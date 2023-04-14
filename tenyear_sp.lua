@@ -3531,10 +3531,20 @@ local xialei = fk.CreateTriggerSkill{
     local chosen = room:askForAG(player, ids, false, self.name)
     table.removeOne(ids, chosen)
     room:obtainCard(player, chosen, false, fk.ReasonPrey)
-    for _, id in ipairs(ids) do
-      table.insert(room.draw_pile, id)
-    end
     room:closeAG(player)
+    if #ids > 0 then
+      local choice = room:askForChoice(player, {"xialei_top", "xialei_bottom"}, self.name)
+      local place = 1
+      if choice == "xialei_top" then
+        for i = #ids, 1, -1 do
+          table.insert(room.draw_pile, 1, ids[i])
+        end
+      else
+        for _, id in ipairs(ids) do
+          table.insert(room.draw_pile, id)
+        end
+      end
+    end
     room:addPlayerMark(player, "xialei-turn", 1)
   end,
 }
@@ -3560,6 +3570,7 @@ local anzhi = fk.CreateActiveSkill{
     if judge.card.color == Card.Red then
       room:setPlayerMark(player, "xialei-turn", 0)
     elseif judge.card.color == Card.Black then
+      room:addPlayerMark(player, "anzhi-turn", 1)
       local ids = player:getMark("anzhi_record-turn")
       if type(ids) ~= "table" then return end
       for _, id in ipairs(ids) do
@@ -3571,7 +3582,6 @@ local anzhi = fk.CreateActiveSkill{
       local to = room:askForChoosePlayers(player, table.map(table.filter(room:getAlivePlayers(), function(p)
         return p ~= room.current end), function(p) return p.id end), 1, 1, "#anzhi-choose", self.name)
       if #to > 0 then
-        room:addPlayerMark(player, "anzhi-turn", 1)
         local get = {}
         room:fillAG(player, ids)
         while #get < 2 and #ids > 0 do
@@ -3633,6 +3643,8 @@ Fk:loadTranslationTable{
   [":xialei"] = "当你的红色牌进入弃牌堆后，你可观看牌堆顶的三张牌，然后你获得一张并可将其他牌置于牌堆底，你本回合观看牌数-1。",
   ["anzhi"] = "暗织",
   [":anzhi"] = "出牌阶段或当你受到伤害后，你可以进行一次判定，若结果为：红色，重置〖霞泪〗；黑色，你可以令一名非当前回合角色获得本回合进入弃牌堆的两张牌，且你本回合不能再发动此技能。",
+  ["xialei_top"] = "将剩余牌置于牌堆顶",
+  ["xialei_bottom"] = "将剩余牌置于牌堆底",
   ["#anzhi-invoke"] = "你想发动技能“暗织”吗？",
   ["#anzhi-choose"] = "暗织：你可以令一名非当前回合角色获得本回合进入弃牌堆的两张牌",
 }

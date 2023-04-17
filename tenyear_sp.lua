@@ -83,11 +83,9 @@ Fk:loadTranslationTable{
   [":limu"] = "出牌阶段，你可以将一张方块牌当【乐不思蜀】对自己使用，然后回复1点体力；你的判定区有牌时，你使用牌没有次数和距离限制。",
 
   ["$tushe1"] = "据险以图进，备策而施为！",
-  ["$tushe1"] = "夫战者，可时以奇险之策而图常谋！",
-
+  ["$tushe2"] = "夫战者，可时以奇险之策而图常谋！",
   ["$limu1"] = "今诸州纷乱，当立牧以定！",
   ["$limu2"] = "此非为偏安一隅，但求一方百姓安宁！",
-
   ["~liuyan"] = "季玉，望你能守好者益州疆土……",
 }
 --司马徽
@@ -157,10 +155,10 @@ local xionghuo_record = fk.CreateTriggerSkill{
       else
         local dummy = Fk:cloneCard("dilu")
         if not target:isKongcheng() then
-          dummy:addSubcards({ target.player_cards[Player.Hand][math.random(1, #target.player_cards[Player.Hand])] })
+          dummy:addSubcard(table.random(target.player_cards[Player.Hand]))
         end
         if #target.player_cards[Player.Equip] > 0 then
-          dummy:addSubcards({ target.player_cards[Player.Equip][math.random(1, #target.player_cards[Player.Equip])] })
+          dummy:addSubcard(table.random(target.player_cards[Player.Equip]))
         end
         room:obtainCard(player.id, dummy, false, fk.ReasonPrey)
       end
@@ -210,10 +208,8 @@ Fk:loadTranslationTable{
 
   ["$xionghuo1"] = "此镬加之于你，定有所伤！",
   ["$xionghuo2"] = "凶镬沿袭，怎会轻易无伤？",
-
   ["$shajue1"] = "杀伐决绝，不留后患。",
   ["$shajue2"] = "吾即出，必绝之！",
-
   ["~xurong"] = "此生无悔，心中无愧。",
 }
 
@@ -276,6 +272,12 @@ Fk:loadTranslationTable{
   ["#langxi-choose"] = "狼袭：请选择一名体力值不大于你的其他角色，对其随机造成0~2点伤害",
   ["yisuan"] = "亦算",
   [":yisuan"] = "每阶段限一次，当你于出牌阶段内使用普通锦囊牌结算结束后，你可以减1点体力上限，然后获得此牌。",
+
+  ["$langxi1"] = "袭夺之势，如狼噬骨。",
+  ["$langxi2"] = "引吾至此，怎能不袭掠之？",
+  ["$yisuan1"] = "吾亦能善算谋划。",
+  ["$yisuan2"] = "算计人心，我也可略施一二。",
+  ["~lijue"] = "若无内讧，也不至如此。",
 }
 
 local guosi = General(extension, "guosi", "qun", 4)
@@ -409,6 +411,12 @@ Fk:loadTranslationTable{
   ["tanbei1"] = "其随机获得你区域内的一张牌，此回合不能再对你使用牌",
   ["tanbei2"] = "此回合对你使用牌无次数和距离限制",
   ["#sidao-cost"] = "伺盗：你可将一张手牌当【顺手牵羊】对相同的目标使用",
+
+  ["$tanbei1"] = "此机，我怎么会错失。",
+  ["$tanbei2"] = "你的东西，现在是我的了！",
+  ["$sidao1"] = "连发伺动，顺手可得。	",
+  ["$sidao2"] = "伺机而动，此地可窃。",
+  ["~guosi"] = "伍习，你……",
 }
 
 local zhangji = General(extension, "zhangji", "qun", 4)
@@ -509,6 +517,12 @@ Fk:loadTranslationTable{
   [":lveming"] = "出牌阶段限一次，你选择一名装备区装备少于你的其他角色，令其选择一个点数，然后你进行判定：若点数相同，你对其造成2点伤害；不同，你随机获得其区域内的一张牌。",
   ["tunjun"] = "屯军",
   [":tunjun"] = "限定技，出牌阶段，你可以选择一名角色，令其随机使用牌堆中的X张不同类型的装备牌。（不替换原有装备，X为你发动“掠命”的次数）",
+
+  ["$lveming1"] = "劫命掠财，毫不费力。",
+  ["$lveming2"] = "人财，皆掠之，哈哈！",
+  ["$tunjun1"] = "得封侯爵，屯军弘农。",
+  ["$tunjun2"] = "屯军弘农，养精蓄锐。",
+  ["~zhangji"] = "哪，哪里来的乱箭？",
 }
 
 local fanchou = General(extension, "fanchou", "qun", 4)
@@ -541,6 +555,10 @@ Fk:loadTranslationTable{
   ["fanchou"] = "樊稠",
   ["xingluan"] = "兴乱",
   [":xingluan"] = "出牌阶段限一次，当你使用的仅指定一个目标的牌结算完成后，你可以从牌堆里获得一张点数为6的牌。",
+
+  ["$xingluan1"] = "大兴兵争，长安当乱。",
+  ["$xingluan2"] = "勇猛兴军，乱世当立。",
+  ["~fanchou"] = "唉，稚然，疑心甚重。",
 }
 --张琪瑛 卫温诸葛直 吕凯 张恭 2019.4.28
 local zhangqiying = General(extension, "zhangqiying", "qun", 3, 3, General.Female)
@@ -715,6 +733,14 @@ Fk:loadTranslationTable{
   ["@faluclub"] = "♣后土",
   ["@faluheart"] = "♥玉清",
   ["@faludiamond"] = "♦勾陈",
+
+  ["$falu1"] = "求法之道，以司箓籍。",
+  ["$falu2"] = "取舍有法，方得其法。",
+  ["$zhenyi1"] = "不疾不徐，自爱自重。",
+  ["$zhenyi2"] = "紫薇星辰，斗数之仪。",
+  ["$dianhua1"] = "大道无形，点化无为。",
+  ["$dianhua2"] = "得此点化，必得大道。",
+  ["~zhangqiying"] = "米碎面散，我心欲绝。",
 }
 --沙摩柯 忙牙长 许贡 张昌蒲 2019.8.20
 local shamoke = General(extension, "shamoke", "shu", 4)
@@ -743,6 +769,10 @@ Fk:loadTranslationTable{
   ["jilis"] = "蒺藜",
   [":jilis"] = "当你于一回合内使用或打出第X张牌时，你可以摸X张牌（X为你的攻击范围）。",
   ["@jilis-turn"] = "蒺藜",
+
+  ["$jilis1"] = "蒺藜骨朵，威震慑敌！",
+  ["$jilis2"] = "看我一招，铁蒺藜骨朵！",
+  ["~shamoke"] = "五溪蛮夷，不可能输！",
 }
 
 local mangyachang = General(extension, "mangyachang", "qun", 4)
@@ -784,6 +814,10 @@ Fk:loadTranslationTable{
   ["jiedao"] = "截刀",
   [":jiedao"] = "当你每回合第一次造成伤害时，你可令此伤害至多+X（X为你损失的体力值）。然后若受到此伤害的角色没有死亡，你弃置等同于此伤害加值的牌。",
   ["#jiedao-discard"] = "截刀：你需弃置等同于此伤害加值的牌",
+
+  ["$jiedao1"] = "截头大刀的威力，你来尝尝？",
+  ["$jiedao2"] = "我这大刀，可是不看情面的。",
+  ["~mangyachang"] = "黄骠马也跑不快了……",
 }
 
 local wenyang = General(extension, "wenyang", "wei", 5)
@@ -904,8 +938,8 @@ local qingjiao = fk.CreateTriggerSkill{
 }
 wenyang:addSkill(lvli)
 wenyang:addSkill(choujue)
-Fk:addSkill(beishui)
-Fk:addSkill(qingjiao)
+wenyang:addRelatedSkill(beishui)
+wenyang:addRelatedSkill(qingjiao)
 Fk:loadTranslationTable{
   ["wenyang"] = "文鸯",
   ["lvli"] = "膂力",
@@ -916,6 +950,16 @@ Fk:loadTranslationTable{
   [":beishui"] = "觉醒技，准备阶段，若你的手牌数或体力值小于2，你减1点体力上限并获得〖清剿〗，然后修改〖膂力〗为“当你造成或受到伤害后”。",
   ["qingjiao"] = "清剿",
   [":qingjiao"] = "出牌阶段开始时，你可以弃置所有手牌，然后从牌堆或弃牌堆中随机获得八张牌名各不相同且副类别不同的牌。若如此做，结束阶段，你弃置所有牌。",
+
+  ["$lvli1"] = "此击若中，万念俱灰！",
+  ["$lvli2"] = "姿器膂力，万人之雄。",
+  ["$choujue1"] = "家仇未报，怎可独安？",
+  ["$choujue2"] = "逆臣之军，不足畏惧！",
+  ["$beishui1"] = "某若退却半步，诸将可立斩之！",
+  ["$beishui2"] = "效淮阴之举，力敌数千！",
+  ["$qingjiao1"] = "慈不掌兵，义不养财！",
+  ["$qingjiao2"] = "清蛮夷之乱，剿不臣之贼！",
+  ["~wenyang"] = "痛贯心膂，天灭大魏啊！",
 }
 
 local jianggan = General(extension, "jianggan", "wei", 3)
@@ -988,6 +1032,12 @@ Fk:loadTranslationTable{
   ["daoshu"] = "盗书",
   [":daoshu"] = "出牌阶段限一次，你可以选择一名其他角色并选择一种花色，然后获得该角色一张手牌。若此牌与你选择的花色：相同，你对其造成1点伤害且此技能视为未发动过；不同，你交给该角色一张其他花色的手牌（若没有需展示所有手牌）。",
   ["#daoshu-give"] = "盗书：你需交给其一张另一种花色的手牌，若没有则展示所有手牌",
+
+  ["$weicheng1"] = "略施谋略，敌军便信以为真。",
+  ["$weicheng2"] = "吾只观雅规，而非说客。",
+  ["$daoshu1"] = "得此文书，丞相定可高枕无忧。",
+  ["$daoshu2"] = "让我看看，这是什么机密。",
+  ["~jianggan"] = "丞相，再给我一次机会啊！",
 }
 --管辂 葛玄 蒲元 2019.10.22
 local guanlu = General(extension, "guanlu", "wei", 3)
@@ -1124,6 +1174,14 @@ Fk:loadTranslationTable{
   [":busuan"] = "出牌阶段限一次，你可以选择一名其他角色，然后选择至多两张不同的卡牌名称（限基本牌或锦囊牌）。该角色下次摸牌阶段摸牌时，改为从牌堆或弃牌堆中获得你选择的牌。",
   ["mingjie"] = "命戒",
   [":mingjie"] = "结束阶段，你可以摸一张牌，若此牌为红色，你可以重复此流程直到摸到黑色牌或摸到第三张牌。当你以此法摸到黑色牌时，若你的体力值大于1，你失去1点体力。",
+
+  ["$tuiyan1"] = "鸟语略知，万物略懂。",
+  ["$tuiyan2"] = "玄妙之舒巧，推微而知晓。",
+  ["$busuan1"] = "今日一卦，便知命数。",
+  ["$busuan2"] = "喜仰视星辰，夜不肯寐。",
+  ["$mingjie1"] = "戒律循规，不可妄贪。",
+  ["$mingjie2"] = "王道文明，何忧不平。",
+  ["~guanlu"] = "怀我好英，心非草木……",
 }
 Fk:loadTranslationTable{
   ["gexuan"] = "葛玄",
@@ -1225,6 +1283,10 @@ Fk:loadTranslationTable{
   [":kuiji"] = "出牌阶段限一次，你可以将一张黑色基本牌当作【兵粮寸断】对你使用，然后摸一张牌。若如此做，你可以对体力值最多的一名其他角色造成2点伤害。该角色因此进入濒死状态时，你可令另一名体力值最少的角色回复1点体力。",
   ["#kuiji-damage"] = "溃击：你可以对其他角色中体力值最大的一名角色造成2点伤害",
   ["#kuiji-recover"] = "溃击：你可以令除其以外体力值最小的一名角色回复1点体力",
+
+  ["$kuiji1"] = "绝域奋击，孤注一掷。",
+  ["$kuiji2"] = "舍得一身剐，不畏君王威。",
+  ["~leitong"] = "翼德救我……",
 }
 
 local wulan = General(extension, "wulan", "shu", 4)
@@ -1347,6 +1409,10 @@ Fk:loadTranslationTable{
   ["#cuoruiw-use"] = "挫锐：选择另一名其他角色，弃置其至多两张颜色相同的装备，或展示其至多两张手牌",
   ["cuoruiw_equip"] = "弃置其至多两张颜色相同的装备",
   ["cuoruiw_hand"] = "展示其至多两张手牌并获得其中相同颜色牌",
+
+  ["$cuoruiw1"] = "减辎疾行，挫敌军锐气。",
+  ["$cuoruiw2"] = "外物当舍，摄敌为重。",
+  ["~wulan"] = "蛮狗，尔敢杀我！",
 }
 
 local liuzan = General(extension, "ty__liuzan", "wu", 4)
@@ -1414,6 +1480,12 @@ Fk:loadTranslationTable{
   [":ty__fenyin"] = "锁定技，你的回合内，每当有一种花色的牌进入弃牌堆后（每回合每种花色各限一次），你摸一张牌。",
   ["liji"] = "力激",
   [":liji"] = "出牌阶段限0次，你可以弃置一张牌然后对一名其他角色造成1点伤害。你的回合内，本回合进入弃牌堆的牌每次达到8的倍数张时（存活人数小于5时改为4的倍数），此技能使用次数+1。",
+
+  ["$ty__fenyin1"] = "斗志高歌，士气昂扬！",
+  ["$ty__fenyin2"] = "抗音而歌，左右应之！",
+  ["$liji1"] = "破敌搴旗，未尝负败！",
+  ["$liji2"] = "鸷猛壮烈，万人不敌！",
+  ["~ty__liuzan"] = "若因病困此，命矣。",
 }
 --何进 2020.10.31（原1v1技能组）
 --曹性 刘辩 2020.11.22
@@ -1595,6 +1667,12 @@ Fk:loadTranslationTable{
   ["zunwei1"] = "将手牌摸至与其相同（最多摸五张）",
   ["zunwei2"] = "使用装备至与其相同",
   ["zunwei3"] = "回复体力至与其相同",
+
+  ["$pianchong1"] = "得陛下怜爱，恩宠不衰。",
+  ["$pianchong2"] = "谬蒙圣恩，光授殊宠。",
+  ["$zunwei1"] = "处尊居显，位极椒房。",
+  ["$zunwei2"] = "自在东宫，及即尊位。",
+  ["~guozhao"] = "我的出身，不配为后？",
 }
 
 --陆郁生 2021.3.20
@@ -1665,6 +1743,14 @@ Fk:loadTranslationTable{
   ["zhuixi"] = "追袭",
   [":zhuixi"] = "锁定技，当你对其他角色造成伤害时，或当你受到其他角色造成的伤害时，若你与其翻面状态不同，此伤害+1。",
   ["#lulve-choose"] = "掳掠：你可以令一名有手牌且手牌数小于你的其他角色选择一项",
+  ["lulve_give"] = "将所有手牌交给其，其翻面",
+  ["lulve_slash"] = "你翻面，视为对其使用【杀】",
+
+  ["$lulve1"] = "趁火打劫，乘危掳掠。",
+  ["$lulve2"] = "天下大乱，掳掠以自保。",
+  ["$zhuixi1"] = "得势追击，胜望在握！",
+  ["$zhuixi2"] = "诸将得令，追而袭之！",
+  ["~liangxing"] = "夏侯渊，你竟敢！",
 }
 --牛金 段煨 张横2021.7.18
 local duanwei = General(extension, "duanwei", "qun", 4)
@@ -1727,6 +1813,10 @@ Fk:loadTranslationTable{
   ["langmie"] = "狼灭",
   [":langmie"] = "其他角色的出牌阶段结束时，若其本阶段使用过至少两张相同类型的牌，你可以摸一张牌；其他角色的结束阶段，若其本回合造成过至少2点伤害，你可以弃置一张牌，对其造成1点伤害。",
   ["#langmie-cost"] = "狼灭：你可以弃置一张牌，对其造成1点伤害",
+
+  ["$langmie1"] = "群狼四起，灭其一威众。",
+  ["$langmie2"] = "贪狼强力，寡义而趋利。",
+  ["~duanwei"] = "狼伴其侧，终不胜防。",
 }
 
 local zhangheng = General(extension, "zhangheng", "qun", 8)
@@ -1819,6 +1909,12 @@ Fk:loadTranslationTable{
   ["dangzai"] = "挡灾",
   [":dangzai"] = "出牌阶段开始时，你可以将一名其他角色判定区里的一张牌移至你的判定区。",
   ["#dangzai-choose"] = "挡灾：你可以将一名其他角色判定区里的一张牌移至你的判定区",
+
+  ["$liangjue1"] = "行军者，切不可无粮！",
+  ["$liangjue2"] = "粮尽援绝，须另谋出路。",
+  ["$dangzai1"] = "此处有我，休得放肆！",
+  ["$dangzai2"] = "退后，让我来！",
+  ["~zhangheng"] = "军粮匮乏。",
 }
 --杨婉 2021.8.23
 --董承 胡车儿 2021.9.19
@@ -1896,6 +1992,10 @@ Fk:loadTranslationTable{
   ["xuezhao"] = "血诏",
   [":xuezhao"] = "出牌阶段限一次，你可以弃置一张手牌并选择至多X名其他角色（X为你的体力上限），然后令这些角色依次选择是否交给你一张牌，若选择是，该角色摸一张牌且你本阶段使用【杀】的次数上限+1；若选择否，该角色本阶段不能响应你使用的牌。",
   ["#xuezhao-give"] = "血诏：交出一张牌并摸一张牌使其使用【杀】次数上限+1；或本阶段不能响应其使用的牌",
+
+  ["$xuezhao1"] = "奉旨行事，莫敢不从？",
+  ["$xuezhao2"] = "衣带密诏，当诛曹公！",
+  ["~ty__dongcheng"] = "是谁走漏了风声？",
 }
 --邹氏 2021.9.23
 Fk:loadTranslationTable{
@@ -1956,7 +2056,7 @@ local zhukou = fk.CreateTriggerSkill{
     if event == fk.Damage then
       return room:askForSkillInvoke(player, self.name)
     else
-      local targets = room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), function(p)
+      local targets = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p)
         return p.id end), 2, 2, "#zhukou-choose", self.name, true)
       if #targets == 2 then
         self.cost_data = targets
@@ -2123,7 +2223,7 @@ yuyun:addRelatedSkill(yuyun_distance)
 yuyun:addRelatedSkill(yuyun_maxcards)
 zhouyi:addSkill(zhukou)
 zhouyi:addSkill(mengqing)
-Fk:addSkill(yuyun)
+zhouyi:addRelatedSkill(yuyun)
 Fk:loadTranslationTable{
   ["zhouyi"] = "周夷",
   ["zhukou"] = "逐寇",
@@ -2131,7 +2231,12 @@ Fk:loadTranslationTable{
   ["mengqing"] = "氓情",
   [":mengqing"] = "觉醒技，准备阶段，若已受伤的角色数大于你的体力值，你加3点体力上限并回复3点体力，失去〖逐寇〗，获得〖玉殒〗。",
   ["yuyun"] = "玉陨",
-  [":yuyun"] = "锁定技，出牌阶段开始时，你失去1点体力或体力上限（你的体力上限不能以此法被减至1以下），然后选择X+1项（X为你已损失的体力值）：1.摸两张牌；2.对一名其他角色造成1点伤害，然后本回合对其使用【杀】无距离和次数限制；3.本回合没有手牌上限；4.获得一名其他角色区域内的一张牌；5.令一名其他角色将手牌摸至体力上限（最多摸至5）。",
+  [":yuyun"] = "锁定技，出牌阶段开始时，你失去1点体力或体力上限（你的体力上限不能以此法被减至1以下），然后选择X+1项（X为你已损失的体力值）：<br>"..
+  "1.摸两张牌；<br>"..
+  "2.对一名其他角色造成1点伤害，然后本回合对其使用【杀】无距离和次数限制；<br>"..
+  "3.本回合没有手牌上限；<br>"..
+  "4.获得一名其他角色区域内的一张牌；<br>"..
+  "5.令一名其他角色将手牌摸至体力上限（最多摸至5）。",
   ["@zhukou-turn"] = "逐寇",
   ["#zhukou-choose"] = "逐寇：你可以对两名其他角色各造成1点伤害",
   ["yuyun1"] = "摸两张牌",
@@ -2142,6 +2247,14 @@ Fk:loadTranslationTable{
   ["#yuyun2-choose"] = "玉陨：对一名其他角色造成1点伤害，本回合对其使用【杀】无距离和次数限制",
   ["#yuyun4-choose"] = "玉陨：获得一名其他角色区域内的一张牌",
   ["#yuyun5-choose"] = "玉陨：令一名其他角色将手牌摸至体力上限（最多摸至5）",
+
+  ["$zhukou1"] = "草莽贼寇，不过如此。",
+  ["$zhukou2"] = "轻装上阵，利剑出鞘。",
+  ["$mengqing1"] = "女之耽兮，不可说也。",
+  ["$mengqing2"] = "淇水汤汤，渐车帷裳。",
+  ["$yuyun1"] = "春依旧，人消瘦。",
+  ["$yuyun2"] = "泪沾青衫，玉殒香消。",
+  ["~zhouyi"] = "江水寒，萧瑟起。",
 }
 
 local lvlingqi = General(extension, "lvlingqi", "qun", 4, 4, General.Female)
@@ -2262,7 +2375,8 @@ guowu:addRelatedSkill(guowu_targetmod)
 shenwei:addRelatedSkill(shenwei_maxcards)
 lvlingqi:addSkill(guowu)
 lvlingqi:addSkill(zhuangrong)
-Fk:addSkill(shenwei)
+lvlingqi:addRelatedSkill(shenwei)
+lvlingqi:addRelatedSkill("wushuang")
 Fk:loadTranslationTable{
   ["lvlingqi"] = "吕玲绮",
   ["guowu"] = "帼武",
@@ -2272,6 +2386,14 @@ Fk:loadTranslationTable{
   ["shenwei"] = "神威",
   [":shenwei"] = "锁定技，摸牌阶段，你额外摸两张牌；你的手牌上限+2。",  --TODO: this should be moved to SP!
   ["#guowu-choose"] = "帼武：可以多指定两个目标",
+
+  ["$guowu1"] = "方天映黛眉，赤兔牵红妆。",
+  ["$guowu2"] = "武姬青丝利，巾帼女儿红。",
+  ["$zhuangrong1"] = "锋镝鸣手中，锐戟映秋霜。",
+  ["$zhuangrong2"] = "红妆非我愿，学武觅封侯。",
+  ["$shenwei1"] = "继父神威，无坚不摧！",
+  ["$shenwei2"] = "我乃温侯吕奉先之女！",
+  ["~lvlingqi"] = "父亲，女儿好累。",
 }
 
 local dufuren = General(extension, "dufuren", "wei", 3, 3, General.Female)
@@ -2401,6 +2523,12 @@ Fk:loadTranslationTable{
   ["shunshi"] = "顺世",
   [":shunshi"] = "准备阶段或当你于回合外受到伤害后，你可以交给一名其他角色一张牌（伤害来源除外），然后直到你的回合结束，你：摸牌阶段多摸一张牌、出牌阶段使用的【杀】次数上限+1、手牌上限+1。",
   ["#shunshi-cost"] = "顺世：你可以交给一名其他角色一张牌，然后直到你的回合结束获得效果",
+
+  ["$yise1"] = "明丽端庄，双瞳剪水。",
+  ["$yise2"] = "姿色天然，貌若桃李。",
+  ["$shunshi1"] = "顺应时运，得保安康。",
+  ["$shunshi2"] = "随遇而安，宠辱不惊。",
+  ["~dufuren"] = "往事云烟，去日苦多。",
 }
 --荀谌 张宁 万年公主 童渊 刘永2021.12.1
 local wanniangongzhu = General(extension, "wanniangongzhu", "qun", 3, 3, General.Female)
@@ -2459,19 +2587,31 @@ local xinghan = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and not target.dead and target:getMark("@zhenge") > 0 and data.card ~= nil and data.card.trueName == "slash" and target:getMark("xinghan-turn") == 0
+    return player:hasSkill(self.name) and not target.dead and target:getMark("@zhenge") > 0 and
+      data.card and data.card.trueName == "slash" and data.card.extra_data and table.contains(data.card.extra_data, "xinghan")
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:addPlayerMark(target, "xinghan-turn", 1)
     for _, p in ipairs(room:getOtherPlayers(player)) do
       if #p.player_cards[Player.Hand] > #player.player_cards[Player.Hand] then
-        player:drawCards(math.min(target:getAttackRange(), 5))
+        player:drawCards(math.min(target:getAttackRange(), 5), self.name)
         return
       end
     end
     player:drawCards(1, self.name)
-  end
+  end,
+
+  refresh_events = {fk.AfterCardUseDeclared},
+  can_refresh = function(self, event, target, player, data)
+    return data.card.trueName == "slash" and player.room.current and player.room.current:getMark("xinghan-turn") == 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:addPlayerMark(player.room.current, "xinghan-turn", 1)
+    if target == player.room.current then
+      data.card.extra_data = data.card.extra_data or {}
+      table.insert(data.card.extra_data, "xinghan")
+    end
+  end,
 }
 zhenge:addRelatedSkill(zhenge_attackrange)
 wanniangongzhu:addSkill(zhenge)
@@ -2485,6 +2625,12 @@ Fk:loadTranslationTable{
   ["@zhenge"] = "枕戈",
   ["#zhenge-choose"] = "枕戈：你可以令一名角色的攻击范围+1（至多+5）",
   ["#zhenge-slash"] = "枕戈：你可以选择另一名角色，视为其对此角色使用【杀】",
+
+  ["$zhenge1"] = "常备不懈，严阵以待。",
+  ["$zhenge2"] = "枕戈待旦，日夜警惕。",
+  ["$xinghan1"] = "汉之兴旺，不敢松懈。",
+  ["$xinghan2"] = "兴汉除贼，吾之所愿。",
+  ["~wanniangongzhu"] = "兴汉的使命，还没有完成。",
 }
 --嵇康 曹不兴2021.12.3
 --陈登2021.12.15
@@ -2614,6 +2760,14 @@ Fk:loadTranslationTable{
   ["yuqi2"] = "观看牌数",
   ["yuqi3"] = "交给受伤角色牌数",
   ["yuqi4"] = "自己获得牌数",
+
+  ["$yuqi1"] = "孤影独泣，困于隅角。",
+  ["$yuqi2"] = "向隅而泣，黯然伤感。",
+  ["$shanshen1"] = "好善为德，坚守本心。",
+  ["$shanshen2"] = "洁身自爱，独善其身。",
+  ["$xianjing1"] = "文静娴丽，举止柔美。",
+  ["$xianjing2"] = "娴静淡雅，温婉穆穆。",
+  ["~caojinyu"] = "平叔之情，吾岂不明。",
 }
 --王桃 王悦 庞德公2022.2.28
 --吴范 李采薇 祢衡2022.3.5
@@ -2758,20 +2912,183 @@ Fk:loadTranslationTable{
   ["shezang"] = "奢葬",
   [":shezang"] = "每轮限一次，当你或你回合内有角色进入濒死状态时，你可以从牌堆获得不同花色的牌各一张。",
   ["@tongli-turn"] = "同礼",
+
+  ["$tongli1"] = "胞妹殊礼，妾幸同之。",
+  ["$tongli2"] = "夫妻之礼，举案齐眉。",
+  ["$shezang1"] = "世间千百物，物物皆相思。",
+  ["$shezang2"] = "伊人将逝，何物为葬？",
+  ["~zhangxuan"] = "陛下，臣妾绝无异心！",
 }
 --一将2022：李婉 诸葛尚 陆凯 轲比能
 --王昶 冯方2022.8.27
 --卞喜2022.9.6
 --全惠解 胡昭 魏吕旷吕翔 黄权 孙茹 赵昂2022.9.17
+local quanhuijie = General(extension, "quanhuijie", "wu", 3, 3, General.Female)
+local huishu = fk.CreateTriggerSkill{
+  name = "huishu",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Draw
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(player:getMark("huishu1"), self.name)
+    player.room:askForDiscard(player, player:getMark("huishu2"), player:getMark("huishu2"), false, self.name, false)
+  end,
 
+  refresh_events = {fk.GameStart, fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      if event == fk.GameStart then
+        return true
+      else
+        if player:usedSkillTimes(self.name) > 0 and player:getMark("huishu-turn") < player:getMark("huishu3") then
+          for _, move in ipairs(data) do
+            if move.from == player.id and move.toArea == Card.DiscardPile and move.moveReason == fk.ReasonDiscard then
+              for _, info in ipairs(move.moveInfo) do
+                if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+                  player.room:addPlayerMark(player, "huishu-turn", 1)
+                end
+              end
+            end
+          end
+          return player:getMark("huishu-turn") >= player:getMark("huishu3")
+        end
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.GameStart then
+      room:setPlayerMark(player, "huishu1", 3)
+      room:setPlayerMark(player, "huishu2", 1)
+      room:setPlayerMark(player, "huishu3", 2)
+      room:setPlayerMark(player, "@" .. self.name, string.format("%d-%d-%d", 3, 1, 2))
+    else
+      local card = {getCardByPattern(room, ".|.|.|.|.|trick", room.discard_pile)}
+      if #card > 0 then
+        room:moveCards({
+          ids = card,
+          to = player.id,
+          toArea = Card.PlayerHand,
+          moveReason = fk.ReasonPrey,
+          proposer = player.id,
+          skillName = self.name,
+        })
+      end
+    end
+  end,
+}
+local yishu = fk.CreateTriggerSkill{
+  name = "yishu",
+  anim_type = "special",
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) and player.phase ~= Player.Play then
+      for _, move in ipairs(data) do
+        if move.from == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local max = math.max(player:getMark("huishu1"), player:getMark("huishu2"), player:getMark("huishu3"))
+    local min = math.min(player:getMark("huishu1"), player:getMark("huishu2"), player:getMark("huishu3"))
+    local maxes, mins = {}, {}
+    for _, mark in ipairs({"huishu1", "huishu2", "huishu3"}) do
+      if player:getMark(mark) == max then
+        table.insert(maxes, mark)
+      end
+      if player:getMark(mark) == min then
+        table.insert(mins, mark)
+      end
+    end
+    local choice1 = room:askForChoice(player, mins, self.name, "huishu_add")
+    local choice2 = room:askForChoice(player, maxes, self.name, "huishu_lose")
+    room:addPlayerMark(player, choice1, 2)
+    room:removePlayerMark(player, choice2, 1)
+    room:setPlayerMark(player, "@huishu", string.format("%d-%d-%d",
+      player:getMark("huishu1"),
+      player:getMark("huishu2"),
+      player:getMark("huishu3")))
+  end,
+}
+local ligong = fk.CreateTriggerSkill{
+  name = "ligong",
+  frequency = Skill.Wake,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and
+     player.phase == Player.Start and
+     (player:getMark("huishu1") > 4 or player:getMark("huishu2") > 4 or player:getMark("huishu3") > 4)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:changeMaxHp(player, 1)
+    room:recover({
+      who = player,
+      num = 1,
+      recoverBy = player,
+      skillName = self.name
+    })
+    local generals = Fk:getGeneralsRandomly(2, Fk:getAllGenerals(),
+      table.map(room:getAllPlayers(), function(p) return p.general end),
+      (function (p) return (p.kingdom ~= "wu" or p.gender ~= General.Female) end))
+    local skills = {"Cancel"}
+    for _, general in ipairs(generals) do
+      for _, skill in ipairs(general.skills) do
+        if skill.frequency ~= Skill.Wake and skill.frequency ~= Skill.Limited then
+          table.insertIfNeed(skills, skill.name)
+        end
+      end
+    end
+    local choices = {}
+    for i = 1, 2, 1 do
+      local choice = room:askForChoice(player, skills, self.name)
+      table.insert(choices, choice)
+      if choice == "Cancel" then break end
+      table.removeOne(skills, choice)
+    end
+    if table.contains(choices, "Cancel") then
+      player:drawCards(2, self.name)
+      room:handleAddLoseSkills(player, "-yishu", nil)
+    else
+      room:handleAddLoseSkills(player, "-huishu|-yishu|"..choices[1].."|"..choices[2], nil)
+    end
+  end,
+}
+quanhuijie:addSkill(huishu)
+quanhuijie:addSkill(yishu)
+quanhuijie:addSkill(ligong)
 Fk:loadTranslationTable{
-  ["huanquan"] = "全惠解",
+  ["quanhuijie"] = "全惠解",
   ["huishu"] = "慧淑",
   [":huishu"] = "摸牌阶段结束时，你可以摸3张牌然后弃置1张手牌。若如此做，你本回合弃置超过2张牌时，从弃牌堆中随机获得一张锦囊牌。",
   ["yishu"] = "易数",
   [":yishu"] = "锁定技，当你于出牌阶段外失去牌后，〖慧淑〗中最小的一个数字+2且最大的一个数字-1。",
   ["ligong"] = "离宫",
   [":ligong"] = "觉醒技，准备阶段，若〖慧淑〗有数字达到5，你加1点体力上限并回复1点体力，失去〖慧淑〗和〖易数〗，然后从随机四个已开通的吴国女性武将中选择两个技能获得（若选择不获得技能则不失去〖慧淑〗并摸两张牌）。",
+  ["@huishu"] = "慧淑",
+  ["huishu1"] = "摸牌数",
+  ["huishu2"] = "弃牌数",
+  ["huishu3"] = "获得锦囊所需弃牌数",
+  ["huishu_add"] = "请选择增加的一项",
+  ["huishu_lose"] = "请选择减少的一项",
+
+  ["$huishu1"] = "心有慧镜，善解百般人意。",
+  ["$huishu2"] = "袖着静淑，可揾夜阑之泪。",
+  ["$yishu1"] = "此命由我，如织之数可易。",
+  ["$yishu2"] = "易天定之数，结人定之缘。",
+  ["$ligong1"] = "伴君离高墙，日暮江湖远。",
+  ["$ligong2"] = "巍巍宫门开，自此不复来。",
+  ["~quanhuijie"] = "妾有愧于陛下。",
 }
 
 local huangquan = General(extension, "ty__huangquan", "shu", 3)
@@ -2867,7 +3184,7 @@ local quanjian_record = fk.CreateTriggerSkill{
   name = "#quanjian_record",
   anim_type = "offensive",
 
-  refresh_events = {fk.DamageCaused, fk.DamageInflicted},
+  refresh_events = {fk.DamageInflicted},
   can_refresh = function(self, event, target, player, data)
     return target:getMark("quanjian_damage-turn") > 0
   end,
@@ -2924,6 +3241,12 @@ Fk:loadTranslationTable{
   ["quanjian_draw"] = "将手牌调整至手牌上限（最多摸到5张），不能使用手牌直到回合结束",
   ["quanjian_cancel"] = "不执行，本回合下次受到的伤害+1",
   ["#tujue-choose"] = "途绝：你可以将所有牌交给一名其他角色，然后回复等量的体力值并摸等量的牌",
+
+  ["$quanjian1"] = "陛下宜后镇，臣请为先锋！",
+  ["$quanjian2"] = "吴人悍战，陛下万不可涉险！",
+  ["$tujue1"] = "归蜀无路，孤臣泪尽江北。",
+  ["$tujue2"] = "受吾主殊遇，安能降吴！",
+  ["~ty__huangquan"] = "败军之将，何言忠乎？",
 }
 
 local sunru = General(extension, "ty__sunru", "wu", 3, 3, General.Female)
@@ -2987,6 +3310,12 @@ Fk:loadTranslationTable{
   ["youxu"] = "忧恤",
   [":youxu"] = "一名角色回合结束时，若其手牌数大于体力值，你可以展示其一张手牌然后交给另一名角色。若获得牌的角色体力值全场最低，其回复1点体力。",
   ["#youxu-choose"] = "忧恤：选择获得这张牌的角色",
+
+  ["$xiecui1"] = "东隅既得，亦收桑榆。",
+  ["$xiecui2"] = "江东多娇，锦花相簇。",
+  ["$youxu1"] = "积富之家，当恤众急。",
+  ["$youxu2"] = "周忧济难，请君恤之。",
+  ["~ty__sunru"] = "伯言，抗儿便托付于你了。",
 }
 --牛辅 蔡阳2022.9.24
 --张奋2022.9.29
@@ -3069,6 +3398,12 @@ Fk:loadTranslationTable{
   ["congshi"] = "从势",
   [":congshi"] = "锁定技，当一名角色使用一张装备牌结算结束后，若其装备区里的牌数为全场最多的，你摸一张牌。",
   ["#yingtu-choose"] = "营图：选择交给另一家的一张牌",
+
+  ["$yingtu1"] = "不过略施小计，聊戏莽夫耳。",
+  ["$yingtu2"] = "栖虎狼之侧，安能不图存身？",
+  ["$congshi1"] = "阁下奉天子以令诸侯，珪自当相从。",
+  ["$congshi2"] = "将军率六师以伐不臣，珪何敢相抗？",
+  ["~chengui"] = "终日戏虎，竟为虎所噬。",
 }
 --王威 赵俨 雷薄 王烈2022.11.17
 --丁尚涴
@@ -3274,9 +3609,9 @@ Fk:loadTranslationTable{
 
   ["$shencai1"] = "我有三千炼狱，待汝万世轮回！",
   ["$shencai2"] = "纵汝王侯将相，亦须俯首待裁！",
-
   ["$xunshi1"] = "秉身为正，辟易万邪！",
   ["$xunshi2"] = "巡御两界，路寻不平！",
+  ["~godzhangfei"] = "尔等，欲复斩我头乎？",
 }
 --李异谢旌 袁姬 庞会 赵直 陈矫 朱建平 2022.12.22
 Fk:loadTranslationTable{
@@ -3327,6 +3662,10 @@ Fk:loadTranslationTable{
   [":yiyong"] = "每回合限两次，当你对其他角色造成伤害时，你可以弃置任意张牌，令该角色弃置任意张牌。若你弃置的牌的点数之和：不大于其，你摸X张牌（X为该角色弃置的牌数）；不小于其，此伤害+1。",
   ["#yiyong-cost"] = "异勇：你可以弃置任意张牌，令目标弃置任意张牌，根据双方弃牌点数执行效果",
   ["#yiyong-disable"] = "异勇：你需弃置任意张牌，若点数大则对方摸牌，若点数小则伤害+1",
+
+  ["$yiyong1"] = "关氏鼠辈，庞令明之子来邪！",
+  ["$yiyong2"] = "凭一腔勇力，父仇定可报还。",
+  ["~panghui"] = "大仇虽报，奈何心有余创。",
 }
 
 Fk:loadTranslationTable{
@@ -3438,6 +3777,12 @@ Fk:loadTranslationTable{
   ["tianji"] = "天机",
   [":tianji"] = "锁定技，生效后的判定牌进入弃牌堆后，你从牌堆随机获得与该牌类型、花色和点数相同的牌各一张。",
   ["@xiangmian"] = "相面",
+
+  ["$xiangmian1"] = "以吾之见，阁下命不久矣。",
+  ["$xiangmian2"] = "印堂发黑，将军危在旦夕。",
+  ["$tianji1"] = "顺天而行，坐收其利。",
+  ["$tianji2"] = "只可意会，不可言传。",
+  ["~zhujianping"] = "天机，不可泄露啊……",
 }
 
 local gongsundu = General(extension, "gongsundu", "qun", 4)
@@ -3453,18 +3798,18 @@ local zhenze = fk.CreateTriggerSkill{
     local choice = room:askForChoice(player, {"zhenze_lose", "zhenze_recover"}, self.name)
     if choice == "zhenze_lose" then
       for _, p in ipairs(room:getOtherPlayers(player)) do
-        if ((p.hp > player.hp) ~= (#p.player_cards[Player.Hand] > #player.player_cards[Player.Hand])) or
-          ((p.hp == player.hp) ~= (#p.player_cards[Player.Hand] == #player.player_cards[Player.Hand])) or
-          ((p.hp < player.hp) ~= (#p.player_cards[Player.Hand] < #player.player_cards[Player.Hand])) then
+        if ((#p.player_cards[Player.Hand] > p.hp) ~= (#player.player_cards[Player.Hand] > player.hp) or
+          (#p.player_cards[Player.Hand] == p.hp) ~= (#player.player_cards[Player.Hand] == player.hp) or
+          (#p.player_cards[Player.Hand] < p.hp) ~= (#player.player_cards[Player.Hand] < player.hp)) then
             room:loseHp(p, 1, self.name)
         end
       end
     else
       for _, p in ipairs(room:getAlivePlayers()) do
         if p:isWounded() and
-          (((p.hp > player.hp) and (#p.player_cards[Player.Hand] > #player.player_cards[Player.Hand])) or
-          ((p.hp == player.hp) and (#p.player_cards[Player.Hand] == #player.player_cards[Player.Hand])) or
-          ((p.hp < player.hp) and (#p.player_cards[Player.Hand] < #player.player_cards[Player.Hand]))) then
+          ((#p.player_cards[Player.Hand] > p.hp) and (#player.player_cards[Player.Hand] > player.hp) or
+          (#p.player_cards[Player.Hand] == p.hp) and (#player.player_cards[Player.Hand] == player.hp) or
+          (#p.player_cards[Player.Hand] < p.hp) and (#player.player_cards[Player.Hand] < player.hp)) then
             room:recover({
               who = p,
               num = 1,
@@ -3519,6 +3864,12 @@ Fk:loadTranslationTable{
   [":anliao"] = "出牌阶段限X次（X为群势力角色数），你可以重铸一名角色的一张牌。",
   ["zhenze_lose"] = "手牌数和体力值的大小关系与你不同的角色失去1点体力",
   ["zhenze_recover"] = "所有手牌数和体力值的大小关系与你相同的角色回复1点体力",
+
+  ["$zhenze1"] = "名震千里，泽被海东。",
+  ["$zhenze2"] = "施威除暴，上下咸服。",
+  ["$anliao1"] = "地阔天高，大有可为。",
+  ["$anliao2"] = "水草丰沛，当展宏图。",
+  ["~gongsundu"] = "为何都不愿出仕！",
 }
 
 --董贵人 是仪 程秉 孙狼 武安国 霍峻 孙寒华 薛灵芸 刘辟 关宁2023.1.18
@@ -3669,6 +4020,12 @@ Fk:loadTranslationTable{
   ["xialei_bottom"] = "将剩余牌置于牌堆底",
   ["#anzhi-invoke"] = "你想发动技能“暗织”吗？",
   ["#anzhi-choose"] = "暗织：你可以令一名非当前回合角色获得本回合进入弃牌堆的两张牌",
+
+  ["$xialei1"] = "采霞揾晶泪，沾我青衫湿。",
+  ["$xialei2"] = "登车入宫墙，垂泪凝如瑙。",
+  ["$anzhi1"] = "深闱行彩线，唯手熟尔。",
+  ["$anzhi2"] = "星月独照人，何谓之暗？",
+  ["~xuelingyun"] = "寒月隐幕，难作衣裳。",
 }
 --神张角 周宣2023.2.25
 --local godzhangjiao = General(extension, "godzhangjiao", "god", 3)
@@ -3946,6 +4303,12 @@ Fk:loadTranslationTable{
   ["zhanmeng2"] = "下一回合内，当同名牌首次被使用后，你获得一张伤害牌",
   ["zhanmeng3"] = "令一名其他角色弃置两张牌，若点数之和大于10，对其造成1点火焰伤害",
   ["#zhanmeng-choose"] = "占梦: 令一名其他角色弃置两张牌，若点数之和大于10，对其造成1点火焰伤害",
+
+  ["$wumei1"] = "大梦若期，皆付一枕黄粱。",
+  ["$wumei2"] = "日所思之，故夜所梦之。",
+  ["$zhanmeng1"] = "梦境缥缈，然有迹可占。",
+  ["$zhanmeng2"] = "万物有兆，唯梦可卜。",
+  ["~zhouxuan"] = "人生如梦，假时亦真。",
 }
 --杨彪 傅肜傅佥 向朗 孙桓 杨弘 桥蕤 秦朗 郑浑2023.3.11
 --孟节 孙资刘放 2023.3.19

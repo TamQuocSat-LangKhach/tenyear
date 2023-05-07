@@ -4157,10 +4157,12 @@ local xunshi_targetmod = fk.CreateTargetModSkill{
       return 999
     end
   end,
-  distance_limit_func =  function(self, player, skill)
-    if player:hasSkill(self.name) and card ~= nil and card.color == Card.NoColor then
+  anim_type = "offensive",
+  distance_limit_func =  function(self, player, skill, card)
+    if player:hasSkill(self.name) and skill.trueName == "slash_skill" and card.color == Card.NoColor then
       return 999
     end
+    return 0
   end,
 }
 shencai:addRelatedSkill(shencai_record)

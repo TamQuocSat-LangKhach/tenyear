@@ -789,9 +789,8 @@ local xingluan = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) and player.phase == Player.Play and player:usedSkillTimes(self.name) == 0 then
-      return data.tos and #data.tos == 1
-    end
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and
+    data.tos and #data.tos == 1 and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

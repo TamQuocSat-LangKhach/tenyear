@@ -584,7 +584,7 @@ local jinjie = fk.CreateTriggerSkill{
       if n == 0 then
         return player.room:askForSkillInvoke(player, self.name, nil, "#jinjie-invoke::"..target.id)
       else
-        if player.player_cards[Player.Hand] < n then return end
+        if #player.player_cards[Player.Hand] < n then return end
         return #player.room:askForDiscard(player, n, n, false, self.name, true, ".", "#jinjie-discard::"..target.id..":"..n) > 0
       end
     end

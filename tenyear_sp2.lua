@@ -1279,18 +1279,12 @@ local mengqing = fk.CreateTriggerSkill{
   frequency = Skill.Wake,
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and
-     player.phase == Player.Start then
-      local n = 0
-      for _, p in ipairs(player.room:getAlivePlayers()) do
-        if p:isWounded() then
-          n = n + 1
-        end
-      end
-      if n > player.hp then
-        return true
-      end
-    end
+    return target == player and player:hasSkill(self.name) and
+      player.phase == Player.Start and
+      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  can_wake = function(self, event, target, player, data)
+    return #table.filter(player.room.alive_players, function(p) return p:isWounded() end) > player.hp
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -1515,11 +1509,12 @@ local guowu_targetmod = fk.CreateTargetModSkill{
 local zhuangrong = fk.CreateTriggerSkill{
   name = "zhuangrong",
   frequency = Skill.Wake,
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and
-     data.to == Player.NotActive and
-    (#player.player_cards[Player.Hand] == 1 or player.hp == 1)
+    return player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  can_wake = function(self, event, target, player, data)
+    return #player.player_cards[Player.Hand] == 1 or player.hp == 1
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

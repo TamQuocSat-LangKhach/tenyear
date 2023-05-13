@@ -1120,10 +1120,10 @@ local choujue = fk.CreateTriggerSkill{
   frequency = Skill.Wake,
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and
-      math.abs(#player.player_cards[Player.Hand] - player.hp) > 2
+    return player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   can_wake = function(self, event, target, player, data)
+    return math.abs(#player.player_cards[Player.Hand] - player.hp) > 2
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -1137,8 +1137,12 @@ local beishui = fk.CreateTriggerSkill{
   frequency = Skill.Wake,
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and
-      player.phase == Player.Start and (#player.player_cards[Player.Hand] < 2 or player.hp < 2)
+    return target == player and player:hasSkill(self.name) and
+      player.phase == Player.Start and
+      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  can_wake = function(self, event, target, player, data)
+    return #player.player_cards[Player.Hand] < 2 or player.hp < 2
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

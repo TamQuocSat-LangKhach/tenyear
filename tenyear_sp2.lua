@@ -143,13 +143,13 @@ Fk:loadTranslationTable{
   ["#mouzhu-give"] = "谋诛：交给%dest一张手牌，然后若你手牌数小于其，视为你对其使用【杀】或【决斗】",
   ["#yanhuo-invoke"] = "延祸：你可以令本局接下来所有【杀】的伤害基数值+1！",
 }
---曹性 刘辩 2020.11.22
+
 Fk:loadTranslationTable{
   ["caoxing"] = "曹性",
   ["liushi"] = "流矢",
-  [":liushi"] = "",
+  [":liushi"] = "出牌阶段，你可以将一张红桃牌置于牌堆顶，视为对一名角色使用一张【杀】（不计入次数且无距离限制）。若此【杀】造成伤害，该角色手牌上限-1。",
   ["zhanwan"] = "斩腕",
-  [":zhanwan"] = "",
+  [":zhanwan"] = "锁定技，受到〖流矢〗效果影响的角色若弃牌阶段有弃牌，你摸等量的牌，然后移除〖流矢〗的效果。",
 }
 local liubian = General(extension, "liubian", "qun", 3)
 local shiyuan = fk.CreateTriggerSkill{

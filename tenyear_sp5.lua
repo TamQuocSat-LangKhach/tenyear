@@ -5,7 +5,91 @@ Fk:loadTranslationTable{
   ["tenyear_sp5"] = "十周年专属5",
 }
 
---程秉 孙狼 武安国 霍峻 孙寒华 薛灵芸 刘辟 关宁2023.1.18
+--是仪 程秉 孙狼 霍峻 孙寒华 薛灵芸 刘辟 关宁2023.1.18
+Fk:loadTranslationTable{
+  ["shiyi"] = "是仪",
+  ["cuichuan"] = "榱椽",
+  [":cuichuan"] = "出牌阶段限一次，你可以弃置一张手牌并选择一名角色，从牌堆中将一张随机装备牌置入其装备区空位，然后你摸X张牌（X为其装备区牌数）。"..
+  "然后若其装备区里的牌数不小于4张，你失去〖榱椽〗并获得〖佐谏〗，然后令其在此回合结束后获得一个额外回合。",
+  ["zhengxu"] = "正序",
+  [":zhengxu"] = "每回合每项限一次，若你在本回合失去过牌，你可以防止你本回合受到的下一次伤害；若你在本回合受到过伤害，在你下一次失去牌后，你可以摸等量的牌。",
+  ["zuojian"] = "佐谏",
+  [":zuojian"] = "出牌阶段结束时，若你此阶段使用的牌数大于等于你的体力值，你可以选择一项：1.令装备区牌数大于你的角色摸一张牌；2.弃置装备区牌数小于你的每名角色各一张手牌。",
+}
+
+Fk:loadTranslationTable{
+  ["chengbing"] = "程秉",
+  ["jingzao"] = "经造",
+  [":jingzao"] = "出牌阶段每名角色限一次，你可以选择一名其他角色并亮出牌堆顶3张牌，然后该角色选择一项：1.弃置一张与亮出牌同名的牌，然后此技能本回合亮出的牌数+1；2.令你随机获得这些牌中牌名不同的牌各一张，然后此技能本回合失效。",
+  ["enyu"] = "恩遇",
+  [":enyu"] = "锁定技，当你成为其他角色使用基本牌或普通锦囊牌的目标后，若你本回合已成为过同名牌的目标，此牌对你无效。",
+}
+
+local sunlang = General(extension, "sunlang", "shu", 4)
+local tingxian = fk.CreateTriggerSkill{
+  name = "tingxian",
+  anim_type = "drawcard",
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.card.trueName == "slash" and #AimGroup:getAllTargets(data.tos) > 0 and
+      player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    local n = #player.player_cards[Player.Equip]
+    return n > 0 and player.room:askForSkillInvoke(player, self.name, nil, "#tingxian-invoke:::"..n)
+  end,
+  on_use = function(self, event, target, player, data)
+    local n = #player.player_cards[Player.Equip]
+    player:drawCards(n, self.name)
+    local targets = player.room:askForChoosePlayers(player, AimGroup:getAllTargets(data.tos), 1, n, "#tingxian-choose:::"..n, self.name, true)
+    if #targets > 0 then
+      table.insertTable(data.nullifiedTargets, targets)
+    end
+  end,
+}
+local benshi = fk.CreateTriggerSkill{
+  name = "benshi",
+  anim_type = "offensive",
+  frequency = Skill.Compulsory,
+  events = {fk.TargetSpecifying},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.card.trueName == "slash"
+  end,
+  on_use = function(self, event, target, player, data)
+    for _, p in ipairs(player.room:getOtherPlayers(player)) do
+      if not table.contains(AimGroup:getAllTargets(data.tos), p.id) and player:inMyAttackRange(p) and not player:isProhibited(p, data.card) then
+        TargetGroup:pushTargets(data.targetGroup, p.id)
+      end
+    end
+  end,
+}
+local benshi_attackrange = fk.CreateAttackRangeSkill{
+  name = "#benshi_attackrange",
+  frequency = Skill.Compulsory,
+  correct_func = function (self, from, to)
+    if from:hasSkill(self.name) then
+      local fix = 1
+      if from:getEquipment(Card.SubtypeWeapon) then
+        fix = fix + 1 - Fk:getCardById(from:getEquipment(Card.SubtypeWeapon)).attack_range
+      end
+      return fix
+    end
+    return 0
+  end,
+}
+benshi:addRelatedSkill(benshi_attackrange)
+sunlang:addSkill(tingxian)
+sunlang:addSkill(benshi)
+Fk:loadTranslationTable{
+  ["sunlang"] = "孙狼",
+  ["tingxian"] = "铤险",
+  [":tingxian"] = "每回合限一次，你使用【杀】指定目标后，你可以摸X张牌，然后令此【杀】对其中至多X个目标无效（X为你装备区的牌数）。",
+  ["benshi"] = "奔矢",
+  [":benshi"] = "锁定技，你装备区内的武器牌不提供攻击范围，你的攻击范围+1，你使用【杀】须指定攻击范围内所有角色为目标。",
+  ["#tingxian-invoke"] = "铤险：你可以摸%arg张牌，然后可以令此【杀】对至多等量的目标无效",
+  ["#tingxian-choose"] = "铤险：你可以令此【杀】对至多%arg名目标无效",
+}
+
 Fk:loadTranslationTable{
   ["ty__sunhanhua"] = "孙寒华",
   ["huiling"] = "汇灵",
@@ -1498,4 +1582,71 @@ Fk:loadTranslationTable{
   ["$xinyou2"] = "心在方外，故而不闻市井之声。",
   ["~xielingyu"] = "翠瓦红墙处，最折意中人。",
 }
+
+local zhangkai = General(extension, "zhangkai", "qun", 4)
+local xiangshuz = fk.CreateTriggerSkill{
+  name = "xiangshuz",
+  anim_type = "offensive",
+  events = {fk.EventPhaseStart, fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    if target ~= player and player:hasSkill(self.name) and target.phase == Player.Play then
+      if event == fk.EventPhaseStart then
+        return #target.player_cards[Player.Hand] >= target.hp
+      else
+        return player:usedSkillTimes(self.name, Player.HistoryPhase) > 0
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.EventPhaseStart then
+      return player.room:askForSkillInvoke(player, self.name, nil, "#xiangshuz-invoke::"..target.id)
+    else
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart then
+      local choices = {}
+      for i = 0, 5, 1 do
+        table.insert(choices, i)
+      end
+      local choice = room:askForChoice(player, choices, self.name, "#xiangshuz-choice::"..target.id)
+      local mark = self.name
+      if player:isKongcheng() or #room:askForDiscard(player, 1, 1, false, self.name, true, ".", "#xiangshuz-discard") == 0 then
+        mark = "@"..self.name
+      end
+      room:setPlayerMark(target, mark, tonumber(choice))
+    else
+      local n1 = #target.player_cards[Player.Hand]
+      local n2 = math.max(target:getMark(self.name), target:getMark("@"..self.name))
+      room:setPlayerMark(target, self.name, 0)
+      room:setPlayerMark(target, "@"..self.name, 0)
+      if math.abs(n1 - n2) < 2 and not target:isNude() then
+        local id = room:askForCardChosen(player, target, "he", self.name)
+        room:obtainCard(player, id, false, fk.ReasonPrey)
+      end
+      if n1 == n2 then
+        room:damage{
+          from = player,
+          to = target,
+          damage = 1,
+          skillName = self.name,
+        }
+      end
+    end
+  end,
+}
+zhangkai:addSkill(xiangshuz)
+Fk:loadTranslationTable{
+  ["zhangkai"] = "张闿",
+  ["xiangshuz"] = "相鼠",
+  [":xiangshuz"] = "其他角色出牌阶段开始时，若其手牌数不小于体力值，你可以声明一个0~5的数字（若你弃置一张手牌，则数字不公布）。"..
+  "此阶段结束时，若其手牌数与你声明的数：相差1以内，你获得其一张牌；相等，你对其造成1点伤害。",
+  ["#xiangshuz-invoke"] = "相鼠：猜测 %dest 此阶段结束时手牌数，若相差1以内，获得其一张牌；相等，再对其造成1点伤害",
+  ["#xiangshuz-choice"] = "相鼠：猜测 %dest 此阶段结束时的手牌数",
+  ["#xiangshuz-discard"] = "相鼠：你可以弃置一张手牌令你猜测的数值不公布",
+  ["@xiangshuz"] = "相鼠",
+}
+
 return extension

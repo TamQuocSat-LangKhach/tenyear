@@ -1206,27 +1206,48 @@ local qingjiao = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:throwAllCards("h")
-    local names = {"weapon", "armor", "offensive_horse", "defensive_horse"}  --, "treasure"
-    for _, id in ipairs(Fk:getAllCardIds()) do
+    
+    local wholeCards = table.clone(room.draw_pile)
+    table.insertTable(wholeCards, room.discard_pile)
+
+    local cardSubtypeStrings = {
+      [Card.SubtypeWeapon] = "weapon",
+      [Card.SubtypeArmor] = "armor",
+      [Card.SubtypeDefensiveRide] = "defensive_horse",
+      [Card.SubtypeOffensiveRide] = "offensive_horse",
+      [Card.SubtypeTreasure] = "treasure",
+    }
+
+    local cardDic = {}
+    for _, id in ipairs(wholeCards) do
       local card = Fk:getCardById(id)
-      if card.type == Card.TypeBasic or card.type == Card.TypeTrick then
-        table.insertIfNeed(names, card.trueName)
+      local cardName = card.type == Card.TypeEquip and cardSubtypeStrings[card.sub_type] or card.trueName
+      cardDic[cardName] = cardDic[cardName] or {}
+      table.insert(cardDic[cardName], id)
+    end
+
+    local toObtain = {}
+    while #toObtain < 8 and next(cardDic) ~= nil do
+      local dicLength = 0
+      for _, ids in pairs(cardDic) do
+        dicLength = dicLength + #ids
+      end
+
+      local randomIdx = math.random(1, dicLength)
+      dicLength = 0
+      for cardName, ids in pairs(cardDic) do
+        dicLength = dicLength + #ids
+        if dicLength >= randomIdx then
+          table.insert(toObtain, ids[dicLength - randomIdx + 1])
+          cardDic[cardName] = nil
+          break
+        end
       end
     end
-    local table1 = table.clone(room.draw_pile)
-    local table2 = table.clone(room.discard_pile)
-    for _, id in ipairs(table2) do
-      table.insert(table1, id)
-    end
-    local cards = {}
-    for i = 1, 8, 1 do
-      local name = table.random(names)
-      table.insert(cards, getCardByPattern(room, name, table1))
-      table.removeOne(names, name)
-    end
-    if #cards > 0 then
+
+    if #toObtain > 0 then
       room:moveCards({
-        ids = cards,
+        ids = toObtain,
         to = player.id,
         toArea = Card.PlayerHand,
         moveReason = fk.ReasonPrey,

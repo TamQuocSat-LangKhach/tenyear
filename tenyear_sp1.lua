@@ -1971,10 +1971,77 @@ Fk:loadTranslationTable{
   [":zhuilie"] = "锁定技，你使用【杀】无距离限制；当你使用【杀】指定你攻击范围外的一名角色为目标后，此【杀】不计入次数且你进行一次判定，若结果为武器牌或坐骑牌，此【杀】伤害基数值增加至该角色的体力值，否则你失去1点体力。",
 }
 
+local xingdaorong = General(extension, "xingdaorong", "qun", 4, 6)
+local xuhe = fk.CreateTriggerSkill{
+  name = "xuhe",
+  anim_type = "control",
+  events = {fk.EventPhaseStart, fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) and player.phase == Player.Play then
+      if event == fk.EventPhaseStart then
+        return true
+      else
+        return not table.every(player.room:getOtherPlayers(player), function(p) return p.maxHp <= player.maxHp end)
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.EventPhaseStart then
+      return player.room:askForSkillInvoke(player, self.name, nil, "#xuhe-invoke")
+    else
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart then
+      room:changeMaxHp(player, -1)
+      if not player.dead then
+        local choice = room:askForChoice(player, {"xuhe_discard", "xuhe_draw"}, self.name)
+        if choice == "xuhe_discard" then
+          for _, p in ipairs(room:getAlivePlayers()) do
+            if player:distanceTo(p) < 2 and not p:isNude() then
+              room:doIndicate(player.id, {p.id})
+              local id = room:askForCardChosen(player, p, "he", self.name)
+              room:throwCard({id}, self.name, p, player)
+            end
+          end
+        else
+          for _, p in ipairs(room:getAlivePlayers()) do
+            if player:distanceTo(p) < 2  then
+              p:drawCards(1, self.name)
+            end
+          end
+        end
+      end
+    else
+      room:changeMaxHp(player, 1)
+      local choices = {"draw2"}
+      if player:isWounded() then
+        table.insert(choices, "recover")
+      end
+      local choice = room:askForChoice(player, choices, self.name)
+      if choice == "draw2" then
+        player:drawCards(2)
+      else
+        room:recover({
+          who = player,
+          num = 1,
+          recoverBy = player,
+          skillName = self.name
+        })
+      end
+    end
+  end,
+}
+xingdaorong:addSkill(xuhe)
 Fk:loadTranslationTable{
   ["xingdaorong"] = "邢道荣",
   ["xuhe"] = "虚猲",
   [":xuhe"] = "出牌阶段开始时，你可以减1点体力上限，然后你弃置距离1以内的每名角色各一张牌或令这些角色各摸一张牌。出牌阶段结束时，若你体力上限不为全场最高，你加1点体力上限，然后回复1点体力或摸两张牌。",
+  ["#xuhe-invoke"] = "虚猲：你可以减1点体力上限，然后弃置距离1以内每名角色各一张牌或令这些角色各摸一张牌",
+  ["xuhe_discard"] = "弃置距离1以内角色各一张牌",
+  ["xuhe_draw"] = "距离1以内角色各摸一张牌",
 }
 
 local leitong = General(extension, "leitong", "shu", 4)
@@ -2066,6 +2133,7 @@ Fk:loadTranslationTable{
   [":kuiji"] = "出牌阶段限一次，你可以将一张黑色基本牌当作【兵粮寸断】对你使用，然后摸一张牌。若如此做，你可以对体力值最多的一名其他角色造成2点伤害。该角色因此进入濒死状态时，你可令另一名体力值最少的角色回复1点体力。",
   ["#kuiji-damage"] = "溃击：你可以对其他角色中体力值最大的一名角色造成2点伤害",
   ["#kuiji-recover"] = "溃击：你可以令除 %dest 以外体力值最小的一名角色回复1点体力",
+  ["#kuiji_record"] = "溃击",
 
   ["$kuiji1"] = "绝域奋击，孤注一掷。",
   ["$kuiji2"] = "舍得一身剐，不畏君王威。",

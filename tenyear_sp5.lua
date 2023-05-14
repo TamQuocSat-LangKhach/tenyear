@@ -101,6 +101,7 @@ Fk:loadTranslationTable{
   ["qinghuang"] = "清荒",
   [":qinghuang"] = "出牌阶段开始时，你可以减1点体力上限，然后你本回合失去牌时触发〖踏寂〗时随机额外获得一种效果。",
 }
+
 local xuelingyun = General(extension, "xuelingyun", "wei", 3, 3, General.Female)
 local xialei = fk.CreateTriggerSkill{
   name = "xialei",
@@ -256,7 +257,7 @@ Fk:loadTranslationTable{
   ["~xuelingyun"] = "寒月隐幕，难作衣裳。",
 }
 --神张角 周宣2023.2.25
---local godzhangjiao = General(extension, "godzhangjiao", "god", 3)
+local godzhangjiao = General(extension, "godzhangjiao", "god", 3)
 local yizhao = fk.CreateTriggerSkill{
   name = "yizhao",
   anim_type = "drawcard",
@@ -267,9 +268,9 @@ local yizhao = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local n1 = tostring(player:getMark("@huang"))
-    room:addPlayerMark(player, "@huang", math.min(data.card.number, 184 - player:getMark("@huang")))
-    local n2 = tostring(player:getMark("@huang"))
+    local n1 = tostring(player:getMark("@zhangjiao_huang"))
+    room:addPlayerMark(player, "@zhangjiao_huang", math.min(data.card.number, 184 - player:getMark("@zhangjiao_huang")))
+    local n2 = tostring(player:getMark("@zhangjiao_huang"))
     if #n1 == 1 then
       if #n2 == 1 then return end
     else
@@ -290,16 +291,63 @@ local yizhao = fk.CreateTriggerSkill{
     end
   end,
 }
+local sanshou = fk.CreateTriggerSkill{
+  name = "sanshou",
+  anim_type = "defensive",
+  events = {fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = room:getNCards(3)
+    room:moveCards({
+      ids = cards,
+      toArea = Card.Processing,
+      moveReason = fk.ReasonJustMove,
+      skillName = self.name,
+    })
+    local yes = false
+    for _, id in ipairs(cards) do
+      if player:getMark("sanshou_"..Fk:getCardById(id):getTypeString().."-turn") == 0 then
+        room:setCardEmotion(id, "judgegood")
+        yes = true
+      else
+        room:setCardEmotion(id, "judgebad")
+      end
+    end
+    room:delay(1000)
+    room:moveCards({
+      ids = cards,
+      fromArea = Card.Processing,
+      toArea = Card.DiscardPile,
+      moveReason = fk.ReasonJustMove,
+      skillName = self.name,
+    })
+    if yes then
+      return true
+    end
+  end,
+
+  refresh_events = {fk.AfterCardUseDeclared},
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill(self.name, true)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:addPlayerMark(player, "sanshou_"..data.card:getTypeString().."-turn", 1)
+  end,
+}
 local sijun = fk.CreateTriggerSkill{
   name = "sijun",
   anim_type = "drawcard",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Start and player:getMark("@huang") > #player.room.draw_pile
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Start and
+      player:getMark("@zhangjiao_huang") > #player.room.draw_pile
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:setPlayerMark(player, "@huang", 0)
+    room:setPlayerMark(player, "@zhangjiao_huang", 0)
     room:shuffleDrawPile()
     local cards = {}
     local total = 36
@@ -318,17 +366,60 @@ local sijun = fk.CreateTriggerSkill{
         ids = cards,
         to = player.id,
         toArea = Card.PlayerHand,
-        moveReason = fk.ReasonPrey,
+        moveReason = fk.ReasonJustMove,
         proposer = player.id,
         skillName = self.name,
       })
     end
   end,
 }
---godzhangjiao:addSkill(yizhao)
---godzhangjiao:addSkill(sanshou)
---godzhangjiao:addSkill(sijun)
---godzhangjiao:addSkill(tianjie)
+local tianjie = fk.CreateTriggerSkill{
+  name = "tianjie",
+  anim_type = "offensive",
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      if player:getMark(self.name) > 0 then
+        player.room:setPlayerMark(player, self.name, 0)
+        return true
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local tos = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), function(p)
+      return p.id end), 1, 3, "#tianjie-choose", self.name, true)
+    if #tos > 0 then
+      self.cost_data = tos
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, id in ipairs(self.cost_data) do
+      local p = room:getPlayerById(id)
+      local n = math.max(1, #table.filter(p.player_cards[Player.Hand], function(c) return Fk:getCardById(c).name == "jink" end))
+      room:damage{
+        from = player,
+        to = p,
+        damage = n,
+        damageType = fk.ThunderDamage,
+        skillName = self.name,
+      }
+    end
+  end,
+
+  refresh_events = {fk.AfterDrawPileShuffle},
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill(self.name)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:addPlayerMark(player, self.name, 1)
+  end,
+}
+godzhangjiao:addSkill(yizhao)
+godzhangjiao:addSkill(sanshou)
+godzhangjiao:addSkill(sijun)
+godzhangjiao:addSkill(tianjie)
 Fk:loadTranslationTable{
   ["godzhangjiao"] = "神张角",
   ["yizhao"] = "异兆",
@@ -339,7 +430,8 @@ Fk:loadTranslationTable{
   [":sijun"] = "准备阶段，若“黄”标记数大于牌堆里的牌数，你可以移去所有“黄”标记并洗牌，然后获得随机张点数之和为36的牌。",
   ["tianjie"] = "天劫",
   [":tianjie"] = "一名角色的回合结束时，若本回合牌堆进行过洗牌，你可以对至多三名其他角色各造成X点雷电伤害（X为其手牌中【闪】的数量且至少为1）。",
-  ["@huang"] = "黄",
+  ["@zhangjiao_huang"] = "黄",
+  ["#tianjie-choose"] = "天劫：你可以对至多三名其他角色各造成X点雷电伤害（X为其手牌中【闪】数，至少为1）",
 }
 
 local zhouxuan = General(extension, "zhouxuan", "wei", 3)

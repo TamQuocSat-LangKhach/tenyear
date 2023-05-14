@@ -1248,7 +1248,7 @@ Fk:loadTranslationTable{
   ["~guanning"] = "高节始终，无憾矣。",
 }
 --刘虞 曹华2022.7.18
---local liuyu = General(extension, "ty__liuyu", "qun", 3)
+local liuyu = General(extension, "ty__liuyu", "qun", 3)
 local suifu = fk.CreateTriggerSkill{
   name = "suifu",
   anim_type = "control",
@@ -1262,7 +1262,7 @@ local suifu = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local cards = target.player_cards[Player.Hand]
+    local cards = table.reverse(target.player_cards[Player.Hand])
     room:moveCards({
       ids = cards,
       from = target.id,
@@ -1271,10 +1271,6 @@ local suifu = fk.CreateTriggerSkill{
       moveReason = fk.ReasonJustMove,
       skillName = self.name,
     })
-    for i = 1, #cards, 1 do
-      table.insert(room.draw_pile, 1, cards[i])
-      table.remove(room.draw_pile, #room.draw_pile)  --FIXME: ？？？
-    end
     room:useVirtualCard("amazing_grace", nil, player, table.filter(room:getAlivePlayers(), function (p)
       return not player:isProhibited(p, Fk:cloneCard("amazing_grace")) end), self.name, false)
   end,
@@ -1335,9 +1331,9 @@ local zimu = fk.CreateTriggerSkill{
     room:handleAddLoseSkills(player, "-zimu", nil, true, false)
   end,
 }
---liuyu:addSkill(suifu)
---liuyu:addSkill(pijing)
---liuyu:addRelatedSkill(zimu)
+liuyu:addSkill(suifu)
+liuyu:addSkill(pijing)
+liuyu:addRelatedSkill(zimu)
 Fk:loadTranslationTable{
   ["ty__liuyu"] = "刘虞",
   ["suifu"] = "绥抚",

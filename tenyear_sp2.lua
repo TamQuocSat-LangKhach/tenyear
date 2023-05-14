@@ -199,7 +199,7 @@ local dushi = fk.CreateTriggerSkill{
       end
     elseif event == fk.AfterDying then
       for _, p in ipairs(room:getAllPlayers()) do  --FIXME: 错误的，这样插结中也不能使用桃
-        room:addPlayerMark(p, self.name, 0)
+        room:setPlayerMark(p, self.name, 0)
       end
     elseif event == fk.Death then
       local targets = table.map(table.filter(room:getAlivePlayers(), function(p)
@@ -308,7 +308,7 @@ local kuimang = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.Death},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and player.tag[self.name] and player.tag[self.name]:contains(target.id)
+    return player:hasSkill(self.name) and player.tag[self.name] and table.contains(player.tag[self.name], target.id)
   end,
   on_use = function(self, event, target, player, data)
     player:drawCards(2, self.name)

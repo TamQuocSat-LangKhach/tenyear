@@ -223,6 +223,7 @@ local thunderBladeSkill = fk.CreateTriggerSkill{
           skillName = self.name
         })
       end
+      player:drawCards(1, self.name)
     end
   end,
 }
@@ -242,9 +243,9 @@ Fk:loadTranslationTable{
   ["#thunder_blade-invoke"] = "天雷刃：你可以令 %dest 判定<br>♠，其受到3点雷电伤害；♣，其受到1点雷电伤害，你回复1点体力并摸一张牌",
 }
 Fk:loadTranslationTable{
-  ["&ty__"] = "霹雳车",
-  ["#ty__"] = "霹雳车",
-  [":&ty__"] = "装备牌·宝物<br /><b>宝物技能</b>：锁定技，你回合内使用基本牌的伤害和回复数值+1且无距离限制。你回合外使用或打出基本牌时摸一张牌。此宝物离开装备区时销毁。",
+  ["&ty__catapult"] = "霹雳车",
+  ["#ty__catapult"] = "霹雳车",
+  [":&ty__catapult"] = "装备牌·宝物<br /><b>宝物技能</b>：锁定技，你回合内使用基本牌的伤害和回复数值+1且无距离限制。你回合外使用或打出基本牌时摸一张牌。此宝物离开装备区时销毁。",
 }
 
 return extension

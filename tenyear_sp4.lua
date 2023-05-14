@@ -771,6 +771,186 @@ Fk:loadTranslationTable{
 }
 --丁尚涴
 --卢弈 穆顺 神张飞 2022.12.17
+local luyi = General(extension, "luyi", "qun", 3, 3, General.Female)
+local fuxue = fk.CreateTriggerSkill{
+  name = "fuxue",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) then
+      if player.phase == Player.Start and player.tag[self.name] and #player.tag[self.name] > 0 then
+        local tag = player.tag[self.name]
+        for i = #tag, 1, -1 do
+          if player.room:getCardArea(tag[i]) ~= Card.DiscardPile then
+            table.removeOne(player.tag[self.name], tag[i])
+          end
+        end
+        return #player.tag[self.name] > 0
+      end
+      if player.phase == Player.Finish and player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then
+        local cards = player:getMark("fuxue-turn")
+        if cards ~= 0 then
+          for _, id in ipairs(player.player_cards[Player.Hand]) do
+            if table.contains(cards, id) then return end
+          end
+          return true
+        end
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if player.phase == Player.Start then
+      return player.room:askForSkillInvoke(player, self.name, nil, "#fuxue-invoke:::"..player.hp)
+    else
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    if player.phase == Player.Start then
+      local room = player.room
+      local cards = player.tag[self.name]
+      local get = {}
+      while #cards > 0 and #get < player.hp do
+        room:fillAG(player, cards)
+        local id = room:askForAG(player, cards, true, self.name)  --TODO: temporarily use AG. AG function need cancelable!
+        if id ~= nil then
+          table.removeOne(cards, id)
+          table.insert(get, id)
+          room:closeAG(player)
+        else
+          room:closeAG(player)
+          break
+        end
+      end
+      if #get > 0 then
+        local dummy = Fk:cloneCard("dilu")
+        dummy:addSubcards(get)
+        room:obtainCard(player.id, dummy, true, fk.ReasonJustMove)
+        room:setPlayerMark(player, "fuxue-turn", get)
+      end
+    else
+      player:drawCards(player.hp, self.name)
+    end
+  end,
+
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill(self.name, true)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    for _, move in ipairs(data) do
+      if move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then --TODO: ReasonJudge
+        player.tag[self.name] = player.tag[self.name] or {}
+        for _, info in ipairs(move.moveInfo) do
+          table.insertIfNeed(player.tag[self.name], info.cardId)
+        end
+      end
+      for _, info in ipairs(move.moveInfo) do
+        if info.fromArea == Card.DiscardPile and player.tag[self.name] and #player.tag[self.name] > 0 then
+          table.removeOne(player.tag[self.name], info.cardId)
+        end
+      end
+    end
+  end,
+}
+local yaoyi = fk.CreateTriggerSkill{
+  name = "yaoyi",
+  anim_type = "special",
+  frequency = Skill.Compulsory,
+  events = {fk.GameStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, p in ipairs(player.room:getAlivePlayers()) do
+      local yes = true
+      for _, skill in ipairs(p.player_skills) do
+        if skill.switchSkillName then
+          yes = false
+          break
+        end
+      end
+      if yes then
+        room:handleAddLoseSkills(p, "shoutan", nil, true, false)
+      end
+    end
+  end,
+}
+local shoutan = fk.CreateActiveSkill{
+  name = "shoutan",
+  anim_type = "switch",
+  switch_skill_name = "shoutan",
+  card_num = function()
+    if Self:hasSkill("yaoyi") then
+      return 0
+    else
+      return 1
+    end
+  end,
+  target_num = 0,
+  can_use = function(self, player)
+    if player:hasSkill("yaoyi") then
+      return true--player:getMark("shoutan-phase") == 0 FIXME: 避免无限空发
+    else
+      return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+    end
+  end,
+  card_filter = function(self, to_select, selected)
+    if Self:hasSkill("yaoyi") then
+      return false
+    elseif #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Card.PlayerEquip then
+      if Self:getSwitchSkillState(self.name, false) == fk.SwitchYang then
+        return Fk:getCardById(to_select).color ~= Card.Black
+      else
+        return Fk:getCardById(to_select).color == Card.Black
+      end
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:throwCard(effect.cards, self.name, player, player)
+  end,
+}
+local yaoyi_prohibit = fk.CreateProhibitSkill{
+  name = "#yaoyi_prohibit",
+  frequency = Skill.Compulsory,
+  is_prohibited = function(self, from, to, card)
+    if from ~= to then
+      local fromskill = {}
+      for _, skill in ipairs(from.player_skills) do
+        if skill.switchSkillName then
+          table.insertIfNeed(fromskill, skill.switchSkillName)
+        end
+      end
+      local toskill = {}
+      for _, skill in ipairs(to.player_skills) do
+        if skill.switchSkillName then
+          table.insertIfNeed(toskill, skill.switchSkillName)
+        end
+      end
+      if #fromskill == 0 or #toskill == 0 then return false end
+      if #fromskill > 1 then  --FIXME: 多个转换技
+      end
+      return from:getSwitchSkillState(fromskill[1], false) == to:getSwitchSkillState(toskill[1], false)
+    end
+  end,
+}
+yaoyi:addRelatedSkill(yaoyi_prohibit)
+luyi:addSkill(fuxue)
+luyi:addSkill(yaoyi)
+luyi:addRelatedSkill(shoutan)
+Fk:loadTranslationTable{
+  ["luyi"] = "卢弈",
+  ["fuxue"] = "复学",
+  [":fuxue"] = "准备阶段，你可以从弃牌堆中获得至多X张不因使用而进入弃牌堆的牌。结束阶段，若你手中没有以此法获得的牌，你摸X张牌。（X为你的体力值）",
+  ["yaoyi"] = "邀弈",
+  [":yaoyi"] = "锁定技，游戏开始时，所有没有转换技的角色获得〖手谈〗；你发动〖手谈〗无需弃置牌且无次数限制。所有角色使用牌只能指定自己及与自己转换技状态不同的角色为目标。",
+  ["shoutan"] = "手谈",
+  [":shoutan"] = "转换技，出牌阶段限一次，你可以弃置一张：阳：非黑色手牌；阴：黑色手牌。",
+  ["#fuxue-invoke"] = "复学：你可以获得弃牌堆中至多%arg张不因使用而进入弃牌堆的牌",
+}
+
 local godzhangfei = General(extension, "godzhangfei", "god", 4)
 local shencai = fk.CreateActiveSkill{
   name = "shencai",

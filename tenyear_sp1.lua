@@ -334,17 +334,62 @@ Fk:loadTranslationTable{
   ["qinguo"] = "勤国",
   [":qinguo"] = "①当你于回合内使用装备牌结算结束后，你可视为使用一张【杀】。②当你的装备区里的牌移动后，或装备牌移至你的装备区后，若你装备区里的牌数与你的体力值相等且与此次移动之前你装备区里的牌数不等，你回复1点体力。",
 }
+
+local liuyao = General(extension, "liuyao", "qun", 4)
+local kannan = fk.CreateActiveSkill{
+  name = "kannan",
+  anim_type = "control",
+  card_num = 0,
+  target_num = 1,
+  can_use = function(self, player)
+    return not player:isKongcheng() and player:getMark("kannan-phase") == 0 and player:usedSkillTimes(self.name, Player.HistoryPhase) < player.hp
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    local target = Fk:currentRoom():getPlayerById(to_select)
+    return #selected == 0 and to_select ~= Self.id and target:getMark("kannan-phase") == 0 and not target:isKongcheng()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    room:addPlayerMark(target, "kannan-phase", 1)
+    local pindian = player:pindian({target}, self.name)
+    if pindian.results[target.id].winner == player then
+      room:addPlayerMark(player, "@kannan", 1)
+      room:addPlayerMark(player, "kannan-phase", 1)
+    elseif pindian.results[target.id].winner == target then
+      room:addPlayerMark(target, "@kannan", 1)
+    end
+  end,
+}
+local kannan_record = fk.CreateTriggerSkill{
+  name = "#kannan_record",
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark("@kannan") > 0 and data.card.trueName == "slash"
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.additionalDamage = (data.additionalDamage or 0) + player:getMark("@kannan")
+    player.room:setPlayerMark(player, "@kannan", 0)
+  end,
+}
+kannan:addRelatedSkill(kannan_record)
+liuyao:addSkill(kannan)
 Fk:loadTranslationTable{
   ["liuyao"] = "刘繇",
   ["kannan"] = "戡难",
   [":kannan"] = "出牌阶段，若你于此阶段内发动过此技能的次数小于X（X为你的体力值），你可与你于此阶段内未以此法拼点过的一名角色拼点。若：你赢，你使用的下一张【杀】的伤害值基数+1且你于此阶段内不能发动此技能；其赢，其使用的下一张【杀】的伤害值基数+1。",
+  ["@kannan"] = "戡难",
 }
 Fk:loadTranslationTable{
   ["lvqian"] = "吕虔",
   ["weilu"] = "威虏",
-  [":weilu"] = "锁定技，当你受到其他角色造成的伤害后，伤害来源在你的下回合出牌阶段开始时失去体力值直到仅剩1点体力，然后回合结束时回复以此法失去的体力值。",
+  [":weilu"] = "锁定技，当你受到其他角色造成的伤害后，伤害来源在你的下回合出牌阶段开始时失去体力至1，回合结束时其回复以此法失去的体力值。",
   ["zengdao"] = "赠刀",
-  [":zengdao"] = "限定技，出牌阶段，你可以将装备区内任意数量的牌置于一名其他角色的武将牌旁。该角色每次造成伤害时，移去一张“赠刀”牌，然后此伤害+1。",
+  [":zengdao"] = "限定技，出牌阶段，你可以将装备区内任意数量的牌置于一名其他角色的武将牌旁，该角色造成伤害时，移去一张“赠刀”牌，然后此伤害+1。",
 }
 Fk:loadTranslationTable{
   ["zhangliang"] = "张梁",
@@ -1584,8 +1629,12 @@ local zhuren = fk.CreateActiveSkill{
         (4 < card.number and card.number < 9 and math.random() > 0.9) or
         (8 < card.number and card.number < 13 and math.random() > 0.95) then
         name = "slash"
+        room:setCardEmotion(effect.cards[1], "judgebad")
+      else
+        room:setCardEmotion(effect.cards[1], "judgegood")
       end
     end
+    room:delay(1000)
     if name == "slash" then
       local ids = {getCardByPattern(room, "slash")}
       if #ids > 0 then
@@ -1622,8 +1671,10 @@ local zhuren_destruct = fk.CreateTriggerSkill{
 
   refresh_events = {fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)
-    for _, move in ipairs(data) do
-      return move.toArea == Card.DiscardPile
+    if player:hasSkill(self.name, true, true) then
+      for _, move in ipairs(data) do
+        return move.toArea == Card.DiscardPile
+      end
     end
   end,
   on_refresh = function(self, event, target, player, data)
@@ -1637,11 +1688,10 @@ local zhuren_destruct = fk.CreateTriggerSkill{
         end
       end
       if #ids > 0 then
-        Fk:currentRoom():moveCards({
-          ids = ids,
-          toArea = Card.Void,
-          moveReason = fk.ReasonJustMove,
-        })
+        for _, id in ipairs(ids) do
+          table.insert(player.room.void, id)
+          player.room:setCardArea(id, Card.Void, nil)
+        end
       end
     end
   end,

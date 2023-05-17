@@ -445,7 +445,6 @@ local xionghuo_record = fk.CreateTriggerSkill{
       data.damage = data.damage + 1
     else
       room:removePlayerMark(target, "@baoli", 1)
-      room:addPlayerMark(target, "xionghuo-clear", 1)
       local n = 3
       if target:isNude() or player.dead then
         n = 2
@@ -458,6 +457,7 @@ local xionghuo_record = fk.CreateTriggerSkill{
           damageType = fk.FireDamage,
           skillName = "xionghuo",
         }
+        room:addPlayerMark(target, "xionghuo-turn", 1)
       elseif rand == 2 then
         room:loseHp(target, 1, "xionghuo")
         room:addPlayerMark(target, "MinusMaxCards-turn", 1)
@@ -477,7 +477,7 @@ local xionghuo_record = fk.CreateTriggerSkill{
 local xionghuo_prohibit = fk.CreateProhibitSkill{
   name = "#xionghuo_prohibit",
   is_prohibited = function(self, from, to, card)
-    if to:hasSkill("xionghuo") and from:getMark("xionghuo-clear") > 0 then
+    if to:hasSkill("xionghuo") and from:getMark("xionghuo-turn") > 0 then
       return card.trueName == "slash"
     end
   end,
@@ -990,14 +990,18 @@ local dianhua = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) and (player.phase == Player.Start or player.phase == Player.Finish) then
-      self.cost_data = 0
-      for _, mark in ipairs(player:getMarkNames()) do
-        if string.find(mark, "@@falu") then
-          self.cost_data = self.cost_data + 1
-        end
+    return target == player and player:hasSkill(self.name) and (player.phase == Player.Start or player.phase == Player.Finish)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local n = 0
+    for _, suit in ipairs({"spade", "club", "heart", "diamond"}) do
+      if player:getMark("@@falu"..suit) > 0 then
+        n = n + 1
       end
-      return self.cost_data > 0
+    end
+    if n > 0 and player.room:askForSkillInvoke(player, self.name) then
+      self.cost_data = n
+      return true
     end
   end,
   on_use = function(self, event, target, player, data)

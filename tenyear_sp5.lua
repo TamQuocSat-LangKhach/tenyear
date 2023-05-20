@@ -1384,7 +1384,7 @@ local jizhong = fk.CreateActiveSkill{
       else
         local cards = room:askForDiscard(target, 3, 3, false, self.name, true, ".", "#jizhong-discard1")
         if #cards == 0 then
-          room:addPsetPlayerMarklayerMark(target, "@@zhangchu_xinzhong", 1)
+          room:setPlayerMark(target, "@@zhangchu_xinzhong", 1)
         end
       end
     end

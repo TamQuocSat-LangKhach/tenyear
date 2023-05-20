@@ -6,7 +6,7 @@ Fk:loadTranslationTable{
 
 local redSpearSkill = fk.CreateTriggerSkill{
   name = "#red_spear_skill",
-  attached_equip = "&red_spear",
+  attached_equip = "red_spear",
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and data.card and data.card.trueName == "slash" and
@@ -44,14 +44,14 @@ local redSpear = fk.CreateWeapon{
 }
 extension:addCard(redSpear)
 Fk:loadTranslationTable{
-  ["&red_spear"] = "红缎枪",
+  ["red_spear"] = "红缎枪",
   ["#red_spear_skill"] = "红缎枪",
-  [":&red_spear"] = "装备牌·武器<br /><b>攻击范围</b>：3<br /><b>武器技能</b>：每回合限一次，当你使用【杀】造成伤害后，你可以判定，若结果为红色，你回复1点体力；若结果为黑色，你摸两张牌。",
+  [":red_spear"] = "装备牌·武器<br /><b>攻击范围</b>：3<br /><b>武器技能</b>：每回合限一次，当你使用【杀】造成伤害后，你可以判定，若结果为红色，你回复1点体力；若结果为黑色，你摸两张牌。",
 }
 
 local quenchedBladeSkill = fk.CreateTriggerSkill{
   name = "#quenched_blade_skill",
-  attached_equip = "&quenched_blade",
+  attached_equip = "quenched_blade",
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and data.card and data.card.trueName == "slash" and not data.chain and
@@ -66,7 +66,7 @@ local quenchedBladeSkill = fk.CreateTriggerSkill{
 }
 local quenched_blade_targetmod = fk.CreateTargetModSkill{
   name = "#quenched_blade_targetmod",
-  attached_equip = "&quenched_blade",
+  attached_equip = "quenched_blade",
   residue_func = function(self, player, skill, scope)
     if player:hasSkill(self.name) and skill.trueName == "slash_skill" and scope == Player.HistoryPhase then
       return 1
@@ -84,15 +84,15 @@ local quenchedBlade = fk.CreateWeapon{
 }
 extension:addCard(quenchedBlade)
 Fk:loadTranslationTable{
-  ["&quenched_blade"] = "烈淬刀",
+  ["quenched_blade"] = "烈淬刀",
   ["#quenched_blade_skill"] = "烈淬刀",
-  [":&quenched_blade"] = "装备牌·武器<br /><b>攻击范围</b>：2<br /><b>武器技能</b>：每回合限两次，你使用【杀】对目标角色造成伤害时，你可以弃置一张牌，令此伤害+1；出牌阶段你可以多使用一张【杀】。",
+  [":quenched_blade"] = "装备牌·武器<br /><b>攻击范围</b>：2<br /><b>武器技能</b>：每回合限两次，你使用【杀】对目标角色造成伤害时，你可以弃置一张牌，令此伤害+1；出牌阶段你可以多使用一张【杀】。",
   ["#quenched_blade-invoke"] = "烈淬刀：你可以弃置一张牌，令你对 %dest 造成的伤害+1",
 }
 
 local poisonousDaggerSkill = fk.CreateTriggerSkill{
   name = "#poisonous_dagger_skill",
-  attached_equip = "&poisonous_dagger",
+  attached_equip = "poisonous_dagger",
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and data.card and data.card.trueName == "slash"
@@ -115,15 +115,15 @@ local poisonousDagger = fk.CreateWeapon{
 }
 extension:addCard(poisonousDagger)
 Fk:loadTranslationTable{
-  ["&poisonous_dagger"] = "混毒弯匕",
+  ["poisonous_dagger"] = "混毒弯匕",
   ["#poisonous_dagger_skill"] = "混毒弯匕",
-  [":&poisonous_dagger"] = "装备牌·武器<br /><b>攻击范围</b>：1<br /><b>武器技能</b>：当你使用【杀】指定目标后，你可以令目标角色失去X点体力（X为此武器本回合发动技能次数且至多为5）。",
+  [":poisonous_dagger"] = "装备牌·武器<br /><b>攻击范围</b>：1<br /><b>武器技能</b>：当你使用【杀】指定目标后，你可以令目标角色失去X点体力（X为此武器本回合发动技能次数且至多为5）。",
   ["#poisonous_dagger-invoke"] = "混毒弯匕：你可以令 %dest 失去%arg点体力",
 }
 
 local waterSwordSkill = fk.CreateTriggerSkill{
   name = "#water_sword_skill",
-  attached_equip = "&water_sword",
+  attached_equip = "water_sword",
   anim_type = "offensive",
   events = {fk.TargetSpecifying},
   can_trigger = function(self, event, target, player, data)
@@ -176,15 +176,15 @@ local waterSword = fk.CreateWeapon{
 }
 extension:addCard(waterSword)
 Fk:loadTranslationTable{
-  ["&water_sword"] = "水波剑",
+  ["water_sword"] = "水波剑",
   ["#water_sword_skill"] = "水波剑",
-  [":&water_sword"] = "装备牌·武器<br /><b>攻击范围</b>：2<br /><b>武器技能</b>：每回合限两次，你使用【杀】或普通锦囊牌可以额外指定一个目标。你失去装备区内的【水波剑】时，你回复1点体力。",
+  [":water_sword"] = "装备牌·武器<br /><b>攻击范围</b>：2<br /><b>武器技能</b>：每回合限两次，你使用【杀】或普通锦囊牌可以额外指定一个目标。你失去装备区内的【水波剑】时，你回复1点体力。",
   ["#water_sword-invoke"] = "水波剑：你可以为%arg额外指定一个目标",
 }
 
 local thunderBladeSkill = fk.CreateTriggerSkill{
   name = "#thunder_blade_skill",
-  attached_equip = "&thunder_blade",
+  attached_equip = "thunder_blade",
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and data.card and data.card.trueName == "slash"
@@ -237,15 +237,15 @@ local thunderBlade = fk.CreateWeapon{
 }
 extension:addCard(thunderBlade)
 Fk:loadTranslationTable{
-  ["&thunder_blade"] = "天雷刃",
+  ["thunder_blade"] = "天雷刃",
   ["#thunder_blade_skill"] = "天雷刃",
-  [":&thunder_blade"] = "装备牌·武器<br /><b>攻击范围</b>：4<br /><b>武器技能</b>：当你使用【杀】指定目标后，可以令其判定，若结果为：♠，其受到3点雷电伤害；♣，其受到1点雷电伤害，你回复1点体力并摸一张牌。",
+  [":thunder_blade"] = "装备牌·武器<br /><b>攻击范围</b>：4<br /><b>武器技能</b>：当你使用【杀】指定目标后，可以令其判定，若结果为：♠，其受到3点雷电伤害；♣，其受到1点雷电伤害，你回复1点体力并摸一张牌。",
   ["#thunder_blade-invoke"] = "天雷刃：你可以令 %dest 判定<br>♠，其受到3点雷电伤害；♣，其受到1点雷电伤害，你回复1点体力并摸一张牌",
 }
 Fk:loadTranslationTable{
-  ["&ty__catapult"] = "霹雳车",
+  ["ty__catapult"] = "霹雳车",
   ["#ty__catapult"] = "霹雳车",
-  [":&ty__catapult"] = "装备牌·宝物<br /><b>宝物技能</b>：锁定技，你回合内使用基本牌的伤害和回复数值+1且无距离限制。你回合外使用或打出基本牌时摸一张牌。此宝物离开装备区时销毁。",
+  [":ty__catapult"] = "装备牌·宝物<br /><b>宝物技能</b>：锁定技，你回合内使用基本牌的伤害和回复数值+1且无距离限制。你回合外使用或打出基本牌时摸一张牌。此宝物离开装备区时销毁。",
 }
 
 return extension

@@ -1531,7 +1531,7 @@ Fk:loadTranslationTable{
 }
 
 local puyuan = General(extension, "ty__puyuan", "shu", 4)
-local puyuan_equips = {"&red_spear", "&quenched_blade", "&poisonous_dagger", "&water_sword", "&thunder_blade"}
+local puyuan_equips = {"red_spear", "quenched_blade", "poisonous_dagger", "water_sword", "thunder_blade"}
 local tianjiang = fk.CreateActiveSkill{
   name = "tianjiang",
   anim_type = "support",
@@ -1631,15 +1631,15 @@ local zhuren = fk.CreateActiveSkill{
     local card = Fk:getCardById(effect.cards[1])
     local name = "slash"
     if card.name == "lightning" then
-      name = "&thunder_blade"
+      name = "thunder_blade"
     elseif card.suit == Card.Heart then
-      name = "&red_spear"
+      name = "red_spear"
     elseif card.suit == Card.Diamond then
-      name = "&quenched_blade"
+      name = "quenched_blade"
     elseif card.suit == Card.Spade then
-      name = "&poisonous_dagger"
+      name = "poisonous_dagger"
     elseif card.suit == Card.Club then
-      name = "&water_sword"
+      name = "water_sword"
     end
     if name ~= "slash" then
       for _, id in ipairs(Fk:getAllCardIds()) do

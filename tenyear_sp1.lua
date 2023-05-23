@@ -830,13 +830,13 @@ local xingluan = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local card = {getCardByPattern(room, ".|6")}
+    local card = room:getCardsFromPileByRule(".|6")
     if #card > 0 then
       room:moveCards({
         ids = card,
         to = player.id,
         toArea = Card.PlayerHand,
-        moveReason = fk.ReasonPrey,
+        moveReason = fk.ReasonJustMove,
         proposer = player.id,
         skillName = self.name,
       })
@@ -969,9 +969,9 @@ local zhenyi = fk.CreateTriggerSkill {
     elseif event == fk.Damaged then
       room:removePlayerMark(player, "@@faludiamond", 1)
       local cards = {}
-      table.insert(cards, getCardByPattern(room, ".|.|.|.|.|basic"))
-      table.insert(cards, getCardByPattern(room, ".|.|.|.|.|trick"))
-      table.insert(cards, getCardByPattern(room, ".|.|.|.|.|equip"))
+      table.insertTable(cards, room:getCardsFromPileByRule(".|.|.|.|.|basic"))
+      table.insertTable(cards, room:getCardsFromPileByRule(".|.|.|.|.|trick"))
+      table.insertTable(cards, room:getCardsFromPileByRule(".|.|.|.|.|equip"))
       if #cards > 0 then
         room:moveCards({
           ids = cards,
@@ -1443,11 +1443,7 @@ local busuan_record = fk.CreateTriggerSkill {
     local room = player.room
     local cards = {}
     for _, name in ipairs(target.tag["busuan"]) do
-      local id = getCardByPattern(room, name)
-      if id == nil then
-        id = getCardByPattern(room, name, room.discard_pile)
-      end
-      table.insert(cards, id)
+      table.insertTable(cards, room:getCardsFromPileByRule(name, 1, "allPiles"))
     end
     if #cards > 0 then
       room:moveCards({
@@ -1516,7 +1512,7 @@ Fk:loadTranslationTable{
   ["$mingjie2"] = "王道文明，何忧不平。",
   ["~guanlu"] = "怀我好英，心非草木……",
 }
---葛玄 蒲元 2019.10.22
+
 Fk:loadTranslationTable{
   ["gexuan"] = "葛玄",
   ["lianhua"] = "炼化",
@@ -1551,31 +1547,35 @@ local tianjiang = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     local card = Fk:getCardById(effect.cards[1])
     local type = card.sub_type
-    if target:getEquipment(type) ~= nil then
-      room:moveCards({
-        ids = {target:getEquipment(type)},
-        from = target.id,
-        toArea = Card.DiscardPile,
-        moveReason = fk.ReasonPutIntoDiscardPile,
-      })
-    end
+    local ids = table.clone(effect.cards)
     room:moveCards({
       from = effect.from,
-      ids = effect.cards,
+      ids = ids,
       toArea = Card.Processing,
       moveReason = fk.ReasonJustMove,
       proposer = effect.from,
       skillName = self.name,
     })
-    room:moveCards({
-      ids = effect.cards,
+    local move3 = {
+      ids = ids,
       fromArea = Card.Processing,
       to = target.id,
       toArea = Card.PlayerEquip,
-      moveReason = fk.ReasonPut,
+      moveReason = fk.ReasonJustMove,
       proposer = effect.from,
       skillName = self.name,
-    })
+    }
+    if target:getEquipment(type) ~= nil then
+      local move2 = {
+        ids = {target:getEquipment(type)},
+        from = target.id,
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonJustMove,
+      }
+      room:moveCards(move2, move3)
+    else
+      room:moveCards(move3)
+    end
     if table.contains(puyuan_equips, card.name) then
       player:drawCards(2, self.name)
     end
@@ -1654,14 +1654,16 @@ local zhuren = fk.CreateActiveSkill{
         (4 < card.number and card.number < 9 and math.random() > 0.9) or
         (8 < card.number and card.number < 13 and math.random() > 0.95) then
         name = "slash"
-        room:setCardEmotion(effect.cards[1], "judgebad")
-      else
-        room:setCardEmotion(effect.cards[1], "judgegood")
       end
+    end
+    if name == "slash" then
+      room:setCardEmotion(effect.cards[1], "judgebad")
+    else
+      room:setCardEmotion(effect.cards[1], "judgegood")
     end
     room:delay(1000)
     if name == "slash" then
-      local ids = {getCardByPattern(room, "slash")}
+      local ids = room:getCardsFromPileByRule("slash")
       if #ids > 0 then
         room:moveCards({
           ids = ids,
@@ -1867,7 +1869,7 @@ local ty__fenyue = fk.CreateActiveSkill{
         end
       end
       if Fk:getCardById(pindian.fromCard.id).number < 10 then
-        local card = {getCardByPattern(room, "slash")}
+        local card = room:getCardsFromPileByRule("slash")
         if #card > 0 then
           room:moveCards({
             ids = card,

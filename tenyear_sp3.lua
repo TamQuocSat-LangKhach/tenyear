@@ -790,6 +790,7 @@ local qianlong = fk.CreateTriggerSkill{
           toArea = Card.DrawPile,
           moveReason = fk.ReasonJustMove,
           skillName = self.name,
+          drawPilePosition = -1,
         })
       else
         room:askForGuanxing(player, card_ids, {0, 0}, nil)
@@ -887,7 +888,7 @@ local juetao = fk.CreateTriggerSkill{  --FIXME: not target filter!
         room:moveCards({
           ids = {id},
           fromArea = Card.Processing,
-          toArea = Card.DrawPile,
+          toArea = Card.DiscardPile,
           moveReason = fk.ReasonJustMove,
         })
         return

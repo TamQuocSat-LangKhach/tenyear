@@ -278,13 +278,13 @@ local yizhao = fk.CreateTriggerSkill{
     end
     local x = n2:sub(#n2 - 1, #n2 - 1)
     if x == 0 then x = 10 end  --yes, tenyear is so strange
-    local card = {getCardByPattern(room, ".|"..x)}
+    local card = room:getCardsFromPileByRule(".|"..x)
     if #card > 0 then
       room:moveCards({
         ids = card,
         to = player.id,
         toArea = Card.PlayerHand,
-        moveReason = fk.ReasonPrey,
+        moveReason = fk.ReasonJustMove,
         proposer = player.id,
         skillName = self.name,
       })
@@ -354,7 +354,7 @@ local sijun = fk.CreateTriggerSkill{
     local i = 0
     while total > 0 and i < 999 do
       local num = math.random(1, math.min(13, total))
-      local id = getCardByPattern(room, ".|"..tostring(num))
+      local id = room:getCardsFromPileByRule(".|"..num)[1]
       if id ~= nil then
         table.insert(cards, id)
         total = total - num
@@ -1230,6 +1230,7 @@ local weidang_active = fk.CreateActiveSkill{
       toArea = Card.DrawPile,
       moveReason = fk.ReasonJustMove,
       skillName = self.name,
+      drawPilePosition = -1,
     })
     local cards = {}
     for i = 1, #room.draw_pile, 1 do

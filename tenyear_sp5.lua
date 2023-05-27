@@ -14,13 +14,15 @@ Fk:loadTranslationTable{
   ["zhengxu"] = "正序",
   [":zhengxu"] = "每回合每项限一次，若你在本回合失去过牌，你可以防止你本回合受到的下一次伤害；若你在本回合受到过伤害，在你下一次失去牌后，你可以摸等量的牌。",
   ["zuojian"] = "佐谏",
-  [":zuojian"] = "出牌阶段结束时，若你此阶段使用的牌数大于等于你的体力值，你可以选择一项：1.令装备区牌数大于你的角色摸一张牌；2.弃置装备区牌数小于你的每名角色各一张手牌。",
+  [":zuojian"] = "出牌阶段结束时，若你此阶段使用的牌数大于等于你的体力值，你可以选择一项：1.令装备区牌数大于你的角色摸一张牌；"..
+  "2.弃置装备区牌数小于你的每名角色各一张手牌。",
 }
 
 Fk:loadTranslationTable{
   ["chengbing"] = "程秉",
   ["jingzao"] = "经造",
-  [":jingzao"] = "出牌阶段每名角色限一次，你可以选择一名其他角色并亮出牌堆顶3张牌，然后该角色选择一项：1.弃置一张与亮出牌同名的牌，然后此技能本回合亮出的牌数+1；2.令你随机获得这些牌中牌名不同的牌各一张，然后此技能本回合失效。",
+  [":jingzao"] = "出牌阶段每名角色限一次，你可以选择一名其他角色并亮出牌堆顶3张牌，然后该角色选择一项："..
+  "1.弃置一张与亮出牌同名的牌，然后此技能本回合亮出的牌数+1；2.令你随机获得这些牌中牌名不同的牌各一张，然后此技能本回合失效。",
   ["enyu"] = "恩遇",
   [":enyu"] = "锁定技，当你成为其他角色使用基本牌或普通锦囊牌的目标后，若你本回合已成为过同名牌的目标，此牌对你无效。",
 }
@@ -93,7 +95,8 @@ Fk:loadTranslationTable{
 Fk:loadTranslationTable{
   ["ty__sunhanhua"] = "孙寒华",
   ["huiling"] = "汇灵",
-  [":huiling"] = "锁定技，弃牌堆中的红色牌数量多于黑色牌时，你使用牌时回复1点体力并获得一个“灵”标记；弃牌堆中黑色牌数量多于红色牌时，你使用牌时可弃置一名其他角色区域内的一张牌。",
+  [":huiling"] = "锁定技，弃牌堆中的红色牌数量多于黑色牌时，你使用牌时回复1点体力并获得一个“灵”标记；"..
+  "弃牌堆中黑色牌数量多于红色牌时，你使用牌时可弃置一名其他角色区域内的一张牌。",
   ["chongxu"] = "冲虚",
   [":chongxu"] = "锁定技，出牌阶段，若“灵”的数量不小于4，你可以失去〖汇灵〗，增加等量的体力上限，并获得〖踏寂〗和〖清荒〗。",
   ["taji"] = "踏寂",
@@ -244,7 +247,8 @@ Fk:loadTranslationTable{
   ["xialei"] = "霞泪",
   [":xialei"] = "当你的红色牌进入弃牌堆后，你可观看牌堆顶的三张牌，然后你获得一张并可将其他牌置于牌堆底，你本回合观看牌数-1。",
   ["anzhi"] = "暗织",
-  [":anzhi"] = "出牌阶段或当你受到伤害后，你可以进行一次判定，若结果为：红色，重置〖霞泪〗；黑色，你可以令一名非当前回合角色获得本回合进入弃牌堆的两张牌，且你本回合不能再发动此技能。",
+  [":anzhi"] = "出牌阶段或当你受到伤害后，你可以进行一次判定，若结果为：红色，重置〖霞泪〗；"..
+  "黑色，你可以令一名非当前回合角色获得本回合进入弃牌堆的两张牌，且你本回合不能再发动此技能。",
   ["xialei_top"] = "将剩余牌置于牌堆顶",
   ["xialei_bottom"] = "将剩余牌置于牌堆底",
   ["#anzhi-invoke"] = "你想发动技能“暗织”吗？",
@@ -847,6 +851,148 @@ Fk:loadTranslationTable{
   ["#yuguan-choose"] = "御关：令至多%arg名角色将手牌摸至体力上限",
 }
 
+local yanghong = General(extension, "yanghong", "qun", 3)
+local function IsNext(from, to)
+  if from.dead or to.dead then return false end
+  if from.next == to then return true end
+  local temp = table.simpleClone(from.next)
+  while true do
+    if temp.dead then
+      temp = temp.next
+    else
+      return temp == to
+    end
+  end
+end
+local ty__jianji = fk.CreateActiveSkill{
+  name = "ty__jianji",
+  anim_type = "control",
+  card_num = 0,
+  min_target_num = 1,
+  max_target_num = function()
+    return Self:getAttackRange()
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    local target = Fk:currentRoom():getPlayerById(to_select)
+    if not target:isNude() and #selected < Self:getAttackRange() then
+      if #selected == 0 then
+        return true
+      else
+        for _, id in ipairs(selected) do
+          if IsNext(target, Fk:currentRoom():getPlayerById(id)) or IsNext(Fk:currentRoom():getPlayerById(id), target) then
+            return true
+          end
+        end
+        return false
+      end
+    end
+  end,
+  on_use = function(self, room, effect)
+    for _, id in ipairs(effect.tos) do
+      room:askForDiscard(room:getPlayerById(id), 1, 1, true, self.name, false, ".")
+    end
+    if #effect.tos < 2 then return end
+    local n = 0
+    for _, id in ipairs(effect.tos) do
+      local num = #room:getPlayerById(id).player_cards[Player.Hand]
+      if num > n then
+        n = num
+      end
+    end
+    local src = table.filter(effect.tos, function(id) return #room:getPlayerById(id).player_cards[Player.Hand] == n end)
+    src = room:getPlayerById(table.random(src))
+    table.removeOne(effect.tos, src.id)
+    local targets = table.filter(effect.tos, function(id) return not src:isProhibited(room:getPlayerById(id), Fk:cloneCard("slash")) end)
+    if #targets == 0 then return end
+    local to = room:askForChoosePlayers(src, effect.tos, 1, 1, "#ty__jianji-choose", self.name, true)
+    if #to > 0 then
+      room:useVirtualCard("slash", nil, src, room:getPlayerById(to[1]), self.name, true)
+    end
+  end,
+}
+local yuanmo = fk.CreateTriggerSkill{
+  name = "yuanmo",
+  anim_type = "control",
+  events = {fk.EventPhaseStart, fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) then
+      if event == fk.EventPhaseStart then
+        return player.phase == Player.Start or
+          (player.phase == Player.Finish and table.every(player.room:getOtherPlayers(player), function(p)
+          return not player:inMyAttackRange(p) end))
+      else
+        return true
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local prompt = "#yuanmo1-invoke"
+    if event == fk.EventPhaseStart and player.phase == Player.Finish then
+      prompt = "#yuanmo2-invoke"
+    end
+    return player.room:askForSkillInvoke(player, self.name, nil, prompt)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart and player.phase == Player.Finish then
+      room:setPlayerMark(player, "@yuanmo", player:getMark("@yuanmo") + 1)  --此处不能用addMark
+    else
+      local choice = room:askForChoice(player, {"yuanmo_add", "yuanmo_minus"}, self.name)
+      if choice == "yuanmo_add" then
+        local nos = table.filter(room:getOtherPlayers(player), function(p) return player:inMyAttackRange(p) end)
+        room:setPlayerMark(player, "@yuanmo", player:getMark("@yuanmo") + 1)
+        local targets = {}
+        for _, p in ipairs(room:getOtherPlayers(player)) do
+          if player:inMyAttackRange(p) and not table.contains(nos, p) and not p:isNude() then
+            table.insert(targets, p.id)
+          end
+        end
+        local tos = room:askForChoosePlayers(player, targets, 1, #targets, "#yuanmo-choose", self.name, true)
+        if #tos > 0 then
+          for _, id in ipairs(tos) do
+            room:doIndicate(player.id, {id})
+            local card = room:askForCardChosen(player, room:getPlayerById(id), "he", self.name)
+            room:obtainCard(player, card, false, fk.ReasonPrey)
+          end
+        end
+      else
+        room:setPlayerMark(player, "@yuanmo", player:getMark("@yuanmo") - 1)
+        player:drawCards(2, self.name)
+      end
+    end
+  end,
+}
+local yuanmo_attackrange = fk.CreateAttackRangeSkill{
+  name = "#yuanmo_attackrange",
+  correct_func = function (self, from, to)
+    return from:getMark("@yuanmo")
+  end,
+}
+yuanmo:addRelatedSkill(yuanmo_attackrange)
+yanghong:addSkill(ty__jianji)
+yanghong:addSkill(yuanmo)
+Fk:loadTranslationTable{
+  ["yanghong"] = "杨弘",
+  ["ty__jianji"] = "间计",
+  [":ty__jianji"] = "出牌阶段限一次，你可以令至多X名相邻的角色各弃置一张牌（X为你的攻击范围），然后其中手牌最多的角色可以视为对其中另一名角色使用【杀】。",
+  ["yuanmo"] = "远谟",
+  [":yuanmo"] = "①准备阶段或你受到伤害后，你可以选择一项：1.令你的攻击范围+1，然后获得任意名因此进入你攻击范围内的角色各一张牌；"..
+  "2.令你的攻击范围-1，然后摸两张牌。<br>②结束阶段，若你攻击范围内没有角色，你可以令你的攻击范围+1。",
+  ["#ty__jianji-choose"] = "间计：你可以视为对其中一名角色使用【杀】",
+  ["#yuanmo1-invoke"]= "远谟：你可以令攻击范围+1并获得进入你攻击范围的角色各一张牌，或攻击范围-1并摸两张牌",
+  ["#yuanmo2-invoke"]= "远谟：你可以令攻击范围+1",
+  ["@yuanmo"] = "远谟",
+  ["yuanmo_add"] = "攻击范围+1，获得因此进入攻击范围的角色各一张牌",
+  ["yuanmo_minus"] = "攻击范围-1，摸两张牌",
+  ["#yuanmo-choose"] = "远谟：你可以获得任意名角色各一张牌",
+}
+
 local qinlang = General(extension, "qinlang", "wei", 4)
 local haochong = fk.CreateTriggerSkill{
   name = "haochong",
@@ -914,7 +1060,8 @@ Fk:loadTranslationTable{
   ["haochong"] = "昊宠",
   [":haochong"] = "当你使用一张牌后，你可以将手牌调整至手牌上限（最多摸五张），然后若你以此法：获得牌，你的手牌上限-1；失去牌，你的手牌上限+1。",
   ["jinjin"] = "矜谨",
-  [":jinjin"] = "每回合限一次，当你造成或受到伤害后，你可以将你的手牌上限重置为当前体力值。若如此做，伤害来源可以弃置至多X张牌（X为你因此变化的手牌上限数且至少为1），然后其每少弃置一张，你便摸一张牌。",
+  [":jinjin"] = "每回合限一次，当你造成或受到伤害后，你可以将你的手牌上限重置为当前体力值。"..
+  "若如此做，伤害来源可以弃置至多X张牌（X为你因此变化的手牌上限数且至少为1），然后其每少弃置一张，你便摸一张牌。",
   ["#haochong-discard"] = "昊宠：你可以将手牌弃至手牌上限（弃置%arg张），然后手牌上限+1",
   ["#haochong-draw"] = "昊宠：你可以将手牌摸至手牌上限（当前手牌上限%arg，最多摸五张），然后手牌上限-1",
   ["#jinjin-invoke"] = "矜谨：你可将手牌上限（当前为%arg）重置为体力值，令 %dest 弃至多等量的牌",
@@ -1326,7 +1473,8 @@ local moyu = fk.CreateActiveSkill{
     local id = room:askForCardChosen(player, target, "hej", self.name)
     room:obtainCard(player, id, false, fk.ReasonPrey)
     room:addPlayerMark(target, "moyu-turn", 1)
-    local use = room:askForUseCard(target, "slash", "slash", "#moyu-use::"..player.id..":"..player:usedSkillTimes(self.name), true, {must_targets = {player.id}})
+    local use = room:askForUseCard(target, "slash", "slash",
+      "#moyu-use::"..player.id..":"..player:usedSkillTimes(self.name), true, {must_targets = {player.id}})
     if use then
       use.additionalDamage = (use.additionalDamage or 0) + player:usedSkillTimes(self.name) - 1
       use.card.extra_data = use.card.extra_data or {}
@@ -1351,7 +1499,8 @@ peiyuanshao:addSkill(moyu)
 Fk:loadTranslationTable{
   ["peiyuanshao"] = "裴元绍",
   ["moyu"] = "没欲",
-  [":moyu"] = "出牌阶段每名角色限一次，你可以获得一名其他角色区域内的一张牌，然后该角色可以选择是否对你使用一张伤害值为X的【杀】（X为本回合本技能发动次数），若此【杀】对你造成了伤害，本技能于本回合失效。",
+  [":moyu"] = "出牌阶段每名角色限一次，你可以获得一名其他角色区域内的一张牌，然后该角色可以选择是否对你使用一张伤害值为X的【杀】"..
+  "（X为本回合本技能发动次数），若此【杀】对你造成了伤害，本技能于本回合失效。",
   ["#moyu-use"] = "没欲：你可以对 %dest 使用一张【杀】，伤害基数为%arg",
 }
 
@@ -1453,9 +1602,11 @@ zhangchu:addSkill(guangshi)
 Fk:loadTranslationTable{
   ["zhangchu"] = "张楚",
   ["jizhong"] = "集众",
-  [":jizhong"] = "出牌阶段限一次，你可以令一名其他角色摸两张牌，然后若其不是“信众”，则其选择一项：1.成为“信众”；2.弃置三张手牌；若其是“信众”，则其弃置三张手牌（不足则全弃）。",
+  [":jizhong"] = "出牌阶段限一次，你可以令一名其他角色摸两张牌，然后若其不是“信众”，则其选择一项：1.成为“信众”；"..
+  "2.弃置三张手牌；若其是“信众”，则其弃置三张手牌（不足则全弃）。",
   ["jucheng"] = "聚逞",
-  [":jucheng"] = "每回合限一次，当你使用指定唯一其他角色为目标的普通锦囊牌或黑色基本牌后，若其：不是“信众”，所有“信众”均视为对其使用此牌；是“信众”，你可以获得其区域内的一张牌。",
+  [":jucheng"] = "每回合限一次，当你使用指定唯一其他角色为目标的普通锦囊牌或黑色基本牌后，若其：不是“信众”，所有“信众”均视为对其使用此牌；"..
+  "是“信众”，你可以获得其区域内的一张牌。",
   ["guangshi"] = "光噬",
   [":guangshi"] = "锁定技，准备阶段，若所有其他角色均是“信众”，你失去1点体力并摸两张牌。",
   ["@@zhangchu_xinzhong"] = "信众",
@@ -1558,7 +1709,8 @@ Fk:loadTranslationTable{
   ["shengdu"] = "生妒",
   [":shengdu"] = "回合开始时，你可以选择一名其他角色，该角色下个摸牌阶段摸牌后，你摸等量的牌。",
   ["xianjiao"] = "献绞",
-  [":xianjiao"] = "出牌阶段限一次，你可以将两张颜色不同的手牌当无距离和次数限制的【杀】使用。若此【杀】：造成伤害，则目标角色失去1点体力；没造成伤害，则你对目标角色发动一次〖生妒〗。",
+  [":xianjiao"] = "出牌阶段限一次，你可以将两张颜色不同的手牌当无距离和次数限制的【杀】使用。"..
+  "若此【杀】：造成伤害，则目标角色失去1点体力；没造成伤害，则你对目标角色发动一次〖生妒〗。",
   ["#shengdu-choose"] = "生妒：选择一名角色，其下次摸牌阶段摸牌后，你摸等量的牌",
 }
 
@@ -1663,7 +1815,8 @@ Fk:loadTranslationTable{
   ["yuandi"] = "元嫡",
   [":yuandi"] = "其他角色于其出牌阶段使用第一张牌时，若此牌没有指定除其以外的角色为目标，你可以选择一项：1.弃置其一张手牌；2.你与其各摸一张牌。",
   ["xinyou"] = "心幽",
-  [":xinyou"] = "出牌阶段限一次，你可以回复体力至体力上限并将手牌摸至体力上限。若你因此摸超过一张牌，结束阶段你失去1点体力；若你因此回复体力，结束阶段你弃置两张牌。",
+  [":xinyou"] = "出牌阶段限一次，你可以回复体力至体力上限并将手牌摸至体力上限。若你因此摸超过一张牌，结束阶段你失去1点体力；"..
+  "若你因此回复体力，结束阶段你弃置两张牌。",
   ["#yuandi-invoke"] = "元嫡：你可以弃置 %dest 的一张手牌或与其各摸一张牌",
   ["yuandi_discard"] = "弃置其一张手牌",
   ["yuandi_draw"] = "你与其各摸一张牌",

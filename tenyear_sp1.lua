@@ -1335,8 +1335,8 @@ local daoshu = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     local suits = {"spade", "heart", "club", "diamond"}
     local choice = room:askForChoice(player, suits, self.name)
-    local card = room:askForCardChosen(player, target, 'h', self.name)
-    room:obtainCard(player.id, card, true)
+    local card = room:askForCardChosen(player, target, "h", self.name)
+    room:obtainCard(player, card, false, fk.ReasonPrey)
     if Fk:getCardById(card):getSuitString() == choice then
       room:damage{
         from = player,

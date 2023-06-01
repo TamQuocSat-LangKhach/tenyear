@@ -1155,9 +1155,12 @@ local zhukou = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.Damage, fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) and target == player then
-      if event == fk.Damage then
-        return player.room.current.phase == Player.Play and player:usedSkillTimes(self.name) == 0
+    if target == player and player:hasSkill(self.name) then
+      if event == fk.Damage and player.room.current and player.room.current.phase == Player.Play then
+        if player:getMark("zhukou-turn") == 0 then
+          player.room:addPlayerMark(player, "zhukou-turn", 1)
+          return true
+        end
       else
         return player.phase == Player.Finish and player:getMark("zhukou-turn") == 0
       end
@@ -1168,10 +1171,11 @@ local zhukou = fk.CreateTriggerSkill{
     if event == fk.Damage then
       return room:askForSkillInvoke(player, self.name)
     else
-      local targets = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p)
-        return p.id end), 2, 2, "#zhukou-choose", self.name, true)
-      if #targets == 2 then
-        self.cost_data = targets
+      local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
+      if #targets < 2 then return end
+      local tos = room:askForChoosePlayers(player, targets, 2, 2, "#zhukou-choose", self.name, true)
+      if #tos == 2 then
+        self.cost_data = tos
         return true
       end
     end
@@ -1180,7 +1184,6 @@ local zhukou = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.Damage then
       player:drawCards(player:getMark("@zhukou-turn"), self.name)
-      room:addPlayerMark(player, "zhukou-turn", 1)
       room:setPlayerMark(player, "@zhukou-turn", 0)
     else
       for _, p in ipairs(self.cost_data) do
@@ -1196,7 +1199,7 @@ local zhukou = fk.CreateTriggerSkill{
 
   refresh_events = {fk.CardUsing},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player:getMark("zhukou-turn") == 0 and player.phase < Player.Discard
+    return target == player and player:hasSkill(self.name, true) and player:getMark("zhukou-turn") == 0 and player.phase < Player.Discard
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:addPlayerMark(player, "@zhukou-turn", 1)

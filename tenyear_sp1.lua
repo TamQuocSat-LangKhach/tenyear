@@ -938,12 +938,7 @@ local zhenyi = fk.CreateTriggerSkill {
     if event == fk.AskForRetrial then
       room:removePlayerMark(player, "@@faluspade", 1)
       local choice = room:askForChoice(player, {"spade", "heart"}, self.name, self.name)
-      if choice == "spade" then
-        data.card.suit = Card.Spade
-      else
-        data.card.suit = Card.Heart
-      end
-      data.card.number = 5
+      room:setPlayerMark(target, self.name, {data.card.id, choice})
     elseif event == fk.AskForPeaches then
       room:removePlayerMark(player, "@@faluclub", 1)
       local peach = Fk:cloneCard("peach")
@@ -984,6 +979,31 @@ local zhenyi = fk.CreateTriggerSkill {
       end
     end
   end,
+
+  refresh_events = {fk.FinishJudge},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark(self.name) ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, self.name, 0)
+  end,
+}
+local zhenyi_filter = fk.CreateFilterSkill{
+  name = "#zhenyi_filter",
+  card_filter = function(self, to_select, player)
+    return player:getMark("zhenyi") ~= 0 and to_select.id == player:getMark("zhenyi")[1]
+  end,
+  view_as = function(self, to_select)
+    local suit
+    if Self:getMark("zhenyi") ~= 0 then
+      if Self:getMark("zhenyi")[2] == "heart" then
+        suit = Card.Heart
+      else
+        suit = Card.Spade
+      end
+      return Fk:cloneCard(to_select.name, suit, 5)
+    end
+  end,
 }
 local dianhua = fk.CreateTriggerSkill{
   name = "dianhua",
@@ -1009,6 +1029,7 @@ local dianhua = fk.CreateTriggerSkill{
     room:askForGuanxing(player, room:getNCards(self.cost_data), nil, {0, 0})
   end,
 }
+zhenyi:addRelatedSkill(zhenyi_filter)
 zhangqiying:addSkill(falu)
 zhangqiying:addSkill(zhenyi)
 zhangqiying:addSkill(dianhua)
@@ -1037,6 +1058,7 @@ Fk:loadTranslationTable{
   ["#zhenyi2"] = "真仪：你可以弃置♣后土，将一张手牌当【桃】使用",
   ["#zhenyi3"] = "真仪：你可以弃置<font color='red'>♥</font>玉清，你进行判定，若结果为黑色，你对 %dest 造成的伤害+1",
   ["#zhenyi4"] = "真仪：你可以弃置<font color='red'>♦</font>勾陈，从牌堆中随机获得三种类型的牌各一张",
+  ["#zhenyi_filter"] = "真仪",
 
   ["$falu1"] = "求法之道，以司箓籍。",
   ["$falu2"] = "取舍有法，方得其法。",

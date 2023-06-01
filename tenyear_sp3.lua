@@ -202,7 +202,7 @@ local anyong = fk.CreateTriggerSkill{
     end
   end,
   on_cost = function(self, event, target, player, data)
-    return #player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#anyong-invoke::"..data.to.id)
+    return #player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#anyong-invoke::"..data.to.id) > 0
   end,
   on_use = function(self, event, target, player, data)
     player.room:doIndicate(player.id, {data.to.id})
@@ -284,27 +284,26 @@ local xinghan = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and not target.dead and target:getMark("@zhenge") > 0 and
+    return player:hasSkill(self.name) and target:getMark("@zhenge") > 0 and
       data.card and data.card.trueName == "slash" and data.card.extra_data and table.contains(data.card.extra_data, "xinghan")
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    for _, p in ipairs(room:getOtherPlayers(player)) do
-      if #p.player_cards[Player.Hand] > #player.player_cards[Player.Hand] then
+    if not table.every(room:getOtherPlayers(player), function(p)
+      return #p.player_cards[Player.Hand] < #player.player_cards[Player.Hand] end) then
         player:drawCards(math.min(target:getAttackRange(), 5), self.name)
-        return
-      end
+    else
+      player:drawCards(1, self.name)
     end
-    player:drawCards(1, self.name)
   end,
 
   refresh_events = {fk.AfterCardUseDeclared},
   can_refresh = function(self, event, target, player, data)
-    return data.card.trueName == "slash" and player.room.current and player.room.current:getMark("xinghan-turn") == 0
+    return player.phase ~= Player.NotActive and data.card.trueName == "slash" and player:getMark("xinghan-turn") == 0
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player.room.current, "xinghan-turn", 1)
-    if target == player.room.current then
+    player.room:addPlayerMark(player, "xinghan-turn", 1)
+    if target:getMark("@zhenge") > 0 then
       data.card.extra_data = data.card.extra_data or {}
       table.insert(data.card.extra_data, "xinghan")
     end
@@ -755,6 +754,30 @@ local qianlong = fk.CreateTriggerSkill{
     return target == player and target:hasSkill(self.name)
   end,
   on_use = function(self, event, target, player, data)
+    --[[local room = player.room
+    local cards = room:getNCards(5)
+    room:moveCards({
+      ids = cards,
+      toArea = Card.Processing,
+      moveReason = fk.ReasonJustMove,
+    })
+    local result = room:askForGuanxing(player, cards, {0, player:getLostHp()}, {}, "#qianlong-guanxing:::"..player:getLostHp(), true)
+    if #result.top > 0 then
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(result.top)
+      room:obtainCard(player.id, dummy, true, fk.ReasonJustMove)
+    end
+    if #result.bottom > 0 then
+      for _, id in ipairs(result.bottom) do
+        table.insert(room.draw_pile, id)
+      end
+      room:sendLog{
+        type = "#GuanxingResult",
+        from = player.id,
+        arg = #result.top,
+        arg2 = #result.bottom,
+      }
+    end]]--
     local room = player.room
     local card_ids = room:getNCards(3)
     local get = {}
@@ -868,7 +891,7 @@ local juetao = fk.CreateTriggerSkill{  --FIXME: not target filter!
       elseif (card.name == "collateral" and to:getEquipment(Card.SubtypeWeapon)) then
         tos = {{to.id}, {player.id}}
       elseif (card.type == Card.TypeEquip) or
-        (card.name == "peach" and player:isWounded()) or 
+        (card.name == "peach" and player:isWounded()) or
         (card.name == "analeptic") or
         (table.contains({"ex_nihilo", "foresight"}, card.name)) or
         (card.name == "fire_attack" and not player:isKongcheng()) or
@@ -925,6 +948,7 @@ Fk:loadTranslationTable{
   [":juetao"] = "限定技，出牌阶段开始时，若你的体力值为1，你可以选择一名角色并依次使用牌堆底的牌直到你无法使用，这些牌不能指定除你和该角色以外的角色为目标。",
   ["zhushi"] = "助势",
   [":zhushi"] = "主公技，其他魏势力角色每回合限一次，该角色回复体力时，你可以令其选择是否令你摸一张牌。",
+  ["#qianlong-guanxing"] = "潜龙：获得其中至多%arg张牌（获得上方的牌，下方的牌置于牌堆底）",
   ["#fensi-choose"] = "忿肆：你须对一名体力值不小于你的角色造成1点伤害，若不为你，视为其对你使用【杀】",
   ["#juetao-choose"] = "决讨：你可以指定一名角色，连续对其使用牌堆底牌直到不能使用！",
   ["#juetao-use"] = "决讨：是否使用%arg！",

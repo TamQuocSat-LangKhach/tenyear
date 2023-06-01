@@ -32,7 +32,7 @@ local tongli = fk.CreateTriggerSkill{
   can_refresh = function(self, event, target, player, data)
     if target == player and player:hasSkill(self.name) then
       if event == fk.AfterCardUseDeclared then
-        return player.phase == Player.Play
+        return player.phase == Player.Play and not table.contains(data.card.skillNames, self.name)
       else
         return player:getMark(self.name) > 0
       end
@@ -53,9 +53,13 @@ local tongli = fk.CreateTriggerSkill{
       end
       if #targets > 0 then
         for i = 1, n, 1 do
-          if not player.dead then
-            room:useVirtualCard(data.card.name, nil, player, table.map(targets, function(id) return room:getPlayerById(id) end), self.name, true)
+          if player.dead then return end
+          for _, id in ipairs(targets) do
+            if room:getPlayerById(id).dead then
+              return
+            end
           end
+          room:useVirtualCard(data.card.name, nil, player, table.map(targets, function(id) return room:getPlayerById(id) end), self.name, true)
         end
       end
     end
@@ -1650,9 +1654,10 @@ local zhaozhi = General(extension, "zhaozhi", "shu", 3)
 local tongguan = fk.CreateTriggerSkill{
   name = "tongguan",
   anim_type = "special",
+  frequency = Skill.Compulsory,
   events = {fk.EventPhaseChanging},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and data.from == Player.RoundStart and
+    return player:hasSkill(self.name, true) and data.from == Player.RoundStart and
       table.every({1, 2, 3, 4, 5}, function(i) return target:getMark("@@tongguan"..i) == 0 end)
   end,
   on_cost = function(self, event, target, player, data)
@@ -1683,7 +1688,7 @@ local mengjiez = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and (target:getMark(self.name) > 0 or
+    return player:hasSkill(self.name, true) and (target:getMark(self.name) > 0 or
       (target:getMark("@@tongguan2") > 0 and #target.player_cards[Player.Hand] > target.hp))
   end,
   on_cost = function(self, event, target, player, data)
@@ -1762,7 +1767,8 @@ local mengjiez = fk.CreateTriggerSkill{
             return true
           end
           if player:getMark("@@tongguan4") > 0 and
-            move.from ~= player.id and move.proposer == player.id and (move.moveReason == fk.ReasonDiscard or move.moveReason == fk.ReasonPrey) then
+            move.from ~= player.id and (move.proposer == player or move.proposer == player.id) and
+            (move.moveReason == fk.ReasonDiscard or move.moveReason == fk.ReasonPrey) then
             return true
           end
           if player:getMark("@@tongguan5") > 0 and

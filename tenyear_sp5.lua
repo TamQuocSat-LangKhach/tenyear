@@ -448,8 +448,7 @@ local wumei = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local to = room:askForChoosePlayers(player, table.map(room:getAlivePlayers(), function(p)
-      return p.id end), 1, 1, "#wumei-choose", self.name)
+    local to = room:askForChoosePlayers(player, table.map(room:getAlivePlayers(), function(p) return p.id end), 1, 1, "#wumei-choose", self.name)
     if #to > 0 then
       self.cost_data = to[1]
       return true
@@ -495,18 +494,18 @@ local zhanmeng = fk.CreateTriggerSkill{
     local room = player.room
     local choices = {"Cancel"}
     self.cost_data = {}
-    if player:getMark("zhanmeng1-turn") == 0 and table.contains(room:getTag("zhanmeng1"), data.card.trueName) then
+    if player:getMark("zhanmeng1-turn") == 0 and not table.contains(room:getTag("zhanmeng1"), data.card.trueName) then
       table.insert(choices, "zhanmeng1")
     end
     if player:getMark("zhanmeng2-turn") == 0 then
       table.insert(choices, "zhanmeng2")
     end
-    local tos = {}
+    local targets = {}
     if player:getMark("zhanmeng3-turn") == 0 then
       for _, p in ipairs(room:getOtherPlayers(player)) do
-        if #p:getCardIds{Player.Hand, Player.Equip} > 1 then
+        if not p:isNude() then
           table.insertIfNeed(choices, "zhanmeng3")
-          table.insert(tos, p)
+          table.insert(targets, p.id)
         end
       end
     end
@@ -514,26 +513,34 @@ local zhanmeng = fk.CreateTriggerSkill{
     if choice == "Cancel" then return end
     self.cost_data[1] = choice
     if choice == "zhanmeng3" then
-      local p = room:askForChoosePlayers(player, table.map(tos, function(p)
-        return p.id end), 1, 1, "#zhanmeng-choose", self.name)
-      if #p > 0 then
-        self.cost_data[2] = p[1]
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#zhanmeng-choose", self.name, false)
+      if #to > 0 then
+        self.cost_data[2] = to[1]
+      else
+        self.cost_data[2] = table.random(targets)
       end
     end
-    return #self.cost_data > 0
+    return true
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local choice = self.cost_data[1]
     room:setPlayerMark(player, choice.."-turn", 1)
     if choice == "zhanmeng1" then
-      local card = {getCardByPattern(room, "nondamage_card")}
-      if #card > 0 then
+      local cards = {}
+      for i = 1, #room.draw_pile, 1 do
+        local card = Fk:getCardById(room.draw_pile[i])
+        if not card.is_damage_card then
+          table.insertIfNeed(cards, room.draw_pile[i])
+        end
+      end
+      if #cards > 0 then
+        local card = table.random(cards)
         room:moveCards({
-          ids = card,
+          ids = {card},
           to = player.id,
           toArea = Card.PlayerHand,
-          moveReason = fk.ReasonPrey,
+          moveReason = fk.ReasonJustMove,
           proposer = player.id,
           skillName = self.name,
         })
@@ -542,8 +549,13 @@ local zhanmeng = fk.CreateTriggerSkill{
       room:setPlayerMark(player, "zhanmeng2_invoke", data.card.trueName)
     elseif choice == "zhanmeng3" then
       local p = room:getPlayerById(self.cost_data[2])
-      local discards = room:askForDiscard(p, 2, 2, true, self.name, false)
-      if Fk:getCardById(discards[1]).number + Fk:getCardById(discards[2]).number > 10 then
+      local n = math.min(2, #p:getCardIds{Player.Hand, Player.Equip})
+      local cards = room:askForDiscard(p, n, 2, true, self.name, false, ".", "#zhanmeng-discard:"..player.id.."::"..tostring(n))
+      local x = Fk:getCardById(cards[1]).number
+      if #cards == 2 then
+        x = x + Fk:getCardById(cards[2]).number
+      end
+      if x > 10 then
         room:damage{
           from = player,
           to = p,
@@ -579,13 +591,20 @@ local zhanmeng_record = fk.CreateTriggerSkill{
       for _, p in ipairs(room:getAlivePlayers()) do
         if p:getMark("zhanmeng2_get-turn") == data.card.trueName then
           room:setPlayerMark(p, "zhanmeng2_get-turn", 0)
-          local card = {getCardByPattern(room, "damage_card")}
-          if #card > 0 then
+          local cards = {}
+          for i = 1, #room.draw_pile, 1 do
+            local card = Fk:getCardById(room.draw_pile[i])
+            if card.is_damage_card then
+              table.insertIfNeed(cards, room.draw_pile[i])
+            end
+          end
+          if #cards > 0 then
+            local card = table.random(cards)
             room:moveCards({
-              ids = card,
+              ids = {card},
               to = p.id,
               toArea = Card.PlayerHand,
-              moveReason = fk.ReasonPrey,
+              moveReason = fk.ReasonJustMove,
               proposer = p.id,
               skillName = "zhanmeng",
             })
@@ -594,9 +613,9 @@ local zhanmeng_record = fk.CreateTriggerSkill{
       end
     else
       local zhanmeng2 = room:getTag("zhanmeng2") or {}
-      room:setTag("zhanmeng1", zhanmeng2)  --cards used in last turn
+      room:setTag("zhanmeng1", zhanmeng2)  --上回合使用的牌
       zhanmeng2 = {}
-      room:setTag("zhanmeng2", zhanmeng2)  --cards used in current turn
+      room:setTag("zhanmeng2", zhanmeng2)  --当前回合使用的牌
       for _, p in ipairs(room:getAlivePlayers()) do
         if type(p:getMark("zhanmeng2_invoke")) == "string" then
           room:setPlayerMark(p, "zhanmeng2_get-turn", p:getMark("zhanmeng2_invoke"))
@@ -623,6 +642,7 @@ Fk:loadTranslationTable{
   ["zhanmeng2"] = "下一回合内，当同名牌首次被使用后，你获得一张伤害牌",
   ["zhanmeng3"] = "令一名其他角色弃置两张牌，若点数之和大于10，对其造成1点火焰伤害",
   ["#zhanmeng-choose"] = "占梦: 令一名其他角色弃置两张牌，若点数之和大于10，对其造成1点火焰伤害",
+  ["#zhanmeng-discard"] = "占梦：弃置%arg张牌，若点数之和大于10，%src 对你造成1点火焰伤害",
 
   ["$wumei1"] = "大梦若期，皆付一枕黄粱。",
   ["$wumei2"] = "日所思之，故夜所梦之。",
@@ -630,7 +650,7 @@ Fk:loadTranslationTable{
   ["$zhanmeng2"] = "万物有兆，唯梦可卜。",
   ["~zhouxuan"] = "人生如梦，假时亦真。",
 }
---杨彪 傅肜傅佥 向朗 孙桓 杨弘 芮姬 桥蕤 秦朗 郑浑2023.3.11
+
 local yangbiao = General(extension, "ty__yangbiao", "qun", 3)
 local ty__zhaohan = fk.CreateTriggerSkill{
   name = "ty__zhaohan",
@@ -851,6 +871,7 @@ Fk:loadTranslationTable{
   ["#yuguan-choose"] = "御关：令至多%arg名角色将手牌摸至体力上限",
 }
 
+-- 向朗 孙桓 杨弘 芮姬 桥蕤2023.3.11
 local yanghong = General(extension, "yanghong", "qun", 3)
 local function IsNext(from, to)
   if from.dead or to.dead then return false end
@@ -1073,7 +1094,9 @@ Fk:loadTranslationTable{
   ["$jinjin2"] = "我姓非曹，可敬人，不可欺人。",
   ["~qinlang"] = "二姓之人，死无其所。",
 }
---孟节 孙资刘放 2023.3.19
+
+--郑浑2023.3.11
+
 local mengjie = General(extension, "mengjie", "qun", 3)
 local yinlu = fk.CreateTriggerSkill{
   name = "yinlu",
@@ -1298,7 +1321,7 @@ Fk:loadTranslationTable{
   ["@@yinlu2"] = "<font color='red'>♥</font>藿溪",
   ["@@yinlu3"] = "♠瘴气",
   ["@@yinlu4"] = "♣芸香",
-  ["@yunxiang"] = "♣芸香",
+  ["@yunxiang"] = "芸香",
   ["#yinlu_move-invoke1"] = "引路：你可以移动一个标记",
   ["#yinlu_move-invoke2"] = "引路：你可以移动 %dest 的标记",
   ["#yinlu-choice"] = "引路：请选择要移动的标记",
@@ -1450,7 +1473,7 @@ Fk:loadTranslationTable{
   ["#weidang-invoke"] = "伪谠：你可以将一张牌名字数为%arg的牌置于牌堆底，然后从牌堆获得一张字数相同的牌并使用之",
   ["#weidang-use"] = "伪谠：请使用%arg",
 }
---裴元绍 张楚 董绾 袁胤 谢灵毓 高翔 笮融 周善 2023.4.19
+
 local peiyuanshao = General(extension, "peiyuanshao", "qun", 4)
 local moyu = fk.CreateActiveSkill{
   name = "moyu",
@@ -1713,6 +1736,8 @@ Fk:loadTranslationTable{
   "若此【杀】：造成伤害，则目标角色失去1点体力；没造成伤害，则你对目标角色发动一次〖生妒〗。",
   ["#shengdu-choose"] = "生妒：选择一名角色，其下次摸牌阶段摸牌后，你摸等量的牌",
 }
+
+--袁胤 谢灵毓 高翔 笮融 周善 2023.4.19
 
 local xielingyu = General(extension, "xielingyu", "wu", 3, 3, General.Female)
 local yuandi = fk.CreateTriggerSkill{

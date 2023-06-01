@@ -713,9 +713,9 @@ niujin:addSkill(ty__liewei)
 Fk:loadTranslationTable{
   ["ty__niujin"] = "牛金",
   ["cuirui"] = "摧锐",
-  [":cuirui"] = "限定技，出牌阶段，你可以选择至多X名其他角色（X为你的体力值），你获得这些角色各1张手牌。",
+  [":cuirui"] = "限定技，出牌阶段，你可以选择至多X名其他角色（X为你的体力值），你获得这些角色各一张手牌。",
   ["ty__liewei"] = "裂围",
-  [":ty__liewei"] = "你的回合内，有角色进入濒死状态时，你可以摸1张牌。",
+  [":ty__liewei"] = "你的回合内，有角色进入濒死状态时，你可以摸一张牌。",
 }
 
 local zhangheng = General(extension, "zhangheng", "qun", 8)
@@ -1367,6 +1367,74 @@ Fk:loadTranslationTable{
 }
 
 local lvlingqi = General(extension, "lvlingqi", "qun", 4, 4, General.Female)
+---@param player ServerPlayer @ 执行的玩家
+---@param targets ServerPlayer[] @ 可选的目标范围
+---@param num integer @ 可选的目标数
+---@param can_minus boolean @ 是否可减少
+---@param prompt string @ 提示信息
+---@param skillName string @ 技能名
+---@param data CardUseStruct @ 使用数据
+--枚举法为使用牌增减目标（无距离限制）
+local function AskForAddTarget(player, targets, num, can_minus, prompt, skillName, data)
+  num = num or 1
+  can_minus = can_minus or false
+  prompt = prompt or ""
+  skillName = skillName or ""
+  local room = player.room
+  local tos = {}
+  if can_minus and #AimGroup:getAllTargets(data.tos) > 1 then  --默认不允许减目标至0
+    tos = table.map(table.filter(targets, function(p)
+      return table.contains(AimGroup:getAllTargets(data.tos), p.id) end), function(p) return p.id end)
+  end
+  for _, p in ipairs(targets) do
+    if not table.contains(AimGroup:getAllTargets(data.tos), p.id) and not room:getPlayerById(data.from):isProhibited(p, data.card) then
+      if data.card.name == "jink" or data.card.trueName == "nullification" or data.card.name == "adaptation" or
+        (data.card.name == "peach" and not p:isWounded()) then
+        --continue
+      else
+        if data.from ~= p.id then
+          if (data.card.trueName == "slash") or
+            ((table.contains({"dismantlement", "snatch", "chasing_near"}, data.card.name)) and not p:isAllNude()) or
+            (table.contains({"fire_attack", "unexpectation"}, data.card.name) and not p:isKongcheng()) or
+            (table.contains({"peach", "analeptic", "ex_nihilo", "duel", "savage_assault", "archery_attack", "amazing_grace", "god_salvation", 
+              "iron_chain", "foresight", "redistribute", "enemy_at_the_gates", "raid_and_frontal_attack"}, data.card.name)) or
+            (data.card.name == "collateral" and p:getEquipment(Card.SubtypeWeapon) and
+              #table.filter(room:getOtherPlayers(p), function(v) return p:inMyAttackRange(v) end) > 0) then
+            table.insertIfNeed(tos, p.id)
+          end
+        else
+          if (data.card.name == "analeptic") or
+            (table.contains({"ex_nihilo", "foresight", "iron_chain", "amazing_grace", "god_salvation", "redistribute"}, data.card.name)) or
+            (data.card.name == "fire_attack" and not p:isKongcheng()) then
+            table.insertIfNeed(tos, p.id)
+          end
+        end
+      end
+    end
+  end
+  if #tos > 0 then
+    tos = room:askForChoosePlayers(player, tos, 1, num, prompt, skillName, true)
+    if data.card.name ~= "collateral" then
+      return tos
+    else
+      local result = {}
+      for _, id in ipairs(tos) do
+        local to = room:getPlayerById(id)
+        local target = room:askForChoosePlayers(player, table.map(table.filter(room:getOtherPlayers(player), function(v)
+          return to:inMyAttackRange(v) end), function(p) return p.id end), 1, 1, "#collateral-choose::"..to.id..":"..data.card:toLogString())
+        if #target > 0 then
+          table.insert(result, {id, target[1]})
+        end
+      end
+      if #result > 0 then
+        return result
+      else
+        return {}
+      end
+    end
+  end
+  return {}
+end
 local guowu = fk.CreateTriggerSkill{
   name = "guowu",
   anim_type = "offensive",
@@ -1403,22 +1471,15 @@ local guowu = fk.CreateTriggerSkill{
 
   refresh_events = {fk.TargetSpecifying},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player:getMark("guowu3-phase") > 0 and data.firstTarget and
+    return target == player and player:getMark("guowu3-phase") > -1 and data.firstTarget and
       data.card.type == Card.TypeTrick and data.card.sub_type ~= Card.SubtypeDelayedTrick
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    local targets = {}
-    for _, p in ipairs(room:getOtherPlayers(player)) do
-      if not table.contains(AimGroup:getAllTargets(data.tos), p.id) then  --TODO: target filter
-        table.insertIfNeed(targets, p.id)
-      end
-    end
+    local targets = AskForAddTarget(player, room:getAlivePlayers(), 2, false, "#guowu-choose:::"..data.card:toLogString(), self.name, data)
     if #targets > 0 then
-      local tos = room:askForChoosePlayers(player, targets, 1, 2, "#guowu-choose", self.name, true)
-      if #tos > 0 then
-        TargetGroup:pushTargets(data.targetGroup, tos)  --TODO: sort by action order
-        room:sortPlayersByAction(data.targetGroup)
+      for _, id in ipairs(targets) do
+        TargetGroup:pushTargets(data.targetGroup, id)
       end
     end
   end,
@@ -1426,13 +1487,12 @@ local guowu = fk.CreateTriggerSkill{
 local guowu_targetmod = fk.CreateTargetModSkill{
   name = "#guowu_targetmod",
   distance_limit_func =  function(self, player, skill)
-    if player:hasSkill(self.name) and player:getMark("guowu2-phase") > 0 then
+    if player:getMark("guowu2-phase") > 0 then
       return 999
     end
   end,
   extra_target_func = function(self, player, skill)
-    if player:hasSkill(self.name) and player:getMark("guowu3-phase") > 0 and skill.trueName == "slash_skill" then
-      --(card.type == Card.TypeTrick and card.sub_type ~= Card.SubtypeDelayedTrick)  FIXME: fire_attack!
+    if player:getMark("guowu3-phase") > 0 and skill.trueName == "slash_skill" then
       return 2
     end
   end,
@@ -1462,7 +1522,7 @@ local zhuangrong = fk.CreateTriggerSkill{
     if n > 0 then
       player:drawCards(n, self.name)
     end
-    room:handleAddLoseSkills(player, "shenwei|wushuang", nil)
+    room:handleAddLoseSkills(player, "shenwei|wushuang", nil, true, false)
   end,
 }
 local shenwei = fk.CreateTriggerSkill{  --TODO: move this!
@@ -1496,7 +1556,7 @@ Fk:loadTranslationTable{
   [":zhuangrong"] = "觉醒技，一名角色的回合结束时，若你的手牌数或体力值为1，你减1点体力上限并将体力值回复至体力上限，然后将手牌摸至体力上限。若如此做，你获得技能〖神威〗和〖无双〗。",
   ["shenwei"] = "神威",
   [":shenwei"] = "锁定技，摸牌阶段，你额外摸两张牌；你的手牌上限+2。",  --TODO: this should be moved to SP!
-  ["#guowu-choose"] = "帼武：可以多指定两个目标",
+  ["#guowu-choose"] = "帼武：你可以为%arg增加至多两个目标",
 
   ["$guowu1"] = "方天映黛眉，赤兔牵红妆。",
   ["$guowu2"] = "武姬青丝利，巾帼女儿红。",

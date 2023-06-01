@@ -69,7 +69,6 @@ local shezang = fk.CreateTriggerSkill{
   name = "shezang",
   anim_type = "drawcard",
   events = {fk.EnterDying},
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self.name) and (target == player or player.phase ~= Player.NotActive) and player:usedSkillTimes(self.name, Player.HistoryRound) == 0
   end,
@@ -87,7 +86,7 @@ local shezang = fk.CreateTriggerSkill{
         ids = cards,
         to = player.id,
         toArea = Card.PlayerHand,
-        moveReason = fk.ReasonPrey,
+        moveReason = fk.ReasonJustMove,
         proposer = player.id,
         skillName = self.name,
       })
@@ -266,7 +265,7 @@ Fk:loadTranslationTable{
   ["#dunxi-choose"] = "钝袭：你可以令一名角色获得“钝”标记，其使用下一张牌目标改为随机角色",
   ["@bianxi_dun"] = "钝",
 }
---全惠解 胡昭 魏吕旷吕翔 黄权 孙茹 赵昂2022.9.17
+
 local quanhuijie = General(extension, "quanhuijie", "wu", 3, 3, General.Female)
 local huishu = fk.CreateTriggerSkill{
   name = "huishu",
@@ -442,6 +441,7 @@ Fk:loadTranslationTable{
   ["$ligong2"] = "巍巍宫门开，自此不复来。",
   ["~quanhuijie"] = "妾有愧于陛下。",
 }
+--胡昭
 
 local lvkuanglvxiang = General(extension, "ty__lvkuanglvxiang", "wei", 4)
 local shuhe = fk.CreateActiveSkill{
@@ -749,6 +749,7 @@ Fk:loadTranslationTable{
   ["$youxu2"] = "周忧济难，请君恤之。",
   ["~ty__sunru"] = "伯言，抗儿便托付于你了。",
 }
+--赵昂
 --牛辅 蔡阳2022.9.24
 --张奋2022.9.29
 --杜夔2022.10.9
@@ -815,7 +816,9 @@ Fk:loadTranslationTable{
   [":qinbao"] = "锁定技，手牌数大于等于你的其他角色不能响应你使用的【杀】或普通锦囊牌。",
   ["#suoliang-invoke"] = "索粮：你可以选择 %dest 最多其体力上限张牌，获得其中的<font color='red'>♥</font>和♣牌，若没有则弃置这些牌",
 }
---刘徽 陈珪 胡班2022.11.13
+
+--刘徽
+
 local chengui = General(extension, "chengui", "qun", 3)
 local yingtu = fk.CreateTriggerSkill{
   name = "yingtu",

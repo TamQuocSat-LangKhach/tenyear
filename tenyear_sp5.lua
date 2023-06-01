@@ -1051,7 +1051,7 @@ local haochong = fk.CreateTriggerSkill{
 local jinjin = fk.CreateTriggerSkill{
   name = "jinjin",
   anim_type = "drawcard",
-  events = {fk.Damage, Fk.Damaged},
+  events = {fk.Damage, fk.Damaged},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and player:getMaxCards() ~= player.hp and
       player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
@@ -1880,7 +1880,7 @@ local xiangshuz = fk.CreateTriggerSkill{
     if event == fk.EventPhaseStart then
       local choices = {}
       for i = 0, 5, 1 do
-        table.insert(choices, i)
+        table.insert(choices, tostring(i))
       end
       local choice = room:askForChoice(player, choices, self.name, "#xiangshuz-choice::"..target.id)
       local mark = self.name

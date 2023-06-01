@@ -1189,7 +1189,7 @@ local dunshi = fk.CreateViewAsSkill{
     return card
   end,
   before_use = function(self, player, use)
-    Fk:currentRoom():setPlayerMark(player, "dunshi_name-turn", use.card.trueName)
+    player.room:setPlayerMark(player, "dunshi_name-turn", use.card.trueName)
   end,
   enabled_at_play = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and (player:getMark(self.name) == 0 or #player:getMark(self.name) < 4)
@@ -1203,7 +1203,7 @@ local dunshi_record = fk.CreateTriggerSkill{
   anim_type = "special",
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) and target.phase ~= Player.NotActive and player:usedSkillTimes("dunshi", Player.HistoryTurn) > 0 then
+    if player:usedSkillTimes("dunshi", Player.HistoryTurn) > 0 and target and target.phase ~= Player.NotActive then
       if target:getMark("dunshi-turn") == 0 then
         player.room:addPlayerMark(target, "dunshi-turn", 1)
         return true
@@ -1272,7 +1272,7 @@ Fk:loadTranslationTable{
   ["$dunshi2"] = "隐居青松畔，遁走孤竹丘。",
   ["~guanning"] = "高节始终，无憾矣。",
 }
---刘虞 曹华2022.7.18
+
 local liuyu = General(extension, "ty__liuyu", "qun", 3)
 local suifu = fk.CreateTriggerSkill{
   name = "suifu",
@@ -1370,5 +1370,6 @@ Fk:loadTranslationTable{
   ["#suifu-invoke"] = "绥抚：你可以将 %dest 所有手牌置于牌堆顶，你视为使用【五谷丰登】",
   ["#pijing-choose"] = "辟境：你可以令包括你的任意名角色获得技能〖自牧〗直到下次发动〖辟境〗<br>（锁定技，当你受到伤害后，其他有〖自牧〗的角色各摸一张牌，然后你失去〖自牧〗）",
 }
+--曹华2022.7.18
 
 return extension

@@ -13,8 +13,8 @@ local tongli = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) and player.phase == Player.Play and
-      not table.contains(data.card.skillNames, self.name) then
+    if target == player and player:hasSkill(self.name) and player.phase == Player.Play and data.firstTarget and
+      (not data.card:isVirtual() or #data.card.subcards > 0) and not table.contains(data.card.skillNames, self.name) then
       local suits = {}
       for _, id in ipairs(player.player_cards[Player.Hand]) do
         table.insertIfNeed(suits, Fk:getCardById(id).suit)
@@ -25,7 +25,7 @@ local tongli = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, self.name, player:getMark("@tongli-turn"))
-    room:setPlayerMark(player, "tongli_tos", TargetGroup:getRealTargets(data.tos))
+    room:setPlayerMark(player, "tongli_tos", AimGroup:getAllTargets(data.tos))
   end,
 
   refresh_events = {fk.AfterCardUseDeclared, fk.CardUseFinished},
@@ -48,19 +48,29 @@ local tongli = fk.CreateTriggerSkill{
       local targets = player:getMark("tongli_tos")
       if targets == 0 then return end
       room:setPlayerMark(player, "tongli_tos", 0)
-      for _, id in ipairs(data.nullifiedTargets) do
-        table.removeOne(targets, id)
-      end
-      if #targets > 0 then
-        for i = 1, n, 1 do
-          if player.dead then return end
-          for _, id in ipairs(targets) do
-            if room:getPlayerById(id).dead then
-              return
+      local tos = table.simpleClone(targets)
+      for i = 1, n, 1 do
+        if player.dead then return end
+        for _, id in ipairs(targets) do
+          if room:getPlayerById(id).dead then
+            return
+          end
+        end
+        if table.contains({"savage_assault", "archery_attack"}, data.card.name) then  --to modify tenyear's stupid processing
+          for _, p in ipairs(room:getOtherPlayers(player)) do
+            if not player:isProhibited(p, Fk:cloneCard(data.card.name)) then
+              table.insertIfNeed(tos, p.id)
             end
           end
-          room:useVirtualCard(data.card.name, nil, player, table.map(targets, function(id) return room:getPlayerById(id) end), self.name, true)
+        elseif table.contains({"amazing_grace", "god_salvation"}, data.card.name) then
+          for _, p in ipairs(room:getAlivePlayers()) do
+            if not player:isProhibited(p, Fk:cloneCard(data.card.name)) then
+              table.insertIfNeed(tos, p.id)
+            end
+          end
         end
+        room:sortPlayersByAction(tos)
+        room:useVirtualCard(data.card.name, nil, player, table.map(tos, function(id) return room:getPlayerById(id) end), self.name, true)
       end
     end
   end,
@@ -70,7 +80,8 @@ local shezang = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.EnterDying},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and (target == player or player.phase ~= Player.NotActive) and player:usedSkillTimes(self.name, Player.HistoryRound) == 0
+    return player:hasSkill(self.name) and (target == player or player.phase ~= Player.NotActive) and
+      player:usedSkillTimes(self.name, Player.HistoryRound) == 0
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

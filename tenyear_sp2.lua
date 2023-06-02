@@ -1471,7 +1471,7 @@ local guowu = fk.CreateTriggerSkill{
 
   refresh_events = {fk.TargetSpecifying},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:getMark("guowu3-phase") > -1 and data.firstTarget and
+    return target == player and player:getMark("guowu3-phase") > 0 and data.firstTarget and
       data.card.type == Card.TypeTrick and data.card.sub_type ~= Card.SubtypeDelayedTrick
   end,
   on_refresh = function(self, event, target, player, data)

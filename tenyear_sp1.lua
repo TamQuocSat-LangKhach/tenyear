@@ -121,10 +121,10 @@ local tushe = fk.CreateTriggerSkill{
 local limu_targetmod = fk.CreateTargetModSkill{
   name = "#limu_targetmod",
   residue_func = function(self, player, skill)
-    return #player:getCardIds(Player.Judge) > 0 and 999 or 0
+    return player:hasSkill(self.name) and #player:getCardIds(Player.Judge) > 0 and 999 or 0
   end,
   distance_limit_func = function(self, player, skill)
-    return #player:getCardIds(Player.Judge) > 0 and 999 or 0
+    return player:hasSkill(self.name) and #player:getCardIds(Player.Judge) > 0 and 999 or 0
   end,
 }
 local limu = fk.CreateActiveSkill{

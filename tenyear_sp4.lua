@@ -1137,9 +1137,11 @@ local fuxue = fk.CreateTriggerSkill{
         end
         return #player.tag[self.name] > 0
       end
-      if player.phase == Player.Finish and player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then
+      if player.phase == Player.Finish then
         local cards = player:getMark("fuxue-turn")
-        if cards ~= 0 then
+        if cards == 0 then
+          return true
+        else
           for _, id in ipairs(player.player_cards[Player.Hand]) do
             if table.contains(cards, id) then return end
           end

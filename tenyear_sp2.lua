@@ -1156,9 +1156,10 @@ local zhukou = fk.CreateTriggerSkill{
   events = {fk.Damage, fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self.name) then
-      if event == fk.Damage and player.room.current and player.room.current.phase == Player.Play then
-        if player:getMark("zhukou-turn") == 0 then
-          player.room:addPlayerMark(player, "zhukou-turn", 1)
+      if event == fk.Damage then
+        local room = player.room
+        if room.current and room.current.phase == Player.Play and player:getMark("zhukou-turn") == 0 then
+          room:addPlayerMark(player, "zhukou-turn", 1)
           return true
         end
       else

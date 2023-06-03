@@ -60,13 +60,13 @@ local xunxian = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.CardUseFinished, fk.CardRespondFinished},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.NotActive and
-      player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and player.room:getCardArea(data.card) == Card.Processing
+    return target == player and player:hasSkill(self.name) and player.room:getCardArea(data.card) == Card.Processing and
+      player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
-      return #p.player_cards[Player.Hand] > #player.player_cards[Player.Hand] end), function(p) return p.id end)
+      return (#p.player_cards[Player.Hand] > #player.player_cards[Player.Hand] or p.hp > player.hp) end), function(p) return p.id end)
     if #targets == 0 then return end
     local to = room:askForChoosePlayers(player, targets, 1, 1, "#xunxian-choose:::"..data.card:toLogString(), self.name, true)
     if #to > 0 then
@@ -85,7 +85,7 @@ Fk:loadTranslationTable{
   ["guanchao"] = "观潮",
   [":guanchao"] = "出牌阶段开始时，你可以选择一项直到回合结束：1.当你使用牌时，若你此阶段使用过的所有牌的点数为严格递增，你摸一张牌；2.当你使用牌时，若你此阶段使用过的所有牌的点数为严格递减，你摸一张牌。",
   ["xunxian"] = "逊贤",
-  [":xunxian"] = "每名其他角色的回合限一次，你使用或打出的牌置入弃牌堆时，你可以将之交给一名手牌比你多的角色。",
+  [":xunxian"] = "每回合限一次，你使用或打出的牌置入弃牌堆时，你可以将之交给一名手牌数或体力值大于你的角色。",
   ["@@guanchao_ascending-turn"] = "观潮：递增",
   ["@@guanchao_decending-turn"] = "观潮：递减",
   ["@guanchao_ascending-turn"] = "观潮：递增",
@@ -559,17 +559,13 @@ local yisuan = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and
-      player.phase == Player.Play and
-      player:usedSkillTimes(self.name) < 1 and
-      data.card.type == Card.TypeTrick and
-      data.card.sub_type ~= Card.SubtypeDelayedTrick and
-      player.room:getCardArea(data.card) == Card.Processing
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and data.card:isCommonTrick() and
+      player.room:getCardArea(data.card) == Card.Processing and player:usedSkillTimes(self.name) == 0
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeMaxHp(player, -1)
-    room:obtainCard(player.id, data.card, true, fk.ReasonPrey)
+    room:obtainCard(player.id, data.card, true, fk.ReasonJustMove)
   end,
 }
 lijue:addSkill(langxi)
@@ -988,21 +984,22 @@ local zhenyi = fk.CreateTriggerSkill {
     player.room:setPlayerMark(player, self.name, 0)
   end,
 }
-local zhenyi_filter = fk.CreateFilterSkill{
-  name = "#zhenyi_filter",
+local zhenyi_filter1 = fk.CreateFilterSkill{
+  name = "#zhenyi_filter1",
+  card_filter = function(self, to_select, player)
+    return player:getMark("zhenyi") ~= 0 and to_select.id == player:getMark("zhenyi")[1] and player:getMark("zhenyi")[2] == "heart"
+  end,
+  view_as = function(self, to_select)
+    return Fk:cloneCard(to_select.name, Card.Heart, 5)
+  end,
+}
+local zhenyi_filter2 = fk.CreateFilterSkill{
+  name = "#zhenyi_filter2",
   card_filter = function(self, to_select, player)
     return player:getMark("zhenyi") ~= 0 and to_select.id == player:getMark("zhenyi")[1]
   end,
   view_as = function(self, to_select)
-    local suit
-    if Self:getMark("zhenyi") ~= 0 then
-      if Self:getMark("zhenyi")[2] == "heart" then
-        suit = Card.Heart
-      else
-        suit = Card.Spade
-      end
-      return Fk:cloneCard(to_select.name, suit, 5)
-    end
+    return Fk:cloneCard(to_select.name, Card.Spade, 5)
   end,
 }
 local dianhua = fk.CreateTriggerSkill{
@@ -1029,7 +1026,8 @@ local dianhua = fk.CreateTriggerSkill{
     room:askForGuanxing(player, room:getNCards(self.cost_data), nil, {0, 0})
   end,
 }
-zhenyi:addRelatedSkill(zhenyi_filter)
+zhenyi:addRelatedSkill(zhenyi_filter1)
+zhenyi:addRelatedSkill(zhenyi_filter2)
 zhangqiying:addSkill(falu)
 zhangqiying:addSkill(zhenyi)
 zhangqiying:addSkill(dianhua)
@@ -1058,7 +1056,8 @@ Fk:loadTranslationTable{
   ["#zhenyi2"] = "真仪：你可以弃置♣后土，将一张手牌当【桃】使用",
   ["#zhenyi3"] = "真仪：你可以弃置<font color='red'>♥</font>玉清，你进行判定，若结果为黑色，你对 %dest 造成的伤害+1",
   ["#zhenyi4"] = "真仪：你可以弃置<font color='red'>♦</font>勾陈，从牌堆中随机获得三种类型的牌各一张",
-  ["#zhenyi_filter"] = "真仪",
+  ["#zhenyi_filter1"] = "真仪",
+  ["#zhenyi_filter2"] = "真仪",
 
   ["$falu1"] = "求法之道，以司箓籍。",
   ["$falu2"] = "取舍有法，方得其法。",

@@ -29,9 +29,9 @@ local yise = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     if self.yise_color == Card.Red then
-      return player.room:askForSkillInvoke(player, self.name, data, "#yise1-invoke::"..self.yise_to)
+      return player.room:askForSkillInvoke(player, self.name, data, "#yise-invoke::"..self.yise_to)
     elseif self.yise_color == Card.Black then
-      return player.room:askForSkillInvoke(player, self.name, data, "#yise2-invoke::"..self.yise_to)
+      return true
     end
   end,
   on_use = function(self, event, target, player, data)
@@ -138,8 +138,7 @@ Fk:loadTranslationTable{
   [":yise"] = "当其他角色获得你的牌后，若此牌为：红色，你可以令其回复1点体力；黑色，其下次受到【杀】造成的伤害时，此伤害+1。",
   ["shunshi"] = "顺世",
   [":shunshi"] = "准备阶段或当你于回合外受到伤害后，你可以交给一名其他角色一张牌（伤害来源除外），然后直到你的回合结束，你：摸牌阶段多摸一张牌、出牌阶段使用的【杀】次数上限+1、手牌上限+1。",
-  ["#yise1-invoke"] = "异色：你可以令 %dest 回复1点体力",
-  ["#yise2-invoke"] = "异色：你可以令 %dest 下次受到【杀】的伤害+1",
+  ["#yise-invoke"] = "异色：你可以令 %dest 回复1点体力",
   ["#shunshi-cost"] = "顺世：你可以交给一名其他角色一张牌，然后直到你的回合结束获得效果",
 
   ["$yise1"] = "明丽端庄，双瞳剪水。",
@@ -342,7 +341,7 @@ Fk:loadTranslationTable{
 --嵇康 曹不兴2021.12.3
 --陈登2021.12.15
 --曹金玉 滕公主2022.1.22
-local caojinyu = General(extension, "caojinyu", "wei", 3, 3, General.Female)
+--local caojinyu = General(extension, "caojinyu", "wei", 3, 3, General.Female)
 local yuqi = fk.CreateTriggerSkill{
   name = "yuqi",
   anim_type = "masochism",
@@ -451,9 +450,9 @@ local xianjing = fk.CreateTriggerSkill{
     end
   end,
 }
-caojinyu:addSkill(yuqi)
-caojinyu:addSkill(shanshen)
-caojinyu:addSkill(xianjing)
+--caojinyu:addSkill(yuqi)
+--caojinyu:addSkill(shanshen)
+--caojinyu:addSkill(xianjing)
 Fk:loadTranslationTable{
   ["caojinyu"] = "曹金玉",
   ["yuqi"] = "隅泣",
@@ -745,7 +744,7 @@ Fk:loadTranslationTable{
   "装备牌：你使用装备牌时可以弃置一名其他角色的一张牌。",
 }
 --曹髦 吉平 阎柔 来莺儿 神姜维2022.6.11
-local caomao = General(extension, "caomao", "wei", 3, 4)
+--local caomao = General(extension, "caomao", "wei", 3, 4)
 local qianlong = fk.CreateTriggerSkill{
   name = "qianlong",
   anim_type = "masochism",
@@ -934,10 +933,10 @@ local zhushi = fk.CreateTriggerSkill{
     end
   end,
 }
-caomao:addSkill(qianlong)
-caomao:addSkill(fensi)
-caomao:addSkill(juetao)
-caomao:addSkill(zhushi)
+--caomao:addSkill(qianlong)
+--caomao:addSkill(fensi)
+--caomao:addSkill(juetao)
+--caomao:addSkill(zhushi)
 Fk:loadTranslationTable{
   ["caomao"] = "曹髦",
   ["qianlong"] = "潜龙",

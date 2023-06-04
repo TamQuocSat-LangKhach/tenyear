@@ -91,6 +91,12 @@ Fk:loadTranslationTable{
   ["@guanchao_ascending-turn"] = "观潮：递增",
   ["@guanchao_decending-turn"] = "观潮：递减",
   ["#xunxian-choose"] = "逊贤：你可以将%arg交给一名手牌数大于你的角色",
+
+  ["$guanchao1"] = "朝夕之间，可知所进退。",
+  ["$guanchao2"] = "月盈，潮起晨暮也；月亏，潮起日半也。",
+  ["$xunxian1"] = "督军之才，子明强于我甚多。",
+  ["$xunxian2"] = "此间重任，公卿可担之。",
+  ["~yanjun"] = "著作，还，没完成。",
 }
 
 Fk:loadTranslationTable{
@@ -99,6 +105,12 @@ Fk:loadTranslationTable{
   [":andong"] = "当你受到其他角色造成的伤害时，你可令伤害来源选择一项：1.防止此伤害，本回合弃牌阶段红桃牌不计入手牌上限；2.观看其手牌，若其中有红桃牌则你获得这些红桃牌。",
   ["yingshi"] = "应势",
   [":yingshi"] = "出牌阶段开始时，若没有武将牌旁有“酬”的角色，你可将所有红桃牌置于一名其他角色的武将牌旁，称为“酬”。若如此做，当一名角色使用【杀】对武将牌旁有“酬”的角色造成伤害后，其可以获得一张“酬”。当武将牌旁有“酬”的角色死亡时，你获得所有“酬”。",
+
+  ["$andong1"] = "勇足以当大难，智涌以安万变。",
+  ["$andong2"] = "宽猛克济，方安河东之民。",
+  ["$yingshi1"] = "应民之声，势民之根。",
+  ["$yingshi2"] = "应势而谋，顺民而为。",
+  ["~duji"] = "试船而溺之，虽亡而忠至。",
 }
 
 local liuyan = General(extension, "liuyan", "qun", 3)
@@ -216,6 +228,7 @@ local guanwei = fk.CreateTriggerSkill{
 }
 local gongqing = fk.CreateTriggerSkill{
   name = "gongqing",
+  mute = true,
   frequency = Skill.Compulsory,
   events = {fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
@@ -226,8 +239,12 @@ local gongqing = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     if data.from:getAttackRange() < 3 then
       data.damage = 1
+      player.room:notifySkillInvoked(player, self.name, "defensive")
+      player.room:broadcastSkillInvoke(self.name, 1)
     elseif data.from:getAttackRange() > 3 then
       data.damage = data.damage + 1
+      player.room:notifySkillInvoked(player, self.name, "negative")
+      player.room:broadcastSkillInvoke(self.name, 2)
     end
   end,
 }
@@ -240,6 +257,12 @@ Fk:loadTranslationTable{
   ["gongqing"] = "公清",
   [":gongqing"] = "锁定技，当你受到伤害时，若伤害来源攻击范围小于3，则你只受到1点伤害；若伤害来源攻击范围大于3，则此伤害+1。",
   ["#guanwei-invoke"] = "观微：你可以弃置一张牌，令 %dest 摸两张牌并执行一个额外的出牌阶段",
+
+  ["$guanwei1"] = "今日宴请诸位，有要事相商。",
+  ["$guanwei2"] = "天下未定，请主公以大局为重。",
+  ["$gongqing1"] = "尔辈何故与降虏交善。",
+  ["$gongqing2"] = "豪将在外，增兵必成祸患啊！",
+  ["~panjun"] = "耻失荆州，耻失荆州啊！",
 }
 
 Fk:loadTranslationTable{
@@ -250,6 +273,14 @@ Fk:loadTranslationTable{
   [":qiai"] = "限定技，当你进入濒死状态时，你可令其他每名角色交给你一张牌。",
   ["denglou"] = "登楼",
   [":denglou"] = "限定技，结束阶段开始时，若你没有手牌，你可以观看牌堆顶的四张牌，然后获得其中的非基本牌，并使用其中的基本牌（不能使用则弃置）。",
+
+  ["$sanwen1"] = "文若春华，思若泉涌。",
+  ["$sanwen2"] = "独步汉南，散文天下。",
+  ["$qiai1"] = "未知身死处，何能两相完？",
+  ["$qiai2"] = "悟彼下泉人，喟然伤心肝。",
+  ["$denglou1"] = "登兹楼以四望兮，聊暇日以销忧。",
+  ["$denglou2"] = "惟日月之逾迈兮，俟河清其未极。",
+  ["~wangcan"] = "一作驴鸣悲，万古送葬别。",
 }
 Fk:loadTranslationTable{
   ["sp__pangtong"] = "庞统",
@@ -259,6 +290,14 @@ Fk:loadTranslationTable{
   [":songsang"] = "限定技，当其他角色死亡时，若你已受伤，你可回复1点体力；若你未受伤，你可加1点体力上限。若如此做，你获得〖展骥〗。",
   ["zhanji"] = "展骥",
   [":zhanji"] = "锁定技，当你于出牌阶段内因摸牌且并非因发动此技能而得到牌时，你摸一张牌。",
+
+  ["$guolun1"] = "品过是非，讨评好坏。",
+  ["$guolun2"] = "若有天下太平时，必讨四海之内才。",
+  ["$songsang1"] = "送丧至东吴，使命已完。",
+  ["$songsang2"] = "送丧虽至，吾与孝则得相交。",
+  ["$zhanji1"] = "公瑾安全至吴，心安之。",
+  ["$zhanji2"] = "功曹之恩，吾必有展骥之机。",  
+  ["~sp__pangtong"] = "我终究……不得东吴赏识。",
 }
 Fk:loadTranslationTable{
   ["sp__taishici"] = "太史慈",
@@ -327,12 +366,22 @@ Fk:loadTranslationTable{
   ["sp__youdi"] = "诱敌",
   [":sp__youdi"] = "结束阶段，你可以令一名其他角色弃置你一张手牌，若弃置的牌不是【杀】，则你获得其一张牌；若弃置的牌不是黑色，则你摸一张牌。",
   ["#sp__youdi-choose"] = "诱敌：令一名角色弃置你一张牌，若不为【杀】，你获得其一张牌；若不为黑色，你摸一张牌",
+
+  ["$duanfa1"] = "身体发肤，受之父母。",
+  ["$duanfa2"] = "今断发以明志，尚不可证吾之心意？",
+  ["$sp__youdi1"] = "东吴已容不下我，愿降以保周全。",
+  ["$sp__youdi2"] = "笺书七条，足以表我归降之心。",
+  ["~zhoufang"] = "功亏一篑，功亏一篑啊。",
 }
 
 Fk:loadTranslationTable{
   ["lvdai"] = "吕岱",
   ["qinguo"] = "勤国",
-  [":qinguo"] = "①当你于回合内使用装备牌结算结束后，你可视为使用一张【杀】。②当你的装备区里的牌移动后，或装备牌移至你的装备区后，若你装备区里的牌数与你的体力值相等且与此次移动之前你装备区里的牌数不等，你回复1点体力。",
+  [":qinguo"] = "当你于回合内使用装备牌结算结束后，你可视为使用一张不计入次数限制的【杀】；当你的装备区里的牌数变化后，若你装备区里的牌数与你的体力值相等，你回复1点体力。",
+
+  ["$qinguo1"] = "为国勤事，体素精勤。",
+  ["$qinguo2"] = "忠勤为国，通达治体。",
+  ["~lvdai"] = "再也不能，为吴国奉身了。",
 }
 
 local liuyao = General(extension, "liuyao", "qun", 4)
@@ -383,6 +432,10 @@ Fk:loadTranslationTable{
   ["kannan"] = "戡难",
   [":kannan"] = "出牌阶段，若你于此阶段内发动过此技能的次数小于X（X为你的体力值），你可与你于此阶段内未以此法拼点过的一名角色拼点。若：你赢，你使用的下一张【杀】的伤害值基数+1且你于此阶段内不能发动此技能；其赢，其使用的下一张【杀】的伤害值基数+1。",
   ["@kannan"] = "戡难",
+  
+  ["$kannan1"] = "俊才之杰，材匪戡难。",
+  ["$kannan2"] = "戡，克也，难，攻之。",
+  ["~liuyao"] = "伯符小儿，还我子义！",
 }
 Fk:loadTranslationTable{
   ["lvqian"] = "吕虔",
@@ -390,6 +443,12 @@ Fk:loadTranslationTable{
   [":weilu"] = "锁定技，当你受到其他角色造成的伤害后，伤害来源在你的下回合出牌阶段开始时失去体力至1，回合结束时其回复以此法失去的体力值。",
   ["zengdao"] = "赠刀",
   [":zengdao"] = "限定技，出牌阶段，你可以将装备区内任意数量的牌置于一名其他角色的武将牌旁，该角色造成伤害时，移去一张“赠刀”牌，然后此伤害+1。",
+
+  ["$weilu1"] = "贼人势大，需从长计议。",
+  ["$weilu2"] = "时机未到，先行撤退。",
+  ["$zengdao1"] = "有功赏之，有过罚之。",
+  ["$zengdao2"] = "治军之道，功过分明。",
+  ["~lvqian"] = "我自泰山郡以来，百姓获安，镇军伐贼，此生已无憾！",
 }
 Fk:loadTranslationTable{
   ["zhangliang"] = "张梁",
@@ -397,6 +456,12 @@ Fk:loadTranslationTable{
   [":jijun"] = "当武器牌或不为装备牌的牌于你的出牌阶段内指定第一个目标后，若此牌的使用者为你且你是此牌的目标之一，你可判定。当此次判定的判定牌移至弃牌堆后，你可将此判定牌置于武将牌上（称为“方”）。",
   ["fangtong"] = "方统",
   [":fangtong"] = "结束阶段开始时，若有“方”，你可弃置一张牌，若如此做，你将至少一张“方”置入弃牌堆。若此牌与你以此法置入弃牌堆的所有“方”的点数之和为36，你对一名其他角色造成3点雷电伤害。",
+
+  ["$jijun1"] = "集民力万千，亦可为军！",
+  ["$jijun2"] = "集万千义军，定天下大局！",
+  ["$fangtong1"] = "统领方队，为民意所举！",
+  ["$fangtong2"] = "三十六方，必为大统！",
+  ["~zhangliang"] = "人公也难逃被人所杀……",
 }
 --司马徽
 local xurong = General(extension, "xurong", "qun", 4)
@@ -1546,6 +1611,16 @@ Fk:loadTranslationTable{
   "超过3枚且红色和黑色一样多：【杀】、【决斗】和“攻心”。",
   ["zhafu"] = "札符",
   [":zhafu"] = "限定技，出牌阶段，你可以选择一名其他角色。该角色的下个弃牌阶段开始时，其选择保留一张手牌，将其余手牌交给你。",
+
+  ["$lianhua1"] = "白日青山，飞升化仙。",
+  ["$lianhua2"] = "草木精炼，万物化丹。",
+  ["$zhafu1"] = "垂恩广救，慈悲在怀。",
+  ["$zhafu2"] = "行符敕鬼，神变善易。",
+  -- ["$ex__yingzi0"] = "仙人之姿，凡目岂见！",
+  -- ["$zhiyan0"] = "仙人之语，凡耳震聩！",
+  -- ["$gongxin0"] = "仙人之目，因果即现！",
+  -- ["$ex_guanxing0"] = "仙人之栖，群星浩瀚！",
+  ["~gexuan"] = "善变化，拙用身。",
 }
 
 local puyuan = General(extension, "ty__puyuan", "shu", 4)
@@ -1759,6 +1834,12 @@ Fk:loadTranslationTable{
   ["zhuren"] = "铸刃",
   [":zhuren"] = "出牌阶段限一次，你可以弃置一张手牌。根据此牌的花色点数，你有一定概率打造成功并获得一张武器牌（若打造失败或武器已有则改为摸一张【杀】，花色决定武器名称，点数决定成功率）。此武器牌进入弃牌堆时，将其移出游戏。",
   ["#tianjiang_trigger"] = "天匠",
+
+  ["$tianjiang1"] = "巧夺天工，超凡脱俗。",
+  ["$tianjiang2"] = "天赐匠法，精心锤炼。",
+  ["$zhuren1"] = "造刀三千口，用法各不同。",
+  ["$zhuren2"] = "此刀，可劈铁珠之筒。",
+  ["~ty__puyuan"] = "铸木镂冰，怎成大器。",
 }
 --辛毗 李肃 张温 2019.12.4
 local zhangwen = General(extension, "ty__zhangwen", "wu", 3)
@@ -1864,6 +1945,12 @@ Fk:loadTranslationTable{
   ["sibian"] = "思辩",
   [":sibian"] = "摸牌阶段，你可以放弃摸牌，改为亮出牌堆顶的4张牌，你获得其中所有点数最大和最小的牌，然后你可以将剩余的牌交给一名手牌数最少的角色。",
   ["#sibian-choose"] = "思辩：你可以将剩余的牌交给一名手牌数最少的角色",
+
+  ["$ty__songshu1"] = "称颂蜀汉，以表诚心。",
+  ["$ty__songshu2"] = "吴蜀两和，方可安稳。",
+  ["$sibian1"] = "才藻俊茂，辨思如涌。",
+  ["$sibian2"] = "弘雅之素，英秀之德。",
+  ["~ty__zhangwen"] = "暨艳过错，强牵吾罪。",
 }
 --花鬘 2020.1.31
 
@@ -1959,6 +2046,10 @@ Fk:loadTranslationTable{
   ["ty__huangfusong"] = "皇甫嵩",
   ["ty__fenyue"] = "奋钺",
   [":ty__fenyue"] = "出牌阶段限X次（X为与你不同阵营的存活角色数），你可以与一名角色拼点，若你赢，根据你拼点的牌的点数执行以下效果：小于等于K：视为对其使用一张雷【杀】；小于等于9：获得牌堆中的一张【杀】；小于等于5：获得其一张牌。",
+
+  ["$ty__fenyue1"] = "逆贼势大，且扎营寨，击其懈怠。",
+  ["$ty__fenyue2"] = "兵有其变，不在众寡。",
+  ["~ty__huangfusong"] = "吾只恨黄巾未平，不能报效朝廷……",
 }
 
 local wangshuang = General(extension, "wangshuang", "wei", 8)
@@ -2000,6 +2091,10 @@ Fk:loadTranslationTable{
   ["wangshuang"] = "王双",
   ["zhuilie"] = "追猎",
   [":zhuilie"] = "锁定技，你使用【杀】无距离限制；当你使用【杀】指定你攻击范围外的一名角色为目标后，此【杀】不计入次数且你进行一次判定，若结果为武器牌或坐骑牌，此【杀】伤害基数值增加至该角色的体力值，否则你失去1点体力。",
+
+  ["$zhuilie1"] = "我喜欢，猎夺沙场的快感。",
+  ["$zhuilie2"] = "追敌夺魂，猎尽贼寇。",
+  ["~wangshuang"] = "我居然，被蜀军所击倒。",
 }
 
 local xingdaorong = General(extension, "xingdaorong", "qun", 4, 6)
@@ -2073,6 +2168,10 @@ Fk:loadTranslationTable{
   ["#xuhe-invoke"] = "虚猲：你可以减1点体力上限，然后弃置距离1以内每名角色各一张牌或令这些角色各摸一张牌",
   ["xuhe_discard"] = "弃置距离1以内角色各一张牌",
   ["xuhe_draw"] = "距离1以内角色各摸一张牌",
+
+  ["$xuhe1"] = "说出吾名，吓汝一跳！",
+  ["$xuhe2"] = "我乃是零陵上将军！",
+  ["~xingdaorong"] = "孔明之计，我难猜透啊。",
 }
 
 local leitong = General(extension, "leitong", "shu", 4)

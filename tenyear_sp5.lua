@@ -1747,6 +1747,118 @@ Fk:loadTranslationTable{
 }
 
 --袁胤 谢灵毓 高翔 笮融 周善 2023.4.19
+local zerong = General(extension, "zerong", "qun", 4)
+local cansi = fk.CreateTriggerSkill{
+  name = "cansi",
+  events = {fk.EventPhaseStart},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Start
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
+    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#cansi-choose", self.name)
+    local to
+    if #tos > 0 then
+      to = room:getPlayerById(tos[1])
+    else
+      to = room:getPlayerById(table.random(targets))
+    end
+    if player:isWounded() then
+      room:recover({
+        who = player,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      })
+    end
+    if to:isWounded() then
+      room:recover({
+        who = to,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      })
+    end
+    room:setPlayerMark(player, self.name, to.id)
+    for _, name in ipairs({"slash", "duel", "fire_attack"}) do
+      if player.dead or to.dead then break end
+      room:useVirtualCard(name, nil, player, to, self.name)
+    end
+    room:setPlayerMark(player, self.name, 0)
+  end,
+
+  refresh_events = {fk.CardUseFinished},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and table.contains(data.card.skillNames, self.name) and not player.dead
+  end,
+  on_refresh = function(self, event, target, player, data)
+    if data.damageDealt and data.damageDealt[player:getMark(self.name)] then
+      player:drawCards(2*data.damageDealt[player:getMark(self.name)], self.name)
+    end
+  end,
+}
+local fozong = fk.CreateTriggerSkill{
+  name = "fozong",
+  events = {fk.EventPhaseStart},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and #player.player_cards[Player.Hand] > 7
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local n = #player.player_cards[Player.Hand] - 7
+    local cards = room:askForCard(player, n, n, false, self.name, false, ".", "#fozong-card:::"..n)
+    local dummy = Fk:cloneCard("dilu")
+    dummy:addSubcards(cards)
+    player:addToPile(self.name, dummy, true, self.name)
+    if #player:getPile(self.name) >= 7 then
+      for _, p in ipairs(room:getOtherPlayers(player)) do
+        if player.dead then return end
+        local choices = {"fozong_lose"}
+        if #player:getPile(self.name) > 0 then  --很难想象怎样才会不够发
+          table.insert(choices, 1, "fozong_get")
+        end
+        local choice = room:askForChoice(p, choices, self.name, "#fozong-choice:"..player.id)  --之后应该改成选牌框
+        if choice == "fozong_get" then
+          local cards = player:getPile(self.name)
+          table.forEach(room.players, function(p) room:fillAG(p, cards) end)
+          local id = room:askForAG(p, cards, false, self.name)
+          room:takeAG(p, id, room.players)
+          room:obtainCard(p, id, true, fk.ReasonJustMove)
+          table.removeOne(cards, id)
+          table.forEach(room.players, function(p) room:closeAG(p) end)
+          if player:isWounded() then
+            room:recover({
+              who = player,
+              num = 1,
+              recoverBy = player,
+              skillName = self.name
+            })
+          end
+        else
+          room:loseHp(player, 1, self.name)
+        end
+      end
+    end
+  end,
+}
+zerong:addSkill(cansi)
+zerong:addSkill(fozong)
+Fk:loadTranslationTable{
+  ["zerong"] = "笮融",
+  ["cansi"] = "残肆",
+  [":cansi"] = "锁定技，准备阶段，你选择一名其他角色，你与其各回复1点体力，然后依次视为对其使用【杀】、【决斗】和【火攻】，其每因此受到1点伤害，你摸两张牌。",
+  ["fozong"] = "佛宗",
+  [":fozong"] = "锁定技，出牌阶段开始时，若你的手牌多于七张，你将超出数量的手牌置于武将牌上，然后若你武将牌上有至少七张牌，"..
+  "其他角色依次选择一项：1.获得其中一张牌并令你回复1点体力；2.令你失去1点体力。",
+  ["#cansi-choose"] = "残肆：选择一名角色，你与其各回复1点体力，然后依次视为对其使用【杀】、【决斗】和【火攻】",
+  ["#fozong-card"] = "佛宗：将 %arg 张手牌置于武将牌上",
+  ["#fozong-choice"] = "佛宗：选择对 %src 执行的一项",
+  ["fozong_get"] = "获得一张“佛宗”牌，其回复1点体力",
+  ["fozong_lose"] = "其失去1点体力",
+}
 
 local xielingyu = General(extension, "xielingyu", "wu", 3, 3, General.Female)
 local yuandi = fk.CreateTriggerSkill{
@@ -1896,10 +2008,10 @@ local xiangshuz = fk.CreateTriggerSkill{
       if player:isKongcheng() or #room:askForDiscard(player, 1, 1, false, self.name, true, ".", "#xiangshuz-discard") == 0 then
         mark = "@"..self.name
       end
-      room:setPlayerMark(target, mark, tonumber(choice))
+      room:setPlayerMark(target, mark, choice)
     else
       local n1 = #target.player_cards[Player.Hand]
-      local n2 = math.max(target:getMark(self.name), target:getMark("@"..self.name))
+      local n2 = math.max(tonumber(target:getMark(self.name)), tonumber(target:getMark("@"..self.name)))
       room:setPlayerMark(target, self.name, 0)
       room:setPlayerMark(target, "@"..self.name, 0)
       if math.abs(n1 - n2) < 2 and not target:isNude() then

@@ -83,7 +83,8 @@ yanjun:addSkill(xunxian)
 Fk:loadTranslationTable{
   ["yanjun"] = "严畯",
   ["guanchao"] = "观潮",
-  [":guanchao"] = "出牌阶段开始时，你可以选择一项直到回合结束：1.当你使用牌时，若你此阶段使用过的所有牌的点数为严格递增，你摸一张牌；2.当你使用牌时，若你此阶段使用过的所有牌的点数为严格递减，你摸一张牌。",
+  [":guanchao"] = "出牌阶段开始时，你可以选择一项直到回合结束：1.当你使用牌时，若你此阶段使用过的所有牌的点数为严格递增，你摸一张牌；"..
+  "2.当你使用牌时，若你此阶段使用过的所有牌的点数为严格递减，你摸一张牌。",
   ["xunxian"] = "逊贤",
   [":xunxian"] = "每回合限一次，你使用或打出的牌置入弃牌堆时，你可以将之交给一名手牌数或体力值大于你的角色。",
   ["@@guanchao_ascending-turn"] = "观潮：递增",
@@ -102,7 +103,8 @@ Fk:loadTranslationTable{
 Fk:loadTranslationTable{
   ["duji"] = "杜畿",
   ["andong"] = "安东",
-  [":andong"] = "当你受到其他角色造成的伤害时，你可令伤害来源选择一项：1.防止此伤害，本回合弃牌阶段红桃牌不计入手牌上限；2.观看其手牌，若其中有红桃牌则你获得这些红桃牌。",
+  [":andong"] = "当你受到其他角色造成的伤害时，你可令伤害来源选择一项：1.防止此伤害，本回合弃牌阶段红桃牌不计入手牌上限；"..
+  "2.观看其手牌，若其中有红桃牌则你获得这些红桃牌。",
   ["yingshi"] = "应势",
   [":yingshi"] = "出牌阶段开始时，若没有武将牌旁有“酬”的角色，你可将所有红桃牌置于一名其他角色的武将牌旁，称为“酬”。若如此做，当一名角色使用【杀】对武将牌旁有“酬”的角色造成伤害后，其可以获得一张“酬”。当武将牌旁有“酬”的角色死亡时，你获得所有“酬”。",
 
@@ -111,6 +113,8 @@ Fk:loadTranslationTable{
   ["$yingshi1"] = "应民之声，势民之根。",
   ["$yingshi2"] = "应势而谋，顺民而为。",
   ["~duji"] = "试船而溺之，虽亡而忠至。",
+  [":yingshi"] = "出牌阶段开始时，若没有武将牌旁有“酬”的角色，你可将所有红桃牌置于一名其他角色的武将牌旁，称为“酬”。"..
+  "若如此做，当一名角色使用【杀】对武将牌旁有“酬”的角色造成伤害后，其可以获得一张“酬”。当武将牌旁有“酬”的角色死亡时，你获得所有“酬”。",
 }
 
 local liuyan = General(extension, "liuyan", "qun", 3)
@@ -253,7 +257,8 @@ panjun:addSkill(gongqing)
 Fk:loadTranslationTable{
   ["panjun"] = "潘濬",
   ["guanwei"] = "观微",
-  [":guanwei"] = "一名角色的出牌阶段结束时，若其于此回合内使用过的牌数大于1，且其于此回合内使用过的牌花色均相同，且你于此回合未发动过此技能，你可弃置一张牌。若如此做，其摸两张牌，然后其获得一个额外的出牌阶段。",
+  [":guanwei"] = "一名角色的出牌阶段结束时，若其于此回合内使用过的牌数大于1，且其于此回合内使用过的牌花色均相同，且你于此回合未发动过此技能，"..
+  "你可弃置一张牌。若如此做，其摸两张牌，然后其获得一个额外的出牌阶段。",
   ["gongqing"] = "公清",
   [":gongqing"] = "锁定技，当你受到伤害时，若伤害来源攻击范围小于3，则你只受到1点伤害；若伤害来源攻击范围大于3，则此伤害+1。",
   ["#guanwei-invoke"] = "观微：你可以弃置一张牌，令 %dest 摸两张牌并执行一个额外的出牌阶段",
@@ -285,7 +290,8 @@ Fk:loadTranslationTable{
 Fk:loadTranslationTable{
   ["sp__pangtong"] = "庞统",
   ["guolun"] = "过论",
-  [":guolun"] = "出牌阶段限一次，你可展示一名其他角色的一张手牌。然后你可选择你的一张牌。若其选择的牌点数小，你与其交换这两张牌，其摸一张牌；若你选择的牌点数小，你与其交换这两张牌，你摸一张牌。",
+  [":guolun"] = "出牌阶段限一次，你可展示一名其他角色的一张手牌。然后你可选择你的一张牌。若其选择的牌点数小，你与其交换这两张牌，其摸一张牌；"..
+  "若你选择的牌点数小，你与其交换这两张牌，你摸一张牌。",
   ["songsang"] = "送丧",
   [":songsang"] = "限定技，当其他角色死亡时，若你已受伤，你可回复1点体力；若你未受伤，你可加1点体力上限。若如此做，你获得〖展骥〗。",
   ["zhanji"] = "展骥",
@@ -303,7 +309,8 @@ Fk:loadTranslationTable{
   ["sp__taishici"] = "太史慈",
   ["jixu"] = "击虚",
   [":jixu"] = "出牌阶段限一次，你可令体力值相同的至少一名其他角色各猜测你的手牌区里是否有【杀】。系统公布这些角色各自的选择和猜测结果。"..
-  "若你的手牌区里：有【杀】，当你于此阶段内使用【杀】选择目标后，你令所有选择“否”的角色也成为此【杀】的目标；没有【杀】，你弃置所有选择“是”的角色的各一张牌。你摸X张牌（X为猜错的角色数）。若没有猜错的角色，你结束此阶段。",
+  "若你的手牌区里：有【杀】，当你于此阶段内使用【杀】选择目标后，你令所有选择“否”的角色也成为此【杀】的目标；没有【杀】，你弃置所有选择“是”的角色的各一张牌。"..
+  "你摸X张牌（X为猜错的角色数）。若没有猜错的角色，你结束此阶段。",
 }
 
 local zhoufang = General(extension, "zhoufang", "wu", 3)
@@ -333,7 +340,7 @@ local sp__youdi = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish and not player:isNude()
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish and not player:isKongcheng()
   end,
   on_cost = function(self, event, target, player, data)
     local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), function(p)
@@ -346,7 +353,7 @@ local sp__youdi = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
-    local card = room:askForCardChosen(to, player, "he", self.name)
+    local card = room:askForCardChosen(to, player, "h", self.name)
     room:throwCard({card}, self.name, player, to)
     if Fk:getCardById(card).trueName ~= "slash" and not to:isNude() then
       local card2 = room:askForCardChosen(player, to, "he", self.name)
@@ -492,7 +499,8 @@ liuyao:addSkill(kannan)
 Fk:loadTranslationTable{
   ["liuyao"] = "刘繇",
   ["kannan"] = "戡难",
-  [":kannan"] = "出牌阶段，若你于此阶段内发动过此技能的次数小于X（X为你的体力值），你可与你于此阶段内未以此法拼点过的一名角色拼点。若：你赢，你使用的下一张【杀】的伤害值基数+1且你于此阶段内不能发动此技能；其赢，其使用的下一张【杀】的伤害值基数+1。",
+  [":kannan"] = "出牌阶段，若你于此阶段内发动过此技能的次数小于X（X为你的体力值），你可与你于此阶段内未以此法拼点过的一名角色拼点。"..
+  "若：你赢，你使用的下一张【杀】的伤害值基数+1且你于此阶段内不能发动此技能；其赢，其使用的下一张【杀】的伤害值基数+1。",
   ["@kannan"] = "戡难",
   
   ["$kannan1"] = "俊才之杰，材匪戡难。",
@@ -515,7 +523,8 @@ Fk:loadTranslationTable{
 Fk:loadTranslationTable{
   ["zhangliang"] = "张梁",
   ["jijun"] = "集军",
-  [":jijun"] = "当武器牌或不为装备牌的牌于你的出牌阶段内指定第一个目标后，若此牌的使用者为你且你是此牌的目标之一，你可判定。当此次判定的判定牌移至弃牌堆后，你可将此判定牌置于武将牌上（称为“方”）。",
+  [":jijun"] = "当武器牌或不为装备牌的牌于你的出牌阶段内指定第一个目标后，若此牌的使用者为你且你是此牌的目标之一，你可判定。"..
+  "当此次判定的判定牌移至弃牌堆后，你可将此判定牌置于武将牌上（称为“方”）。",
   ["fangtong"] = "方统",
   [":fangtong"] = "结束阶段开始时，若有“方”，你可弃置一张牌，若如此做，你将至少一张“方”置入弃牌堆。若此牌与你以此法置入弃牌堆的所有“方”的点数之和为36，你对一名其他角色造成3点雷电伤害。",
 
@@ -524,6 +533,8 @@ Fk:loadTranslationTable{
   ["$fangtong1"] = "统领方队，为民意所举！",
   ["$fangtong2"] = "三十六方，必为大统！",
   ["~zhangliang"] = "人公也难逃被人所杀……",
+  [":fangtong"] = "结束阶段开始时，若有“方”，你可弃置一张牌，若如此做，你将至少一张“方”置入弃牌堆。"..
+  "若此牌与你以此法置入弃牌堆的所有“方”的点数之和为36，你对一名其他角色造成3点雷电伤害。",
 }
 --司马徽
 local xurong = General(extension, "xurong", "qun", 4)
@@ -633,9 +644,8 @@ xurong:addSkill(shajue)
 Fk:loadTranslationTable{
   ["xurong"] = "徐荣",
   ["xionghuo"] = "凶镬",
-  [":xionghuo"] = "游戏开始时，你获得3个“暴戾”标记。出牌阶段，你可以交给一名其他角色一个“暴戾”标记，你对有此标记的角色造成的伤害+1，且其出牌阶段开始时，移去“暴戾”并随机执行一项：<br>"..
-  "受到1点火焰伤害且本回合不能对你使用【杀】；<br>"..
-  "流失1点体力且本回合手牌上限-1；<br>"..
+  [":xionghuo"] = "游戏开始时，你获得3个“暴戾”标记。出牌阶段，你可以交给一名其他角色一个“暴戾”标记，你对有此标记的角色造成的伤害+1，"..
+  "且其出牌阶段开始时，移去“暴戾”并随机执行一项：<br>受到1点火焰伤害且本回合不能对你使用【杀】；<br>流失1点体力且本回合手牌上限-1；<br>"..
   "你随机获得其一张手牌和一张装备区里的牌。",
   ["shajue"] = "杀绝",
   [":shajue"] = "锁定技，其他角色进入濒死状态时，若其需要超过一张【桃】或【酒】救回，则你获得一个“暴戾”标记，并获得使其进入濒死状态的牌。",
@@ -783,7 +793,8 @@ local sidao = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) and player.phase == Player.Play and player:usedSkillTimes(self.name) == 0 and not player:isKongcheng() then
+    if target == player and player:hasSkill(self.name) and player.phase == Player.Play and player:usedSkillTimes(self.name) == 0 and
+      not player:isKongcheng() then
       return self.sidao_tos and #self.sidao_tos > 0
     end
   end,
@@ -829,7 +840,8 @@ guosi:addSkill(sidao)
 Fk:loadTranslationTable{
   ["guosi"] = "郭汜",
   ["tanbei"] = "贪狈",
-  [":tanbei"] = "出牌阶段限一次，你可以令一名其他角色选择一项：1.令你随机获得其区域内的一张牌，此回合不能再对其使用牌；2. 令你此回合对其使用牌没有次数和距离限制。",
+  [":tanbei"] = "出牌阶段限一次，你可以令一名其他角色选择一项：1.令你随机获得其区域内的一张牌，此回合不能再对其使用牌；"..
+  "2.令你此回合对其使用牌没有次数和距离限制。",
   ["sidao"] = "伺盗",
   [":sidao"] = "出牌阶段限一次，当你对一名其他角色连续使用两张牌后，你可将一张手牌当【顺手牵羊】对其使用（目标须合法）。",
   ["tanbei1"] = "其随机获得你区域内的一张牌，此回合不能再对你使用牌",
@@ -931,9 +943,10 @@ zhangji:addSkill(tunjun)
 Fk:loadTranslationTable{
   ["zhangji"] = "张济",
   ["lveming"] = "掠命",
-  [":lveming"] = "出牌阶段限一次，你选择一名装备区装备少于你的其他角色，令其选择一个点数，然后你进行判定：若点数相同，你对其造成2点伤害；不同，你随机获得其区域内的一张牌。",
+  [":lveming"] = "出牌阶段限一次，你选择一名装备区装备少于你的其他角色，令其选择一个点数，然后你进行判定：若点数相同，你对其造成2点伤害；"..
+  "不同，你随机获得其区域内的一张牌。",
   ["tunjun"] = "屯军",
-  [":tunjun"] = "限定技，出牌阶段，你可以选择一名角色，令其随机使用牌堆中的X张不同类型的装备牌。（不替换原有装备，X为你发动“掠命”的次数）",
+  [":tunjun"] = "限定技，出牌阶段，你可以选择一名角色，令其随机使用牌堆中的X张不同类型的装备牌。（不替换原有装备，X为你发动〖掠命〗的次数）",
 
   ["$lveming1"] = "劫命掠财，毫不费力。",
   ["$lveming2"] = "人财，皆掠之，哈哈！",
@@ -1427,7 +1440,8 @@ Fk:loadTranslationTable{
   ["lvli"] = "膂力",
   [":lvli"] = "每名角色的回合限一次，当你造成伤害后，你可以将手牌摸至与体力值相同或将体力回复至与手牌数相同。",
   ["choujue"] = "仇决",
-  [":choujue"] = "觉醒技，每名角色的回合结束时，若你的手牌数和体力值相差3或更多，你减1点体力上限并获得〖背水〗，然后修改〖膂力〗为“每名其他角色的回合限一次（在自己的回合限两次）”。",
+  [":choujue"] = "觉醒技，每名角色的回合结束时，若你的手牌数和体力值相差3或更多，你减1点体力上限并获得〖背水〗，"..
+  "然后修改〖膂力〗为“每名其他角色的回合限一次（在自己的回合限两次）”。",
   ["beishui"] = "背水",
   [":beishui"] = "觉醒技，准备阶段，若你的手牌数或体力值小于2，你减1点体力上限并获得〖清剿〗，然后修改〖膂力〗为“当你造成或受到伤害后”。",
   ["qingjiao"] = "清剿",
@@ -1496,7 +1510,8 @@ local daoshu = fk.CreateActiveSkill{
       player:addSkillUseHistory(self.name, -1)
     else
       table.removeOne(suits, Fk:getCardById(card):getSuitString())
-      local ids = room:askForCard(player, 1, 1, false, self.name, false, ".|.|"..table.concat(suits, ","), "#daoshu-give::"..target.id..":"..Fk:getCardById(card):getSuitString())
+      local ids = room:askForCard(player, 1, 1, false, self.name, false, ".|.|"..table.concat(suits, ","),
+        "#daoshu-give::"..target.id..":"..Fk:getCardById(card):getSuitString())
       if #ids > 0 then
         room:obtainCard(target, Fk:getCardById(ids[1]), true, fk.ReasonGive)
       else
@@ -1512,7 +1527,8 @@ Fk:loadTranslationTable{
   ["weicheng"] = "伪诚",
   [":weicheng"] = "你交给其他角色手牌，或你的手牌被其他角色获得后，若你的手牌数小于体力值，你可以摸一张牌。",
   ["daoshu"] = "盗书",
-  [":daoshu"] = "出牌阶段限一次，你可以选择一名其他角色并选择一种花色，然后获得该角色一张手牌。若此牌与你选择的花色：相同，你对其造成1点伤害且此技能视为未发动过；不同，你交给该角色一张其他花色的手牌（若没有需展示所有手牌）。",
+  [":daoshu"] = "出牌阶段限一次，你可以选择一名其他角色并选择一种花色，然后获得该角色一张手牌。若此牌与你选择的花色："..
+  "相同，你对其造成1点伤害且此技能视为未发动过；不同，你交给该角色一张其他花色的手牌（若没有需展示所有手牌）。",
   ["#daoshu-give"] = "盗书：你需交给 %dest 一张非%arg手牌，若没有则展示所有手牌",
 
   ["$weicheng1"] = "略施谋略，敌军便信以为真。",
@@ -1649,9 +1665,11 @@ Fk:loadTranslationTable{
   ["tuiyan"] = "推演",
   [":tuiyan"] = "出牌阶段开始时，你可以观看牌堆顶的三张牌。",
   ["busuan"] = "卜算",
-  [":busuan"] = "出牌阶段限一次，你可以选择一名其他角色，然后选择至多两张不同的卡牌名称（限基本牌或锦囊牌）。该角色下次摸牌阶段摸牌时，改为从牌堆或弃牌堆中获得你选择的牌。",
+  [":busuan"] = "出牌阶段限一次，你可以选择一名其他角色，然后选择至多两张不同的卡牌名称（限基本牌或锦囊牌）。"..
+  "该角色下次摸牌阶段摸牌时，改为从牌堆或弃牌堆中获得你选择的牌。",
   ["mingjie"] = "命戒",
-  [":mingjie"] = "结束阶段，你可以摸一张牌，若此牌为红色，你可以重复此流程直到摸到黑色牌或摸到第三张牌。当你以此法摸到黑色牌时，若你的体力值大于1，你失去1点体力。",
+  [":mingjie"] = "结束阶段，你可以摸一张牌，若此牌为红色，你可以重复此流程直到摸到黑色牌或摸到第三张牌。当你以此法摸到黑色牌时，"..
+  "若你的体力值大于1，你失去1点体力。",
 
   ["$tuiyan1"] = "鸟语略知，万物略懂。",
   ["$tuiyan2"] = "玄妙之舒巧，推微而知晓。",
@@ -1892,9 +1910,11 @@ puyuan:addSkill(zhuren)
 Fk:loadTranslationTable{
   ["ty__puyuan"] = "蒲元",
   ["tianjiang"] = "天匠",
-  [":tianjiang"] = "游戏开始时，你随机获得两张不同副类别的装备牌，并置入你的装备区。出牌阶段，你可以将装备区里的一张牌移动至其他角色的装备区（可替换原装备），若你移动的是〖铸刃〗打造的装备，你摸两张牌。",
+  [":tianjiang"] = "游戏开始时，你随机获得两张不同副类别的装备牌，并置入你的装备区。出牌阶段，你可以将装备区里的一张牌移动至其他角色的装备区"..
+  "（可替换原装备），若你移动的是〖铸刃〗打造的装备，你摸两张牌。",
   ["zhuren"] = "铸刃",
-  [":zhuren"] = "出牌阶段限一次，你可以弃置一张手牌。根据此牌的花色点数，你有一定概率打造成功并获得一张武器牌（若打造失败或武器已有则改为摸一张【杀】，花色决定武器名称，点数决定成功率）。此武器牌进入弃牌堆时，将其移出游戏。",
+  [":zhuren"] = "出牌阶段限一次，你可以弃置一张手牌。根据此牌的花色点数，你有一定概率打造成功并获得一张武器牌（若打造失败或武器已有则改为摸一张【杀】，"..
+  "花色决定武器名称，点数决定成功率）。此武器牌进入弃牌堆时，将之移出游戏。",
   ["#tianjiang_trigger"] = "天匠",
 
   ["$tianjiang1"] = "巧夺天工，超凡脱俗。",
@@ -2112,6 +2132,8 @@ Fk:loadTranslationTable{
   ["$ty__fenyue1"] = "逆贼势大，且扎营寨，击其懈怠。",
   ["$ty__fenyue2"] = "兵有其变，不在众寡。",
   ["~ty__huangfusong"] = "吾只恨黄巾未平，不能报效朝廷……",
+  [":ty__fenyue"] = "出牌阶段限X次（X为与你不同阵营的存活角色数），你可以与一名角色拼点，若你赢，根据你拼点的牌的点数执行以下效果："..
+  "小于等于K：视为对其使用一张雷【杀】；小于等于9：获得牌堆中的一张【杀】；小于等于5：获得其一张牌。",
 }
 
 local wangshuang = General(extension, "wangshuang", "wei", 8)
@@ -2121,7 +2143,8 @@ local zhuilie = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card.trueName == "slash" and not player:inMyAttackRange(player.room:getPlayerById(data.to))
+    return target == player and player:hasSkill(self.name) and data.card.trueName == "slash" and
+      not player:inMyAttackRange(player.room:getPlayerById(data.to))
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -2132,7 +2155,8 @@ local zhuilie = fk.CreateTriggerSkill{
       pattern = ".|.|.|.|.|equip",
     }
     room:judge(judge)
-    if judge.card.sub_type and (judge.card.sub_type == Card.SubtypeWeapon or judge.card.sub_type == Card.SubtypeOffensiveRide or judge.card.sub_type == Card.SubtypeDefensiveRide) then
+    if judge.card.sub_type and (judge.card.sub_type == Card.SubtypeWeapon or
+      judge.card.sub_type == Card.SubtypeOffensiveRide or judge.card.sub_type == Card.SubtypeDefensiveRide) then
       data.additionalDamage = (data.additionalDamage or 0) + room:getPlayerById(data.to).hp - 1
     else
       room:loseHp(player, 1, self.name)
@@ -2157,6 +2181,8 @@ Fk:loadTranslationTable{
   ["$zhuilie1"] = "我喜欢，猎夺沙场的快感。",
   ["$zhuilie2"] = "追敌夺魂，猎尽贼寇。",
   ["~wangshuang"] = "我居然，被蜀军所击倒。",
+  [":zhuilie"] = "锁定技，你使用【杀】无距离限制；当你使用【杀】指定你攻击范围外的一名角色为目标后，此【杀】不计入次数且你进行一次判定，"..
+  "若结果为武器牌或坐骑牌，此【杀】伤害基数值增加至该角色的体力值，否则你失去1点体力。",
 }
 
 local xingdaorong = General(extension, "xingdaorong", "qun", 4, 6)
@@ -2226,7 +2252,8 @@ xingdaorong:addSkill(xuhe)
 Fk:loadTranslationTable{
   ["xingdaorong"] = "邢道荣",
   ["xuhe"] = "虚猲",
-  [":xuhe"] = "出牌阶段开始时，你可以减1点体力上限，然后你弃置距离1以内的每名角色各一张牌或令这些角色各摸一张牌。出牌阶段结束时，若你体力上限不为全场最高，你加1点体力上限，然后回复1点体力或摸两张牌。",
+  [":xuhe"] = "出牌阶段开始时，你可以减1点体力上限，然后你弃置距离1以内的每名角色各一张牌或令这些角色各摸一张牌。出牌阶段结束时，"..
+  "若你体力上限不为全场最高，你加1点体力上限，然后回复1点体力或摸两张牌。",
   ["#xuhe-invoke"] = "虚猲：你可以减1点体力上限，然后弃置距离1以内每名角色各一张牌或令这些角色各摸一张牌",
   ["xuhe_discard"] = "弃置距离1以内角色各一张牌",
   ["xuhe_draw"] = "距离1以内角色各摸一张牌",
@@ -2322,7 +2349,8 @@ leitong:addSkill(kuiji)
 Fk:loadTranslationTable{
   ["leitong"] = "雷铜",
   ["kuiji"] = "溃击",
-  [":kuiji"] = "出牌阶段限一次，你可以将一张黑色基本牌当作【兵粮寸断】对你使用，然后摸一张牌。若如此做，你可以对体力值最多的一名其他角色造成2点伤害。该角色因此进入濒死状态时，你可令另一名体力值最少的角色回复1点体力。",
+  [":kuiji"] = "出牌阶段限一次，你可以将一张黑色基本牌当作【兵粮寸断】对你使用，然后摸一张牌。若如此做，你可以对体力值最多的一名其他角色造成2点伤害。"..
+  "该角色因此进入濒死状态时，你可令另一名体力值最少的角色回复1点体力。",
   ["#kuiji-damage"] = "溃击：你可以对其他角色中体力值最大的一名角色造成2点伤害",
   ["#kuiji-recover"] = "溃击：你可以令除 %dest 以外体力值最小的一名角色回复1点体力",
   ["#kuiji_record"] = "溃击",
@@ -2447,7 +2475,8 @@ wulan:addSkill(cuoruiw)
 Fk:loadTranslationTable{
   ["wulan"] = "吴兰",
   ["cuoruiw"] = "挫锐",
-  [":cuoruiw"] = "出牌阶段开始时，你可以弃置一名你计算与其距离不大于1的角色区域里的一张牌。若如此做，你选择一项：1.弃置另一名其他角色装备区里至多两张与此牌颜色相同的牌；2.展示另一名其他角色的至多两张手牌，然后获得其中与此牌颜色相同的牌。",
+  [":cuoruiw"] = "出牌阶段开始时，你可以弃置一名你计算与其距离不大于1的角色区域里的一张牌。若如此做，你选择一项："..
+  "1.弃置另一名其他角色装备区里至多两张与此牌颜色相同的牌；2.展示另一名其他角色的至多两张手牌，然后获得其中与此牌颜色相同的牌。",
   ["#cuoruiw-cost"] = "挫锐：你可以弃置距离不大于1的角色区域里的一张牌",
   ["#cuoruiw-use"] = "挫锐：选择另一名其他角色，弃置其至多两张颜色相同的装备，或展示其至多两张手牌",
   ["cuoruiw_equip"] = "弃置其至多两张颜色相同的装备",

@@ -1504,30 +1504,35 @@ local yaoyi = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self.name, true, true)
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:handleAddLoseSkills(player, "-yaoyi", nil, false, true)  --FIXME: 伪实现，死掉之后失去禁止技
+    local room = player.room
+    for _, p in ipairs(room:getAllPlayers()) do
+      room:handleAddLoseSkills(p, "-shoutan", nil, true, true)
+    end
   end,
 }
 local yaoyi_prohibit = fk.CreateProhibitSkill{
   name = "#yaoyi_prohibit",
   frequency = Skill.Compulsory,
   is_prohibited = function(self, from, to, card)
-    if from ~= to then
-      local fromskill = {}
-      for _, skill in ipairs(from.player_skills) do
-        if skill.switchSkillName then
-          table.insertIfNeed(fromskill, skill.switchSkillName)
+    if table.find(Fk:currentRoom().alive_players, function(p) return p:hasSkill("yaoyi") end) then
+      if from ~= to then
+        local fromskill = {}
+        for _, skill in ipairs(from.player_skills) do
+          if skill.switchSkillName then
+            table.insertIfNeed(fromskill, skill.switchSkillName)
+          end
         end
-      end
-      local toskill = {}
-      for _, skill in ipairs(to.player_skills) do
-        if skill.switchSkillName then
-          table.insertIfNeed(toskill, skill.switchSkillName)
+        local toskill = {}
+        for _, skill in ipairs(to.player_skills) do
+          if skill.switchSkillName then
+            table.insertIfNeed(toskill, skill.switchSkillName)
+          end
         end
+        if #fromskill == 0 or #toskill == 0 then return false end
+        if #fromskill > 1 then  --FIXME: 多个转换技
+        end
+        return from:getSwitchSkillState(fromskill[1], false) == to:getSwitchSkillState(toskill[1], false)
       end
-      if #fromskill == 0 or #toskill == 0 then return false end
-      if #fromskill > 1 then  --FIXME: 多个转换技
-      end
-      return from:getSwitchSkillState(fromskill[1], false) == to:getSwitchSkillState(toskill[1], false)
     end
   end,
 }

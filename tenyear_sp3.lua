@@ -747,7 +747,7 @@ Fk:loadTranslationTable{
   "装备牌：你使用装备牌时可以弃置一名其他角色的一张牌。",
 }
 --曹髦 吉平 阎柔 来莺儿 神姜维2022.6.11
---local caomao = General(extension, "caomao", "wei", 3, 4)
+local caomao = General(extension, "caomao", "wei", 3, 4)
 local qianlong = fk.CreateTriggerSkill{
   name = "qianlong",
   anim_type = "masochism",
@@ -756,14 +756,15 @@ local qianlong = fk.CreateTriggerSkill{
     return target == player and target:hasSkill(self.name)
   end,
   on_use = function(self, event, target, player, data)
-    --[[local room = player.room
+    local room = player.room
     local cards = room:getNCards(5)
     room:moveCards({
       ids = cards,
       toArea = Card.Processing,
       moveReason = fk.ReasonJustMove,
     })
-    local result = room:askForGuanxing(player, cards, {0, player:getLostHp()}, {}, "#qianlong-guanxing:::"..player:getLostHp(), true)
+    local result = room:askForGuanxing(player, cards, {0, player:getLostHp()}, {},
+      "#qianlong-guanxing:::"..player:getLostHp(), true, {"qianlong_get", "qianlong_bottom"})
     if #result.top > 0 then
       local dummy = Fk:cloneCard("dilu")
       dummy:addSubcards(result.top)
@@ -779,47 +780,6 @@ local qianlong = fk.CreateTriggerSkill{
         arg = #result.top,
         arg2 = #result.bottom,
       }
-    end]]--
-    local room = player.room
-    local card_ids = room:getNCards(3)
-    local get = {}
-    room:moveCards({
-      ids = card_ids,
-      toArea = Card.Processing,
-      moveReason = fk.ReasonJustMove,
-    })
-    table.forEach(room.players, function(p)
-      room:fillAG(p, card_ids)
-    end)
-    while #get < player:getLostHp() do
-      local card_id = room:askForAG(player, card_ids, true, self.name)
-      if card_id == nil then break end
-      room:takeAG(player, card_id, room.players)
-      table.insert(get, card_id)
-      table.removeOne(card_ids, card_id)
-      if #card_ids == 0 then break end
-    end
-    table.forEach(room.players, function(p)
-      room:closeAG(p)
-    end)
-    if #get > 0 then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(get)
-      room:obtainCard(player.id, dummy, true, fk.ReasonJustMove)
-    end
-    if #card_ids > 0 then
-      if #card_ids == 1 then
-        room:moveCards({
-          ids = card_ids,
-          fromArea = Card.Processing,
-          toArea = Card.DrawPile,
-          moveReason = fk.ReasonJustMove,
-          skillName = self.name,
-          drawPilePosition = -1,
-        })
-      else
-        room:askForGuanxing(player, card_ids, {0, 0}, nil)
-      end
     end
   end,
 }
@@ -851,7 +811,7 @@ local fensi = fk.CreateTriggerSkill{
     end
   end,
 }
-local juetao = fk.CreateTriggerSkill{  --FIXME: not target filter!
+local juetao = fk.CreateTriggerSkill{
   name = "juetao",
   anim_type = "offensive",
   frequency = Skill.Limited,
@@ -886,7 +846,7 @@ local juetao = fk.CreateTriggerSkill{  --FIXME: not target filter!
       if (card.trueName == "slash") or
         ((table.contains({"dismantlement", "snatch", "chasing_near"}, card.name)) and not to:isAllNude()) or
         (table.contains({"fire_attack", "unexpectation"}, card.name) and not to:isKongcheng()) or
-        (table.contains({"duel", "savage_assault", "archery_attack", "iron_chain"}, card.name)) or
+        (table.contains({"duel", "savage_assault", "archery_attack", "iron_chain", "raid_and_frontal_attack", "enemy_at_the_gates"}, card.name)) or
         (table.contains({"indulgence", "supply_shortage"}, card.name) and not to:hasDelayedTrick(card.name)) then
         tos = {{to.id}}
       elseif (table.contains({"amazing_grace", "god_salvation"}, card.name)) then
@@ -938,10 +898,10 @@ local zhushi = fk.CreateTriggerSkill{
     end
   end,
 }
---caomao:addSkill(qianlong)
---caomao:addSkill(fensi)
---caomao:addSkill(juetao)
---caomao:addSkill(zhushi)
+caomao:addSkill(qianlong)
+caomao:addSkill(fensi)
+caomao:addSkill(juetao)
+caomao:addSkill(zhushi)
 Fk:loadTranslationTable{
   ["caomao"] = "曹髦",
   ["qianlong"] = "潜龙",
@@ -953,6 +913,8 @@ Fk:loadTranslationTable{
   ["zhushi"] = "助势",
   [":zhushi"] = "主公技，其他魏势力角色每回合限一次，该角色回复体力时，你可以令其选择是否令你摸一张牌。",
   ["#qianlong-guanxing"] = "潜龙：获得其中至多%arg张牌（获得上方的牌，下方的牌置于牌堆底）",
+  ["qianlong_get"] = "获得",
+  ["qianlong_bottom"] = "置于牌堆底",
   ["#fensi-choose"] = "忿肆：你须对一名体力值不小于你的角色造成1点伤害，若不为你，视为其对你使用【杀】",
   ["#juetao-choose"] = "决讨：你可以指定一名角色，连续对其使用牌堆底牌直到不能使用！",
   ["#juetao-use"] = "决讨：是否使用%arg！",

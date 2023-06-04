@@ -1262,6 +1262,7 @@ local yuyun = fk.CreateTriggerSkill{
     end
     local n = 1 + player:getLostHp()
     for i = 1, n, 1 do
+      if player.dead then return end
       local choice = room:askForChoice(player, choices, self.name)
       if choice == "Cancel" then return end
       table.removeOne(choices, choice)

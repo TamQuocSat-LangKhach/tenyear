@@ -374,10 +374,72 @@ Fk:loadTranslationTable{
   ["~zhoufang"] = "功亏一篑，功亏一篑啊。",
 }
 
+local lvdai = General(extension, "lvdai", "wu", 4)
+local qinguo = fk.CreateTriggerSkill{
+  name = "qinguo",
+  mute = true,
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+      return target == player and player:hasSkill(self.name) and data.card.type == Card.TypeEquip
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local card = Fk:cloneCard("slash")
+    local availableTargets = table.map(
+      table.filter(room:getOtherPlayers(player), function(p)
+        return not player:isProhibited(p, card)
+      end),
+      function(p)
+        return p.id
+      end
+    )
+    if #availableTargets == 0 then return false end
+    local target = room:askForChoosePlayers(player, availableTargets, 1, 1, "#qinguo-ask", self.name)
+    if #target > 0 then
+      self.cost_data = target[1]
+      return true
+    end
+    return false
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:notifySkillInvoked(player, self.name)
+    player.room:broadcastSkillInvoke(self.name)
+    player.room:useVirtualCard("slash", nil, player, player.room:getPlayerById(self.cost_data), self.name, true)
+  end,
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) then
+      local equipnum = #player.player_cards[Player.Equip]
+      for _, move in ipairs(data) do
+        for _, info in ipairs(move.moveInfo) do
+          if move.from == player.id and info.fromArea == Card.PlayerEquip then
+            equipnum = equipnum + 1
+          elseif move.to == player.id and move.toArea == Card.PlayerEquip then
+            equipnum = equipnum - 1
+          end
+        end
+      end
+      return #player.player_cards[Player.Equip] ~= equipnum and equipnum == player.hp
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:notifySkillInvoked(player, self.name)
+    player.room:broadcastSkillInvoke(self.name)
+    player.room:recover{
+      who = player,
+      num = 1,
+      recoverBy = player,
+      skillName = self.name,
+    }
+  end,
+}
+lvdai:addSkill(qinguo)
 Fk:loadTranslationTable{
   ["lvdai"] = "吕岱",
   ["qinguo"] = "勤国",
   [":qinguo"] = "当你于回合内使用装备牌结算结束后，你可视为使用一张不计入次数限制的【杀】；当你的装备区里的牌数变化后，若你装备区里的牌数与你的体力值相等，你回复1点体力。",
+
+  ["#qinguo-ask"] = "你可发动勤国，视为使用1张【杀】",
 
   ["$qinguo1"] = "为国勤事，体素精勤。",
   ["$qinguo2"] = "忠勤为国，通达治体。",

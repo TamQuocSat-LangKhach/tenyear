@@ -1886,12 +1886,92 @@ Fk:loadTranslationTable{
   ["~godzhangfei"] = "尔等，欲复斩我头乎？",
 }
 --李异谢旌 袁姬 庞会 赵直 陈矫 朱建平 2022.12.22
+local yuanji = General(extension, "yuanji", "wu", 3, 3, General.Female)
+local mengchi = fk.CreateTriggerSkill{
+  name = "mengchi",
+  anim_type = "defensive",
+  frequency = Skill.Compulsory,
+  events = {fk.BeforeChainStateChange, fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) and player:getMark("mengchi-turn") == 0 then
+      if event == fk.BeforeChainStateChange then
+        return not player.chained
+      else
+        return data.damageType == fk.NormalDamage and player:isWounded()
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    if event == fk.BeforeChainStateChange then
+      return true
+    else
+      player.room:recover{
+        who = player,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      }
+    end
+  end,
+
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill(self.name, true) and player:getMark("mengchi-turn") == 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    for _, move in ipairs(data) do
+      if move.to == player.id and move.toArea == Player.Hand then
+        player.room:addPlayerMark(player, "mengchi-turn", 1)
+        return
+      end
+    end
+  end,
+}
+local mengchi_prohibit = fk.CreateProhibitSkill{
+  name = "#mengchi_prohibit",
+  prohibit_use = function(self, player, card)
+    if player:hasSkill("mengchi") and player:getMark("mengchi-turn") == 0 then
+      return true
+    end
+  end,
+}
+local jiexing = fk.CreateTriggerSkill{
+  name = "jiexing",
+  anim_type = "drawcard",
+  events = {fk.HpChanged},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name)
+      --and player:usedSkillTimes("mengchi", Player.HistoryTurn) == 0（听说十周年为防止玩家手欠，不允许第一次掉血发动节行）
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#jiexing-invoke")
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local id = player:drawCards(1, self.name)[1]
+    local mark = player:getMark("jiexing-turn")
+    if mark == 0 then mark = {} end
+    table.insertIfNeed(mark, id)
+    room:setPlayerMark(player, "jiexing-turn", mark)
+  end,
+}
+local jiexing_maxcards = fk.CreateMaxCardsSkill{
+  name = "#jiexing_maxcards",
+  exclude_from = function(self, player, card)
+    return player:getMark("jiexing-turn") ~= 0 and table.contains(player:getMark("jiexing-turn"), card.id)
+  end,
+}
+mengchi:addRelatedSkill(mengchi_prohibit)
+jiexing:addRelatedSkill(jiexing_maxcards)
+yuanji:addSkill(mengchi)
+yuanji:addSkill(jiexing)
 Fk:loadTranslationTable{
   ["yuanji"] = "袁姬",
   ["mengchi"] = "蒙斥",
   [":mengchi"] = "锁定技，若你于当前回合内没有获得过牌，你：1.不能使用牌；2.进入横置状态时，取消之；3.受到普通伤害后，回复1点体力。",
   ["jiexing"] = "节行",
   [":jiexing"] = "当你的体力值变化后，你可以摸一张牌（此牌不计入你本回合的手牌上限）。",
+  ["#jiexing-invoke"] = "节行：你可以摸一张牌，此牌本回合不计入手牌上限",
 }
 
 local panghui = General(extension, "panghui", "wei", 5)
@@ -2126,7 +2206,7 @@ local xiangmian = fk.CreateActiveSkill{
   name = "xiangmian",
   anim_type = "offensive",
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name) < 1
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
   end,
   card_filter = function()
     return false
@@ -2168,27 +2248,37 @@ local xiangmian_record = fk.CreateTriggerSkill{
 }
 local tianji = fk.CreateTriggerSkill{
   name = "tianji",
-  events = {fk.FinishJudge},
+  events = {fk.AfterCardsMove},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name)
+    if player:hasSkill(self.name) then
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile and move.moveReason == fk.ReasonJudge then
+          self.cost_data = move
+          return true
+        end
+      end
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local card = data.card
-    local cards = {}
-    table.insertTable(cards, room:getCardsFromPileByRule(".|.|.|.|.|"..card:getTypeString()))
-    table.insertTable(cards, room:getCardsFromPileByRule(".|.|"..card:getSuitString()))
-    table.insertTable(cards, room:getCardsFromPileByRule(".|"..card.number))
-    if #cards > 0 then
-      room:moveCards({
-        ids = cards,
-        to = player.id,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonJustMove,
-        proposer = player.id,
-        skillName = self.name,
-      })
+    local move = self.cost_data
+    for _, info in ipairs(move.moveInfo) do
+      local card = Fk:getCardById(info.cardId, true)
+      local cards = {}
+      table.insertTable(cards, room:getCardsFromPileByRule(".|.|.|.|.|"..card:getTypeString()))
+      table.insertTable(cards, room:getCardsFromPileByRule(".|.|"..card:getSuitString()))
+      table.insertTable(cards, room:getCardsFromPileByRule(".|"..card.number))
+      if #cards > 0 then
+        room:moveCards({
+          ids = cards,
+          to = player.id,
+          toArea = Card.PlayerHand,
+          moveReason = fk.ReasonJustMove,
+          proposer = player.id,
+          skillName = self.name,
+        })
+      end
     end
   end,
 }
@@ -2198,7 +2288,8 @@ zhujianping:addSkill(tianji)
 Fk:loadTranslationTable{
   ["zhujianping"] = "朱建平",
   ["xiangmian"] = "相面",
-  [":xiangmian"] = "出牌阶段限一次，你可以令一名其他角色进行一次判定，当该角色使用判定花色的牌或使用第X张牌后（X为判定点数），其失去所有体力。每名其他角色限一次。",
+  [":xiangmian"] = "出牌阶段限一次，你可以令一名其他角色进行一次判定，当该角色使用判定花色的牌或使用第X张牌后（X为判定点数），其失去所有体力。"..
+  "每名其他角色限一次。",
   ["tianji"] = "天机",
   [":tianji"] = "锁定技，生效后的判定牌进入弃牌堆后，你从牌堆随机获得与该牌类型、花色和点数相同的牌各一张。",
   ["@xiangmian"] = "相面",
@@ -2270,13 +2361,7 @@ local anliao = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     local id = room:askForCardChosen(player, target, "he", self.name)
-    room:moveCards({
-      ids = {id},
-      from = effect.tos[1],
-      toArea = Card.DiscardPile,
-      moveReason = fk.ReasonPutIntoDiscardPile,  --TODO: reason recast
-    })
-    target:drawCards(1, self.name)
+    room:recastCard({id}, target, self.name)
   end,
 }
 gongsundu:addSkill(zhenze)
@@ -2284,7 +2369,8 @@ gongsundu:addSkill(anliao)
 Fk:loadTranslationTable{
   ["gongsundu"] = "公孙度",
   ["zhenze"] = "震泽",
-  [":zhenze"] = "弃牌阶段开始时，你可以选择一项：1.令所有手牌数和体力值的大小关系与你不同的角色失去1点体力；2.令所有手牌数和体力值的大小关系与你相同的角色回复1点体力。",
+  [":zhenze"] = "弃牌阶段开始时，你可以选择一项：1.令所有手牌数和体力值的大小关系与你不同的角色失去1点体力；"..
+  "2.令所有手牌数和体力值的大小关系与你相同的角色回复1点体力。",
   ["anliao"] = "安辽",
   [":anliao"] = "出牌阶段限X次（X为群势力角色数），你可以重铸一名角色的一张牌。",
   ["zhenze_lose"] = "手牌数和体力值的大小关系与你不同的角色失去1点体力",

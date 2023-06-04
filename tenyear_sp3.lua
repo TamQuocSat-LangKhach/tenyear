@@ -257,7 +257,7 @@ local zhenge = fk.CreateTriggerSkill{
     end
     local targets = {}
     for _, p in ipairs(room:getOtherPlayers(to)) do
-      if to:inMyAttackRange(p) and not to:isProhibited(p ,Fk:cloneCard("slash")) then
+      if to:inMyAttackRange(p) and not to:isProhibited(p, Fk:cloneCard("slash")) then
         if p ~= player then
           table.insert(targets, p.id)
         end

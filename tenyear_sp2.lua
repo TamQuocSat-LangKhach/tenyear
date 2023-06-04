@@ -620,7 +620,7 @@ local lulve = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
-    local choice = room:askForChoice(to, {"lulve_give", "lulve_slash"}, self.name)
+    local choice = room:askForChoice(to, {"lulve_give", "lulve_slash"}, self.name, "#lulve-choice:"..player.id)
     if choice == "lulve_give" then
       local dummy = Fk:cloneCard("dilu")
       dummy:addSubcards(to:getCardIds(Player.Hand))
@@ -628,13 +628,7 @@ local lulve = fk.CreateTriggerSkill{
       player:turnOver()
     else
       to:turnOver()
-      local slash = Fk:cloneCard("slash")
-      slash.skillName = self.name
-        room:useCard({
-          card = slash,
-          from = to.id,
-          tos = {{player.id}},
-        })
+      room:useVirtualCard("slash", nil, to, player, self.name, true)
     end
   end,
 }
@@ -661,6 +655,7 @@ Fk:loadTranslationTable{
   ["#lulve-choose"] = "掳掠：你可以令一名有手牌且手牌数小于你的其他角色选择一项",
   ["lulve_give"] = "将所有手牌交给其，其翻面",
   ["lulve_slash"] = "你翻面，视为对其使用【杀】",
+  ["#lulve-choice"] = "掳掠：选择对 %src 执行的一项",
 
   ["$lulve1"] = "趁火打劫，乘危掳掠。",
   ["$lulve2"] = "天下大乱，掳掠以自保。",

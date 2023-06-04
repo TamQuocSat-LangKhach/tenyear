@@ -453,7 +453,8 @@ local wumei = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.EventPhaseChanging},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.from == Player.RoundStart and player:usedSkillTimes(self.name, Player.HistoryRound) == 0
+    return target == player and player:hasSkill(self.name) and data.to == Player.RoundStart and player.faceup and
+      player:usedSkillTimes(self.name, Player.HistoryRound) == 0
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room

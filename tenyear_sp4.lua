@@ -17,15 +17,19 @@ local tongli = fk.CreateTriggerSkill{
       (not data.card:isVirtual() or #data.card.subcards > 0) and not table.contains(data.card.skillNames, self.name) then
       local suits = {}
       for _, id in ipairs(player.player_cards[Player.Hand]) do
-        table.insertIfNeed(suits, Fk:getCardById(id).suit)
+        if Fk:getCardById(id).suit ~= Card.NoSuit then
+          table.insertIfNeed(suits, Fk:getCardById(id).suit)
+        end
       end
       return #suits == player:getMark("@tongli-turn")
     end
   end,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    room:setPlayerMark(player, self.name, player:getMark("@tongli-turn"))
-    room:setPlayerMark(player, "tongli_tos", AimGroup:getAllTargets(data.tos))
+    if data.card.type ~= Card.TypeEquip and data.card.sub_type ~= Card.SubtypeDelayedTrick and data.card.trueName ~= "nullification" then
+      data.extra_data = data.extra_data or {}
+      data.extra_data.tongli = player:getMark("@tongli-turn")
+      player.room:setPlayerMark(player, "tongli_tos", AimGroup:getAllTargets(data.tos))
+    end
   end,
 
   refresh_events = {fk.AfterCardUseDeclared, fk.CardUseFinished},
@@ -34,7 +38,7 @@ local tongli = fk.CreateTriggerSkill{
       if event == fk.AfterCardUseDeclared then
         return player.phase == Player.Play and not table.contains(data.card.skillNames, self.name)
       else
-        return player:getMark(self.name) > 0
+        return data.extra_data and data.extra_data.tongli and player:getMark("tongli_tos") ~= 0
       end
     end
   end,
@@ -43,10 +47,8 @@ local tongli = fk.CreateTriggerSkill{
     if event == fk.AfterCardUseDeclared then
       room:addPlayerMark(player, "@tongli-turn", 1)
     else
-      local n = player:getMark(self.name)
-      room:setPlayerMark(player, self.name, 0)
+      local n = data.extra_data.tongli
       local targets = player:getMark("tongli_tos")
-      if targets == 0 then return end
       room:setPlayerMark(player, "tongli_tos", 0)
       local tos = table.simpleClone(targets)
       for i = 1, n, 1 do
@@ -763,6 +765,140 @@ Fk:loadTranslationTable{
 --赵昂
 --牛辅 蔡阳2022.9.24
 --张奋2022.9.29
+local zhangfen = General(extension, "zhangfen", "wu", 4)
+local wanglu = fk.CreateTriggerSkill{
+  name = "wanglu",
+  frequency = Skill.Compulsory,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Start
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if player:getEquipment(Card.SubtypeTreasure) then
+      if Fk:getCardById(player:getEquipment(Card.SubtypeTreasure)).name == "siege_engine" then
+        room:addPlayerMark(player, self.name, 1)
+        return
+      end
+    else
+      for i = 1, 3, 1 do
+        room:setPlayerMark(player, "xianzhu"..tostring(i), 0)
+      end
+    end
+    for _, id in ipairs(Fk:getAllCardIds()) do
+      if Fk:getCardById(id).name == "siege_engine" and room:getCardArea(id) == Card.Void then
+        room:useCard({
+          from = player.id,
+          tos = {{player.id}},
+          card = Fk:getCardById(id, true),
+        })
+        break
+      end
+    end
+  end,
+
+  refresh_events = {fk.EventPhaseChanging},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark(self.name) > 0 and data.from == Player.Start
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, self.name, 0)
+    player:gainAnExtraPhase(Player.Play)
+  end,
+}
+local xianzhu = fk.CreateTriggerSkill{
+  name = "xianzhu",
+  anim_type = "offensive",
+  events = {fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.card and data.card.trueName == "slash" and
+      player:getEquipment(Card.SubtypeTreasure) and Fk:getCardById(player:getEquipment(Card.SubtypeTreasure)).name == "siege_engine" and
+      (player:getMark("xianzhu1") + player:getMark("xianzhu2") + player:getMark("xianzhu3")) < 5
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local choices = {"xianzhu2", "xianzhu3"}
+    if player:getMark("xianzhu1") == 0 then
+      table.insert(choices, 1, "xianzhu1")
+    end
+    local choice = room:askForChoice(player, choices, self.name, "#xianzhu-choice")
+    room:addPlayerMark(player, choice, 1)
+  end,
+}
+local chaixie = fk.CreateTriggerSkill{
+  name = "chaixie",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      for _, move in ipairs(data) do
+        if move.toArea == Card.Void then
+          for _, info in ipairs(move.moveInfo) do
+            if Fk:getCardById(info.cardId, true).name == "siege_engine" then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local n = 0
+    for i = 1, 3, 1 do
+      n = n + player:getMark("xianzhu"..tostring(i))
+      room:setPlayerMark(player, "xianzhu"..tostring(i), 0)
+    end
+    player:drawCards(n, self.name)
+  end,
+
+  refresh_events = {fk.BeforeCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return true
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local id = 0
+    for i = #data, 1, -1 do
+      local move = data[i]
+      if move.toArea ~= Card.Void then
+        for j = #move.moveInfo, 1, -1 do
+          local info = move.moveInfo[j]
+          if info.fromArea == Card.PlayerEquip and Fk:getCardById(info.cardId, true).name == "siege_engine" then
+            id = info.cardId
+            table.removeOne(move.moveInfo, info)
+            break
+          end
+        end
+      end
+    end
+    if id ~= 0 then
+      local room = player.room
+      room:sendLog{
+        type = "#destructDerivedCard",
+        arg = Fk:getCardById(id, true):toLogString(),
+      }
+      room:moveCardTo(Fk:getCardById(id, true), Card.Void, nil, fk.ReasonJustMove, "", "", true)
+    end
+  end,
+}
+zhangfen:addSkill(wanglu)
+zhangfen:addSkill(xianzhu)
+zhangfen:addSkill(chaixie)
+Fk:loadTranslationTable{
+  ["zhangfen"] = "张奋",
+  ["wanglu"] = "望橹",
+  [":wanglu"] = "锁定技，准备阶段，你将【大攻车】置入你的装备区，若你的装备区内已有【大攻车】，则你执行一个额外的出牌阶段。",
+  ["xianzhu"] = "陷筑",
+  [":xianzhu"] = "当你使用【杀】造成伤害后，你可以升级【大攻车】（每个【大攻车】最多升级5次）。升级选项：<br>"..
+  "【大攻车】的【杀】无视距离和防具；<br>【大攻车】的【杀】可指定目标+1；<br>【大攻车】的【杀】造成伤害后弃牌数+1。",
+  ["chaixie"] = "拆械",
+  [":chaixie"] = "锁定技，当【大攻车】销毁后，你摸X张牌（X为该【大攻车】的升级次数）。",
+  ["#xianzhu-choice"] = "陷筑：选择【大攻车】使用【杀】的增益效果",
+  ["xianzhu1"] = "无视距离和防具",
+  ["xianzhu2"] = "可指定目标+1",
+  ["xianzhu3"] = "造成伤害后弃牌数+1",
+}
 --杜夔2022.10.9
 --尹夫人2022.10.21
 
@@ -982,12 +1118,144 @@ Fk:loadTranslationTable{
   ["~ty__huban"] = "行义而亡，虽死无憾。",
 }
 
+local liuye = General(extension, "ty__liuye", "wei", 3)
+local poyuan = fk.CreateTriggerSkill{
+  name = "poyuan",
+  anim_type = "control",
+  events = {fk.GamePrepared, fk.EventPhaseChanging},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      return event == fk.GamePrepared or
+        (event == fk.EventPhaseChanging and target == player and data.from == Player.RoundStart)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if not player:getEquipment(Card.SubtypeTreasure) or Fk:getCardById(player:getEquipment(Card.SubtypeTreasure)).name ~= "ty__catapult" then
+      return room:askForSkillInvoke(player, self.name, nil, "#poyuan-invoke")
+    else
+      local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+        return not p:isNude() end), function(p) return p.id end)
+      if #targets == 0 then return end
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#poyuan-choose", self.name, true)
+      if #to > 0 then
+        self.cost_data = to[1]
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if player:getEquipment(Card.SubtypeTreasure) then
+      if Fk:getCardById(player:getEquipment(Card.SubtypeTreasure)).name == "ty__catapult" then
+        local to = room:getPlayerById(self.cost_data)
+        local cards = room:askForCardsChosen(player, to, 1, 2, "he", self.name)
+        room:throwCard(cards, self.name, to, player)
+        return
+      end
+    end
+    for _, id in ipairs(Fk:getAllCardIds()) do
+      if Fk:getCardById(id, true).name == "ty__catapult" and room:getCardArea(id) == Card.Void then
+        room:useCard({
+          from = player.id,
+          tos = {{player.id}},
+          card = Fk:getCardById(id, true),
+        })
+        break
+      end
+    end
+  end,
+
+  refresh_events = {fk.BeforeCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return true
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local id = 0
+    for i = #data, 1, -1 do
+      local move = data[i]
+      if move.toArea ~= Card.Void then
+        for j = #move.moveInfo, 1, -1 do
+          local info = move.moveInfo[j]
+          if info.fromArea == Card.PlayerEquip and Fk:getCardById(info.cardId, true).name == "ty__catapult" then
+            id = info.cardId
+            table.removeOne(move.moveInfo, info)
+            break
+          end
+        end
+      end
+    end
+    if id ~= 0 then
+      local room = player.room
+      room:sendLog{
+        type = "#destructDerivedCard",
+        arg = Fk:getCardById(id, true):toLogString(),
+      }
+      room:moveCardTo(Fk:getCardById(id, true), Card.Void, nil, fk.ReasonJustMove, "", "", true)
+    end
+  end,
+}
+local huace = fk.CreateViewAsSkill{
+  name = "huace",
+  interaction = function()
+    local names = {}
+    local mark = Self:getMark("huace2")
+    for _, id in ipairs(Fk:getAllCardIds()) do
+      local card = Fk:getCardById(id, true)
+      if card:isCommonTrick() and card.trueName ~= "nullification" and card.name ~= "adaptation" and not card.is_derived then
+        if mark == 0 or (not table.contains(mark, card.trueName)) then
+          table.insertIfNeed(names, card.name)
+        end
+      end
+    end
+    return UI.ComboBox {choices = names}
+  end,
+  enabled_at_play = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isNude()
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 or not self.interaction.data then return end
+    local card = Fk:cloneCard(self.interaction.data)
+    card:addSubcard(cards[1])
+    card.skillName = self.name
+    return card
+  end,
+}
+local huace_record = fk.CreateTriggerSkill{
+  name = "#huace_record",
+
+  refresh_events = {fk.AfterCardUseDeclared, fk.RoundStart},
+  can_refresh = function(self, event, target, player, data)
+    return (event == fk.AfterCardUseDeclared and data.card:isCommonTrick()) or event == fk.RoundStart
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.AfterCardUseDeclared then
+      local mark = player:getMark("huace1")
+      if mark == 0 then mark = {} end
+      table.insertIfNeed(mark, data.card.trueName)
+      room:setPlayerMark(player, "huace1", mark)
+    else
+      room:setPlayerMark(player, "huace2", player:getMark("huace1"))
+      room:setPlayerMark(player, "huace1", 0)
+    end
+  end,
+}
+huace:addRelatedSkill(huace_record)
+liuye:addSkill(poyuan)
+liuye:addSkill(huace)
 Fk:loadTranslationTable{
   ["ty__liuye"] = "刘晔",
   ["poyuan"] = "破垣",
   [":poyuan"] = "游戏开始时或回合开始时，若你的装备区里没有【霹雳车】，你可以将【霹雳车】置于装备区；若有，你可以弃置一名其他角色至多两张牌。",
   ["huace"] = "画策",
   [":huace"] = "出牌阶段限一次，你可以将一张手牌当上一轮没有角色使用过的普通锦囊牌使用。",
+  ["#poyuan-invoke"] = "破垣：你可以装备【霹雳车】",
+  ["#poyuan-choose"] = "破垣：你可以弃置一名其他角色至多两张牌",
+  ["#destructDerivedCard"] = "%arg 被销毁",
 }
 
 Fk:loadTranslationTable{
@@ -1194,7 +1462,9 @@ local fuxue = fk.CreateTriggerSkill{
       if move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then --TODO: ReasonJudge
         player.tag[self.name] = player.tag[self.name] or {}
         for _, info in ipairs(move.moveInfo) do
-          table.insertIfNeed(player.tag[self.name], info.cardId)
+          if Fk:getCardById(info.cardId).sub_type ~= Card.SubtypeDelayedTrick or info.fromArea ~= Card.Processing then
+            table.insertIfNeed(player.tag[self.name], info.cardId)
+          end
         end
       end
       for _, info in ipairs(move.moveInfo) do

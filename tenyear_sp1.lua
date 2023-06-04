@@ -1119,16 +1119,17 @@ local jiedao = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local n = player:getLostHp()
     data.damage = data.damage + n
-    data.jiedao_extra = n
+    data.extra_data = data.extra_data or {}
+    data.extra_data.jiedao = n
   end,
 
   refresh_events = {fk.Damage},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and not data.to.dead and data.jiedao_extra and data.jiedao_extra > 0 and not player:isNude()
+    return target == player and not data.to.dead and data.extra_data and data.extra_data.jiedao and not player:isNude()
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    local n = data.jiedao_extra
+    local n = data.extra_data.jiedao
     if #player:getCardIds{Player.Hand, Player.Equip} <= n then
       player:throwAllCards("he")
     else
@@ -1275,7 +1276,7 @@ local qingjiao = fk.CreateTriggerSkill{
         ids = toObtain,
         to = player.id,
         toArea = Card.PlayerHand,
-        moveReason = fk.ReasonPrey,
+        moveReason = fk.ReasonJustMove,
         proposer = player.id,
         skillName = self.name,
       })
@@ -1284,7 +1285,7 @@ local qingjiao = fk.CreateTriggerSkill{
 
   refresh_events = {fk.EventPhaseStart},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish and player:usedSkillTimes(self.name) > 0
+    return target == player and player.phase == Player.Finish and player:usedSkillTimes(self.name, Player.HistoryTurn) > 0
   end,
   on_refresh = function(self, event, target, player, data)
     player:throwAllCards("he")
@@ -1604,7 +1605,7 @@ local tianjiang = fk.CreateActiveSkill{
 }
 local tianjiang_trigger = fk.CreateTriggerSkill{
   name = "#tianjiang_trigger",
-  events = {fk.GameStart},
+  events = {fk.GamePrepared},
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self.name)
   end,
@@ -1715,7 +1716,6 @@ local zhuren = fk.CreateActiveSkill{
 }
 local zhuren_destruct = fk.CreateTriggerSkill{
   name = "#zhuren_destruct",
-  priority = 1.1,
 
   refresh_events = {fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)
@@ -1737,6 +1737,10 @@ local zhuren_destruct = fk.CreateTriggerSkill{
       end
       if #ids > 0 then
         for _, id in ipairs(ids) do
+          player.room:sendLog{
+            type = "#destructDerivedCard",
+            arg = Fk:getCardById(id, true):toLogString(),
+          }
           table.insert(player.room.void, id)
           player.room:setCardArea(id, Card.Void, nil)
         end

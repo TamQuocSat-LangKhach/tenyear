@@ -942,7 +942,7 @@ local xuezhao = fk.CreateActiveSkill{
     return Self.maxHp
   end,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name) == 0 and not player:isKongcheng()
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
   end,
   card_filter = function(self, to_select, selected, targets)
     return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip

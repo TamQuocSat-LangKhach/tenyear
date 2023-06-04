@@ -576,7 +576,8 @@ Fk:loadTranslationTable{
   ["tiqi"] = "涕泣",
   [":tiqi"] = "其他角色摸牌阶段摸牌后，若其摸牌数不等于2，则你摸超出或少于2的牌，然后令该角色本回合手牌上限增加或减少同样的数值。",
   ["baoshu"] = "宝梳",
-  [":baoshu"] = "准备阶段，你可以选择至多X名角色（X为你的体力上限），这些角色各获得一个“梳”标记并重置武将牌（有“梳”标记的角色摸牌阶段多摸与其“梳”等量的牌，然后移去其所有“梳”），你每少选一名角色，每名目标角色便多获得一个“梳”。",
+  [":baoshu"] = "准备阶段，你可以选择至多X名角色（X为你的体力上限），这些角色各获得一个“梳”标记并重置武将牌，"..
+  "你每少选一名角色，每名目标角色便多获得一个“梳”。有“梳”标记的角色摸牌阶段多摸其“梳”数量的牌，然后移去其所有“梳”。",
   ["#tiqi-invoke"] = "涕泣：你可以摸%arg张牌，并令其本回合手牌上限+X或-X",
   ["tiqi_add"] = "增加手牌上限",
   ["tiqi_minus"] = "减少手牌上限",
@@ -603,7 +604,7 @@ local lianzhou = fk.CreateTriggerSkill{
     if #targets == 0 then return end
     local tos = room:askForChoosePlayers(player, targets, 1, 999, "#lianzhou-choose", self.name, true)
     if #tos > 0 then
-      table.every(tos, function(p) room:getPlayerById(p):setChainState(true) end)
+      table.forEach(tos, function(p) room:getPlayerById(p):setChainState(true) end)
     end
   end,
 }
@@ -657,7 +658,8 @@ Fk:loadTranslationTable{
   ["lianzhou"] = "连舟",
   [":lianzhou"] = "锁定技，准备阶段，将你的武将牌横置，然后横置任意名体力值等于你的角色。",
   ["jinglan"] = "惊澜",
-  [":jinglan"] = "锁定技，当你造成伤害后，若你的手牌数：大于体力值，你弃三张手牌；等于体力值，你弃一张手牌并回复1点体力；小于体力值，你受到1点火焰伤害并摸四张牌。",
+  [":jinglan"] = "锁定技，当你造成伤害后，若你的手牌数：大于体力值，你弃三张手牌；等于体力值，你弃一张手牌并回复1点体力；"..
+  "小于体力值，你受到1点火焰伤害并摸四张牌。",
   ["#lianzhou-choose"] = "连舟：你可以横置任意名体力值等于你的角色",
 }
 
@@ -701,7 +703,7 @@ local xizhen = fk.CreateTriggerSkill{
 
   refresh_events = {fk.CardUsing, fk.CardResponding},
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryPhase) > 0 and
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) > 0 and
       data.responseToEvent and data.responseToEvent.from == player.id
   end,
   on_refresh = function(self, event, target, player, data)
@@ -726,7 +728,8 @@ gaolan:addSkill(xizhen)
 Fk:loadTranslationTable{
   ["ty__gaolan"] = "高览",
   ["xizhen"] = "袭阵",
-  [":xizhen"] = "出牌阶段开始时，你可选择一名其他角色，视为对其使用【杀】或【决斗】，然后本阶段你的牌每次被使用或打出牌响应时，该角色回复1点体力，你摸一张牌（若其未受伤，改为两张）。",
+  [":xizhen"] = "出牌阶段开始时，你可选择一名其他角色，视为对其使用【杀】或【决斗】，然后本阶段你的牌每次被使用或打出牌响应时，"..
+  "该角色回复1点体力，你摸一张牌（若其未受伤，改为两张）。",
   ["#xizhen-choose"] = "袭阵：你可视为对一名角色使用【杀】或【决斗】；<br>本阶段你的牌被响应时其回复1点体力，你摸一张牌（若其未受伤则改为摸两张）",
   ["#xizhen-choice"] = "袭阵：选择视为对 %dest 使用的牌",
 
@@ -854,7 +857,8 @@ local juetao = fk.CreateTriggerSkill{  --FIXME: not target filter!
   frequency = Skill.Limited,
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and player.hp == 1 and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and player.hp == 1 and
+      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   on_cost = function(self, event, target, player, data)
     local to = player.room:askForChoosePlayers(player, table.map(player.room:getAlivePlayers(), function(p)
@@ -923,7 +927,8 @@ local zhushi = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.HpRecover},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and target ~= player and target.phase ~= Player.NotActive and target.kingdom == "wei" and player:usedSkillTimes(self.name) == 0
+    return player:hasSkill(self.name) and target ~= player and target.phase ~= Player.NotActive and target.kingdom == "wei" and
+      player:usedSkillTimes(self.name) == 0
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -1031,7 +1036,8 @@ Fk:loadTranslationTable{
   ["#choutao-invoke"] = "仇讨：你可以弃置 %dest 一张牌令此【杀】不能被响应；若为你则此【杀】不计次",
   ["#xiangshu-invoke"] = "襄戍：你可令一名已受伤角色回复%arg点体力并摸%arg2张牌",
 }
---local godjiangwei = General(extension, "godjiangwei", "god", 4)
+
+local godjiangwei = General(extension, "godjiangwei", "god", 4)
 local tianren = fk.CreateTriggerSkill {
   name = "tianren",
   anim_type = "drawcard",
@@ -1039,42 +1045,184 @@ local tianren = fk.CreateTriggerSkill {
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self.name) then
-      self.tianren_num = 0
+      self.cost_data = 0
       for _, move in ipairs(data) do
-        if move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then  --TODO: REASON!!!
+        if move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then
           for _, info in ipairs(move.moveInfo) do
             local card = Fk:getCardById(info.cardId)
-            if card.type == Card.TypeBasic or (card.type == Card.TypeTrick and card.sub_type ~= Card.SubtypeDelayedTrick) then
-              self.tianren_num = self.tianren_num + 1
+            if card.type == Card.TypeBasic or card:isCommonTrick() then
+              self.cost_data = self.cost_data + 1
             end
           end
         end
       end
-      return self.tianren_num > 0
+      return self.cost_data > 0
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    for i = 1, self.tianren_num, 1 do
+    for i = 1, self.cost_data, 1 do
       room:addPlayerMark(player, "@tianren", 1)
       if player:getMark("@tianren") >= player.maxHp then
         room:removePlayerMark(player, "@tianren", player.maxHp)
         room:changeMaxHp(player, 1)
-        player:drawCards(2)
+        player:drawCards(2, self.name)
       end
     end
   end,
 }
---godjiangwei:addSkill(tianren)
+local jiufa = fk.CreateTriggerSkill{
+  name = "jiufa",
+  events = {fk.CardUsing, fk.CardResponding},
+  anim_type = "drawcard",
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) then
+      local mark = player:getMark(self.name)
+      if mark == 0 then mark = {} end
+      if #mark == 9 then
+        player.room:setPlayerMark(player, "@$jiufa", 0)
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local card_ids = room:getNCards(9)
+    local get, throw = {}, {}
+    room:moveCards({
+      ids = card_ids,
+      toArea = Card.Processing,
+      moveReason = fk.ReasonJustMove,
+    })
+    table.forEach(room.players, function(p) room:fillAG(p, card_ids) end)
+    local numbers = {}
+    for _, id in ipairs(card_ids) do
+      local num = Fk:getCardById(id, true).number
+      numbers[num] = (numbers[num] or 0) + 1
+    end
+    while true do
+      for i = #card_ids, 1, -1 do
+        local id = card_ids[i]
+        if numbers[Fk:getCardById(id, true).number] < 2 then
+          room:takeAG(player, id, room.players)
+          table.insert(throw, id)
+          table.removeOne(card_ids, id)
+        end
+      end
+      if #card_ids == 0 then break end
+      local card_id = room:askForAG(player, card_ids, false, self.name)
+      --if card_id == nil then break end
+      room:takeAG(player, card_id, room.players)
+      table.insert(get, card_id)
+      table.removeOne(card_ids, card_id)
+      numbers[Fk:getCardById(card_id, true).number] = 0
+      if #card_ids == 0 then break end
+    end
+    table.forEach(room.players, function(p)
+      room:closeAG(p)
+    end)
+    if #get > 0 then
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(get)
+      room:obtainCard(player.id, dummy, true, fk.ReasonJustMove)
+    end
+    if #throw > 0 then
+      room:moveCards({
+        ids = throw,
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonPutIntoDiscardPile,
+      })
+    end
+  end,
+
+  refresh_events = {fk.CardUsing, fk.CardResponding},
+  can_refresh = function(self, event, target, player, data)
+    return target == player
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local mark = player:getMark(self.name)
+    if mark == 0 or #mark > 8 then mark = {} end
+    if not table.contains(mark, data.card.trueName) then
+      table.insert(mark, data.card.trueName)
+    end
+    player.room:setPlayerMark(player, self.name, mark)
+    if player:hasSkill(self.name, true) then
+      player.room:setPlayerMark(player, "@$jiufa", mark)
+    end
+  end,
+}
+local pingxiang = fk.CreateActiveSkill{
+  name = "pingxiang",
+  anim_type = "offensive",
+  card_num = 0,
+  target_num = 0,
+  frequency = Skill.Limited,
+  can_use = function(self, player)
+    return player.maxHp > 9 and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  card_filter = function(self, to_select, selected, selected_targets)
+    return false
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:changeMaxHp(player, -9)
+    for i = 1, 9, 1 do
+      if player.dead then return end
+      local success, data = room:askForUseViewAsSkill(player, "pingxiang_viewas", "#pingxiang-slash:::"..tostring(i), true)
+      if success then
+        local card = Fk:cloneCard("fire__slash")
+        card.skillName = self.name
+        room:useCard{
+          from = player.id,
+          tos = table.map(data.targets, function(id) return {id} end),
+          card = card,
+          extraUse = true,
+        }
+      else
+        break
+      end
+    end
+    room:handleAddLoseSkills(player, "-jiufa", nil, true, false)
+  end,
+}
+local pingxiang_viewas = fk.CreateViewAsSkill{
+  name = "pingxiang_viewas",
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  view_as = function(self, cards)
+    local card = Fk:cloneCard("fire__slash")
+    card.skillName = "pingxiang"
+    return card
+  end,
+}
+local pingxiang_maxcards = fk.CreateMaxCardsSkill{
+  name = "#pingxiang_maxcards",
+  fixed_func = function(self, player)
+    if player:usedSkillTimes("pingxiang", Player.HistoryGame) > 0 then
+      return player.maxHp
+    end
+  end
+}
+Fk:addSkill(pingxiang_viewas)
+pingxiang:addRelatedSkill(pingxiang_maxcards)
+godjiangwei:addSkill(tianren)
+godjiangwei:addSkill(jiufa)
+godjiangwei:addSkill(pingxiang)
 Fk:loadTranslationTable{
   ["godjiangwei"] = "神姜维",
   ["tianren"] = "天任",
-  [":tianren"] = "锁定技，当一张基本牌或普通锦囊牌不是因使用而置入弃牌堆后，你获得1个“天任”标记，然后若“天任”标记数不小于X，你移去X个“天任”标记，加1点体力上限并摸两张牌（X为你的体力上限）。",
+  [":tianren"] = "锁定技，当一张基本牌或普通锦囊牌不是因使用而置入弃牌堆后，你获得1个“天任”标记，"..
+  "然后若“天任”标记数不小于X，你移去X个“天任”标记，加1点体力上限并摸两张牌（X为你的体力上限）。",
   ["jiufa"] = "九伐",
   [":jiufa"] = "当你每累计使用或打出九张不同牌名的牌后，你可以亮出牌堆顶的九张牌，然后若其中有点数相同的牌，你选择并获得其中每个重复点数的牌各一张。",
   ["pingxiang"] = "平襄",
-  [":pingxiang"] = "限定技，出牌阶段，若你的体力上限大于9，你可以减9点体力上限，然后你视为使用至多九张火【杀】。若如此做，你失去技能〖九伐〗且本局游戏内你的手牌上限等于体力上限。",
+  [":pingxiang"] = "限定技，出牌阶段，若你的体力上限大于9，你可以减9点体力上限，然后你视为使用至多九张火【杀】。"..
+  "若如此做，你失去技能〖九伐〗且本局游戏内你的手牌上限等于体力上限。",
   ["@tianren"] = "天任",
+  ["@$jiufa"] = "九伐",
+  ["pingxiang_viewas"] = "平襄",
+  ["#pingxiang-slash"] = "平襄：你可以视为使用火【杀】（第%arg张，共9张）！",
 }
 --骆统 张媱 张勋 滕胤 神马超 黄承彦2022.6.15
 local zhangxun = General(extension, "zhangxun", "qun", 4)

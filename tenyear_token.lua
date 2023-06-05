@@ -278,7 +278,7 @@ local siegeEngineSkill = fk.CreateTriggerSkill{
         end
       end
     elseif event == fk.TargetSpecified then
-      return target == player and player:hasSkill(self.name) and data.card and table.contains(data.card.skillNames, "siege_engine_skill")
+      return target == player and player:hasSkill(self.name) and data.card and table.contains(data.card.skillNames, self.name)
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -296,7 +296,7 @@ local siegeEngineSkill = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.EventPhaseStart then
       local card = Fk:cloneCard("slash")
-      card.skillName = "siege_engine_skill"
+      card.skillName = self.name
       room:useCard{
         from = player.id,
         tos = table.map(self.cost_data.targets, function(id) return {id} end),
@@ -346,12 +346,12 @@ local siegeEngineSkill = fk.CreateTriggerSkill{
 local siege_engine_targetmod = fk.CreateTargetModSkill{
   name = "#siege_engine_targetmod",
   distance_limit_func =  function(self, player, skill, card)
-    if skill.trueName == "slash_skill" and table.contains(card.skillNames, "siege_engine_skill") and player:getMark("xianzhu1") > 0 then
+    if skill.trueName == "slash_skill" and table.contains(card.skillNames, "#siege_engine_skill") and player:getMark("xianzhu1") > 0 then
       return 999
     end
   end,
   extra_target_func = function(self, player, skill, card)
-    if skill.trueName == "slash_skill" and table.contains(card.skillNames, "siege_engine_skill") then
+    if skill.trueName == "slash_skill" and table.contains(card.skillNames, "#siege_engine_skill") then
       return player:getMark("xianzhu2")
     end
   end,
@@ -369,6 +369,7 @@ Fk:loadTranslationTable{
   ["siege_engine"] = "大攻车",
   [":siege_engine"] = "装备牌·宝物<br /><b>宝物技能</b>：出牌阶段开始时，你可以视为使用一张【杀】，当此【杀】对目标角色造成伤害后，你弃置其一张牌。"..
   "若此牌未升级，则不能被弃置。离开装备区后销毁。<br>升级选项：<br>1.此【杀】无视距离和防具；<br>2.此【杀】可指定目标+1；<br>3.此【杀】造成伤害后弃牌数+1。",
+  ["#siege_engine_skill"] = "大攻车",
   ["siege_engine_slash"] = "大攻车",
   ["#siege_engine-invoke"] = "大攻车：你可以视为使用【杀】",
 }
@@ -377,18 +378,18 @@ local catapultSkill = fk.CreateTriggerSkill{
   name = "#ty__catapult_skill",
   attached_equip = "ty__catapult",
   frequency = Skill.Compulsory,
-  events = {fk.CardUsing},
+  events = {fk.CardUsing, fk.CardResponding},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and data.card.type == Card.TypeBasic
   end,
   on_use = function(self, event, target, player, data)
-    if player.phase ~= Player.NotActive then
+    if event == fk.CardUsing and player.phase ~= Player.NotActive then
       if data.card.is_damage_card then
         data.additionalDamage = (data.additionalDamage or 0) + 1
       elseif data.card.name == "peach" or (data.card.name == "analeptic" and data.extra_data and data.extra_data.analepticRecover) then
         data.additionalRecover = (data.additionalRecover or 0) + 1
       end
-    else
+    elseif player.phase == Player.NotActive then
       player:drawCards(1, self.name)
     end
   end,

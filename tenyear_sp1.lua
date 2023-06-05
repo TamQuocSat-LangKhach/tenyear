@@ -401,7 +401,7 @@ local qinguo = fk.CreateTriggerSkill{
       end
     )
     if #availableTargets == 0 then return false end
-    local target = room:askForChoosePlayers(player, availableTargets, 1, 1, "#qinguo-ask", self.name)
+    local target = room:askForChoosePlayers(player, availableTargets, 1, 1, "#qinguo-ask", self.name, true)
     if #target > 0 then
       self.cost_data = target[1]
       return true

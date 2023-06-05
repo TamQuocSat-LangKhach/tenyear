@@ -394,7 +394,7 @@ local qinguo = fk.CreateTriggerSkill{
     local card = Fk:cloneCard("slash")
     local availableTargets = table.map(
       table.filter(room:getOtherPlayers(player), function(p)
-        return not player:isProhibited(p, card)
+        return (not player:isProhibited(p, card)) and player:inMyAttackRange(p)
       end),
       function(p)
         return p.id
@@ -415,7 +415,7 @@ local qinguo = fk.CreateTriggerSkill{
   end,
   refresh_events = {fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) then
+    if player:hasSkill(self.name) then
       local equipnum = #player.player_cards[Player.Equip]
       for _, move in ipairs(data) do
         for _, info in ipairs(move.moveInfo) do
@@ -426,7 +426,7 @@ local qinguo = fk.CreateTriggerSkill{
           end
         end
       end
-      return #player.player_cards[Player.Equip] ~= equipnum and equipnum == player.hp
+      return #player.player_cards[Player.Equip] ~= equipnum and #player.player_cards[Player.Equip] == player.hp
     end
   end,
   on_refresh = function(self, event, target, player, data)

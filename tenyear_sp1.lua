@@ -409,7 +409,7 @@ local qinguo = fk.CreateTriggerSkill{
     return false
   end,
   on_use = function(self, event, target, player, data)
-    player.room:notifySkillInvoked(player, self.name)
+    player.room:notifySkillInvoked(player, self.name, "offensive")
     player.room:broadcastSkillInvoke(self.name)
     player.room:useVirtualCard("slash", nil, player, player.room:getPlayerById(self.cost_data), self.name, true)
   end,
@@ -430,7 +430,7 @@ local qinguo = fk.CreateTriggerSkill{
     end
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:notifySkillInvoked(player, self.name)
+    player.room:notifySkillInvoked(player, self.name, "support")
     player.room:broadcastSkillInvoke(self.name)
     player.room:recover{
       who = player,
@@ -507,12 +507,105 @@ Fk:loadTranslationTable{
   ["$kannan2"] = "戡，克也，难，攻之。",
   ["~liuyao"] = "伯符小儿，还我子义！",
 }
+
+local lvqian = General(extension, "lvqian", "wei", 4)
+local weilu = fk.CreateTriggerSkill{
+  name = "weilu",
+  anim = "masochism",
+  frequency = Skill.Compulsory,
+  events = {fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.from and not data.from.dead and data.from ~= player
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:addPlayerMark(data.from, "@@weilu", 1)
+  end,
+  refresh_events = {fk.EventPhaseStart},
+  can_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if target == player and player:hasSkill(self.name) then
+      local players = table.filter(room:getOtherPlayers(player), function(p)
+        return p:getMark("@@weilu") > 0 or p:getMark("weilu".."-turn") > 0
+      end)
+      return #players > 0 and (player.phase == Player.Play or player.phase == Player.Finish)
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local players = table.filter(room:getOtherPlayers(player), function(p)
+      return p:getMark("@@weilu") > 0 or p:getMark("weilu".."-turn") > 0
+    end)
+    if player.phase == Player.Play then
+      for _, p in ipairs(players) do
+        room:setPlayerMark(p, self.name.."-turn", p:getMark("@@weilu"))
+        room:setPlayerMark(p, self.name, p.hp - 1)
+        room:loseHp(p, p:getMark(self.name), self.name)
+      end
+    elseif player.phase == Player.Finish then
+      for _, p in ipairs(players) do
+        local n = p:getMark(self.name)
+        if n > 0 then
+          room:recover({
+            who = p,
+            num = n,
+            skillName = self.name,
+          })
+        end
+        if p:getMark("@@weilu") == p:getMark("weilu".."-turn") then
+          room:setPlayerMark(p, "@@weilu", 0)
+        end
+        room:setPlayerMark(p, self.name, 0)
+      end
+    end
+  end,
+}
+local zengdao = fk.CreateActiveSkill{
+  name = "zengdao",
+  anim_type = "support",
+  frequency = Skill.Limited,
+  target_num = 1,
+  min_card_num = 1,
+  can_use = function(self, player)
+    return #player.player_cards[Player.Equip] > 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return Fk:currentRoom():getCardArea(to_select) == Player.Equip
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local target = room:getPlayerById(effect.tos[1])
+    local cards = effect.cards
+    target:addToPile(self.name, cards, false, self.name)
+  end,
+}
+local zengdao_trig = fk.CreateTriggerSkill{
+  name = "#zengdao_trig",
+  refresh_events = {fk.DamageCaused},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and #player:getPile("zengdao") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local cards = room:askForCard(player, 1, 1, false, "zengdao", true, ".|.|.|zengdao|.|.|.", "#zengdao-invoke", "zengdao")
+    if #cards == 0 then cards = {player:getPile("zengdao")[math.random(1, #player:getPile("zengdao"))]} end
+    player:removeCards(Player.Special, cards, "zengdao")
+    data.damage = data.damage + 1
+  end
+}
+zengdao:addRelatedSkill(zengdao_trig)
+lvqian:addSkill(weilu)
+lvqian:addSkill(zengdao)
 Fk:loadTranslationTable{
   ["lvqian"] = "吕虔",
   ["weilu"] = "威虏",
   [":weilu"] = "锁定技，当你受到其他角色造成的伤害后，伤害来源在你的下回合出牌阶段开始时失去体力至1，回合结束时其回复以此法失去的体力值。",
   ["zengdao"] = "赠刀",
   [":zengdao"] = "限定技，出牌阶段，你可以将装备区内任意数量的牌置于一名其他角色的武将牌旁，该角色造成伤害时，移去一张“赠刀”牌，然后此伤害+1。",
+  ["@@weilu"] = "威虏",
+  ["#zengdao-invoke"] = "赠刀：你需移去一张“赠刀”牌（点“取消”则随机移去一张）",
 
   ["$weilu1"] = "贼人势大，需从长计议。",
   ["$weilu2"] = "时机未到，先行撤退。",

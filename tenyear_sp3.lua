@@ -757,7 +757,7 @@ local qianlong = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local cards = room:getNCards(5)
+    local cards = room:getNCards(3)
     room:moveCards({
       ids = cards,
       toArea = Card.Processing,
@@ -794,9 +794,9 @@ local fensi = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:askForChoosePlayers(player, table.map(table.filter(room:getAlivePlayers(), function(p)
-      return p.hp >= player.hp end), function(p) return p.id end), 1, 1, "#fensi-choose", self.name, false)[1]
-    if to then
-      to = room:getPlayerById(to)
+      return p.hp >= player.hp end), function(p) return p.id end), 1, 1, "#fensi-choose", self.name, false)
+    if #to > 0 then
+      to = room:getPlayerById(to[1])
     else
       to = player
     end
@@ -822,8 +822,7 @@ local juetao = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local to = player.room:askForChoosePlayers(player, table.map(player.room:getAlivePlayers(), function(p)
-      return p.id
-    end), 1, 1, "#juetao-choose", self.name, false)
+      return p.id end), 1, 1, "#juetao-choose", self.name, false)
     if #to > 0 then
       self.cost_data = to[1]
       return true

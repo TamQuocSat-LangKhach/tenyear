@@ -601,16 +601,14 @@ local lulve = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and
-      not table.every(player.room:getOtherPlayers(player), function(p)
-        return (#p.player_cards[Player.Hand] >= #player.player_cards[Player.Hand] or p:isKongcheng()) end)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local to = room:askForChoosePlayers(player, table.map(table.filter(room:getOtherPlayers(player), function(p)
-      return (#p.player_cards[Player.Hand] < #player.player_cards[Player.Hand] and not p:isKongcheng()) end),
-      function(p) return p.id end),
-      1, 1, "#lulve-choose", self.name, true)
+    local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+      return (#p.player_cards[Player.Hand] < #player.player_cards[Player.Hand] and not p:isKongcheng()) end), function(p) return p.id end)
+    if #targets == 0 then return end
+    local to = room:askForChoosePlayers(player, targets, 1, 1, "#lulve-choose", self.name, true)
     if #to > 0 then
       self.cost_data = to[1]
       return true
@@ -1264,8 +1262,13 @@ local yuyun = fk.CreateTriggerSkill{
       if choice == "yuyun1" then
         player:drawCards(2, self.name)
       elseif choice == "yuyun2" then
-        local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p)
-          return p.id end), 1, 1, "#yuyun2-choose", self.name)[1]
+        local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
+        local to = room:askForChoosePlayers(player, targets, 1, 1, "#yuyun2-choose", self.name, false)
+        if #to > 0 then
+          to = to[1]
+        else
+          to = table.random(targets)
+        end
         room:damage{
           from = player,
           to = room:getPlayerById(to),
@@ -1276,13 +1279,25 @@ local yuyun = fk.CreateTriggerSkill{
       elseif choice == "yuyun3" then
         room:addPlayerMark(player, "yuyun3-turn", 1)
       elseif choice == "yuyun4" then
-        local to = room:askForChoosePlayers(player, table.map(table.filter(room:getOtherPlayers(player), function(p)
-          return not p:isAllNude() end), function(p) return p.id end), 1, 1, "#yuyun4-choose", self.name)[1]
+        local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+          return not p:isAllNude() end), function(p) return p.id end)
+        local to = room:askForChoosePlayers(player, targets, 1, 1, "#yuyun4-choose", self.name, false)
+        if #to > 0 then
+          to = to[1]
+        else
+          to = table.random(targets)
+        end
         local id = room:askForCardChosen(player, room:getPlayerById(to), "hej", self.name)
         room:obtainCard(player.id, id, false, fk.ReasonPrey)
       elseif choice == "yuyun5" then
-        local to = room:askForChoosePlayers(player, table.map(table.filter(room:getOtherPlayers(player), function(p)
-          return #p.player_cards[Player.Hand] < math.min(p.maxHp, 5) end), function(p) return p.id end), 1, 1, "#yuyun5-choose", self.name)[1]
+        local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+          return #p.player_cards[Player.Hand] < math.min(p.maxHp, 5) end), function(p) return p.id end)
+        local to = room:askForChoosePlayers(player, targets, 1, 1, "#yuyun5-choose", self.name)
+        if #to > 0 then
+          to = to[1]
+        else
+          to = table.random(targets)
+        end
         local p = room:getPlayerById(to)
         p:drawCards(math.min(p.maxHp, 5) - #p.player_cards[Player.Hand], self.name)
       end
@@ -1306,7 +1321,7 @@ local yuyun = fk.CreateTriggerSkill{
 local yuyun_distance = fk.CreateDistanceSkill{
   name = "#yuyun_distance",
   correct_func = function(self, from, to)
-    if from:hasSkill(self.name) then
+    if from:hasSkill(self.name, true) then
       if to:getMark("yuyun2-turn") > 0 then
         from:setFixedDistance(to, 1)
       else
@@ -1319,7 +1334,7 @@ local yuyun_distance = fk.CreateDistanceSkill{
 local yuyun_maxcards = fk.CreateMaxCardsSkill{
   name = "#yuyun_maxcards",
   correct_func = function(self, player)
-    if player:hasSkill(self.name) and player:getMark("yuyun3-turn") > 0 then
+    if player:getMark("yuyun3-turn") > 0 then
       return 999
     end
     return 0
@@ -1418,7 +1433,8 @@ local function AskForAddTarget(player, targets, num, can_minus, prompt, skillNam
       for _, id in ipairs(tos) do
         local to = room:getPlayerById(id)
         local target = room:askForChoosePlayers(player, table.map(table.filter(room:getOtherPlayers(player), function(v)
-          return to:inMyAttackRange(v) end), function(p) return p.id end), 1, 1, "#collateral-choose::"..to.id..":"..data.card:toLogString())
+          return to:inMyAttackRange(v) end), function(p) return p.id end), 1, 1,
+          "#collateral-choose::"..to.id..":"..data.card:toLogString(), "collateral_skill", true)
         if #target > 0 then
           table.insert(result, {id, target[1]})
         end

@@ -1814,7 +1814,7 @@ local xunshi_record = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.AfterCardTargetDeclared},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card.suit == Card.NoSuit and data.tos ~= nil
+    return target == player and player:hasSkill(self.name) and data.card.color == Card.NoColor and data.tos ~= nil
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -1824,8 +1824,10 @@ local xunshi_record = fk.CreateTriggerSkill{
         table.insertIfNeed(targets, p.id)
       end
     end
-    local tos = room:askForChoosePlayers(player, targets, 1, #targets, "#xunshi-choose", self.name)
-    self.cost_data = tos
+    local tos = room:askForChoosePlayers(player, targets, 1, #targets, "#xunshi-choose", self.name, true)
+    if #tos > 0 then
+      self.cost_data = tos
+    end
     return true
   end,
   on_use = function(self, event, target, player, data)
@@ -1833,9 +1835,10 @@ local xunshi_record = fk.CreateTriggerSkill{
       player.room:addPlayerMark(player, "xunshi", 1)
     end
     player:addCardUseHistory(data.card.trueName, -1)
-    if self.cost_data == nil then return end
-    for _, p in ipairs(self.cost_data) do
-      table.insert(data.tos, {p})
+    if self.cost_data then
+      for _, p in ipairs(self.cost_data) do
+        table.insert(data.tos, {p})
+      end
     end
   end,
 }

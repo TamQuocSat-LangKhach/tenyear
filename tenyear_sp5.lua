@@ -193,7 +193,7 @@ local anzhi = fk.CreateActiveSkill{
       end
       if #ids == 0 then return end
       local to = room:askForChoosePlayers(player, table.map(table.filter(room:getAlivePlayers(), function(p)
-        return p ~= room.current end), function(p) return p.id end), 1, 1, "#anzhi-choose", self.name)
+        return p ~= room.current end), function(p) return p.id end), 1, 1, "#anzhi-choose", self.name, true)
       if #to > 0 then
         local get = {}
         room:fillAG(player, ids)
@@ -458,7 +458,8 @@ local wumei = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local to = room:askForChoosePlayers(player, table.map(room:getAlivePlayers(), function(p) return p.id end), 1, 1, "#wumei-choose", self.name)
+    local to = room:askForChoosePlayers(player, table.map(room:getAlivePlayers(), function(p) return p.id end),
+      1, 1, "#wumei-choose", self.name, true)
     if #to > 0 then
       self.cost_data = to[1]
       return true
@@ -1659,7 +1660,7 @@ local shengdu = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local p = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p)
-      return p.id end), 1, 1, "#shengdu-choose", self.name)
+      return p.id end), 1, 1, "#shengdu-choose", self.name, true)
     if #p > 0 then
       self.cost_data = p[1]
       return true
@@ -1758,7 +1759,7 @@ local cansi = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
-    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#cansi-choose", self.name)
+    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#cansi-choose", self.name, false)
     local to
     if #tos > 0 then
       to = room:getPlayerById(tos[1])

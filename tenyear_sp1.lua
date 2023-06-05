@@ -546,7 +546,7 @@ local langxi = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local to = room:askForChoosePlayers(player, table.map(table.filter(room:getOtherPlayers(player), function(p)
-      return p.hp <= player.hp end), function(p) return p.id end), 1, 1, "#langxi-choose", self.name)
+      return p.hp <= player.hp end), function(p) return p.id end), 1, 1, "#langxi-choose", self.name, true)
     if #to > 0 then
       self.cost_data = to[1]
       return true
@@ -1856,7 +1856,7 @@ local sibian = fk.CreateTriggerSkill{
           table.insert(targets, p.id)
         end
       end
-      local to = room:askForChoosePlayers(player, targets, 1, 1, "#sibian-choose", self.name)
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#sibian-choose", self.name, true)
       if #to > 0 then
         local dummy2 = Fk:cloneCard("dilu")
         dummy2:addSubcards(cards)

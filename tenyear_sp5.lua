@@ -268,7 +268,81 @@ Fk:loadTranslationTable{
   ["$anzhi2"] = "星月独照人，何谓之暗？",
   ["~xuelingyun"] = "寒月隐幕，难作衣裳。",
 }
--- 刘辟 关宁
+
+local liupi = General(extension, "liupi", "qun", 4)
+local juying = fk.CreateTriggerSkill{
+  name = "juying",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) and player.phase == Player.Play then
+      local n = 1
+      local skill = Fk.skills["slash_skill"]
+      local status_skills = player.room.status_skills[TargetModSkill] or Util.DummyTable
+      for _, skill in ipairs(status_skills) do
+        local correct = skill:getResidueNum(player, skill, Player.HistoryPhase, Fk:cloneCard("slash"), nil)
+        if correct == nil then correct = 0 end
+        n = n + correct
+      end
+      return player:usedCardTimes("slash", Player.HistoryPhase) < n
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local n = 0
+    local choices = {"Cancel", "juying1", "juying2", "juying3"}
+    for i = 1, 3, 1 do
+      local choice = room:askForChoice(player, choices, self.name, "#juying-choice")
+      if choice == "Cancel" then break end
+      if choice == "juying1" then
+        room:addPlayerMark(player, self.name, 1)
+      elseif choice == "juying2" then
+        room:addPlayerMark(player, MarkEnum.AddMaxCardsInTurn, 2)
+      else
+        player:drawCards(3, self.name)
+      end
+      table.removeOne(choices, choice)
+      n = n + 1
+    end
+    if n > 0 and n > player.hp then
+      n = n - player.hp
+      if #player:getCardIds{Player.Hand, Player.Equip} < n then return end
+      room:askForDiscard(player, n, n, true, self.name, false)
+    end
+  end,
+
+  refresh_events = {fk.EventPhaseEnd},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player.phase == Player.Play and player:getMark(self.name) > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, self.name, 0)
+  end,
+}
+local juying_targetmod = fk.CreateTargetModSkill{
+  name = "#juying_targetmod",
+  residue_func = function(self, player, skill, scope)
+    if skill.trueName == "slash_skill" and player:getMark("juying") > 0 and scope == Player.HistoryPhase then
+      return player:getMark("juying")
+    end
+  end,
+}
+juying:addRelatedSkill(juying_targetmod)
+liupi:addSkill(juying)
+Fk:loadTranslationTable{
+  ["liupi"] = "刘辟",
+  ["juying"] = "踞营",
+  [":juying"] = "出牌阶段结束时，若你本阶段使用【杀】的次数小于次数上限，你可以选择任意项：1.下个回合出牌阶段使用【杀】次数上限+1；"..
+  "2.本回合手牌上限+2；3.摸三张牌。若你选择的选项数大于你的体力值，每多一项你弃置一张牌（不足则不弃）。",
+  ["#juying-choice"] = "踞营：你可以选择任意项，每比体力值多选一项便弃一张牌",
+  ["juying1"] = "下个回合出牌阶段使用【杀】上限+1",
+  ["juying2"] = "本回合手牌上限+2",
+  ["juying3"] = "摸三张牌",
+}
+-- 关宁
 
 local godzhangjiao = General(extension, "godzhangjiao", "god", 3)
 local yizhao = fk.CreateTriggerSkill{
@@ -2147,7 +2221,7 @@ Fk:loadTranslationTable{
   ["@huayi"] = "华衣",
 }
 
-local zhangjinyun = General(extension, "zhangjinyun", "shu", 3)
+local zhangjinyun = General(extension, "zhangjinyun", "shu", 3, 3, General.Female)
 local huizhi = fk.CreateTriggerSkill{
   name = "huizhi",
   anim_type = "drawcard",

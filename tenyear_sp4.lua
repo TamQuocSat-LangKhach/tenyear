@@ -416,7 +416,7 @@ local ligong = fk.CreateTriggerSkill{
     end
     local choices = {}
     for i = 1, 2, 1 do
-      local choice = room:askForChoice(player, skills, self.name)
+      local choice = room:askForChoice(player, skills, self.name, "#ligong-choice", true)
       table.insert(choices, choice)
       if choice == "Cancel" then break end
       table.removeOne(skills, choice)
@@ -445,6 +445,7 @@ Fk:loadTranslationTable{
   ["huishu3"] = "获得锦囊所需弃牌数",
   ["#yishu-add"] = "易数：请选择增加的一项",
   ["#yishu-lose"] = "易数：请选择减少的一项",
+  ["#ligong-choice"] = "离宫：获得两个技能并失去“易数”和“慧淑”，或点“取消”不失去“慧淑”并摸三张牌",
 
   ["$huishu1"] = "心有慧镜，善解百般人意。",
   ["$huishu2"] = "袖着静淑，可揾夜阑之泪。",
@@ -940,11 +941,11 @@ local qinbao = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and
       (data.card.trueName == "slash" or (data.card.type == Card.TypeTrick and data.card.sub_type ~= Card.SubtypeDelayedTrick)) and
-      #table.filter(player.room:getOtherPlayers(player), function(p) return #p.player_cards[Player.Hand] >= #player.player_cards[Player.Hand] end) > 0
+      #table.filter(player.room:getOtherPlayers(player), function(p) return p:getHandcardNum() >= player:getHandcardNum() end) > 0
   end,
   on_use = function(self, event, target, player, data)
     local targets = table.filter(player.room:getOtherPlayers(player), function(p)
-      return #p.player_cards[Player.Hand] >= #player.player_cards[Player.Hand] end)
+      return p:getHandcardNum() >= player:getHandcardNum() end)
     if #targets > 0 then
       data.disresponsiveList = data.disresponsiveList or {}
       for _, p in ipairs(targets) do
@@ -2053,7 +2054,7 @@ local tongguan = fk.CreateTriggerSkill{
         table.insert(choices, "@@tongguan"..i)
       end
     end
-    local choice = room:askForChoice(player, choices, self.name, "#tongguan-choice::"..target.id)
+    local choice = room:askForChoice(player, choices, self.name, "#tongguan-choice::"..target.id, true)
     room:setPlayerMark(target, choice, 1)
   end,
 }
@@ -2085,7 +2086,7 @@ local mengjiez = fk.CreateTriggerSkill{
         prompt = "#mengjiez4-invoke"
       elseif target:getMark("@@tongguan5") > 0 then
         targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
-          return #p.player_cards[Player.Hand] < p.maxHp end), function(p) return p.id end)
+          return p:getHandcardNum() < p.maxHp end), function(p) return p.id end)
         prompt = "#mengjiez5-invoke"
       end
       if #targets == 0 then return end
@@ -2174,12 +2175,17 @@ Fk:loadTranslationTable{
   "多谋：摸牌阶段外摸牌；摸两张牌<br>"..
   "果决：弃置或获得其他角色的牌；弃置一名其他角色区域内的至多两张牌<br>"..
   "仁智：交给其他角色牌；令一名其他角色将手牌摸至体力上限（至多摸五张）",
-  ["#tongguan-choice"] = "统观：为 %dest 选择一项属性",
+  ["#tongguan-choice"] = "统观：为 %dest 选择一项属性（每种属性至多被选择两次）",
   ["@@tongguan1"] = "武勇",
+  [":@@tongguan1"] = "回合结束时，若其本回合造成伤害，你对一名其他角色造成1点伤害",
   ["@@tongguan2"] = "刚硬",
+  [":@@tongguan2"] = "回合结束时，若其本回合回复体力或手牌数大于体力值，你令一名角色回复1点体力",
   ["@@tongguan3"] = "多谋",
+  [":@@tongguan3"] = "回合结束时，若其本回合摸牌阶段外摸牌，你摸两张牌",
   ["@@tongguan4"] = "果决",
+  [":@@tongguan4"] = "回合结束时，若其本回合弃置或获得其他角色的牌，你弃置一名其他角色区域内的至多两张牌",
   ["@@tongguan5"] = "仁智",
+  [":@@tongguan5"] = "回合结束时，若其本回合交给其他角色牌，你令一名其他角色将手牌摸至体力上限（至多摸五张）",
   ["#mengjiez1-invoke"] = "梦解：你可以对一名其他角色造成1点伤害",
   ["#mengjiez2-invoke"] = "梦解：你可以令一名角色回复1点体力",
   ["#mengjiez3-invoke"] = "梦解：你可以摸两张牌",
@@ -2317,18 +2323,18 @@ local zhenze = fk.CreateTriggerSkill{
     local choice = room:askForChoice(player, {"zhenze_lose", "zhenze_recover"}, self.name)
     if choice == "zhenze_lose" then
       for _, p in ipairs(room:getOtherPlayers(player)) do
-        if ((#p.player_cards[Player.Hand] > p.hp) ~= (#player.player_cards[Player.Hand] > player.hp) or
-          (#p.player_cards[Player.Hand] == p.hp) ~= (#player.player_cards[Player.Hand] == player.hp) or
-          (#p.player_cards[Player.Hand] < p.hp) ~= (#player.player_cards[Player.Hand] < player.hp)) then
+        if ((p:getHandcardNum() > p.hp) ~= (player:getHandcardNum() > player.hp) or
+          (p:getHandcardNum() == p.hp) ~= (player:getHandcardNum() == player.hp) or
+          (p:getHandcardNum() < p.hp) ~= (player:getHandcardNum() < player.hp)) then
             room:loseHp(p, 1, self.name)
         end
       end
     else
       for _, p in ipairs(room:getAlivePlayers()) do
         if p:isWounded() and
-          ((#p.player_cards[Player.Hand] > p.hp) and (#player.player_cards[Player.Hand] > player.hp) or
-          (#p.player_cards[Player.Hand] == p.hp) and (#player.player_cards[Player.Hand] == player.hp) or
-          (#p.player_cards[Player.Hand] < p.hp) and (#player.player_cards[Player.Hand] < player.hp)) then
+          ((p:getHandcardNum() > p.hp) and (player:getHandcardNum() > player.hp) or
+          (p:getHandcardNum() == p.hp) and (player:getHandcardNum() == player.hp) or
+          (p:getHandcardNum() < p.hp) and (player:getHandcardNum() < player.hp)) then
             room:recover({
               who = p,
               num = 1,

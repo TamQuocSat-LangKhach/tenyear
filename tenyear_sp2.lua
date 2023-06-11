@@ -984,7 +984,7 @@ local xingzuo = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if player.phase == Player.Play then
-      local piles = room:AskForExchange(player, {room:getNCards(3, "bottom"), player.player_cards[Player.Hand]}, {"Bottom", "$Hand"}, self.name)
+      local piles = room:askForExchange(player, {room:getNCards(3, "bottom"), player.player_cards[Player.Hand]}, {"Bottom", "$Hand"}, self.name)
       local cards1, cards2 = {}, {}
       for _, id in ipairs(piles[1]) do
         if room:getCardArea(id) == Player.Hand then

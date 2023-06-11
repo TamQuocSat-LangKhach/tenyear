@@ -955,9 +955,8 @@ local yuanmo = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self.name) then
       if event == fk.EventPhaseStart then
-        return player.phase == Player.Start or
-          (player.phase == Player.Finish and table.every(player.room:getOtherPlayers(player), function(p)
-          return not player:inMyAttackRange(p) end))
+        return player.phase == Player.Start or (player.phase == Player.Finish and
+          table.every(player.room:getOtherPlayers(player), function(p) return not player:inMyAttackRange(p) end))
       else
         return true
       end
@@ -1199,6 +1198,20 @@ local yinlu = fk.CreateTriggerSkill{
         room:setPlayerMark(to, choice, 0)
         room:setPlayerMark(dest, choice, 1)
         if event == fk.EventPhaseStart then return end
+      end
+    end
+  end,
+
+  refresh_events = {fk.Deathed},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name, true, true) and
+      not table.find(player.room.alive_players, function(p) return p:hasSkill(self.name, true) end)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    for _, p in ipairs(room.alive_players) do
+      for i = 1, 4, 1 do
+        room:setPlayerMark(p, "@@yinlu"..i, 0)
       end
     end
   end,
@@ -2055,7 +2068,6 @@ local caizhuang = fk.CreateActiveSkill{
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
   end,
   card_filter = function(self, to_select, selected)
-    if Fk:currentRoom():getCardArea(to_select) == Player.Equip then return end
     if #selected == 0 then
       return true
     else

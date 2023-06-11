@@ -1602,14 +1602,21 @@ local daoshu = fk.CreateActiveSkill{
       }
       player:addSkillUseHistory(self.name, -1)
     else
-      table.removeOne(suits, Fk:getCardById(card):getSuitString())
-      local ids = room:askForCard(player, 1, 1, false, self.name, false, ".|.|"..table.concat(suits, ","),
-        "#daoshu-give::"..target.id..":"..Fk:getCardById(card):getSuitString())
-      if #ids > 0 then
-        room:obtainCard(target, Fk:getCardById(ids[1]), true, fk.ReasonGive)
-      else
-        player:showCards(player.player_cards[Player.Hand])
+      local suit = Fk:getCardById(card):getSuitString()
+      table.removeOne(suits, suit)
+      local others = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getSuitString() ~= suit end)
+      if #others > 0 then
+        local cards = room:askForCard(player, 1, 1, false, self.name, false, ".|.|"..table.concat(suits, ","),
+          "#daoshu-give::"..target.id..":"..suit)
+        if #cards > 0 then
+          cards = cards[1]
+        else
+          cards = table.random(others)
+        end
+        room:obtainCard(target, cards, true, fk.ReasonGive)
+        return
       end
+      player:showCards(player.player_cards[Player.Hand])
     end
   end,
 }

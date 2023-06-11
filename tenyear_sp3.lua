@@ -227,7 +227,7 @@ Fk:loadTranslationTable{
 Fk:loadTranslationTable{
   ["ty__zhangning"] = "张宁",
   ["tianze"] = "天则",
-  [":tianze"] = "其他角色的出牌阶段限一次，其使用黑色手牌结算完毕后，你可以弃置一张黑色牌对其造成1点伤害；其他角色的黑色判定牌生效后，你摸一张牌。",
+  [":tianze"] = "其他角色的出牌阶段限一次，其使用黑色牌结算后，你可以弃置一张黑色牌对其造成1点伤害；其他角色的黑色判定牌生效后，你摸一张牌。",
   ["difa"] = "地法",
   [":difa"] = "你的回合内限一次，当你从牌堆摸到红色牌后，你可以弃置此牌，然后选择一种锦囊牌的牌名，从牌堆或弃牌堆获得一张。",
 }
@@ -242,8 +242,7 @@ local zhenge = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local p = player.room:askForChoosePlayers(player, table.map(player.room:getAlivePlayers(), function(p)
-      return p.id
-    end), 1, 1, "#zhenge-choose", self.name)
+      return p.id end), 1, 1, "#zhenge-choose", self.name)
     if #p > 0 then
       self.cost_data = p[1]
       return true
@@ -252,7 +251,7 @@ local zhenge = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
-    if to:getMark("@zhenge") <5 then
+    if to:getMark("@zhenge") < 5 then
       room:addPlayerMark(to, "@zhenge", 1)
     end
     local targets = {}
@@ -331,7 +330,8 @@ Fk:loadTranslationTable{
 Fk:loadTranslationTable{
   ["ty__tongyuan"] = "童渊",
   ["chaofeng"] = "朝凤",
-  [":chaofeng"] = "出牌阶段限一次，当你使用牌造成伤害时，你可以弃置一张手牌，然后摸一张牌。若弃置的牌与造成伤害的牌：颜色相同，则多摸1张牌；类型相同，则此伤害+1。",
+  [":chaofeng"] = "出牌阶段限一次，当你使用牌造成伤害时，你可以弃置一张手牌，然后摸一张牌。若弃置的牌与造成伤害的牌：颜色相同，则多摸一张牌；"..
+  "类型相同，则此伤害+1。",
   ["chuanshu"] = "传术",
   [":chuanshu"] = "限定技，准备阶段若你已受伤，或当你死亡时，你可令一名其他角色获得〖朝凤〗，然后你获得〖龙胆〗、〖从谏〗、〖穿云〗。",
   ["chuanyun"] = "穿云",
@@ -478,7 +478,8 @@ Fk:loadTranslationTable{
 Fk:loadTranslationTable{
   ["tenggongzhu"] = "滕公主",
   ["xingchong"] = "幸宠",
-  [":xingchong"] = "每轮游戏开始时，你可以摸任意张牌并展示任意张牌（摸牌和展示牌的总数不能超过你的体力上限）。若如此做，本轮内当你失去一张以此法展示的手牌后，你摸两张牌。",
+  [":xingchong"] = "每轮游戏开始时，你可以摸任意张牌并展示任意张牌（摸牌和展示牌的总数不能超过你的体力上限）。"..
+  "若如此做，本轮内当你失去一张以此法展示的手牌后，你摸两张牌。",
   ["xingchng"] = "幸宠",
   [":xingcong"] = "锁定技，牌堆第一次洗牌后，你于当前回合结束时加1点体力上限。牌堆第二次洗牌后，你于当前回合结束时回复1点体力，然后本局游戏手牌上限+10。",
 }
@@ -488,9 +489,11 @@ Fk:loadTranslationTable{
   ["wufan"] = "吴范",
   ["tianyun"] = "天运",
   [":tianyun"] = "获得起始手牌后，你再从牌堆中随机获得手牌中没有的花色各一张牌。<br>"..
-  "一名角色的回合开始时，若其座次等于游戏轮数，你可以观看牌堆顶的X张牌，然后以任意顺序置于牌堆顶或牌堆底，若你将所有牌均置于牌堆底，则你可以令一名角色摸X张牌（X为你手牌中的花色数），若如此做，你失去1点体力。",
+  "一名角色的回合开始时，若其座次等于游戏轮数，你可以观看牌堆顶的X张牌，然后以任意顺序置于牌堆顶或牌堆底，若你将所有牌均置于牌堆底，"..
+  "则你可以令一名角色摸X张牌（X为你手牌中的花色数），若如此做，你失去1点体力。",
   ["yuyan"] = "预言",
-  [":yuyan"] = "每轮游戏开始时，你选择一名角色，若其是本轮第一个进入濒死状态的角色，则你获得技能“奋音”直到你的回合结束。若其是本轮第一个造成伤害的角色，则你摸两张牌。",
+  [":yuyan"] = "每轮游戏开始时，你选择一名角色，若其是本轮第一个进入濒死状态的角色，则你获得技能“奋音”直到你的回合结束。"..
+  "若其是本轮第一个造成伤害的角色，则你摸两张牌。",
 }
 Fk:loadTranslationTable{
   ["licaiwei"] = "李采薇",
@@ -822,7 +825,7 @@ local juetao = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local to = player.room:askForChoosePlayers(player, table.map(player.room:getAlivePlayers(), function(p)
-      return p.id end), 1, 1, "#juetao-choose", self.name, false)
+      return p.id end), 1, 1, "#juetao-choose", self.name, true)
     if #to > 0 then
       self.cost_data = to[1]
       return true
@@ -1129,7 +1132,7 @@ local pingxiang = fk.CreateActiveSkill{
     room:changeMaxHp(player, -9)
     for i = 1, 9, 1 do
       if player.dead then return end
-      local success, data = room:askForUseViewAsSkill(player, "pingxiang_viewas", "#pingxiang-slash:::"..tostring(i), true)
+      local success, data = room:askForUseActiveSkill(player, "pingxiang_viewas", "#pingxiang-slash:::"..tostring(i), true)
       if success then
         local card = Fk:cloneCard("fire__slash")
         card.skillName = self.name
@@ -1339,7 +1342,7 @@ local dunshi_record = fk.CreateTriggerSkill{
           end
         end
         if #skills > 0 then
-          local skill = room:askForChoice(player, table.random(skills, math.min(3, #skills)), self.name, "#dunshi-chooseskill::"..target.id)
+          local skill = room:askForChoice(player, table.random(skills, math.min(3, #skills)), self.name, "#dunshi-chooseskill::"..target.id, true)
           room:handleAddLoseSkills(target, skill, nil, true, false)
         end
       elseif choice == "dunshi2" then

@@ -283,7 +283,7 @@ local siegeEngineSkill = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     if event == fk.EventPhaseStart then
-      local success, dat = player.room:askForUseViewAsSkill(player, "siege_engine_slash", "#siege_engine-invoke", true)
+      local success, dat = player.room:askForUseActiveSkill(player, "siege_engine_slash", "#siege_engine-invoke", true)
       if success then
         self.cost_data = dat
         return true

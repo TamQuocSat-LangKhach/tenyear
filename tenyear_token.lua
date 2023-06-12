@@ -255,7 +255,7 @@ local siege_engine_slash = fk.CreateViewAsSkill{
   end,
   view_as = function(self, cards)
     local card = Fk:cloneCard("slash")
-    card.skillName = "siege_engine_skill"
+    card.skillName = "#siege_engine_skill"
     return card
   end,
 }
@@ -345,7 +345,7 @@ local siegeEngineSkill = fk.CreateTriggerSkill{
 }
 local siege_engine_targetmod = fk.CreateTargetModSkill{
   name = "#siege_engine_targetmod",
-  distance_limit_func =  function(self, player, skill, card)
+  distance_limit_func =  function(self, player, skill, card, to)
     if skill.trueName == "slash_skill" and table.contains(card.skillNames, "#siege_engine_skill") and player:getMark("xianzhu1") > 0 then
       return 999
     end

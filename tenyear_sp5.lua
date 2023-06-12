@@ -1572,6 +1572,15 @@ Fk:loadTranslationTable{
   ["#weidang-use"] = "伪谠：请使用%arg",
 }
 
+Fk:loadTranslationTable{
+  ["ty__tengfanglan"] = "滕芳兰",
+  ["ty__luochong"] = "落宠",
+  [":ty__luochong"] = "每轮游戏开始时，你可以弃置任意名角色区域内共计至多4张牌，若你一次性弃置了一名角色区域内至少3张牌，〖落宠〗弃置牌数-1。",
+  ["ty__aichen"] = "哀尘",
+  [":ty__aichen"] = "锁定技，若剩余牌堆数大于80，当你发动〖落宠〗弃置自己区域内的牌后，你摸两张牌；"..
+  "若剩余牌堆数大于40，你跳过弃牌阶段；若剩余牌堆数小于40，当你成为♠牌的目标后，你不能响应此牌。",
+}
+
 local peiyuanshao = General(extension, "peiyuanshao", "qun", 4)
 local moyu = fk.CreateActiveSkill{
   name = "moyu",

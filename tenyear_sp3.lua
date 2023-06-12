@@ -51,13 +51,15 @@ local yise = fk.CreateTriggerSkill{
 }
 local yise_record = fk.CreateTriggerSkill{
   name = "#yise_record",
-  anim_type = "offensive",
-
-  refresh_events = {fk.DamageInflicted},
-  can_refresh = function(self, event, target, player, data)
+  mute = true,
+  events = {fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("yise_damage") > 0 and data.card and data.card.trueName == "slash"
   end,
-  on_refresh = function(self, event, target, player, data)
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
     data.damage = data.damage + player:getMark("yise_damage")
     player.room:setPlayerMark(player, "yise_damage", 0)
   end,
@@ -201,11 +203,17 @@ local anyong = fk.CreateTriggerSkill{
     end
   end,
   on_cost = function(self, event, target, player, data)
-    return #player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#anyong-invoke::"..data.to.id) > 0
+    local card = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#anyong-invoke::"..data.to.id, true)
+    if #card > 0 then
+      self.cost_data = card
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:doIndicate(player.id, {data.to.id})
-    player.room:damage{
+    local room = player.room
+    room:throwCard(self.cost_data, self.name, player, player)
+    room:doIndicate(player.id, {data.to.id})
+    room:damage{
       from = player,
       to = data.to,
       damage = 1,
@@ -492,18 +500,134 @@ Fk:loadTranslationTable{
   "一名角色的回合开始时，若其座次等于游戏轮数，你可以观看牌堆顶的X张牌，然后以任意顺序置于牌堆顶或牌堆底，若你将所有牌均置于牌堆底，"..
   "则你可以令一名角色摸X张牌（X为你手牌中的花色数），若如此做，你失去1点体力。",
   ["yuyan"] = "预言",
-  [":yuyan"] = "每轮游戏开始时，你选择一名角色，若其是本轮第一个进入濒死状态的角色，则你获得技能“奋音”直到你的回合结束。"..
+  [":yuyan"] = "每轮游戏开始时，你选择一名角色，若其是本轮第一个进入濒死状态的角色，则你获得技能〖奋音〗直到你的回合结束。"..
   "若其是本轮第一个造成伤害的角色，则你摸两张牌。",
 }
+
+local licaiwei = General(extension, "licaiwei", "qun", 3, 3, General.Female)
+local yijiao = fk.CreateActiveSkill{
+  name = "yijiao",
+  anim_type = "support",
+  card_num = 0,
+  target_num = 1,
+  interaction = function()
+    return UI.Spin {
+      from = 1,
+      to = 4,
+    }
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local target = room:getPlayerById(effect.tos[1])
+    room:addPlayerMark(target, "yijiao1", 10 * self.interaction.data)
+    room:setPlayerMark(target, "@yijiao", target:getMark("yijiao1"))
+    local mark = target:getMark("yijiao_src")
+    if mark == 0 then mark = {} end
+    table.insertIfNeed(mark, effect.from)
+    room:setPlayerMark(target, "yijiao_src", mark)
+  end,
+}
+local yijiao_record = fk.CreateTriggerSkill{
+  name = "#yijiao_record",
+  mute = true,
+  events = {fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:getMark("@yijiao") ~= 0 and player.phase == Player.Finish
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local n = player:getMark("yijiao2") - player:getMark("yijiao1")
+    local src = table.map(target:getMark("yijiao_src"), function(id) return room:getPlayerById(id) end)
+    for _, p in ipairs(src) do
+      if not p.dead then
+        room:doIndicate(p.id, {player.id})
+      end
+      room:delay(500)
+      if n < 0 then
+        if not player:isKongcheng() then
+          room:broadcastSkillInvoke("yijiao", 1)
+          room:notifySkillInvoked(p, "yijiao", "control")
+          room:throwCard({table.random(player.player_cards[Player.Hand])}, "yijiao", player, player)
+        end
+      elseif n == 0 then
+        room:broadcastSkillInvoke("yijiao", 2)
+        room:notifySkillInvoked(p, "yijiao", "support")
+        player:gainAnExtraTurn(true)
+      else
+        if not p.dead then
+          room:broadcastSkillInvoke("yijiao", 2)
+          room:notifySkillInvoked(p, "yijiao", "drawcard")
+          p:drawCards(2, "yijiao")
+        end
+      end
+    end
+    room:setPlayerMark(player, "@yijiao", 0)
+    room:setPlayerMark(player, "yijiao1", 0)
+    room:setPlayerMark(player, "yijiao2", 0)
+    room:setPlayerMark(player, "yijiao_src", 0)
+  end,
+
+  refresh_events = {fk.CardUsing},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark("@yijiao") ~= 0 and player.phase ~= Player.NotActive and data.card.number
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:addPlayerMark(player, "yijiao2", data.card.number)
+    room:setPlayerMark(player, "@yijiao", string.format("%d/%d", target:getMark("yijiao1"), target:getMark("yijiao2")))
+  end,
+}
+local qibie = fk.CreateTriggerSkill{
+  name = "qibie",
+  anim_type = "drawcard",
+  events = {fk.Deathed},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and not player:isKongcheng()
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#qibie-invoke")
+  end,
+  on_use = function(self, event, target, player, data)
+    local n = player:getHandcardNum()
+    player:throwAllCards("h")
+    if player:isWounded() then
+      player.room:recover({
+        who = player,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      })
+    end
+    player:drawCards(n + 1, self.name)
+  end,
+}
+yijiao:addRelatedSkill(yijiao_record)
+licaiwei:addSkill(yijiao)
+licaiwei:addSkill(qibie)
 Fk:loadTranslationTable{
   ["licaiwei"] = "李采薇",
   ["yijiao"] = "异教",
-  [":yijiao"] = "出牌阶段限1次，你可以选择1名其他角色并在1~4之间选择1个数字，该角色获得此数字十倍的“异”标记；有“异”标记的角色结束阶段，若其本回合使用牌的点数之和：<br>"..
-  "1.小于“异”标记数，其随机弃置1张手牌；<br>"..
-  "2.等于“异”标记数，该角色本回合结束后进行1个额外的回合；<br>"..
-  "3.大于“异”标记数，你摸2张牌。",
+  [":yijiao"] = "出牌阶段限一次，你可以选择一名其他角色并选择一个1~4的数字，该角色获得十倍的“异”标记；"..
+  "有“异”标记的角色结束阶段，若其本回合使用牌的点数之和：<br>"..
+  "1.小于“异”标记数，其随机弃置一张手牌；<br>"..
+  "2.等于“异”标记数，其于本回合结束后进行一个额外的回合；<br>"..
+  "3.大于“异”标记数，你摸两张牌。",
   ["qibie"] = "泣别",
-  [":qibie"] = "一名角色阵亡后，你可以弃置所有手牌，然后回复1点体力值并摸X+1张牌（X为你以此法弃置牌数）。",
+  [":qibie"] = "一名角色死亡后，你可以弃置所有手牌，然后回复1点体力值并摸X+1张牌（X为你以此法弃置牌数）。",
+  ["@yijiao"] = "异",
+  ["#yijiao_record"] = "异教",
+  ["#qibie-invoke"] = "泣别：你可以弃置所有手牌，回复1点体力值并摸弃牌数+1张牌",
 }
 --孙翊2022.3.24
 --赵嫣
@@ -707,7 +831,7 @@ local xizhen = fk.CreateTriggerSkill{
   refresh_events = {fk.CardUsing, fk.CardResponding},
   can_refresh = function(self, event, target, player, data)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) > 0 and
-      data.responseToEvent and data.responseToEvent.from == player.id
+      data.responseToEvent and data.responseToEvent.from and data.responseToEvent.from == player.id
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -1479,8 +1603,196 @@ Fk:loadTranslationTable{
   ["zimu"] = "自牧",
   [":zimu"] = "锁定技，当你受到伤害后，其他有〖自牧〗的角色各摸一张牌，然后你失去〖自牧〗。",
   ["#suifu-invoke"] = "绥抚：你可以将 %dest 所有手牌置于牌堆顶，你视为使用【五谷丰登】",
-  ["#pijing-choose"] = "辟境：你可以令包括你的任意名角色获得技能〖自牧〗直到下次发动〖辟境〗<br>（锁定技，当你受到伤害后，其他有〖自牧〗的角色各摸一张牌，然后你失去〖自牧〗）",
+  ["#pijing-choose"] = "辟境：你可以令包括你的任意名角色获得技能〖自牧〗直到下次发动〖辟境〗<br>"..
+  "（锁定技，当你受到伤害后，其他有〖自牧〗的角色各摸一张牌，然后你失去〖自牧〗）",
 }
---曹华2022.7.18
+
+local caohua = General(extension, "caohua", "wei", 3, 3, General.Female)
+local function doCaiyi(player, target, choice, n)
+  local room = player.room
+  local state = string.sub(choice, 6, 9)
+  local i = tonumber(string.sub(choice, 10))
+  if i == 4 then
+    local num = {}
+    for i = 1, 3, 1 do
+      if player:getMark("caiyi"..state..tostring(i)) == 0 then
+        table.insert(num, i)
+      end
+    end
+    doCaiyi(player, target, "caiyi"..state..tostring(table.random(num)), n)
+  else
+    if state == "yang" then
+      if i == 1 then
+        if target:isWounded() then
+          room:recover({
+            who = target,
+            num = math.min(n, target:getLostHp()),
+            recoverBy = player,
+            skillName = "caiyi",
+          })
+        end
+      elseif i == 2 then
+        target:drawCards(n, "caiyi")
+      else
+        if not target.faceup then
+          target:turnOver()
+        end
+        if target.chained then
+          target:setChainState(false)
+        end
+      end
+    else
+      if i == 1 then
+        room:damage{
+          to = target,
+          damage = n,
+          skillName = "caiyi",
+        }
+      elseif i == 2 then
+        if #target:getCardIds{Player.Hand, Player.Equip} <= n then
+          target:throwAllCards("he")
+        else
+          room:askForDiscard(target, n, n, true, "caiyi", false)
+        end
+      else
+        target:turnOver()
+        if not target.chained then
+          target:setChainState(true)
+        end
+      end
+    end
+  end
+end
+local caiyi = fk.CreateTriggerSkill{
+  name = "caiyi",
+  anim_type = "switch",
+  switch_skill_name = "caiyi",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) and player.phase == Player.Finish then
+      local state = "yang"
+      if player:getSwitchSkillState(self.name, false) == fk.SwitchYin then
+        state = "yinn"
+      end
+      for i = 1, 4, 1 do
+        local mark = "caiyi"..state..tostring(i)
+        if player:getMark(mark) == 0 then
+          return true
+        end
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local prompt = "#caiyi1-invoke"
+    if player:getSwitchSkillState(self.name, false) == fk.SwitchYin then
+      prompt = "#caiyi2-invoke"
+    end
+    local to = player.room:askForChoosePlayers(player, table.map(player.room:getAlivePlayers(), function(p)
+      return p.id end), 1, 1, prompt, self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local choices = {}
+    local state = "yang"
+    if player:getSwitchSkillState(self.name, true) == fk.SwitchYin then
+      state = "yinn"
+    end
+    for i = 1, 4, 1 do
+      local mark = "caiyi"..state..tostring(i)
+      if player:getMark(mark) == 0 then
+        table.insert(choices, mark)
+      end
+    end
+    local num = #choices
+    if num == 4 then
+      table.remove(choices, 4)
+    end
+    local to = room:getPlayerById(self.cost_data)
+    local choice = room:askForChoice(to, choices, self.name, "#caiyi-choice:::"..tostring(num))
+    room:setPlayerMark(player, choice, 1)
+    doCaiyi(player, to, choice, num)
+  end,
+}
+local guili = fk.CreateTriggerSkill{
+  name = "guili",
+  anim_type = "control",
+  events = {fk.EventPhaseChanging},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      if target == player and data.from == Player.RoundStart then
+        return player:getMark(self.name) == 0
+      else
+        return player:getMark(self.name) == target.id and data.to == Player.NotActive and
+        target:getMark("guili-round") == 1 and target:getMark("guili_damage-turn") == 0
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if player:getMark(self.name) == 0 then
+      local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
+      local tos = room:askForChoosePlayers(player, targets, 1, 1, "#guili-choose", self.name, false, true)
+      local to
+      if #tos > 0 then
+        to = tos[1]
+      else
+        to = table.random(targets)
+      end
+      room:setPlayerMark(player, self.name, to)
+      room:setPlayerMark(room:getPlayerById(to), "@@guili", 1)
+    else
+      player:gainAnExtraTurn(true)
+    end
+  end,
+
+  refresh_events = {fk.EventPhaseChanging, fk.Damage},
+  can_refresh = function(self, event, target, player, data)
+    if player:getMark(self.name) ~= 0 and target and player:getMark(self.name) == target.id then
+      if event == fk.EventPhaseChanging then
+        return data.from == Player.RoundStart
+      else
+        return target.phase ~= Player.NotActive and target:getMark("guili-round") == 1
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseChanging then
+      room:addPlayerMark(target, "guili-round", 1)
+    else
+      room:setPlayerMark(target, "guili_damage-turn", 1)
+    end
+  end,
+}
+caohua:addSkill(caiyi)
+caohua:addSkill(guili)
+Fk:loadTranslationTable{
+  ["caohua"] = "曹华",
+  ["caiyi"] = "彩翼",
+  [":caiyi"] = "转换技，结束阶段，你可以令一名角色选择一项并移除该选项：阳：1.回复X点体力；2.摸X张牌；3.复原武将牌；4.随机执行一个已移除的阳选项；"..
+  "阴：1.受到X点伤害；2.弃置X张牌；3.翻面并横置；4.随机执行一个已移除的阴选项（X为当前状态剩余选项数）。",
+  ["guili"] = "归离",
+  [":guili"] = "你的第一个回合开始时，你选择一名其他角色。该角色每轮的第一个回合结束时，若其本回合未造成过伤害，你执行一个额外的回合。",
+  ["#caiyi1-invoke"] = "彩翼：你可以令一名角色执行一个正面选项",
+  ["#caiyi2-invoke"] = "彩翼：你可以令一名角色执行一个负面选项",
+  ["#caiyi-choice"] = "彩翼：选择执行的一项（其中X为%arg）",
+  ["caiyiyang1"] = "回复X点体力",
+  ["caiyiyang2"] = "摸X张牌",
+  ["caiyiyang3"] = "复原武将牌",
+  ["caiyiyang4"] = "随机一个已移除的阳选项",
+  ["caiyiyinn1"] = "受到X点伤害",
+  ["caiyiyinn2"] = "弃置X张牌",
+  ["caiyiyinn3"] = "翻面并横置",
+  ["caiyiyinn4"] = "随机一个已移除的阴选项",
+  ["@@guili"] = "归离",
+  ["#guili-choose"] = "归离：选择一名角色，其回合结束时，若其本回合未造成过伤害，你执行一个额外回合",
+}
 
 return extension

@@ -2232,7 +2232,7 @@ local xiangmian = fk.CreateActiveSkill{
       pattern = ".",
     }
     room:judge(judge)
-    room:setPlayerMark(target, "@xiangmian", string.format("%s-%d",
+    room:setPlayerMark(target, "@xiangmian", string.format("%s%d",
     Fk:translate(judge.card:getSuitString()),
     judge.card.number))
     room:setPlayerMark(target, "xiangmian_suit", judge.card:getSuitString())
@@ -2247,12 +2247,13 @@ local xiangmian_record = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    room:addPlayerMark(target, self.name, 1)
-    if data.card:getSuitString() == target:getMark("xiangmian_suit") or target:getMark(self.name) == target:getMark("xiangmian_num") then
+    if data.card:getSuitString() == target:getMark("xiangmian_suit") or target:getMark("xiangmian_num") == 1 then
       room:setPlayerMark(target, "xiangmian_num", 0)
       room:setPlayerMark(target, "@xiangmian", 0)
       room:loseHp(target, target.hp, "xiangmian")
     end
+    room:addPlayerMark(target, "xiangmian_num", -1)
+    room:setPlayerMark(target, "@xiangmian", string.format("%s%d",Fk:translate(target:getMark("xiangmian_suit")), target:getMark("xiangmian_num")))
   end,
 }
 local tianji = fk.CreateTriggerSkill{

@@ -1943,32 +1943,18 @@ local yuyun = fk.CreateTriggerSkill{
       end
     end
   end,
-
-  refresh_events = {fk.TargetSpecifying},
-  can_refresh = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) and data.card.trueName == "slash" then
-      for _, id in ipairs(AimGroup:getAllTargets(data.tos)) do
-        if player.room:getPlayerById(id):getMark("yuyun2-turn") > 0 then
-          return true
-        end
-      end
+}
+local yuyun_targetmod = fk.CreateTargetModSkill{
+  name = "#yuyun_targetmod",
+  residue_func = function(self, player, skill, scope, card, to)
+    if player.phase ~= Player.NotActive and scope == Player.HistoryTurn and to:getMark("yuyun2-turn") > 0 then
+      return 999
     end
   end,
-  on_refresh = function(self, event, target, player, data)
-    player:addCardUseHistory(data.card.trueName, -1)
-  end
-}
-local yuyun_distance = fk.CreateDistanceSkill{
-  name = "#yuyun_distance",
-  correct_func = function(self, from, to)
-    if from:hasSkill(self.name, true) then
-      if to:getMark("yuyun2-turn") > 0 then
-        from:setFixedDistance(to, 1)
-      else
-        from:removeFixedDistance(to)
-      end
+  distance_limit_func =  function(self, player, skill, card, to)
+    if player.phase ~= Player.NotActive and to:getMark("yuyun2-turn") > 0 then
+      return 999
     end
-    return 0
   end,
 }
 local yuyun_maxcards = fk.CreateMaxCardsSkill{
@@ -1980,7 +1966,7 @@ local yuyun_maxcards = fk.CreateMaxCardsSkill{
     return 0
   end,
 }
-yuyun:addRelatedSkill(yuyun_distance)
+yuyun:addRelatedSkill(yuyun_targetmod)
 yuyun:addRelatedSkill(yuyun_maxcards)
 zhouyi:addSkill(zhukou)
 zhouyi:addSkill(mengqing)

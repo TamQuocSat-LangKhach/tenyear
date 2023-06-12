@@ -851,34 +851,17 @@ local tanbei_prohibit = fk.CreateProhibitSkill{
     return from:hasSkill(self.name) and to:getMark("tanbei1-turn") > 0
   end,
 }
-local tanbei_record = fk.CreateTriggerSkill{
-  name = "#tanbei_record",
-
-  refresh_events = {fk.TargetSpecifying},
-  can_refresh = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) then
-      for _, id in ipairs(AimGroup:getAllTargets(data.tos)) do
-        if player.room:getPlayerById(id):getMark("tanbei2-turn") > 0 then
-          return true
-        end
-      end
+local tanbei_targetmod = fk.CreateTargetModSkill{
+  name = "#tanbei_targetmod",
+  residue_func = function(self, player, skill, scope, card, to)
+    if player.phase ~= Player.NotActive and scope == Player.HistoryTurn and to:getMark("tanbei2-turn") > 0 then
+      return 999
     end
   end,
-  on_refresh = function(self, event, target, player, data)
-    player:addCardUseHistory(data.card.trueName, -1)
-  end,
-}
-local tanbei_distance = fk.CreateDistanceSkill{
-  name = "#tanbei_distance",
-  correct_func = function(self, from, to)
-    if from:hasSkill(self.name) then
-      if to:getMark("tanbei2-turn") > 0 then
-        from:setFixedDistance(to, 1)
-      else
-        from:removeFixedDistance(to)
-      end
+  distance_limit_func =  function(self, player, skill, card, to)
+    if player.phase ~= Player.NotActive and to:getMark("tanbei2-turn") > 0 then
+      return 999
     end
-    return 0
   end,
 }
 local sidao = fk.CreateTriggerSkill{
@@ -886,8 +869,8 @@ local sidao = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) and player.phase == Player.Play and player:usedSkillTimes(self.name) == 0 and
-      not player:isKongcheng() then
+    if target == player and player:hasSkill(self.name) and player.phase == Player.Play and not player:isKongcheng() and
+      player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 then
       return self.sidao_tos and #self.sidao_tos > 0
     end
   end,
@@ -926,8 +909,7 @@ local sidao = fk.CreateTriggerSkill{
   end,
 }
 tanbei:addRelatedSkill(tanbei_prohibit)
-tanbei:addRelatedSkill(tanbei_record)
-tanbei:addRelatedSkill(tanbei_distance)
+tanbei:addRelatedSkill(tanbei_targetmod)
 guosi:addSkill(tanbei)
 guosi:addSkill(sidao)
 Fk:loadTranslationTable{
@@ -2276,13 +2258,12 @@ wangshuang:addSkill(zhuilie)
 Fk:loadTranslationTable{
   ["wangshuang"] = "王双",
   ["zhuilie"] = "追猎",
-  [":zhuilie"] = "锁定技，你使用【杀】无距离限制；当你使用【杀】指定你攻击范围外的一名角色为目标后，此【杀】不计入次数且你进行一次判定，若结果为武器牌或坐骑牌，此【杀】伤害基数值增加至该角色的体力值，否则你失去1点体力。",
+  [":zhuilie"] = "锁定技，你使用【杀】无距离限制；当你使用【杀】指定你攻击范围外的一名角色为目标后，此【杀】不计入次数且你进行一次判定，"..
+  "若结果为武器牌或坐骑牌，此【杀】伤害基数值增加至该角色的体力值，否则你失去1点体力。",
 
   ["$zhuilie1"] = "我喜欢，猎夺沙场的快感。",
   ["$zhuilie2"] = "追敌夺魂，猎尽贼寇。",
   ["~wangshuang"] = "我居然，被蜀军所击倒。",
-  [":zhuilie"] = "锁定技，你使用【杀】无距离限制；当你使用【杀】指定你攻击范围外的一名角色为目标后，此【杀】不计入次数且你进行一次判定，"..
-  "若结果为武器牌或坐骑牌，此【杀】伤害基数值增加至该角色的体力值，否则你失去1点体力。",
 }
 
 local xingdaorong = General(extension, "xingdaorong", "qun", 4, 6)

@@ -2241,7 +2241,7 @@ local xiangmian = fk.CreateActiveSkill{
 }
 local xiangmian_record = fk.CreateTriggerSkill{
   name = "#xiangmian_record",
-  refresh_events = {fk.CardUseFinished},
+  refresh_events = {fk.CardEffectFinished},
   can_refresh = function(self, event, target, player, data)
     return target == player and target:getMark("xiangmian_num") > 0
   end,
@@ -2251,9 +2251,10 @@ local xiangmian_record = fk.CreateTriggerSkill{
       room:setPlayerMark(target, "xiangmian_num", 0)
       room:setPlayerMark(target, "@xiangmian", 0)
       room:loseHp(target, target.hp, "xiangmian")
+    else
+      room:addPlayerMark(target, "xiangmian_num", -1)
+      room:setPlayerMark(target, "@xiangmian", string.format("%s%d",Fk:translate(target:getMark("xiangmian_suit")), target:getMark("xiangmian_num")))
     end
-    room:addPlayerMark(target, "xiangmian_num", -1)
-    room:setPlayerMark(target, "@xiangmian", string.format("%s%d",Fk:translate(target:getMark("xiangmian_suit")), target:getMark("xiangmian_num")))
   end,
 }
 local tianji = fk.CreateTriggerSkill{
@@ -2275,19 +2276,15 @@ local tianji = fk.CreateTriggerSkill{
     local move = self.cost_data
     for _, info in ipairs(move.moveInfo) do
       local card = Fk:getCardById(info.cardId, true)
-      local cards = {}
-      table.insertTable(cards, room:getCardsFromPileByRule(".|.|.|.|.|"..card:getTypeString()))
-      table.insertTable(cards, room:getCardsFromPileByRule(".|.|"..card:getSuitString()))
-      table.insertTable(cards, room:getCardsFromPileByRule(".|"..card.number))
-      if #cards > 0 then
-        room:moveCards({
-          ids = cards,
-          to = player.id,
-          toArea = Card.PlayerHand,
-          moveReason = fk.ReasonJustMove,
-          proposer = player.id,
-          skillName = self.name,
-        })
+      local cards = Util.DummyTable
+      local bigNumber = #room.draw_pile
+      local rule = { ".|.|.|.|.|"..card:getTypeString(), ".|.|"..card:getSuitString(), ".|"..card.number }
+      for _, r in ipairs(rule) do
+        cards = room:getCardsFromPileByRule(r, bigNumber)
+        if #cards > 0 then
+          local loc = math.random(1, #cards)
+          room:obtainCard(player, cards[loc])
+        end
       end
     end
   end,

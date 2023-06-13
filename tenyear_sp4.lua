@@ -2232,7 +2232,7 @@ local xiangmian = fk.CreateActiveSkill{
       pattern = ".",
     }
     room:judge(judge)
-    room:setPlayerMark(target, "@xiangmian", string.format("%s-%d",
+    room:setPlayerMark(target, "@xiangmian", string.format("%s%d",
     Fk:translate(judge.card:getSuitString()),
     judge.card.number))
     room:setPlayerMark(target, "xiangmian_suit", judge.card:getSuitString())
@@ -2241,17 +2241,19 @@ local xiangmian = fk.CreateActiveSkill{
 }
 local xiangmian_record = fk.CreateTriggerSkill{
   name = "#xiangmian_record",
-  refresh_events = {fk.CardUseFinished},
+  refresh_events = {fk.CardEffectFinished, fk.CardEffectCancelledOut},
   can_refresh = function(self, event, target, player, data)
     return target == player and target:getMark("xiangmian_num") > 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    room:addPlayerMark(target, self.name, 1)
-    if data.card:getSuitString() == target:getMark("xiangmian_suit") or target:getMark(self.name) == target:getMark("xiangmian_num") then
+    if data.card:getSuitString() == target:getMark("xiangmian_suit") or target:getMark("xiangmian_num") == 1 then
       room:setPlayerMark(target, "xiangmian_num", 0)
       room:setPlayerMark(target, "@xiangmian", 0)
       room:loseHp(target, target.hp, "xiangmian")
+    else
+      room:addPlayerMark(target, "xiangmian_num", -1)
+      room:setPlayerMark(target, "@xiangmian", string.format("%s%d",Fk:translate(target:getMark("xiangmian_suit")), target:getMark("xiangmian_num")))
     end
   end,
 }
@@ -2275,19 +2277,23 @@ local tianji = fk.CreateTriggerSkill{
     for _, info in ipairs(move.moveInfo) do
       local card = Fk:getCardById(info.cardId, true)
       local cards = {}
-      table.insertTable(cards, room:getCardsFromPileByRule(".|.|.|.|.|"..card:getTypeString()))
-      table.insertTable(cards, room:getCardsFromPileByRule(".|.|"..card:getSuitString()))
-      table.insertTable(cards, room:getCardsFromPileByRule(".|"..card.number))
-      if #cards > 0 then
-        room:moveCards({
-          ids = cards,
-          to = player.id,
-          toArea = Card.PlayerHand,
-          moveReason = fk.ReasonJustMove,
-          proposer = player.id,
-          skillName = self.name,
-        })
+      local bigNumber = #room.draw_pile
+      local rule = { ".|.|.|.|.|"..card:getTypeString(), ".|.|"..card:getSuitString(), ".|"..card.number }
+      for _, r in ipairs(rule) do
+        local targetCards = table.filter(room:getCardsFromPileByRule(r, bigNumber), function(cid) return not table.contains(cards, cid) end)
+        if #targetCards > 0 then
+          local loc = math.random(1, #targetCards)
+          table.insert(cards, targetCards[loc])
+        end
       end
+      room:moveCards({
+        ids = cards,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonJustMove,
+        proposer = player.id,
+        skillName = self.name,
+      })
     end
   end,
 }

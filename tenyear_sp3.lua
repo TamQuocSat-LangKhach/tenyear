@@ -633,7 +633,7 @@ Fk:loadTranslationTable{
 --孙翊2022.3.24
 --赵嫣
 --严夫人 郝萌 马日磾2022.4.25
---冯妤 蔡瑁张允 高览 朱灵2022.5.20
+--冯妤 蔡瑁张允 高览2022.5.20
 local fengyu = General(extension, "ty__fengfangnv", "qun", 3, 3, General.Female)
 local tiqi = fk.CreateTriggerSkill{
   name = "tiqi",
@@ -866,15 +866,7 @@ Fk:loadTranslationTable{
   ["~ty__gaolan"] = "郭公则害我！",
 }
 
-Fk:loadTranslationTable{
-  ["ty__zhuling"] = "朱灵",
-  ["ty__zhanyi"] = "战意",
-  [":ty__zhanyi"] = "出牌阶段开始时，你可以弃置一种类别的所有牌，另外两种类别的牌本回合获得以下效果：<br>"..
-  "基本牌：你使用基本牌无距离限制且造成的伤害和回复值+1；<br>"..
-  "锦囊牌：你使用锦囊牌时摸一张牌且锦囊牌不计入手牌上限；<br>"..
-  "装备牌：你使用装备牌时可以弃置一名其他角色的一张牌。",
-}
---曹髦 吉平 阎柔 来莺儿 神姜维2022.6.11
+--曹髦 吉平 来莺儿 神姜维2022.6.11
 local caomao = General(extension, "caomao", "wei", 3, 4)
 local qianlong = fk.CreateTriggerSkill{
   name = "qianlong",
@@ -1047,83 +1039,6 @@ Fk:loadTranslationTable{
   ["#juetao-use"] = "决讨：是否使用%arg！",
   ["#zhushi-invoke"] = "助势：你可以令 %src 摸一张牌",
   ["zhushi_draw"] = "其摸一张牌",
-}
-
-local yanrou = General(extension, "yanrou", "wei", 4)
-local choutao = fk.CreateTriggerSkill{
-  name = "choutao",
-  anim_type = "offensive",
-  events ={fk.TargetSpecified, fk.TargetConfirmed},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card.trueName == "slash" and data.firstTarget and
-      not player.room:getPlayerById(data.from):isNude()
-  end,
-  on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#choutao-invoke::"..data.from)
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local from = room:getPlayerById(data.from)
-    local id = room:askForCardChosen(player, from, "he", self.name)
-    room:throwCard({id}, self.name, from, player)
-    data.disresponsive = true
-    if data.from == player.id then
-      player:addCardUseHistory(data.card.trueName, -1)
-    end
-  end,
-}
-local xiangshu = fk.CreateTriggerSkill{
-  name = "xiangshu",
-  anim_type = "support",
-  frequency = Skill.Limited,
-  events = {fk.EventPhaseStart},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish and player:getMark("xiangshu-turn") > 0 and
-      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    local targets = table.map(table.filter(room:getAlivePlayers(), function(p)
-      return p:isWounded() end), function (p) return p.id end)
-    if #targets == 0 then return end
-    local n = math.min(player:getMark("xiangshu-turn"), 5)
-    local to = room:askForChoosePlayers(player, targets, 1, 1, "#xiangshu-invoke:::"..n..":"..n, self.name, true)
-    if #to > 0 then
-      self.cost_data = to[1]
-      return true
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local to = room:getPlayerById(self.cost_data)
-    local n = math.min(player:getMark("xiangshu-turn"), 5)
-    room:recover({
-      who = to,
-      num = math.min(n, to:getLostHp()),
-      recoverBy = player,
-      skillName = self.name
-    })
-    to:drawCards(n, self.name)
-  end,
-
-  refresh_events = {fk.Damage},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, true) and player.phase ~= Player.NotActive
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "xiangshu-turn", data.damage)
-  end,
-}
-yanrou:addSkill(choutao)
-yanrou:addSkill(xiangshu)
-Fk:loadTranslationTable{
-  ["yanrou"] = "阎柔",
-  ["choutao"] = "仇讨",
-  [":choutao"] = "当你使用【杀】指定目标后或成为【杀】的目标后，你可以弃置使用者一张牌，令此【杀】不能被响应；若你是使用者，则此【杀】不计入次数限制。",
-  ["xiangshu"] = "襄戍",
-  [":xiangshu"] = "限定技，结束阶段，若你本回合造成过伤害，你可令一名已受伤角色回复X点体力并摸X张牌（X为你本回合造成的伤害值且最多为5）。",
-  ["#choutao-invoke"] = "仇讨：你可以弃置 %dest 一张牌令此【杀】不能被响应；若为你则此【杀】不计次",
-  ["#xiangshu-invoke"] = "襄戍：你可令一名已受伤角色回复%arg点体力并摸%arg2张牌",
 }
 
 local godjiangwei = General(extension, "godjiangwei", "god", 4)

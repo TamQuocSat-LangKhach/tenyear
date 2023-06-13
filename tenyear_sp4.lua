@@ -2241,7 +2241,7 @@ local xiangmian = fk.CreateActiveSkill{
 }
 local xiangmian_record = fk.CreateTriggerSkill{
   name = "#xiangmian_record",
-  refresh_events = {fk.CardUseFinished},
+  refresh_events = {fk.CardEffectFinished, fk.CardEffectCancelledOut},
   can_refresh = function(self, event, target, player, data)
     return target == player and target:getMark("xiangmian_num") > 0
   end,

@@ -2620,6 +2620,8 @@ local huizhi = fk.CreateTriggerSkill{
     end
     if n > #player.player_cards[Player.Hand] then
       player:drawCards(math.min(n - #player.player_cards[Player.Hand]), 5)
+    else
+      player:drawCards(1, self.name)
     end
   end,
 }
@@ -2630,7 +2632,8 @@ local jijiao = fk.CreateActiveSkill{
   target_num = 1,
   frequency = Skill.Limited,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and player:getMark(self.name) ~= 0
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+
   end,
   card_filter = function(self, to_select, selected)
     return false
@@ -2642,19 +2645,32 @@ local jijiao = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     local dummy = Fk:cloneCard("dilu")
-    for _, id in ipairs(player:getMark(self.name)) do
-      if room:getCardArea(id) == Card.DiscardPile then
-        dummy:addSubcard(id)
+    local events = room.logic.all_game_events[1]:searchEvents(GameEvent.UseCard, 999, function(e)
+      local use = e.data[1]
+      return use.from == player.id and use.card:isCommonTrick() and not use.card:isVirtual()
+    end, room.logic:getCurrentEvent())
+    for _, e in ipairs(events) do
+      local use = e.data[1]
+      if room:getCardArea(use.card.id) == Card.DiscardPile then
+        dummy:addSubcard(use.card.id)
+      end
+    end
+    events = room.logic.all_game_events[1]:searchEvents(GameEvent.MoveCards, 999, function(e)
+      local move = e.data[1]
+      return move.from == player.id and move.moveReason == fk.ReasonDiscard
+    end, room.logic:getCurrentEvent())
+    for _, e in ipairs(events) do
+      local move = e.data[1]
+      for _, id in ipairs(move.ids) do
+        if Fk:getCardById(id):isCommonTrick() and room:getCardArea(id) == Card.DiscardPile then
+          dummy:addSubcard(id)
+        end
       end
     end
     if #dummy.subcards > 0 then
-      local mark = target:getMark("jijiao_cards")
-      if mark == 0 then mark = {} end
-      table.insertTable(mark, dummy.subcards)
-      room:setPlayerMark(target, "jijiao_cards", mark)
+      room:setPlayerMark(player, "jijiao_cards", dummy.subcards)
       room:obtainCard(target, dummy, true, fk.ReasonJustMove)
     end
-    room:setPlayerMark(player, self.name, 0)
   end,
 }
 local jijiao_record = fk.CreateTriggerSkill{
@@ -2672,57 +2688,19 @@ local jijiao_record = fk.CreateTriggerSkill{
     player:setSkillUseHistory("jijiao", 0, Player.HistoryGame)
   end,
 
-  refresh_events = {fk.CardUseFinished, fk.AfterCardsMove, fk.AfterDrawPileShuffle, fk.Deathed},
+  refresh_events = {fk.AfterDrawPileShuffle, fk.Deathed},
   can_refresh = function(self, event, target, player, data)
-    if player:hasSkill(self.name, true) then
-      if event == fk.CardUseFinished then
-        return target == player and data:isCommonTrick() and not data.card:isVirtual()
-      elseif event == fk.AfterCardsMove then
-        return true
-      else
-        return player:usedSkillTimes("jijiao", Player.HistoryGame) > 0
-      end
-    end
+    return player:usedSkillTimes("jijiao", Player.HistoryGame) > 0
   end,
   on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.CardUseFinished then
-      if room:getCardArea(data.card) == Card.Processing then  --FIXME: 时机略微提前了
-        local mark = player:getMark("jijiao")
-        if mark == 0 then mark = {} end
-        if data.card:getEffectiveId() then
-          table.insertIfNeed(mark, data.card:getEffectiveId())
-        end
-        room:setPlayerMark(player, "jijiao", mark)
-      end
-    elseif event == fk.AfterCardsMove then
-      for _, move in ipairs(data) do
-        if move.from == player.id and move.moveReason == fk.ReasonDiscard and move.proposer == player.id then
-          local mark = player:getMark("jijiao")
-          if mark == 0 then mark = {} end
-          for _, info in ipairs(move.moveInfo) do
-            if Fk:getCardById(info.cardId, true):isCommonTrick() then
-              table.insertIfNeed(mark, info.cardId)
-            end
-          end
-          room:setPlayerMark(player, "jijiao", mark)
-        end
-        for _, info in ipairs(move.moveInfo) do
-          if info.fromArea == Card.DiscardPile and player:getMark("jijiao") ~= 0 then
-            table.removeOne(player:getMark("jijiao"), info.cardId)
-          end
-        end
-      end
-    else
-      room:addPlayerMark(player, self.name, 1)
-    end
+    player.room:setPlayerMark(player, self.name, 1)
   end,
 }
 local jijiao_trigger = fk.CreateTriggerSkill{
   name = "#jijiao_trigger",
-
-  refresh_events = {fk.CardUsing, fk.AfterCardsMove},
-  can_refresh = function(self, event, target, player, data)
+  mute = true,
+  events = {fk.CardUsing, fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
     if player:getMark("jijiao_cards") ~= 0 and #player:getMark("jijiao_cards") > 0 then
       if event == fk.CardUsing then
         return target == player and data.card:isCommonTrick() and not data.card:isVirtual()
@@ -2731,9 +2709,12 @@ local jijiao_trigger = fk.CreateTriggerSkill{
       end
     end
   end,
-  on_refresh = function(self, event, target, player, data)
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.CardUsing then
+    if event == fk.CardUsing then  --TODO: 这也弄个全局记录！
       local mark = player:getMark("jijiao_cards")
       if table.contains(mark, data.card.id) then
         data.prohibitedCardNames = {"nullification"}
@@ -2764,7 +2745,7 @@ zhangjinyun:addSkill(jijiao)
 Fk:loadTranslationTable{
   ["zhangjinyun"] = "张瑾云",
   ["huizhi"] = "蕙质",
-  [":huizhi"] = "摸牌阶段结束时，你可以弃置任意张手牌，然后将手牌摸至与全场手牌最多的角色相同（最多摸五张）。",
+  [":huizhi"] = "摸牌阶段结束时，你可以弃置任意张手牌，然后将手牌摸至与全场手牌最多的角色相同（至少摸一张，最多摸五张）。",
   ["jijiao"] = "继椒",
   [":jijiao"] = "限定技，出牌阶段，你可以令一名角色获得弃牌堆中本局游戏你使用和弃置的所有普通锦囊牌，这些牌不能被【无懈可击】响应。"..
   "每回合结束后，若此回合内牌堆洗过牌或有角色死亡，复原此技能。",

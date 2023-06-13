@@ -2276,16 +2276,24 @@ local tianji = fk.CreateTriggerSkill{
     local move = self.cost_data
     for _, info in ipairs(move.moveInfo) do
       local card = Fk:getCardById(info.cardId, true)
-      local cards = Util.DummyTable
+      local cards = {}
       local bigNumber = #room.draw_pile
       local rule = { ".|.|.|.|.|"..card:getTypeString(), ".|.|"..card:getSuitString(), ".|"..card.number }
       for _, r in ipairs(rule) do
-        cards = room:getCardsFromPileByRule(r, bigNumber)
-        if #cards > 0 then
-          local loc = math.random(1, #cards)
-          room:obtainCard(player, cards[loc])
+        local targetCards = table.filter(room:getCardsFromPileByRule(r, bigNumber), function(cid) return not table.contains(cards, cid) end)
+        if #targetCards > 0 then
+          local loc = math.random(1, #targetCards)
+          table.insert(cards, targetCards[loc])
         end
       end
+      room:moveCards({
+        ids = cards,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonJustMove,
+        proposer = player.id,
+        skillName = self.name,
+      })
     end
   end,
 }

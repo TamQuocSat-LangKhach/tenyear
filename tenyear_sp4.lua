@@ -2241,14 +2241,9 @@ local xiangmian = fk.CreateActiveSkill{
 }
 local xiangmian_record = fk.CreateTriggerSkill{
   name = "#xiangmian_record",
-  refresh_events = {fk.CardEffectFinished, fk.CardEffectCancelledOut, fk.CardUseFinished},
+  refresh_events = {fk.CardUseFinished},
   can_refresh = function(self, event, target, player, data)
-    if target == player and target:getMark("xiangmian_num") > 0 then
-      if event == fk.CardUseFinished then
-        return data.card and data.card.sub_type == Card.SubtypeDelayedTrick
-      else return true
-      end
-    end
+    return target == player and target:getMark("xiangmian_num") > 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room

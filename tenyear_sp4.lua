@@ -1371,6 +1371,191 @@ Fk:loadTranslationTable{
   "1.获得“私掠”角色至多3张牌；<br>2.从牌堆获得三张类型不同的牌。<br>然后“私掠”角色改为你。",
 }
 
+local wanglie = General(extension, "wanglie", "qun", 3)
+local chongwang = fk.CreateTriggerSkill{
+  name = "chongwang",
+  anim_type = "control",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) and target ~= player and (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) then
+      local mark = player:getMark(self.name)
+      if mark ~= 0 and #mark > 1 then
+        return mark[2] == player.id
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local choices = {"Cancel", "chongwang2"}
+    if player.room:getCardArea(data.card) == Card.Processing then
+      table.insert(choices, 2, "chongwang1")
+    end
+    local choice = player.room:askForChoice(player, choices, self.name, "#chongwang-invoke::"..target.id)
+    if choice ~= "Cancel" then
+      self.cost_data = choice
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    if self.cost_data == "chongwang1" then
+      player.room:obtainCard(target, data.card, true, fk.ReasonJustMove)
+    else
+      if data.toCard ~= nil then
+        data.toCard = nil
+      else
+        data.nullifiedTargets = TargetGroup:getRealTargets(data.tos)
+      end
+    end
+  end,
+
+  refresh_events = {fk.CardUsing, fk.EventAcquireSkill},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.CardUsing then
+      return player:hasSkill(self.name, true)
+    else
+      return data == self
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.CardUsing then
+      if target == player and player:hasSkill(self.name) then
+        room:setPlayerMark(player, "@@chongwang", 1)
+      else
+        room:setPlayerMark(player, "@@chongwang", 0)
+      end
+      local mark = player:getMark(self.name)
+      if mark == 0 then mark = {} end
+      if #mark == 2 then
+        mark[2] = mark[1]  --mark2上一张牌使用者，mark1这张牌使用者
+        mark[1] = data.from
+      else
+        table.insert(mark, 1, data.from)
+      end
+      room:setPlayerMark(player, self.name, mark)
+    else
+      --[[local events = room.logic:getEventsOfScope(GameEvent.UseCard, 999, function(e)
+        local use = e.data[1]
+        return use.from == player.id
+      end, Player.HistoryPhase)
+      room:addPlayerMark(player, "zuojian-phase", #events)
+      room:addPlayerMark(player, "@zuojian-phase", #events)]]  --TODO: 需要一个反向查找记录
+    end
+  end,
+}
+local huagui = fk.CreateTriggerSkill{
+  name = "huagui",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+      return not p:isNude() end), function(p) return p.id end)
+    if #targets == 0 then return end
+    local nums = {0, 0, 0}
+    for _, role in ipairs(player:getMark(self.name)) do
+      if role == "lord" or role == "loyalist" then
+        nums[1] = nums[1] + 1
+      elseif role == "rebel" then
+        nums[2] = nums[2] + 1
+      else
+        nums[3] = nums[3] + 1
+      end
+    end
+    local n = math.max(table.unpack(nums))
+    local tos = room:askForChoosePlayers(player, targets, 1, n, "#huagui-choose:::"..tostring(n), self.name, true, true)
+    if #tos > 0 then
+      self.cost_data = tos
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local tos = table.map(self.cost_data, function(id) return room:getPlayerById(id) end)
+
+    local extraData = {
+      num = 1,
+      min_num = 1,
+      include_equip = true,
+      pattern = ".",
+      reason = self.name,
+    }
+    for _, p in ipairs(tos) do
+      p.request_data = json.encode({ "choose_cards_skill", "#huagui-card:"..player.id, true, json.encode(extraData) })
+    end
+    room:notifyMoveFocus(room.alive_players, self.name)
+    room:doBroadcastRequest("AskForUseActiveSkill", tos)
+    for _, p in ipairs(tos) do
+      local id
+      if p.reply_ready then
+        local replyCard = json.decode(p.client_reply).card
+        id = json.decode(replyCard).subcards[1]
+      else
+        id = table.random(p:getCardIds{Player.Hand, Player.Equip})
+      end
+      room:setPlayerMark(p, "huagui-phase", id)
+    end
+
+    for _, p in ipairs(tos) do
+      local id = p:getMark("huagui-phase")
+      local choices = {"huagui1"}
+      if room:getCardArea(id) == Player.Hand then
+        table.insert(choices, "huagui2")
+      end
+      local card = Fk:getCardById(id)
+      p.request_data = json.encode({ choices, self.name, "#huagui-choice:"..player.id.."::"..card:toLogString() })
+    end
+    room:notifyMoveFocus(room.alive_players, self.name)
+    room:doBroadcastRequest("AskForChoice", tos)
+    local get = true
+    for _, p in ipairs(tos) do
+      local choice
+      if p.reply_ready then
+        choice = p.client_reply
+      else
+        choice = "huagui1"
+      end
+      local card = Fk:getCardById(p:getMark("huagui-phase"))
+      if choice == "huagui1" then
+        get = false
+        room:obtainCard(player, card, false, fk.ReasonGive)
+      else
+        p:showCards({card})
+      end
+    end
+
+    if get then
+      room:delay(2000)
+    end
+    for _, p in ipairs(tos) do
+      if get then
+        local card = Fk:getCardById(p:getMark("huagui-phase"))
+        room:obtainCard(player, card, false, fk.ReasonPrey)
+      end
+      room:setPlayerMark(p, "huagui-phase", 0)
+    end
+  end,
+
+  refresh_events = {fk.GameStart, fk.BeforeGameOverJudge},
+  can_refresh = function(self, event, target, player, data)
+    return true
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.GameStart then
+      local mark = room.logic.role_table[#room.players]
+      room:setPlayerMark(player, self.name, mark)
+    else
+      local mark = player:getMark(self.name)
+      table.removeOne(mark, target.role)
+      room:setPlayerMark(player, self.name, mark)
+    end
+  end,
+}
+wanglie:addSkill(chongwang)
+wanglie:addSkill(huagui)
 Fk:loadTranslationTable{
   ["wanglie"] = "王烈",
   ["chongwang"] = "崇望",
@@ -1378,6 +1563,15 @@ Fk:loadTranslationTable{
   ["huagui"] = "化归",
   [":huagui"] = "出牌阶段开始时，你可秘密选择至多X名其他角色（X为最大阵营存活人数），这些角色同时选择一项：交给你一张牌；或展示一张牌。"..
   "若均选择展示牌，你获得这些牌。",
+  ["@@chongwang"] = "崇望",
+  ["#chongwang-invoke"] = "崇望：你可以令 %dest 对%arg执行的一项",
+  ["chongwang1"] = "其获得此牌",
+  ["chongwang2"] = "此牌无效",
+  ["#huagui-choose"] = "化归：你可以秘密选择至多%arg名角色，各选择交给你一张牌或展示一张牌",
+  ["#huagui-card"] = "化归：选择一张牌，交给 %src 或展示之",
+  ["#huagui-choice"] = "化归：选择将%arg交给 %src 或展示之",
+  ["huagui1"] = "交出",
+  ["huagui2"] = "展示",
 }
 
 Fk:loadTranslationTable{

@@ -1681,7 +1681,7 @@ local guowu = fk.CreateTriggerSkill{
     for _, id in ipairs(cards) do
       table.insertIfNeed(types, Fk:getCardById(id).type)
     end
-    local card = room:getCardsFromPileByRule("slash", 1, "allPiles")
+    local card = room:getCardsFromPileByRule("slash", 1, "discardPile")
     if #card > 0 then
       room:moveCards({
         ids = card,
@@ -1756,28 +1756,10 @@ local zhuangrong = fk.CreateTriggerSkill{
     room:handleAddLoseSkills(player, "shenwei|wushuang", nil, true, false)
   end,
 }
-local shenwei = fk.CreateTriggerSkill{  --TODO: move this!
-  name = "shenwei",
-  anim_type = "drawcard",
-  frequency = Skill.Compulsory,
-  events = {fk.DrawNCards},
-  on_use = function(self, event, target, player, data)
-    data.n = data.n + 2
-  end,
-}
-local shenwei_maxcards = fk.CreateMaxCardsSkill{
-  name = "#shenwei_maxcards",
-  correct_func = function(self, player)
-    if player:hasSkill(self.name) then
-      return 2
-    end
-  end,
-}
 guowu:addRelatedSkill(guowu_targetmod)
-shenwei:addRelatedSkill(shenwei_maxcards)
 lvlingqi:addSkill(guowu)
 lvlingqi:addSkill(zhuangrong)
-lvlingqi:addRelatedSkill(shenwei)
+lvlingqi:addRelatedSkill("shenwei")
 lvlingqi:addRelatedSkill("wushuang")
 Fk:loadTranslationTable{
   ["lvlingqi"] = "吕玲绮",
@@ -1787,8 +1769,6 @@ Fk:loadTranslationTable{
   ["zhuangrong"] = "妆戎",
   [":zhuangrong"] = "觉醒技，一名角色的回合结束时，若你的手牌数或体力值为1，你减1点体力上限并将体力值回复至体力上限，然后将手牌摸至体力上限。"..
   "若如此做，你获得技能〖神威〗和〖无双〗。",
-  ["shenwei"] = "神威",
-  [":shenwei"] = "锁定技，摸牌阶段，你额外摸两张牌；你的手牌上限+2。",  --TODO: this should be moved to SP!
   ["#guowu-choose"] = "帼武：你可以为%arg增加至多两个目标",
 
   ["$guowu1"] = "方天映黛眉，赤兔牵红妆。",

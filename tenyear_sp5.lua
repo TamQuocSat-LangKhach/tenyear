@@ -1418,10 +1418,10 @@ local jinjin = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local n = math.abs(player:getMaxCards() - player.hp)
-    room:setPlayerMark(player, "AddMaxCards", 0)
-    room:setPlayerMark(player, "AddMaxCards-turn", 0)
-    room:setPlayerMark(player, "MinusMaxCards", 0)
-    room:setPlayerMark(player, "MinusMaxCards-turn", 0)
+    room:setPlayerMark(player, MarkEnum.AddMaxCards, 0)
+    room:setPlayerMark(player, MarkEnum.AddMaxCardsInTurn, 0)
+    room:setPlayerMark(player, MarkEnum.MinusMaxCards, 0)
+    room:setPlayerMark(player, MarkEnum.MinusMaxCardsInTurn, 0)
     if data.from and not data.from.dead then
       local x = #room:askForDiscard(data.from, 1, n, true, self.name, false, ".", "#jinjin-discard:"..player.id.."::"..n)
       if x < n then

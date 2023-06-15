@@ -708,7 +708,7 @@ local xiecui = fk.CreateTriggerSkill{
     data.damage = data.damage + 1
     if data.from.kingdom == "wu" and room:getCardArea(data.card) == Card.Processing then
       room:obtainCard(data.from, data.card, false)
-      room:addPlayerMark(data.from, "AddMaxCards-turn", 1)
+      room:addPlayerMark(data.from, MarkEnum.AddMaxCardsInTurn, 1)
     end
   end,
 }
@@ -1084,7 +1084,7 @@ local chongyi = fk.CreateTriggerSkill{
       target:drawCards(2, self.name)
       room:addPlayerMark(target, "chongyi-turn", 1)
     else
-      room:addPlayerMark(target, "AddMaxCards-turn", 1)
+      room:addPlayerMark(target, MarkEnum.AddMaxCardsInTurn, 1)
     end
   end,
 

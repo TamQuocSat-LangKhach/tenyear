@@ -2648,7 +2648,7 @@ local jijiao = fk.CreateActiveSkill{
   target_num = 1,
   frequency = Skill.Limited,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and #player.room.discard_pile > 0
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and #Fk:currentRoom().discard_pile > 0
   end,
   card_filter = function(self, to_select, selected)
     return false
@@ -2743,7 +2743,7 @@ local jijiao_trigger = fk.CreateTriggerSkill{
             if info.fromArea == Card.PlayerHand then
               local mark = player:getMark("jijiao_cards")
               if table.contains(mark, info.cardId) then
-                table.removeOne(mark, data.card.id)
+                table.removeOne(mark, info.cardId)
                 room:setPlayerMark(player, "jijiao_cards", mark)
               end
             end

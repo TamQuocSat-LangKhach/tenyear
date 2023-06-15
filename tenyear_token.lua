@@ -389,6 +389,9 @@ local catapultSkill = fk.CreateTriggerSkill{
       elseif data.card.name == "peach" or (data.card.name == "analeptic" and data.extra_data and data.extra_data.analepticRecover) then
         data.additionalRecover = (data.additionalRecover or 0) + 1
       end
+      if data.card.trueName == "slash" and data.extra_data and data.extra_data.drankBuff then
+        data.additionalDamage = (data.additionalDamage or 0) + data.extra_data.drankBuff
+      end
     elseif player.phase == Player.NotActive then
       player:drawCards(1, self.name)
     end
@@ -413,8 +416,8 @@ local catapult = fk.CreateTreasure{
 extension:addCard(catapult)
 Fk:loadTranslationTable{
   ["ty__catapult"] = "霹雳车",
-  [":ty__catapult"] = "装备牌·宝物<br /><b>宝物技能</b>：锁定技，你回合内使用基本牌的伤害和回复数值+1且无距离限制。你回合外使用或打出基本牌时摸一张牌。"..
-  "离开装备区时销毁。",
+  [":ty__catapult"] = "装备牌·宝物<br /><b>宝物技能</b>：锁定技，你回合内使用基本牌的伤害和回复数值+1且无距离限制，使用的【酒】使【杀】伤害基数值"..
+  "增加的效果+1。你回合外使用或打出基本牌时摸一张牌。离开装备区时销毁。",
 }
 
 return extension

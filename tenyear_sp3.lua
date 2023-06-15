@@ -484,13 +484,126 @@ Fk:loadTranslationTable{
   ["$xianjing2"] = "娴静淡雅，温婉穆穆。",
   ["~caojinyu"] = "平叔之情，吾岂不明。",
 }
+
+local tenggongzhu = General(extension, "tenggongzhu", "wu", 3, 3, General.Female)
+local xingchong = fk.CreateTriggerSkill{
+  name = "xingchong",
+  anim_type = "drawcard",
+  events = {fk.RoundStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name)
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#xingchong-invoke:::"..tostring(player.maxHp))
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local n = player.maxHp
+    local choices = {}
+    local i1 = 0
+    if player:isKongcheng() then
+      i1 = 1
+    end
+    for i = i1, n, 1 do
+      table.insert(choices, tostring(i))
+    end
+    local choice = room:askForChoice(player, choices, self.name, "#xingchong-draw")
+    player:drawCards(tonumber(choice), self.name)
+    if player:isKongcheng() then return end
+    n = n - tonumber(choice)
+    local cards = room:askForCard(player, 1, n, false, self.name, true, ".", "#xingchong-card:::"..tostring(n))
+    if #cards > 0 then
+      player:showCards(cards)
+      room:sendCardVirtName(cards, self.name)
+      room:setPlayerMark(player, "xingchong-round", cards)
+    end
+  end,
+}
+local xingchong_trigger = fk.CreateTriggerSkill{
+  name = "#xingchong_trigger",
+  mute = true,
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:getMark("xingchong-round") ~= 0 and #player:getMark("xingchong-round") > 0 then
+      for _, move in ipairs(data) do
+        if move.from == player.id then
+          return true
+        end
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local n = 0
+    for _, move in ipairs(data) do
+      if move.from == player.id then
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand then
+            local mark = player:getMark("xingchong-round")
+            if table.contains(mark, info.cardId) then
+              n = n + 1
+              table.removeOne(mark, info.cardId)
+              room:setPlayerMark(player, "xingchong-round", mark)
+            end
+          end
+        end
+      end
+    end
+    if n > 0 then
+      player:drawCards(2 * n, "xingchong")
+    end
+  end,
+}
+local liunian = fk.CreateTriggerSkill{
+  name = "liunian",
+  anim_type = "defensive",
+  frequency = Skill.Compulsory,
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and player:getMark("liunian-turn") > 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if player:getMark(self.name) == 1 then
+      room:changeMaxHp(player, 1)
+    else
+      if player:isWounded() then
+        room:recover({
+          who = player,
+          num = 1,
+          recoverBy = player,
+          skillName = self.name
+        })
+      end
+      room:addPlayerMark(player, MarkEnum.AddMaxCards, 10)
+    end
+  end,
+
+  refresh_events = {fk.AfterDrawPileShuffle},
+  can_refresh = function(self, event, target, player, data)
+    return player:getMark(self.name) < 2
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:addPlayerMark(player, self.name, 1)
+    player.room:setPlayerMark(player, "liunian-turn", 1)
+  end,
+}
+xingchong:addRelatedSkill(xingchong_trigger)
+tenggongzhu:addSkill(xingchong)
+tenggongzhu:addSkill(liunian)
 Fk:loadTranslationTable{
   ["tenggongzhu"] = "滕公主",
   ["xingchong"] = "幸宠",
   [":xingchong"] = "每轮游戏开始时，你可以摸任意张牌并展示任意张牌（摸牌和展示牌的总数不能超过你的体力上限）。"..
   "若如此做，本轮内当你失去一张以此法展示的手牌后，你摸两张牌。",
-  ["xingchng"] = "幸宠",
-  [":xingcong"] = "锁定技，牌堆第一次洗牌后，你于当前回合结束时加1点体力上限。牌堆第二次洗牌后，你于当前回合结束时回复1点体力，然后本局游戏手牌上限+10。",
+  ["liunian"] = "流年",
+  [":liunian"] = "锁定技，牌堆第一次洗牌的回合结束时，你加1点体力上限。牌堆第二次洗牌的回合结束时，你回复1点体力，然后本局游戏手牌上限+10。",
+  ["#xingchong-invoke"] = "幸宠：你可以摸牌、展示牌合计至多%arg张，本轮失去展示的牌后摸两张牌",
+  ["#xingchong-draw"] = "幸宠：选择摸牌数",
+  ["#xingchong-card"] = "幸宠：展示至多%arg张牌，本轮失去一张展示牌后摸两张牌",
 }
 --王桃 王悦 庞德公2022.2.28
 --吴范 李采薇 祢衡2022.3.5

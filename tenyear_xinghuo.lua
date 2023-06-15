@@ -386,7 +386,7 @@ local qinguo = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.CardUseFinished, fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) then
+    if player:hasSkill(self.name) and player.phase ~= Player.NotActive then
       if event == fk.CardUseFinished then
         return target == player and data.card.type == Card.TypeEquip
       else
@@ -407,15 +407,9 @@ local qinguo = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     if event == fk.CardUseFinished then
       local room = player.room
-      local card = Fk:cloneCard("slash")
-      local targets = table.map(
-        table.filter(room:getOtherPlayers(player), function(p)
-          return (not player:isProhibited(p, card)) and player:inMyAttackRange(p)  --FIXME: 改为使用viewasskill
-        end), function(p) return p.id end )
-      if #targets == 0 then return false end
-      local target = room:askForChoosePlayers(player, targets, 1, 1, "#qinguo-ask", self.name, true)
-      if #target > 0 then
-        self.cost_data = target[1]
+      local success, dat = room:askForUseViewAsSkill(player, "#qinguo_vs", "#qinguo-ask", true)
+      if success then
+        self.cost_data = dat
         return true
       end
     else
@@ -427,7 +421,13 @@ local qinguo = fk.CreateTriggerSkill{
     room:broadcastSkillInvoke(self.name)
     if event == fk.CardUseFinished then
       room:notifySkillInvoked(player, self.name, "offensive")
-      room:useVirtualCard("slash", nil, player, player.room:getPlayerById(self.cost_data), self.name, true)
+      local card = Fk.skills["#qinguo_vs"]:viewAs(self.cost_data.cards)
+      room:useCard{
+        from = player.id,
+        tos = table.map(self.cost_data.targets, function(id) return {id} end),
+        card = card,
+        extraUse = true,
+      }
     else
       room:notifySkillInvoked(player, self.name, "support")
       room:recover{
@@ -439,12 +439,26 @@ local qinguo = fk.CreateTriggerSkill{
     end
   end,
 }
+local qinguo_vs = fk.CreateViewAsSkill{
+  name = "#qinguo_vs",
+  pattern = "slash",
+  card_filter = function()
+    return false
+  end,
+  view_as = function(self, cards)
+    local card = Fk:cloneCard(self.pattern)
+    card.skillName = "qinguo"
+    return card
+  end,
+}
+qinguo:addRelatedSkill(qinguo_vs)
 lvdai:addSkill(qinguo)
 Fk:loadTranslationTable{
   ["lvdai"] = "吕岱",
   ["qinguo"] = "勤国",
   [":qinguo"] = "当你于回合内使用装备牌结算结束后，你可视为使用一张不计入次数限制的【杀】；当你的装备区里的牌数变化后，"..
   "若你装备区里的牌数与你的体力值相等，你回复1点体力。",
+  ["#qinguo_vs"] = "勤国",
   ["#qinguo-ask"] = "勤国：你可以视为使用一张【杀】",
 
   ["$qinguo1"] = "为国勤事，体素精勤。",

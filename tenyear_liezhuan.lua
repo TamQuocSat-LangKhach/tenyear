@@ -238,7 +238,7 @@ local lilu_active = fk.CreateActiveSkill{
 local yizhengc = fk.CreateTriggerSkill{
   name = "yizhengc",
   mute = true,
-  events = {fk.EventPhaseStart, fk.DamageCaused, fk.HpRecover},
+  events = {fk.EventPhaseStart, fk.DamageCaused, fk.PreHpRecover},
   can_trigger = function(self, event, target, player, data)
     if target == player then
       if event == fk.EventPhaseStart then

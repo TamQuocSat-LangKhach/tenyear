@@ -593,7 +593,7 @@ Fk:loadTranslationTable{
 
 --陆郁生 2021.3.20
 --樊玉凤 2021.4.16
---赵忠 宗预2021.4.28
+
 local zhaozhong = General(extension, "zhaozhong", "qun", 6)
 local yangzhong = fk.CreateTriggerSkill{
   name = "yangzhong",
@@ -642,7 +642,86 @@ Fk:loadTranslationTable{
   [":chengshang"] = "出牌阶段内限一次，你使用指定其他角色为目标的牌结算后，若此牌没有造成伤害，你可以获得牌堆中所有与此牌花色点数均相同的牌。"..
   "若你没有因此获得牌，此技能视为未发动过。",
 }
---夏侯杰 阮瑀 唐姬 梁兴
+
+local xiahoujie = General(extension, "xiahoujie", "wei", 5)
+local liedan = fk.CreateTriggerSkill{
+  name = "liedan",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and target.phase == Player.Start and player:getMark("@@zhuangdan") == 0 and
+      (target ~= player or (target == player and player:getMark("@liedan")) > 4)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if target ~= player then
+      local n = 0
+      if player:getHandcardNum() > target:getHandcardNum() then
+        n = n + 1
+      end
+      if player.hp > target.hp then
+        n = n + 1
+      end
+      if #player.player_cards[Player.Equip] > #target.player_cards[Player.Equip] then
+        n = n + 1
+      end
+      if n > 0 then
+        player:drawCards(n, self.name)
+        if n == 3 and player.maxHp < 8 then
+          room:changeMaxHp(player, 1)
+        end
+      else
+        room:loseHp(player, 1, self.name)
+        if not player.dead then
+          room:addPlayerMark(player, "@liedan", 1)
+        end
+      end
+    else
+      room:killPlayer({who = player.id,})
+    end
+  end,
+}
+local zhuangdan = fk.CreateTriggerSkill{
+  name = "zhuangdan",
+  anim_type = "special",
+  frequency = Skill.Compulsory,
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and target ~= player and player:getMark("@@zhuangdan") == 0 and
+      table.every(player.room:getOtherPlayers(player), function(p) return player:getHandcardNum() > p:getHandcardNum() end)
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@@zhuangdan", 1)
+  end,
+
+  refresh_events = {fk.TurnEnd},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark("@@zhuangdan") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@@zhuangdan", 0)
+  end,
+}
+xiahoujie:addSkill(liedan)
+xiahoujie:addSkill(zhuangdan)
+Fk:loadTranslationTable{
+  ["xiahoujie"] = "夏侯杰",
+  ["liedan"] = "裂胆",
+  [":liedan"] = "锁定技，其他角色的准备阶段，你的手牌数、体力值和装备区里的牌数每有一项大于该角色，便摸一张牌。"..
+  "若均大于其，你加1点体力上限（至多加至8）；若均不大于其，你失去1点体力并获得1枚“裂胆”标记。准备阶段，若“裂胆”标记不小于5，你死亡。",
+  ["zhuangdan"] = "壮胆",
+  [":zhuangdan"] = "锁定技，其他角色的回合结束时，若你的手牌数为全场唯一最大，〖裂胆〗失效直到你的回合结束。",
+  ["@liedan"] = "裂胆",
+  ["@@zhuangdan"] = "裂胆失效",
+
+  ["$liedan1"] = "声若洪钟，震胆发聩！",
+  ["$liedan2"] = "阴雷滚滚，肝胆俱颤！",
+  ["$zhuangdan1"] = "我家丞相在此，哪个有胆敢动我？",
+  ["$zhuangdan2"] = "假丞相虎威，壮豪将龙胆。",
+  ["~xiahoujie"] = "你吼那么大声干嘛……",
+}
+
 local ruanyu = General(extension, "ruanyu", "wei", 3)
 local xingzuo = fk.CreateTriggerSkill{
   name = "xingzuo",
@@ -801,7 +880,15 @@ Fk:loadTranslationTable{
   ["#xingzuo-invoke"] = "兴作：你可观看牌堆底的三张牌，并用任意张手牌替换其中等量的牌",
   ["#xingzuo-choose"] = "兴作：你可以令一名角色用所有手牌替换牌堆底的三张牌，若交换前其手牌数大于3，你失去1点体力",
   ["#miaoxian_trigger"] = "妙弦",
+
+  ["$xingzuo1"] = "顺人之情，时之势，兴作可成。",
+  ["$xingzuo2"] = "兴作从心，相继不绝。",
+  ["$miaoxian1"] = "与君高歌，请君侧耳。",
+  ["$miaoxian2"] = "女为悦者容，士为知己死。",
+  ["~ruanyu"] = "良时忽过，身为土灰。",
 }
+
+--唐姬
 
 local liangxing = General(extension, "liangxing", "qun", 4)
 local lulve = fk.CreateTriggerSkill{
@@ -1681,7 +1768,7 @@ local guowu = fk.CreateTriggerSkill{
     for _, id in ipairs(cards) do
       table.insertIfNeed(types, Fk:getCardById(id).type)
     end
-    local card = room:getCardsFromPileByRule("slash", 1, "allPiles")
+    local card = room:getCardsFromPileByRule("slash", 1, "discardPile")
     if #card > 0 then
       room:moveCards({
         ids = card,
@@ -1756,28 +1843,10 @@ local zhuangrong = fk.CreateTriggerSkill{
     room:handleAddLoseSkills(player, "shenwei|wushuang", nil, true, false)
   end,
 }
-local shenwei = fk.CreateTriggerSkill{  --TODO: move this!
-  name = "shenwei",
-  anim_type = "drawcard",
-  frequency = Skill.Compulsory,
-  events = {fk.DrawNCards},
-  on_use = function(self, event, target, player, data)
-    data.n = data.n + 2
-  end,
-}
-local shenwei_maxcards = fk.CreateMaxCardsSkill{
-  name = "#shenwei_maxcards",
-  correct_func = function(self, player)
-    if player:hasSkill(self.name) then
-      return 2
-    end
-  end,
-}
 guowu:addRelatedSkill(guowu_targetmod)
-shenwei:addRelatedSkill(shenwei_maxcards)
 lvlingqi:addSkill(guowu)
 lvlingqi:addSkill(zhuangrong)
-lvlingqi:addRelatedSkill(shenwei)
+lvlingqi:addRelatedSkill("shenwei")
 lvlingqi:addRelatedSkill("wushuang")
 Fk:loadTranslationTable{
   ["lvlingqi"] = "吕玲绮",
@@ -1787,8 +1856,6 @@ Fk:loadTranslationTable{
   ["zhuangrong"] = "妆戎",
   [":zhuangrong"] = "觉醒技，一名角色的回合结束时，若你的手牌数或体力值为1，你减1点体力上限并将体力值回复至体力上限，然后将手牌摸至体力上限。"..
   "若如此做，你获得技能〖神威〗和〖无双〗。",
-  ["shenwei"] = "神威",
-  [":shenwei"] = "锁定技，摸牌阶段，你额外摸两张牌；你的手牌上限+2。",  --TODO: this should be moved to SP!
   ["#guowu-choose"] = "帼武：你可以为%arg增加至多两个目标",
 
   ["$guowu1"] = "方天映黛眉，赤兔牵红妆。",

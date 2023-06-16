@@ -131,8 +131,7 @@ local waterSwordSkill = fk.CreateTriggerSkill{
   events = {fk.TargetSpecifying},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2 and
-      (data.card.trueName == "slash" or (data.card.type == Card.TypeTrick and data.card.sub_type ~= Card.SubtypeDelayedTrick)) and
-      data.targetGroup and #data.targetGroup == 1
+      (data.card.trueName == "slash" or data.card:isCommonTrick()) and data.targetGroup and #data.targetGroup == 1
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room

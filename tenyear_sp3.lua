@@ -346,9 +346,28 @@ Fk:loadTranslationTable{
   [":chuanyun"] = "当你使用【杀】指定目标后，你可令该角色随机弃置一张装备区里的牌。",
 }
 
+Fk:loadTranslationTable{
+  ["liuyong"] = "刘永",
+  ["zhuning"] = "诛佞",
+  [":zhuning"] = "出牌阶段限一次，你可以交给一名其他角色任意张牌，这些牌标记为“隙”，然后你可以视为使用一张不计次数的【杀】或伤害类锦囊牌，"..
+  "然后若此牌没有造成伤害，此技能本阶段改为“出牌阶段限两次”。",
+  ["fengxiang"] = "封乡",
+  [":fengxiang"] = "锁定技，当你受到伤害后，手牌中“隙”唯一最多的角色回复1点体力（没有唯一最多的角色则改为你摸一张牌）；"..
+  "当有角色因手牌数改变而使“隙”唯一最多的角色改变时，你摸一张牌。",
+}
+
 --嵇康 曹不兴2021.12.3
---陈登2021.12.15
---曹金玉 滕公主2022.1.22
+
+Fk:loadTranslationTable{
+  ["ty__chendeng"] = "陈登",
+  ["wangzu"] = "望族",
+  [":wangzu"] = "每回合限一次，当你受到其他角色造成的伤害时，你可以随机弃置一张手牌令此伤害-1，若你所在的阵营存活人数全场最多，则改为选择一张手牌弃置。",
+  ["yingshui"] = "营说",
+  [":yingshui"] = "出牌阶段限一次，你可以交给你攻击范围内的一名其他角色一张牌，然后令其选择一项：1.受到你对其造成的1点伤害；2.交给你至少两张装备牌。",
+  ["fuyuan"] = "扶援",
+  [":fuyuan"] = "当一名角色成为【杀】的目标后，若其本回合没有成为过红色牌的目标，你可令其摸一张牌。",
+}
+
 --local caojinyu = General(extension, "caojinyu", "wei", 3, 3, General.Female)
 local yuqi = fk.CreateTriggerSkill{
   name = "yuqi",
@@ -606,7 +625,6 @@ Fk:loadTranslationTable{
   ["#xingchong-card"] = "幸宠：展示至多%arg张牌，本轮失去一张展示牌后摸两张牌",
 }
 --王桃 王悦 庞德公2022.2.28
---吴范 李采薇 祢衡2022.3.5
 Fk:loadTranslationTable{
   ["wufan"] = "吴范",
   ["tianyun"] = "天运",
@@ -742,6 +760,16 @@ Fk:loadTranslationTable{
   ["@yijiao"] = "异",
   ["#yijiao_record"] = "异教",
   ["#qibie-invoke"] = "泣别：你可以弃置所有手牌，回复1点体力值并摸弃牌数+1张牌",
+}
+
+Fk:loadTranslationTable{
+  ["ty__miheng"] = "祢衡",
+  ["kuangcai"] = "狂才",
+  [":kuangcai"] = "①锁定技，你的回合内，你使用牌无距离和次数限制。<br>②弃牌阶段开始时，若你本回合：没有使用过牌，你的手牌上限+1；"..
+  "使用过牌且没有造成伤害，你手牌上限-1。<br>③结束阶段，若你本回合造成过伤害，你摸等于伤害值数量的牌（最多摸五张）。",
+  ["shejian"] = "舌剑",
+  [":shejian"] = "每回合限两次，当你成为其他角色使用牌的唯一目标后，你可以弃置至少两张手牌。若如此做，你选择一项："..
+  "1.弃置该角色等量的牌，2.对其造成1点伤害。",
 }
 
 local sunyi = General(extension, "ty__sunyi", "wu", 5)

@@ -604,6 +604,12 @@ Fk:loadTranslationTable{
   ["#xingchong-invoke"] = "幸宠：你可以摸牌、展示牌合计至多%arg张，本轮失去展示的牌后摸两张牌",
   ["#xingchong-draw"] = "幸宠：选择摸牌数",
   ["#xingchong-card"] = "幸宠：展示至多%arg张牌，本轮失去一张展示牌后摸两张牌",
+  
+  ["$xingchong1"] = "佳人有荣幸，好女天自怜。",
+  ["$xingchong2"] = "世间万般宠爱，独聚我于一身。",
+  ["$liunian1"] = "佳期若梦，似水流年。",
+  ["$liunian2"] = "逝者如流水，昼夜不将息。",
+  ["~tenggongzhu"] = "已过江北，再无江南……",
 }
 --王桃 王悦 庞德公2022.2.28
 --吴范 李采薇 祢衡2022.3.5
@@ -742,6 +748,12 @@ Fk:loadTranslationTable{
   ["@yijiao"] = "异",
   ["#yijiao_record"] = "异教",
   ["#qibie-invoke"] = "泣别：你可以弃置所有手牌，回复1点体力值并摸弃牌数+1张牌",
+
+  ["$yijiao1"] = "非我同盟，其心必异。",
+  ["$yijiao2"] = "攻乎异教，斯害也已。",
+  ["$qibie1"] = "忽闻君别，泣下沾襟。",
+  ["$qibie2"] = "相与泣别，承其遗志。",
+  ["~licaiwei"] = "随君而去……",
 }
 
 local sunyi = General(extension, "ty__sunyi", "wu", 5)
@@ -948,6 +960,12 @@ Fk:loadTranslationTable{
   ["tiqi_minus"] = "减少手牌上限",
   ["#baoshu-choose"] = "宝梳：你可以令若干名角色获得“梳”标记，重置其武将牌且其摸牌阶段多摸牌",
   ["@fengyu_shu"] = "梳",
+  
+  ["$tiqi1"] = "远望中原，涕泪交流。",
+  ["$tiqi2"] = "瞻望家乡，泣涕如雨。",
+  ["$baoshu1"] = "明镜映梳台，黛眉衬粉面。",
+  ["$baoshu2"] = "头作扶摇髻，首枕千金梳。",
+  ["~ty__fengfangnv"] = "诸位，为何如此对我？",
 }
 
 local caimaozhangyun = General(extension, "caimaozhangyun", "wei", 4)
@@ -1275,6 +1293,16 @@ Fk:loadTranslationTable{
   ["#juetao-use"] = "决讨：是否使用%arg！",
   ["#zhushi-invoke"] = "助势：你可以令 %src 摸一张牌",
   ["zhushi_draw"] = "其摸一张牌",
+  
+  ["$qianlong1"] = "鸟栖于林，龙潜于渊。",
+  ["$qianlong2"] = "游鱼惊钓，潜龙飞天。",
+  ["$fensi1"] = "此贼之心，路人皆知！",
+  ["$fensi2"] = "孤君烈忿，怒愈秋霜。",
+  ["$juetao1"] = "登车拔剑起，奋跃搏乱臣！",
+  ["$juetao2"] = "陵云决心意，登辇讨不臣！",
+  ["$zhushi1"] = "可有爱卿愿助朕讨贼？",
+  ["$zhushi2"] = "泱泱大魏，忠臣俱亡乎？",
+  ["~caomao"] = "宁作高贵乡公死，不作汉献帝生……",
 }
 
 --吉平 来莺儿
@@ -1465,6 +1493,14 @@ Fk:loadTranslationTable{
   ["@$jiufa"] = "九伐",
   ["pingxiang_viewas"] = "平襄",
   ["#pingxiang-slash"] = "平襄：你可以视为使用火【杀】（第%arg张，共9张）！",
+
+  ["$tianren1"] = "举石补苍天，舍我更复其谁？",
+  ["$tianren2"] = "天地同协力，何愁汉道不昌？",
+  ["$jiufa1"] = "九伐中原，以圆先帝遗志。",
+  ["$jiufa2"] = "日日砺剑，相报丞相厚恩。",
+  ["$pingxiang1"] = "策马纵慷慨，捐躯抗虎豺。",
+  ["$pingxiang2"] = "解甲事仇雠，竭力挽狂澜。",
+  ["~godjiangwei"] = "武侯遗志，已成泡影矣……",
 }
 --骆统 张媱 张勋 滕胤 神马超 黄承彦2022.6.15
 local zhangxun = General(extension, "zhangxun", "qun", 4)
@@ -1554,6 +1590,7 @@ Fk:loadTranslationTable{
   ["#suizheng-choose"] = "随征：令一名角色下回合出牌阶段使用【杀】无距离限制且次数+1",
   ["#suizheng-slash"] = "随征：你可以视为对其中一名角色使用【杀】",
 }
+
 local godmachao = General(extension, "godmachao", "god", 4)
 local shouli = fk.CreateViewAsSkill{
   name = "shouli",
@@ -2136,6 +2173,12 @@ Fk:loadTranslationTable{
   ["caiyiyinn4"] = "随机一个已移除的阴选项",
   ["@@guili"] = "归离",
   ["#guili-choose"] = "归离：选择一名角色，其回合结束时，若其本回合未造成过伤害，你执行一个额外回合",
+
+  ["$caiyi1"] = "凰凤化越，彩翼犹存。  ",
+  ["$caiyi2"] = "身披彩翼，心有灵犀。",
+  ["$guili1"] = "既离厄海，当归泸沽。",
+  ["$guili2"] = "山野如春，不如归去。",
+  ["~caohua"] = "自古忠孝难两全……",
 }
 
 local laiyinger = General(extension, "laiyinger", "qun", 3, 3, General.Female)

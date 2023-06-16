@@ -791,6 +791,16 @@ Fk:loadTranslationTable{
   [":tianjie"] = "一名角色的回合结束时，若本回合牌堆进行过洗牌，你可以对至多三名其他角色各造成X点雷电伤害（X为其手牌中【闪】的数量且至少为1）。",
   ["@zhangjiao_huang"] = "黄",
   ["#tianjie-choose"] = "天劫：你可以对至多三名其他角色各造成X点雷电伤害（X为其手牌中【闪】数，至少为1）",
+  
+  ["$yizhao1"] = "苍天已死，此黄天当立之时。",
+  ["$yizhao2"] = "甲子尚水，显炎汉将亡之兆。",
+  ["$sanshou1"] = "三公既现，领大道而立黄天。",
+  ["$sanshou2"] = "天地三才，载厚德以驱魍魉。",
+  ["$sijun1"] = "联九州黎庶，撼一家之王庭。",
+  ["$sijun2"] = "吾以此身为药，欲医天下之疾。",
+  ["$tianjie1"] = "苍天既死，贫道当替天行道。",
+  ["$tianjie2"] = "贫道张角，请大汉赴死！",
+  ["~godzhangjiao"] = "诸君唤我为贼，然我所窃何物？",
 }
 
 local zhouxuan = General(extension, "zhouxuan", "wei", 3)
@@ -1943,6 +1953,12 @@ Fk:loadTranslationTable{
   [":ty__aichen"] = "锁定技，若剩余牌堆数大于80，当你发动〖落宠〗弃置自己区域内的牌后，你摸两张牌；"..
   "若剩余牌堆数大于40，你跳过弃牌阶段；若剩余牌堆数小于40，当你成为♠牌的目标后，你不能响应此牌。",
   ["#ty__luochong-choose"] = "落宠：你可以依次选择角色，弃置其区域内的牌（共计至多%arg张，还剩%arg2张）",
+  
+  ["$ty__luochong1"] = "陛下独宠她人，奈何雨露不均？",
+  ["$ty__luochong2"] = "妾贵于佳丽，然宠不及三千。",
+  ["$ty__aichen1"] = "君可负妾，然妾不负君。",
+  ["$ty__aichen2"] = "所思所想，皆系陛下。",
+  ["~ty__tengfanglan"] = "今生缘尽，来世两宽……",
 }
 
 local peiyuanshao = General(extension, "peiyuanshao", "qun", 4)
@@ -2319,6 +2335,12 @@ Fk:loadTranslationTable{
   ["#fozong-choice"] = "佛宗：选择对 %src 执行的一项",
   ["fozong_get"] = "获得一张“佛宗”牌，其回复1点体力",
   ["fozong_lose"] = "其失去1点体力",
+  
+  ["$cansi1"] = "君不入地狱，谁入地狱？",
+  ["$cansi2"] = "众生皆苦，唯渡众生于极乐。",
+  ["$fozong1"] = "此身无长物，愿奉骨肉为浮屠。",
+  ["$fozong2"] = "驱大白牛车，颂无上功德。",
+  ["~zerong"] = "此劫，不可避……",
 }
 
 local xielingyu = General(extension, "xielingyu", "wu", 3, 3, General.Female)
@@ -2608,6 +2630,12 @@ Fk:loadTranslationTable{
   [":huayi"] = "结束阶段，你可以判定，然后直到你的下回合开始时根据结果获得以下效果：红色，其他角色回合结束时摸一张牌；黑色，受到伤害后摸两张牌。",
   ["#huayi-invoke"] = "华衣：你可以判定，根据颜色直到你下回合开始获得效果",
   ["@huayi"] = "华衣",
+  
+  ["$caizhuang1"] = "素手调脂粉，女子自有好颜色。  ",
+  ["$caizhuang2"] = "为悦己者容，撷彩云为妆。",
+  ["$huayi1"] = "皓腕凝霜雪，罗襦绣鹧鸪。",
+  ["$huayi2"] = "绝色戴珠玉，佳人配华衣。",
+  ["~duanqiaoxiao"] = "佳人时光少，君王总薄情……",
 }
 
 local zhangjinyun = General(extension, "zhangjinyun", "shu", 3, 3, General.Female)
@@ -2766,6 +2794,12 @@ Fk:loadTranslationTable{
   "每回合结束后，若此回合内牌堆洗过牌或有角色死亡，复原此技能。",
   ["#huizhi-invoke"] = "蕙质：你可以弃置任意张手牌，然后将手牌摸至与全场手牌最多的角色相同（最多摸五张）",
   ["#jijiao_record"] = "继椒",
+  
+  ["$huizhi1"] = "妾有一席幽梦，予君三千暗香。",
+  ["$huizhi2"] = "我有玲珑之心，其情唯衷陛下。",
+  ["$jijiao1"] = "哀吾姊早逝，幸陛下垂怜。",
+  ["$jijiao2"] = "居椒之殊荣，妾得之惶恐。",
+  ["~zhangjinyun"] = "陛下，妾身来陪你了……",
 }
 
 local mengda = General(extension, "ty__mengda", "wei", 4)

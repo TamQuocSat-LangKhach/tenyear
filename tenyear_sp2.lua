@@ -1397,6 +1397,12 @@ Fk:loadTranslationTable{
   [":zhuihuan"] = "结束阶段，你可以秘密选择一名角色。直到该角色的下个准备阶段，此期间内对其造成过伤害的角色："..
   "若体力值大于该角色，则受到其造成的2点伤害；若体力值小于等于该角色，则随机弃置两张手牌。",
   ["#zhuihuan-choose"] = "追还：选择一名角色，直到其准备阶段，对此期间对其造成过伤害的角色造成伤害或弃牌",
+  
+  ["$youyan1"] = "诱言者，为人所不齿。",
+  ["$youyan2"] = "诱言之弊，不可不慎。",
+  ["$zhuihuan1"] = "伤人者，追而还之！",
+  ["$zhuihuan2"] = "追而还击，皆为因果。",
+  ["~ty__yangwan"] = "遇人不淑……",
 }
 
 --张虎 冯熙 何晏 糜芳傅士仁2021.9.24
@@ -1609,6 +1615,12 @@ Fk:loadTranslationTable{
   ["#zhiren2-choose"] = "织纴：你可以弃置场上一张延时锦囊牌",
   ["#yaner-invoke"] = "燕尔：你可以与 %dest 各摸两张牌，若摸到的牌类型形同则获得额外效果",
   ["@@yaner"] = "燕尔",
+  
+  ["$zhiren1"] = "穿针引线，栩栩如生。",
+  ["$zhiren2"] = "纺绩织纴，布帛可成。",
+  ["$yaner1"] = "如胶似漆，白首相随。",
+  ["$yaner2"] = "新婚燕尔，亲睦和美。",
+  ["~ty__panshu"] = "有喜必忧，以为深戒！",
 }
 
 local jinghe_skills = {"ol_ex__leiji", "yinbingn", "huoqi", "guizhu", "xianshou", "lundao", "guanyue", "yanzhengn",
@@ -2036,6 +2048,184 @@ Fk:loadTranslationTable{
   ["$shenwei1"] = "继父神威，无坚不摧！",
   ["$shenwei2"] = "我乃温侯吕奉先之女！",
   ["~lvlingqi"] = "父亲，女儿好累。",
+}
+
+local fanyufeng = General(extension, "fanyufeng", "qun", 3, 3, General.Female)
+
+local bazhan = fk.CreateActiveSkill{
+  name = "bazhan",
+  anim_type = "switch",
+  switch_skill_name = "bazhan",
+  target_num = 1,
+  max_card_num = function ()
+    return (Self:getSwitchSkillState("bazhan", false) == fk.SwitchYang) and 2 or 0
+  end,
+  min_card_num = function ()
+    return (Self:getSwitchSkillState("bazhan", false) == fk.SwitchYang) and 1 or 0
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected < self:getMaxCardNum() and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected_cards >= self:getMinCardNum() and #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local isYang = player:getSwitchSkillState(self.name, true) == fk.SwitchYang
+
+    local to_cheak = {}
+    if isYang and #effect.cards > 0 then
+      table.insertTable(to_cheak, effect.cards) 
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(to_cheak)
+      room:obtainCard(target.id, dummy, false, fk.ReasonGive)
+    elseif not isYang and not target:isKongcheng() then
+      to_cheak = room:askForCardsChosen(player, target, 1, 2, "h", self.name)
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(to_cheak)
+      room:obtainCard(player, dummy, false, fk.ReasonPrey)
+      target = player
+    end
+    if not player.dead and not target.dead and table.find(to_cheak, function (id)
+    return Fk:getCardById(id).name == "analeptic" or Fk:getCardById(id).suit == Card.Heart end) then
+      local choices = {"cancel"}
+      if not target.faceup or target.chained then
+        table.insert(choices, 1, "bazhan_reset")
+      end
+      if target:isWounded() then
+        table.insert(choices, 1, "recover")
+      end
+      if #choices > 1 then
+        local choice = room:askForChoice(player, choices, self.name, "#bazhan-support::" .. target.id)
+        if choice == "recover" then
+          room:recover{ who = target, num = 1, recoverBy = player, skillName = self.name }
+        elseif choice == "bazhan_reset" then
+          if not target.faceup then
+            target:turnOver()
+          end
+          if target.chained then
+            target:setChainState(false)
+          end
+        end
+      end
+    end
+  end,
+}
+local jiaoying = fk.CreateTriggerSkill{
+  name = "jiaoying",
+  events = {fk.AfterCardsMove},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      for _, move in ipairs(data) do
+        if move.from == player.id and move.to and move.to ~= player.id and move.toArea == Card.PlayerHand then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local jiaoying_targets = type(player:getMark("jiaoying_targets-turn")) == "table" and player:getMark("jiaoying_targets-turn") or {}
+    for _, move in ipairs(data) do
+      if move.from == player.id and move.to and move.to ~= player.id and move.toArea == Card.PlayerHand then
+        local to = room:getPlayerById(move.to)
+        local jiaoying_colors = type(to:getMark("jiaoying_colors-turn")) == "table" and to:getMark("jiaoying_colors-turn") or {}
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand then
+            local color = Fk:getCardById(info.cardId).color
+            if color ~= Card.NoColor then
+              table.insertIfNeed(jiaoying_colors, color)
+              table.insertIfNeed(jiaoying_targets, to.id)
+            end
+          end
+        end
+        room:setPlayerMark(to, "jiaoying_colors-turn", jiaoying_colors)
+      end
+    end
+    room:setPlayerMark(player, "jiaoying_targets-turn", jiaoying_targets)
+  end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    local jiaoying_targets = type(player:getMark("jiaoying_targets-turn")) == "table" and player:getMark("jiaoying_targets-turn") or {}
+    local jiaoying_ignores = type(player:getMark("jiaoying_ignores-turn")) == "table" and player:getMark("jiaoying_ignores-turn") or {}
+    return table.contains(jiaoying_targets, target.id) and not table.contains(jiaoying_ignores, target.id)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local jiaoying_ignores = type(player:getMark("jiaoying_ignores-turn")) == "table" and player:getMark("jiaoying_ignores-turn") or {}
+    table.insert(jiaoying_ignores, target.id)
+    player.room:setPlayerMark(player, "jiaoying_ignores-turn", jiaoying_ignores)
+  end,
+}
+local jiaoying_delay = fk.CreateTriggerSkill{
+  name = "#jiaoying_delay",
+  events = {fk.EventPhaseStart},
+  frequency = Skill.Compulsory,
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if target.phase == Player.Finish then
+      local jiaoying_targets = type(player:getMark("jiaoying_targets-turn")) == "table" and player:getMark("jiaoying_targets-turn") or {}
+      local jiaoying_ignores = type(player:getMark("jiaoying_ignores-turn")) == "table" and player:getMark("jiaoying_ignores-turn") or {}
+      self.cost_data = #jiaoying_targets - #jiaoying_ignores
+      if self.cost_data > 0 then
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local x = self.cost_data
+    local targets = player.room:askForChoosePlayers(player, table.map(table.filter(room.alive_players, function (p)
+      return p:getHandcardNum() < 5 end), function (p)
+      return p.id end), 1, x, "#jiaoying-choose:::" .. x, self.name, true)
+    if #targets > 0 then
+      room:sortPlayersByAction(targets)
+      for _, pid in ipairs(targets) do
+        local to = room:getPlayerById(pid)
+        if not to.dead and to:getHandcardNum() < 5 then
+          to:drawCards(5-to:getHandcardNum(), self.name)
+        end
+      end
+    end
+  end,
+}
+local jiaoying_prohibit = fk.CreateProhibitSkill{
+  name = "#jiaoying_prohibit",
+  prohibit_use = function(self, player, card)
+    local jiaoying_colors = player:getMark("jiaoying_colors-turn")
+    return type(jiaoying_colors) == "table" and table.contains(jiaoying_colors, card.color)
+  end,
+}
+jiaoying:addRelatedSkill(jiaoying_delay)
+jiaoying:addRelatedSkill(jiaoying_prohibit)
+fanyufeng:addSkill(bazhan)
+fanyufeng:addSkill(jiaoying)
+Fk:loadTranslationTable{
+  ["fanyufeng"] = "樊玉凤",
+  ["bazhan"] = "把盏",
+  [":bazhan"] = "转换技，出牌阶段限一次，阳：你可以交给一名其他角色至多两张手牌；阴：你可以获得一名其他角色至多两张手牌。"..
+    "然后若这些牌里包括【酒】或红桃你可令获得此牌的角色回复1点体力或复原武将牌。",
+  ["jiaoying"] = "醮影",
+  ["#jiaoying_delay"] = "醮影",
+  [":jiaoying"] = "锁定技，其他角色获得你的手牌后，该角色本回合不能使用或打出与此牌颜色相同的牌。"..
+    "然后此回合结束时，若其本回合没有再使用牌，你令一名角色将手牌摸至五张。",
+  ["#bazhan-support"] = "把盏：可以选择令 %dest 回复1点体力或复原武将牌",
+  ["#jiaoying-choose"] = "醮影：可选择至多%arg名角色将手牌补至5张",
+
+  ["$bazhan1"] = "此酒，当配将军。",
+  ["$bazhan2"] = "这杯酒，敬于将军。",
+  ["$jiaoying1"] = "独酌清醮，霓裳自舞。",
+  ["$jiaoying2"] = "醮影倩丽，何人爱怜。",
+  ["~fanyufeng"] = "醮妇再遇良人难……",
 }
 
 return extension

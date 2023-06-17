@@ -137,7 +137,7 @@ local mingfa = fk.CreateTriggerSkill{
       room:setPlayerMark(to, "@@mingfa", mark)
     else
       local card = Fk:cloneCard(Fk:getCardById(player:getPile(self.name)[1]).name)
-      if card.trueName ~= "nullification" and not player:isProhibited(target, card) then
+      if card.trueName ~= "nullification" and card.name ~= "collateral" and not player:isProhibited(target, card) then
         --据说没有合法性检测甚至无懈都能虚空用，甚至不合法目标还能触发贞烈。我不好说
         local n = math.max(target:getHandcardNum(), 1)
         n = math.min(n, 5)
@@ -224,7 +224,7 @@ Fk:loadTranslationTable{
   ["deshao"] = "德劭",
   [":deshao"] = "每回合限两次，当你成为其他角色使用黑色牌的目标后，你可以摸一张牌，然后若其手牌数大于等于你，你弃置其一张牌。",
   ["mingfa"] = "明伐",
-  [":mingfa"] = "你的出牌阶段内限一次，你使用【杀】或普通锦囊牌结算完毕后，若你没有“明伐”牌，可将此牌置于武将牌上并秘密选择一名其他角色。"..
+  [":mingfa"] = "出牌阶段内限一次，你使用【杀】或普通锦囊牌结算完毕后，若你没有“明伐”牌，可将此牌置于武将牌上并秘密选择一名其他角色。"..
   "该角色的结束阶段，视为你对其使用X张“明伐”牌（X为其手牌数，最少为1，最多为5），然后移去“明伐”牌。",
   ["#deshao-invoke"] = "德劭：你可以摸一张牌，然后若 %dest 手牌数不少于你，你弃置其一张牌",
   ["#mingfa-choose"] = "明伐：将%arg置为“明伐”，选择一名角色，其结束阶段视为对其使用其手牌张数次“明伐”牌",
@@ -1790,10 +1790,10 @@ local huagui = fk.CreateTriggerSkill{
       return not p:isNude() end), function(p) return p.id end)
     if #targets == 0 then return end
     local nums = {0, 0, 0}
-    for _, role in ipairs(player:getMark(self.name)) do
-      if role == "lord" or role == "loyalist" then
+    for _, p in ipairs(room.alive_players) do
+      if p.role == "lord" or p.role == "loyalist" then
         nums[1] = nums[1] + 1
-      elseif role == "rebel" then
+      elseif p.role == "rebel" then
         nums[2] = nums[2] + 1
       else
         nums[3] = nums[3] + 1
@@ -1870,22 +1870,6 @@ local huagui = fk.CreateTriggerSkill{
         room:obtainCard(player, card, false, fk.ReasonPrey)
       end
       room:setPlayerMark(p, "huagui-phase", 0)
-    end
-  end,
-
-  refresh_events = {fk.GameStart, fk.BeforeGameOverJudge},
-  can_refresh = function(self, event, target, player, data)
-    return true
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.GameStart then
-      local mark = room.logic.role_table[#room.players]
-      room:setPlayerMark(player, self.name, mark)
-    else
-      local mark = player:getMark(self.name)
-      table.removeOne(mark, target.role)
-      room:setPlayerMark(player, self.name, mark)
     end
   end,
 }

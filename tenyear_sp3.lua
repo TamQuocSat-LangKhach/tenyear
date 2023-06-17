@@ -233,12 +233,10 @@ Fk:loadTranslationTable{
 }
 
 local zhangning = General(extension, "ty__zhangning", "qun", 3, 3, General.Female)
-
 local tianze = fk.CreateTriggerSkill{
   name = "tianze",
-  events = {fk.CardUseFinished, fk.FinishJudge},
+  events = {fk.CardUseFinished},
   anim_type = "offensive",
-  mute = true,
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self.name) and target ~= player and target.phase == Player.Play and data.card.color == Card.Black and
       player:usedSkillTimes(self.name) == 0 and not player:isNude()
@@ -328,11 +326,9 @@ local difa = fk.CreateTriggerSkill{
     end
   end,
 }
-
 tianze:addRelatedSkill(tianze_draw)
 zhangning:addSkill(tianze)
 zhangning:addSkill(difa)
-
 Fk:loadTranslationTable{
   ["ty__zhangning"] = "张宁",
   ["tianze"] = "天则",
@@ -1442,14 +1438,13 @@ Fk:loadTranslationTable{
   ["~caomao"] = "宁作高贵乡公死，不作汉献帝生……",
 }
 
---吉平，来莺儿
+--吉平
 
 local laiyinger = General(extension, "laiyinger", "qun", 3, 3, General.Female)
-
 local xiaowu = fk.CreateActiveSkill{
   name = "xiaowu",
   anim_type = "offensive",
-  prompt = "#xiaowu",
+  --prompt = "#xiaowu",
   max_card_num = 0,
   target_num = 1,
   can_use = function(self, player)
@@ -1601,13 +1596,14 @@ shawu:addRelatedSkill(shawu_select)
 laiyinger:addSkill(xiaowu)
 laiyinger:addSkill(huaping)
 laiyinger:addRelatedSkill(shawu)
-
 Fk:loadTranslationTable{
   ["laiyinger"] = "来莺儿",
   ["xiaowu"] = "绡舞",
-  [":xiaowu"] = "出牌阶段限一次，你可以从你的上家或下家起选择任意名座位连续的其他角色，每名角色依次选择一项：1.令你摸一张牌；2.自己摸一张牌。选择完成后，若令你摸牌的选择人数较多，你获得一个“沙”标记；若自己摸牌的选择人数较多，你对这些角色各造成1点伤害。",
+  [":xiaowu"] = "出牌阶段限一次，你可以从你的上家或下家起选择任意名座位连续的其他角色，每名角色依次选择一项：1.令你摸一张牌；2.自己摸一张牌。"..
+  "选择完成后，若令你摸牌的选择人数较多，你获得一个“沙”标记；若自己摸牌的选择人数较多，你对这些角色各造成1点伤害。",
   ["huaping"] = "化萍",
-  [":huaping"] = "限定技，一名其他角色死亡时，你可以获得其所有武将技能，然后你失去“绡舞”和所有“沙”标记并摸等量的牌。你死亡时，若此技能未发动过，你可令一名其他角色获得技能“沙舞”和所有“沙”标记。",
+  [":huaping"] = "限定技，一名其他角色死亡时，你可以获得其所有武将技能，然后你失去〖绡舞〗和所有“沙”标记并摸等量的牌。"..
+  "你死亡时，若此技能未发动过，你可令一名其他角色获得技能〖沙舞〗和所有“沙”标记。",
   ["shawu"] = "沙舞",
   ["#shawu_select"] = "沙舞",
   [":shawu"] = "当你使用【杀】指定目标后，你可以弃置两张手牌或1枚“沙”标记对目标角色造成1点伤害。若你弃置的是“沙”标记，你摸两张牌。",
@@ -1825,13 +1821,14 @@ Fk:loadTranslationTable{
   ["$pingxiang2"] = "解甲事仇雠，竭力挽狂澜。",
   ["~godjiangwei"] = "武侯遗志，已成泡影矣……",
 }
+
 --骆统 张媱 张勋 滕胤 神马超 黄承彦2022.6.15
 
 local zhangyao = General(extension, "zhangyao", "wu", 3, 3, General.Female)
 local yuanyu = fk.CreateActiveSkill{
   name = "yuanyu",
   anim_type = "control",
-  prompt = "#yuanyu",
+  --prompt = "#yuanyu",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 + player:getMark("yuanyu_extra_times-phase")
   end,
@@ -1960,7 +1957,6 @@ local xiyan = fk.CreateTriggerSkill{
 zhangyao:addSkill(yuanyu)
 yuanyu:addRelatedSkill(yuanyu_trigger)
 zhangyao:addSkill(xiyan)
-
 Fk:loadTranslationTable{
   ["zhangyao"] = "张媱",
   ["yuanyu"] = "怨语",
@@ -2660,6 +2656,5 @@ Fk:loadTranslationTable{
   ["$guili2"] = "山野如春，不如归去。",
   ["~caohua"] = "自古忠孝难两全……",
 }
-
 
 return extension

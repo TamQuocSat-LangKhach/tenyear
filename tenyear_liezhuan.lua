@@ -417,16 +417,222 @@ Fk:loadTranslationTable{
 
 --胡车儿
 
+local zoushi = General(extension, "ty__zoushi", "qun", 3, 3, General.Female)
+local ty__huoshui_active = fk.CreateActiveSkill{
+  name = "ty__huoshui_active",
+  mute = true,
+  card_num = 0,
+  min_target_num = 1,
+  max_target_num = function()
+    local n = math.max(Self:getLostHp(), 1)
+    return math.min(n, 3)
+  end,
+  card_filter = function(self, to_select, selected, targets)
+    return false
+  end,
+  target_filter = function(self, to_select, selected, cards)
+    if to_select ~= Self.id then
+      local target = Fk:currentRoom():getPlayerById(to_select)
+      if #selected == 0 then
+        return true
+      elseif #selected == 1 then
+        return not target:isKongcheng()
+      elseif #selected == 2 then
+        return #target.player_cards[Player.Equip] > 0
+      end
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    for i = 1, #effect.tos, 1 do
+      local target = room:getPlayerById(effect.tos[i])
+      if i == 1 then
+        room:setPlayerMark(target, MarkEnum.UncompulsoryInvalidity.."-turn", 1)
+      elseif i == 2 then
+        local card = room:askForCard(target, 1, 1, false, "ty__huoshui", false, ".", "#ty__huoshui-give:"..player.id)
+        room:obtainCard(player.id, card[1], false, fk.ReasonGive)
+      elseif i == 3 then
+        target:throwAllCards("e")
+      end
+    end
+  end,
+}
+local ty__huoshui = fk.CreateTriggerSkill{
+  name = "ty__huoshui",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Start
+  end,
+  on_cost = function(self, event, target, player, data)
+    local n = math.max(player:getLostHp(), 1)
+    n = math.min(n, 3)
+    return player.room:askForUseActiveSkill(player, "ty__huoshui_active", "#ty__huoshui-choose:::"..tostring(n), true, {}, false)
+  end,
+}
+local ty__qingcheng = fk.CreateActiveSkill{
+  name = "ty__qingcheng",
+  anim_type = "control",
+  target_num = 1,
+  card_num = 0,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    local target = Fk:currentRoom():getPlayerById(to_select)
+    return #selected == 0 and to_select ~= Self.id and target.gender == General.Male and Self:getHandcardNum() >= target:getHandcardNum()
+  end,
+  on_use = function(self, room, effect)
+    local cards1 = table.clone(room:getPlayerById(effect.from).player_cards[Player.Hand])
+    local cards2 = table.clone(room:getPlayerById(effect.tos[1]).player_cards[Player.Hand])
+    local move1 = {
+      from = effect.from,
+      ids = cards1,
+      toArea = Card.Processing,
+      moveReason = fk.ReasonJustMove,
+      proposer = effect.from,
+      skillName = self.name,
+    }
+    local move2 = {
+      from = effect.tos[1],
+      ids = cards2,
+      toArea = Card.Processing,
+      moveReason = fk.ReasonJustMove,
+      proposer = effect.from,
+      skillName = self.name,
+    }
+    room:moveCards(move1, move2)
+    local move3 = {
+      ids = table.filter(cards1, function(id) return room:getCardArea(id) == Card.Processing end),
+      fromArea = Card.Processing,
+      to = effect.tos[1],
+      toArea = Card.PlayerHand,
+      moveReason = fk.ReasonJustMove,
+      proposer = effect.from,
+      skillName = self.name,
+    }
+    local move4 = {
+      ids = table.filter(cards2, function(id) return room:getCardArea(id) == Card.Processing end),
+      fromArea = Card.Processing,
+      to = effect.from,
+      toArea = Card.PlayerHand,
+      moveReason = fk.ReasonJustMove,
+      proposer = effect.from,
+      skillName = self.name,
+    }
+    room:moveCards(move3, move4)
+  end,
+}
+Fk:addSkill(ty__huoshui_active)
+zoushi:addSkill(ty__huoshui)
+zoushi:addSkill(ty__qingcheng)
 Fk:loadTranslationTable{
-  ["zoushi"] = "邹氏",
-  ["huoshui"] = "祸水",
-  [":huoshui"] = "准备阶段，你可以令至多X名角色（X为你已损失的体力值，至少为1且至多为3）按你选择的顺序依次执行一项：1.本回合所有非锁定技失效；"..
+  ["ty__zoushi"] = "邹氏",
+  ["ty__huoshui"] = "祸水",
+  [":ty__huoshui"] = "准备阶段，你可以令至多X名其他角色（X为你已损失体力值，至少为1，至多为3）按你选择的顺序依次执行一项：1.本回合所有非锁定技失效；"..
   "2.交给你一张手牌；3.弃置装备区里的所有牌。",
-  ["qingcheng"] = "倾城",
-  [":qingcheng"] = "出牌阶段限一次，你可以与一名手牌数不大于你的男性角色交换手牌。",
+  ["ty__qingcheng"] = "倾城",
+  [":ty__qingcheng"] = "出牌阶段限一次，你可以与一名手牌数不大于你的男性角色交换手牌。",
+  ["#ty__huoshui-choose"] = "祸水：选择至多%arg名角色，按照选择的顺序：<br>1.本回合非锁定技失效，2.交给你一张手牌，3.弃置装备区里的所有牌",
+  ["ty__huoshui_active"] = "祸水",
+  ["#ty__huoshui-give"] = "祸水：你须交给%src一张手牌",
 }
 
---曹安民 郝萌 严夫人
+--曹安民 郝萌
+
+local yanfuren = General(extension, "yanfuren", "qun", 3, 3, General.Female)
+local channi_viewas = fk.CreateViewAsSkill{
+  name = "channi_viewas",
+  anim_type = "offensive",
+  pattern = "duel",
+  card_filter = function(self, to_select, selected)
+    return Fk:currentRoom():getCardArea(to_select) ~= Player.Equip and #selected < Self:getMark("channi")
+  end,
+  view_as = function(self, cards)
+    if #cards == 0 then return end
+    local card = Fk:cloneCard("duel")
+    card:addSubcards(cards)
+    card.skillName = "channi"
+    return card
+  end,
+}
+local channi = fk.CreateActiveSkill{
+  name = "channi",
+  anim_type = "support",
+  min_card_num = 1,
+  target_num = 1,
+  can_use = function(self, player)
+    return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return Fk:currentRoom():getCardArea(to_select) ~= Card.PlayerEquip
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local n = #effect.cards
+    local dummy = Fk:cloneCard("dilu")
+    dummy:addSubcards(effect.cards)
+    room:obtainCard(target.id, dummy, false, fk.ReasonGive)
+    room:setPlayerMark(target, self.name, n)
+    local success, data = room:askForUseActiveSkill(target, "channi_viewas", "#channi-invoke:"..player.id.."::"..n, true, {}, false)
+    room:setPlayerMark(target, self.name, 0)
+    if success then
+      local card = Fk:cloneCard("duel")
+      card.skillName = self.name
+      card:addSubcards(data.cards)
+      local use = {
+        from = target.id,
+        tos = table.map(data.targets, function(id) return {id} end),
+        card = card,
+      }
+      room:useCard(use)
+      if use.damageDealt then
+        if not use.damageDealt[target.id] and not target.dead then
+          target:drawCards(#card.subcards, self.name)
+        elseif use.damageDealt[target.id] and not player.dead and not player:isKongcheng() then
+          player:throwAllCards("h")
+        end
+      end
+    end
+  end,
+}
+local nifu = fk.CreateTriggerSkill{
+  name = "nifu",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and target.phase == Player.Finish and player:getHandcardNum() ~= 3
+  end,
+  on_use = function(self, event, target, player, data)
+    local n = player:getHandcardNum() - 3
+    if n < 0 then
+      player:drawCards(-n, self.name)
+    else
+      player.room:askForDiscard(player, n, n, false, self.name, false)
+    end
+  end,
+}
+Fk:addSkill(channi_viewas)
+yanfuren:addSkill(channi)
+yanfuren:addSkill(nifu)
+Fk:loadTranslationTable{
+  ["yanfuren"] = "严夫人",
+  ["channi"] = "谗逆",
+  [":channi"] = "出牌阶段限一次，你可以交给一名其他角色任意张手牌，然后该角色可以将X张手牌当一张【决斗】使用（X至多为你以此法交给其的牌数）。"..
+  "其因此使用【决斗】造成伤害后，其摸X张牌；其因此使用【决斗】受到伤害后，你弃置所有手牌。",
+  ["nifu"] = "匿伏",
+  [":nifu"] = "锁定技，一名角色的结束阶段，你将手牌摸至或弃置至三张。",
+  ["channi_viewas"] = "谗逆",
+  ["#channi-invoke"] = "谗逆：你可以将至多%arg张手牌当一张【决斗】使用<br>若对目标造成伤害你摸等量牌，若你受到伤害则 %src 弃置所有手牌",
+}
 
 Fk:loadTranslationTable{
   ["ty__zhuling"] = "朱灵",

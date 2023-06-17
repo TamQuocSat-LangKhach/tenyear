@@ -1017,7 +1017,7 @@ local miaoxian_trigger = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.AfterCardUseDeclared},
   can_trigger = function(self, event, target, player, data)
-    if target == player and (player:isKongcheng() or 
+    if target == player and player:hasSkill(self.name) and (player:isKongcheng() or
       not table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id).color == Card.Red end)) and
       player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and player:usedSkillTimes("miaoxian", Player.HistoryTurn) == 0 then
       if data.card.color == Card.Red then

@@ -2228,71 +2228,31 @@ local shencai = fk.CreateActiveSkill{
 }
 local shencai_record = fk.CreateTriggerSkill{
   name = "#shencai_record",
-  anim_type = "offensive",
-  frequency = Skill.Compulsory,
-  events = {fk.Damaged, fk.TargetConfirmed, fk.AfterCardsMove, fk.EventPhaseStart},
+  mute = true,
+  events = {fk.FinishJudge},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) then
-      if event == fk.Damaged then
-        return target:getMark("@shencai_chi") > 0
-      elseif event == fk.TargetConfirmed then
-        return target:getMark("@shencai_zhang") > 0 and data.card.trueName == "slash"
-      elseif event == fk.AfterCardsMove then
-        self.shencai_target = nil
-        for _, move in ipairs(data) do
-          if move.skillName ~= "shencai" and move.from ~= nil and player.room:getPlayerById(move.from):getMark("@shencai_tu") > 0 then
-            for _, info in ipairs(move.moveInfo) do
-              if info.fromArea == Card.PlayerHand then
-                self.shencai_target = move.from
-                return true
-              end
-            end
-          end
-        end
-      elseif event == fk.EventPhaseStart then
-        return (target:getMark("@shencai_liu") > 0 and target.phase == Player.Finish) or
-          (target:getMark("@shencai_si") > #player.room.alive_players and target.phase == Player.NotActive)
-      end
-    end
+    return player:hasSkill(self.name, true) and data.reason == "shencai"
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.Damaged then
-      room:loseHp(target, data.damage, "shencai")
-    elseif event == fk.TargetConfirmed then
-      data.disresponsive = true
-    elseif event == fk.AfterCardsMove then
-      local to = room:getPlayerById(self.shencai_target)
-      if not to:isKongcheng() then
-        room:throwCard({table.random(to.player_cards[Player.Hand])}, "shencai", to, to)
-      end
-    elseif event == fk.EventPhaseStart then
-      if target.phase == Player.Finish then
-        target:turnOver()
-      else
-        room:killPlayer({who = target.id})
-      end
+    if room:getCardArea(data.card) == Card.Processing then
+      room:obtainCard(player.id, data.card, true, fk.ReasonJustMove)
     end
-  end,
-
-  refresh_events = {fk.FinishJudge},
-  can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self.name, true) and data.reason == "shencai"
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    room:obtainCard(player.id, data.card, true, fk.ReasonJustMove)
     local result = {}
-    if table.contains({"peach", "analeptic", "silver_lion", "god_salvation"}, data.card.trueName) then
+    if table.contains({"peach", "analeptic", "silver_lion", "god_salvation", "celestial_calabash"}, data.card.trueName) then
       table.insert(result, "@shencai_chi")
     end
     if data.card.sub_type == Card.SubtypeWeapon or data.card.name == "collateral" then
       table.insert(result, "@shencai_zhang")
     end
-    if table.contains({"savage_assault", "archery_attack", "duel", "spear", "eight_diagram"}, data.card.trueName) then
+    if table.contains({"savage_assault", "archery_attack", "duel", "spear", "eight_diagram", "raid_and_frontal_attack"}, data.card.trueName) then
       table.insert(result, "@shencai_tu")
     end
-    if data.card.sub_type == Card.SubtypeDefensiveRide or data.card.sub_type == Card.SubtypeOffensiveRide or data.card.name == "snatch" or data.card.name == "supply_shortage" then
+    if data.card.sub_type == Card.SubtypeDefensiveRide or data.card.sub_type == Card.SubtypeOffensiveRide or
+    table.contains({"snatch", "supply_shortage", "chasing_near"}, data.card.trueName) then
       table.insert(result, "@shencai_liu")
     end
     if #result == 0 then
@@ -2312,6 +2272,56 @@ local shencai_record = fk.CreateTriggerSkill{
     end
   end,
 }
+local shencai_trigger = fk.CreateTriggerSkill{
+  name = "#shencai_trigger",
+  anim_type = "offensive",
+  events = {fk.Damaged, fk.TargetConfirmed, fk.AfterCardsMove, fk.EventPhaseStart, fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name, true) then
+      if event == fk.Damaged then
+        return target:getMark("@shencai_chi") > 0
+      elseif event == fk.TargetConfirmed then
+        return target:getMark("@shencai_zhang") > 0 and data.card.trueName == "slash"
+      elseif event == fk.AfterCardsMove then
+        self.shencai_target = nil
+        for _, move in ipairs(data) do
+          if move.skillName ~= "shencai" and move.from and player.room:getPlayerById(move.from):getMark("@shencai_tu") > 0 then
+            for _, info in ipairs(move.moveInfo) do
+              if info.fromArea == Card.PlayerHand then
+                self.shencai_target = move.from
+                return true
+              end
+            end
+          end
+        end
+      elseif event == fk.EventPhaseStart then
+        return target:getMark("@shencai_liu") > 0 and target.phase == Player.Finish
+      elseif event == fk.TurnEnd then
+        return target:getMark("@shencai_si") > #player.room.alive_players
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.Damaged then
+      room:loseHp(target, data.damage, "shencai")
+    elseif event == fk.TargetConfirmed then
+      data.disresponsive = true
+    elseif event == fk.AfterCardsMove then
+      local to = room:getPlayerById(self.shencai_target)
+      if not to:isKongcheng() then
+        room:throwCard({table.random(to.player_cards[Player.Hand])}, "shencai", to, to)
+      end
+    elseif event == fk.EventPhaseStart then
+      target:turnOver()
+    elseif event == fk.TurnEnd then
+      room:killPlayer({who = target.id})
+    end
+  end,
+}
 local shencai_maxcards = fk.CreateMaxCardsSkill {
   name = "#shencai_maxcards",
   correct_func = function(self, player)
@@ -2320,12 +2330,13 @@ local shencai_maxcards = fk.CreateMaxCardsSkill {
 }
 local xunshi = fk.CreateFilterSkill{
   name = "xunshi",
-  card_filter = function(self, to_select, player)
-    local names = {"savage_assault", "archery_attack", "amazing_grace", "god_salvation", "iron_chain"}
-    return player:hasSkill(self.name) and table.contains(names, to_select.name)
+  card_filter = function(self, card, player)
+    local names = {"savage_assault", "archery_attack", "amazing_grace", "god_salvation", "iron_chain", "redistribute"}
+    return player:hasSkill(self.name) and table.contains(names, card.name) and
+      not table.contains(player.player_cards[Player.Judge], card.id)
   end,
-  view_as = function(self, to_select)
-    local card = Fk:cloneCard("slash", Card.NoSuit, to_select.number)
+  view_as = function(self, card)
+    local card = Fk:cloneCard("slash", Card.NoSuit, card.number)
     card.skillName = self.name
     return card
   end,
@@ -2334,21 +2345,24 @@ local xunshi_record = fk.CreateTriggerSkill{
   name = "#xunshi_record",
   anim_type = "offensive",
   frequency = Skill.Compulsory,
-  events = {fk.AfterCardTargetDeclared},
+  events = {fk.TargetSpecifying},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card.color == Card.NoColor and data.tos ~= nil
+    return target == player and player:hasSkill("xunshi") and data.card.color == Card.NoColor and data.targetGroup
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
+    self.cost_data = {}
     local targets = {}
     for _, p in ipairs(room:getOtherPlayers(player)) do
-      if not table.contains(data.tos[1], p.id) and not player:isProhibited(p, data.card) then
+      if not table.contains(AimGroup:getAllTargets(data.tos), p.id) and not player:isProhibited(p, data.card) then
         table.insertIfNeed(targets, p.id)
       end
     end
-    local tos = room:askForChoosePlayers(player, targets, 1, #targets, "#xunshi-choose", self.name, true)
-    if #tos > 0 then
-      self.cost_data = tos
+    if #targets > 0 then
+      local tos = room:askForChoosePlayers(player, targets, 1, #targets, "#xunshi-choose", "xunshi", true)
+      if #tos > 0 then
+        self.cost_data = tos
+      end
     end
     return true
   end,
@@ -2356,10 +2370,9 @@ local xunshi_record = fk.CreateTriggerSkill{
     if player:getMark("xunshi") < 4 then
       player.room:addPlayerMark(player, "xunshi", 1)
     end
-    player:addCardUseHistory(data.card.trueName, -1)
     if self.cost_data then
-      for _, p in ipairs(self.cost_data) do
-        table.insert(data.tos, {p})
+      for _, id in ipairs(self.cost_data) do
+        TargetGroup:pushTargets(data.targetGroup, id)
       end
     end
   end,
@@ -2378,6 +2391,7 @@ local xunshi_targetmod = fk.CreateTargetModSkill{
   end,
 }
 shencai:addRelatedSkill(shencai_record)
+shencai:addRelatedSkill(shencai_trigger)
 shencai:addRelatedSkill(shencai_maxcards)
 xunshi:addRelatedSkill(xunshi_record)
 xunshi:addRelatedSkill(xunshi_targetmod)
@@ -2395,7 +2409,7 @@ Fk:loadTranslationTable{
   "“死”标记个数大于场上存活人数的角色回合结束时，其直接死亡。",
   ["xunshi"] = "巡使",
   [":xunshi"] = "锁定技，你的多目标锦囊牌均视为无色【杀】。你使用无色牌无距离和次数限制且可以额外指定任意个目标，然后〖神裁〗的发动次数+1（至多为5）。",
-  ["#shencai_record"] = "神裁",
+  ["#shencai_trigger"] = "神裁",
   ["@shencai_chi"] = "笞",
   ["@shencai_zhang"] = "杖",
   ["@shencai_tu"] = "徒",

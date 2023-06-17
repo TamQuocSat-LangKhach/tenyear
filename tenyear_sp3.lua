@@ -1206,6 +1206,7 @@ local xizhen = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
+    room:setPlayerMark(player, "xizhen-phase", to.id)
     local choices = {}
     for _, name in ipairs({"slash", "duel"}) do
       if not player:isProhibited(to, Fk:cloneCard(name)) then
@@ -1214,15 +1215,20 @@ local xizhen = fk.CreateTriggerSkill{
     end
     local choice = room:askForChoice(player, choices, self.name, "#xizhen-choice::"..to.id)
     room:useVirtualCard(choice, nil, player, to, self.name, true)
-    room:setPlayerMark(player, "xizhen-phase", to.id)
   end,
-
-  refresh_events = {fk.CardUsing, fk.CardResponding},
-  can_refresh = function(self, event, target, player, data)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) > 0 and
-      data.responseToEvent and data.responseToEvent.from and data.responseToEvent.from == player.id
+}
+local xizhen_trigger = fk.CreateTriggerSkill{
+  name = "#xizhen_trigger",
+  mute = true,
+  events = {fk.CardUsing, fk.CardResponding},
+  can_trigger = function(self, event, target, player, data)
+    return player:getMark("xizhen-phase") ~= 0 and data.responseToEvent and data.responseToEvent.from and
+      data.responseToEvent.from == player.id
   end,
-  on_refresh = function(self, event, target, player, data)
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(player:getMark("xizhen-phase"))
     if not to.dead then
@@ -1231,15 +1237,16 @@ local xizhen = fk.CreateTriggerSkill{
           who = to,
           num = 1,
           recoverBy = player,
-          skillName = self.name
+          skillName = "xizhen",
         }
-        player:drawCards(1, self.name)
+        player:drawCards(1, "xizhen")
       else
-        player:drawCards(2, self.name)
+        player:drawCards(2, "xizhen")
       end
     end
   end,
 }
+xizhen:addRelatedSkill(xizhen_trigger)
 gaolan:addSkill(xizhen)
 Fk:loadTranslationTable{
   ["ty__gaolan"] = "高览",

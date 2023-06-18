@@ -1663,7 +1663,137 @@ Fk:loadTranslationTable{
   ["~qinlang"] = "二姓之人，死无其所。",
 }
 
---郑浑2023.3.11
+local zhenghun = General(extension, "zhenghun", "wei", 3)
+local qiangzhiz = fk.CreateActiveSkill{
+  name = "qiangzhiz",
+  anim_type = "offensive",
+  card_num = 0,
+  target_num = 1,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function()
+    return false
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0 and to_select ~= Self.id and
+      #Fk:currentRoom():getPlayerById(to_select):getCardIds{Player.Hand, Player.Equip} + #Self:getCardIds{Player.Hand, Player.Equip} > 2
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local result = room:askForCustomDialog(player, self.name,
+      "packages/tenyear/qml/QiangzhiBox.qml", {
+        player.general, player:getCardIds(Player.Hand), player:getCardIds(Player.Equip),
+        target.general, target:getCardIds(Player.Hand), target:getCardIds(Player.Equip),
+      })
+    local cards
+    if result == "" then
+      local ids1 = table.simpleClone(player:getCardIds{Player.Hand, Player.Equip})
+      local ids2 = table.simpleClone(target:getCardIds{Player.Hand, Player.Equip})
+      table.insertTable(ids1, ids2)
+      cards = table.random(ids1, 3)
+    else
+      cards = json.decode(result)
+    end
+    local cards1 = table.filter(cards, function(id) return table.contains(player:getCardIds{Player.Hand, Player.Equip}, id) end)
+    local cards2 = table.filter(cards, function(id) return table.contains(target:getCardIds{Player.Hand, Player.Equip}, id) end)
+    local moveInfos = {}
+    if #cards1 > 0 then
+      table.insert(moveInfos, {
+        from = player.id,
+        ids = cards1,
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonDiscard,
+        proposer = effect.from,
+        skillName = self.name,
+      })
+    end
+    if #cards2 > 0 then
+      table.insert(moveInfos, {
+        from = target.id,
+        ids = cards2,
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonDiscard,
+        proposer = effect.from,
+        skillName = self.name,
+      })
+    end
+    room:moveCards(table.unpack(moveInfos))
+    if not player.dead and not target.dead then
+      if #cards1 == 3 then
+        room:damage{
+          from = player,
+          to = target,
+          damage = 1,
+          skillName = self.name,
+        }
+      elseif #cards2 == 3 then
+        room:damage{
+          from = target,
+          to = player,
+          damage = 1,
+          skillName = self.name,
+        }
+      end
+    end
+  end,
+}
+local pitian = fk.CreateTriggerSkill{
+  name = "pitian",
+  anim_type = "drawcard",
+  events = {fk.AfterCardsMove, fk.Damaged, fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      if event == fk.AfterCardsMove then
+        for _, move in ipairs(data) do
+          if move.from == player.id and move.moveReason == fk.ReasonDiscard then
+            return true
+          end
+        end
+      elseif event == fk.Damaged then
+        return target == player
+      else
+        return target == player and player.phase == Player.Finish and player:getHandcardNum() < player:getMaxCards()
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.EventPhaseStart then
+      return player.room:askForSkillInvoke(player, self.name, nil, "#pitian-invoke")
+    else
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    if event == fk.EventPhaseStart then
+      player:drawCards(math.min(player:getMaxCards() - player:getHandcardNum(), 5), self.name)
+      player.room:setPlayerMark(player, "@pitian", 0)
+    else
+      player.room:addPlayerMark(player, "@pitian", 1)
+    end
+  end,
+}
+local pitian_maxcards = fk.CreateMaxCardsSkill{
+  name = "#pitian_maxcards",
+  correct_func = function(self, player)
+    return player:getMark("@pitian")
+  end,
+}
+pitian:addRelatedSkill(pitian_maxcards)
+zhenghun:addSkill(qiangzhiz)
+zhenghun:addSkill(pitian)
+Fk:loadTranslationTable{
+  ["zhenghun"] = "郑浑",
+  ["qiangzhiz"] = "强峙",
+  [":qiangzhiz"] = "出牌阶段限一次，你可以弃置你和一名其他角色共计三张牌。若有角色因此弃置三张牌，其对另一名角色造成1点伤害。",
+  ["pitian"] = "辟田",
+  [":pitian"] = "当你的牌因弃置而进入弃牌堆后或当你受到伤害后，你的手牌上限+1。结束阶段，若你的手牌数小于手牌上限，"..
+  "你可以将手牌摸至手牌上限（最多摸五张），然后重置因此技能而增加的手牌上限。",
+  ["#qiangzhiz-choose"] = "强峙：弃置双方共计三张牌",
+  ["#pitian-invoke"] = "辟田：你可以将手牌摸至手牌上限，然后重置本技能增加的手牌上限",
+  ["@pitian"] = "辟田",
+}
 
 local mengjie = General(extension, "mengjie", "qun", 3)
 local yinlu = fk.CreateTriggerSkill{

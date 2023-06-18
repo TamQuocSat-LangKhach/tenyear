@@ -3128,15 +3128,17 @@ local wujie = fk.CreateTriggerSkill{
       player:addCardUseHistory(data.card.trueName, -1)
     else
       player.room:setTag("SkipNormalDeathProcess", true)
+      player.room:setTag(self.name, true)
     end
   end,
 
   refresh_events = {fk.Deathed},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:usedSkillTimes(self.name, Player.HistoryGame) > 0
+    return target == player and player.room:getTag(self.name)
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:setTag("SkipNormalDeathProcess", false)
+    player.room:setTag(self.name, false)
   end,
 }
 local wujie_targetmod = fk.CreateTargetModSkill{

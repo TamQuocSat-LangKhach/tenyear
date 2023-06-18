@@ -224,7 +224,7 @@ Fk:loadTranslationTable{
   ["deshao"] = "德劭",
   [":deshao"] = "每回合限两次，当你成为其他角色使用黑色牌的目标后，你可以摸一张牌，然后若其手牌数大于等于你，你弃置其一张牌。",
   ["mingfa"] = "明伐",
-  [":mingfa"] = "出牌阶段内限一次，你使用【杀】或普通锦囊牌结算完毕后，若你没有“明伐”牌，可将此牌置于武将牌上并秘密选择一名其他角色。"..
+  [":mingfa"] = "出牌阶段内限一次，你使用【杀】或普通锦囊牌结算完毕后，若你没有“明伐”牌，可将此牌置于武将牌上并选择一名其他角色。"..
   "该角色的结束阶段，视为你对其使用X张“明伐”牌（X为其手牌数，最少为1，最多为5），然后移去“明伐”牌。",
   ["#deshao-invoke"] = "德劭：你可以摸一张牌，然后若 %dest 手牌数不少于你，你弃置其一张牌",
   ["#mingfa-choose"] = "明伐：将%arg置为“明伐”，选择一名角色，其结束阶段视为对其使用其手牌张数次“明伐”牌",
@@ -1113,7 +1113,9 @@ zhangfen:addSkill(chaixie)
 Fk:loadTranslationTable{
   ["zhangfen"] = "张奋",
   ["wanglu"] = "望橹",
-  [":wanglu"] = "锁定技，准备阶段，你将【大攻车】置入你的装备区，若你的装备区内已有【大攻车】，则你执行一个额外的出牌阶段。",
+  [":wanglu"] = "锁定技，准备阶段，你将【大攻车】置入你的装备区，若你的装备区内已有【大攻车】，则你执行一个额外的出牌阶段。<br>"..
+  "<font color='grey'>【大攻车】<br>♠9 装备牌·宝物<br /><b>装备技能</b>：出牌阶段开始时，你可以视为使用一张【杀】，"..
+  "当此【杀】对目标角色造成伤害后，你弃置其一张牌。若此牌未升级，则不能被弃置。离开装备区时销毁。",
   ["xianzhu"] = "陷筑",
   [":xianzhu"] = "当你使用【杀】造成伤害后，你可以升级【大攻车】（每个【大攻车】最多升级5次）。升级选项：<br>"..
   "【大攻车】的【杀】无视距离和防具；<br>【大攻车】的【杀】可指定目标+1；<br>【大攻车】的【杀】造成伤害后弃牌数+1。",
@@ -1586,7 +1588,9 @@ liuye:addSkill(huace)
 Fk:loadTranslationTable{
   ["ty__liuye"] = "刘晔",
   ["poyuan"] = "破垣",
-  [":poyuan"] = "游戏开始时或回合开始时，若你的装备区里没有【霹雳车】，你可以将【霹雳车】置于装备区；若有，你可以弃置一名其他角色至多两张牌。",
+  [":poyuan"] = "游戏开始时或回合开始时，若你的装备区里没有【霹雳车】，你可以将【霹雳车】置于装备区；若有，你可以弃置一名其他角色至多两张牌。<br>"..
+  "<font color='grey'>【霹雳车】<br>♦9 装备牌·宝物<br /><b>装备技能</b>：锁定技，你回合内使用基本牌的伤害和回复数值+1且无距离限制，"..
+  "使用的【酒】使【杀】伤害基数值增加的效果+1。你回合外使用或打出基本牌时摸一张牌。离开装备区时销毁。",
   ["huace"] = "画策",
   [":huace"] = "出牌阶段限一次，你可以将一张手牌当上一轮没有角色使用过的普通锦囊牌使用。",
   ["#poyuan-invoke"] = "破垣：你可以装备【霹雳车】",
@@ -2424,7 +2428,13 @@ Fk:loadTranslationTable{
   ["$xunshi2"] = "巡御两界，路寻不平！",
   ["~godzhangfei"] = "尔等，欲复斩我头乎？",
 }
---李异谢旌 袁姬 庞会 赵直 陈矫 朱建平 2022.12.22
+
+Fk:loadTranslationTable{
+  ["liyixiejing"] = "李异谢旌",
+  ["douzhen"] = "斗阵",
+  [":douzhen"] = "转换技，锁定技，你的回合内，阳：你的黑色基本牌视为【决斗】，且使用时获得目标一张牌；阴：你的红色基本牌视为【杀】，且使用时无次数限制。",
+}
+
 local yuanji = General(extension, "yuanji", "wu", 3, 3, General.Female)
 local mengchi = fk.CreateTriggerSkill{
   name = "mengchi",
@@ -2599,7 +2609,7 @@ local mengjiez = fk.CreateTriggerSkill{
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self.name, true) and (target:getMark(self.name) > 0 or
-      (target:getMark("@@tongguan2") > 0 and #target.player_cards[Player.Hand] > target.hp))
+      (target:getMark("@@tongguan2") > 0 and target:getHandcardNum() > target.hp))
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -2712,13 +2722,13 @@ Fk:loadTranslationTable{
   "仁智：交给其他角色牌；令一名其他角色将手牌摸至体力上限（至多摸五张）",
   ["#tongguan-choice"] = "统观：为 %dest 选择一项属性（每种属性至多被选择两次）",
   ["@@tongguan1"] = "武勇",
-  [":@@tongguan1"] = "回合结束时，若其本回合造成伤害，你对一名其他角色造成1点伤害",
+  [":@@tongguan1"] = "回合结束时，若其本回合造成过伤害，你对一名其他角色造成1点伤害",
   ["@@tongguan2"] = "刚硬",
-  [":@@tongguan2"] = "回合结束时，若其本回合回复体力或手牌数大于体力值，你令一名角色回复1点体力",
+  [":@@tongguan2"] = "回合结束时，若其手牌数大于体力值，或其本回合回复过体力，你令一名角色回复1点体力",
   ["@@tongguan3"] = "多谋",
-  [":@@tongguan3"] = "回合结束时，若其本回合摸牌阶段外摸牌，你摸两张牌",
+  [":@@tongguan3"] = "回合结束时，若其本回合摸牌阶段外摸过牌，你摸两张牌",
   ["@@tongguan4"] = "果决",
-  [":@@tongguan4"] = "回合结束时，若其本回合弃置或获得其他角色的牌，你弃置一名其他角色区域内的至多两张牌",
+  [":@@tongguan4"] = "回合结束时，若其本回合弃置或获得过其他角色的牌，你弃置一名其他角色区域内的至多两张牌",
   ["@@tongguan5"] = "仁智",
   [":@@tongguan5"] = "回合结束时，若其本回合交给其他角色牌，你令一名其他角色将手牌摸至体力上限（至多摸五张）",
   ["#mengjiez1-invoke"] = "梦解：你可以对一名其他角色造成1点伤害",
@@ -2734,15 +2744,112 @@ Fk:loadTranslationTable{
   ["~zhaozhi"] = "解人之梦者，犹在己梦中。",
 }
 
+local chenjiao = General(extension, "chenjiao", "wei", 3)
+local xieshou = fk.CreateTriggerSkill{
+  name = "xieshou",
+  anim_type = "masochism",
+  events = {fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and not target.dead and player:distanceTo(target) <= 2 and player:getMaxCards() > 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#xieshou-invoke::"..target.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:addPlayerMark(player, MarkEnum.MinusMaxCards, 1)
+    local choices = {"xieshou_draw"}
+    if target:isWounded() then
+      table.insert(choices, 1, "recover")
+    end
+    local choice = room:askForChoice(target, choices, self.name, "#xieshou-choice:"..player.id)
+    if choice == "recover" then
+      room:recover({
+        who = target,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      })
+    else
+      if not target.faceup then
+        target:turnOver()
+      end
+      if target.chained then
+        target:setChainState(false)
+      end
+      target:drawCards(2, self.name)
+    end
+  end,
+}
+local qingyan = fk.CreateTriggerSkill{
+  name = "qingyan",
+  anim_type = "defensive",
+  events = {fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.firstTarget and data.card.color == Card.Black and data.from ~= player.id and
+      player:usedSkillTimes(self.name, Player.HistoryTurn) < 2
+  end,
+  on_cost = function(self, event, target, player, data)
+    if player:getHandcardNum() < math.min(player.hp, player.maxHp) then
+      return player.room:askForSkillInvoke(player, self.name, nil, "#qingyan-invoke")
+    else
+      local card = player.room:askForDiscard(player, 1, 1, false, self.name, true, ".", "#qingyan-card", true)
+      if #card > 0 then
+        self.cost_data = card
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if self.cost_data then
+      room:throwCard(self.cost_data, self.name, player, player)
+      room:addPlayerMark(player, MarkEnum.AddMaxCards, 1)
+    else
+      player:drawCards(player.maxHp - player:getHandcardNum(), self.name)
+    end
+  end,
+}
+local qizi = fk.CreateTriggerSkill{
+  name = "qizi",
+  anim_type = "negative",
+  frequency = Skill.Compulsory,
+  events = {fk.EnterDying},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and player:distanceTo(target) > 2
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:broadcastSkillInvoke(self.name)
+    player.room:notifySkillInvoked(player, self.name)
+  end,
+}
+local qizi_prohibit = fk.CreateProhibitSkill{
+  name = "#qizi_prohibit",
+  frequency = Skill.Compulsory,
+  prohibit_use = function(self, player, card)
+    if player:hasSkill("qizi") and card.name == "peach" then
+      return table.find(Fk:currentRoom().alive_players, function(p) return p.dying and player:distanceTo(p) > 2 end)
+    end
+  end,
+}
+qizi:addRelatedSkill(qizi_prohibit)
+chenjiao:addSkill(xieshou)
+chenjiao:addSkill(qingyan)
+chenjiao:addSkill(qizi)
 Fk:loadTranslationTable{
   ["chenjiao"] = "陈矫",
   ["xieshou"] = "协守",
-  [":xieshou"] = "每回合限一次，当有角色受到伤害后，若你与其距离小于等于2，你可以令你的手牌上限-1，然后其选择一项：1.回复1点体力；2.将武将牌复原并摸两张牌。",
+  [":xieshou"] = "每回合限一次，一名角色受到伤害后，若你与其距离不大于2，你可以令你的手牌上限-1，然后其选择一项：1.回复1点体力；2.复原武将牌并摸两张牌。",
   ["qingyan"] = "清严",
-  [":qingyan"] = "每回合限两次，当你成为其他角色使用黑色牌的目标后：若你的手牌小于体力值，你可将手牌摸至体力上限；"..
-  "若你的手牌数不小于体力值，你可以弃置一张手牌令手牌上限+1。",
+  [":qingyan"] = "每回合限两次，当你成为其他角色使用黑色牌的目标后，若你的手牌数：小于体力值，你可将手牌摸至体力上限；"..
+  "不小于体力值，你可以弃置一张手牌令手牌上限+1。",
   ["qizi"] = "弃子",
   [":qizi"] = "锁定技，其他角色处于濒死状态时，若你与其距离大于2，你不能对其使用【桃】。",
+  ["#xieshou-invoke"] = "协守：你可以手牌上限-1，令 %dest 选择回复体力，或复原武将牌并摸牌",
+  ["xieshou_draw"] = "复原武将牌并摸两张牌",
+  ["#xieshou-choice"] = "协守：选择 %src 令你执行的一项",
+  ["#qingyan-invoke"] = "清严：你可以将手牌摸至体力上限",
+  ["#qingyan-card"] = "清严：你可以弃置一张手牌令手牌上限+1",
 }
 
 local zhujianping = General(extension, "zhujianping", "qun", 3)

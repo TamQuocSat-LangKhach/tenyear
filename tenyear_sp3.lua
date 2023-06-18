@@ -1848,7 +1848,10 @@ local yuanyu = fk.CreateActiveSkill{
       return p.id end), 1, 1, ".|.|.|hand", "#yuanyu-choose", self.name, false)
     if #tar > 0 and card then
       local targetRecorded = type(player:getMark("yuanyu_targets")) == "table" and player:getMark("yuanyu_targets") or {}
-      table.insertIfNeed(targetRecorded, tar[1])
+      if not table.contains(targetRecorded, tar[1]) then
+        table.insert(targetRecorded, tar[1])
+        room:addPlayerMark(room:getPlayerById(tar[1]), "@@yuanyu")
+      end
       room:setPlayerMark(player, "yuanyu_targets", targetRecorded)
       player:addToPile("yuanyu_resent", card, true, self.name)
     end
@@ -1901,8 +1904,23 @@ local yuanyu_trigger = fk.CreateTriggerSkill{
         player:addToPile("yuanyu_resent", card, false, self.name)
       end
     end
+  end,
 
-  end
+  refresh_events = {fk.EventLoseSkill, fk.Death},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.EventLoseSkill and data ~= yuanyu then return false end
+    return player == target and type(player:getMark("yuanyu_targets")) == "table"
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local targets = player:getMark("yuanyu_targets")
+    if type(targets) == "table" then
+      for _, pid in ipairs(targets) do
+        room:removePlayerMark(room:getPlayerById(pid), "@@yuanyu")
+      end
+    end
+    room:setPlayerMark(player, "yuanyu_targets", 0)
+  end,
 }
 local xiyan = fk.CreateTriggerSkill{
   name = "xiyan",
@@ -1924,6 +1942,12 @@ local xiyan = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    local targets = player:getMark("yuanyu_targets")
+    if type(targets) == "table" then
+      for _, pid in ipairs(targets) do
+        room:removePlayerMark(room:getPlayerById(pid), "@@yuanyu")
+      end
+    end
     room:setPlayerMark(player, "yuanyu_targets", 0)
     local dummy = Fk:cloneCard("dilu")
     dummy:addSubcards(player:getPile("yuanyu_resent"))
@@ -1961,8 +1985,22 @@ local xiyan = fk.CreateTriggerSkill{
     player.room:setPlayerMark(player, "@xiyan", #suitsRecorded > 0 and suitsRecorded or 0)
   end,
 }
-zhangyao:addSkill(yuanyu)
+local xiyan_targetmod = fk.CreateTargetModSkill{
+  name = "#xiyan_targetmod",
+  residue_func = function(self, player, skill, scope, card)
+    return (card and player:getMark("yuanyu_targetmod-turn") > 0) and 999 or 0
+  end,
+}
+local xiyan_prohibit = fk.CreateProhibitSkill{
+  name = "#local xiyan_prohibit",
+  prohibit_use = function(self, player, card)
+    return player:getMark("yuanyu_prohibit-trun") > 0 and card.type == Card.TypeBasic
+  end,
+}
 yuanyu:addRelatedSkill(yuanyu_trigger)
+xiyan:addRelatedSkill(xiyan_targetmod)
+xiyan:addRelatedSkill(xiyan_prohibit)
+zhangyao:addSkill(yuanyu)
 zhangyao:addSkill(xiyan)
 Fk:loadTranslationTable{
   ["zhangyao"] = "张媱",
@@ -1973,6 +2011,7 @@ Fk:loadTranslationTable{
   [":xiyan"] = "每次增加“怨”时，若“怨”的花色数达到4种，你可以获得所有“怨”。然后若此时是你的回合，你的“怨语”视为未发动过，本回合手牌上限+4且使用牌无次数限制；若不是你的回合，你可令当前回合角色本回合手牌上限-4且本回合不能使用基本牌。",
 
   ["yuanyu_resent"] = "怨",
+  ["@@yuanyu"] = "怨语",
   ["#yuanyu"] = "怨语：你可以摸一张牌，然后放置一张手牌作为怨",
   ["#yuanyu-choose"] = "怨语：选择作为怨的一张手牌以及作为目标的一名其他角色",
   ["#yuanyu-push"] = "怨语：选择一张手牌作为%src的怨",

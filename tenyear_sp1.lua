@@ -613,7 +613,7 @@ local dianhua = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:askForGuanxing(player, room:getNCards(self.cost_data), nil, {0, 0})
+    room:askForGuanxing(player, room:getNCards(self.cost_data), nil, {0, 0}, self.name)
   end,
 }
 zhenyi:addRelatedSkill(zhenyi_filter1)

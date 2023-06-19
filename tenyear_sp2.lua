@@ -809,6 +809,60 @@ Fk:loadTranslationTable{
   ["#yangzhong-invoke"] = "殃众：你可以弃置两张牌，令 %dest 失去1点体力",
 }
 
+local zongyu = General(extension, "ty__zongyu", "shu", 3)
+local qiao = fk.CreateTriggerSkill{
+  name = "qiao",
+  anim_type = "control",
+  events = {fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.firstTarget and data.from ~= player.id and
+      not player.room:getPlayerById(data.from):isNude() and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#qiao-invoke::"..data.from)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local from = room:getPlayerById(data.from)
+    local id = room:askForCardChosen(player, from, "he", self.name)
+    room:throwCard(id, self.name, from, player)
+    if not player:isNude() then
+      room:askForDiscard(player, 1, 1, true, self.name, false)
+    end
+  end,
+}
+local chengshang = fk.CreateTriggerSkill{
+  name = "chengshang",
+  anim_type = "drawcard",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and data.tos and
+      table.find(TargetGroup:getRealTargets(data.tos), function(id) return id ~= player.id end) and not data.damageDealt and
+      data.card.suit ~= Card.NoSuit and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil,
+      "#chengshang-invoke:::"..data.card:getSuitString()..":"..tostring(data.card.number))
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = room:getCardsFromPileByRule(".|"..tostring(data.card.number).."|"..data.card:getSuitString())
+    if #cards > 0 then
+      room:moveCards({
+        ids = cards,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonJustMove,
+        proposer = player.id,
+        skillName = self.name,
+      })
+    else
+      player:setSkillUseHistory(self.name, 0, Player.HistoryPhase)
+    end
+  end,
+}
+zongyu:addSkill(qiao)
+zongyu:addSkill(chengshang)
 Fk:loadTranslationTable{
   ["ty__zongyu"] = "宗预",
   ["qiao"] = "气傲",
@@ -816,6 +870,8 @@ Fk:loadTranslationTable{
   ["chengshang"] = "承赏",
   [":chengshang"] = "出牌阶段内限一次，你使用指定其他角色为目标的牌结算后，若此牌没有造成伤害，你可以获得牌堆中所有与此牌花色点数均相同的牌。"..
   "若你没有因此获得牌，此技能视为未发动过。",
+  ["#qiao-invoke"] = "气傲：你可以弃置 %dest 一张牌，然后你弃置一张牌",
+  ["#chengshang-invoke"] = "承赏：你可以获得牌堆中所有的%arg%arg2牌",
 }
 
 local xiahoujie = General(extension, "xiahoujie", "wei", 5)

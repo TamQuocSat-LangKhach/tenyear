@@ -1897,14 +1897,151 @@ Fk:loadTranslationTable{
   ["huagui2"] = "展示",
 }
 
+local dingfuren = General(extension, "dingfuren", "wei", 3, 3, General.Female)
+local fengyan = fk.CreateActiveSkill{
+  name = "fengyan",
+  anim_type = "control",
+  card_num = 0,
+  target_num = 1,
+  interaction = function(self)
+    local choices = {}
+    if Self:getMark("fengyan1-phase") == 0 then
+      table.insert(choices, "fengyan1-phase")
+    end
+    if Self:getMark("fengyan2-phase") == 0 then
+      table.insert(choices, "fengyan2-phase")
+    end
+    return UI.ComboBox { choices = choices }
+  end,
+  can_use = function(self, player)
+    return player:getMark("fengyan1-phase") == 0 or player:getMark("fengyan2-phase") == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if #selected == 0 and to_select ~= Self.id then
+      local target = Fk:currentRoom():getPlayerById(to_select)
+      if self.interaction.data == "fengyan1-phase" then
+        return target.hp <= Self.hp and not target:isKongcheng()
+      elseif self.interaction.data == "fengyan2-phase" then
+        return target:getHandcardNum() <= Self:getHandcardNum() and not Self:isProhibited(target, Fk:cloneCard("slash"))
+      end
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    room:setPlayerMark(player, self.interaction.data, 1)
+    if self.interaction.data == "fengyan1-phase" then
+      local card = room:askForCard(target, 1, 1, true, self.name, false, ".", "#fengyan-give:"..player.id)
+      room:obtainCard(player.id, card[1], false, fk.ReasonGive)
+    elseif self.interaction.data == "fengyan2-phase" then
+      room:useVirtualCard("slash", nil, player, target, self.name, true)
+    end
+  end,
+}
+local fudao = fk.CreateTriggerSkill{
+  name = "fudao",
+  anim_type = "support",
+  events = {fk.GameStart, fk.TargetSpecified, fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      if event == fk.GameStart then
+        return true
+      elseif event == fk.TargetSpecified then
+        return target:getMark("@@fudao") ~= 0 and data.firstTarget and table.find(AimGroup:getAllTargets(data.tos), function(id)
+          return player.room:getPlayerById(id):getMark("@@fudao") ~= 0 and table.contains(target:getMark("@@fudao"), id) end) and
+          player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
+      elseif event == fk.TargetConfirmed then
+        return target == player and data.from ~= player.id and player.room:getPlayerById(data.from):getMark("@@juelie") > 0 and
+          data.card.color == Card.Black
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.GameStart then
+      local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
+      local tos = room:askForChoosePlayers(player, targets, 1, 1, "#fudao-choose", self.name, false, true)
+      local to
+      if #tos > 0 then
+        to = room:getPlayerById(tos[1])
+      else
+        to = room:getPlayerById(table.random(targets))
+      end
+      local mark = player:getMark("@@fudao")
+      if mark == 0 then mark = {} end
+      table.insertIfNeed(mark, to.id)
+      room:setPlayerMark(player, "@@fudao", mark)
+      mark = to:getMark("@@fudao")
+      if mark == 0 then mark = {} end
+      table.insertIfNeed(mark, player.id)
+      room:setPlayerMark(to, "@@fudao", mark)
+    elseif event == fk.TargetSpecified then
+      target:drawCards(2, self.name)
+      for _, id in ipairs(target:getMark("@@fudao")) do
+        if table.contains(AimGroup:getAllTargets(data.tos), id) then
+          room:getPlayerById(id):drawCards(2, self.name)
+        end
+      end
+    elseif event == fk.TargetConfirmed then
+      room:setPlayerMark(room:getPlayerById(data.from), "fudao-turn", 1)
+    end
+  end,
+}
+local fudao_trigger = fk.CreateTriggerSkill{
+  name = "#fudao_trigger",
+  mute = true,
+  events = {fk.Death, fk.DamageCaused},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:getMark("@@fudao") ~= 0 then
+      if event == fk.Death then
+        return data.damage and data.damage.from and not data.damage.from.dead and data.damage.from:getMark("@@fudao") == 0
+      elseif event == fk.DamageCaused then
+        return data.to:getMark("@@juelie") > 0
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.Death then
+      player.room:setPlayerMark(data.damage.from, "@@juelie", 1)
+    elseif event == fk.DamageCaused then
+      data.damage = data.damage + 1
+    end
+  end,
+}
+local fudao_prohibit = fk.CreateProhibitSkill{
+  name = "#fudao_prohibit",
+  prohibit_use = function(self, player, card)
+    return player:getMark("fudao-turn") > 0
+  end,
+}
+fudao:addRelatedSkill(fudao_trigger)
+fudao:addRelatedSkill(fudao_prohibit)
+dingfuren:addSkill(fengyan)
+dingfuren:addSkill(fudao)
 Fk:loadTranslationTable{
-  ["dingshangwan"] = "丁尚涴",
+  ["dingfuren"] = "丁尚涴",
   ["fengyan"] = "讽言",
   [":fengyan"] = "出牌阶段每项限一次，你可以选择一名其他角色，若其体力值小于等于你，你令其交给你一张手牌；"..
   "若其手牌数小于等于你，你视为对其使用一张无距离和次数限制的【杀】。",
   ["fudao"] = "抚悼",
-  [":fudao"] = "游戏开始时，你选择一名其他角色。你与其每回合首次使用牌指定对方为目标后，各摸两张牌。杀死你或该角色的其他角色获得一个“决裂”标记。"..
-  "你或该角色对有“决裂”标记的角色造成的伤害+1且“决裂”角色使用黑色牌指定你为目标后，其本回合不能再使用牌。",
+  [":fudao"] = "游戏开始时，你选择一名其他角色，你与其每回合首次使用牌指定对方为目标后，各摸两张牌。杀死你或该角色的其他角色获得“决裂”标记，"..
+  "你或该角色对有“决裂”的角色造成的伤害+1；“决裂”角色使用黑色牌指定你为目标后，其本回合不能再使用牌。",
+  ["fengyan1-phase"] = "令一名体力值不大于你的角色交给你一张手牌",
+  ["fengyan2-phase"] = "视为对一名手牌数不大于你的角色使用【杀】",
+  ["#fengyan-give"] = "讽言：你须交给 %src 一张手牌",
+  ["@@fudao"] = "抚悼",
+  ["#fudao-choose"] = "抚悼：请选择要“抚悼”的角色",
+  ["@@juelie"] = "决裂",
 }
 
 local luyi = General(extension, "luyi", "qun", 3, 3, General.Female)

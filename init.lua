@@ -7,6 +7,7 @@ local tenyear_sp4 = require "packages/tenyear/tenyear_sp4"
 local tenyear_sp5 = require "packages/tenyear/tenyear_sp5"
 --local tenyear_yj22 = require "packages/tenyear/tenyear_yj22"
 local tenyear_token = require "packages/tenyear/tenyear_token"
+local tenyear_ex = require "packages/tenyear/tenyear_ex"
 
 return {
   tenyear_xinghuo,
@@ -18,5 +19,5 @@ return {
   tenyear_sp5,
   --tenyear_yj22,
   tenyear_token,
-  --tenyear_ex,
+  tenyear_ex,
 }

@@ -238,7 +238,9 @@ local tongli = fk.CreateTriggerSkill{
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self.name) and player.phase == Player.Play and data.firstTarget and
-      (not data.card:isVirtual() or #data.card.subcards > 0) and not table.contains(data.card.skillNames, self.name) then
+      (not data.card:isVirtual() or #data.card.subcards > 0) and not table.contains(data.card.skillNames, self.name) and
+      data.card.type ~= Card.TypeEquip and data.card.sub_type ~= Card.SubtypeDelayedTrick and
+      not (table.contains({"peach", "analeptic"}, data.card.trueName) and table.find(player.room.alive_players, function(p) return p.dying end)) then
       local suits = {}
       for _, id in ipairs(player.player_cards[Player.Hand]) do
         if Fk:getCardById(id).suit ~= Card.NoSuit then
@@ -249,11 +251,9 @@ local tongli = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    if data.card.type ~= Card.TypeEquip and data.card.sub_type ~= Card.SubtypeDelayedTrick and data.card.trueName ~= "nullification" then
-      data.extra_data = data.extra_data or {}
-      data.extra_data.tongli = player:getMark("@tongli-turn")
-      player.room:setPlayerMark(player, "tongli_tos", AimGroup:getAllTargets(data.tos))
-    end
+    data.extra_data = data.extra_data or {}
+    data.extra_data.tongli = player:getMark("@tongli-turn")
+    player.room:setPlayerMark(player, "tongli_tos", AimGroup:getAllTargets(data.tos))
   end,
 
   refresh_events = {fk.AfterCardUseDeclared, fk.CardUseFinished},

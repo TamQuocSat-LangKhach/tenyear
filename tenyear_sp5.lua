@@ -1129,7 +1129,7 @@ local ty__zhaohan = fk.CreateTriggerSkill{
 
   refresh_events = {fk.AfterDrawNCards},
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryPhase) > 0 and #player.player_cards[Player.Hand] > 1
+    return player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryPhase) > 0 and player:getHandcardNum() > 1
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -1167,7 +1167,7 @@ local jinjie = fk.CreateTriggerSkill{
       if n == 0 then
         return player.room:askForSkillInvoke(player, self.name, nil, "#jinjie-invoke::"..target.id)
       else
-        if #player.player_cards[Player.Hand] < n then return end
+        if player:getHandcardNum() < n then return end
         return #player.room:askForDiscard(player, n, n, false, self.name, true, ".", "#jinjie-discard::"..target.id..":"..n) > 0
       end
     end
@@ -1338,7 +1338,7 @@ Fk:loadTranslationTable{
   ["#yuguan-choose"] = "御关：令至多%arg名角色将手牌摸至体力上限",
 }
 
--- 向朗 孙桓 杨弘 芮姬 桥蕤2023.3.11
+-- 孙桓 杨弘 芮姬 桥蕤2023.3.11
 local xianglang = General(extension, "xianglang", "shu", 3)
 local kanji = fk.CreateActiveSkill{
   name = "kanji",
@@ -1582,16 +1582,212 @@ Fk:loadTranslationTable{
   ["#yuanmo-choose"] = "远谟：你可以获得任意名角色各一张牌",
 }
 
+local ruiji = General(extension, "ty__ruiji", "wu", 4, 4, General.Female)
+local wangyuan = fk.CreateTriggerSkill{
+  name = "wangyuan",
+  anim_type = "special",
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) and player.phase == Player.NotActive and #player:getPile("ruiji_wang") < #player.room.players then
+      for _, move in ipairs(data) do
+        if move.from == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local names = {}
+    for _, id in ipairs(room.draw_pile) do
+      local card = Fk:getCardById(id, true)
+      if card.type ~= Card.TypeEquip and not table.find(player:getPile("ruiji_wang"), function(c)
+        return card.trueName == Fk:getCardById(c, true).trueName end) then
+        table.insertIfNeed(names, card.trueName)
+      end
+    end
+    if #names > 0 then
+      local card = room:getCardsFromPileByRule(table.random(names))
+      player:addToPile("ruiji_wang", card[1], true, self.name)
+    end
+  end,
+}
+local lingyin = fk.CreateViewAsSkill{
+  name = "lingyin",
+  anim_type = "offensive",
+  pattern = "duel",
+  card_filter = function(self, to_select, selected)
+    local card = Fk:getCardById(to_select)
+    return #selected == 0 and (card.sub_type == Card.SubtypeWeapon or card.sub_type == Card.SubtypeArmor)
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 then return end
+    local card = Fk:cloneCard("duel")
+    card:addSubcard(cards[1])
+    return card
+  end,
+  enabled_at_play = function(self, player)
+    return player:getMark("lingyin-turn") > 0
+  end,
+}
+local lingyin_trigger = fk.CreateTriggerSkill{
+  name = "#lingyin_trigger",
+  mute = true,
+  expand_pile = "ruiji_wang",
+  events = {fk.EventPhaseStart, fk.DamageCaused},
+  can_trigger = function(self, event, target, player, data)
+    if target == player then
+      if event == fk.EventPhaseStart then
+        return player:hasSkill(self.name) and player.phase == Player.Play and #player:getPile("ruiji_wang") > 0
+      else
+        return player:getMark("lingyin-turn") > 0 and not data.chain and data.to ~= player
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.EventPhaseStart then
+      local n = player.room:getTag("RoundCount")
+      local cards = player.room:askForCard(player, 1, n, false, "liying", true,
+        ".|.|.|ruiji_wang|.|.", "#lingyin-invoke:::"..tostring(n), "ruiji_wang")
+      if #cards > 0 then
+        self.cost_data = cards
+        return true
+      end
+    else
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    if event == fk.EventPhaseStart then
+      local room = player.room
+      room:broadcastSkillInvoke("lingyin")
+      room:notifySkillInvoked(player, "lingyin", "drawcard")
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(self.cost_data)
+      room:obtainCard(player, dummy, false, fk.ReasonJustMove)
+      if #player:getPile("ruiji_wang") == 0 or table.every(player:getPile("ruiji_wang"), function(id)
+        return Fk:getCardById(id).color == Fk:getCardById(player:getPile("ruiji_wang")[1]).color end) then
+        room:setPlayerMark(player, "lingyin-turn", 1)
+      end
+    else
+      data.damage = data.damage + 1
+    end
+  end,
+}
+local liying = fk.CreateTriggerSkill{
+  name = "liying",
+  anim_type = "support",
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) and player.phase ~= Player.Draw and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 then
+      for _, move in ipairs(data) do
+        if move.to == player.id and move.toArea == Player.Hand then
+          return true
+        end
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local mark = {}
+    for _, move in ipairs(data) do
+      if move.to == player.id and move.toArea == Player.Hand then
+        for _, info in ipairs(move.moveInfo) do
+          table.insertIfNeed(mark, info.cardId)
+        end
+      end
+    end
+    room:setPlayerMark(player, "liying-phase", mark)
+    local prompt = "#liying1-invoke"
+    if player.phase ~= Player.NotActive and #player:getPile("ruiji_wang") < #room.players then
+      prompt = "#liying2-invoke"
+    end
+    return player.room:askForUseActiveSkill(player, "liying_active", prompt, true)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if not player.dead then
+      player:drawCards(1, self.name)
+      if player.phase ~= Player.NotActive and #player:getPile("ruiji_wang") < #room.players then
+        local skill = Fk.skills["wangyuan"]
+        skill:use(event, target, player, data)
+      end
+    end
+  end,
+}
+local liying_active = fk.CreateActiveSkill{
+  name = "liying_active",
+  mute = true,
+  min_card_num = 1,
+  target_num = 1,
+  card_filter = function(self, to_select, selected, targets)
+    return Self:getMark("liying-phase") ~= 0 and table.contains(Self:getMark("liying-phase"), to_select)
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local target = room:getPlayerById(effect.tos[1])
+    local dummy = Fk:cloneCard("dilu")
+    dummy:addSubcards(effect.cards)
+    room:obtainCard(target, dummy, false, fk.ReasonGive)
+  end,
+}
+lingyin:addRelatedSkill(lingyin_trigger)
+Fk:addSkill(liying_active)
+ruiji:addSkill(wangyuan)
+ruiji:addSkill(lingyin)
+ruiji:addSkill(liying)
+Fk:loadTranslationTable{
+  ["ty__ruiji"] = "芮姬",
+  ["wangyuan"] = "妄缘",
+  [":wangyuan"] = "当你于回合外失去牌后，你可以随机将牌堆中一张基本牌或锦囊牌置于你的武将牌上，称为“妄”（“妄”的牌名不重复且至多为游戏人数）。",
+  ["lingyin"] = "铃音",
+  [":lingyin"] = "出牌阶段开始时，你可以获得至多X张“妄”（X为游戏轮数）。然后若“妄”颜色均相同，你本回合对其他角色造成的伤害+1且"..
+  "可以将武器或防具牌当【决斗】使用。",
+  ["liying"] = "俐影",
+  [":liying"] = "每回合限一次，当你于摸牌阶段外获得牌后，你可以将其中任意张牌交给一名其他角色，然后你摸一张牌。若此时是你的回合内，再增加一张“妄”。",
+  ["ruiji_wang"] = "妄",
+  ["#lingyin-invoke"] = "铃音：获得至多%arg张“妄”，然后若“妄”颜色相同，你本回合伤害+1且可以将武器、防具当【决斗】使用",
+  ["liying_active"] = "俐影",
+  ["#liying1-invoke"] = "俐影：你可以将其中任意张牌交给一名其他角色，然后摸一张牌",
+  ["#liying2-invoke"] = "俐影：你可以将其中任意张牌交给一名其他角色，然后摸一张牌并增加一张“妄”",
+
+  ["$wangyuan1"] = "小女子不才，愿伴公子余生。",
+  ["$wangyuan2"] = "纵有万钧之力，然不斩情丝。",
+  ["$lingyin1"] = "环佩婉尔，心动情动铃儿动。",
+  ["$lingyin2"] = "小鹿撞入我怀，银铃焉能不鸣？",
+  ["$liying1"] = "飞影略白鹭，日暮栖君怀。",
+  ["$liying2"] = "妾影婆娑，摇曳君心。",
+  ["~ty__ruiji"] = "佳人芳华逝，空余孤铃鸣……",
+}
+
+Fk:loadTranslationTable{
+  ["ty__qiaorui"] = "桥蕤",
+  ["aishou"] = "隘守",
+  [":aishou"] = "结束阶段，你可以摸X张牌（X为你的体力上限），这些牌标记为“隘”。当你于回合外失去最后一张“隘”时，你减1点体力上限。<be>"..
+  "准备阶段，弃置你手牌中的所有“隘”，若弃置的“隘”数量大于你的体力值，你加1点体力上限。",
+  ["saowei"] = "扫围",
+  [":saowei"] = "当一名其他角色使用【杀】结算结束后，若目标角色不为你且目标角色在你的攻击范围内，你可以将一张“隘”当【杀】对该目标角色使用。",
+}
+
 local qinlang = General(extension, "qinlang", "wei", 4)
 local haochong = fk.CreateTriggerSkill{
   name = "haochong",
   anim_type = "drawcard",
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and #player.player_cards[Player.Hand] ~= player:getMaxCards()
+    return target == player and player:hasSkill(self.name) and player:getHandcardNum() ~= player:getMaxCards()
   end,
   on_cost = function(self, event, target, player, data)
-    local n = #player.player_cards[Player.Hand] - player:getMaxCards()
+    local n = player:getHandcardNum() - player:getMaxCards()
     if n > 0 then
       if #player.room:askForDiscard(player, n, n, false, self.name, true, ".", "#haochong-discard:::"..n) then
         self.cost_data = n
@@ -1607,11 +1803,11 @@ local haochong = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if self.cost_data > 0 then
-      room:addPlayerMark(player, "AddMaxCards", 1)
+      room:addPlayerMark(player, MarkEnum.AddMaxCards, 1)
     else
       player:drawCards(math.min(-self.cost_data, 5), self.name)
       if player:getMaxCards() > 0 then  --不允许减为负数
-        room:addPlayerMark(player, "MinusMaxCards", 1)
+        room:addPlayerMark(player, MarkEnum.MinusMaxCards, 1)
       end
     end
   end,
@@ -2613,11 +2809,11 @@ local fozong = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and #player.player_cards[Player.Hand] > 7
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and player:getHandcardNum() > 7
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local n = #player.player_cards[Player.Hand] - 7
+    local n = player:getHandcardNum() - 7
     local cards = room:askForCard(player, n, n, false, self.name, false, ".", "#fozong-card:::"..n)
     local dummy = Fk:cloneCard("dilu")
     dummy:addSubcards(cards)
@@ -2716,7 +2912,7 @@ local xinyou = fk.CreateActiveSkill{
   name = "xinyou",
   anim_type = "drawcard",
   can_use = function(self, player)
-    return (player:isWounded() or #player.player_cards[Player.Hand] < player.maxHp) and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+    return (player:isWounded() or player:getHandcardNum() < player.maxHp) and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   card_num = 0,
   target_num = 0,
@@ -2734,7 +2930,7 @@ local xinyou = fk.CreateActiveSkill{
       })
       room:addPlayerMark(player, "xinyou_recover-turn", 1)
     end
-    local n = player.maxHp - #player.player_cards[Player.Hand]
+    local n = player.maxHp - player:getHandcardNum()
     if n > 0 then
       player:drawCards(n, self.name)
       if n > 1 then
@@ -2988,14 +3184,14 @@ local huizhi = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:throwCard(self.cost_data, self.name, player, player)
-    local n = #player.player_cards[Player.Hand]
+    local n = player:getHandcardNum()
     for _, p in ipairs(room:getAlivePlayers()) do
       if #p.player_cards[Player.Hand] > n then
         n = #p.player_cards[Player.Hand]
       end
     end
-    if n > #player.player_cards[Player.Hand] then
-      player:drawCards(math.min(n - #player.player_cards[Player.Hand]), 5)
+    if n > player:getHandcardNum() then
+      player:drawCards(math.min(n - player:getHandcardNum()), 5)
     else
       player:drawCards(1, self.name)
     end

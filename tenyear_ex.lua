@@ -167,7 +167,7 @@ zhangchunhua:addSkill(ty_ex__shangshi)
 Fk:loadTranslationTable{
   ["ty_ex__zhangchunhua"] = "界张春华",
   ["ty_ex__jueqing"] = "绝情",
- ["#ty_ex__jueqing_trigger"] = "绝情",
+  ["#ty_ex__jueqing_trigger"] = "绝情",
   [":ty_ex__jueqing"] = "①每局限一次，当你造成伤害时，你可以失去同于伤害值点体力令此伤害翻倍。②锁定技，若你已发动过绝情①，你造成的伤害均视为体力流失。",
   ["ty_ex__shangshi"] = "伤逝",
   ["#ty_ex__shangshi_discard"] = "伤逝",
@@ -258,19 +258,21 @@ local ex__yongjin = fk.CreateActiveSkill{
     return false
   end,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and #Fk:currentRoom():canMoveCardInBoard() > 0
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     for i = 1, 3, 1 do
-      if #room:canMoveCardInBoard() == 0 or player.dead then return end
+      if #room:canMoveCardInBoard() == 0 or player.dead then break end
       local to = room:askForChooseToMoveCardInBoard(player, "#ex__yongjin-choose", self.name, true, "e")
       if #to == 2 then
         room:askForMoveCardInBoard(player, room:getPlayerById(to[1]), room:getPlayerById(to[2]), self.name, "e")
+      else
+        break
       end
     end
   end,
-  }
+}
 lingtong:addSkill(ty_ex__xuanfeng)
 lingtong:addSkill(ex__yongjin)
 Fk:loadTranslationTable{

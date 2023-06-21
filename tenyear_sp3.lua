@@ -801,17 +801,28 @@ local yijiao_record = fk.CreateTriggerSkill{
         if not player:isKongcheng() then
           room:broadcastSkillInvoke("yijiao", 1)
           room:notifySkillInvoked(p, "yijiao", "control")
-          room:throwCard({table.random(player.player_cards[Player.Hand])}, "yijiao", player, player)
+
+          local cards = table.filter(player.player_cards[Player.Hand], function (id)
+            return not player:prohibitDiscard(Fk:getCardById(id))
+          end)
+          if #cards > 0 then
+            local x = math.random(1, math.min(3, #cards))
+            if x < #cards then
+              cards = table.random(cards, x)
+            end
+            room:throwCard(cards, "yijiao", player, player)
+          end
         end
       elseif n == 0 then
         room:broadcastSkillInvoke("yijiao", 2)
         room:notifySkillInvoked(p, "yijiao", "support")
+        p:drawCards(2, "yijiao")
         player:gainAnExtraTurn(true)
       else
         if not p.dead then
           room:broadcastSkillInvoke("yijiao", 2)
           room:notifySkillInvoked(p, "yijiao", "drawcard")
-          p:drawCards(2, "yijiao")
+          p:drawCards(3, "yijiao")
         end
       end
     end
@@ -863,9 +874,9 @@ Fk:loadTranslationTable{
   ["yijiao"] = "异教",
   [":yijiao"] = "出牌阶段限一次，你可以选择一名其他角色并选择一个1~4的数字，该角色获得十倍的“异”标记；"..
   "有“异”标记的角色结束阶段，若其本回合使用牌的点数之和：<br>"..
-  "1.小于“异”标记数，其随机弃置一张手牌；<br>"..
-  "2.等于“异”标记数，其于本回合结束后进行一个额外的回合；<br>"..
-  "3.大于“异”标记数，你摸两张牌。",
+  "1.小于“异”标记数，其随机弃置一至三张手牌；<br>"..
+  "2.等于“异”标记数，你摸两张牌且其于本回合结束后进行一个额外的回合；<br>"..
+  "3.大于“异”标记数，你摸三张牌。",
   ["qibie"] = "泣别",
   [":qibie"] = "一名角色死亡后，你可以弃置所有手牌，然后回复1点体力值并摸X+1张牌（X为你以此法弃置牌数）。",
   ["@yijiao"] = "异",
@@ -1012,6 +1023,16 @@ Fk:loadTranslationTable{
   ["#jiqiaos-card"] = "激峭：获得一张“激峭”牌",
   ["#xiongyis1-invoke"] = "凶疑：你可以将回复体力至%arg点并变身为徐氏！",
   ["#xiongyis2-invoke"] = "凶疑：你可以将回复体力至1点并获得〖魂姿〗！",
+
+  ["$jiqiaos1"] = "为将者，当躬冒矢石！",
+  ["$jiqiaos2"] = "吾承父兄之志，危又何惧？",
+  ["$xiongyis1"] = "此仇不报，吾恨难消！",
+  ["$xiongyis2"] = "功业未立，汝可继之！",
+  ["$hunzi-sunyi1"] = "身临绝境，亦当心怀壮志！",
+  ["$hunzi-sunyi2"] = "危难之时，自当振奋以对！",
+  ["$yingzi-sunyi"] = "骁悍果烈，威震江东！",
+  ["$yinghun-sunyi"] = "兄弟齐心，以保父兄基业！",
+  ["~ty__sunyi"] = "功业未成而身先死，惜哉，惜哉！",
 }
 --赵嫣
 --郝萌
@@ -1951,6 +1972,12 @@ Fk:loadTranslationTable{
   "若如此做，你此回合下次受到的伤害+1且不能发动〖进谏〗。",
   ["#jinjian1-invoke"] = "进谏：你可以令对 %dest 造成的伤害+1",
   ["#jinjian2-invoke"] = "进谏：你可以令受到的伤害-1",
+
+  ["$renzheng1"] = "仁政如水，可润万物。",
+  ["$renzheng2"] = "为官一任，当造福一方。",
+  ["$jinjian1"] = "臣代天子牧民，闻苛自当谏之。",
+  ["$jinjian2"] = "为将者死战，为臣者死谏！",
+  ["~ty__luotong"] = "而立之年，奈何早逝。",
 }
 
 local zhangyao = General(extension, "zhangyao", "wu", 3, 3, General.Female)
@@ -2472,7 +2499,6 @@ local ty__zhubi = fk.CreateTriggerSkill{
         })
       end
     end
-    player:drawCards(1)
   end,
 }
 local liuzhuan = fk.CreateTriggerSkill{
@@ -2772,7 +2798,7 @@ local zimu = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    for _, p in ipairs(room:getOtherPlayers(player)) do
+    for _, p in ipairs(room:getAlivePlayers()) do
       if p:hasSkill("zimu", true) then
         p:drawCards(1, self.name)
       end
@@ -2790,10 +2816,10 @@ Fk:loadTranslationTable{
   ["pijing"] = "辟境",
   [":pijing"] = "结束阶段，你可选择包含你的任意名角色，这些角色获得〖自牧〗直到下次发动〖辟境〗。",
   ["zimu"] = "自牧",
-  [":zimu"] = "锁定技，当你受到伤害后，其他有〖自牧〗的角色各摸一张牌，然后你失去〖自牧〗。",
+  [":zimu"] = "锁定技，当你受到伤害后，有〖自牧〗的角色各摸一张牌，然后你失去〖自牧〗。",
   ["#suifu-invoke"] = "绥抚：你可以将 %dest 所有手牌置于牌堆顶，你视为使用【五谷丰登】",
   ["#pijing-choose"] = "辟境：你可以令包括你的任意名角色获得技能〖自牧〗直到下次发动〖辟境〗<br>"..
-  "（锁定技，当你受到伤害后，其他有〖自牧〗的角色各摸一张牌，然后你失去〖自牧〗）",
+  "（锁定技，当你受到伤害后，有〖自牧〗的角色各摸一张牌，然后你失去〖自牧〗）",
 }
 
 local caohua = General(extension, "caohua", "wei", 3, 3, General.Female)

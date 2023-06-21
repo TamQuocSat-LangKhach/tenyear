@@ -285,9 +285,11 @@ Fk:loadTranslationTable{
   ["ex__yongjin"] = "勇进",
   [":ex__yongjin"] = "限定技，出牌阶段，你可以依次移动场上至多三张装备牌。",
   ["#ex__yongjin-choose"] = "勇进：你可以移动场上的一张装备牌",
-  ["$xuanfeng1"] = "伤敌于千里之外！",
-  ["$xuanfeng2"] = "索命于须臾之间！",
-  ["~ex__lingtong"] = "大丈夫不惧死亡……",
+  ["$ty_ex__xuanfeng1"] = "风动扬帆起，枪出敌军溃！",
+  ["$ty_ex__xuanfeng2"] = "御风而动，敌军四散！",
+  ["$ex__yongjin1"] = "鏖兵卫主，勇足以却敌！",
+  ["$ex__yongjin2"] = "勇不可挡，进则无退！",
+  ["~ty_ex__lingtong"] = "泉下弟兄，统来也！",
 }
 
 local wuguotai = General(extension, "ty_ex__wuguotai", "wu", 3, 3, General.Female)

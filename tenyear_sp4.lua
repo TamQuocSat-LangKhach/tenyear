@@ -23,7 +23,7 @@ local jinggong = fk.CreateViewAsSkill{
   end,
   before_use = function(self, player, use)
     local to = player.room:getPlayerById(TargetGroup:getRealTargets(use.tos)[1])
-    use.additionalDamage = (use.additionalDamage or 0) + math.min(player:distanceTo(to), 3) - 1
+    use.additionalDamage = (use.additionalDamage or 0) + math.min(player:distanceTo(to), 5) - 1
   end,
 }
 local jinggong_targetmod = fk.CreateTargetModSkill{
@@ -56,8 +56,7 @@ local xiaojun = fk.CreateTriggerSkill{
     room:throwCard(cards, self.name, to, player)
     if player:getHandcardNum() < 2 or data.card == Card.NoSuit then return end
     if table.find(cards, function(id) return Fk:getCardById(id).suit == data.card.suit end) then
-      n = player:getHandcardNum() // 2
-      room:askForDiscard(player, n, n, false, self.name, false)
+      room:askForDiscard(player, 1, 1, false, self.name, false)
     end
   end,
 }
@@ -67,11 +66,11 @@ huangzu:addSkill(xiaojun)
 Fk:loadTranslationTable{
   ["ty__huangzu"] = "黄祖",
   ["jinggong"] = "精弓",
-  [":jinggong"] = "你可以将装备牌当无距离限制的【杀】使用，此【杀】的伤害基数值改为X（X为你计算与该角色的距离且至多为3）。",
+  [":jinggong"] = "你可以将装备牌当无距离限制的【杀】使用，此【杀】的伤害基数值改为X（X为你计算与该角色的距离且至多为5）。",
   ["xiaojun"] = "骁隽",
   [":xiaojun"] = "你使用牌指定其他角色为唯一目标后，你可以弃置其一半手牌（向下取整）。若其中有与你指定其为目标的牌花色相同的牌，"..
-  "你弃置一半手牌（向下取整）。",
-  ["#xiaojun-invoke"] = "骁隽：你可以弃置 %dest 一半手牌（%arg张），若其中有%arg2牌，你也弃置一半手牌",
+  "你弃置一张手牌。",
+  ["#xiaojun-invoke"] = "骁隽：你可以弃置 %dest 一半手牌（%arg张），若其中有%arg2牌，你弃置一张手牌",
 }
 
 local yanghu = General(extension, "ty__yanghu", "wei", 3)
@@ -481,7 +480,6 @@ local dunxi = fk.CreateTriggerSkill{
       room:delay(1000)  --来一段市长动画？
       room:doIndicate(player.id, {new_to})
       if to == new_to then
-        room:setPlayerMark(player, "@bianxi_dun", 0)
         room:loseHp(player, 1, self.name)
         if not player.dead and player.phase == Player.Play then
           data.extra_data = data.extra_data or {}
@@ -498,7 +496,7 @@ Fk:loadTranslationTable{
   ["bianxi"] = "卞喜",
   ["dunxi"] = "钝袭",
   [":dunxi"] = "当你使用伤害牌结算后，你可令其中一个目标获得1个“钝”标记。有“钝”标记的角色使用基本牌或锦囊牌指定唯一目标时，"..
-  "移去一个“钝”，然后目标改为随机一名角色。若随机的目标与原本目标相同，则其移去所有“钝”，失去1点体力并结束出牌阶段。",
+  "移去一个“钝”，然后目标改为随机一名角色。若随机的目标与原本目标相同，则其失去1点体力并结束出牌阶段。",
   ["#dunxi-choose"] = "钝袭：你可以令一名角色获得“钝”标记，其使用下一张牌目标改为随机角色",
   ["@bianxi_dun"] = "钝",
 }
@@ -1238,6 +1236,12 @@ Fk:loadTranslationTable{
   ["#yingyu2-choose"] = "媵予：选择一名角色，其获得另一名角色的展示牌",
   ["@@yongbi"] = "拥嬖",
   ["#yingyu_trigger"] = "拥嬖",
+
+  ["$yingyu1"] = "妾身蒲柳，幸蒙将军不弃。",
+  ["$yingyu2"] = "妾之所有，愿尽予君。",
+  ["$yongbi1"] = "海誓山盟，此生不渝。",
+  ["$yongbi2"] = "万千宠爱，幸君怜之。",
+  ["~yinfuren"] = "奈何遇君何其晚乎？",
 }
 
 local guanhai = General(extension, "guanhai", "qun", 4)

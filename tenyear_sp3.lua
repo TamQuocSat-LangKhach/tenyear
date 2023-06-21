@@ -2083,7 +2083,7 @@ local xiyan = fk.CreateTriggerSkill{
         room:addPlayerMark(player, "yuanyu_targetmod-turn")
       elseif room:askForSkillInvoke(player, self.name, nil, "#xiyan-debuff::"..room.current.id) then
         room:addPlayerMark(room.current, MarkEnum.MinusMaxCardsInTurn, 4)
-        room:addPlayerMark(room.current, "yuanyu_prohibit-trun")
+        room:addPlayerMark(room.current, "yuanyu_prohibit-turn")
       end
     end
   end,
@@ -2116,7 +2116,7 @@ local xiyan_targetmod = fk.CreateTargetModSkill{
 local xiyan_prohibit = fk.CreateProhibitSkill{
   name = "#local xiyan_prohibit",
   prohibit_use = function(self, player, card)
-    return player:getMark("yuanyu_prohibit-trun") > 0 and card.type == Card.TypeBasic
+    return player:getMark("yuanyu_prohibit-turn") > 0 and card.type == Card.TypeBasic
   end,
 }
 yuanyu:addRelatedSkill(yuanyu_trigger)
@@ -2455,8 +2455,24 @@ local ty__zhubi = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local cards = room:getCardsFromPileByRule("ex_nihilo", 1, "allPiles")
-    room:askForGuanxing(player, cards, {1, 1}, {0, 0}, self.name, false)
+    local cards = room:getCardsFromPileByRule("ex_nihilo")
+    if #cards > 0 then
+      local id = cards[1]
+      table.removeOne(room.draw_pile, id)
+      table.insert(room.draw_pile, 1, id)
+    else
+      cards = room:getCardsFromPileByRule("ex_nihilo", 1, "discardPile")
+      if #cards > 0 then
+        room:moveCards({
+          ids = cards,
+          fromArea = Card.DiscardPile,
+          toArea = Card.DrawPile,
+          moveReason = fk.ReasonPut,
+          skillName = self.name,
+        })
+      end
+    end
+    player:drawCards(1)
   end,
 }
 local liuzhuan = fk.CreateTriggerSkill{
@@ -2465,54 +2481,83 @@ local liuzhuan = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) and player:getMark("liuzhuan-turn") ~= 0 and #player:getMark("liuzhuan-turn") > 0 then
-      self.cost_data = {}
+    if player:hasSkill(self.name) and player.phase == Player.NotActive then
+      local room = player.room
+      local current = room.current
       for _, move in ipairs(data) do
-        if move.toArea == Card.DiscardPile then
+        if current and move.to == current.id and move.toArea == Card.PlayerHand then
+          for _, info in ipairs(move.moveInfo) do
+            local id = info.cardId
+            if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == current then
+              return true
+            end
+          end
+        end
+        if move.toArea == Card.DiscardPile and player:getMark("liuzhuan-turn") ~= 0 then
           for _, info in ipairs(move.moveInfo) do
             if table.contains(player:getMark("liuzhuan-turn"), info.cardId) then
-              table.insertIfNeed(self.cost_data, info.cardId)
+              return true
             end
           end
         end
       end
-      return #self.cost_data > 0
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local dummy = Fk:cloneCard("dilu")
-    for _, id in ipairs(self.cost_data) do
-      if room:getCardArea(id) == Card.DiscardPile then
-        dummy:addSubcard(id)
+    local mark = player:getMark("liuzhuan-turn")
+    if mark == 0 then mark = {} end
+    local current = room.current
+    local toObtain = {}
+    for _, move in ipairs(data) do
+      if current and move.to == current.id and move.toArea == Card.PlayerHand then
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == current then
+            table.insertIfNeed(mark, id)
+          end
+        end
+      end
+      if move.toArea == Card.DiscardPile then
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if table.contains(mark, info.cardId) and room:getCardArea(info.cardId) == Card.DiscardPile then
+            table.insertIfNeed(toObtain, id)
+          end
+        end
       end
     end
-    room:obtainCard(player, dummy, true, fk.ReasonJustMove)
+    room:setPlayerMark(player, "liuzhuan-turn", mark)
+
+    if #toObtain > 0 then
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(toObtain)
+      room:obtainCard(player, dummy, true, fk.ReasonJustMove)
+    end
   end,
 
   refresh_events = {fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self.name, true) and player.phase == Player.NotActive and
-      player.room.current and player.room.current.phase ~= Player.Draw
+    return player.phase ~= Player.NotActive
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
+    local mark = player:getMark("liuzhuan-turn")
+    if mark == 0 then mark = {} end
     for _, move in ipairs(data) do
-      if move.to and move.to == room.current.id and move.toArea == Card.PlayerHand then
-        local mark = player:getMark("liuzhuan-turn")
-        if mark == 0 then mark = {} end
+      if move.toArea == Card.PlayerHand or move.toArea == Card.PlayerEquip then
         for _, info in ipairs(move.moveInfo) do
-          table.insertIfNeed(mark, info.cardId)
+          table.removeOne(mark, info.cardId)
         end
-        room:setPlayerMark(player, "liuzhuan-turn", mark)
       end
     end
+    room:setPlayerMark(player, "liuzhuan-turn", mark)
   end,
 }
 local liuzhuan_prohibit = fk.CreateProhibitSkill{
   name = "#liuzhuan_prohibit",
   is_prohibited = function(self, from, to, card)
-    if to:hasSkill(self.name) and to:getMark("liuzhuan-turn") ~= 0 and #to:getMark("liuzhuan-turn") > 0 then
+    if to:hasSkill(liuzhuan.name) and to:getMark("liuzhuan-turn") ~= 0 and #to:getMark("liuzhuan-turn") > 0 then
       if table.contains(to:getMark("liuzhuan-turn"), card:getEffectiveId()) then
         return true
       end

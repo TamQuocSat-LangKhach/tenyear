@@ -167,7 +167,151 @@ Fk:loadTranslationTable{
   ["#gongjian-choose"] = "攻坚：你可以选择其中相同的目标角色，弃置每名角色各至多两张牌，你获得其中的【杀】",
 }
 
---许劭 丁原
+--许劭
+
+local dingyuan = General(extension, "ty__dingyuan", "qun", 4)
+
+local cixiao = fk.CreateTriggerSkill{
+  name = "cixiao",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Start and
+    table.find(player.room.alive_players, function (p) return p ~= player and not p:hasSkill("panshi", true) end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if table.find(room.alive_players, function (p) return p:hasSkill("panshi", true) end) then
+      local tos, id = room:askForChooseCardAndPlayers(player, table.map(player.room:getOtherPlayers(player), function (p)
+        return p.id end), 1, 1, ".", "#cixiao-discard", self.name, true)
+      if #tos > 0 and id then
+        self.cost_data = {tos[1], id}
+        return true
+      end
+    else
+      local tos = room:askForChoosePlayers(player, table.map(table.filter(room.alive_players, function (p)
+        return p ~= player and not p:hasSkill("panshi", true) end), function (p)
+        return p.id end), 1, 1, "#cixiao-choose", self.name, true)
+      if #tos > 0 then
+        self.cost_data = {tos[1]}
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data[1])
+    if #self.cost_data > 1 then
+      room:throwCard(self.cost_data[2], self.name, player, player)
+    end
+    for _, p in ipairs(room.alive_players) do
+      room:handleAddLoseSkills(p, "-panshi", nil, true, false)
+    end
+    room:handleAddLoseSkills(to, "panshi", nil, true, false)
+  end,
+}
+local xianshuai = fk.CreateTriggerSkill{
+  name = "xianshuai",
+  anim_type = "offensive",
+  events = {fk.Damage},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryRound) == 0
+    -- FIXME: first time, not once pre round
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(1, self.name)
+    if player == target and not data.to.dead then
+      player.room:damage{
+        from = player,
+        to = data.to,
+        damage = 1,
+        skillName = self.name,
+      }
+    end
+  end,
+}
+local panshi = fk.CreateTriggerSkill{
+  name = "panshi",
+  events = {fk.EventPhaseStart, fk.DamageCaused, fk.Damage},
+  frequency = Skill.Compulsory,
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) and player == target then
+      if event == fk.EventPhaseStart then
+        return player.phase == Player.Start and table.find(player.room.alive_players, function (p)
+          return p ~= player and p:hasSkill(cixiao.name, true) end)
+      elseif event == fk.DamageCaused or event == fk.Damage then
+        return player.phase == Player.Play and data.to:hasSkill(cixiao.name, true) and data.card.trueName =="slash" and not data.chain
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart then
+      room:notifySkillInvoked(player, self.name, "negative")
+      room:broadcastSkillInvoke(self.name)
+      local fathers = table.filter(room.alive_players, function (p) return p ~= player and p:hasSkill(cixiao.name, true) end)
+      if #fathers == 1 then
+        room:doIndicate(player.id, {fathers[1].id})
+        if player:isKongcheng() then return false end
+        local card = room:askForCard(player, 1, 1, false, self.name, false, ".", "#panshi-give-to:"..fathers[1].id)
+        if #card > 0 then
+          room:obtainCard(fathers[1].id, card[1], false, fk.ReasonGive)
+        end
+      else
+        local tos, id = room:askForChooseCardAndPlayers(player, table.map(fathers, function (p)
+          return p.id end), 1, 1, ".|.|.|hand", "#panshi-give", self.name, false)
+        if #tos > 0 and id then
+          room:obtainCard(tos[1].id, id, false, fk.ReasonGive)
+        end
+      end
+    elseif event == fk.DamageCaused then
+      room:notifySkillInvoked(player, self.name, "offensive")
+      room:broadcastSkillInvoke(self.name)
+      data.damage = data.damage + 1
+    elseif event == fk.Damage then
+      room:notifySkillInvoked(player, self.name, "negative")
+      room:broadcastSkillInvoke(self.name)
+      room.logic:getCurrentEvent():findParent(GameEvent.Phase):shutdown()
+      -- FIXME: finish phase when free time, not shutdown GameEvent.Phase
+    end
+  end,
+
+  refresh_events = {fk.EventLoseSkill, fk.EventAcquireSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == self
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@@panshi_son", event == fk.EventAcquireSkill and 1 or 0)
+  end,
+}
+
+dingyuan:addSkill(cixiao)
+dingyuan:addSkill(xianshuai)
+dingyuan:addRelatedSkill(panshi)
+
+Fk:loadTranslationTable{
+  ["ty__dingyuan"] = "丁原",
+  ["cixiao"] = "慈孝",
+  [":cixiao"] = "准备阶段，若场上没有“义子”，你可以令一名其他角色获得一个“义子”标记；若场上有“义子”标记，你可以弃置一张牌移动“义子”标记。拥有“义子”标记的角色获得技能〖叛弑〗。",
+  ["xianshuai"] = "先率",
+  [":xianshuai"] = "锁定技，一名角色造成伤害后，若此伤害是本轮第一次造成伤害，你摸一张牌。若伤害来源为你，你对受到伤害的角色造成1点伤害。",
+  ["panshi"] = "叛弑",
+  [":panshi"] = "锁定技，准备阶段，你将一张手牌交给拥有技能〖慈孝〗的角色；你于出牌阶段使用的【杀】对其造成伤害时，此伤害+1且你于造成伤害后结束出牌阶段。",
+
+  ["#cixiao-choose"] = "慈孝：可选择一名其他角色，令其获得义子标记",
+  ["#cixiao-discard"] = "慈孝：可弃置一张牌来转移将义子标记",
+  ["@@panshi_son"] = "义子",
+  ["#panshi-give-to"] = "叛弑：必须选择一张手牌交给%src",
+  ["#panshi-give"] = "叛弑：必须选择一张手牌交给一名拥有慈孝的角色",
+
+  ["$cixiao1"] = "吾儿奉先，天下无敌！",
+  ["$cixiao2"] = "父慈子孝，义理为先！",
+  ["$xianshuai1"] = "九州齐喑，首义瞩吾！",
+  ["$xianshuai2"] = "雄兵一击，则天下大白！",
+  ["~ty__dingyuan"] = "你我父子，此恩今日断！",
+}
 
 Fk:loadTranslationTable{
   ["ty__wangrongh"] = "王荣",
@@ -179,7 +323,19 @@ Fk:loadTranslationTable{
   [":zhuide"] = "当你死亡时，你可以令一名其他角色摸四张不同牌名的基本牌。",
 }
 
---韩馥
+Fk:loadTranslationTable{
+  ["hanfu"] = "韩馥",
+  ["ty__jieying"] = "节应",
+  [":ty__jieying"] = "结束阶段，你可以选择一名其他角色，然后该角色的下回合内：其使用【杀】或普通锦囊牌无距离限制，若仅指定一个目标则可以多指定一个目标；当其造成伤害后，其不能再使用牌直到回合结束。",
+  ["ty__weipo"] = "危迫",
+  [":ty__weipo"] = "锁定技，当你成为其他角色使用【杀】或普通锦囊牌的目标后，你将手牌摸至X张，然后若你因此摸牌且此牌结算结束后你的手牌数小于X，你交给该角色一张手牌且此技能失效直到你的下回合开始。（X为你的体力上限）",
+
+  ["$ty__jieying1"] = "秉志持节，应时而动。",
+  ["$ty__jieying2"] = "授节于汝，随机应变！",
+  ["$ty__weipo1"] = "临渊勒马，进退维谷！",
+  ["$ty__weipo2"] = "前狼后虎，朝不保夕！",
+  ["~hanfu"] = "袁本初，你为何不放过我！",
+}
 
 local caosong = General(extension, "ty__caosong", "wei", 4)
 local lilu = fk.CreateTriggerSkill{

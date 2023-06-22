@@ -1677,29 +1677,36 @@ local tianren = fk.CreateTriggerSkill {
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self.name) then
-      self.cost_data = 0
       for _, move in ipairs(data) do
         if move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then
           for _, info in ipairs(move.moveInfo) do
             local card = Fk:getCardById(info.cardId)
             if card.type == Card.TypeBasic or card:isCommonTrick() then
-              self.cost_data = self.cost_data + 1
+              return true
             end
           end
         end
       end
-      return self.cost_data > 0
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    for i = 1, self.cost_data, 1 do
-      room:addPlayerMark(player, "@tianren", 1)
-      if player:getMark("@tianren") >= player.maxHp then
-        room:removePlayerMark(player, "@tianren", player.maxHp)
-        room:changeMaxHp(player, 1)
-        player:drawCards(2, self.name)
+    local x = 0
+    for _, move in ipairs(data) do
+      if move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then
+        for _, info in ipairs(move.moveInfo) do
+          local card = Fk:getCardById(info.cardId)
+          if card.type == Card.TypeBasic or card:isCommonTrick() then
+            x = x + 1
+          end
+        end
       end
+    end
+    room:addPlayerMark(player, "@tianren", x)
+    while player:getMark("@tianren") >= player.maxHp do
+      room:removePlayerMark(player, "@tianren", player.maxHp)
+      room:changeMaxHp(player, 1)
+      player:drawCards(2, self.name)
     end
   end,
 }
@@ -1709,16 +1716,19 @@ local jiufa = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self.name) then
-      local mark = player:getMark(self.name)
-      if mark == 0 then mark = {} end
-      if #mark == 9 then
-        player.room:setPlayerMark(player, "@$jiufa", 0)
-        return true
-      end
+      local mark = player:getMark("@$jiufa")
+      return type(mark) ~= "table" or not table.contains(mark, data.card.trueName)
     end
   end,
+  on_cost = function() return true end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    local mark = player:getMark("@$jiufa")
+    if mark == 0 then mark = {} end
+    table.insertIfNeed(mark, data.card.trueName)
+    room:setPlayerMark(player, "@$jiufa", mark)
+    if #mark < 9 or not room:askForSkillInvoke(player, self.name, nil, "#jiufa-invoke") then return fasle end
+    room:setPlayerMark(player, "@$jiufa", 0)
     local card_ids = room:getNCards(9)
     local get, throw = {}, {}
     room:moveCards({
@@ -1764,22 +1774,6 @@ local jiufa = fk.CreateTriggerSkill{
         toArea = Card.DiscardPile,
         moveReason = fk.ReasonPutIntoDiscardPile,
       })
-    end
-  end,
-
-  refresh_events = {fk.CardUsing, fk.CardResponding},
-  can_refresh = function(self, event, target, player, data)
-    return target == player
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local mark = player:getMark(self.name)
-    if mark == 0 or #mark > 8 then mark = {} end
-    if not table.contains(mark, data.card.trueName) then
-      table.insert(mark, data.card.trueName)
-    end
-    player.room:setPlayerMark(player, self.name, mark)
-    if player:hasSkill(self.name, true) then
-      player.room:setPlayerMark(player, "@$jiufa", mark)
     end
   end,
 }
@@ -1836,8 +1830,15 @@ local pingxiang_maxcards = fk.CreateMaxCardsSkill{
     end
   end
 }
+local pingxiang_targetmod = fk.CreateTargetModSkill{
+  name = "#pingxiang_targetmod",
+  bypass_times = function(self, player, skill, scope, card)
+    return table.contains(card.skillNames, pingxiang.name)
+  end,
+}
 Fk:addSkill(pingxiang_viewas)
 pingxiang:addRelatedSkill(pingxiang_maxcards)
+pingxiang:addRelatedSkill(pingxiang_targetmod)
 godjiangwei:addSkill(tianren)
 godjiangwei:addSkill(jiufa)
 godjiangwei:addSkill(pingxiang)
@@ -1853,6 +1854,7 @@ Fk:loadTranslationTable{
   "若如此做，你失去技能〖九伐〗且本局游戏内你的手牌上限等于体力上限。",
   ["@tianren"] = "天任",
   ["@$jiufa"] = "九伐",
+  ["#jiufa-invoke"] = "九伐：是否亮出牌堆顶九张牌，获得重复点数的牌各一张！",
   ["pingxiang_viewas"] = "平襄",
   ["#pingxiang-slash"] = "平襄：你可以视为使用火【杀】（第%arg张，共9张）！",
 
@@ -2511,7 +2513,7 @@ local liuzhuan = fk.CreateTriggerSkill{
       local room = player.room
       local current = room.current
       for _, move in ipairs(data) do
-        if current and move.to == current.id and move.toArea == Card.PlayerHand then
+        if current and current.phase ~= Player.Draw and move.to == current.id and move.toArea == Card.PlayerHand then
           for _, info in ipairs(move.moveInfo) do
             local id = info.cardId
             if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == current then
@@ -2536,7 +2538,7 @@ local liuzhuan = fk.CreateTriggerSkill{
     local current = room.current
     local toObtain = {}
     for _, move in ipairs(data) do
-      if current and move.to == current.id and move.toArea == Card.PlayerHand then
+      if current and current.phase ~= Player.Draw and move.to == current.id and move.toArea == Card.PlayerHand then
         for _, info in ipairs(move.moveInfo) do
           local id = info.cardId
           if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == current then
@@ -2571,7 +2573,7 @@ local liuzhuan = fk.CreateTriggerSkill{
     local mark = player:getMark("liuzhuan-turn")
     if mark == 0 then mark = {} end
     for _, move in ipairs(data) do
-      if move.toArea == Card.PlayerHand or move.toArea == Card.PlayerEquip then
+      if room.current and move.to ~= room.current.id and (move.toArea == Card.PlayerHand or move.toArea == Card.PlayerEquip) then
         for _, info in ipairs(move.moveInfo) do
           table.removeOne(mark, info.cardId)
         end

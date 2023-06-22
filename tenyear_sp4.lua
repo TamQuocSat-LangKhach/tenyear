@@ -2046,6 +2046,12 @@ Fk:loadTranslationTable{
   ["@@fudao"] = "抚悼",
   ["#fudao-choose"] = "抚悼：请选择要“抚悼”的角色",
   ["@@juelie"] = "决裂",
+  
+  ["$fengyan1"] = "既将我儿杀之，何复念之！",
+  ["$fengyan2"] = "乞问曹公，吾儿何时归还？",
+  ["$fudao1"] = "弑子之仇，不共戴天！",
+  ["$fudao2"] = "眼中泪绝，尽付仇怆。",
+  ["~dingfuren"] = "吾儿既丧，天地无光……",
 }
 
 local luyi = General(extension, "luyi", "qun", 3, 3, General.Female)

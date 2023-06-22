@@ -323,13 +323,180 @@ Fk:loadTranslationTable{
   [":zhuide"] = "当你死亡时，你可以令一名其他角色摸四张不同牌名的基本牌。",
 }
 
+local hanfu = General(extension, "hanfu", "qun", 4)
+
+local function getUseExtraTargets(room, data, bypass_distances)
+  if not (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) then return {} end
+  local ban_cards = {"jink", "nullification", "adaptation", "collateral"} --stupid collateral
+  if table.contains(ban_cards, data.card.trueName) then return {} end
+  local tos = {}
+  local current_targets = TargetGroup:getRealTargets(data.tos)
+  local aoe_names = {"savage_assault", "archery_attack"}
+
+  Self = room:getPlayerById(data.from) -- for targetFilter
+
+  for _, p in ipairs(room.alive_players) do
+    if not table.contains(current_targets, p.id) and not Self:isProhibited(p, data.card) then
+      if data.card.skill:getMinTargetNum() == 0 then
+        if data.card.trueName == "peach" then
+          if p:isWounded() then
+            table.insertIfNeed(tos, p.id)
+          end
+        elseif table.contains(aoe_names, data.card.name) then
+          if p.id ~= data.from then
+            table.insertIfNeed(tos, p.id)
+          end
+        else
+          table.insertIfNeed(tos, p.id)
+        end
+      else
+        room:setPlayerMark(Self, MarkEnum.BypassTimesLimit, 1)
+        if bypass_distances then
+          room:setPlayerMark(Self, MarkEnum.BypassDistancesLimit, 1)
+        end
+        if data.card.skill:targetFilter(p.id, {}, {}, data.card) then
+          table.insertIfNeed(tos, p.id)
+        end
+        room:setPlayerMark(Self, MarkEnum.BypassTimesLimit, 0)
+        room:setPlayerMark(Self, MarkEnum.BypassDistancesLimit, 0)
+      end
+    end
+  end
+  return tos
+end
+
+local ty__jieying = fk.CreateTriggerSkill{
+  name = "ty__jieying",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish
+  end,
+  on_cost = function(self, event, target, player, data)
+    local tos = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), function (p)
+      return p.id end), 1, 1, "#ty__jieying-choose", self.name, true)
+    if #tos > 0 then
+      self.cost_data = tos[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:setPlayerMark(player.room:getPlayerById(self.cost_data), "@ty__jieying", {})
+  end,
+}
+local ty__jieying_delay = fk.CreateTriggerSkill{
+  name = "#ty__jieying_delay",
+  events = {fk.AfterCardTargetDeclared, fk.Damage},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if player ~= target or player.dead or player:getMark("@ty__jieying") == 0 or player.phase == Player.NotActive then return false end
+    if event == fk.AfterCardTargetDeclared then
+      return (data.card:isCommonTrick() or data.card.trueName == "slash") and #TargetGroup:getRealTargets(data.tos) == 1
+    elseif event == fk.Damage then
+      return true
+    end
+  end,
+  on_cost = function() return true end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.AfterCardTargetDeclared then
+      local tos = room:askForChoosePlayers(player, getUseExtraTargets(room, data), 1, 1,
+        "#ty__jieying-extra:::"..data.card:toLogString(), ty__jieying.name, true)
+      if #tos == 1 then
+        table.insert(data.tos, tos)
+      end
+    elseif event == fk.Damage then
+      room:setPlayerMark(player, "@ty__jieying", {"ty__jieying_prohibit"})
+    end
+  end,
+
+  refresh_events = {fk.TurnEnd},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and player:getMark("@ty__jieying") ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@ty__jieying", 0)
+  end,
+}
+local ty__jieying_targetmod = fk.CreateTargetModSkill{
+  name = "#ty__jieying_targetmod",
+  bypass_distances = function(self, player, skill, card)
+    return card and (card:isCommonTrick() or card.trueName == "slash") and player:getMark("@ty__jieying") ~= 0 and player.phase ~= Player.NotActive
+  end,
+}
+local ty__jieying_prohibit = fk.CreateProhibitSkill{
+  name = "#ty__jieying_prohibit",
+  prohibit_use = function(self, player, card)
+    return type(player:getMark("@ty__jieying")) == "table" and table.contains(player:getMark("@ty__jieying"), "ty__jieying_prohibit")
+  end,
+}
+
+local ty__weipo = fk.CreateTriggerSkill{
+  name = "ty__weipo",
+  events = {fk.TargetConfirming},
+  frequency = Skill.Compulsory,
+  anim_type = "drawcard",
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and player == target and player:getMark("@@ty__weipo_invalidity-round") == 0 and
+      data.from ~= player.id and (data.card.trueName == "slash" or data.card:isCommonTrick()) and player:getHandcardNum() < player.maxHp
+  end,
+  on_use = function(self, event, target, player, data)
+    if player:getHandcardNum() < player.maxHp then
+      player:drawCards(player.maxHp - player:getHandcardNum(), self.name)
+      data.extra_data = data.extra_data or {}
+      local weipo_players = data.extra_data.ty__weipo_players or {}
+      table.insertIfNeed(weipo_players, player.id)
+      data.extra_data.ty__weipo_players = weipo_players
+    end
+  end,
+}
+
+local ty__weipo_delay = fk.CreateTriggerSkill{
+  name = "#ty__weipo_delay",
+  events = {fk.CardUseFinished},
+  frequency = Skill.Compulsory,
+  anim_type = "drawcard",
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return data.extra_data and data.extra_data.ty__weipo_players and table.contains(data.extra_data.ty__weipo_players, player.id) and
+      not player.dead and player:getHandcardNum() < player.maxHp
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:notifySkillInvoked(player, ty__weipo.name, "negative")
+    room:broadcastSkillInvoke(ty__weipo.name)
+    if not target.dead and not player:isKongcheng() then
+      local card = room:askForCard(player, 1, 1, false, ty__weipo.name, false, ".", "#ty__weipo-give:"..target.id)
+      if #card > 0 then
+        room:obtainCard(target.id, card[1], false, fk.ReasonGive)
+      end
+    end
+    room:addPlayerMark(player, "@@ty__weipo_invalidity-round")
+  end,
+}
+
+ty__jieying:addRelatedSkill(ty__jieying_delay)
+ty__jieying:addRelatedSkill(ty__jieying_targetmod)
+ty__jieying:addRelatedSkill(ty__jieying_prohibit)
+ty__weipo:addRelatedSkill(ty__weipo_delay)
+hanfu:addSkill(ty__jieying)
+hanfu:addSkill(ty__weipo)
+
 Fk:loadTranslationTable{
   ["hanfu"] = "韩馥",
   ["ty__jieying"] = "节应",
+  ["#ty__jieying_delay"] = "节应",
   [":ty__jieying"] = "结束阶段，你可以选择一名其他角色，然后该角色的下回合内：其使用【杀】或普通锦囊牌无距离限制，若仅指定一个目标则可以多指定一个目标；当其造成伤害后，其不能再使用牌直到回合结束。",
   ["ty__weipo"] = "危迫",
+  ["#ty__weipo_delay"] = "危迫",
   [":ty__weipo"] = "锁定技，当你成为其他角色使用【杀】或普通锦囊牌的目标后，你将手牌摸至X张，然后若你因此摸牌且此牌结算结束后你的手牌数小于X，你交给该角色一张手牌且此技能失效直到你的下回合开始。（X为你的体力上限）",
 
+  ["@ty__jieying"] = "节应",
+  ["ty__jieying_prohibit"] = "不能出牌",
+  ["#ty__jieying-choose"] = "节应：选择一名其他角色，令其下个回合<br>使用牌无距离限制且可多指定1个目标，造成伤害后不能使用牌",
+  ["#ty__jieying-extra"] = "节应：可为此【%arg】额外指定1个目标",
+  ["#ty__weipo-give"] = "危迫：必须选择一张手牌交给%src，且本回合危迫失效",
+  ["@@ty__weipo_invalidity-round"] = "危迫失效",
   ["$ty__jieying1"] = "秉志持节，应时而动。",
   ["$ty__jieying2"] = "授节于汝，随机应变！",
   ["$ty__weipo1"] = "临渊勒马，进退维谷！",
@@ -577,7 +744,145 @@ Fk:loadTranslationTable{
   ["~ty__dongcheng"] = "是谁走漏了风声？",
 }
 
---胡车儿
+local hucheer = General(extension, "ty__hucheer", "qun", 4)
+
+local ty__daoji = fk.CreateTriggerSkill{
+  name = "ty__daoji",
+  anim_type = "control",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    return target ~= player and player:hasSkill(self.name) and data.extra_data and data.extra_data.ty__daoji_triggerable
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local choices = {"ty__daoji_prohibit", "Cancel"}
+    if room:getCardArea(data.card:getEffectiveId()) == Card.Processing then
+      table.insert(choices, 1, "ty__daoji_prey")
+    end
+    self.cost_data = room:askForChoice(player, choices, self.name, "#ty__daoji-choice::" .. target.id .. ":" .. data.card:toLogString())
+    return self.cost_data ~= "Cancel"
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if self.cost_data == "ty__daoji_prey" then
+      if room:getCardArea(data.card:getEffectiveId()) == Card.Processing then
+        room:obtainCard(player.id, data.card, true)
+      end
+    elseif self.cost_data == "ty__daoji_prohibit" then
+      room:addPlayerMark(target, "@@ty__daoji_prohibit-turn")
+    end
+  end,
+
+  refresh_events = {fk.AfterCardUseDeclared},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark("ty__daoji_used_weapon") == 0 and data.card.sub_type == Card.SubtypeWeapon
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:addPlayerMark(player, "ty__daoji_used_weapon", 1)
+    data.extra_data = data.extra_data or {}
+    data.extra_data.ty__daoji_triggerable = true
+  end,
+}
+local ty__daoji_prohibit = fk.CreateProhibitSkill{
+  name = "#ty__daoji_prohibit",
+  prohibit_use = function(self, player, card)
+    return player:getMark("@@ty__daoji_prohibit-turn") > 0 and card.trueName == "slash"
+  end,
+  prohibit_response = function(self, player, card)
+    return player:getMark("@@ty__daoji_prohibit-turn") > 0 and card.trueName == "slash"
+  end,
+}
+local fuzhong = fk.CreateTriggerSkill{
+  name = "fuzhong",
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove, fk.DrawNCards, fk.EventPhaseStart},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      if event == fk.AfterCardsMove and player.phase == Player.NotActive then
+        for _, move in ipairs(data) do
+          if move.to == player.id and move.toArea == Card.PlayerHand then
+            return true
+          end
+        end
+      elseif event == fk.DrawNCards then
+        return player == target and player:getMark("@fuzhong_weight") > 0
+      elseif event == fk.EventPhaseStart then
+        return player == target and player.phase == Player.Finish and player:getMark("@fuzhong_weight") > 3
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.AfterCardsMove then
+      room:notifySkillInvoked(player, self.name)
+      room:broadcastSkillInvoke(self.name)
+      room:addPlayerMark(player, "@fuzhong_weight")
+    elseif event == fk.DrawNCards then
+      room:notifySkillInvoked(player, self.name, "drawcard")
+      room:broadcastSkillInvoke(self.name)
+      data.n = data.n + 1
+    elseif event == fk.EventPhaseStart then
+      room:notifySkillInvoked(player, self.name, "offensive")
+      room:broadcastSkillInvoke(self.name)
+      local targets = room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), function (p)
+        return p.id end), 1, 1, "#fuzhong-choose", self.name, false)
+      if #targets > 0 then
+        room:damage{
+          from = player,
+          to = room:getPlayerById(targets[1]),
+          damage = 1,
+          skillName = self.name,
+        }
+        room:removePlayerMark(player, "@fuzhong_weight", 4)
+      end
+    end
+  end,
+}
+local fuzhong_distance = fk.CreateDistanceSkill{
+  name = "#fuzhong_distance",
+  frequency = Skill.Compulsory,
+  correct_func = function(self, from, to)
+    if from:hasSkill(fuzhong.name) and from:getMark("@fuzhong_weight") > 1 then
+      return -2
+    end
+  end,
+}
+local fuzhong_maxcards = fk.CreateMaxCardsSkill{
+  name = "#fuzhong_maxcards",
+  correct_func = function(self, player)
+    if player:hasSkill(fuzhong.name) and player:getMark("@fuzhong_weight") > 2 then
+      return 3
+    end
+  end,
+}
+ty__daoji:addRelatedSkill(ty__daoji_prohibit)
+hucheer:addSkill(ty__daoji)
+hucheer:addSkill(fuzhong)
+fuzhong:addRelatedSkill(fuzhong_distance)
+fuzhong:addRelatedSkill(fuzhong_maxcards)
+
+Fk:loadTranslationTable{
+  ["ty__hucheer"] = "胡车儿",
+  ["ty__daoji"] = "盗戟",
+  [":ty__daoji"] = "当其他角色本局游戏第一次使用武器牌时，你可以选择一项：1.获得此武器牌；2.其本回合不能使用或打出【杀】。",
+  ["fuzhong"] = "负重",
+  [":fuzhong"] = "锁定技，当你于回合外得到牌时，你获得一枚“重”标记。当你的“重”标记数：大于等于1，摸牌阶段，你多摸一张牌；"..
+  "大于等于2，你计算与其他角色的距离-2；大于等于3，你的手牌上限+3；大于等于4，结束阶段，你对一名其他角色造成1点伤害，然后移去4个“重”。",
+
+  ["#ty__daoji-choice"] = "盗戟：可选择获得%dest使用的%arg或令其本回合不能出杀",
+  ["ty__daoji_prey"] = "获得其使用的武器牌",
+  ["ty__daoji_prohibit"] = "令其本回合不能出杀",
+  ["@@ty__daoji_prohibit-turn"] = "盗戟 不能出杀",
+  ["@fuzhong_weight"] = "重",
+  ["#fuzhong-choose"] = "负重：必须选择一名其他角色，对其造成1点伤害，然后移去4个重标记",
+
+  ["$ty__daoji1"] = "典韦勇猛，盗戟可除。",
+  ["$ty__daoji2"] = "你的，就是我的。",
+  ["$fuzhong1"] = "身负重任，绝无懈怠。",
+  ["$fuzhong2"] = "勇冠其军，负重前行。",
+  ["~ty__hucheer"] = "好快的涯角枪！",
+}
 
 local zoushi = General(extension, "ty__zoushi", "qun", 3, 3, General.Female)
 local ty__huoshui_active = fk.CreateActiveSkill{

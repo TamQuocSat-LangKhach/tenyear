@@ -1487,7 +1487,7 @@ local laiyinger = General(extension, "laiyinger", "qun", 3, 3, General.Female)
 local xiaowu = fk.CreateActiveSkill{
   name = "xiaowu",
   anim_type = "offensive",
-  --prompt = "#xiaowu",
+  prompt = "#xiaowu",
   max_card_num = 0,
   target_num = 1,
   can_use = function(self, player)
@@ -1986,7 +1986,7 @@ local zhangyao = General(extension, "zhangyao", "wu", 3, 3, General.Female)
 local yuanyu = fk.CreateActiveSkill{
   name = "yuanyu",
   anim_type = "control",
-  --prompt = "#yuanyu",
+  prompt = "#yuanyu",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 + player:getMark("yuanyu_extra_times-phase")
   end,
@@ -2109,10 +2109,10 @@ local xiyan = fk.CreateTriggerSkill{
         if player:usedSkillTimes(yuanyu.name, Player.HistoryPhase) > player:getMark("yuanyu_extra_times-phase") then
           room:addPlayerMark(player, "yuanyu_extra_times-phase")
         end
-        room:addPlayerMark(player, "yuanyu_targetmod-turn")
+        room:addPlayerMark(player, "xiyan_targetmod-turn")
       elseif room:askForSkillInvoke(player, self.name, nil, "#xiyan-debuff::"..room.current.id) then
         room:addPlayerMark(room.current, MarkEnum.MinusMaxCardsInTurn, 4)
-        room:addPlayerMark(room.current, "yuanyu_prohibit-turn")
+        room:addPlayerMark(room.current, "@@xiyan_prohibit-turn")
       end
     end
   end,
@@ -2139,13 +2139,13 @@ local xiyan = fk.CreateTriggerSkill{
 local xiyan_targetmod = fk.CreateTargetModSkill{
   name = "#xiyan_targetmod",
   residue_func = function(self, player, skill, scope, card)
-    return (card and player:getMark("yuanyu_targetmod-turn") > 0) and 999 or 0
+    return (card and player:getMark("xiyan_targetmod-turn") > 0) and 999 or 0
   end,
 }
 local xiyan_prohibit = fk.CreateProhibitSkill{
-  name = "#local xiyan_prohibit",
+  name = "#xiyan_prohibit",
   prohibit_use = function(self, player, card)
-    return player:getMark("yuanyu_prohibit-turn") > 0 and card.type == Card.TypeBasic
+    return player:getMark("@@xiyan_prohibit-turn") > 0 and card.type == Card.TypeBasic
   end,
 }
 yuanyu:addRelatedSkill(yuanyu_trigger)
@@ -2168,7 +2168,8 @@ Fk:loadTranslationTable{
   ["#yuanyu-push"] = "怨语：选择一张手牌作为%src的怨",
   ["@xiyan"] = "夕颜",
   ["#xiyan-debuff"] = "夕颜：是否令%dest本回合不能使用基本牌且手牌上限-4",
-
+  ["@@xiyan_prohibit-turn"] = "夕颜 不能出牌",
+  
   ["$yuanyu1"] = "此生最恨者，吴垣孙氏人。",
   ["$yuanyu2"] = "愿为宫外柳，不做建章卿。",
   ["$xiyan1"] = "夕阳绝美，只叹黄昏。",

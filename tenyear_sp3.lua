@@ -2623,11 +2623,15 @@ local dunshi = fk.CreateViewAsSkill{
   name = "dunshi",
   pattern = "slash,jink,peach,analeptic",
   interaction = function()
-    local names = {"slash", "jink", "peach", "analeptic"}
+    local all_names, names = {"slash", "jink", "peach", "analeptic"}, {}
     local mark = Self:getMark("dunshi")
-    if mark ~= 0 then
-      for _, name in ipairs(mark) do
-        table.removeOne(names, name)
+    for _, name in ipairs(all_names) do
+      if type(mark) ~= "table" or not table.contains(mark, name) then
+        local to_use = Fk:cloneCard(name)
+        if ((Fk.currentResponsePattern == nil and to_use.skill:canUse(Self, to_use) and not Self:prohibitUse(to_use)) or
+            (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use))) then
+          table.insertIfNeed(names, name)
+        end
       end
     end
     if #names == 0 then return end
@@ -2637,6 +2641,7 @@ local dunshi = fk.CreateViewAsSkill{
     return false
   end,
   view_as = function(self, cards)
+    if not self.interaction.data then return nil end
     local card = Fk:cloneCard(self.interaction.data)
     card.skillName = self.name
     return card
@@ -2645,10 +2650,30 @@ local dunshi = fk.CreateViewAsSkill{
     player.room:setPlayerMark(player, "dunshi_name-turn", use.card.trueName)
   end,
   enabled_at_play = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and (player:getMark(self.name) == 0 or #player:getMark(self.name) < 4)
+    if player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then return false end
+    local names = {"slash", "jink", "peach", "analeptic"}
+    local mark = Self:getMark("dunshi")
+    for _, name in ipairs(names) do
+      if type(mark) ~= "table" or not table.contains(mark, name) then
+        local to_use = Fk:cloneCard(name)
+        if to_use.skill:canUse(Self, to_use) and not Self:prohibitUse(to_use) then
+          return true
+        end
+      end
+    end
   end,
   enabled_at_response = function(self, player, response)
-    return player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and (player:getMark(self.name) == 0 or #player:getMark(self.name) < 4)
+    if player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then return false end
+    local names = {"slash", "jink", "peach", "analeptic"}
+    local mark = Self:getMark("dunshi")
+    for _, name in ipairs(names) do
+      if type(mark) ~= "table" or not table.contains(mark, name) then
+        local to_use = Fk:cloneCard(name)
+        if (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use)) then
+          return true
+        end
+      end
+    end
   end,
 }
 local dunshi_record = fk.CreateTriggerSkill{
@@ -2699,10 +2724,29 @@ local dunshi_record = fk.CreateTriggerSkill{
         end
         table.insert(mark, player:getMark("dunshi_name-turn"))
         room:setPlayerMark(player, "dunshi", mark)
+
+        local UImark = player:getMark("@$dunshi")
+        if type(UImark) == "table" then
+          table.removeOne(UImark, player:getMark("dunshi_name-turn"))
+          room:setPlayerMark(player, "@$dunshi", UImark)
+        end
       end
     end
     if not table.contains(choices, "dunshi1") then
       return true
+    end
+  end,
+
+  refresh_events = {fk.EventLoseSkill, fk.EventAcquireSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == self
+  end,
+  on_refresh = function(self, event, target, player, data)
+    if event == fk.EventAcquireSkill then
+      player.room:setPlayerMark(player, "@$dunshi", {"slash", "jink", "peach", "analeptic"})
+    else
+      player.room:setPlayerMark(player, dunshi.name, 0)
+      player.room:setPlayerMark(player, "@$dunshi", 0)
     end
   end,
 }
@@ -2716,6 +2760,7 @@ Fk:loadTranslationTable{
   "2.减1点体力上限并摸X张牌（X为你选择3的次数）；<br>"..
   "3.删除你本次视为使用的牌名。",
   ["#dunshi_record"] = "遁世",
+  ["@$dunshi"] = "遁世",
   ["dunshi1"] = "防止此伤害，选择1个“仁义礼智信”的技能令其获得",
   ["dunshi2"] = "减1点体力上限并摸X张牌",
   ["dunshi3"] = "删除你本次视为使用的牌名",

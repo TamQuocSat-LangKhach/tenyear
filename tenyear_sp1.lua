@@ -1106,7 +1106,8 @@ local busuan_trigger = fk.CreateTriggerSkill {
       end
     end
     
-    room:setPlayerMark(player, busuan.name, card_names_copy)
+    room:setPlayerMark(player, busuan.name, (#card_names_copy > 0) and card_names_copy or 0)
+    
     data.num = data.num - #to_get
 
     if #to_get > 0 then

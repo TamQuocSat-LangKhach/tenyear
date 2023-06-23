@@ -1047,42 +1047,79 @@ local busuan = fk.CreateActiveSkill {
     if mark == 0 then mark = {} end
     for i = 1, 2, 1 do
       local name = room:askForChoice(player, names, self.name)
+      if name == "Cancel" then break end
       table.insert(mark, name)
       table.removeOne(names, name)
+      if i == 1 then
+        table.insert(names, "Cancel")
+      end
     end
-    target.tag[self.name] = tag
+    room:setPlayerMark(target, self.name, mark)
   end,
 }
 local busuan_trigger = fk.CreateTriggerSkill {
   name = "#busuan_trigger",
   mute = true,
-  events = {fk.DrawNCards},
+  events = {fk.BeforeDrawCard},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name, true, true) then
-      return type(target.tag["busuan"]) == "table" and #target.tag["busuan"] > 0 and data.n > 0
-    end
+    return player == target and data.num > 0 and player.phase == Player.Draw and type(player:getMark(busuan.name)) == "table"
+    --FIXME: can't find skillName(game_rule)!!
   end,
-  on_cost = function(self, event, target, player, data)
-    return true
-  end,
+  on_cost = function() return true end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = {}
-    for _, name in ipairs(target.tag["busuan"]) do
-      table.insertTable(cards, room:getCardsFromPileByRule(name, 1, "allPiles"))
+    local card_names = player:getMark(busuan.name)
+    for i = 1, #card_names, 1 do
+      table.insert(cards, -1)
     end
-    if #cards > 0 then
+    for i = 1, #card_names, 1 do
+      if cards[i] == -1 then
+        local name = card_names[i]
+        local x = #table.filter(card_names, function (card_name)
+          return card_name == name end)
+
+        local tosearch = room:getCardsFromPileByRule(name, x, "discardPile")
+        if #tosearch < x then
+          table.insertTable(tosearch, room:getCardsFromPileByRule(name, x - #tosearch))
+        end
+
+        for i2 = 1, #card_names, 1 do
+          if card_names[i2] == name then
+            if #tosearch > 0 then
+              cards[i2] = tosearch[1]
+              table.remove(tosearch, 1)
+            else
+              cards[i2] = -2
+            end
+          end
+        end
+      end
+    end
+    local to_get = {}
+    local card_names_copy = table.clone(card_names)
+    for i = 1, #card_names, 1 do
+      if #to_get >= data.num then break end
+      if cards[i] > -1 then
+        table.insert(to_get, cards[i])
+        table.removeOne(card_names_copy, card_names[i])
+      end
+    end
+    
+    room:setPlayerMark(player, busuan.name, card_names_copy)
+    data.num = data.num - #to_get
+
+    if #to_get > 0 then
       room:moveCards({
-        ids = cards,
+        ids = to_get,
         to = target.id,
         toArea = Card.PlayerHand,
         moveReason = fk.ReasonJustMove,
         proposer = player.id,
-        skillName = self.name,
+        skillName = busuan.name,
+        moveVisible = false,
       })
     end
-    target.tag["busuan"] = {}
-    data.n = 0
   end,
 }
 local mingjie = fk.CreateTriggerSkill {

@@ -345,12 +345,12 @@ local siegeEngineSkill = fk.CreateTriggerSkill{
 local siege_engine_targetmod = fk.CreateTargetModSkill{
   name = "#siege_engine_targetmod",
   distance_limit_func =  function(self, player, skill, card, to)
-    if skill.trueName == "slash_skill" and table.contains(card.skillNames, "#siege_engine_skill") and player:getMark("xianzhu1") > 0 then
+    if skill.trueName == "slash_skill" and card and table.contains(card.skillNames, "#siege_engine_skill") and player:getMark("xianzhu1") > 0 then
       return 999
     end
   end,
   extra_target_func = function(self, player, skill, card)
-    if skill.trueName == "slash_skill" and table.contains(card.skillNames, "#siege_engine_skill") then
+    if skill.trueName == "slash_skill" and card and table.contains(card.skillNames, "#siege_engine_skill") then
       return player:getMark("xianzhu2")
     end
   end,
@@ -399,7 +399,7 @@ local catapultSkill = fk.CreateTriggerSkill{
 local catapult_targetmod = fk.CreateTargetModSkill{
   name = "#catapult_targetmod",
   distance_limit_func =  function(self, player, skill, card)
-    if player:hasSkill(self.name) and player.phase ~= Player.NotActive and card.type == Card.TypeBasic then
+    if player:hasSkill(self.name) and player.phase ~= Player.NotActive and card and card.type == Card.TypeBasic then
       return 999
     end
   end,

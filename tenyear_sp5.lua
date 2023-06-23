@@ -906,7 +906,7 @@ Fk:loadTranslationTable{
 local zhouxuan = General(extension, "zhouxuan", "wei", 3)
 local wumei = fk.CreateTriggerSkill{
   name = "wumei",
-  anim_type = "control",
+  anim_type = "support",
   events = {fk.EventPhaseChanging},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and data.to == Player.RoundStart and player.faceup and
@@ -914,8 +914,8 @@ local wumei = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local to = room:askForChoosePlayers(player, table.map(room:getAlivePlayers(), function(p) return p.id end),
-      1, 1, "#wumei-choose", self.name, true)
+    local to = room:askForChoosePlayers(player, table.map(table.filter(room.alive_players, function (p)
+      return p:getMark("@@wumei_extra") == 0 end), function(p) return p.id end), 1, 1, "#wumei-choose", self.name, true)
     if #to > 0 then
       self.cost_data = to[1]
       return true
@@ -923,28 +923,64 @@ local wumei = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    for _, p in ipairs(room:getAlivePlayers()) do
-      room:setPlayerMark(p, "wumei_hp", p.hp)
-    end
     local to = room:getPlayerById(self.cost_data)
-    room:addPlayerMark(to, "wumei_extra", 1)
+    room:addPlayerMark(to, "@@wumei_extra", 1)
+    local hp_record = {}
+    for _, p in ipairs(room.alive_players) do
+      table.insert(hp_record, {p.id, p.hp})
+    end
+    room:setPlayerMark(to, "wumei_record", hp_record)
+    if to == player then
+      room:addPlayerMark(to, "wumei_self", 1)
+    end
     to:gainAnExtraTurn()
+    player:gainAnExtraTurn()
+    --FIXME: 回合顺序反了！！
+    room.logic:breakTurn()
   end,
 
   refresh_events = {fk.TurnEnd},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:getMark("wumei_extra") > 0
+    return target == player and player:getMark("@@wumei_extra") > 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    room:setPlayerMark(player, "wumei_extra", 0)
-    for _, p in ipairs(room:getAlivePlayers()) do
-      p.hp = math.min(p.maxHp, p:getMark("wumei_hp"))
-      room:broadcastProperty(p, "hp")
-      room:setPlayerMark(p, "wumei_hp", 0)
+    if player:getMark("wumei_self") > 0 then
+      room:setPlayerMark(player, "wumei_self", 0)
+    else
+      room:setPlayerMark(player, "@@wumei_extra", 0)
+      room:setPlayerMark(player, "wumei_record", 0)
     end
   end,
 }
+
+local wumei_delay = fk.CreateTriggerSkill{
+  name = "#wumei_delay",
+  events = {fk.EventPhaseStart},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return player == target and player.phase == Player.Finish and player:getMark("@@wumei_extra") > 0
+  end,
+  on_cost = function() return true end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:notifySkillInvoked(player, wumei.name, "special")
+    local hp_record = player:getMark("wumei_record")
+    if type(hp_record) ~= "table" then return false end
+
+    for _, p in ipairs(room:getAlivePlayers()) do
+      local p_record = table.find(hp_record, function (sub_record)
+        return #sub_record == 2 and sub_record[1] == p.id
+      end)
+
+      if p_record then
+        p.hp = math.min(p.maxHp, p_record[2])
+        room:broadcastProperty(p, "hp")
+      end
+    end
+  end,
+}
+
 local zhanmeng = fk.CreateTriggerSkill{
   name = "zhanmeng",
   events = {fk.CardUsing},
@@ -959,7 +995,7 @@ local zhanmeng = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local choices = {"Cancel"}
+    local choices = {}
     self.cost_data = {}
     if player:getMark("zhanmeng1-turn") == 0 and not table.contains(room:getTag("zhanmeng1"), data.card.trueName) then
       table.insert(choices, "zhanmeng1")
@@ -976,6 +1012,7 @@ local zhanmeng = fk.CreateTriggerSkill{
         end
       end
     end
+    table.insert(choices, "Cancel")
     local choice = room:askForChoice(player, choices, self.name)
     if choice == "Cancel" then return end
     self.cost_data[1] = choice
@@ -1092,12 +1129,14 @@ local zhanmeng_record = fk.CreateTriggerSkill{
     end
   end,
 }
+wumei:addRelatedSkill(wumei_delay)
 zhanmeng:addRelatedSkill(zhanmeng_record)
 zhouxuan:addSkill(wumei)
 zhouxuan:addSkill(zhanmeng)
 Fk:loadTranslationTable{
   ["zhouxuan"] = "周宣",
   ["wumei"] = "寤寐",
+  ["#wumei_delay"] = "寤寐",
   [":wumei"] = "每轮限一次，回合开始前，你可以令一名角色执行一个额外的回合：该回合结束时，将所有存活角色的体力值调整为此额外回合开始时的数值。",
   ["zhanmeng"] = "占梦",
   [":zhanmeng"] = "你使用牌时，可以执行以下一项（每回合每项各限一次）：<br>"..
@@ -1105,6 +1144,7 @@ Fk:loadTranslationTable{
   "2.下一回合内，当同名牌首次被使用后，你获得一张伤害牌。<br>"..
   "3.令一名其他角色弃置两张牌，若点数之和大于10，对其造成1点火焰伤害。",
   ["#wumei-choose"] = "寤寐: 你可以令一名角色执行一个额外的回合",
+  ["@@wumei_extra"] = "寤寐",
   ["zhanmeng1"] = "你获得一张非伤害牌",
   ["zhanmeng2"] = "下一回合内，当同名牌首次被使用后，你获得一张伤害牌",
   ["zhanmeng3"] = "令一名其他角色弃置两张牌，若点数之和大于10，对其造成1点火焰伤害",
@@ -3470,12 +3510,12 @@ local wujie = fk.CreateTriggerSkill{
 local wujie_targetmod = fk.CreateTargetModSkill{
   name = "#wujie_targetmod",
   residue_func = function(self, player, skill, scope, card)
-    if player:hasSkill("wujie") and card.color == Card.NoColor and scope == Player.HistoryPhase then
+    if player:hasSkill("wujie") and card and card.color == Card.NoColor and scope == Player.HistoryPhase then
       return 999
     end
   end,
   distance_limit_func =  function(self, player, skill, card)
-    if player:hasSkill("wujie") and card.color == Card.NoColor then
+    if player:hasSkill("wujie") and card and card.color == Card.NoColor then
       return 999
     end
   end,
@@ -3516,7 +3556,7 @@ local ty__wusheng = fk.CreateViewAsSkill{  --TODO: 界武圣，移到界包
 local ty__wusheng_targetmod = fk.CreateTargetModSkill{
   name = "#ty__wusheng_targetmod",
   distance_limit_func =  function(self, player, skill, card)
-    if player:hasSkill(self.name) and skill.trueName == "slash_skill" and card.suit == Card.Diamond then
+    if player:hasSkill(self.name) and skill.trueName == "slash_skill" and card and card.suit == Card.Diamond then
       return 999
     end
   end,

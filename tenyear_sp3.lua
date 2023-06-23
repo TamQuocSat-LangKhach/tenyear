@@ -1833,7 +1833,7 @@ local pingxiang_maxcards = fk.CreateMaxCardsSkill{
 local pingxiang_targetmod = fk.CreateTargetModSkill{
   name = "#pingxiang_targetmod",
   bypass_times = function(self, player, skill, scope, card)
-    return table.contains(card.skillNames, pingxiang.name)
+    return card and table.contains(card.skillNames, pingxiang.name)
   end,
 }
 Fk:addSkill(pingxiang_viewas)

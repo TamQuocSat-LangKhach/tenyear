@@ -29,7 +29,7 @@ local jinggong = fk.CreateViewAsSkill{
 local jinggong_targetmod = fk.CreateTargetModSkill{
   name = "#jinggong_targetmod",
   distance_limit_func =  function(self, player, skill, card)
-    if table.contains(card.skillNames, "jinggong") then
+    if card and table.contains(card.skillNames, "jinggong") then
       return 999
     end
   end,
@@ -54,8 +54,8 @@ local xiaojun = fk.CreateTriggerSkill{
     local n = to:getHandcardNum() // 2
     local cards = room:askForCardsChosen(player, to, n, n, "h", self.name)
     room:throwCard(cards, self.name, to, player)
-    if player:getHandcardNum() < 2 or data.card == Card.NoSuit then return end
-    if table.find(cards, function(id) return Fk:getCardById(id).suit == data.card.suit end) then
+    if not player:isKongcheng() and data.card ~= Card.NoSuit and table.find(cards, function(id)
+        return Fk:getCardById(id).suit == data.card.suit end) then
       room:askForDiscard(player, 1, 1, false, self.name, false)
     end
   end,
@@ -2531,12 +2531,12 @@ local xunshi_record = fk.CreateTriggerSkill{
 local xunshi_targetmod = fk.CreateTargetModSkill{
   name = "#xunshi_targetmod",
   residue_func = function(self, player, skill, scope, card)
-    if player:hasSkill("xunshi") and card.color == Card.NoColor and scope == Player.HistoryPhase then
+    if player:hasSkill("xunshi") and card and card.color == Card.NoColor and scope == Player.HistoryPhase then
       return 999
     end
   end,
   distance_limit_func =  function(self, player, skill, card)
-    if player:hasSkill("xunshi") and card.color == Card.NoColor then
+    if player:hasSkill("xunshi") and card and card.color == Card.NoColor then
       return 999
     end
   end,

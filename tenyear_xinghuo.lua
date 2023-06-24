@@ -838,13 +838,93 @@ Fk:loadTranslationTable{
   ["~lvqian"] = "我自泰山郡以来，百姓获安，镇军伐贼，此生已无憾！",
 }
 
+local zhangliang = General(extension, "zhangliang", "qun", 4)
+local jijun = fk.CreateTriggerSkill{
+  name = "jijun",
+  anim_type = "drawcard",
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, _, target, player, data)
+    return target == player and player:hasSkill(self.name) and
+      player.phase == Player.Play and player.id == data.to and
+      (data.card.sub_type == Card.SubtypeWeapon or
+      data.card.type ~= Card.TypeEquip)
+  end,
+  on_use = function(self, _, _, player, _)
+    local room = player.room
+    local judge = {
+      who = player,
+      reason = self.name,
+      pattern = ".",
+    }
+    room:judge(judge)
+  end,
+
+  refresh_events = {fk.FinishJudge},
+  can_refresh = function(self, _, _, player, data)
+    return player:hasSkill(self.name) and data.reason == self.name
+  end,
+  on_refresh = function(self, _, _, player, data)
+    player:addToPile("zhangliang_fang", data.card, true, self.name)
+  end,
+}
+zhangliang:addSkill(jijun)
+local fangtong = fk.CreateTriggerSkill{
+  name = "fangtong",
+  anim_type = "offensive",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, _, target, player, _)
+    return target == player and player:hasSkill(self.name) and
+      player.phase == Player.Finish and #player:getPile("zhangliang_fang") > 0 and
+      not player:isNude()
+  end,
+  on_cost = function(self, event, target, player, data)
+    local card = player.room:askForDiscard(player, 1, 1, true, self.name,
+      true, ".", "#fangtong-invoke", true)
+
+    if #card > 0 then
+      self.cost_data = card[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:throwCard(self.cost_data, self.name, player, player)
+    local cards = room:askForCard(player, 1, 0xFFFF, false, self.name,
+      false, ".|.|.|zhangliang_fang|.|.", "#fangtong-discard", "zhangliang_fang")
+
+    if #cards == 0 then cards = table.random(player:getPile("zhangliang_fang"), 1) end
+    room:throwCard(cards, self.name, player, player)
+
+    local sum = Fk:getCardById(self.cost_data).number
+    for _, id in ipairs(cards) do
+      sum = sum + Fk:getCardById(id).number
+    end
+
+    if sum == 36 then
+      local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+      local tos = room:askForChoosePlayers(player, targets, 1, 1, "#fangtong-choose", self.name, false)
+      room:damage {
+        from = player,
+        to = room:getPlayerById(tos[1]),
+        damage = 3,
+        damageType = fk.ThunderDamage,
+        skillName = self.name,
+      }
+    end
+  end,
+}
+zhangliang:addSkill(fangtong)
 Fk:loadTranslationTable{
   ["zhangliang"] = "张梁",
   ["jijun"] = "集军",
   [":jijun"] = "当你于出牌阶段使用武器或非装备牌指定你为目标后，你可以判定，将判定牌置于你的武将牌上，称为“方”。",
+  ["zhangliang_fang"] = "方",
   ["fangtong"] = "方统",
   [":fangtong"] = "结束阶段，你可以弃置一张牌，然后将至少一张“方”置入弃牌堆。若此牌与你以此法置入弃牌堆的所有“方”的点数之和为36，"..
   "你对一名其他角色造成3点雷电伤害。",
+  ["#fangtong-invoke"] = "方统：你可以弃置一张牌发动“方统”",
+  ["#fangtong-discard"] = "方统：将至少一张“方”置入弃牌堆，若和之前弃置的牌点数之和为36则可电人",
+  ["#fangtong-choose"] = "方统：对一名其他角色造成3点雷电伤害",
 
   ["$jijun1"] = "集民力万千，亦可为军！",
   ["$jijun2"] = "集万千义军，定天下大局！",

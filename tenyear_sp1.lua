@@ -1260,7 +1260,7 @@ local tianjiang = fk.CreateActiveSkill{
 }
 local tianjiang_trigger = fk.CreateTriggerSkill{
   name = "#tianjiang_trigger",
-  events = {fk.GamePrepared},
+  events = {fk.GameStart},
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self.name)
   end,

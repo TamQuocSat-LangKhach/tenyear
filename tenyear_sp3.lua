@@ -2522,9 +2522,10 @@ local liuzhuan = fk.CreateTriggerSkill{
             end
           end
         end
-        if move.toArea == Card.DiscardPile and player:getMark("liuzhuan-turn") ~= 0 then
+        local mark = player:getMark("liuzhuan_record")
+        if move.toArea == Card.DiscardPile and type(mark) == "table" then
           for _, info in ipairs(move.moveInfo) do
-            if table.contains(player:getMark("liuzhuan-turn"), info.cardId) then
+            if table.contains(mark, info.cardId) and room:getCardArea(info.cardId) == Card.DiscardPile then
               return true
             end
           end
@@ -2534,7 +2535,7 @@ local liuzhuan = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local mark = player:getMark("liuzhuan-turn")
+    local mark = player:getMark("liuzhuan_record")
     if mark == 0 then mark = {} end
     local current = room.current
     local toObtain = {}
@@ -2544,6 +2545,7 @@ local liuzhuan = fk.CreateTriggerSkill{
           local id = info.cardId
           if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == current then
             table.insertIfNeed(mark, id)
+            room:setCardMark(Fk:getCardById(id), "@@liuzhuan", 1)
           end
         end
       end
@@ -2556,7 +2558,7 @@ local liuzhuan = fk.CreateTriggerSkill{
         end
       end
     end
-    room:setPlayerMark(player, "liuzhuan-turn", mark)
+    room:setPlayerMark(player, "liuzhuan_record", mark)
 
     if #toObtain > 0 then
       local dummy = Fk:cloneCard("dilu")
@@ -2565,34 +2567,41 @@ local liuzhuan = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.AfterCardsMove},
+  refresh_events = {fk.AfterCardsMove, fk.TurnEnd},
   can_refresh = function(self, event, target, player, data)
-    return player.phase ~= Player.NotActive
+    return type(player:getMark("liuzhuan_record")) == "table"
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    local mark = player:getMark("liuzhuan-turn")
-    if mark == 0 then mark = {} end
-    for _, move in ipairs(data) do
-      if room.current and move.to ~= room.current.id and (move.toArea == Card.PlayerHand or move.toArea == Card.PlayerEquip) then
-        for _, info in ipairs(move.moveInfo) do
-          table.removeOne(mark, info.cardId)
+    local mark = player:getMark("liuzhuan_record")
+    if event == fk.AfterCardsMove then
+      for _, move in ipairs(data) do
+        if room.current and move.to ~= room.current.id and (move.toArea == Card.PlayerHand or move.toArea == Card.PlayerEquip) then
+          for _, info in ipairs(move.moveInfo) do
+            table.removeOne(mark, info.cardId)
+            room:setCardMark(Fk:getCardById(info.cardId), "@@liuzhuan", 0)
+          end
         end
       end
+      room:setPlayerMark(player, "liuzhuan_record", mark)
+    elseif event == fk.TurnEnd then
+      for _, id in ipairs(mark) do
+        room:setCardMark(Fk:getCardById(id), "@@liuzhuan", 0)
+      end
+      room:setPlayerMark(player, "liuzhuan_record", 0)
     end
-    room:setPlayerMark(player, "liuzhuan-turn", mark)
   end,
 }
 local liuzhuan_prohibit = fk.CreateProhibitSkill{
   name = "#liuzhuan_prohibit",
   is_prohibited = function(self, from, to, card)
-    if to:hasSkill(liuzhuan.name) and to:getMark("liuzhuan-turn") ~= 0 and #to:getMark("liuzhuan-turn") > 0 then
-      if table.contains(to:getMark("liuzhuan-turn"), card:getEffectiveId()) then
+    if to:hasSkill(liuzhuan.name) and to:getMark("liuzhuan_record") ~= 0 and #to:getMark("liuzhuan_record") > 0 then
+      if table.contains(to:getMark("liuzhuan_record"), card:getEffectiveId()) then
         return true
       end
       if #card.subcards > 0 then
         for _, id in ipairs(card.subcards) do
-          if table.contains(to:getMark("liuzhuan-turn"), id) then
+          if table.contains(to:getMark("liuzhuan_record"), id) then
             return true
           end
         end
@@ -2610,6 +2619,7 @@ Fk:loadTranslationTable{
   ["liuzhuan"] = "流转",
   [":liuzhuan"] = "锁定技，其他角色的回合内，其于摸牌阶段外获得的牌无法对你使用，这些牌本回合进入弃牌堆后，你获得之。",
   ["#ty__zhubi-invoke"] = "铸币：是否将一张【无中生有】置于牌堆顶？",
+  ["@@liuzhuan"] = "流转",
 
   ["$ty__zhubi1"] = "铸币平市，百货可居。",
   ["$ty__zhubi2"] = "做钱直百，府库皆实。",

@@ -1472,10 +1472,10 @@ local liuye = General(extension, "ty__liuye", "wei", 3)
 local poyuan = fk.CreateTriggerSkill{
   name = "poyuan",
   anim_type = "control",
-  events = {fk.GamePrepared, fk.EventPhaseChanging},
+  events = {fk.GameStart, fk.EventPhaseChanging},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self.name) then
-      return event == fk.GamePrepared or
+      return event == fk.GameStart or
         (event == fk.EventPhaseChanging and target == player and data.from == Player.RoundStart)
     end
   end,

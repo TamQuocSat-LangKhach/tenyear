@@ -597,6 +597,9 @@ local bazhan = fk.CreateActiveSkill{
   name = "bazhan",
   anim_type = "switch",
   switch_skill_name = "bazhan",
+  prompt = function ()
+    return Self:getSwitchSkillState("bazhan", false) == fk.SwitchYang and "#bazhan-Yang" or "#bazhan-Yin"
+  end,
   target_num = 1,
   max_card_num = function ()
     return (Self:getSwitchSkillState("bazhan", false) == fk.SwitchYang) and 2 or 0
@@ -759,6 +762,8 @@ Fk:loadTranslationTable{
   ["#jiaoying_delay"] = "醮影",
   [":jiaoying"] = "锁定技，其他角色获得你的手牌后，该角色本回合不能使用或打出与此牌颜色相同的牌。然后此回合结束阶段，"..
   "若其本回合没有再使用牌，你令一名角色将手牌摸至五张（每有一名符合条件的角色便可以选择一个目标）。",
+  ["#bazhan-Yang"] = "把盏（阳）：选择一至两张手牌，交给一名其他角色",
+  ["#bazhan-Yin"] = "把盏（阴）：选择一名有手牌的其他角色，获得其一至两张手牌",
   ["#bazhan-support"] = "把盏：可以选择令 %dest 回复1点体力或复原武将牌",
   ["#jiaoying-choose"] = "醮影：可选择至多%arg名角色将手牌补至5张",
 

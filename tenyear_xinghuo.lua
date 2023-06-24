@@ -130,15 +130,6 @@ local tushe = fk.CreateTriggerSkill{
     player:drawCards(#AimGroup:getAllTargets(data.tos), self.name)
   end,
 }
-local limu_targetmod = fk.CreateTargetModSkill{
-  name = "#limu_targetmod",
-  residue_func = function(self, player, skill)
-    return player:hasSkill(self.name) and #player:getCardIds(Player.Judge) > 0 and 999 or 0
-  end,
-  distance_limit_func = function(self, player, skill)
-    return player:hasSkill(self.name) and #player:getCardIds(Player.Judge) > 0 and 999 or 0
-  end,
-}
 local limu = fk.CreateActiveSkill{
   name = "limu",
   anim_type = "control",
@@ -147,7 +138,11 @@ local limu = fk.CreateActiveSkill{
   can_use = function(self, player) return not player:hasDelayedTrick("indulgence") end,
   target_filter = function() return false end,
   card_filter = function(self, to_select, selected)
-    return #selected == 0 and Fk:getCardById(to_select).suit == Card.Diamond
+    if #selected == 0 and Fk:getCardById(to_select).suit == Card.Diamond then
+      local card = Fk:cloneCard("indulgence")
+      card:addSubcard(to_select)
+      return not Self:prohibitUse(card) and not Self:isProhibited(Self, card)
+    end
   end,
   on_use = function(self, room, use)
     local player = room:getPlayerById(use.from)
@@ -168,6 +163,15 @@ local limu = fk.CreateActiveSkill{
     end
   end,
 }
+local limu_targetmod = fk.CreateTargetModSkill{
+  name = "#limu_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    return player:hasSkill(self.name) and #player:getCardIds(Player.Judge) > 0 and to and player:inMyAttackRange(to)
+  end,
+  bypass_distances =  function(self, player, skill, card, to)
+    return player:hasSkill(self.name) and #player:getCardIds(Player.Judge) > 0 and to and player:inMyAttackRange(to)
+  end,
+}
 limu:addRelatedSkill(limu_targetmod)
 liuyan:addSkill(tushe)
 liuyan:addSkill(limu)
@@ -176,7 +180,7 @@ Fk:loadTranslationTable{
   ["tushe"] = "图射",
   [":tushe"] = "当你使用非装备牌指定目标后，若你没有基本牌，则你可以摸X张牌（X为此牌指定的目标数）。",
   ["limu"] = "立牧",
-  [":limu"] = "出牌阶段，你可以将一张方块牌当【乐不思蜀】对自己使用，然后回复1点体力；你的判定区有牌时，你使用牌没有次数和距离限制。",
+  [":limu"] = "出牌阶段，你可以将一张方块牌当【乐不思蜀】对自己使用，然后回复1点体力；你的判定区有牌时，你对攻击范围内的其他角色使用牌没有次数和距离限制。",
 
   ["$tushe1"] = "据险以图进，备策而施为！",
   ["$tushe2"] = "夫战者，可时以奇险之策而图常谋！",

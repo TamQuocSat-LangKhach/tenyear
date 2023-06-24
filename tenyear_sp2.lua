@@ -1115,8 +1115,8 @@ Fk:loadTranslationTable{
 
   ["$xingzuo1"] = "顺人之情，时之势，兴作可成。",
   ["$xingzuo2"] = "兴作从心，相继不绝。",
-  ["$miaoxian1"] = "与君高歌，请君侧耳。",
-  ["$miaoxian2"] = "女为悦者容，士为知己死。",
+  ["$miaoxian1"] = "女为悦者容，士为知己死。",
+  ["$miaoxian2"] = "与君高歌，请君侧耳。",
   ["~ruanyu"] = "良时忽过，身为土灰。",
 }
 
@@ -1924,7 +1924,7 @@ Fk:loadTranslationTable{
   ["$mengqing2"] = "淇水汤汤，渐车帷裳。",
   ["$yuyun1"] = "春依旧，人消瘦。",
   ["$yuyun2"] = "泪沾青衫，玉殒香消。",
-  ["~zhouyi"] = "江水寒，萧瑟起。",
+  ["~zhouyi"] = "江水寒，萧瑟起……",
 }
 
 local lvlingqi = General(extension, "lvlingqi", "qun", 4, 4, General.Female)
@@ -2047,10 +2047,8 @@ local guowu = fk.CreateTriggerSkill{
 }
 local guowu_targetmod = fk.CreateTargetModSkill{
   name = "#guowu_targetmod",
-  distance_limit_func =  function(self, player, skill)
-    if player:getMark("guowu2-phase") > 0 then
-      return 999
-    end
+  bypass_distances =  function(self, player)
+    return player:getMark("guowu2-phase") > 0
   end,
   extra_target_func = function(self, player, skill)
     if player:getMark("guowu3-phase") > 0 and skill.trueName == "slash_skill" then

@@ -213,7 +213,9 @@ local tanbei = fk.CreateActiveSkill{
       table.insert(choices, 1, "tanbei1")
     end
     local choice = room:askForChoice(target, choices, self.name)
-    room:addPlayerMark(target, choice.."-turn", 1)
+    local targetRecorded = type(player:getMark(choice.."-turn")) == "table" and player:getMark(choice.."-turn") or {}
+    table.insertIfNeed(targetRecorded, target.id)
+    room:setPlayerMark(player, choice.."-turn", targetRecorded)
     if choice == "tanbei1" then
       local id = table.random(target:getCardIds{Player.Hand, Player.Equip, Player.Judge})
       room:obtainCard(player.id, id, false, fk.ReasonPrey)
@@ -223,20 +225,19 @@ local tanbei = fk.CreateActiveSkill{
 local tanbei_prohibit = fk.CreateProhibitSkill{
   name = "#tanbei_prohibit",
   is_prohibited = function(self, from, to, card)
-    return from:hasSkill(self.name) and to:getMark("tanbei1-turn") > 0
+    local targetRecorded = from:getMark("tanbei1-turn")
+    return type(targetRecorded) == "table" and table.contains(targetRecorded, to.id)
   end,
 }
 local tanbei_targetmod = fk.CreateTargetModSkill{
   name = "#tanbei_targetmod",
-  residue_func = function(self, player, skill, scope, card, to)
-    if player.phase ~= Player.NotActive and scope == Player.HistoryTurn and to:getMark("tanbei2-turn") > 0 then
-      return 999
-    end
+  bypass_times = function(self, player, skill, scope, card, to)
+    local targetRecorded = player:getMark("tanbei2-turn")
+    return type(targetRecorded) == "table" and to and table.contains(targetRecorded, to.id)
   end,
-  distance_limit_func =  function(self, player, skill, card, to)
-    if player.phase ~= Player.NotActive and to:getMark("tanbei2-turn") > 0 then
-      return 999
-    end
+  bypass_distances =  function(self, player, skill, card, to)
+    local targetRecorded = player:getMark("tanbei2-turn")
+    return type(targetRecorded) == "table" and to and table.contains(targetRecorded, to.id)
   end,
 }
 local sidao = fk.CreateTriggerSkill{

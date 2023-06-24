@@ -395,7 +395,7 @@ local xinghan = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and target:getMark("@zhenge") > 0 and
+    return player:hasSkill(self.name) and target and target:getMark("@zhenge") > 0 and
       data.card and data.card.trueName == "slash" and data.card.extra_data and table.contains(data.card.extra_data, "xinghan")
   end,
   on_use = function(self, event, target, player, data)

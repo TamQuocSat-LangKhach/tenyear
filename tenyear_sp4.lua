@@ -1123,6 +1123,14 @@ Fk:loadTranslationTable{
   ["xianzhu1"] = "无视距离和防具",
   ["xianzhu2"] = "可指定目标+1",
   ["xianzhu3"] = "造成伤害后弃牌数+1",
+  
+  ["$wanglu1"] = "大攻车前，坚城弗当。",
+  ["$wanglu2"] = "大攻既作，天下可望！",
+  ["$xianzhu1"] = "敌垒已陷，当长驱直入！",
+  ["$xianzhu2"] = "舍命陷登，击蛟蟒于狂澜！",
+  ["$chaixie1"] = "利器经久，拆合自用。",
+  ["$chaixie2"] = "损一得十，如鲸落宇。",
+  ["~zhangfen"] = "身陨外，愿魂归江东……",
 }
 --杜夔2022.10.9
 
@@ -1600,6 +1608,12 @@ Fk:loadTranslationTable{
   ["#poyuan-invoke"] = "破垣：你可以装备【霹雳车】",
   ["#poyuan-choose"] = "破垣：你可以弃置一名其他角色至多两张牌",
   ["#destructDerivedCard"] = "%arg 被销毁",
+
+  ["$poyuan1"] = "砲石飞空，坚垣难存。",
+  ["$poyuan2"] = "声若霹雳，人马俱摧。",
+  ["$huace1"] = "筹画所料，无有不中。",
+  ["$huace2"] = "献策破敌，所谋皆应。",
+  ["~ty__liuye"] = "功名富贵，到头来，不过黄土一抔……",
 }
 
 Fk:loadTranslationTable{

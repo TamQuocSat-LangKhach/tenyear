@@ -210,7 +210,7 @@ local ty_ex__xuanfeng = fk.CreateTriggerSkill{
       local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
         return not p:isNude() end), function (p) return p.id end)
       if #targets > 0 then
-        local tos = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__xuanfeng-choose", self.name, false)
+        local tos = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__xuanfeng-choose", self.name, true)
         if #tos == 0 then
           tos = {table.random(targets)}
         end
@@ -223,17 +223,17 @@ local ty_ex__xuanfeng = fk.CreateTriggerSkill{
       end
     end
     if #targetsx > 0 then
-      local tos = room:askForChoosePlayers(player, targetsx, 1, 1, "#ty_ex__xuanfeng-damage", self.name, false)
-    if #tos == 0 then
-      tos = {table.random(targetsx)}
-    end
-    room:damage{
-      from = player,
-      to = room:getPlayerById(tos[1]),
-      damage = 1,
-      skillName = self.name,
-    }
-    end
+      local tos = room:askForChoosePlayers(player, targetsx, 1, 1, "#ty_ex__xuanfeng-damage", self.name, true)
+      if #tos == 0 then
+        tos = {table.random(targetsx)}
+      end
+       room:damage{
+         from = player,
+         to = room:getPlayerById(tos[1]),
+         damage = 1,
+          skillName = self.name,
+       }
+    else return end
   end,
 
   refresh_events = {fk.AfterCardsMove},

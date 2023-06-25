@@ -2567,8 +2567,9 @@ local liuzhuan = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.AfterCardsMove, fk.TurnEnd},
+  refresh_events = {fk.AfterCardsMove, fk.TurnEnd, fk.Death},
   can_refresh = function(self, event, target, player, data)
+    if event == fk.Death and player ~= target then return false end
     return type(player:getMark("liuzhuan_record")) == "table"
   end,
   on_refresh = function(self, event, target, player, data)
@@ -2587,6 +2588,16 @@ local liuzhuan = fk.CreateTriggerSkill{
     elseif event == fk.TurnEnd then
       for _, id in ipairs(mark) do
         room:setCardMark(Fk:getCardById(id), "@@liuzhuan", 0)
+      end
+      room:setPlayerMark(player, "liuzhuan_record", 0)
+    elseif event == fk.Death then
+      for _, id in ipairs(mark) do
+        if table.every(room.alive_players, function (p)
+          local p_mark = p:getMark("liuzhuan_record")
+          return not (type(p_mark) == "table" and table.contains(p_mark, id))
+        end) then
+        room:setCardMark(Fk:getCardById(id), "@@liuzhuan", 0)
+        end
       end
       room:setPlayerMark(player, "liuzhuan_record", 0)
     end

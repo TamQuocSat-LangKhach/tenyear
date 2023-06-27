@@ -3026,6 +3026,242 @@ Fk:loadTranslationTable{
   ["~xielingyu"] = "翠瓦红墙处，最折意中人。",
 }
 
+local zhoushan = General(extension, "zhoushan", "wu", 4)
+
+local miyun_active = fk.CreateActiveSkill{
+  name = "miyun_active",
+  target_num = 1,
+  min_card_num = 1,
+  card_filter = function(self, to_select, selected)
+    if Fk:currentRoom():getCardArea(to_select) == Card.PlayerEquip then return false end
+    local id = Self:getMark("miyun")
+    return to_select == id or table.contains(selected, id)
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return table.contains(selected_cards, Self:getMark("miyun")) and #selected == 0 and to_select ~= Self.id
+  end,
+}
+
+local miyun = fk.CreateTriggerSkill{
+  name = "miyun",
+  frequency = Skill.Compulsory,
+  events = {fk.RoundStart, fk.RoundEnd, fk.AfterCardsMove},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) then return false end
+    if event == fk.RoundStart then
+      return not table.every(player.room.alive_players, function (p) return p == player or p:isNude() end)
+    elseif event == fk.RoundEnd then
+      return table.contains(player.player_cards[player.Hand], player:getMark(self.name))
+    elseif event == fk.AfterCardsMove then
+      local miyun_losehp = (data.extra_data or {}).miyun_losehp or {}
+      return table.contains(miyun_losehp, player.id)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.RoundStart then
+      local targets = table.filter(room.alive_players, function (p)
+        return p ~= player and not p:isNude()
+      end)
+      if #targets == 0 then return false end
+      room:notifySkillInvoked(player, self.name, "control")
+      room:broadcastSkillInvoke(self.name)
+      local tos = room:askForChoosePlayers(player, table.map(targets, function (p)
+        return p.id end), 1, 1, "#miyun-choose", self.name, false, true)
+      local cid = room:askForCardChosen(player, room:getPlayerById(tos[1]), "he", self.name)
+      local move = {
+        from = tos[1],
+        ids = {cid},
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonPrey,
+        proposer = player.id,
+        skillName = "miyun_prey",
+      }
+      room:moveCards(move)
+    elseif event == fk.RoundEnd then
+      room:notifySkillInvoked(player, self.name, "drawcard")
+      room:broadcastSkillInvoke(self.name)
+
+      local cid = player:getMark(self.name)
+      local card = Fk:getCardById(cid)
+
+      local _, ret = room:askForUseActiveSkill(player, "miyun_active", "#miyun-give:::" .. card:toLogString(), false)
+      local to_give = {cid}
+      local target = room:getOtherPlayers(to_give)[1].id
+      if ret and #ret.cards > 0 and #ret.targets == 1 then
+        to_give = ret.cards
+        target = ret.targets[1]
+      end
+      local move = {
+        from = player.id,
+        ids = to_give,
+        to = target,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonGive,
+        proposer = player.id,
+        skillName = "miyun_give",
+      }
+      room:moveCards(move)
+      if not player.dead then
+        local x = player.maxHp - player:getHandcardNum()
+        if x > 0 then
+          room:drawCards(player, x, self.name)
+        end
+      end
+    elseif event == fk.AfterCardsMove then
+      room:notifySkillInvoked(player, self.name, "negative")
+      room:loseHp(player, 1, self.name)
+    end
+  end,
+
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return true
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local marked = {}
+    for _, move in ipairs(data) do
+      if move.from == player.id and (move.to ~= player.id or move.toArea ~= Card.PlayerHand) then
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if player:getMark(self.name) == info.cardId then
+            room:setPlayerMark(player, self.name, 0)
+            room:setPlayerMark(player, "@miyun_safe", 0)
+            room:setCardMark(Fk:getCardById(info.cardId), "@@miyun_safe", 0)
+            if move.skillName ~= "miyun_give" then
+              data.extra_data = data.extra_data or {}
+              local miyun_losehp = data.extra_data.miyun_losehp or {}
+              table.insert(miyun_losehp, player.id)
+              data.extra_data.miyun_losehp = miyun_losehp
+            end
+          end
+        end
+      elseif move.to == player.id and move.toArea == Card.PlayerHand and move.skillName == "miyun_prey" then
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player then
+            table.insert(marked, id)
+          end
+        end
+      end
+    end
+    if #marked > 0 then
+      local card = Fk:getCardById(marked[1])
+      room:setPlayerMark(player, self.name, card.id)
+      local num = card.number
+      if num > 0 then
+        if num == 1 then
+          num = "A"
+        elseif num == 11 then
+          num = "J"
+        elseif num == 12 then
+          num = "Q"
+        elseif num == 13 then
+          num = "K"
+        end
+      end
+      room:setPlayerMark(player, "@miyun_safe", {card.name, card:getSuitString(true), num})
+      room:setCardMark(card, "@@miyun_safe", 1)
+    end
+  end,
+}
+
+local danying = fk.CreateViewAsSkill{
+  name = "danying",
+  pattern = "slash,jink",
+  interaction = function()
+    local names = {}
+    local pat = Fk.currentResponsePattern
+    local slash = Fk:cloneCard("slash")
+    if pat == nil and slash.skill:canUse(Self, slash)  then
+      table.insert(names, "slash")
+    else
+      if Exppattern:Parse(pat):matchExp("slash") then
+          table.insert(names, "slash")
+      end
+      if Exppattern:Parse(pat):matchExp("jink")  then
+          table.insert(names, "jink")
+      end
+    end
+    if #names == 0 then return end
+    return UI.ComboBox {choices = names}  --FIXME: 体验很不好！
+  end,
+  view_as = function(self, cards)
+    if self.interaction.data == nil then return end
+    local card = Fk:cloneCard(self.interaction.data)
+    card.skillName = self.name
+    return card
+  end,
+  before_use = function(self, player, use)
+    local room = player.room
+    local cid = player:getMark(miyun.name)
+    if table.contains(player.player_cards[player.Hand], cid) then
+      player:showCards({cid})
+    end
+  end,
+  enabled_at_play = function(self, player)
+    if player:usedSkillTimes(self.name) > 0 or not table.contains(player.player_cards[player.Hand], player:getMark(miyun.name)) then
+      return false
+    end
+    local slash = Fk:cloneCard("slash")
+    return slash.skill:canUse(player, slash)
+  end,
+  enabled_at_response = function(self, player)
+    if player:usedSkillTimes(self.name) > 0 or not table.contains(player.player_cards[player.Hand], player:getMark(miyun.name)) then
+      return false
+    end
+    local pat = Fk.currentResponsePattern
+    return pat and Exppattern:Parse(pat):matchExp(self.pattern)
+  end,
+}
+local danying_delay = fk.CreateTriggerSkill{
+  name = "#danying_delay",
+  events = {fk.TargetConfirming},
+  anim_type = "negative",
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:usedSkillTimes(danying.name) > 0 and player:usedSkillTimes(self.name) == 0
+  end,
+  on_cost = function() return true end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local from = room:getPlayerById(data.from)
+    if not from.dead and not player.dead and not player:isNude() then
+      local cid = room:askForCardChosen(from, player, "he", danying.name)
+      room:throwCard({cid}, danying.name, player, from)
+    end
+  end,
+}
+Fk:addSkill(miyun_active)
+zhoushan:addSkill(miyun)
+danying:addRelatedSkill(danying_delay)
+zhoushan:addSkill(danying)
+
+Fk:loadTranslationTable{
+  ["zhoushan"] = "周善",
+  ["miyun"] = "密运",
+  ["miyun_active"] = "密运",
+  [":miyun"] = "锁定技，每轮开始时，你展示并获得一名其他角色的一张牌，称为『安』；"..
+  "每轮结束时，你将包括『安』在内的任意张手牌交给一名其他角色，然后你将手牌摸至体力上限。你不以此法失去『安』时，你失去1点体力。",
+  ["danying"] = "胆迎",
+  ["#danying_delay"] = "胆迎",
+  [":danying"] = "每回合限一次，你可展示手牌中的『安』，然后视为使用或打出一张【杀】或【闪】。"..
+  "若如此做，本回合你下次成为牌的目标后，使用者弃置你一张牌。",
+
+  ["#miyun-choose"] = "密运：选择一名角色，获得其一张牌作为『安』",
+  ["#miyun-give"] = "密运：选择包含『安』（%arg）在内的任意张手牌，交给一名角色",
+  ["@miyun_safe"] = "安",
+  ["@@miyun_safe"] = "安",
+
+  ["$miyun1"] = "不要大张旗鼓，要神不知鬼不觉。",
+  ["$miyun2"] = "小阿斗，跟本将军走一趟吧。",
+  ["$danying1"] = "早就想会会你常山赵子龙了。",
+  ["$danying2"] = "赵子龙是吧？兜鍪给你打掉。",
+  ["~zhoushan"] = "夫人救我！夫人救我！",
+}
+
 local zhangkai = General(extension, "zhangkai", "qun", 4)
 local xiangshuz = fk.CreateTriggerSkill{
   name = "xiangshuz",

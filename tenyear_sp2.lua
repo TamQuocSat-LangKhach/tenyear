@@ -689,6 +689,9 @@ local jiaoying = fk.CreateTriggerSkill{
             if color ~= Card.NoColor then
               table.insertIfNeed(jiaoying_colors, color)
               table.insertIfNeed(jiaoying_targets, to.id)
+              if to:getMark("@jiaoying-turn") == 0 then
+                room:setPlayerMark(to, "@jiaoying-turn", {})
+              end
             end
           end
         end
@@ -708,6 +711,7 @@ local jiaoying = fk.CreateTriggerSkill{
     local jiaoying_ignores = type(player:getMark("jiaoying_ignores-turn")) == "table" and player:getMark("jiaoying_ignores-turn") or {}
     table.insert(jiaoying_ignores, target.id)
     player.room:setPlayerMark(player, "jiaoying_ignores-turn", jiaoying_ignores)
+    player.room:setPlayerMark(target, "@jiaoying-turn", {"jiaoying_usedcard"})
   end,
 }
 local jiaoying_delay = fk.CreateTriggerSkill{
@@ -748,6 +752,10 @@ local jiaoying_prohibit = fk.CreateProhibitSkill{
     local jiaoying_colors = player:getMark("jiaoying_colors-turn")
     return type(jiaoying_colors) == "table" and table.contains(jiaoying_colors, card.color)
   end,
+  prohibit_response = function(self, player, card)
+    local jiaoying_colors = player:getMark("jiaoying_colors-turn")
+    return type(jiaoying_colors) == "table" and table.contains(jiaoying_colors, card.color)
+  end,
 }
 jiaoying:addRelatedSkill(jiaoying_delay)
 jiaoying:addRelatedSkill(jiaoying_prohibit)
@@ -766,6 +774,8 @@ Fk:loadTranslationTable{
   ["#bazhan-Yin"] = "把盏（阴）：选择一名有手牌的其他角色，获得其一至两张手牌",
   ["#bazhan-support"] = "把盏：可以选择令 %dest 回复1点体力或复原武将牌",
   ["#jiaoying-choose"] = "醮影：可选择至多%arg名角色将手牌补至5张",
+  ["@jiaoying-turn"] = "醮影",
+  ["jiaoying_usedcard"] = "使用过牌",
 
   ["$bazhan1"] = "此酒，当配将军。",
   ["$bazhan2"] = "这杯酒，敬于将军。",

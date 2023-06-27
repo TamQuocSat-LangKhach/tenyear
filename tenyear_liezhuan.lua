@@ -182,15 +182,15 @@ local cixiao = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     if table.find(room.alive_players, function (p) return p:hasSkill("panshi", true) end) then
-      local tos, id = room:askForChooseCardAndPlayers(player, table.map(player.room:getOtherPlayers(player), function (p)
+      local tos, id = room:askForChooseCardAndPlayers(player, table.map(table.filter(room.alive_players, function (p)
+        return p ~= player and not p:hasSkill("panshi", true) end), function (p)
         return p.id end), 1, 1, ".", "#cixiao-discard", self.name, true)
       if #tos > 0 and id then
         self.cost_data = {tos[1], id}
         return true
       end
     else
-      local tos = room:askForChoosePlayers(player, table.map(table.filter(room.alive_players, function (p)
-        return p ~= player and not p:hasSkill("panshi", true) end), function (p)
+      local tos = room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), function (p)
         return p.id end), 1, 1, "#cixiao-choose", self.name, true)
       if #tos > 0 then
         self.cost_data = {tos[1]}

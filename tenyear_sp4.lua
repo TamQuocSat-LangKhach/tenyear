@@ -3035,11 +3035,9 @@ local xiangmian = fk.CreateActiveSkill{
       pattern = ".",
     }
     room:judge(judge)
-    room:setPlayerMark(target, "@xiangmian", string.format("%s%d",
-    Fk:translate(judge.card:getSuitString()),
-    judge.card.number))
-    room:setPlayerMark(target, "xiangmian_suit", judge.card:getSuitString())
+    room:setPlayerMark(target, "xiangmian_suit", judge.card:getSuitString(true))
     room:setPlayerMark(target, "xiangmian_num", judge.card.number)
+    room:setPlayerMark(target, "@xiangmian", string.format("%s%d",Fk:translate(target:getMark("xiangmian_suit")), target:getMark("xiangmian_num")))
   end,
 }
 local xiangmian_record = fk.CreateTriggerSkill{
@@ -3050,7 +3048,7 @@ local xiangmian_record = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if data.card:getSuitString() == target:getMark("xiangmian_suit") or target:getMark("xiangmian_num") == 1 then
+    if data.card:getSuitString(true) == target:getMark("xiangmian_suit") or target:getMark("xiangmian_num") == 1 then
       room:setPlayerMark(target, "xiangmian_num", 0)
       room:setPlayerMark(target, "@xiangmian", 0)
       room:loseHp(target, target.hp, "xiangmian")

@@ -25,6 +25,9 @@ local jinggong = fk.CreateViewAsSkill{
     local to = player.room:getPlayerById(TargetGroup:getRealTargets(use.tos)[1])
     use.additionalDamage = (use.additionalDamage or 0) + math.min(player:distanceTo(to), 5) - 1
   end,
+  enabled_at_response = function(self, player, response)
+    return not response
+  end,
 }
 local jinggong_targetmod = fk.CreateTargetModSkill{
   name = "#jinggong_targetmod",

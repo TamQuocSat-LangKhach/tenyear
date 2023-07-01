@@ -3041,7 +3041,6 @@ local miyun_active = fk.CreateActiveSkill{
     return table.contains(selected_cards, Self:getMark("miyun")) and #selected == 0 and to_select ~= Self.id
   end,
 }
-
 local miyun = fk.CreateTriggerSkill{
   name = "miyun",
   frequency = Skill.Compulsory,
@@ -3149,6 +3148,9 @@ local miyun = fk.CreateTriggerSkill{
       end
     end
     if #marked > 0 then
+      for _, id in ipairs(player.player_cards[player.Hand]) do
+        room:setCardMark(Fk:getCardById(id), "@@miyun_safe", 0)
+      end
       local card = Fk:getCardById(marked[1])
       room:setPlayerMark(player, self.name, card.id)
       local num = card.number
@@ -3168,7 +3170,6 @@ local miyun = fk.CreateTriggerSkill{
     end
   end,
 }
-
 local danying = fk.CreateViewAsSkill{
   name = "danying",
   pattern = "slash,jink",

@@ -1051,29 +1051,35 @@ local tiqi = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.EventPhaseChanging},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and target ~= player and data.to == Player.Play and player:getMark("tiqi-turn") ~= 2
+    if player:hasSkill(self.name) and player ~= target and target and not target.dead and target:getMark("tiqi-turn") ~= 2 and
+        player:usedSkillTimes(self.name) < 1 then
+      return data.to == Player.Play or data.to == Player.Discard or data.to == Player.Finish
+    end
   end,
-  on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, data, "#tiqi-invoke:::"..tostring(math.abs(player:getMark("tiqi-turn") - 2)))
-  end,
+  on_cost = function() return true end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local n = math.abs(player:getMark("tiqi-turn") - 2)
+    local n = math.abs(target:getMark("tiqi-turn") - 2)
     player:drawCards(n, self.name)
-    local choice = room:askForChoice(player, {"tiqi_add", "tiqi_minus"}, self.name)
+    local choice = room:askForChoice(player, {"tiqi_add", "tiqi_minus", "Cancel"}, self.name,
+      "#tiqi-choice::" .. target.id .. ":" .. tostring(n))
     if choice == "tiqi_add" then
       room:addPlayerMark(target, MarkEnum.AddMaxCardsInTurn, n)
-    else
+    elseif choice == "tiqi_minus" then
       room:addPlayerMark(target, MarkEnum.MinusMaxCardsInTurn, n)
     end
   end,
 
-  refresh_events = {fk.AfterDrawNCards},
+  refresh_events = {fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)
-    return target ~= player
+    return player.phase == Player.Draw
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "tiqi-turn", data.n)
+    for _, move in ipairs(data) do
+      if move.to == player.id and move.moveReason == fk.ReasonDraw and move.toArea == Card.PlayerHand then
+        player.room:addPlayerMark(player, "tiqi-turn", #move.moveInfo)
+      end
+    end
   end,
 }
 local baoshu = fk.CreateTriggerSkill{
@@ -1095,37 +1101,45 @@ local baoshu = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    local x = player.maxHp - #self.cost_data + 1
     for _, id in ipairs(self.cost_data) do
       local p = room:getPlayerById(id)
-      room:addPlayerMark(p, "@fengyu_shu", player.maxHp - #self.cost_data + 1)
-      if not p.faceup then
-        p:turnOver()
-      end
-      if p.chained then
-        p:setChainState(false)
+      if not p.dead then
+        room:addPlayerMark(p, "@fengyu_shu", x)
+        if p.chained then
+          p:setChainState(false)
+        end
       end
     end
   end,
-
-  refresh_events = {fk.DrawNCards},
-  can_refresh = function(self, event, target, player, data)
+}
+local baoshu_delay = fk.CreateTriggerSkill{
+  name = "#baoshu_delay",
+  anim_type = "drawcard",
+  events = {fk.DrawNCards},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("@fengyu_shu") > 0
   end,
-  on_refresh = function(self, event, target, player, data)
+  on_cost = function() return true end,
+  on_use = function(self, event, target, player, data)
     data.n = data.n + player:getMark("@fengyu_shu")
     player.room:setPlayerMark(player, "@fengyu_shu", 0)
   end,
 }
+baoshu:addRelatedSkill(baoshu_delay)
 fengyu:addSkill(tiqi)
 fengyu:addSkill(baoshu)
 Fk:loadTranslationTable{
   ["ty__fengfangnv"] = "冯妤",
   ["tiqi"] = "涕泣",
-  [":tiqi"] = "其他角色出牌阶段开始前，若其摸牌数不等于2，则你摸超出或少于2的牌，然后令该角色本回合手牌上限增加或减少同样的数值。",
+  [":tiqi"] = "其他角色出牌阶段、弃牌阶段、结束开始前，若其于此回合的摸牌阶段内因摸牌而得到的牌数之和不等于2且你于此回合内未发动过此技能，"..
+  "则你摸超出或少于2的牌，然后可以令该角色本回合手牌上限增加或减少同样的数值。",
   ["baoshu"] = "宝梳",
+  ["#baoshu_delay"] = "宝梳",
   [":baoshu"] = "准备阶段，你可以选择至多X名角色（X为你的体力上限），这些角色各获得一个“梳”标记并重置武将牌，"..
   "你每少选一名角色，每名目标角色便多获得一个“梳”。有“梳”标记的角色摸牌阶段多摸其“梳”数量的牌，然后移去其所有“梳”。",
-  ["#tiqi-invoke"] = "涕泣：你可以摸%arg张牌，并令其本回合手牌上限+X或-X",
+  ["#tiqi-choice"] = "涕泣：你可以令%dest本回合的手牌上限增加或减少 %arg",
   ["tiqi_add"] = "增加手牌上限",
   ["tiqi_minus"] = "减少手牌上限",
   ["#baoshu-choose"] = "宝梳：你可以令若干名角色获得“梳”标记，重置其武将牌且其摸牌阶段多摸牌",

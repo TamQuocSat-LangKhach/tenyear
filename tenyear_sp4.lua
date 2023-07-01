@@ -2491,7 +2491,7 @@ local shencai_delay = fk.CreateTriggerSkill{
       end
     elseif event == fk.EventPhaseStart then
       player:turnOver()
-    elseif event == fk.TurnEnd then
+    elseif event == fk.EventPhaseChanging then
       room:killPlayer({who = player.id})
     end
   end,

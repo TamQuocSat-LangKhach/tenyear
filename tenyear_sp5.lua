@@ -4093,13 +4093,191 @@ Fk:loadTranslationTable{
 --张曼成 杜预 阮籍 神邓艾
 Fk:loadTranslationTable{
   ["ty__duyu"] = "杜预",
-  ["zhaowen"] = "谏国",
-  [":zhaowen"] = "出牌阶段限一次，你可以选择一项：令一名角色摸一张牌然后弃置一半的手牌（向下取整）；"..
+  ["jianguo"] = "谏国",
+  [":jianguo"] = "出牌阶段限一次，你可以选择一项：令一名角色摸一张牌然后弃置一半的手牌（向下取整）；"..
   "令一名角色弃置一张牌然后摸与当前手牌数一半数量的牌（向下取整）",
   ["qingshid"] = "倾势",
   [":qingshid"] = "当你于回合内使用【杀】或锦囊牌指定一名其他角色为目标后，若此牌是你本回合使用的第X张牌，你可对其中一名目标角色造成1点伤害（X为你的手牌数）",
 }
 
+local ruanji = General(extension, "ruanji", "wei", 3)
+local zhaowen = fk.CreateViewAsSkill{
+  name = "zhaowen",
+  pattern = ".|.|.|.|.|trick|.",
+  prompt = "#zhaowen",
+  interaction = function()
+    local names = {}
+    local mark = Self:getMark("@$zhaowen-turn")
+    for _, id in ipairs(Fk:getAllCardIds()) do
+      local card = Fk:getCardById(id)
+      if card:isCommonTrick() and not card.is_derived then
+        local c = Fk:cloneCard(card.name)
+        if ((Fk.currentResponsePattern == nil and card.skill:canUse(Self, c) and not Self:prohibitUse(c)) or
+        (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(c))) then
+          if mark == 0 or (not table.contains(mark, card.trueName)) then
+            table.insertIfNeed(names, card.name)
+          end
+        end
+      end
+    end
+    if #names == 0 then return false end
+    return UI.ComboBox { choices = names }
+  end,
+  card_filter = function(self, to_select, selected)
+    local card = Fk:getCardById(to_select)
+    return #selected == 0 and card.color == Card.Black and card:getMark("@@zhaowen") > 0
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 or not self.interaction.data then return nil end
+    local card = Fk:cloneCard(self.interaction.data)
+    card:addSubcard(cards[1])
+    card.skillName = self.name
+    return card
+  end,
+  before_use = function(self, player, use)
+    local mark = player:getMark("@$zhaowen-turn")
+    if mark == 0 then mark = {} end
+    table.insert(mark, use.card.trueName)
+    player.room:setPlayerMark(player, "@$zhaowen-turn", mark)
+  end,
+  enabled_at_play = function(self, player)
+    return not player:isKongcheng() and player:usedSkillTimes("#zhaowen_trigger", Player.HistoryTurn) > 0 and
+      table.find(player.player_cards[Player.Hand], function(id)
+        return Fk:getCardById(id).color == Card.Black and Fk:getCardById(id):getMark("@@zhaowen") > 0 end)
+  end,
+  enabled_at_response = function(self, player, response)
+    return not response and Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):matchExp(self.pattern) and
+      not player:isKongcheng() and player:usedSkillTimes("#zhaowen_trigger", Player.HistoryTurn) > 0 and
+      table.find(player.player_cards[Player.Hand], function(id)
+        return Fk:getCardById(id).color == Card.Black and Fk:getCardById(id):getMark("@@zhaowen") > 0 end)
+  end,
+}
+local zhaowen_trigger = fk.CreateTriggerSkill{
+  name = "#zhaowen_trigger",
+  mute = true,
+  events = {fk.EventPhaseStart, fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill("zhaowen") and player.phase == Player.Play then
+      if event == fk.EventPhaseStart then
+        return not player:isKongcheng()
+      else
+        return data.card.color == Card.Red and not data.card:isVirtual() and data.card:getMark("@@zhaowen") > 0
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.EventPhaseStart then
+      return player.room:askForSkillInvoke(player, "zhaowen", nil, "#zhaowen-invoke")
+    else
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:broadcastSkillInvoke("zhaowen")
+    if event == fk.EventPhaseStart then
+      room:notifySkillInvoked(player, "zhaowen", "special")
+      local cards = table.simpleClone(player.player_cards[Player.Hand])
+      player:showCards(cards)
+      if not player.dead and not player:isKongcheng() then
+        room:setPlayerMark(player, "zhaowen-turn", cards)
+        for _, id in ipairs(cards) do
+          room:setCardMark(Fk:getCardById(id, true), "@@zhaowen", 1)
+        end
+      end
+    else
+      room:notifySkillInvoked(player, "zhaowen", "drawcard")
+      player:drawCards(1, "zhaowen")
+    end
+  end,
+
+  refresh_events = {fk.AfterCardsMove, fk.TurnEnd, fk.Death},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.Death and player ~= target then return end
+    return player:getMark("zhaowen-turn") ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local mark = player:getMark("zhaowen-turn")
+    if event == fk.AfterCardsMove then
+      for _, move in ipairs(data) do
+        if move.toArea ~= Card.Processing then
+          for _, info in ipairs(move.moveInfo) do
+            table.removeOne(mark, info.cardId)
+            room:setCardMark(Fk:getCardById(info.cardId), "@@zhaowen", 0)
+          end
+        end
+      end
+      room:setPlayerMark(player, "zhaowen-turn", mark)
+    elseif event == fk.TurnEnd then
+      for _, id in ipairs(mark) do
+        room:setCardMark(Fk:getCardById(id), "@@zhaowen", 0)
+      end
+    elseif event == fk.Death then
+      for _, id in ipairs(mark) do
+        room:setCardMark(Fk:getCardById(id), "@@zhaowen", 0)
+      end
+    end
+  end,
+}
+local jiudun = fk.CreateTriggerSkill{
+  name = "jiudun",
+  anim_type = "defensive",
+  events = {fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.firstTarget and data.card.color == Card.Black and data.from ~= player.id and
+      (player.drank == 0 or not player:isKongcheng())
+  end,
+  on_cost = function(self, event, target, player, data)
+    if player.drank == 0 then
+      return player.room:askForSkillInvoke(player, self.name, nil, "#jiudun-invoke")
+    else
+      local card = player.room:askForDiscard(player, 1, 1, false, self.name, true, ".|.|.|hand", "#jiudun-card:::"..data.card:toLogString(), true)
+      if #card > 0 then
+        self.cost_data = card
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if player.drank == 0 then
+      player:drawCards(1, self.name)
+      room:useVirtualCard("analeptic", nil, player, player, self.name, false)
+    else
+      room:throwCard(self.cost_data, self.name, player, player)
+      if data.card.sub_type == Card.SubtypeDelayedTrick then
+        AimGroup:cancelTarget(data, player.id)
+      else
+        table.insertIfNeed(data.nullifiedTargets, player.id)
+      end
+    end
+  end,
+
+  refresh_events = {fk.EventPhaseStart, fk.TurnEnd},
+  can_refresh = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      if event == fk.EventPhaseStart then
+        return target.phase == Player.NotActive and player.drank > 0
+      else
+        return player:getMark(self.name) > 0
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart then
+      room:setPlayerMark(player, self.name, player.drank)
+    else
+      player.drank = player:getMark(self.name)
+      room:setPlayerMark(player, self.name, 0)
+      room:broadcastProperty(player, "drank")
+    end
+  end,
+}
+zhaowen:addRelatedSkill(zhaowen_trigger)
+ruanji:addSkill(zhaowen)
+ruanji:addSkill(jiudun)
 Fk:loadTranslationTable{
   ["ruanji"] = "阮籍",
   ["zhaowen"] = "昭文",
@@ -4108,6 +4286,26 @@ Fk:loadTranslationTable{
   ["jiudun"] = "酒遁",
   [":jiudun"] = "你的【酒】效果不会因回合结束而消失。当你成为其他角色使用黑色牌的目标后，若你未处于【酒】状态，你可以摸一张牌并视为使用一张【酒】；"..
   "若你处于【酒】状态，你可以弃置一张手牌令此牌对你无效。",
+  ["#zhaowen"] = "昭文：将一张黑色“昭文”牌当任意普通锦囊牌使用（每回合每种牌名限一次）",
+  ["@$zhaowen-turn"] = "昭文",
+  ["#zhaowen_trigger"] = "昭文",
+  ["#zhaowen-invoke"] = "昭文：你可以展示手牌，本回合其中黑色牌可以当任意锦囊牌使用，红色牌使用时摸一张牌",
+  ["@@zhaowen"] = "昭文",
+  ["#jiudun-invoke"] = "酒遁：你可以摸一张牌，视为使用【酒】",
+  ["#jiudun-card"] = "酒遁：你可以弃置一张手牌，令%arg对你无效",
+}
+
+Fk:loadTranslationTable{
+  ["goddengai"] = "神邓艾",
+  ["tuoyu"] = "拓域",
+  [":tuoyu"] = "锁定技，你的手牌区域添加三个未开发的副区域：<br>丰田：伤害和回复值+1；<br>清渠：无距离和次数限制；峻山：不能被响应。<br>"..
+  "出牌阶段开始时和结束时，你将手牌分配至已开发的副区域中。",
+  ["xianjin"] = "险进",
+  [":xianjin"] = "锁定技，你每造成或受到两次伤害后开发一个手牌副区域，摸X张牌（X为你已开发的手牌副区域数，若你手牌全场最多则改为1）。",
+  ["qijing"] = "奇径",
+  [":qijing"] = "觉醒技，每个回合结束时，若你的手牌副区域均已开发，你减1点体力上限，将座次移动至两名其他角色之间，获得〖摧心〗并执行一个额外回合。",
+  ["cuixin"] = "摧心",
+  [":cuixin"] = "当你不以此法对上家/下家使用的牌结算后，你可以视为对下家/上家使用一张同名牌。",
 }
 
 return extension

@@ -3725,7 +3725,7 @@ local jijiao = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local dummy = Fk:cloneCard("dilu")
+    local ids = {}
     local events = room.logic.all_game_events[1]:searchEvents(GameEvent.UseCard, 999, function(e)
       local use = e.data[1]
       return use.from == player.id and use.card:isCommonTrick() and not use.card:isVirtual()
@@ -3733,7 +3733,7 @@ local jijiao = fk.CreateActiveSkill{
     for _, e in ipairs(events) do
       local use = e.data[1]
       if room:getCardArea(use.card.id) == Card.DiscardPile then
-        dummy:addSubcard(use.card.id)
+        table.insertIfNeed(ids, use.card.id)
       end
     end
     events = room.logic.all_game_events[1]:searchEvents(GameEvent.MoveCards, 999, function(e)
@@ -3744,11 +3744,13 @@ local jijiao = fk.CreateActiveSkill{
       local move = e.data[1]
       for _, id in ipairs(move.ids) do
         if Fk:getCardById(id):isCommonTrick() and room:getCardArea(id) == Card.DiscardPile then
-          dummy:addSubcard(id)
+          table.insertIfNeed(ids, id)
         end
       end
     end
-    if #dummy.subcards > 0 then
+    if #ids > 0 then
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(ids)
       room:setPlayerMark(player, "jijiao_cards", dummy.subcards)
       room:obtainCard(target.id, dummy, true, fk.ReasonJustMove)
     end

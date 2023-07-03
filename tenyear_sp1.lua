@@ -2,10 +2,13 @@ local extension = Package("tenyear_sp1")
 extension.extensionName = "tenyear"
 
 Fk:loadTranslationTable{
-  ["tenyear_sp1"] = "十周年专属1",
+  ["tenyear_sp1"] = "十周年-限定专属1",
 }
 
---司马徽
+--祈福：关索 赵襄 鲍三娘 徐荣 曹纯 张琪瑛
+
+--关索 赵襄 鲍三娘
+
 local xurong = General(extension, "xurong", "qun", 4)
 local xionghuo = fk.CreateActiveSkill{
   name = "xionghuo",
@@ -128,319 +131,8 @@ Fk:loadTranslationTable{
   ["~xurong"] = "此生无悔，心中无愧。",
 }
 
-local lijue = General(extension, "lijue", "qun", 4, 6)
-local langxi = fk.CreateTriggerSkill{
-  name = "langxi",
-  anim_type = "offensive",
-  events = {fk.EventPhaseStart},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and
-      player.phase == Player.Start and
-      not table.every(player.room:getOtherPlayers(player), function(p)
-        return p.hp > player.hp
-      end)
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    local to = room:askForChoosePlayers(player, table.map(table.filter(room:getOtherPlayers(player), function(p)
-      return p.hp <= player.hp end), function(p) return p.id end), 1, 1, "#langxi-choose", self.name, true)
-    if #to > 0 then
-      self.cost_data = to[1]
-      return true
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    room:damage({
-      from = player,
-      to = room:getPlayerById(self.cost_data),
-      damage = math.random(0, 2),
-      skillName = self.name,
-    })
-  end,
-}
-local yisuan = fk.CreateTriggerSkill{
-  name = "yisuan",
-  anim_type = "drawcard",
-  events = {fk.CardUseFinished},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and data.card:isCommonTrick() and
-      player.room:getCardArea(data.card) == Card.Processing and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    room:changeMaxHp(player, -1)
-    room:obtainCard(player.id, data.card, true, fk.ReasonJustMove)
-  end,
-}
-lijue:addSkill(langxi)
-lijue:addSkill(yisuan)
-Fk:loadTranslationTable{
-  ["lijue"] = "李傕",
-  ["langxi"] = "狼袭",
-  [":langxi"] = "准备阶段开始时，你可以对一名体力值不大于你的其他角色随机造成0~2点伤害。",
-  ["#langxi-choose"] = "狼袭：请选择一名体力值不大于你的其他角色，对其随机造成0~2点伤害",
-  ["yisuan"] = "亦算",
-  [":yisuan"] = "出牌阶段限一次，当你使用普通锦囊牌结算后，你可以减1点体力上限，然后获得此牌。",
+--曹纯
 
-  ["$langxi1"] = "袭夺之势，如狼噬骨。",
-  ["$langxi2"] = "引吾至此，怎能不袭掠之？",
-  ["$yisuan1"] = "吾亦能善算谋划。",
-  ["$yisuan2"] = "算计人心，我也可略施一二。",
-  ["~lijue"] = "若无内讧，也不至如此。",
-}
-
-local guosi = General(extension, "guosi", "qun", 4)
-local tanbei = fk.CreateActiveSkill{
-  name = "tanbei",
-  anim_type = "offensive",
-  card_num = 0,
-  target_num = 1,
-  can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
-  end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
-  target_filter = function(self, to_select, selected)
-    return #selected == 0 and to_select ~= Self.id
-  end,
-  on_use = function(self, room, use)
-    local player = room:getPlayerById(use.from)
-    local target = room:getPlayerById(use.tos[1])
-    local choices = {"tanbei2"}
-    if not target:isNude() then
-      table.insert(choices, 1, "tanbei1")
-    end
-    local choice = room:askForChoice(target, choices, self.name)
-    local targetRecorded = type(player:getMark(choice.."-turn")) == "table" and player:getMark(choice.."-turn") or {}
-    table.insertIfNeed(targetRecorded, target.id)
-    room:setPlayerMark(player, choice.."-turn", targetRecorded)
-    if choice == "tanbei1" then
-      local id = table.random(target:getCardIds{Player.Hand, Player.Equip, Player.Judge})
-      room:obtainCard(player.id, id, false, fk.ReasonPrey)
-    end
-  end,
-}
-local tanbei_prohibit = fk.CreateProhibitSkill{
-  name = "#tanbei_prohibit",
-  is_prohibited = function(self, from, to, card)
-    local targetRecorded = from:getMark("tanbei1-turn")
-    return type(targetRecorded) == "table" and table.contains(targetRecorded, to.id)
-  end,
-}
-local tanbei_targetmod = fk.CreateTargetModSkill{
-  name = "#tanbei_targetmod",
-  bypass_times = function(self, player, skill, scope, card, to)
-    local targetRecorded = player:getMark("tanbei2-turn")
-    return type(targetRecorded) == "table" and to and table.contains(targetRecorded, to.id)
-  end,
-  bypass_distances =  function(self, player, skill, card, to)
-    local targetRecorded = player:getMark("tanbei2-turn")
-    return type(targetRecorded) == "table" and to and table.contains(targetRecorded, to.id)
-  end,
-}
-local sidao = fk.CreateTriggerSkill{
-  name = "sidao",
-  anim_type = "offensive",
-  events = {fk.CardUseFinished},
-  can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) and player.phase == Player.Play and not player:isKongcheng() and
-      player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 then
-      return self.sidao_tos and #self.sidao_tos > 0
-    end
-  end,
-  on_cost = function(self, event, target, player, data)  --TODO: target filter
-    local tos, id = player.room:askForChooseCardAndPlayers(player, self.sidao_tos, 1, 1, ".|.|.|hand|.|.", "#sidao-cost", self.name, true)
-    if #tos > 0 then
-      self.cost_data = {tos[1], id}
-      return true
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    player.room:useVirtualCard("snatch", {self.cost_data[2]}, player, player.room:getPlayerById(self.cost_data[1]), self.name)
-  end,
-
-  refresh_events = {fk.TargetSpecified},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and data.firstTarget
-  end,
-  on_refresh = function(self, event, target, player, data)
-    self.sidao_tos = {}
-    local mark = player:getMark("sidao-phase")
-    if mark ~= 0 and #mark > 0 and #AimGroup:getAllTargets(data.tos) > 0 then
-      for _, id in ipairs(AimGroup:getAllTargets(data.tos)) do
-        if table.contains(mark, id) then
-          table.insert(self.sidao_tos, id)
-        end
-      end
-    end
-    if #AimGroup:getAllTargets(data.tos) > 0 then
-      mark = AimGroup:getAllTargets(data.tos)
-      table.removeOne(mark, player.id)
-    else
-      mark = 0
-    end
-    player.room:setPlayerMark(player, "sidao-phase", mark)
-  end,
-}
-tanbei:addRelatedSkill(tanbei_prohibit)
-tanbei:addRelatedSkill(tanbei_targetmod)
-guosi:addSkill(tanbei)
-guosi:addSkill(sidao)
-Fk:loadTranslationTable{
-  ["guosi"] = "郭汜",
-  ["tanbei"] = "贪狈",
-  [":tanbei"] = "出牌阶段限一次，你可以令一名其他角色选择一项：1.令你随机获得其区域内的一张牌，此回合不能再对其使用牌；"..
-  "2.令你此回合对其使用牌没有次数和距离限制。",
-  ["sidao"] = "伺盗",
-  [":sidao"] = "出牌阶段限一次，当你对一名其他角色连续使用两张牌后，你可将一张手牌当【顺手牵羊】对其使用（目标须合法）。",
-  ["tanbei1"] = "其随机获得你区域内的一张牌，此回合不能再对你使用牌",
-  ["tanbei2"] = "此回合对你使用牌无次数和距离限制",
-  ["#sidao-cost"] = "伺盗：你可将一张手牌当【顺手牵羊】对相同的目标使用",
-
-  ["$tanbei1"] = "此机，我怎么会错失。",
-  ["$tanbei2"] = "你的东西，现在是我的了！",
-  ["$sidao1"] = "连发伺动，顺手可得。	",
-  ["$sidao2"] = "伺机而动，此地可窃。",
-  ["~guosi"] = "伍习，你……",
-}
-
-local zhangji = General(extension, "zhangji", "qun", 4)
-local lveming = fk.CreateActiveSkill{
-  name = "lveming",
-  anim_type = "offensive",
-  card_num = 0,
-  target_num = 1,
-  can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
-  end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
-  target_filter = function(self, to_select, selected)
-    local target = Fk:currentRoom():getPlayerById(to_select)
-    return #selected == 0 and #target.player_cards[Player.Equip] < #Self.player_cards[Player.Equip]
-  end,
-  on_use = function(self, room, use)
-    local player = room:getPlayerById(use.from)
-    local target = room:getPlayerById(use.tos[1])
-    local choices = {}
-    for i = 1, 13, 1 do
-      table.insert(choices, tostring(i))
-    end
-    local choice = room:askForChoice(target, choices, self.name)
-    local judge = {
-      who = player,
-      reason = self.name,
-      pattern = ".",
-    }
-    room:judge(judge)
-    if tostring(judge.card.number) == choice then
-      room:damage{
-        from = player,
-        to = target,
-        damage = 2,
-        skillName = self.name,
-      }
-    elseif not target:isAllNude() then
-      local id = table.random(target:getCardIds{Player.Hand, Player.Equip, Player.Judge})
-      room:obtainCard(player.id, id, false, fk.ReasonPrey)
-    end
-  end,
-}
-local tunjun = fk.CreateActiveSkill{
-  name = "tunjun",
-  anim_type = "drawcard",
-  target_num = 1,
-  card_num = 0,
-  frequency = Skill.Limited,
-  can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and player:usedSkillTimes("lveming", Player.HistoryGame) > 0
-  end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
-  target_filter = function(self, to_select, selected)
-    return #selected == 0 and #Fk:currentRoom():getPlayerById(to_select).player_cards[Player.Equip] < 4  --TODO: no treasure yet
-  end,
-  on_use = function(self, room, use)
-    local player = room:getPlayerById(use.from)
-    local target = room:getPlayerById(use.tos[1])
-    local n = player:usedSkillTimes("lveming", Player.HistoryGame)
-    for i = 1, n, 1 do
-      local types = {Card.SubtypeWeapon, Card.SubtypeArmor, Card.SubtypeDefensiveRide, Card.SubtypeOffensiveRide, Card.SubtypeTreasure}
-      local cards = {}
-      for i = 1, #room.draw_pile, 1 do
-        local card = Fk:getCardById(room.draw_pile[i])
-        for _, type in ipairs(types) do
-          if card.sub_type == type and target:getEquipment(type) == nil then
-            table.insertIfNeed(cards, room.draw_pile[i])
-          end
-        end
-      end
-      if #cards > 0 then
-        room:useCard({
-          from = target.id,
-          tos = {{target.id}},
-          card = Fk:getCardById(table.random(cards)),
-        })
-      end
-    end
-  end,
-}
-zhangji:addSkill(lveming)
-zhangji:addSkill(tunjun)
-Fk:loadTranslationTable{
-  ["zhangji"] = "张济",
-  ["lveming"] = "掠命",
-  [":lveming"] = "出牌阶段限一次，你选择一名装备区装备少于你的其他角色，令其选择一个点数，然后你进行判定：若点数相同，你对其造成2点伤害；"..
-  "不同，你随机获得其区域内的一张牌。",
-  ["tunjun"] = "屯军",
-  [":tunjun"] = "限定技，出牌阶段，你可以选择一名角色，令其随机使用牌堆中的X张不同类型的装备牌。（不替换原有装备，X为你发动〖掠命〗的次数）",
-
-  ["$lveming1"] = "劫命掠财，毫不费力。",
-  ["$lveming2"] = "人财，皆掠之，哈哈！",
-  ["$tunjun1"] = "得封侯爵，屯军弘农。",
-  ["$tunjun2"] = "屯军弘农，养精蓄锐。",
-  ["~zhangji"] = "哪，哪里来的乱箭？",
-}
-
-local fanchou = General(extension, "fanchou", "qun", 4)
-local xingluan = fk.CreateTriggerSkill{
-  name = "xingluan",
-  anim_type = "drawcard",
-  events = {fk.CardUseFinished},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and
-    data.tos and #data.tos == 1 and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local card = room:getCardsFromPileByRule(".|6")
-    if #card > 0 then
-      room:moveCards({
-        ids = card,
-        to = player.id,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonJustMove,
-        proposer = player.id,
-        skillName = self.name,
-      })
-    end
-  end,
-}
-fanchou:addSkill(xingluan)
-Fk:loadTranslationTable{
-  ["fanchou"] = "樊稠",
-  ["xingluan"] = "兴乱",
-  [":xingluan"] = "出牌阶段限一次，当你使用的仅指定一个目标的牌结算完成后，你可以从牌堆里获得一张点数为6的牌。",
-
-  ["$xingluan1"] = "大兴兵争，长安当乱。",
-  ["$xingluan2"] = "勇猛兴军，乱世当立。",
-  ["~fanchou"] = "唉，稚然，疑心甚重。",
-}
---张琪瑛 卫温诸葛直 吕凯 张恭 2019.4.28
 local zhangqiying = General(extension, "zhangqiying", "qun", 3, 3, General.Female)
 local falu = fk.CreateTriggerSkill{
   name = "falu",
@@ -658,88 +350,1271 @@ Fk:loadTranslationTable{
   ["$dianhua2"] = "得此点化，必得大道。",
   ["~zhangqiying"] = "米碎面散，我心欲绝。",
 }
---沙摩柯 忙牙长 许贡 张昌蒲 2019.8.20
-local shamoke = General(extension, "shamoke", "shu", 4)
-local jilis = fk.CreateTriggerSkill{
-  name = "jilis",
-  anim_type = "drawcard",
-  events = {fk.CardUsing, fk.CardResponding},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player:getMark("@jilis-turn") == player:getAttackRange()
-  end,
-  on_use = function(self, event, target, player, data)
-    player:drawCards(player:getAttackRange())
-  end,
 
-  refresh_events = {fk.CardUsing, fk.CardResponding},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name)
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "@jilis-turn", 1)
-  end,
-}
-shamoke:addSkill(jilis)
-Fk:loadTranslationTable{
-  ["shamoke"] = "沙摩柯",
-  ["jilis"] = "蒺藜",
-  [":jilis"] = "当你于一回合内使用或打出第X张牌时，你可以摸X张牌（X为你的攻击范围）。",
-  ["@jilis-turn"] = "蒺藜",
-
-  ["$jilis1"] = "蒺藜骨朵，威震慑敌！",
-  ["$jilis2"] = "看我一招，铁蒺藜骨朵！",
-  ["~shamoke"] = "五溪蛮夷，不可能输！",
-}
-
-local mangyachang = General(extension, "mangyachang", "qun", 4)
-local jiedao = fk.CreateTriggerSkill{
-  name = "jiedao",
+--隐山之玉：周夷 卢弈
+local zhouyi = General(extension, "zhouyi", "wu", 3, 3, General.Female)
+local zhukou = fk.CreateTriggerSkill{
+  name = "zhukou",
   anim_type = "offensive",
-  events = {fk.DamageCaused},
+  events = {fk.Damage, fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self.name) then
-      if player:getMark("jiedao-turn") == 0 then
-        player.room:addPlayerMark(player, "jiedao-turn", 1)
-        return player:isWounded()
+      if event == fk.Damage then
+        local room = player.room
+        if room.current and room.current.phase == Player.Play and player:getMark("zhukou-turn") == 0 then
+          room:addPlayerMark(player, "zhukou-turn", 1)
+          if player:getMark("@zhukou-turn") > 0 then
+            return true
+          end
+        end
+      else
+        return player.phase == Player.Finish and player:getMark("zhukou-turn") == 0
       end
     end
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#jiedao-invoke::"..data.to.id..":"..player:getLostHp())
+    local room = player.room
+    if event == fk.Damage then
+      return room:askForSkillInvoke(player, self.name)
+    else
+      local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
+      if #targets < 2 then return end
+      local tos = room:askForChoosePlayers(player, targets, 2, 2, "#zhukou-choose", self.name, true)
+      if #tos == 2 then
+        self.cost_data = tos
+        return true
+      end
+    end
   end,
   on_use = function(self, event, target, player, data)
-    local n = player:getLostHp()
-    data.damage = data.damage + n
-    data.extra_data = data.extra_data or {}
-    data.extra_data.jiedao = n
+    local room = player.room
+    if event == fk.Damage then
+      player:drawCards(player:getMark("@zhukou-turn"), self.name)
+      room:setPlayerMark(player, "@zhukou-turn", 0)
+    else
+      for _, p in ipairs(self.cost_data) do
+        room:damage{
+          from = player,
+          to = room:getPlayerById(p),
+          damage = 1,
+          skillName = self.name,
+        }
+      end
+    end
   end,
 
-  refresh_events = {fk.Damage},
+  refresh_events = {fk.AfterCardUseDeclared},
   can_refresh = function(self, event, target, player, data)
-    return target == player and not data.to.dead and data.extra_data and data.extra_data.jiedao and not player:isNude()
+    return target == player and player:hasSkill(self.name, true) and player:getMark("zhukou-turn") == 0 and player.phase < Player.Discard
   end,
   on_refresh = function(self, event, target, player, data)
+    player.room:addPlayerMark(player, "@zhukou-turn", 1)
+  end,
+}
+local mengqing = fk.CreateTriggerSkill{
+  name = "mengqing",
+  frequency = Skill.Wake,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and
+      player.phase == Player.Start and
+      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  can_wake = function(self, event, target, player, data)
+    return #table.filter(player.room.alive_players, function(p) return p:isWounded() end) > player.hp
+  end,
+  on_use = function(self, event, target, player, data)
     local room = player.room
-    local n = data.extra_data.jiedao
-    if #player:getCardIds{Player.Hand, Player.Equip} <= n then
-      player:throwAllCards("he")
+    room:changeMaxHp(player, 3)
+    room:recover({
+      who = player,
+      num = 3,
+      recoverBy = player,
+      skillName = self.name
+    })
+    room:handleAddLoseSkills(player, "-zhukou|yuyun", nil)
+  end,
+}
+local yuyun = fk.CreateTriggerSkill{
+  name = "yuyun",
+  anim_type = "offensive",
+  frequency = Skill.Compulsory,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local chs = {"loseHp"}
+    if player.maxHp > 1 then table.insert(chs, "loseMaxHp") end
+    local chc = room:askForChoice(player, chs, self.name)
+    if chc == "loseMaxHp" then
+      room:changeMaxHp(player, -1)
     else
-      room:askForDiscard(player, n, n, true, self.name, false, ".", "#jiedao-discard:::"..n)
+      room:loseHp(player, 1, self.name)
+    end
+    local choices = {"Cancel", "yuyun1", "yuyun2", "yuyun3"}
+    if table.find(room:getOtherPlayers(player), function(p) return not p:isNude() end) then
+      table.insert(choices, "yuyun4")
+    end
+    if table.find(room:getOtherPlayers(player), function(p) return p:getHandcardNum() < p.maxHp end) then
+      table.insert(choices, "yuyun5")
+    end
+    local n = 1 + player:getLostHp()
+    for i = 1, n, 1 do
+      if player.dead then return end
+      local choice = room:askForChoice(player, choices, self.name)
+      if choice == "Cancel" then return end
+      table.removeOne(choices, choice)
+      if choice == "yuyun1" then
+        player:drawCards(2, self.name)
+      elseif choice == "yuyun2" then
+        local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
+        local to = room:askForChoosePlayers(player, targets, 1, 1, "#yuyun2-choose", self.name, false)
+        if #to > 0 then
+          to = to[1]
+        else
+          to = table.random(targets)
+        end
+        room:damage{
+          from = player,
+          to = room:getPlayerById(to),
+          damage = 1,
+          skillName = self.name,
+        }
+        room:addPlayerMark(room:getPlayerById(to), "@@yuyun-turn")
+        local targetRecorded = type(player:getMark("yuyun2-turn")) == "table" and player:getMark("yuyun2-turn") or {}
+        table.insertIfNeed(targetRecorded, to)
+        room:setPlayerMark(player, "yuyun2-turn", targetRecorded)
+      elseif choice == "yuyun3" then
+        room:addPlayerMark(player, "@@yuyun-turn")
+        room:addPlayerMark(player, "yuyun3-turn", 1)
+      elseif choice == "yuyun4" then
+        local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+          return not p:isAllNude() end), function(p) return p.id end)
+        local to = room:askForChoosePlayers(player, targets, 1, 1, "#yuyun4-choose", self.name, false)
+        if #to > 0 then
+          to = to[1]
+        else
+          to = table.random(targets)
+        end
+        local id = room:askForCardChosen(player, room:getPlayerById(to), "hej", self.name)
+        room:obtainCard(player.id, id, false, fk.ReasonPrey)
+      elseif choice == "yuyun5" then
+        local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+          return p:getHandcardNum() < math.min(p.maxHp, 5) end), function(p) return p.id end)
+        local to = room:askForChoosePlayers(player, targets, 1, 1, "#yuyun5-choose", self.name)
+        if #to > 0 then
+          to = to[1]
+        else
+          to = table.random(targets)
+        end
+        local p = room:getPlayerById(to)
+        p:drawCards(math.min(p.maxHp, 5) - p:getHandcardNum(), self.name)
+      end
     end
   end,
 }
-mangyachang:addSkill(jiedao)
-Fk:loadTranslationTable{
-  ["mangyachang"] = "忙牙长",
-  ["jiedao"] = "截刀",
-  [":jiedao"] = "当你每回合第一次造成伤害时，你可令此伤害至多+X（X为你损失的体力值）。然后若受到此伤害的角色没有死亡，你弃置等同于此伤害加值的牌。",
-  ["#jiedao-invoke"] = "截刀：你可以令你对 %dest 造成的伤害+%arg",
-  ["#jiedao-discard"] = "截刀：你需弃置等同于此伤害加值的牌（%arg张）",
-
-  ["$jiedao1"] = "截头大刀的威力，你来尝尝？",
-  ["$jiedao2"] = "我这大刀，可是不看情面的。",
-  ["~mangyachang"] = "黄骠马也跑不快了……",
+local yuyun_targetmod = fk.CreateTargetModSkill{
+  name = "#yuyun_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    local targetRecorded = player:getMark("yuyun2-turn")
+    return type(targetRecorded) == "table" and to and table.contains(targetRecorded, to.id)
+  end,
+  bypass_distances =  function(self, player, skill, card, to)
+    local targetRecorded = player:getMark("yuyun2-turn")
+    return type(targetRecorded) == "table" and to and table.contains(targetRecorded, to.id)
+  end,
 }
+local yuyun_maxcards = fk.CreateMaxCardsSkill{
+  name = "#yuyun_maxcards",
+  correct_func = function(self, player)
+    if player:getMark("yuyun3-turn") > 0 then
+      return 999
+    end
+    return 0
+  end,
+}
+yuyun:addRelatedSkill(yuyun_targetmod)
+yuyun:addRelatedSkill(yuyun_maxcards)
+zhouyi:addSkill(zhukou)
+zhouyi:addSkill(mengqing)
+zhouyi:addRelatedSkill(yuyun)
+Fk:loadTranslationTable{
+  ["zhouyi"] = "周夷",
+  ["zhukou"] = "逐寇",
+  [":zhukou"] = "当你于每回合的出牌阶段第一次造成伤害后，你可以摸X张牌（X为本回合你已使用的牌数）。结束阶段，若你本回合未造成过伤害，"..
+  "你可以对两名其他角色各造成1点伤害。",
+  ["mengqing"] = "氓情",
+  [":mengqing"] = "觉醒技，准备阶段，若已受伤的角色数大于你的体力值，你加3点体力上限并回复3点体力，失去〖逐寇〗，获得〖玉殒〗。",
+  ["yuyun"] = "玉陨",
+  [":yuyun"] = "锁定技，出牌阶段开始时，你失去1点体力或体力上限（你的体力上限不能以此法被减至1以下），然后选择X+1项（X为你已损失的体力值）：<br>"..
+  "1.摸两张牌；<br>"..
+  "2.对一名其他角色造成1点伤害，然后本回合对其使用【杀】无距离和次数限制；<br>"..
+  "3.本回合没有手牌上限；<br>"..
+  "4.获得一名其他角色区域内的一张牌；<br>"..
+  "5.令一名其他角色将手牌摸至体力上限（最多摸至5）。",
+  ["@zhukou-turn"] = "逐寇",
+  ["#zhukou-choose"] = "逐寇：你可以对两名其他角色各造成1点伤害",
+  ["yuyun1"] = "摸两张牌",
+  ["yuyun2"] = "对一名其他角色造成1点伤害，本回合对其使用【杀】无距离和次数限制",
+  ["yuyun3"] = "本回合没有手牌上限",
+  ["yuyun4"] = "获得一名其他角色区域内的一张牌",
+  ["yuyun5"] = "令一名其他角色将手牌摸至体力上限（最多摸至5）",
+  ["#yuyun2-choose"] = "玉陨：对一名其他角色造成1点伤害，本回合对其使用【杀】无距离和次数限制",
+  ["#yuyun4-choose"] = "玉陨：获得一名其他角色区域内的一张牌",
+  ["#yuyun5-choose"] = "玉陨：令一名其他角色将手牌摸至体力上限（最多摸至5）",
+  ["@@yuyun-turn"] = "玉陨",
+
+  ["$zhukou1"] = "草莽贼寇，不过如此。",
+  ["$zhukou2"] = "轻装上阵，利剑出鞘。",
+  ["$mengqing1"] = "女之耽兮，不可说也。",
+  ["$mengqing2"] = "淇水汤汤，渐车帷裳。",
+  ["$yuyun1"] = "春依旧，人消瘦。",
+  ["$yuyun2"] = "泪沾青衫，玉殒香消。",
+  ["~zhouyi"] = "江水寒，萧瑟起……",
+}
+
+local luyi = General(extension, "luyi", "qun", 3, 3, General.Female)
+local fuxue = fk.CreateTriggerSkill{
+  name = "fuxue",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) then
+      if player.phase == Player.Start and player.tag[self.name] and #player.tag[self.name] > 0 then
+        local tag = player.tag[self.name]
+        for i = #tag, 1, -1 do
+          if player.room:getCardArea(tag[i]) ~= Card.DiscardPile then
+            table.removeOne(player.tag[self.name], tag[i])
+          end
+        end
+        return #player.tag[self.name] > 0
+      end
+      if player.phase == Player.Finish then
+        local cards = player:getMark("fuxue-turn")
+        if cards == 0 then
+          return true
+        else
+          for _, id in ipairs(player.player_cards[Player.Hand]) do
+            if table.contains(cards, id) then return end
+          end
+          return true
+        end
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if player.phase == Player.Start then
+      return player.room:askForSkillInvoke(player, self.name, nil, "#fuxue-invoke:::"..player.hp)
+    else
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    if player.phase == Player.Start then
+      local room = player.room
+      local cards = player.tag[self.name]
+      local get = {}
+      while #cards > 0 and #get < player.hp do
+        room:fillAG(player, cards)
+        local id = room:askForAG(player, cards, true, self.name)  --TODO: temporarily use AG. AG function need cancelable!
+        if id ~= nil then
+          table.removeOne(cards, id)
+          table.insert(get, id)
+          room:closeAG(player)
+        else
+          room:closeAG(player)
+          break
+        end
+      end
+      if #get > 0 then
+        local dummy = Fk:cloneCard("dilu")
+        dummy:addSubcards(get)
+        room:obtainCard(player.id, dummy, true, fk.ReasonJustMove)
+        room:setPlayerMark(player, "fuxue-turn", get)
+      end
+    else
+      player:drawCards(player.hp, self.name)
+    end
+  end,
+
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill(self.name, true)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    for _, move in ipairs(data) do
+      if move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then --TODO: ReasonJudge
+        player.tag[self.name] = player.tag[self.name] or {}
+        for _, info in ipairs(move.moveInfo) do
+          if Fk:getCardById(info.cardId).sub_type ~= Card.SubtypeDelayedTrick or info.fromArea ~= Card.Processing then
+            table.insertIfNeed(player.tag[self.name], info.cardId)
+          end
+        end
+      end
+      for _, info in ipairs(move.moveInfo) do
+        if info.fromArea == Card.DiscardPile and player.tag[self.name] and #player.tag[self.name] > 0 then
+          table.removeOne(player.tag[self.name], info.cardId)
+        end
+      end
+    end
+  end,
+}
+local yaoyi = fk.CreateTriggerSkill{
+  name = "yaoyi",
+  anim_type = "special",
+  frequency = Skill.Compulsory,
+  events = {fk.GameStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, p in ipairs(player.room:getAlivePlayers()) do
+      local yes = true
+      for _, skill in ipairs(p.player_skills) do
+        if skill.switchSkillName then
+          yes = false
+          break
+        end
+      end
+      if yes then
+        room:handleAddLoseSkills(p, "shoutan", nil, true, false)
+      end
+    end
+  end,
+
+  refresh_events = {fk.Deathed},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name, true, true)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    for _, p in ipairs(room:getAllPlayers()) do
+      room:handleAddLoseSkills(p, "-shoutan", nil, true, true)
+    end
+  end,
+}
+local yaoyi_prohibit = fk.CreateProhibitSkill{
+  name = "#yaoyi_prohibit",
+  frequency = Skill.Compulsory,
+  is_prohibited = function(self, from, to, card)
+    if table.find(Fk:currentRoom().alive_players, function(p) return p:hasSkill("yaoyi") end) then
+      if from ~= to then
+        local fromskill = {}
+        for _, skill in ipairs(from.player_skills) do
+          if skill.switchSkillName then
+            table.insertIfNeed(fromskill, skill.switchSkillName)
+          end
+        end
+        local toskill = {}
+        for _, skill in ipairs(to.player_skills) do
+          if skill.switchSkillName then
+            table.insertIfNeed(toskill, skill.switchSkillName)
+          end
+        end
+        if #fromskill == 0 or #toskill == 0 then return false end
+        if #fromskill > 1 then  --FIXME: 多个转换技
+        end
+        return from:getSwitchSkillState(fromskill[1], false) == to:getSwitchSkillState(toskill[1], false)
+      end
+    end
+  end,
+}
+local shoutan = fk.CreateActiveSkill{
+  name = "shoutan",
+  anim_type = "switch",
+  switch_skill_name = "shoutan",
+  card_num = function()
+    if Self:hasSkill("yaoyi") then
+      return 0
+    else
+      return 1
+    end
+  end,
+  target_num = 0,
+  can_use = function(self, player)
+    if player:hasSkill("yaoyi") then
+      return true--player:getMark("shoutan-phase") == 0 FIXME: 避免无限空发
+    else
+      return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+    end
+  end,
+  card_filter = function(self, to_select, selected)
+    if Self:hasSkill("yaoyi") then
+      return false
+    elseif #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Card.PlayerEquip then
+      if Self:getSwitchSkillState(self.name, false) == fk.SwitchYang then
+        return Fk:getCardById(to_select).color ~= Card.Black
+      else
+        return Fk:getCardById(to_select).color == Card.Black
+      end
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:throwCard(effect.cards, self.name, player, player)
+  end,
+}
+yaoyi:addRelatedSkill(yaoyi_prohibit)
+luyi:addSkill(fuxue)
+luyi:addSkill(yaoyi)
+luyi:addRelatedSkill(shoutan)
+Fk:loadTranslationTable{
+  ["luyi"] = "卢弈",
+  ["fuxue"] = "复学",
+  [":fuxue"] = "准备阶段，你可以从弃牌堆中获得至多X张不因使用而进入弃牌堆的牌。结束阶段，若你手中没有以此法获得的牌，你摸X张牌。（X为你的体力值）",
+  ["yaoyi"] = "邀弈",
+  [":yaoyi"] = "锁定技，游戏开始时，所有没有转换技的角色获得〖手谈〗；你发动〖手谈〗无需弃置牌且无次数限制。所有角色使用牌只能指定自己及与自己转换技状态不同的角色为目标。",
+  ["shoutan"] = "手谈",
+  [":shoutan"] = "转换技，出牌阶段限一次，你可以弃置一张：阳：非黑色手牌；阴：黑色手牌。",
+  ["#fuxue-invoke"] = "复学：你可以获得弃牌堆中至多%arg张不因使用而进入弃牌堆的牌",
+  
+  ["$fuxue1"] = "普天之大，唯此处可安书桌。",
+  ["$fuxue2"] = "书中自有风月，何故东奔西顾？",
+  ["$yaoyi1"] = "对弈未分高下，胜负可问春风。",
+  ["$yaoyi2"] = "我掷三十六道，邀君游弈其中。",
+  ["$shoutan1"] = "对弈博雅，落子珠玑胜无声。",
+  ["$shoutan2"] = "弈者无言，手执黑白谈古今。",
+  ["~luyi"] = "此生博弈，落子未有悔……",
+}
+
+--神·武：姜维 马超 张飞 张角 邓艾
+local godjiangwei = General(extension, "godjiangwei", "god", 4)
+local tianren = fk.CreateTriggerSkill {
+  name = "tianren",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then
+          for _, info in ipairs(move.moveInfo) do
+            local card = Fk:getCardById(info.cardId)
+            if card.type == Card.TypeBasic or card:isCommonTrick() then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local x = 0
+    for _, move in ipairs(data) do
+      if move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then
+        for _, info in ipairs(move.moveInfo) do
+          local card = Fk:getCardById(info.cardId)
+          if card.type == Card.TypeBasic or card:isCommonTrick() then
+            x = x + 1
+          end
+        end
+      end
+    end
+    room:addPlayerMark(player, "@tianren", x)
+    while player:getMark("@tianren") >= player.maxHp do
+      room:removePlayerMark(player, "@tianren", player.maxHp)
+      room:changeMaxHp(player, 1)
+      player:drawCards(2, self.name)
+    end
+  end,
+}
+local jiufa = fk.CreateTriggerSkill{
+  name = "jiufa",
+  events = {fk.CardUsing, fk.CardResponding},
+  anim_type = "drawcard",
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) then
+      local mark = player:getMark("@$jiufa")
+      return type(mark) ~= "table" or not table.contains(mark, data.card.trueName)
+    end
+  end,
+  on_cost = function() return true end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local mark = player:getMark("@$jiufa")
+    if mark == 0 then mark = {} end
+    table.insertIfNeed(mark, data.card.trueName)
+    room:setPlayerMark(player, "@$jiufa", mark)
+    if #mark < 9 or not room:askForSkillInvoke(player, self.name, nil, "#jiufa-invoke") then return fasle end
+    room:setPlayerMark(player, "@$jiufa", 0)
+    local card_ids = room:getNCards(9)
+    local get, throw = {}, {}
+    room:moveCards({
+      ids = card_ids,
+      toArea = Card.Processing,
+      moveReason = fk.ReasonJustMove,
+    })
+    table.forEach(room.players, function(p) room:fillAG(p, card_ids) end)
+    local numbers = {}
+    for _, id in ipairs(card_ids) do
+      local num = Fk:getCardById(id, true).number
+      numbers[num] = (numbers[num] or 0) + 1
+    end
+    while true do
+      for i = #card_ids, 1, -1 do
+        local id = card_ids[i]
+        if numbers[Fk:getCardById(id, true).number] < 2 then
+          room:takeAG(player, id, room.players)
+          table.insert(throw, id)
+          table.removeOne(card_ids, id)
+        end
+      end
+      if #card_ids == 0 then break end
+      local card_id = room:askForAG(player, card_ids, false, self.name)
+      --if card_id == nil then break end
+      room:takeAG(player, card_id, room.players)
+      table.insert(get, card_id)
+      table.removeOne(card_ids, card_id)
+      numbers[Fk:getCardById(card_id, true).number] = 0
+      if #card_ids == 0 then break end
+    end
+    table.forEach(room.players, function(p)
+      room:closeAG(p)
+    end)
+    if #get > 0 then
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(get)
+      room:obtainCard(player.id, dummy, true, fk.ReasonJustMove)
+    end
+    if #throw > 0 then
+      room:moveCards({
+        ids = throw,
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonPutIntoDiscardPile,
+      })
+    end
+  end,
+}
+local pingxiang = fk.CreateActiveSkill{
+  name = "pingxiang",
+  anim_type = "offensive",
+  card_num = 0,
+  target_num = 0,
+  frequency = Skill.Limited,
+  can_use = function(self, player)
+    return player.maxHp > 9 and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  card_filter = function(self, to_select, selected, selected_targets)
+    return false
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:changeMaxHp(player, -9)
+    for i = 1, 9, 1 do
+      if player.dead then return end
+      local success, data = room:askForUseActiveSkill(player, "pingxiang_viewas", "#pingxiang-slash:::"..tostring(i), true)
+      if success then
+        local card = Fk:cloneCard("fire__slash")
+        card.skillName = self.name
+        room:useCard{
+          from = player.id,
+          tos = table.map(data.targets, function(id) return {id} end),
+          card = card,
+          extraUse = true,
+        }
+      else
+        break
+      end
+    end
+    room:handleAddLoseSkills(player, "-jiufa", nil, true, false)
+  end,
+}
+local pingxiang_viewas = fk.CreateViewAsSkill{
+  name = "pingxiang_viewas",
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  view_as = function(self, cards)
+    local card = Fk:cloneCard("fire__slash")
+    card.skillName = "pingxiang"
+    return card
+  end,
+}
+local pingxiang_maxcards = fk.CreateMaxCardsSkill{
+  name = "#pingxiang_maxcards",
+  fixed_func = function(self, player)
+    if player:usedSkillTimes("pingxiang", Player.HistoryGame) > 0 then
+      return player.maxHp
+    end
+  end
+}
+local pingxiang_targetmod = fk.CreateTargetModSkill{
+  name = "#pingxiang_targetmod",
+  bypass_times = function(self, player, skill, scope, card)
+    return card and table.contains(card.skillNames, pingxiang.name)
+  end,
+}
+Fk:addSkill(pingxiang_viewas)
+pingxiang:addRelatedSkill(pingxiang_maxcards)
+pingxiang:addRelatedSkill(pingxiang_targetmod)
+godjiangwei:addSkill(tianren)
+godjiangwei:addSkill(jiufa)
+godjiangwei:addSkill(pingxiang)
+Fk:loadTranslationTable{
+  ["godjiangwei"] = "神姜维",
+  ["tianren"] = "天任",
+  [":tianren"] = "锁定技，当一张基本牌或普通锦囊牌不是因使用而置入弃牌堆后，你获得1个“天任”标记，"..
+  "然后若“天任”标记数不小于X，你移去X个“天任”标记，加1点体力上限并摸两张牌（X为你的体力上限）。",
+  ["jiufa"] = "九伐",
+  [":jiufa"] = "当你每累计使用或打出九张不同牌名的牌后，你可以亮出牌堆顶的九张牌，然后若其中有点数相同的牌，你选择并获得其中每个重复点数的牌各一张。",
+  ["pingxiang"] = "平襄",
+  [":pingxiang"] = "限定技，出牌阶段，若你的体力上限大于9，你可以减9点体力上限，然后你视为使用至多九张火【杀】。"..
+  "若如此做，你失去技能〖九伐〗且本局游戏内你的手牌上限等于体力上限。",
+  ["@tianren"] = "天任",
+  ["@$jiufa"] = "九伐",
+  ["#jiufa-invoke"] = "九伐：是否亮出牌堆顶九张牌，获得重复点数的牌各一张！",
+  ["pingxiang_viewas"] = "平襄",
+  ["#pingxiang-slash"] = "平襄：你可以视为使用火【杀】（第%arg张，共9张）！",
+
+  ["$tianren1"] = "举石补苍天，舍我更复其谁？",
+  ["$tianren2"] = "天地同协力，何愁汉道不昌？",
+  ["$jiufa1"] = "九伐中原，以圆先帝遗志。",
+  ["$jiufa2"] = "日日砺剑，相报丞相厚恩。",
+  ["$pingxiang1"] = "策马纵慷慨，捐躯抗虎豺。",
+  ["$pingxiang2"] = "解甲事仇雠，竭力挽狂澜。",
+  ["~godjiangwei"] = "武侯遗志，已成泡影矣……",
+}
+
+local godmachao = General(extension, "godmachao", "god", 4)
+local shouli = fk.CreateViewAsSkill{
+  name = "shouli",
+  pattern = "slash,jink",
+  interaction = function()
+    local names = {}
+    local pat = Fk.currentResponsePattern
+    if pat == nil and Fk:cloneCard("slash").skill:canUse(Self) and table.find(Fk:currentRoom().alive_players, function(p)
+      return p:getEquipment(Card.SubtypeOffensiveRide) ~= nil end) then
+      table.insert(names, "slash")
+    else
+      if Exppattern:Parse(pat):matchExp("slash") and table.find(Fk:currentRoom().alive_players, function(p)
+        return p:getEquipment(Card.SubtypeOffensiveRide) ~= nil end) then
+          table.insert(names, "slash")
+      end
+      if Exppattern:Parse(pat):matchExp("jink") and table.find(Fk:currentRoom().alive_players, function(p)
+        return p:getEquipment(Card.SubtypeDefensiveRide) ~= nil end) then
+          table.insert(names, "jink")
+      end
+    end
+    if #names == 0 then return end
+    return UI.ComboBox {choices = names}  --FIXME: 体验很不好！
+  end,
+  view_as = function(self, cards)
+    if self.interaction.data == nil then return end
+    local card = Fk:cloneCard(self.interaction.data)
+    card.skillName = self.name
+    return card
+  end,
+  before_use = function(self, player, use)
+    local room = player.room
+    local horse_type = use.card.trueName == "slash" and Card.SubtypeOffensiveRide or Card.SubtypeDefensiveRide
+    local horse_name = use.card.trueName == "slash" and "offensive_horse" or "defensive_horse"
+    local targets = table.filter(room.alive_players, function (p)
+      return p:getEquipment(horse_type) ~= nil
+    end)
+    if #targets > 0 then
+      local tos = room:askForChoosePlayers(player, table.map(targets, function (p)
+        return p.id end), 1, 1, "#shouli-horse:::" .. horse_name, self.name, false, true)
+      if #tos > 0 then
+        local to = room:getPlayerById(tos[1])
+        room:addPlayerMark(to, "@@shouli-turn")
+        if to ~= player then
+          room:addPlayerMark(player, "@@shouli-turn")
+          room:addPlayerMark(to, MarkEnum.UncompulsoryInvalidity .. "-turn")
+        end
+        local horse = to:getEquipment(horse_type)
+        if horse then
+          room:obtainCard(player.id, horse, false, fk.ReasonPrey)
+          if room:getCardOwner(horse) == player and room:getCardArea(horse) == Player.Hand then
+            use.card:addSubcard(horse)
+            use.extraUse = true
+            return
+          end
+        end
+      end
+    end
+  end,
+  enabled_at_play = function(self, player)
+    return table.find(Fk:currentRoom().alive_players, function(p)
+      return p:getEquipment(Card.SubtypeOffensiveRide) ~= nil end)
+  end,
+  enabled_at_response = function(self, player)
+    local pat = Fk.currentResponsePattern
+    return pat and table.find(Fk:currentRoom().alive_players, function(p)
+      return (Exppattern:Parse(pat):matchExp("slash") and p:getEquipment(Card.SubtypeOffensiveRide) ~= nil) or
+        (Exppattern:Parse(pat):matchExp("jink") and p:getEquipment(Card.SubtypeDefensiveRide) ~= nil)
+    end)
+  end,
+}
+local shouli_trigger = fk.CreateTriggerSkill{
+  name = "#shouli_trigger",
+  events = {fk.GameStart},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(shouli.name)
+  end,
+  on_cost = function() return true end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:broadcastSkillInvoke(shouli.name)
+    room:notifySkillInvoked(player, shouli.name)
+    local temp = player.next
+    local players = {}
+    while temp ~= player do
+      if not temp.dead then
+        table.insert(players, temp)
+      end
+      temp = temp.next
+    end
+    table.insert(players, player)
+    room:doIndicate(player.id, table.map(players, function (p) return p.id end))
+    for _, p in ipairs(players) do
+      if not p.dead then
+        local cards = {}
+        for i = 1, #room.draw_pile, 1 do
+          local card = Fk:getCardById(room.draw_pile[i])
+          if (card.sub_type == Card.SubtypeOffensiveRide or card.sub_type == Card.SubtypeDefensiveRide) and
+              card.skill.canUse(card.skill, p, card) and not p:prohibitUse(card) then
+            table.insertIfNeed(cards, card)
+          end
+        end
+        if #cards > 0 then
+          local horse = cards[math.random(1, #cards)]
+          room:useCard{
+            from = p.id,
+            card = horse,
+          }
+        end
+      end
+    end
+  end,
+}
+local shouli_delay = fk.CreateTriggerSkill{
+  name = "#shouli_delay",
+  events = {fk.DamageInflicted},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:getMark("@@shouli-turn") > 0
+  end,
+  on_cost = function() return true end,
+  on_use = function(self, event, target, player, data)
+    data.damage = data.damage + 1
+    data.damageType = fk.ThunderDamage
+  end,
+}
+local shouli_negated = fk.CreateTriggerSkill{
+  name = "#shouli_negated",
+  events = {fk.PreCardUse, fk.PreCardRespond},
+  mute = true,
+  priority = 10,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and table.contains(data.card.skillNames, shouli.name) and #data.card.subcards == 0
+  end,
+  on_cost = function() return true end,
+  on_use = function() return true end,
+}
+shouli:addRelatedSkill(shouli_trigger)
+shouli:addRelatedSkill(shouli_delay)
+shouli:addRelatedSkill(shouli_negated)
+local hengwu = fk.CreateTriggerSkill{
+  name = "hengwu",
+  anim_type = "drawcard",
+  events = {fk.CardUsing, fk.CardResponding},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) then
+      local suit = data.card.suit
+      return table.every(player.player_cards[Player.Hand], function (id)
+        return Fk:getCardById(id).suit ~= suit end) and table.find(player.room.alive_players, function (p)
+          return table.find(p.player_cards[Player.Equip], function (id)
+            return Fk:getCardById(id).suit == suit end) end)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local x = 0
+    local suit = data.card.suit
+    for _, p in ipairs(player.room.alive_players) do
+      for _, id in ipairs(p.player_cards[Player.Equip]) do
+        if Fk:getCardById(id).suit == suit then
+          x = x + 1
+        end
+      end
+    end
+    if x > 0 then
+      player:drawCards(x, self.name)
+    end
+  end,
+}
+godmachao:addSkill(shouli)
+godmachao:addSkill(hengwu)
+Fk:loadTranslationTable{
+  ["godmachao"] = "神马超",
+  ["shouli"] = "狩骊",
+  ["#shouli_trigger"] = "狩骊",
+  ["#shouli_delay"] = "狩骊",
+  [":shouli"] = "游戏开始时，从下家开始所有角色随机使用牌堆中的一张坐骑。你可将场上的一张进攻马当【杀】（不计入次数，有次数限制）、防御马当【闪】使用或打出，以此法失去坐骑的其他角色本回合非锁定技失效，你与其本回合受到的伤害+1且改为雷电伤害（不叠加）。",
+  ["hengwu"] = "横骛",
+  [":hengwu"] = "当你使用或打出牌时，若你没有该花色的手牌，你可摸X张牌（X为场上与此牌花色相同的装备数量）。",
+
+  ["@@shouli-turn"] = "狩骊",
+  ["#shouli-horse"] = "狩骊：选择一名装备着 %arg 的角色",
+
+  ["$shouli1"] = "赤骊骋疆，巡狩八荒！",
+  ["$shouli2"] = "长缨在手，百骥可降！",
+  ["$hengwu1"] = "横枪立马，独啸秋风！",
+  ["$hengwu2"] = "世皆彳亍，唯我纵横！",
+  ["~godmachao"] = "离群之马，虽强亦亡……",
+}
+
+local godzhangfei = General(extension, "godzhangfei", "god", 4)
+local shencai = fk.CreateActiveSkill{
+  name = "shencai",
+  anim_type = "offensive",
+  card_num = 0,
+  target_num = 1,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name) < 1 + player:getMark("xunshi")
+  end,
+  card_filter = function()
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local data = {
+      who = target,
+      reason = self.name,
+      pattern = ".",
+      extra_data = {shencaiSource = effect.from}
+    }
+    room:judge(data)
+    local result = {}
+    if table.contains({"peach", "analeptic", "silver_lion", "god_salvation", "celestial_calabash"}, data.card.trueName) then
+      table.insert(result, "@@shencai_chi")
+    end
+    if data.card.sub_type == Card.SubtypeWeapon or data.card.name == "collateral" then
+      table.insert(result, "@@shencai_zhang")
+    end
+    if table.contains({"savage_assault", "archery_attack", "duel", "spear", "eight_diagram", "raid_and_frontal_attack"}, data.card.trueName) then
+      table.insert(result, "@@shencai_tu")
+    end
+    if data.card.sub_type == Card.SubtypeDefensiveRide or data.card.sub_type == Card.SubtypeOffensiveRide or
+    table.contains({"snatch", "supply_shortage", "chasing_near"}, data.card.trueName) then
+      table.insert(result, "@@shencai_liu")
+    end
+    if #result == 0 then
+      table.insert(result, "@shencai_si")
+    end
+    if result[1] ~= "@shencai_si" then
+      for _, mark in ipairs({"@@shencai_chi", "@@shencai_zhang", "@@shencai_tu", "@@shencai_liu"}) do
+        room:setPlayerMark(data.who, mark, 0)
+      end
+    end
+    for _, mark in ipairs(result) do
+      room:addPlayerMark(data.who, mark, 1)
+      if mark == "@shencai_si" and not data.who:isNude() then
+        local card = room:askForCardChosen(player, target, "he", "shencai")
+        room:obtainCard(player.id, card, false, fk.ReasonPrey)
+      end
+    end
+  end,
+}
+local shencai_delay = fk.CreateTriggerSkill{
+  name = "#shencai_delay",
+  anim_type = "offensive",
+  events = {fk.FinishJudge, fk.Damaged, fk.TargetConfirmed, fk.AfterCardsMove, fk.EventPhaseStart, fk.EventPhaseChanging},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if player.dead then return false end
+    if event == fk.FinishJudge then
+      return data.extra_data and data.extra_data.shencaiSource == player.id and player.room:getCardArea(data.card) == Card.Processing
+    elseif event == fk.Damaged then
+      return player == target and player:getMark("@@shencai_chi") > 0
+    elseif event == fk.TargetConfirmed then
+      return player == target and data.card.trueName == "slash" and player:getMark("@@shencai_zhang") > 0
+    elseif event == fk.AfterCardsMove and player:getMark("@@shencai_tu") > 0 and not player:isKongcheng() then
+      for _, move in ipairs(data) do
+        if move.skillName ~= shencai.name and move.from == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand then
+              return true
+            end
+          end
+        end
+      end
+    elseif event == fk.EventPhaseStart then
+      return player == target and player:getMark("@@shencai_liu") > 0 and player.phase == Player.Finish
+    elseif event == fk.EventPhaseChanging then
+      return player == target and data.to == Player.NotActive and player:getMark("@shencai_si") > #player.room.alive_players
+    end
+  end,
+  on_cost = function() return true end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.FinishJudge then
+      if room:getCardArea(data.card) == Card.Processing then
+        room:obtainCard(player.id, data.card, true, fk.ReasonJustMove)
+      end
+      return false
+    end
+    room:notifySkillInvoked(player, shencai.name, "negative")
+    room:broadcastSkillInvoke(shencai.name)
+    if event == fk.Damaged then
+      room:loseHp(player, data.damage, shencai.name)
+    elseif event == fk.TargetConfirmed then
+      data.disresponsive = true
+    elseif event == fk.AfterCardsMove then
+      if not player:isKongcheng() then
+        room:throwCard({table.random(player.player_cards[Player.Hand])}, shencai.name, player, player)
+      end
+    elseif event == fk.EventPhaseStart then
+      player:turnOver()
+    elseif event == fk.EventPhaseChanging then
+      room:killPlayer({who = player.id})
+    end
+  end,
+}
+local shencai_maxcards = fk.CreateMaxCardsSkill {
+  name = "#shencai_maxcards",
+  correct_func = function(self, player)
+    return -player:getMark("@shencai_si")
+  end,
+}
+local xunshi = fk.CreateFilterSkill{
+  name = "xunshi",
+  mute = true,
+  frequency = Skill.Compulsory,
+  card_filter = function(self, card, player)
+    local names = {"savage_assault", "archery_attack", "amazing_grace", "god_salvation", "iron_chain", "redistribute"}
+    return player:hasSkill(self.name) and table.contains(names, card.name) and
+      not table.contains(player.player_cards[Player.Judge], card.id)
+  end,
+  view_as = function(self, card)
+    local card = Fk:cloneCard("slash", Card.NoSuit, card.number)
+    card.skillName = self.name
+    return card
+  end,
+}
+
+local function getUseExtraTargets(room, data, bypass_distances)
+  if not (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) then return {} end
+  local ban_cards = {"jink", "nullification", "adaptation", "collateral"} --stupid collateral
+  if table.contains(ban_cards, data.card.trueName) then return {} end
+  local tos = {}
+  local current_targets = TargetGroup:getRealTargets(data.tos)
+  local aoe_names = {"savage_assault", "archery_attack"}
+
+  Self = room:getPlayerById(data.from) -- for targetFilter
+
+  for _, p in ipairs(room.alive_players) do
+    if not table.contains(current_targets, p.id) and not Self:isProhibited(p, data.card) then
+      if data.card.skill:getMinTargetNum() == 0 then
+        if data.card.trueName == "peach" then
+          if p:isWounded() then
+            table.insertIfNeed(tos, p.id)
+          end
+        elseif table.contains(aoe_names, data.card.name) then
+          if p.id ~= data.from then
+            table.insertIfNeed(tos, p.id)
+          end
+        else
+          table.insertIfNeed(tos, p.id)
+        end
+      else
+        room:setPlayerMark(Self, MarkEnum.BypassTimesLimit, 1)
+        if bypass_distances then
+          room:setPlayerMark(Self, MarkEnum.BypassDistancesLimit, 1)
+        end
+        if data.card.skill:targetFilter(p.id, {}, {}, data.card) then
+          table.insertIfNeed(tos, p.id)
+        end
+        room:setPlayerMark(Self, MarkEnum.BypassTimesLimit, 0)
+        room:setPlayerMark(Self, MarkEnum.BypassDistancesLimit, 0)
+      end
+    end
+  end
+  return tos
+end
+
+local xunshi_trigger = fk.CreateTriggerSkill{
+  name = "#xunshi_trigger",
+  anim_type = "offensive",
+  frequency = Skill.Compulsory,
+  events = {fk.CardUsing},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(xunshi.name) and data.card.color == Card.NoColor
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:notifySkillInvoked(player, xunshi.name)
+    room:broadcastSkillInvoke(xunshi.name)
+    if player:getMark("xunshi") < 4 then
+      player.room:addPlayerMark(player, "xunshi", 1)
+    end
+    local targets = getUseExtraTargets(room, data)
+    local n = #targets
+    if n == 0 then return false end
+    local tos = room:askForChoosePlayers(player, targets, 1, n, "#xunshi-choose:::"..data.card:toLogString(), xunshi.name, true)
+    if #tos > 0 then
+      table.forEach(tos, function (id)
+        table.insert(data.tos, {id})
+      end)
+    end
+  end,
+}
+local xunshi_targetmod = fk.CreateTargetModSkill{
+  name = "#xunshi_targetmod",
+  bypass_times = function(self, player, skill, scope, card)
+    return player:hasSkill(xunshi.name) and card and card.color == Card.NoColor
+  end,
+  bypass_distances =  function(self, player, skill, card)
+    return player:hasSkill(xunshi.name) and card and card.color == Card.NoColor
+  end,
+}
+shencai:addRelatedSkill(shencai_record)
+shencai:addRelatedSkill(shencai_delay)
+shencai:addRelatedSkill(shencai_maxcards)
+xunshi:addRelatedSkill(xunshi_trigger)
+xunshi:addRelatedSkill(xunshi_targetmod)
+godzhangfei:addSkill(shencai)
+godzhangfei:addSkill(xunshi)
+Fk:loadTranslationTable{
+  ["godzhangfei"] = "神张飞",
+  ["shencai"] = "神裁",
+  ["#shencai_delay"] = "神裁",
+  [":shencai"] = "出牌阶段限一次，你可以令一名其他角色进行判定，你获得判定牌。若判定牌包含以下内容，其获得（已有标记则改为修改）对应标记：<br>"..
+  "体力：“笞”标记，每次受到伤害后失去等量体力；<br>"..
+  "武器：“杖”标记，无法响应【杀】；<br>"..
+  "打出：“徒”标记，以此法外失去手牌后随机弃置一张手牌；<br>"..
+  "距离：“流”标记，结束阶段将武将牌翻面；<br>"..
+  "若判定牌不包含以上内容，该角色获得一个“死”标记且手牌上限减少其身上“死”标记个数，然后你获得其区域内一张牌。"..
+  "“死”标记个数大于场上存活人数的角色回合结束时，其直接死亡。",
+  ["xunshi"] = "巡使",
+  ["#xunshi_trigger"] = "巡使",
+  [":xunshi"] = "锁定技，你的多目标锦囊牌均视为无色【杀】。你使用无色牌无距离和次数限制且可以额外指定任意个目标，然后〖神裁〗的发动次数+1（至多为5）。",
+  ["@@shencai_chi"] = "笞",
+  ["@@shencai_zhang"] = "杖",
+  ["@@shencai_tu"] = "徒",
+  ["@@shencai_liu"] = "流",
+  ["@shencai_si"] = "死",
+  ["#xunshi-choose"] = "巡使：可为此【%arg】额外指定任意个目标",
+
+  ["$shencai1"] = "我有三千炼狱，待汝万世轮回！",
+  ["$shencai2"] = "纵汝王侯将相，亦须俯首待裁！",
+  ["$xunshi1"] = "秉身为正，辟易万邪！",
+  ["$xunshi2"] = "巡御两界，路寻不平！",
+  ["~godzhangfei"] = "尔等，欲复斩我头乎？",
+}
+
+local godzhangjiao = General(extension, "godzhangjiao", "god", 3)
+local yizhao = fk.CreateTriggerSkill{
+  name = "yizhao",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.CardUsing, fk.CardResponding},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.card.number
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local n1 = tostring(player:getMark("@zhangjiao_huang"))
+    room:addPlayerMark(player, "@zhangjiao_huang", math.min(data.card.number, 184 - player:getMark("@zhangjiao_huang")))
+    local n2 = tostring(player:getMark("@zhangjiao_huang"))
+    if #n1 == 1 then
+      if #n2 == 1 then return end
+    else
+      if n1:sub(#n1 - 1, #n1 - 1) == n2:sub(#n2 - 1, #n2 - 1) then return end
+    end
+    local x = n2:sub(#n2 - 1, #n2 - 1)
+    if x == 0 then x = 10 end  --yes, tenyear is so strange
+    local card = room:getCardsFromPileByRule(".|"..x)
+    if #card > 0 then
+      room:moveCards({
+        ids = card,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonJustMove,
+        proposer = player.id,
+        skillName = self.name,
+      })
+    end
+  end,
+}
+local sanshou = fk.CreateTriggerSkill{
+  name = "sanshou",
+  anim_type = "defensive",
+  events = {fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = room:getNCards(3)
+    room:moveCards({
+      ids = cards,
+      toArea = Card.Processing,
+      moveReason = fk.ReasonJustMove,
+      skillName = self.name,
+    })
+    local yes = false
+    for _, id in ipairs(cards) do
+      if player:getMark("sanshou_"..Fk:getCardById(id):getTypeString().."-turn") == 0 then
+        room:setCardEmotion(id, "judgegood")
+        yes = true
+      else
+        room:setCardEmotion(id, "judgebad")
+      end
+    end
+    room:delay(1000)
+    room:moveCards({
+      ids = cards,
+      fromArea = Card.Processing,
+      toArea = Card.DiscardPile,
+      moveReason = fk.ReasonJustMove,
+      skillName = self.name,
+    })
+    if yes then
+      return true
+    end
+  end,
+
+  refresh_events = {fk.AfterCardUseDeclared},
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill(self.name, true)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:addPlayerMark(player, "sanshou_"..data.card:getTypeString().."-turn", 1)
+  end,
+}
+local sijun = fk.CreateTriggerSkill{
+  name = "sijun",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Start and
+      player:getMark("@zhangjiao_huang") > #player.room.draw_pile
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "@zhangjiao_huang", 0)
+    room:shuffleDrawPile()
+    local cards = {}
+    local total = 36
+    local i = 0
+    while total > 0 and i < 999 do
+      local num = math.random(1, math.min(13, total))
+      local id = room:getCardsFromPileByRule(".|"..num)[1]
+      if id ~= nil and not table.contains(cards, id) then
+        table.insert(cards, id)
+        total = total - num
+      end
+      i = i + 1
+    end
+    if #cards > 0 then
+      room:moveCards({
+        ids = cards,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonJustMove,
+        proposer = player.id,
+        skillName = self.name,
+      })
+    end
+  end,
+}
+local tianjie = fk.CreateTriggerSkill{
+  name = "tianjie",
+  anim_type = "offensive",
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      if player:getMark(self.name) > 0 then
+        player.room:setPlayerMark(player, self.name, 0)
+        return true
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local tos = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), function(p)
+      return p.id end), 1, 3, "#tianjie-choose", self.name, true)
+    if #tos > 0 then
+      self.cost_data = tos
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, id in ipairs(self.cost_data) do
+      local p = room:getPlayerById(id)
+      local n = math.max(1, #table.filter(p.player_cards[Player.Hand], function(c) return Fk:getCardById(c).name == "jink" end))
+      room:damage{
+        from = player,
+        to = p,
+        damage = n,
+        damageType = fk.ThunderDamage,
+        skillName = self.name,
+      }
+    end
+  end,
+
+  refresh_events = {fk.AfterDrawPileShuffle},
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill(self.name)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:addPlayerMark(player, self.name, 1)
+  end,
+}
+godzhangjiao:addSkill(yizhao)
+godzhangjiao:addSkill(sanshou)
+godzhangjiao:addSkill(sijun)
+godzhangjiao:addSkill(tianjie)
+Fk:loadTranslationTable{
+  ["godzhangjiao"] = "神张角",
+  ["yizhao"] = "异兆",
+  [":yizhao"] = "锁定技，当你使用或打出一张牌后，获得等同于此牌点数的“黄”标记，然后若“黄”标记数的十位数变化，你随机获得牌堆中一张点数为变化后十位数的牌。",
+  ["sanshou"] = "三首",
+  [":sanshou"] = "当你受到伤害时，你可以亮出牌堆顶的三张牌，若其中有本回合所有角色均未使用过的牌的类型，防止此伤害。",
+  ["sijun"] = "肆军",
+  [":sijun"] = "准备阶段，若“黄”标记数大于牌堆里的牌数，你可以移去所有“黄”标记并洗牌，然后获得随机张点数之和为36的牌。",
+  ["tianjie"] = "天劫",
+  [":tianjie"] = "一名角色的回合结束时，若本回合牌堆进行过洗牌，你可以对至多三名其他角色各造成X点雷电伤害（X为其手牌中【闪】的数量且至少为1）。",
+  ["@zhangjiao_huang"] = "黄",
+  ["#tianjie-choose"] = "天劫：你可以对至多三名其他角色各造成X点雷电伤害（X为其手牌中【闪】数，至少为1）",
+  
+  ["$yizhao1"] = "苍天已死，此黄天当立之时。",
+  ["$yizhao2"] = "甲子尚水，显炎汉将亡之兆。",
+  ["$sanshou1"] = "三公既现，领大道而立黄天。",
+  ["$sanshou2"] = "天地三才，载厚德以驱魍魉。",
+  ["$sijun1"] = "联九州黎庶，撼一家之王庭。",
+  ["$sijun2"] = "吾以此身为药，欲医天下之疾。",
+  ["$tianjie1"] = "苍天既死，贫道当替天行道。",
+  ["$tianjie2"] = "贫道张角，请大汉赴死！",
+  ["~godzhangjiao"] = "诸君唤我为贼，然我所窃何物？",
+}
+
+Fk:loadTranslationTable{
+  ["goddengai"] = "神邓艾",
+  ["tuoyu"] = "拓域",
+  [":tuoyu"] = "锁定技，你的手牌区域添加三个未开发的副区域：<br>丰田：伤害和回复值+1；<br>清渠：无距离和次数限制；峻山：不能被响应。<br>"..
+  "出牌阶段开始时和结束时，你将手牌分配至已开发的副区域中。",
+  ["xianjin"] = "险进",
+  [":xianjin"] = "锁定技，你每造成或受到两次伤害后开发一个手牌副区域，摸X张牌（X为你已开发的手牌副区域数，若你手牌全场最多则改为1）。",
+  ["qijing"] = "奇径",
+  [":qijing"] = "觉醒技，每个回合结束时，若你的手牌副区域均已开发，你减1点体力上限，将座次移动至两名其他角色之间，获得〖摧心〗并执行一个额外回合。",
+  ["cuixin"] = "摧心",
+  [":cuixin"] = "当你不以此法对上家/下家使用的牌结算后，你可以视为对下家/上家使用一张同名牌。",
+}
+
+--百战虎贲：兀突骨 文鸯 皇甫嵩 王双 留赞 黄祖 雷铜 吴兰
+
+--兀突骨
 
 local wenyang = General(extension, "wenyang", "wei", 5)
 local lvli = fk.CreateTriggerSkill{
@@ -909,127 +1784,194 @@ Fk:loadTranslationTable{
   ["~wenyang"] = "痛贯心膂，天灭大魏啊！",
 }
 
-local jianggan = General(extension, "jianggan", "wei", 3)
-local weicheng = fk.CreateTriggerSkill{
-  name = "weicheng",
-  anim_type = "drawcard",
-  events = {fk.AfterCardsMove},
-  can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) and #player.player_cards[Player.Hand] < player.hp then
-      for _, move in ipairs(data) do
-        if move.from and move.from == player.id and move.to and move.to ~= player.id and move.toArea == Card.PlayerHand then
-          for _, info in ipairs(move.moveInfo) do
-            if info.fromArea == Card.PlayerHand then
-              return true
-            end
-          end
-        end
-      end
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    player:drawCards(1, self.name)
-  end,
-}
-local daoshu = fk.CreateActiveSkill{
-  name = "daoshu",
+local huangfusong = General(extension, "ty__huangfusong", "qun", 4)
+local ty__fenyue = fk.CreateActiveSkill{
+  name = "ty__fenyue",
+  anim_type = "offensive",
   card_num = 0,
   target_num = 1,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name) == 0
+    return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) < player:getMark(self.name)
   end,
-  card_filter = function()
+  card_filter = function(self, to_select, selected)
     return false
   end,
-  target_filter = function(self, to_select, selected)
+  target_filter = function(self, to_select, selected, selected_cards)
     return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local suits = {"spade", "heart", "club", "diamond"}
-    local choice = room:askForChoice(player, suits, self.name)
-    local card = room:askForCardChosen(player, target, "h", self.name)
-    room:obtainCard(player, card, false, fk.ReasonPrey)
-    if Fk:getCardById(card):getSuitString() == choice then
-      room:damage{
-        from = player,
-        to = target,
-        damage = 1,
-        skillName = self.name,
-      }
-      player:addSkillUseHistory(self.name, -1)
-    else
-      local suit = Fk:getCardById(card):getSuitString()
-      table.removeOne(suits, suit)
-      local others = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getSuitString() ~= suit end)
-      if #others > 0 then
-        local cards = room:askForCard(player, 1, 1, false, self.name, false, ".|.|"..table.concat(suits, ","),
-          "#daoshu-give::"..target.id..":"..suit)
-        if #cards > 0 then
-          cards = cards[1]
-        else
-          cards = table.random(others)
+    local pindian = player:pindian({target}, self.name)
+    if pindian.results[target.id].winner == player then
+      if Fk:getCardById(pindian.fromCard.id).number < 6 then
+        if not target:isNude() then
+          local id = room:askForCardChosen(player, target, "he", self.name)
+          room:obtainCard(player, id, false, fk.ReasonPrey)
         end
-        room:obtainCard(target, cards, true, fk.ReasonGive)
-        return
       end
-      player:showCards(player.player_cards[Player.Hand])
+      if Fk:getCardById(pindian.fromCard.id).number < 10 then
+        local card = room:getCardsFromPileByRule("slash")
+        if #card > 0 then
+          room:moveCards({
+            ids = card,
+            to = player.id,
+            toArea = Card.PlayerHand,
+            moveReason = fk.ReasonJustMove,
+            proposer = player.id,
+            skillName = self.name,
+          })
+        end
+      end
+      if Fk:getCardById(pindian.fromCard.id).number < 14 then
+        room:useVirtualCard("thunder__slash", nil, player, target, self.name, true)
+      end
     end
   end,
 }
-jianggan:addSkill(weicheng)
-jianggan:addSkill(daoshu)
-Fk:loadTranslationTable{
-  ["jianggan"] = "蒋干",
-  ["weicheng"] = "伪诚",
-  [":weicheng"] = "你交给其他角色手牌，或你的手牌被其他角色获得后，若你的手牌数小于体力值，你可以摸一张牌。",
-  ["daoshu"] = "盗书",
-  [":daoshu"] = "出牌阶段限一次，你可以选择一名其他角色并选择一种花色，然后获得该角色一张手牌。若此牌与你选择的花色："..
-  "相同，你对其造成1点伤害且此技能视为未发动过；不同，你交给该角色一张其他花色的手牌（若没有需展示所有手牌）。",
-  ["#daoshu-give"] = "盗书：你需交给 %dest 一张非%arg手牌，若没有则展示所有手牌",
+local ty__fenyue_record = fk.CreateTriggerSkill{
+  name = "#ty__fenyue_record",
 
-  ["$weicheng1"] = "略施谋略，敌军便信以为真。",
-  ["$weicheng2"] = "吾只观雅规，而非说客。",
-  ["$daoshu1"] = "得此文书，丞相定可高枕无忧。",
-  ["$daoshu2"] = "让我看看，这是什么机密。",
-  ["~jianggan"] = "丞相，再给我一次机会啊！",
+  refresh_events = {fk.GameStart, fk.BeforeGameOverJudge},
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill(self.name)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.GameStart then
+      local n = 0
+      if room.settings.gameMode == "aaa_role_mode" then
+        local total = #room.alive_players
+        if player.role == "lord" or player.role == "loyalist" then
+          if total == 8 then n = 4
+          elseif total == 7 or total == 6 then n = 3
+          elseif total == 5 then n = 2
+          else n = 1
+          end
+        elseif player.role == "rebel" then
+          if total == 8 or total == 7 then n = 4
+          elseif total == 6 or total == 5 or total == 4 then n = 3
+          elseif total == 3 then n = 2
+          else n = 1
+          end
+        elseif player.role == "renegade" then
+          n = total - 1
+        end
+      elseif room.settings.gameMode == "m_1v2_mode" or room.settings.gameMode == "m_2v2_mode" then
+        n = 2
+      end
+      room:setPlayerMark(player, "ty__fenyue", n)
+    else
+      if player.role == "renegade" or target.role == "renegade" or
+        (player.role == "lord" or player.role == "loyalist" and target.role == "rebel") or
+        (player.role == "rebel" and target.role == "loyalist") then
+        room:removePlayerMark(player, "ty__fenyue", 1)
+      end
+    end
+  end,
+}
+ty__fenyue:addRelatedSkill(ty__fenyue_record)
+huangfusong:addSkill(ty__fenyue)
+Fk:loadTranslationTable{
+  ["ty__huangfusong"] = "皇甫嵩",
+  ["ty__fenyue"] = "奋钺",
+  [":ty__fenyue"] = "出牌阶段限X次（X为与你不同阵营的存活角色数），你可以与一名角色拼点，若你赢，根据你拼点的牌的点数执行以下效果："..
+  "小于等于K：视为对其使用一张雷【杀】；小于等于9：获得牌堆中的一张【杀】；小于等于5：获得其一张牌。",
+
+  ["$ty__fenyue1"] = "逆贼势大，且扎营寨，击其懈怠。",
+  ["$ty__fenyue2"] = "兵有其变，不在众寡。",
+  ["~ty__huangfusong"] = "吾只恨黄巾未平，不能报效朝廷……",
 }
 
-local guanlu = General(extension, "guanlu", "wei", 3)
-local tuiyan = fk.CreateTriggerSkill{
-  name = "tuiyan",
-  anim_type = "control",
-  events = {fk.EventPhaseStart},
+local wangshuang = General(extension, "wangshuang", "wei", 8)
+local zhuilie = fk.CreateTriggerSkill{
+  name = "zhuilie",
+  anim_type = "offensive",
+  frequency = Skill.Compulsory,
+  events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Play
+    return target == player and player:hasSkill(self.name) and data.card.trueName == "slash" and
+      not player:inMyAttackRange(player.room:getPlayerById(data.to))
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if #room.draw_pile < 3 then
-      room:shuffleDrawPile()
-      if #room.draw_pile < 3 then
-        room:gameOver("")
-      end
+    player:addCardUseHistory(data.card.trueName, -1)
+    local judge = {
+      who = player,
+      reason = self.name,
+      pattern = ".|.|.|.|.|equip",
+    }
+    room:judge(judge)
+    if judge.card.sub_type and (judge.card.sub_type == Card.SubtypeWeapon or
+      judge.card.sub_type == Card.SubtypeOffensiveRide or judge.card.sub_type == Card.SubtypeDefensiveRide) then
+      data.additionalDamage = (data.additionalDamage or 0) + room:getPlayerById(data.to).hp - 1
+    else
+      room:loseHp(player, 1, self.name)
     end
-    local ids = {}
-    for i = 1, 3, 1 do
-      table.insert(ids, room.draw_pile[i])
-    end
-    room:fillAG(player, ids)
-    room:delay(5000)
-    room:closeAG(player)
   end,
 }
-local busuan = fk.CreateActiveSkill {
-  name = "busuan",
-  anim_type = "control",
+local zhuilie_targetmod = fk.CreateTargetModSkill{
+  name = "#zhuilie_targetmod",
+  distance_limit_func =  function(self, player, skill)
+    if player:hasSkill(self.name) and skill.trueName == "slash_skill" then
+      return 999
+    end
+  end,
+}
+zhuilie:addRelatedSkill(zhuilie_targetmod)
+wangshuang:addSkill(zhuilie)
+Fk:loadTranslationTable{
+  ["wangshuang"] = "王双",
+  ["zhuilie"] = "追猎",
+  [":zhuilie"] = "锁定技，你使用【杀】无距离限制；当你使用【杀】指定你攻击范围外的一名角色为目标后，此【杀】不计入次数且你进行一次判定，"..
+  "若结果为武器牌或坐骑牌，此【杀】伤害基数值增加至该角色的体力值，否则你失去1点体力。",
+
+  ["$zhuilie1"] = "我喜欢，猎夺沙场的快感。",
+  ["$zhuilie2"] = "追敌夺魂，猎尽贼寇。",
+  ["~wangshuang"] = "我居然，被蜀军所击倒。",
+}
+
+local liuzan = General(extension, "ty__liuzan", "wu", 4)
+local ty__fenyin = fk.CreateTriggerSkill{
+  name = "ty__fenyin",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) and player.phase ~= Player.NotActive then
+      local room = player.room
+      self.fenyin_draw = 0
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile then
+          for _, info in ipairs(move.moveInfo) do
+            room:addPlayerMark(player, "liji-turn", 1)  --move this to liji would be proper...
+            local mark = "fenyin_"..Fk:getCardById(info.cardId):getSuitString().."-turn"
+            if player:getMark(mark) == 0 then
+              room:addPlayerMark(player, mark, 1)
+              self.fenyin_draw = self.fenyin_draw + 1
+            end
+          end
+        end
+      end
+      return self.fenyin_draw > 0
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(self.fenyin_draw, self.name)
+  end,
+}
+local liji = fk.CreateActiveSkill{
+  name = "liji",
+  anim_type = "offensive",
+  card_num = 1,
   target_num = 1,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+    local n = 8
+    if #Fk:currentRoom().alive_players < 5 then n = 4 end
+    return player:getMark("liji-turn") >= n and player:usedSkillTimes(self.name, Player.HistoryPhase) < player:getMark("liji-turn")/n
   end,
   card_filter = function(self, to_select, selected)
-    return false
+    return #selected == 0
   end,
   target_filter = function(self, to_select, selected)
     return #selected == 0 and to_select ~= Self.id
@@ -1037,171 +1979,320 @@ local busuan = fk.CreateActiveSkill {
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local names = {}
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if (card.type == Card.TypeBasic or card.type == Card.TypeTrick) and not card.is_derived then
-        table.insertIfNeed(names, card.trueName)
-      end
-    end
-    local mark = target:getMark(self.name)
-    if mark == 0 then mark = {} end
-    for i = 1, 2, 1 do
-      local name = room:askForChoice(player, names, self.name)
-      if name == "Cancel" then break end
-      table.insert(mark, name)
-      table.removeOne(names, name)
-      if i == 1 then
-        table.insert(names, "Cancel")
-      end
-    end
-    room:setPlayerMark(target, self.name, mark)
+    room:throwCard(effect.cards, self.name, player, player)
+    room:damage{
+      from = player,
+      to = target,
+      damage = 1,
+      skillName = self.name,
+    }
   end,
 }
-local busuan_trigger = fk.CreateTriggerSkill {
-  name = "#busuan_trigger",
-  mute = true,
-  events = {fk.BeforeDrawCard},
-  can_trigger = function(self, event, target, player, data)
-    return player == target and data.num > 0 and player.phase == Player.Draw and type(player:getMark(busuan.name)) == "table"
-    --FIXME: can't find skillName(game_rule)!!
+liuzan:addSkill(ty__fenyin)
+liuzan:addSkill(liji)
+Fk:loadTranslationTable{
+  ["ty__liuzan"] = "留赞",
+  ["ty__fenyin"] = "奋音",
+  [":ty__fenyin"] = "锁定技，你的回合内，每当有一种花色的牌进入弃牌堆后（每回合每种花色各限一次），你摸一张牌。",
+  ["liji"] = "力激",
+  [":liji"] = "出牌阶段限0次，你可以弃置一张牌然后对一名其他角色造成1点伤害。你的回合内，本回合进入弃牌堆的牌每次达到8的倍数张时（存活人数小于5时改为4的倍数），此技能使用次数+1。",
+
+  ["$ty__fenyin1"] = "斗志高歌，士气昂扬！",
+  ["$ty__fenyin2"] = "抗音而歌，左右应之！",
+  ["$liji1"] = "破敌搴旗，未尝负败！",
+  ["$liji2"] = "鸷猛壮烈，万人不敌！",
+  ["~ty__liuzan"] = "若因病困此，命矣。",
+}
+
+local huangzu = General(extension, "ty__huangzu", "qun", 4)
+local jinggong = fk.CreateViewAsSkill{
+  name = "jinggong",
+  anim_type = "offensive",
+  pattern = "slash",
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:getCardById(to_select).type == Card.TypeEquip
   end,
-  on_cost = function() return true end,
+  view_as = function(self, cards)
+    if #cards ~= 1 then return nil end
+    local card = Fk:cloneCard("slash")
+    card:addSubcard(cards[1])
+    card.skillName = self.name
+    return card
+  end,
+  before_use = function(self, player, use)
+    local to = player.room:getPlayerById(TargetGroup:getRealTargets(use.tos)[1])
+    use.additionalDamage = (use.additionalDamage or 0) + math.min(player:distanceTo(to), 5) - 1
+  end,
+  enabled_at_response = function(self, player, response)
+    return not response
+  end,
+}
+local jinggong_targetmod = fk.CreateTargetModSkill{
+  name = "#jinggong_targetmod",
+  distance_limit_func =  function(self, player, skill, card)
+    if card and table.contains(card.skillNames, "jinggong") then
+      return 999
+    end
+  end,
+}
+local xiaojun = fk.CreateTriggerSkill{
+  name = "xiaojun",
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) and data.firstTarget and #AimGroup:getAllTargets(data.tos) == 1 then
+      local to = AimGroup:getAllTargets(data.tos)[1]
+      return to ~= player.id and player.room:getPlayerById(to):getHandcardNum() > 1
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local to = AimGroup:getAllTargets(data.tos)[1]
+    return player.room:askForSkillInvoke(player, self.name, nil,
+      "#xiaojun-invoke::"..to..":"..tostring(player.room:getPlayerById(to):getHandcardNum() // 2)..":"..data.card:getSuitString())
+  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local cards = {}
-    local card_names = player:getMark(busuan.name)
-    for i = 1, #card_names, 1 do
-      table.insert(cards, -1)
-    end
-    for i = 1, #card_names, 1 do
-      if cards[i] == -1 then
-        local name = card_names[i]
-        local x = #table.filter(card_names, function (card_name)
-          return card_name == name end)
-
-        local tosearch = room:getCardsFromPileByRule(name, x, "discardPile")
-        if #tosearch < x then
-          table.insertTable(tosearch, room:getCardsFromPileByRule(name, x - #tosearch))
-        end
-
-        for i2 = 1, #card_names, 1 do
-          if card_names[i2] == name then
-            if #tosearch > 0 then
-              cards[i2] = tosearch[1]
-              table.remove(tosearch, 1)
-            else
-              cards[i2] = -2
-            end
-          end
-        end
-      end
-    end
-    local to_get = {}
-    local card_names_copy = table.clone(card_names)
-    for i = 1, #card_names, 1 do
-      if #to_get >= data.num then break end
-      if cards[i] > -1 then
-        table.insert(to_get, cards[i])
-        table.removeOne(card_names_copy, card_names[i])
-      end
-    end
-    
-    room:setPlayerMark(player, busuan.name, (#card_names_copy > 0) and card_names_copy or 0)
-    
-    data.num = data.num - #to_get
-
-    if #to_get > 0 then
-      room:moveCards({
-        ids = to_get,
-        to = target.id,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonJustMove,
-        proposer = player.id,
-        skillName = busuan.name,
-        moveVisible = false,
-      })
+    local to = room:getPlayerById(AimGroup:getAllTargets(data.tos)[1])
+    local n = to:getHandcardNum() // 2
+    local cards = room:askForCardsChosen(player, to, n, n, "h", self.name)
+    room:throwCard(cards, self.name, to, player)
+    if not player:isKongcheng() and data.card ~= Card.NoSuit and table.find(cards, function(id)
+        return Fk:getCardById(id).suit == data.card.suit end) then
+      room:askForDiscard(player, 1, 1, false, self.name, false)
     end
   end,
 }
-local mingjie = fk.CreateTriggerSkill {
-  name = "mingjie",
-  anim_type = "drawcard",
+jinggong:addRelatedSkill(jinggong_targetmod)
+huangzu:addSkill(jinggong)
+huangzu:addSkill(xiaojun)
+Fk:loadTranslationTable{
+  ["ty__huangzu"] = "黄祖",
+  ["jinggong"] = "精弓",
+  [":jinggong"] = "你可以将装备牌当无距离限制的【杀】使用，此【杀】的伤害基数值改为X（X为你计算与该角色的距离且至多为5）。",
+  ["xiaojun"] = "骁隽",
+  [":xiaojun"] = "你使用牌指定其他角色为唯一目标后，你可以弃置其一半手牌（向下取整）。若其中有与你指定其为目标的牌花色相同的牌，"..
+  "你弃置一张手牌。",
+  ["#xiaojun-invoke"] = "骁隽：你可以弃置 %dest 一半手牌（%arg张），若其中有%arg2牌，你弃置一张手牌",
+}
+
+local leitong = General(extension, "leitong", "shu", 4)
+local kuiji = fk.CreateActiveSkill{
+  name = "kuiji",
+  anim_type = "offensive",
+  target_num = 0,
+  card_num = 1,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name) == 0 and not player:hasDelayedTrick("supply_shortage")
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:getCardById(to_select).type == Card.TypeBasic and Fk:getCardById(to_select).color == Card.Black
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local card = Fk:cloneCard("supply_shortage")
+    card:addSubcards(effect.cards)
+    room:useCard{
+      from = effect.from,
+      tos = {{effect.from}},
+      card = card,
+    }
+    player:drawCards(1, self.name)
+    local targets = {}
+    local n = 0
+    for _, p in ipairs(room:getOtherPlayers(player)) do
+      if p.hp > n then
+        n = p.hp
+      end
+    end
+    for _, p in ipairs(room:getOtherPlayers(player)) do
+      if p.hp == n then
+        table.insert(targets, p.id)
+      end
+    end
+    local to = room:askForChoosePlayers(player, targets, 1, 1, "#kuiji-damage", self.name, true)
+    if #to > 0 then
+      room:damage{
+        from = player,
+        to = room:getPlayerById(to[1]),
+        damage = 2,
+        skillName = self.name,
+      }
+    end
+  end,
+}
+local kuiji_trigger = fk.CreateTriggerSkill{
+  name = "#kuiji_trigger",
+  anim_type = "support",
+  events = {fk.EnterDying},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and data.damage and data.damage.skillName == "kuiji"
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = {}
+    local n = 999
+    for _, p in ipairs(room:getOtherPlayers(target)) do
+      if p.hp < n then
+        n = p.hp
+      end
+    end
+    for _, p in ipairs(room:getOtherPlayers(target)) do
+      if p.hp == n and p:isWounded() then
+        table.insert(targets, p.id)
+      end
+    end
+    local to = room:askForChoosePlayers(player, targets, 1, 1, "#kuiji-recover::"..target.id, self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+      player.room:recover({
+        who = player.room:getPlayerById(self.cost_data),
+        num = 1,
+        recoverBy = player,
+        skillName = "kuiji"
+      })
+  end,
+}
+kuiji:addRelatedSkill(kuiji_trigger)
+leitong:addSkill(kuiji)
+Fk:loadTranslationTable{
+  ["leitong"] = "雷铜",
+  ["kuiji"] = "溃击",
+  [":kuiji"] = "出牌阶段限一次，你可以将一张黑色基本牌当作【兵粮寸断】对你使用，然后摸一张牌。若如此做，你可以对体力值最多的一名其他角色造成2点伤害。"..
+  "该角色因此进入濒死状态时，你可令另一名体力值最少的角色回复1点体力。",
+  ["#kuiji-damage"] = "溃击：你可以对其他角色中体力值最大的一名角色造成2点伤害",
+  ["#kuiji-recover"] = "溃击：你可以令除 %dest 以外体力值最小的一名角色回复1点体力",
+  ["#kuiji_trigger"] = "溃击",
+
+  ["$kuiji1"] = "绝域奋击，孤注一掷。",
+  ["$kuiji2"] = "舍得一身剐，不畏君王威。",
+  ["~leitong"] = "翼德救我……",
+}
+
+local wulan = General(extension, "wulan", "shu", 4)
+local cuoruiw = fk.CreateTriggerSkill{
+  name = "cuoruiw",
+  anim_type = "control",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = {}
+    for _, p in ipairs(room:getAlivePlayers()) do
+      if player:distanceTo(p) < 2 and not p:isAllNude() then
+        table.insert(targets, p.id)
+      end
+    end
+    local to = room:askForChoosePlayers(player, targets, 1, 1, "#cuoruiw-cost", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local card = Fk:getCardById(player:drawCards(1)[1])
-    if card.color == Card.Black then
-      if player.hp > 1 then
-        room:loseHp(player, 1, self.name)
+    local id = room:askForCardChosen(player, room:getPlayerById(self.cost_data), "hej", self.name)
+    local color = Fk:getCardById(id).color
+    room:throwCard({id}, self.name, room:getPlayerById(self.cost_data), player)
+    local targets = {}
+    local targets1 = {}
+    local targets2 = {}
+    for _, p in ipairs(room:getOtherPlayers(player)) do
+      if not p:isKongcheng() then
+        table.insertIfNeed(targets, p.id)
+        table.insert(targets2, p.id)
       end
-      return
-    else
-      for i = 1, 2, 1 do
-        if room:askForSkillInvoke(player, self.name) then
-          card = Fk:getCardById(player:drawCards(1)[1])
-          if card.color == Card.Black then
-            if player.hp > 1 then
-              room:loseHp(player, 1, self.name)
-            end
-            return
+      if #p.player_cards[Player.Equip] > 0 then
+        for _, id in ipairs(p.player_cards[Player.Equip]) do
+          if Fk:getCardById(id).color == color then
+            table.insertIfNeed(targets, p.id)
+            table.insert(targets1, p.id)
+            break
           end
-        else
-          return
         end
+      end
+    end
+    table.removeOne(targets, self.cost_data)
+    if #targets == 0 then return end
+    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#cuoruiw-use", self.name, true)
+    local to
+    if #tos > 0 then
+      to = room:getPlayerById(tos[1])
+    else
+      to = room:getPlayerById(table.random(targets))
+    end
+    local choices = {}
+    if table.contains(targets1, to.id) then
+      table.insert(choices, "cuoruiw_equip")
+    end
+    if table.contains(targets2, to.id) then
+      table.insert(choices, "cuoruiw_hand")
+    end
+    local choice = room:askForChoice(player, choices, self.name)
+    if choice == "cuoruiw_equip" then
+      local ids = {}
+      for _, id in ipairs(to.player_cards[Player.Equip]) do
+        if Fk:getCardById(id).color == color then
+          table.insert(ids, id)
+        end
+      end
+      if #ids == 1 then
+        room:throwCard(ids, self.name, to, player)
+      else
+        local throw = {}
+        room:fillAG(player, ids)
+        while #ids > 0 and #throw < 2 do
+          local id = room:askForAG(player, ids, true, self.name)
+          if id ~= nil then
+            room:takeAG(player, id, {player})
+            table.insert(throw, id)
+            table.removeOne(ids, id)
+          else
+            break
+          end
+        end
+        room:closeAG(player)
+        room:throwCard(throw, self.name, to, player)
+      end
+    else
+      local cards = room:askForCardsChosen(player, to, 1, 2, "h", self.name)
+      to:showCards(cards)
+      room:delay(1500)
+      local dummy = Fk:cloneCard("dilu")
+      for _, id in ipairs(cards) do
+        if Fk:getCardById(id).color == color then
+          dummy:addSubcard(id)
+        end
+      end
+      if #dummy.subcards > 0 then
+        room:obtainCard(player.id, dummy, false, fk.ReasonPrey)
       end
     end
   end,
 }
-busuan:addRelatedSkill(busuan_trigger)
-guanlu:addSkill(tuiyan)
-guanlu:addSkill(busuan)
-guanlu:addSkill(mingjie)
+wulan:addSkill(cuoruiw)
 Fk:loadTranslationTable{
-  ["guanlu"] = "管辂",
-  ["tuiyan"] = "推演",
-  [":tuiyan"] = "出牌阶段开始时，你可以观看牌堆顶的三张牌。",
-  ["busuan"] = "卜算",
-  [":busuan"] = "出牌阶段限一次，你可以选择一名其他角色，然后选择至多两张不同的卡牌名称（限基本牌或锦囊牌）。"..
-  "该角色下次摸牌阶段摸牌时，改为从牌堆或弃牌堆中获得你选择的牌。",
-  ["mingjie"] = "命戒",
-  [":mingjie"] = "结束阶段，你可以摸一张牌，若此牌为红色，你可以重复此流程直到摸到黑色牌或摸到第三张牌。当你以此法摸到黑色牌时，"..
-  "若你的体力值大于1，你失去1点体力。",
+  ["wulan"] = "吴兰",
+  ["cuoruiw"] = "挫锐",
+  [":cuoruiw"] = "出牌阶段开始时，你可以弃置一名你计算与其距离不大于1的角色区域里的一张牌。若如此做，你选择一项："..
+  "1.弃置另一名其他角色装备区里至多两张与此牌颜色相同的牌；2.展示另一名其他角色的至多两张手牌，然后获得其中与此牌颜色相同的牌。",
+  ["#cuoruiw-cost"] = "挫锐：你可以弃置距离不大于1的角色区域里的一张牌",
+  ["#cuoruiw-use"] = "挫锐：选择另一名其他角色，弃置其至多两张颜色相同的装备，或展示其至多两张手牌",
+  ["cuoruiw_equip"] = "弃置其至多两张颜色相同的装备",
+  ["cuoruiw_hand"] = "展示其至多两张手牌并获得其中相同颜色牌",
 
-  ["$tuiyan1"] = "鸟语略知，万物略懂。",
-  ["$tuiyan2"] = "玄妙之舒巧，推微而知晓。",
-  ["$busuan1"] = "今日一卦，便知命数。",
-  ["$busuan2"] = "喜仰视星辰，夜不肯寐。",
-  ["$mingjie1"] = "戒律循规，不可妄贪。",
-  ["$mingjie2"] = "王道文明，何忧不平。",
-  ["~guanlu"] = "怀我好英，心非草木……",
+  ["$cuoruiw1"] = "减辎疾行，挫敌军锐气。",
+  ["$cuoruiw2"] = "外物当舍，摄敌为重。",
+  ["~wulan"] = "蛮狗，尔敢杀我！",
 }
 
-Fk:loadTranslationTable{
-  ["gexuan"] = "葛玄",
-  ["lianhua"] = "炼化",
-  [":lianhua"] = "你的回合外，每当有其他角色受到伤害后，你获得一个 “丹血”标记，直到你的出牌阶段开始。<br>"..
-  "准备阶段，根据你获得的“丹血”标记的数量和颜色，你获得相应的游戏牌以及获得相应技能直到回合结束。<br>"..
-  "3枚或以下：“英姿”和【桃】；<br>"..
-  "超过3枚且红色“丹血”较多：“观星”和【无中生有】；<br>"..
-  "超过3枚且黑色“丹血”较多：“直言”和【顺手牵羊】；<br>"..
-  "超过3枚且红色和黑色一样多：【杀】、【决斗】和“攻心”。",
-  ["zhafu"] = "札符",
-  [":zhafu"] = "限定技，出牌阶段，你可以选择一名其他角色。该角色的下个弃牌阶段开始时，其选择保留一张手牌，将其余手牌交给你。",
+--奇人异士：张宝 司马徽 蒲元 管辂 葛玄 杜夔 朱建平 吴范 赵直 周宣 笮融
 
-  ["$lianhua1"] = "白日青山，飞升化仙。",
-  ["$lianhua2"] = "草木精炼，万物化丹。",
-  ["$zhafu1"] = "垂恩广救，慈悲在怀。",
-  ["$zhafu2"] = "行符敕鬼，神变善易。",
-  -- ["$ex__yingzi0"] = "仙人之姿，凡目岂见！",
-  -- ["$zhiyan0"] = "仙人之语，凡耳震聩！",
-  -- ["$gongxin0"] = "仙人之目，因果即现！",
-  -- ["$ex_guanxing0"] = "仙人之栖，群星浩瀚！",
-  ["~gexuan"] = "善变化，拙用身。",
-}
+--张宝 司马徽
 
 local puyuan = General(extension, "ty__puyuan", "shu", 4)
 local puyuan_equips = {"red_spear", "quenched_blade", "poisonous_dagger", "water_sword", "thunder_blade"}
@@ -1423,458 +2514,518 @@ Fk:loadTranslationTable{
   ["$zhuren2"] = "此刀，可劈铁珠之筒。",
   ["~ty__puyuan"] = "铸木镂冰，怎成大器。",
 }
---辛毗 李肃 张温 2019.12.4
-local zhangwen = General(extension, "ty__zhangwen", "wu", 3)
-local ty__songshu = fk.CreateActiveSkill{
-  name = "ty__songshu",
-  anim_type = "drawcard",
-  card_num = 0,
-  target_num = 1,
-  can_use = function(self, player)
-    return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
-  end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
-  target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    local pindian = player:pindian({target}, self.name)
-    if pindian.results[target.id].winner == player then
-      player:setSkillUseHistory(self.name, 0, Player.HistoryPhase)
-    else
-      player:drawCards(2, self.name)
-      target:drawCards(2, self.name)
-    end
-  end,
-}
-local sibian = fk.CreateTriggerSkill{
-  name = "sibian",
-  anim_type = "drawcard",
-  events = {fk.EventPhaseStart},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Draw
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local cards = room:getNCards(4)
-    room:moveCards({
-      ids = cards,
-      toArea = Card.Processing,
-      moveReason = fk.ReasonJustMove,
-      skillName = self.name,
-    })
-    local min, max = 13, 1
-    for _, id in ipairs(cards) do
-      if Fk:getCardById(id).number < min then
-        min = Fk:getCardById(id).number
-      end
-      if Fk:getCardById(id).number > max then
-        max = Fk:getCardById(id).number
-      end
-    end
-    local get = {}
-    for i = #cards, 1, -1 do
-      if Fk:getCardById(cards[i]).number == min or Fk:getCardById(cards[i]).number == max then
-        table.insert(get, cards[i])
-        table.removeOne(cards, cards[i])
-      end
-    end
-    room:delay(1000)
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(get)
-    room:obtainCard(player, dummy, false, fk.ReasonJustMove)
-    if #cards > 0 then
-      local n = #player.player_cards[Player.Hand]
-      for _, p in ipairs(room:getOtherPlayers(player)) do
-        if #p.player_cards[Player.Hand] < n then
-          n = #p.player_cards[Player.Hand]
-        end
-      end
-      local targets = {}
-      for _, p in ipairs(room:getAlivePlayers()) do
-        if #p.player_cards[Player.Hand] == n then
-          table.insert(targets, p.id)
-        end
-      end
-      local to = room:askForChoosePlayers(player, targets, 1, 1, "#sibian-choose", self.name, true)
-      if #to > 0 then
-        local dummy2 = Fk:cloneCard("dilu")
-        dummy2:addSubcards(cards)
-        room:obtainCard(room:getPlayerById(to[1]), dummy2, false, fk.ReasonGive)
-      else
-        room:moveCards({
-          ids = cards,
-          fromArea = Card.Processing,
-          toArea = Card.DiscardPile,
-          moveReason = fk.ReasonJustMove,
-          skillName = self.name,
-        })
-      end
-    end
-    return true
-  end,
-}
-zhangwen:addSkill(ty__songshu)
-zhangwen:addSkill(sibian)
-Fk:loadTranslationTable{
-  ["ty__zhangwen"] = "张温",
-  ["ty__songshu"] = "颂蜀",
-  [":ty__songshu"] = "出牌阶段限一次，你可以与一名其他角色拼点：若你没赢，你和该角色各摸两张牌；若你赢，视为本阶段此技能未发动过。",
-  ["sibian"] = "思辩",
-  [":sibian"] = "摸牌阶段，你可以放弃摸牌，改为亮出牌堆顶的4张牌，你获得其中所有点数最大和最小的牌，然后你可以将剩余的牌交给一名手牌数最少的角色。",
-  ["#sibian-choose"] = "思辩：你可以将剩余的牌交给一名手牌数最少的角色",
 
-  ["$ty__songshu1"] = "称颂蜀汉，以表诚心。",
-  ["$ty__songshu2"] = "吴蜀两和，方可安稳。",
-  ["$sibian1"] = "才藻俊茂，辨思如涌。",
-  ["$sibian2"] = "弘雅之素，英秀之德。",
-  ["~ty__zhangwen"] = "暨艳过错，强牵吾罪。",
-}
---花鬘 2020.1.31
-
-local huangfusong = General(extension, "ty__huangfusong", "qun", 4)
-local ty__fenyue = fk.CreateActiveSkill{
-  name = "ty__fenyue",
-  anim_type = "offensive",
-  card_num = 0,
-  target_num = 1,
-  can_use = function(self, player)
-    return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) < player:getMark(self.name)
-  end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
-  target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    local pindian = player:pindian({target}, self.name)
-    if pindian.results[target.id].winner == player then
-      if Fk:getCardById(pindian.fromCard.id).number < 6 then
-        if not target:isNude() then
-          local id = room:askForCardChosen(player, target, "he", self.name)
-          room:obtainCard(player, id, false, fk.ReasonPrey)
-        end
-      end
-      if Fk:getCardById(pindian.fromCard.id).number < 10 then
-        local card = room:getCardsFromPileByRule("slash")
-        if #card > 0 then
-          room:moveCards({
-            ids = card,
-            to = player.id,
-            toArea = Card.PlayerHand,
-            moveReason = fk.ReasonJustMove,
-            proposer = player.id,
-            skillName = self.name,
-          })
-        end
-      end
-      if Fk:getCardById(pindian.fromCard.id).number < 14 then
-        room:useVirtualCard("thunder__slash", nil, player, target, self.name, true)
-      end
-    end
-  end,
-}
-local ty__fenyue_record = fk.CreateTriggerSkill{
-  name = "#ty__fenyue_record",
-
-  refresh_events = {fk.GameStart, fk.BeforeGameOverJudge},
-  can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self.name)
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.GameStart then
-      local n = 0
-      if room.settings.gameMode == "aaa_role_mode" then
-        local total = #room.alive_players
-        if player.role == "lord" or player.role == "loyalist" then
-          if total == 8 then n = 4
-          elseif total == 7 or total == 6 then n = 3
-          elseif total == 5 then n = 2
-          else n = 1
-          end
-        elseif player.role == "rebel" then
-          if total == 8 or total == 7 then n = 4
-          elseif total == 6 or total == 5 or total == 4 then n = 3
-          elseif total == 3 then n = 2
-          else n = 1
-          end
-        elseif player.role == "renegade" then
-          n = total - 1
-        end
-      elseif room.settings.gameMode == "m_1v2_mode" or room.settings.gameMode == "m_2v2_mode" then
-        n = 2
-      end
-      room:setPlayerMark(player, "ty__fenyue", n)
-    else
-      if player.role == "renegade" or target.role == "renegade" or
-        (player.role == "lord" or player.role == "loyalist" and target.role == "rebel") or
-        (player.role == "rebel" and target.role == "loyalist") then
-        room:removePlayerMark(player, "ty__fenyue", 1)
-      end
-    end
-  end,
-}
-ty__fenyue:addRelatedSkill(ty__fenyue_record)
-huangfusong:addSkill(ty__fenyue)
-Fk:loadTranslationTable{
-  ["ty__huangfusong"] = "皇甫嵩",
-  ["ty__fenyue"] = "奋钺",
-  [":ty__fenyue"] = "出牌阶段限X次（X为与你不同阵营的存活角色数），你可以与一名角色拼点，若你赢，根据你拼点的牌的点数执行以下效果："..
-  "小于等于K：视为对其使用一张雷【杀】；小于等于9：获得牌堆中的一张【杀】；小于等于5：获得其一张牌。",
-
-  ["$ty__fenyue1"] = "逆贼势大，且扎营寨，击其懈怠。",
-  ["$ty__fenyue2"] = "兵有其变，不在众寡。",
-  ["~ty__huangfusong"] = "吾只恨黄巾未平，不能报效朝廷……",
-}
-
-local wangshuang = General(extension, "wangshuang", "wei", 8)
-local zhuilie = fk.CreateTriggerSkill{
-  name = "zhuilie",
-  anim_type = "offensive",
-  frequency = Skill.Compulsory,
-  events = {fk.TargetSpecified},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card.trueName == "slash" and
-      not player:inMyAttackRange(player.room:getPlayerById(data.to))
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    player:addCardUseHistory(data.card.trueName, -1)
-    local judge = {
-      who = player,
-      reason = self.name,
-      pattern = ".|.|.|.|.|equip",
-    }
-    room:judge(judge)
-    if judge.card.sub_type and (judge.card.sub_type == Card.SubtypeWeapon or
-      judge.card.sub_type == Card.SubtypeOffensiveRide or judge.card.sub_type == Card.SubtypeDefensiveRide) then
-      data.additionalDamage = (data.additionalDamage or 0) + room:getPlayerById(data.to).hp - 1
-    else
-      room:loseHp(player, 1, self.name)
-    end
-  end,
-}
-local zhuilie_targetmod = fk.CreateTargetModSkill{
-  name = "#zhuilie_targetmod",
-  distance_limit_func =  function(self, player, skill)
-    if player:hasSkill(self.name) and skill.trueName == "slash_skill" then
-      return 999
-    end
-  end,
-}
-zhuilie:addRelatedSkill(zhuilie_targetmod)
-wangshuang:addSkill(zhuilie)
-Fk:loadTranslationTable{
-  ["wangshuang"] = "王双",
-  ["zhuilie"] = "追猎",
-  [":zhuilie"] = "锁定技，你使用【杀】无距离限制；当你使用【杀】指定你攻击范围外的一名角色为目标后，此【杀】不计入次数且你进行一次判定，"..
-  "若结果为武器牌或坐骑牌，此【杀】伤害基数值增加至该角色的体力值，否则你失去1点体力。",
-
-  ["$zhuilie1"] = "我喜欢，猎夺沙场的快感。",
-  ["$zhuilie2"] = "追敌夺魂，猎尽贼寇。",
-  ["~wangshuang"] = "我居然，被蜀军所击倒。",
-}
-
-local xingdaorong = General(extension, "xingdaorong", "qun", 4, 6)
-local xuhe = fk.CreateTriggerSkill{
-  name = "xuhe",
-  anim_type = "control",
-  events = {fk.EventPhaseStart, fk.EventPhaseEnd},
-  can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) and player.phase == Player.Play then
-      if event == fk.EventPhaseStart then
-        return true
-      else
-        return not table.every(player.room:getOtherPlayers(player), function(p) return p.maxHp <= player.maxHp end)
-      end
-    end
-  end,
-  on_cost = function(self, event, target, player, data)
-    if event == fk.EventPhaseStart then
-      return player.room:askForSkillInvoke(player, self.name, nil, "#xuhe-invoke")
-    else
-      return true
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.EventPhaseStart then
-      room:changeMaxHp(player, -1)
-      if not player.dead then
-        local choice = room:askForChoice(player, {"xuhe_discard", "xuhe_draw"}, self.name)
-        if choice == "xuhe_discard" then
-          for _, p in ipairs(room:getAlivePlayers()) do
-            if player:distanceTo(p) < 2 and not p:isNude() then
-              room:doIndicate(player.id, {p.id})
-              local id = room:askForCardChosen(player, p, "he", self.name)
-              room:throwCard({id}, self.name, p, player)
-            end
-          end
-        else
-          for _, p in ipairs(room:getAlivePlayers()) do
-            if player:distanceTo(p) < 2  then
-              p:drawCards(1, self.name)
-            end
-          end
-        end
-      end
-    else
-      room:changeMaxHp(player, 1)
-      local choices = {"draw2"}
-      if player:isWounded() then
-        table.insert(choices, "recover")
-      end
-      local choice = room:askForChoice(player, choices, self.name)
-      if choice == "draw2" then
-        player:drawCards(2)
-      else
-        room:recover({
-          who = player,
-          num = 1,
-          recoverBy = player,
-          skillName = self.name
-        })
-      end
-    end
-  end,
-}
-xingdaorong:addSkill(xuhe)
-Fk:loadTranslationTable{
-  ["xingdaorong"] = "邢道荣",
-  ["xuhe"] = "虚猲",
-  [":xuhe"] = "出牌阶段开始时，你可以减1点体力上限，然后你弃置距离1以内的每名角色各一张牌或令这些角色各摸一张牌。出牌阶段结束时，"..
-  "若你体力上限不为全场最高，你加1点体力上限，然后回复1点体力或摸两张牌。",
-  ["#xuhe-invoke"] = "虚猲：你可以减1点体力上限，然后弃置距离1以内每名角色各一张牌或令这些角色各摸一张牌",
-  ["xuhe_discard"] = "弃置距离1以内角色各一张牌",
-  ["xuhe_draw"] = "距离1以内角色各摸一张牌",
-
-  ["$xuhe1"] = "说出吾名，吓汝一跳！",
-  ["$xuhe2"] = "我乃是零陵上将军！",
-  ["~xingdaorong"] = "孔明之计，我难猜透啊。",
-}
-
-local leitong = General(extension, "leitong", "shu", 4)
-local kuiji = fk.CreateActiveSkill{
-  name = "kuiji",
-  anim_type = "offensive",
-  target_num = 0,
-  card_num = 1,
-  can_use = function(self, player)
-    return player:usedSkillTimes(self.name) == 0 and not player:hasDelayedTrick("supply_shortage")
-  end,
-  card_filter = function(self, to_select, selected)
-    return #selected == 0 and Fk:getCardById(to_select).type == Card.TypeBasic and Fk:getCardById(to_select).color == Card.Black
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local card = Fk:cloneCard("supply_shortage")
-    card:addSubcards(effect.cards)
-    room:useCard{
-      from = effect.from,
-      tos = {{effect.from}},
-      card = card,
-    }
-    player:drawCards(1, self.name)
-    local targets = {}
-    local n = 0
-    for _, p in ipairs(room:getOtherPlayers(player)) do
-      if p.hp > n then
-        n = p.hp
-      end
-    end
-    for _, p in ipairs(room:getOtherPlayers(player)) do
-      if p.hp == n then
-        table.insert(targets, p.id)
-      end
-    end
-    local to = room:askForChoosePlayers(player, targets, 1, 1, "#kuiji-damage", self.name, true)
-    if #to > 0 then
-      room:damage{
-        from = player,
-        to = room:getPlayerById(to[1]),
-        damage = 2,
-        skillName = self.name,
-      }
-    end
-  end,
-}
-local kuiji_trigger = fk.CreateTriggerSkill{
-  name = "#kuiji_trigger",
-  anim_type = "support",
-  events = {fk.EnterDying},
-  can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and data.damage and data.damage.skillName == "kuiji"
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    local targets = {}
-    local n = 999
-    for _, p in ipairs(room:getOtherPlayers(target)) do
-      if p.hp < n then
-        n = p.hp
-      end
-    end
-    for _, p in ipairs(room:getOtherPlayers(target)) do
-      if p.hp == n and p:isWounded() then
-        table.insert(targets, p.id)
-      end
-    end
-    local to = room:askForChoosePlayers(player, targets, 1, 1, "#kuiji-recover::"..target.id, self.name, true)
-    if #to > 0 then
-      self.cost_data = to[1]
-      return true
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-      player.room:recover({
-        who = player.room:getPlayerById(self.cost_data),
-        num = 1,
-        recoverBy = player,
-        skillName = "kuiji"
-      })
-  end,
-}
-kuiji:addRelatedSkill(kuiji_trigger)
-leitong:addSkill(kuiji)
-Fk:loadTranslationTable{
-  ["leitong"] = "雷铜",
-  ["kuiji"] = "溃击",
-  [":kuiji"] = "出牌阶段限一次，你可以将一张黑色基本牌当作【兵粮寸断】对你使用，然后摸一张牌。若如此做，你可以对体力值最多的一名其他角色造成2点伤害。"..
-  "该角色因此进入濒死状态时，你可令另一名体力值最少的角色回复1点体力。",
-  ["#kuiji-damage"] = "溃击：你可以对其他角色中体力值最大的一名角色造成2点伤害",
-  ["#kuiji-recover"] = "溃击：你可以令除 %dest 以外体力值最小的一名角色回复1点体力",
-  ["#kuiji_trigger"] = "溃击",
-
-  ["$kuiji1"] = "绝域奋击，孤注一掷。",
-  ["$kuiji2"] = "舍得一身剐，不畏君王威。",
-  ["~leitong"] = "翼德救我……",
-}
-
-local wulan = General(extension, "wulan", "shu", 4)
-local cuoruiw = fk.CreateTriggerSkill{
-  name = "cuoruiw",
+local guanlu = General(extension, "guanlu", "wei", 3)
+local tuiyan = fk.CreateTriggerSkill{
+  name = "tuiyan",
   anim_type = "control",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and player.phase == Player.Play
   end,
-  on_cost = function(self, event, target, player, data)
+  on_use = function(self, event, target, player, data)
     local room = player.room
-    local targets = {}
-    for _, p in ipairs(room:getAlivePlayers()) do
-      if player:distanceTo(p) < 2 and not p:isAllNude() then
-        table.insert(targets, p.id)
+    if #room.draw_pile < 3 then
+      room:shuffleDrawPile()
+      if #room.draw_pile < 3 then
+        room:gameOver("")
       end
     end
-    local to = room:askForChoosePlayers(player, targets, 1, 1, "#cuoruiw-cost", self.name, true)
+    local ids = {}
+    for i = 1, 3, 1 do
+      table.insert(ids, room.draw_pile[i])
+    end
+    room:fillAG(player, ids)
+    room:delay(5000)
+    room:closeAG(player)
+  end,
+}
+local busuan = fk.CreateActiveSkill {
+  name = "busuan",
+  anim_type = "control",
+  target_num = 1,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local names = {}
+    for _, id in ipairs(Fk:getAllCardIds()) do
+      local card = Fk:getCardById(id)
+      if (card.type == Card.TypeBasic or card.type == Card.TypeTrick) and not card.is_derived then
+        table.insertIfNeed(names, card.trueName)
+      end
+    end
+    local mark = target:getMark(self.name)
+    if mark == 0 then mark = {} end
+    for i = 1, 2, 1 do
+      local name = room:askForChoice(player, names, self.name)
+      if name == "Cancel" then break end
+      table.insert(mark, name)
+      table.removeOne(names, name)
+      if i == 1 then
+        table.insert(names, "Cancel")
+      end
+    end
+    room:setPlayerMark(target, self.name, mark)
+  end,
+}
+local busuan_trigger = fk.CreateTriggerSkill {
+  name = "#busuan_trigger",
+  mute = true,
+  events = {fk.BeforeDrawCard},
+  can_trigger = function(self, event, target, player, data)
+    return player == target and data.num > 0 and player.phase == Player.Draw and type(player:getMark(busuan.name)) == "table"
+    --FIXME: can't find skillName(game_rule)!!
+  end,
+  on_cost = function() return true end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = {}
+    local card_names = player:getMark(busuan.name)
+    for i = 1, #card_names, 1 do
+      table.insert(cards, -1)
+    end
+    for i = 1, #card_names, 1 do
+      if cards[i] == -1 then
+        local name = card_names[i]
+        local x = #table.filter(card_names, function (card_name)
+          return card_name == name end)
+
+        local tosearch = room:getCardsFromPileByRule(name, x, "discardPile")
+        if #tosearch < x then
+          table.insertTable(tosearch, room:getCardsFromPileByRule(name, x - #tosearch))
+        end
+
+        for i2 = 1, #card_names, 1 do
+          if card_names[i2] == name then
+            if #tosearch > 0 then
+              cards[i2] = tosearch[1]
+              table.remove(tosearch, 1)
+            else
+              cards[i2] = -2
+            end
+          end
+        end
+      end
+    end
+    local to_get = {}
+    local card_names_copy = table.clone(card_names)
+    for i = 1, #card_names, 1 do
+      if #to_get >= data.num then break end
+      if cards[i] > -1 then
+        table.insert(to_get, cards[i])
+        table.removeOne(card_names_copy, card_names[i])
+      end
+    end
+    
+    room:setPlayerMark(player, busuan.name, (#card_names_copy > 0) and card_names_copy or 0)
+    
+    data.num = data.num - #to_get
+
+    if #to_get > 0 then
+      room:moveCards({
+        ids = to_get,
+        to = target.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonJustMove,
+        proposer = player.id,
+        skillName = busuan.name,
+        moveVisible = false,
+      })
+    end
+  end,
+}
+local mingjie = fk.CreateTriggerSkill {
+  name = "mingjie",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local card = Fk:getCardById(player:drawCards(1)[1])
+    if card.color == Card.Black then
+      if player.hp > 1 then
+        room:loseHp(player, 1, self.name)
+      end
+      return
+    else
+      for i = 1, 2, 1 do
+        if room:askForSkillInvoke(player, self.name) then
+          card = Fk:getCardById(player:drawCards(1)[1])
+          if card.color == Card.Black then
+            if player.hp > 1 then
+              room:loseHp(player, 1, self.name)
+            end
+            return
+          end
+        else
+          return
+        end
+      end
+    end
+  end,
+}
+busuan:addRelatedSkill(busuan_trigger)
+guanlu:addSkill(tuiyan)
+guanlu:addSkill(busuan)
+guanlu:addSkill(mingjie)
+Fk:loadTranslationTable{
+  ["guanlu"] = "管辂",
+  ["tuiyan"] = "推演",
+  [":tuiyan"] = "出牌阶段开始时，你可以观看牌堆顶的三张牌。",
+  ["busuan"] = "卜算",
+  [":busuan"] = "出牌阶段限一次，你可以选择一名其他角色，然后选择至多两张不同的卡牌名称（限基本牌或锦囊牌）。"..
+  "该角色下次摸牌阶段摸牌时，改为从牌堆或弃牌堆中获得你选择的牌。",
+  ["mingjie"] = "命戒",
+  [":mingjie"] = "结束阶段，你可以摸一张牌，若此牌为红色，你可以重复此流程直到摸到黑色牌或摸到第三张牌。当你以此法摸到黑色牌时，"..
+  "若你的体力值大于1，你失去1点体力。",
+
+  ["$tuiyan1"] = "鸟语略知，万物略懂。",
+  ["$tuiyan2"] = "玄妙之舒巧，推微而知晓。",
+  ["$busuan1"] = "今日一卦，便知命数。",
+  ["$busuan2"] = "喜仰视星辰，夜不肯寐。",
+  ["$mingjie1"] = "戒律循规，不可妄贪。",
+  ["$mingjie2"] = "王道文明，何忧不平。",
+  ["~guanlu"] = "怀我好英，心非草木……",
+}
+
+Fk:loadTranslationTable{
+  ["gexuan"] = "葛玄",
+  ["lianhua"] = "炼化",
+  [":lianhua"] = "你的回合外，每当有其他角色受到伤害后，你获得一个 “丹血”标记，直到你的出牌阶段开始。<br>"..
+  "准备阶段，根据你获得的“丹血”标记的数量和颜色，你获得相应的游戏牌以及获得相应技能直到回合结束。<br>"..
+  "3枚或以下：“英姿”和【桃】；<br>"..
+  "超过3枚且红色“丹血”较多：“观星”和【无中生有】；<br>"..
+  "超过3枚且黑色“丹血”较多：“直言”和【顺手牵羊】；<br>"..
+  "超过3枚且红色和黑色一样多：【杀】、【决斗】和“攻心”。",
+  ["zhafu"] = "札符",
+  [":zhafu"] = "限定技，出牌阶段，你可以选择一名其他角色。该角色的下个弃牌阶段开始时，其选择保留一张手牌，将其余手牌交给你。",
+
+  ["$lianhua1"] = "白日青山，飞升化仙。",
+  ["$lianhua2"] = "草木精炼，万物化丹。",
+  ["$zhafu1"] = "垂恩广救，慈悲在怀。",
+  ["$zhafu2"] = "行符敕鬼，神变善易。",
+  -- ["$ex__yingzi0"] = "仙人之姿，凡目岂见！",
+  -- ["$zhiyan0"] = "仙人之语，凡耳震聩！",
+  -- ["$gongxin0"] = "仙人之目，因果即现！",
+  -- ["$ex_guanxing0"] = "仙人之栖，群星浩瀚！",
+  ["~gexuan"] = "善变化，拙用身。",
+}
+
+--杜夔
+
+local zhujianping = General(extension, "zhujianping", "qun", 3)
+local xiangmian = fk.CreateActiveSkill{
+  name = "xiangmian",
+  anim_type = "offensive",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
+  end,
+  card_filter = function()
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id and Fk:currentRoom():getPlayerById(to_select):getMark("xiangmian_suit") == 0
+  end,
+  target_num = 1,
+  on_use = function(self, room, effect)
+    local target = room:getPlayerById(effect.tos[1])
+    local judge = {
+      who = target,
+      reason = self.name,
+      pattern = ".",
+    }
+    room:judge(judge)
+    room:setPlayerMark(target, "xiangmian_suit", judge.card:getSuitString(true))
+    room:setPlayerMark(target, "xiangmian_num", judge.card.number)
+    room:setPlayerMark(target, "@xiangmian", string.format("%s%d",Fk:translate(target:getMark("xiangmian_suit")), target:getMark("xiangmian_num")))
+  end,
+}
+local xiangmian_record = fk.CreateTriggerSkill{
+  name = "#xiangmian_record",
+  refresh_events = {fk.CardUseFinished},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and target:getMark("xiangmian_num") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if data.card:getSuitString(true) == target:getMark("xiangmian_suit") or target:getMark("xiangmian_num") == 1 then
+      room:setPlayerMark(target, "xiangmian_num", 0)
+      room:setPlayerMark(target, "@xiangmian", 0)
+      room:loseHp(target, target.hp, "xiangmian")
+    else
+      room:addPlayerMark(target, "xiangmian_num", -1)
+      room:setPlayerMark(target, "@xiangmian", string.format("%s%d",Fk:translate(target:getMark("xiangmian_suit")), target:getMark("xiangmian_num")))
+    end
+  end,
+}
+local tianji = fk.CreateTriggerSkill{
+  name = "tianji",
+  events = {fk.AfterCardsMove},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile and move.moveReason == fk.ReasonJudge then
+          self.cost_data = move
+          return true
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local move = self.cost_data
+    for _, info in ipairs(move.moveInfo) do
+      local card = Fk:getCardById(info.cardId, true)
+      local cards = {}
+      local bigNumber = #room.draw_pile
+      local rule = { ".|.|.|.|.|"..card:getTypeString(), ".|.|"..card:getSuitString(), ".|"..card.number }
+      for _, r in ipairs(rule) do
+        local targetCards = table.filter(room:getCardsFromPileByRule(r, bigNumber), function(cid) return not table.contains(cards, cid) end)
+        if #targetCards > 0 then
+          local loc = math.random(1, #targetCards)
+          table.insert(cards, targetCards[loc])
+        end
+      end
+      room:moveCards({
+        ids = cards,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonJustMove,
+        proposer = player.id,
+        skillName = self.name,
+      })
+    end
+  end,
+}
+xiangmian:addRelatedSkill(xiangmian_record)
+zhujianping:addSkill(xiangmian)
+zhujianping:addSkill(tianji)
+Fk:loadTranslationTable{
+  ["zhujianping"] = "朱建平",
+  ["xiangmian"] = "相面",
+  [":xiangmian"] = "出牌阶段限一次，你可以令一名其他角色进行一次判定，当该角色使用判定花色的牌或使用第X张牌后（X为判定点数），其失去所有体力。"..
+  "每名其他角色限一次。",
+  ["tianji"] = "天机",
+  [":tianji"] = "锁定技，生效后的判定牌进入弃牌堆后，你从牌堆随机获得与该牌类型、花色和点数相同的牌各一张。",
+  ["@xiangmian"] = "相面",
+
+  ["$xiangmian1"] = "以吾之见，阁下命不久矣。",
+  ["$xiangmian2"] = "印堂发黑，将军危在旦夕。",
+  ["$tianji1"] = "顺天而行，坐收其利。",
+  ["$tianji2"] = "只可意会，不可言传。",
+  ["~zhujianping"] = "天机，不可泄露啊……",
+}
+
+Fk:loadTranslationTable{
+  ["wufan"] = "吴范",
+  ["tianyun"] = "天运",
+  [":tianyun"] = "获得起始手牌后，你再从牌堆中随机获得手牌中没有的花色各一张牌。<br>"..
+  "一名角色的回合开始时，若其座次等于游戏轮数，你可以观看牌堆顶的X张牌，然后以任意顺序置于牌堆顶或牌堆底，若你将所有牌均置于牌堆底，"..
+  "则你可以令一名角色摸X张牌（X为你手牌中的花色数），若如此做，你失去1点体力。",
+  ["yuyan"] = "预言",
+  [":yuyan"] = "每轮游戏开始时，你选择一名角色，若其是本轮第一个进入濒死状态的角色，则你获得技能〖奋音〗直到你的回合结束。"..
+  "若其是本轮第一个造成伤害的角色，则你摸两张牌。",
+}
+
+local zhaozhi = General(extension, "zhaozhi", "shu", 3)
+local tongguan = fk.CreateTriggerSkill{
+  name = "tongguan",
+  anim_type = "special",
+  frequency = Skill.Compulsory,
+  events = {fk.EventPhaseChanging},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name, true) and data.from == Player.RoundStart and
+      table.every({1, 2, 3, 4, 5}, function(i) return target:getMark("@@tongguan"..i) == 0 end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local count = {0, 0, 0, 0, 0}
+    for _, p in ipairs(room:getAlivePlayers()) do
+      for i = 1, 5, 1 do
+        if p:getMark("@@tongguan"..i) > 0 then
+          count[i] = count[i] + 1
+        end
+      end
+    end
+    local choices = {}
+    for i = 1, 5, 1 do
+      if count[i] < 2 then
+        table.insert(choices, "@@tongguan"..i)
+      end
+    end
+    local choice = room:askForChoice(player, choices, self.name, "#tongguan-choice::"..target.id, true)
+    room:setPlayerMark(target, choice, 1)
+  end,
+}
+local mengjiez = fk.CreateTriggerSkill{
+  name = "mengjiez",
+  anim_type = "control",
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name, true) and (target:getMark(self.name) > 0 or
+      (target:getMark("@@tongguan2") > 0 and target:getHandcardNum() > target.hp))
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if target:getMark("@@tongguan3") > 0 then
+      return room:askForSkillInvoke(player, self.name, nil, "#mengjiez3-invoke")
+    else
+      local targets, prompt
+      if target:getMark("@@tongguan1") > 0 then
+        targets = table.map(room:getOtherPlayers(player), function(p)
+          return p.id end)
+        prompt = "#mengjiez1-invoke"
+      elseif target:getMark("@@tongguan2") > 0 then
+        targets = table.map(table.filter(room:getAlivePlayers(), function(p)
+          return p:isWounded() end), function(p) return p.id end)
+        prompt = "#mengjiez2-invoke"
+      elseif target:getMark("@@tongguan4") > 0 then
+        targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+          return not p:isAllNude() end), function(p) return p.id end)
+        prompt = "#mengjiez4-invoke"
+      elseif target:getMark("@@tongguan5") > 0 then
+        targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+          return p:getHandcardNum() < p.maxHp end), function(p) return p.id end)
+        prompt = "#mengjiez5-invoke"
+      end
+      if #targets == 0 then return end
+      local to = room:askForChoosePlayers(player, targets, 1, 1, prompt, self.name, true)
+      if #to > 0 then
+        self.cost_data = to[1]
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    if target:getMark("@@tongguan3") > 0 then
+      player:drawCards(2, self.name)
+    else
+      local room = player.room
+      local to = room:getPlayerById(self.cost_data)
+      if target:getMark("@@tongguan1") > 0 then
+        room:damage{
+          from = player,
+          to = to,
+          damage = 1,
+          skillName = self.name,
+        }
+      elseif target:getMark("@@tongguan2") > 0 then
+        room:recover({
+          who = to,
+          num = 1,
+          recoverBy = player,
+          skillName = self.name
+        })
+      elseif target:getMark("@@tongguan4") > 0 then
+        local cards = room:askForCardsChosen(player, to, 1, 2, "hej", self.name)
+        room:throwCard(cards, self.name, to, player)
+      elseif target:getMark("@@tongguan5") > 0 then
+        to:drawCards(math.min(5, to.maxHp - #to.player_cards[Player.Hand]), self.name)
+      end
+    end
+  end,
+
+  refresh_events = {fk.EventPhaseChanging, fk.Damage, fk.HpRecover, fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.EventPhaseChanging then
+      return target == player and data.from == Player.RoundStart
+    elseif player.phase ~= Player.NotActive then
+      if event == fk.Damage then
+        return target == player and player:getMark("@@tongguan1") > 0
+      elseif event == fk.HpRecover then
+        return target == player and player:getMark("@@tongguan2") > 0
+      else
+        for _, move in ipairs(data) do
+          if player:getMark("@@tongguan3") > 0 and
+            move.to == player.id and move.moveReason == fk.ReasonDraw and player.phase ~= Player.Draw then
+            return true
+          end
+          if player:getMark("@@tongguan4") > 0 and
+            move.from ~= player.id and (move.proposer == player or move.proposer == player.id) and
+            (move.moveReason == fk.ReasonDiscard or move.moveReason == fk.ReasonPrey) then
+            return true
+          end
+          if player:getMark("@@tongguan5") > 0 and
+            move.from == player.id and move.moveReason == fk.ReasonGive then
+            return true
+          end
+        end
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    if event == fk.EventPhaseChanging then
+      player.room:setPlayerMark(player, self.name, 0)
+    else
+      player.room:addPlayerMark(player, self.name, 1)
+    end
+  end,
+}
+zhaozhi:addSkill(tongguan)
+zhaozhi:addSkill(mengjiez)
+Fk:loadTranslationTable{
+  ["zhaozhi"] = "赵直",
+  ["tongguan"] = "统观",
+  [":tongguan"] = "一名角色的第一个回合开始时，你为其选择一项属性（每种属性至多被选择两次）。",
+  ["mengjiez"] = "梦解",
+  [":mengjiez"] = "一名角色的回合结束时，若其本回合完成了其属性对应内容，你执行对应效果。<br>"..
+  "武勇：造成伤害；对一名其他角色造成1点伤害<br>"..
+  "刚硬：回复体力或手牌数大于体力值；令一名角色回复1点体力<br>"..
+  "多谋：摸牌阶段外摸牌；摸两张牌<br>"..
+  "果决：弃置或获得其他角色的牌；弃置一名其他角色区域内的至多两张牌<br>"..
+  "仁智：交给其他角色牌；令一名其他角色将手牌摸至体力上限（至多摸五张）",
+  ["#tongguan-choice"] = "统观：为 %dest 选择一项属性（每种属性至多被选择两次）",
+  ["@@tongguan1"] = "武勇",
+  [":@@tongguan1"] = "回合结束时，若其本回合造成过伤害，你对一名其他角色造成1点伤害",
+  ["@@tongguan2"] = "刚硬",
+  [":@@tongguan2"] = "回合结束时，若其手牌数大于体力值，或其本回合回复过体力，你令一名角色回复1点体力",
+  ["@@tongguan3"] = "多谋",
+  [":@@tongguan3"] = "回合结束时，若其本回合摸牌阶段外摸过牌，你摸两张牌",
+  ["@@tongguan4"] = "果决",
+  [":@@tongguan4"] = "回合结束时，若其本回合弃置或获得过其他角色的牌，你弃置一名其他角色区域内的至多两张牌",
+  ["@@tongguan5"] = "仁智",
+  [":@@tongguan5"] = "回合结束时，若其本回合交给其他角色牌，你令一名其他角色将手牌摸至体力上限（至多摸五张）",
+  ["#mengjiez1-invoke"] = "梦解：你可以对一名其他角色造成1点伤害",
+  ["#mengjiez2-invoke"] = "梦解：你可以令一名角色回复1点体力",
+  ["#mengjiez3-invoke"] = "梦解：你可以摸两张牌",
+  ["#mengjiez4-invoke"] = "梦解：你可以弃置一名其他角色区域内至多两张牌",
+  ["#mengjiez5-invoke"] = "梦解：你可以令一名其他角色将手牌摸至体力上限（至多摸五张）",
+
+  ["$tongguan1"] = "极目宇宙，可观如织之命数。",
+  ["$tongguan2"] = "命河长往，唯我立于川上。",
+  ["$mengjiez1"] = "唇舌之语，难言虚实之境。",
+  ["$mengjiez2"] = "解梦之术，如镜中观花尔。",
+  ["~zhaozhi"] = "解人之梦者，犹在己梦中。",
+}
+
+local zhouxuan = General(extension, "zhouxuan", "wei", 3)
+local wumei = fk.CreateTriggerSkill{
+  name = "wumei",
+  anim_type = "support",
+  events = {fk.EventPhaseChanging},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.to == Player.RoundStart and player.faceup and
+      player:usedSkillTimes(self.name, Player.HistoryRound) == 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:askForChoosePlayers(player, table.map(table.filter(room.alive_players, function (p)
+      return p:getMark("@@wumei_extra") == 0 end), function(p) return p.id end), 1, 1, "#wumei-choose", self.name, true)
     if #to > 0 then
       self.cost_data = to[1]
       return true
@@ -1882,99 +3033,743 @@ local cuoruiw = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local id = room:askForCardChosen(player, room:getPlayerById(self.cost_data), "hej", self.name)
-    local color = Fk:getCardById(id).color
-    room:throwCard({id}, self.name, room:getPlayerById(self.cost_data), player)
-    local targets = {}
-    local targets1 = {}
-    local targets2 = {}
-    for _, p in ipairs(room:getOtherPlayers(player)) do
-      if not p:isKongcheng() then
-        table.insertIfNeed(targets, p.id)
-        table.insert(targets2, p.id)
+    local to = room:getPlayerById(self.cost_data)
+    room:addPlayerMark(to, "@@wumei_extra", 1)
+    local hp_record = {}
+    for _, p in ipairs(room.alive_players) do
+      table.insert(hp_record, {p.id, p.hp})
+    end
+    room:setPlayerMark(to, "wumei_record", hp_record)
+    if to == player then
+      room:addPlayerMark(to, "wumei_self", 1)
+    end
+    to:gainAnExtraTurn()
+    player:gainAnExtraTurn()
+    --FIXME: 回合顺序反了！！
+    room.logic:breakTurn()
+  end,
+
+  refresh_events = {fk.TurnEnd},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark("@@wumei_extra") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if player:getMark("wumei_self") > 0 then
+      room:setPlayerMark(player, "wumei_self", 0)
+    else
+      room:setPlayerMark(player, "@@wumei_extra", 0)
+      room:setPlayerMark(player, "wumei_record", 0)
+    end
+  end,
+}
+
+local wumei_delay = fk.CreateTriggerSkill{
+  name = "#wumei_delay",
+  events = {fk.EventPhaseStart},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return player == target and player.phase == Player.Finish and player:getMark("@@wumei_extra") > 0
+  end,
+  on_cost = function() return true end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:notifySkillInvoked(player, wumei.name, "special")
+    local hp_record = player:getMark("wumei_record")
+    if type(hp_record) ~= "table" then return false end
+
+    for _, p in ipairs(room:getAlivePlayers()) do
+      local p_record = table.find(hp_record, function (sub_record)
+        return #sub_record == 2 and sub_record[1] == p.id
+      end)
+
+      if p_record then
+        p.hp = math.min(p.maxHp, p_record[2])
+        room:broadcastProperty(p, "hp")
       end
-      if #p.player_cards[Player.Equip] > 0 then
-        for _, id in ipairs(p.player_cards[Player.Equip]) do
-          if Fk:getCardById(id).color == color then
-            table.insertIfNeed(targets, p.id)
-            table.insert(targets1, p.id)
-            break
-          end
+    end
+  end,
+}
+
+local zhanmeng = fk.CreateTriggerSkill{
+  name = "zhanmeng",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) then
+      for i = 1, 3, 1 do
+        if player:getMark(self.name .. tostring(i).."-turn") == 0 then
+          return true
         end
       end
     end
-    table.removeOne(targets, self.cost_data)
-    if #targets == 0 then return end
-    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#cuoruiw-use", self.name, true)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local choices = {}
+    self.cost_data = {}
+    if player:getMark("zhanmeng1-turn") == 0 and not table.contains(room:getTag("zhanmeng1"), data.card.trueName) then
+      table.insert(choices, "zhanmeng1")
+    end
+    if player:getMark("zhanmeng2-turn") == 0 then
+      table.insert(choices, "zhanmeng2")
+    end
+    local targets = {}
+    if player:getMark("zhanmeng3-turn") == 0 then
+      for _, p in ipairs(room:getOtherPlayers(player)) do
+        if not p:isNude() then
+          table.insertIfNeed(choices, "zhanmeng3")
+          table.insert(targets, p.id)
+        end
+      end
+    end
+    table.insert(choices, "Cancel")
+    local choice = room:askForChoice(player, choices, self.name)
+    if choice == "Cancel" then return end
+    self.cost_data[1] = choice
+    if choice == "zhanmeng3" then
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#zhanmeng-choose", self.name, false)
+      if #to > 0 then
+        self.cost_data[2] = to[1]
+      else
+        self.cost_data[2] = table.random(targets)
+      end
+    end
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local choice = self.cost_data[1]
+    room:setPlayerMark(player, choice.."-turn", 1)
+    if choice == "zhanmeng1" then
+      local cards = {}
+      for i = 1, #room.draw_pile, 1 do
+        local card = Fk:getCardById(room.draw_pile[i])
+        if not card.is_damage_card then
+          table.insertIfNeed(cards, room.draw_pile[i])
+        end
+      end
+      if #cards > 0 then
+        local card = table.random(cards)
+        room:moveCards({
+          ids = {card},
+          to = player.id,
+          toArea = Card.PlayerHand,
+          moveReason = fk.ReasonJustMove,
+          proposer = player.id,
+          skillName = self.name,
+        })
+      end
+    elseif choice == "zhanmeng2" then
+      room:setPlayerMark(player, "zhanmeng2_invoke", data.card.trueName)
+    elseif choice == "zhanmeng3" then
+      local p = room:getPlayerById(self.cost_data[2])
+      local n = math.min(2, #p:getCardIds{Player.Hand, Player.Equip})
+      local cards = room:askForDiscard(p, n, 2, true, self.name, false, ".", "#zhanmeng-discard:"..player.id.."::"..tostring(n))
+      local x = Fk:getCardById(cards[1]).number
+      if #cards == 2 then
+        x = x + Fk:getCardById(cards[2]).number
+      end
+      if x > 10 then
+        room:damage{
+          from = player,
+          to = p,
+          damage = 1,
+          damageType = fk.FireDamage,
+          skillName = self.name,
+        }
+      end
+    end
+  end,
+}
+local zhanmeng_record = fk.CreateTriggerSkill{
+  name = "#zhanmeng_record",
+
+  refresh_events = {fk.CardUsing, fk.EventPhaseStart},
+  can_refresh = function(self, event, target, player, data)
+    if target == player then
+      if event == fk.CardUsing then
+        return true
+      else
+        return player.phase == Player.Start
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.CardUsing then
+      local zhanmeng2 = room:getTag("zhanmeng2") or {}
+      if not table.contains(zhanmeng2, data.card.trueName) then
+        table.insert(zhanmeng2, data.card.trueName)
+        room:setTag("zhanmeng2", zhanmeng2)
+      end
+      for _, p in ipairs(room:getAlivePlayers()) do
+        if p:getMark("zhanmeng2_get-turn") == data.card.trueName then
+          room:setPlayerMark(p, "zhanmeng2_get-turn", 0)
+          local cards = {}
+          for i = 1, #room.draw_pile, 1 do
+            local card = Fk:getCardById(room.draw_pile[i])
+            if card.is_damage_card then
+              table.insertIfNeed(cards, room.draw_pile[i])
+            end
+          end
+          if #cards > 0 then
+            local card = table.random(cards)
+            room:moveCards({
+              ids = {card},
+              to = p.id,
+              toArea = Card.PlayerHand,
+              moveReason = fk.ReasonJustMove,
+              proposer = p.id,
+              skillName = "zhanmeng",
+            })
+          end
+        end
+      end
+    else
+      local zhanmeng2 = room:getTag("zhanmeng2") or {}
+      room:setTag("zhanmeng1", zhanmeng2)  --上回合使用的牌
+      zhanmeng2 = {}
+      room:setTag("zhanmeng2", zhanmeng2)  --当前回合使用的牌
+      for _, p in ipairs(room:getAlivePlayers()) do
+        if type(p:getMark("zhanmeng2_invoke")) == "string" then
+          room:setPlayerMark(p, "zhanmeng2_get-turn", p:getMark("zhanmeng2_invoke"))
+          room:setPlayerMark(p, "zhanmeng2_invoke", 0)
+        end
+      end
+    end
+  end,
+}
+wumei:addRelatedSkill(wumei_delay)
+zhanmeng:addRelatedSkill(zhanmeng_record)
+zhouxuan:addSkill(wumei)
+zhouxuan:addSkill(zhanmeng)
+Fk:loadTranslationTable{
+  ["zhouxuan"] = "周宣",
+  ["wumei"] = "寤寐",
+  ["#wumei_delay"] = "寤寐",
+  [":wumei"] = "每轮限一次，回合开始前，你可以令一名角色执行一个额外的回合：该回合结束时，将所有存活角色的体力值调整为此额外回合开始时的数值。",
+  ["zhanmeng"] = "占梦",
+  [":zhanmeng"] = "你使用牌时，可以执行以下一项（每回合每项各限一次）：<br>"..
+  "1.上一回合内，若没有同名牌被使用，你获得一张非伤害牌。<br>"..
+  "2.下一回合内，当同名牌首次被使用后，你获得一张伤害牌。<br>"..
+  "3.令一名其他角色弃置两张牌，若点数之和大于10，对其造成1点火焰伤害。",
+  ["#wumei-choose"] = "寤寐: 你可以令一名角色执行一个额外的回合",
+  ["@@wumei_extra"] = "寤寐",
+  ["zhanmeng1"] = "你获得一张非伤害牌",
+  ["zhanmeng2"] = "下一回合内，当同名牌首次被使用后，你获得一张伤害牌",
+  ["zhanmeng3"] = "令一名其他角色弃置两张牌，若点数之和大于10，对其造成1点火焰伤害",
+  ["#zhanmeng-choose"] = "占梦: 令一名其他角色弃置两张牌，若点数之和大于10，对其造成1点火焰伤害",
+  ["#zhanmeng-discard"] = "占梦：弃置%arg张牌，若点数之和大于10，%src 对你造成1点火焰伤害",
+
+  ["$wumei1"] = "大梦若期，皆付一枕黄粱。",
+  ["$wumei2"] = "日所思之，故夜所梦之。",
+  ["$zhanmeng1"] = "梦境缥缈，然有迹可占。",
+  ["$zhanmeng2"] = "万物有兆，唯梦可卜。",
+  ["~zhouxuan"] = "人生如梦，假时亦真。",
+}
+
+local zerong = General(extension, "zerong", "qun", 4)
+local cansi = fk.CreateTriggerSkill{
+  name = "cansi",
+  events = {fk.EventPhaseStart},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Start
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
+    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#cansi-choose", self.name, false)
     local to
     if #tos > 0 then
       to = room:getPlayerById(tos[1])
     else
       to = room:getPlayerById(table.random(targets))
     end
-    local choices = {}
-    if table.contains(targets1, to.id) then
-      table.insert(choices, "cuoruiw_equip")
+    if player:isWounded() then
+      room:recover({
+        who = player,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      })
     end
-    if table.contains(targets2, to.id) then
-      table.insert(choices, "cuoruiw_hand")
+    if to:isWounded() then
+      room:recover({
+        who = to,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      })
     end
-    local choice = room:askForChoice(player, choices, self.name)
-    if choice == "cuoruiw_equip" then
-      local ids = {}
-      for _, id in ipairs(to.player_cards[Player.Equip]) do
-        if Fk:getCardById(id).color == color then
-          table.insert(ids, id)
+    room:setPlayerMark(player, self.name, to.id)
+    for _, name in ipairs({"slash", "duel", "fire_attack"}) do
+      if player.dead or to.dead then break end
+      room:useVirtualCard(name, nil, player, to, self.name)
+    end
+    room:setPlayerMark(player, self.name, 0)
+  end,
+
+  refresh_events = {fk.CardUseFinished},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and table.contains(data.card.skillNames, self.name) and not player.dead
+  end,
+  on_refresh = function(self, event, target, player, data)
+    if data.damageDealt and data.damageDealt[player:getMark(self.name)] then
+      player:drawCards(2*data.damageDealt[player:getMark(self.name)], self.name)
+    end
+  end,
+}
+local fozong = fk.CreateTriggerSkill{
+  name = "fozong",
+  events = {fk.EventPhaseStart},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and player:getHandcardNum() > 7
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local n = player:getHandcardNum() - 7
+    local cards = room:askForCard(player, n, n, false, self.name, false, ".", "#fozong-card:::"..n)
+    local dummy = Fk:cloneCard("dilu")
+    dummy:addSubcards(cards)
+    player:addToPile(self.name, dummy, true, self.name)
+    if #player:getPile(self.name) >= 7 then
+      for _, p in ipairs(room:getOtherPlayers(player)) do
+        if player.dead then return end
+        local choices = {"fozong_lose"}
+        if #player:getPile(self.name) > 0 then  --很难想象怎样才会不够发
+          table.insert(choices, 1, "fozong_get")
         end
-      end
-      if #ids == 1 then
-        room:throwCard(ids, self.name, to, player)
-      else
-        local throw = {}
-        room:fillAG(player, ids)
-        while #ids > 0 and #throw < 2 do
-          local id = room:askForAG(player, ids, true, self.name)
-          if id ~= nil then
-            room:takeAG(player, id, {player})
-            table.insert(throw, id)
-            table.removeOne(ids, id)
-          else
-            break
+        local choice = room:askForChoice(p, choices, self.name, "#fozong-choice:"..player.id)  --之后应该改成选牌框
+        if choice == "fozong_get" then
+          local cards = player:getPile(self.name)
+          table.forEach(room.players, function(p) room:fillAG(p, cards) end)
+          local id = room:askForAG(p, cards, false, self.name)
+          room:takeAG(p, id, room.players)
+          room:obtainCard(p.id, id, true, fk.ReasonJustMove)
+          table.removeOne(cards, id)
+          table.forEach(room.players, function(p) room:closeAG(p) end)
+          if player:isWounded() then
+            room:recover({
+              who = player,
+              num = 1,
+              recoverBy = player,
+              skillName = self.name
+            })
           end
+        else
+          room:loseHp(player, 1, self.name)
         end
-        room:closeAG(player)
-        room:throwCard(throw, self.name, to, player)
-      end
-    else
-      local cards = room:askForCardsChosen(player, to, 1, 2, "h", self.name)
-      to:showCards(cards)
-      room:delay(1500)
-      local dummy = Fk:cloneCard("dilu")
-      for _, id in ipairs(cards) do
-        if Fk:getCardById(id).color == color then
-          dummy:addSubcard(id)
-        end
-      end
-      if #dummy.subcards > 0 then
-        room:obtainCard(player.id, dummy, false, fk.ReasonPrey)
       end
     end
   end,
 }
-wulan:addSkill(cuoruiw)
+zerong:addSkill(cansi)
+zerong:addSkill(fozong)
 Fk:loadTranslationTable{
-  ["wulan"] = "吴兰",
-  ["cuoruiw"] = "挫锐",
-  [":cuoruiw"] = "出牌阶段开始时，你可以弃置一名你计算与其距离不大于1的角色区域里的一张牌。若如此做，你选择一项："..
-  "1.弃置另一名其他角色装备区里至多两张与此牌颜色相同的牌；2.展示另一名其他角色的至多两张手牌，然后获得其中与此牌颜色相同的牌。",
-  ["#cuoruiw-cost"] = "挫锐：你可以弃置距离不大于1的角色区域里的一张牌",
-  ["#cuoruiw-use"] = "挫锐：选择另一名其他角色，弃置其至多两张颜色相同的装备，或展示其至多两张手牌",
-  ["cuoruiw_equip"] = "弃置其至多两张颜色相同的装备",
-  ["cuoruiw_hand"] = "展示其至多两张手牌并获得其中相同颜色牌",
+  ["zerong"] = "笮融",
+  ["cansi"] = "残肆",
+  [":cansi"] = "锁定技，准备阶段，你选择一名其他角色，你与其各回复1点体力，然后依次视为对其使用【杀】、【决斗】和【火攻】，其每因此受到1点伤害，你摸两张牌。",
+  ["fozong"] = "佛宗",
+  [":fozong"] = "锁定技，出牌阶段开始时，若你的手牌多于七张，你将超出数量的手牌置于武将牌上，然后若你武将牌上有至少七张牌，"..
+  "其他角色依次选择一项：1.获得其中一张牌并令你回复1点体力；2.令你失去1点体力。",
+  ["#cansi-choose"] = "残肆：选择一名角色，你与其各回复1点体力，然后依次视为对其使用【杀】、【决斗】和【火攻】",
+  ["#fozong-card"] = "佛宗：将 %arg 张手牌置于武将牌上",
+  ["#fozong-choice"] = "佛宗：选择对 %src 执行的一项",
+  ["fozong_get"] = "获得一张“佛宗”牌，其回复1点体力",
+  ["fozong_lose"] = "其失去1点体力",
+  
+  ["$cansi1"] = "君不入地狱，谁入地狱？",
+  ["$cansi2"] = "众生皆苦，唯渡众生于极乐。",
+  ["$fozong1"] = "此身无长物，愿奉骨肉为浮屠。",
+  ["$fozong2"] = "驱大白牛车，颂无上功德。",
+  ["~zerong"] = "此劫，不可避……",
+}
 
-  ["$cuoruiw1"] = "减辎疾行，挫敌军锐气。",
-  ["$cuoruiw2"] = "外物当舍，摄敌为重。",
-  ["~wulan"] = "蛮狗，尔敢杀我！",
+--计将安出：程昱 蒋干 赵昂 刘晔 杨弘
+--程昱
+
+local jianggan = General(extension, "jianggan", "wei", 3)
+local weicheng = fk.CreateTriggerSkill{
+  name = "weicheng",
+  anim_type = "drawcard",
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) and #player.player_cards[Player.Hand] < player.hp then
+      for _, move in ipairs(data) do
+        if move.from and move.from == player.id and move.to and move.to ~= player.id and move.toArea == Card.PlayerHand then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(1, self.name)
+  end,
+}
+local daoshu = fk.CreateActiveSkill{
+  name = "daoshu",
+  card_num = 0,
+  target_num = 1,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name) == 0
+  end,
+  card_filter = function()
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local suits = {"spade", "heart", "club", "diamond"}
+    local choice = room:askForChoice(player, suits, self.name)
+    local card = room:askForCardChosen(player, target, "h", self.name)
+    room:obtainCard(player, card, false, fk.ReasonPrey)
+    if Fk:getCardById(card):getSuitString() == choice then
+      room:damage{
+        from = player,
+        to = target,
+        damage = 1,
+        skillName = self.name,
+      }
+      player:addSkillUseHistory(self.name, -1)
+    else
+      local suit = Fk:getCardById(card):getSuitString()
+      table.removeOne(suits, suit)
+      local others = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getSuitString() ~= suit end)
+      if #others > 0 then
+        local cards = room:askForCard(player, 1, 1, false, self.name, false, ".|.|"..table.concat(suits, ","),
+          "#daoshu-give::"..target.id..":"..suit)
+        if #cards > 0 then
+          cards = cards[1]
+        else
+          cards = table.random(others)
+        end
+        room:obtainCard(target, cards, true, fk.ReasonGive)
+        return
+      end
+      player:showCards(player.player_cards[Player.Hand])
+    end
+  end,
+}
+jianggan:addSkill(weicheng)
+jianggan:addSkill(daoshu)
+Fk:loadTranslationTable{
+  ["jianggan"] = "蒋干",
+  ["weicheng"] = "伪诚",
+  [":weicheng"] = "你交给其他角色手牌，或你的手牌被其他角色获得后，若你的手牌数小于体力值，你可以摸一张牌。",
+  ["daoshu"] = "盗书",
+  [":daoshu"] = "出牌阶段限一次，你可以选择一名其他角色并选择一种花色，然后获得该角色一张手牌。若此牌与你选择的花色："..
+  "相同，你对其造成1点伤害且此技能视为未发动过；不同，你交给该角色一张其他花色的手牌（若没有需展示所有手牌）。",
+  ["#daoshu-give"] = "盗书：你需交给 %dest 一张非%arg手牌，若没有则展示所有手牌",
+
+  ["$weicheng1"] = "略施谋略，敌军便信以为真。",
+  ["$weicheng2"] = "吾只观雅规，而非说客。",
+  ["$daoshu1"] = "得此文书，丞相定可高枕无忧。",
+  ["$daoshu2"] = "让我看看，这是什么机密。",
+  ["~jianggan"] = "丞相，再给我一次机会啊！",
+}
+
+--赵昂
+
+local liuye = General(extension, "ty__liuye", "wei", 3)
+local poyuan = fk.CreateTriggerSkill{
+  name = "poyuan",
+  anim_type = "control",
+  events = {fk.GameStart, fk.EventPhaseChanging},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      return event == fk.GameStart or
+        (event == fk.EventPhaseChanging and target == player and data.from == Player.RoundStart)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if not player:getEquipment(Card.SubtypeTreasure) or Fk:getCardById(player:getEquipment(Card.SubtypeTreasure)).name ~= "ty__catapult" then
+      return room:askForSkillInvoke(player, self.name, nil, "#poyuan-invoke")
+    else
+      local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+        return not p:isNude() end), function(p) return p.id end)
+      if #targets == 0 then return end
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#poyuan-choose", self.name, true)
+      if #to > 0 then
+        self.cost_data = to[1]
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if player:getEquipment(Card.SubtypeTreasure) then
+      if Fk:getCardById(player:getEquipment(Card.SubtypeTreasure)).name == "ty__catapult" then
+        local to = room:getPlayerById(self.cost_data)
+        local cards = room:askForCardsChosen(player, to, 1, 2, "he", self.name)
+        room:throwCard(cards, self.name, to, player)
+        return
+      end
+    end
+    for _, id in ipairs(Fk:getAllCardIds()) do
+      if Fk:getCardById(id, true).name == "ty__catapult" and room:getCardArea(id) == Card.Void then
+        room:moveCards({
+          ids = {id},
+          fromArea = Card.Void,
+          to = player.id,
+          toArea = Card.PlayerEquip,
+          moveReason = fk.ReasonJustMove,
+          proposer = player.id,
+          skillName = self.name,
+        })
+        break
+      end
+    end
+  end,
+
+  refresh_events = {fk.BeforeCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return true
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local id = 0
+    for i = #data, 1, -1 do
+      local move = data[i]
+      if move.toArea ~= Card.Void then
+        for j = #move.moveInfo, 1, -1 do
+          local info = move.moveInfo[j]
+          if info.fromArea == Card.PlayerEquip and Fk:getCardById(info.cardId, true).name == "ty__catapult" then
+            id = info.cardId
+            table.removeOne(move.moveInfo, info)
+            break
+          end
+        end
+      end
+    end
+    if id ~= 0 then
+      local room = player.room
+      room:sendLog{
+        type = "#destructDerivedCard",
+        arg = Fk:getCardById(id, true):toLogString(),
+      }
+      room:moveCardTo(Fk:getCardById(id, true), Card.Void, nil, fk.ReasonJustMove, "", "", true)
+    end
+  end,
+}
+local huace = fk.CreateViewAsSkill{
+  name = "huace",
+  interaction = function()
+    local names = {}
+    local mark = Self:getMark("huace2")
+    for _, id in ipairs(Fk:getAllCardIds()) do
+      local card = Fk:getCardById(id, true)
+      if card:isCommonTrick() and card.trueName ~= "nullification" and card.name ~= "adaptation" and not card.is_derived then
+        if mark == 0 or (not table.contains(mark, card.trueName)) then
+          table.insertIfNeed(names, card.name)
+        end
+      end
+    end
+    return UI.ComboBox {choices = names}
+  end,
+  enabled_at_play = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isNude()
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 or not self.interaction.data then return end
+    local card = Fk:cloneCard(self.interaction.data)
+    card:addSubcard(cards[1])
+    card.skillName = self.name
+    return card
+  end,
+}
+local huace_record = fk.CreateTriggerSkill{
+  name = "#huace_record",
+
+  refresh_events = {fk.AfterCardUseDeclared, fk.RoundStart},
+  can_refresh = function(self, event, target, player, data)
+    return (event == fk.AfterCardUseDeclared and data.card:isCommonTrick()) or event == fk.RoundStart
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.AfterCardUseDeclared then
+      local mark = player:getMark("huace1")
+      if mark == 0 then mark = {} end
+      table.insertIfNeed(mark, data.card.trueName)
+      room:setPlayerMark(player, "huace1", mark)
+    else
+      room:setPlayerMark(player, "huace2", player:getMark("huace1"))
+      room:setPlayerMark(player, "huace1", 0)
+    end
+  end,
+}
+huace:addRelatedSkill(huace_record)
+liuye:addSkill(poyuan)
+liuye:addSkill(huace)
+Fk:loadTranslationTable{
+  ["ty__liuye"] = "刘晔",
+  ["poyuan"] = "破垣",
+  [":poyuan"] = "游戏开始时或回合开始时，若你的装备区里没有【霹雳车】，你可以将【霹雳车】置于装备区；若有，你可以弃置一名其他角色至多两张牌。<br>"..
+  "<font color='grey'>【霹雳车】<br>♦9 装备牌·宝物<br /><b>装备技能</b>：锁定技，你回合内使用基本牌的伤害和回复数值+1且无距离限制，"..
+  "使用的【酒】使【杀】伤害基数值增加的效果+1。你回合外使用或打出基本牌时摸一张牌。离开装备区时销毁。",
+  ["huace"] = "画策",
+  [":huace"] = "出牌阶段限一次，你可以将一张手牌当上一轮没有角色使用过的普通锦囊牌使用。",
+  ["#poyuan-invoke"] = "破垣：你可以装备【霹雳车】",
+  ["#poyuan-choose"] = "破垣：你可以弃置一名其他角色至多两张牌",
+  ["#destructDerivedCard"] = "%arg 被销毁",
+
+  ["$poyuan1"] = "砲石飞空，坚垣难存。",
+  ["$poyuan2"] = "声若霹雳，人马俱摧。",
+  ["$huace1"] = "筹画所料，无有不中。",
+  ["$huace2"] = "献策破敌，所谋皆应。",
+  ["~ty__liuye"] = "功名富贵，到头来，不过黄土一抔……",
+}
+
+local yanghong = General(extension, "yanghong", "qun", 3)
+local function IsNext(from, to)
+  if from.dead or to.dead then return false end
+  if from.next == to then return true end
+  local temp = table.simpleClone(from.next)
+  while true do
+    if temp.dead then
+      temp = temp.next
+    else
+      return temp == to
+    end
+  end
+end
+local ty__jianji = fk.CreateActiveSkill{
+  name = "ty__jianji",
+  anim_type = "control",
+  card_num = 0,
+  min_target_num = 1,
+  max_target_num = function()
+    return Self:getAttackRange()
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    local target = Fk:currentRoom():getPlayerById(to_select)
+    if not target:isNude() and #selected < Self:getAttackRange() then
+      if #selected == 0 then
+        return true
+      else
+        for _, id in ipairs(selected) do
+          if IsNext(target, Fk:currentRoom():getPlayerById(id)) or IsNext(Fk:currentRoom():getPlayerById(id), target) then
+            return true
+          end
+        end
+        return false
+      end
+    end
+  end,
+  on_use = function(self, room, effect)
+    for _, id in ipairs(effect.tos) do
+      room:askForDiscard(room:getPlayerById(id), 1, 1, true, self.name, false, ".")
+    end
+    if #effect.tos < 2 then return end
+    local n = 0
+    for _, id in ipairs(effect.tos) do
+      local num = #room:getPlayerById(id).player_cards[Player.Hand]
+      if num > n then
+        n = num
+      end
+    end
+    local src = table.filter(effect.tos, function(id) return #room:getPlayerById(id).player_cards[Player.Hand] == n end)
+    src = room:getPlayerById(table.random(src))
+    table.removeOne(effect.tos, src.id)
+    local targets = table.filter(effect.tos, function(id) return not src:isProhibited(room:getPlayerById(id), Fk:cloneCard("slash")) end)
+    if #targets == 0 then return end
+    local to = room:askForChoosePlayers(src, effect.tos, 1, 1, "#ty__jianji-choose", self.name, true)
+    if #to > 0 then
+      room:useVirtualCard("slash", nil, src, room:getPlayerById(to[1]), self.name, true)
+    end
+  end,
+}
+local yuanmo = fk.CreateTriggerSkill{
+  name = "yuanmo",
+  anim_type = "control",
+  events = {fk.EventPhaseStart, fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) then
+      if event == fk.EventPhaseStart then
+        return player.phase == Player.Start or (player.phase == Player.Finish and
+          table.every(player.room:getOtherPlayers(player), function(p) return not player:inMyAttackRange(p) end))
+      else
+        return true
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local prompt = "#yuanmo1-invoke"
+    if event == fk.EventPhaseStart and player.phase == Player.Finish then
+      prompt = "#yuanmo2-invoke"
+    end
+    return player.room:askForSkillInvoke(player, self.name, nil, prompt)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart and player.phase == Player.Finish then
+      room:setPlayerMark(player, "@yuanmo", player:getMark("@yuanmo") + 1)  --此处不能用addMark
+    else
+      local choice = room:askForChoice(player, {"yuanmo_add", "yuanmo_minus"}, self.name)
+      if choice == "yuanmo_add" then
+        local nos = table.filter(room:getOtherPlayers(player), function(p) return player:inMyAttackRange(p) end)
+        room:setPlayerMark(player, "@yuanmo", player:getMark("@yuanmo") + 1)
+        local targets = {}
+        for _, p in ipairs(room:getOtherPlayers(player)) do
+          if player:inMyAttackRange(p) and not table.contains(nos, p) and not p:isNude() then
+            table.insert(targets, p.id)
+          end
+        end
+        local tos = room:askForChoosePlayers(player, targets, 1, #targets, "#yuanmo-choose", self.name, true)
+        if #tos > 0 then
+          for _, id in ipairs(tos) do
+            room:doIndicate(player.id, {id})
+            local card = room:askForCardChosen(player, room:getPlayerById(id), "he", self.name)
+            room:obtainCard(player.id, card, false, fk.ReasonPrey)
+          end
+        end
+      else
+        room:setPlayerMark(player, "@yuanmo", player:getMark("@yuanmo") - 1)
+        player:drawCards(2, self.name)
+      end
+    end
+  end,
+}
+local yuanmo_attackrange = fk.CreateAttackRangeSkill{
+  name = "#yuanmo_attackrange",
+  correct_func = function (self, from, to)
+    return from:getMark("@yuanmo")
+  end,
+}
+yuanmo:addRelatedSkill(yuanmo_attackrange)
+yanghong:addSkill(ty__jianji)
+yanghong:addSkill(yuanmo)
+Fk:loadTranslationTable{
+  ["yanghong"] = "杨弘",
+  ["ty__jianji"] = "间计",
+  [":ty__jianji"] = "出牌阶段限一次，你可以令至多X名相邻的角色各弃置一张牌（X为你的攻击范围），然后其中手牌最多的角色可以视为对其中另一名角色使用【杀】。",
+  ["yuanmo"] = "远谟",
+  [":yuanmo"] = "①准备阶段或你受到伤害后，你可以选择一项：1.令你的攻击范围+1，然后获得任意名因此进入你攻击范围内的角色各一张牌；"..
+  "2.令你的攻击范围-1，然后摸两张牌。<br>②结束阶段，若你攻击范围内没有角色，你可以令你的攻击范围+1。",
+  ["#ty__jianji-choose"] = "间计：你可以视为对其中一名角色使用【杀】",
+  ["#yuanmo1-invoke"]= "远谟：你可以令攻击范围+1并获得进入你攻击范围的角色各一张牌，或攻击范围-1并摸两张牌",
+  ["#yuanmo2-invoke"]= "远谟：你可以令攻击范围+1",
+  ["@yuanmo"] = "远谟",
+  ["yuanmo_add"] = "攻击范围+1，获得因此进入攻击范围的角色各一张牌",
+  ["yuanmo_minus"] = "攻击范围-1，摸两张牌",
+  ["#yuanmo-choose"] = "远谟：你可以获得任意名角色各一张牌",
 }
 
 return extension

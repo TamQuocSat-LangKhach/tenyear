@@ -426,7 +426,7 @@ local zhizheTokenSkill = fk.CreateActiveSkill{
     return #selected == 0
   end,
 }
-local zhizhe_token = fk.CreateBasicCard{
+local zhizhe_token = fk.CreateTrickCard{
   name = "&zhizhe_token",
   skill = zhizheTokenSkill,
 }

@@ -1189,6 +1189,72 @@ Fk:loadTranslationTable{
   "2.失去1点体力，然后获得武将牌上的两张牌。<br>你死亡时，你可将武将牌上的牌交给除伤害来源外的一名其他角色。",
 }
 
+local liyixiejing = General(extension, "liyixiejing", "wu", 4)
+local douzhen = fk.CreateFilterSkill{
+  name = "douzhen",
+  anim_type = "switch",
+  switch_skill_name = "douzhen",
+  card_filter = function(self, card, player)
+    if player:hasSkill(self.name) and player.phase ~= Player.NotActive and card.type == Card.TypeBasic then
+      if player:getSwitchSkillState(self.name, false) == fk.SwitchYang then
+        return card.color == Card.Black
+      else
+        return card.color == Card.Red
+      end
+    end
+  end,
+  view_as = function(self, card, player)
+    if player:getSwitchSkillState(self.name, false) == fk.SwitchYang then
+      return Fk:cloneCard("duel", card.suit, card.number)
+    else
+      return Fk:cloneCard("slash", card.suit, card.number)
+    end
+  end,
+}
+local douzhen_trigger = fk.CreateTriggerSkill{
+  name = "#douzhen_trigger",
+  mute = true,
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and table.contains(data.card.skillNames, "douzhen") and data.tos and
+      player:getSwitchSkillState("douzhen", true) == fk.SwitchYang and
+      table.find(TargetGroup:getRealTargets(data.tos), function(id) return not player.room:getPlayerById(id):isNude() end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, id in ipairs(TargetGroup:getRealTargets(data.tos)) do
+      if player.dead then return end
+      local p = room:getPlayerById(id)
+      if not p.dead then
+        local c = room:askForCardChosen(player, p, "he", "douzhen")
+        room:obtainCard(player, c, false, fk.ReasonPrey)
+      end
+    end
+  end,
+
+  refresh_events = {fk.AfterCardUseDeclared, fk.PreCardRespond},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and table.contains(data.card.skillNames, "douzhen")
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, MarkEnum.SwithSkillPreName .. "douzhen", player:getSwitchSkillState("douzhen", true))
+    player:addSkillUseHistory("douzhen")
+  end,
+}
+local douzhen_targetmod = fk.CreateTargetModSkill{
+  name = "#douzhen_targetmod",
+  residue_func = function(self, player, skill, scope, card)
+    if card.trueName == "slash" and table.contains(card.skillNames, "douzhen") and scope == Player.HistoryPhase then
+      return 999
+    end
+  end,
+}
+douzhen:addRelatedSkill(douzhen_trigger)
+douzhen:addRelatedSkill(douzhen_targetmod)
+liyixiejing:addSkill(douzhen)
 Fk:loadTranslationTable{
   ["liyixiejing"] = "李异谢旌",
   ["douzhen"] = "斗阵",

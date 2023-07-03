@@ -733,4 +733,99 @@ Fk:loadTranslationTable{
   ["cesipaiyi_draw"] = "摸牌",
   ["cesipaiyi_damage"] = "伤害",
 }
+local wangyi = General(extension, "ty_ex__wangyi", "wei", 4, 4, General.Female)
+wangyi:addSkill("zhenlie")
+wangyi:addSkill("miji")
+Fk:loadTranslationTable{
+  ["ty_ex__wangyi"] = "界王异",
+}
+local ty_ex__tongxin = fk.CreateAttackRangeSkill{
+  name = "ty_ex__tongxin",
+  correct_func = function (self, from, to)
+    return 2
+  end,
+}
+local guanzhang = General(extension, "ty_ex__guanzhang", "shu", 4)
+guanzhang:addSkill("fuhun")
+guanzhang:addSkill(ty_ex__tongxin)
+Fk:loadTranslationTable{
+  ["ty_ex__guanzhang"] = "界关兴张苞",
+  ["ty_ex__tongxin"] = "同心",
+  [":ty_ex__tongxin"] = "锁定技，你的攻击范围+2。",
+}
+local chengpu = General(extension, "ty_ex__chengpu", "wu", 4)
+local ty_ex__chunlao = fk.CreateTriggerSkill{
+  name = "ty_ex__chunlao",
+  anim_type = "support",
+  expand_pile = "ty_ex__chengpu_chun",
+  events = {fk.EventPhaseStart, fk.AskForPeaches},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      if event == fk.EventPhaseStart then
+        return target == player and player.phase == Player.Finish and #player:getPile("ty_ex__chengpu_chun") == 0 and not player:isKongcheng()
+      else
+        return target.dying and #player:getPile("ty_ex__chengpu_chun") > 0
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local cards = {}
+    if event == fk.EventPhaseStart then
+      cards = room:askForCard(player, 1, #player.player_cards[Player.Hand], false, self.name, true, "slash", "#ty_ex__chunlao-cost")
+    else
+      cards = room:askForCard(player, 1, 1, false, self.name, true, ".|.|.|ty_ex__chengpu_chun|.|.", "#ty_ex__chunlao-invoke::"..target.id, "ty_ex__chengpu_chun")
+    end
+    if #cards > 0 then
+      self.cost_data = cards
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart then
+      player:addToPile("ty_ex__chengpu_chun", self.cost_data, false, self.name)
+    else
+      room:moveCards({
+        from = player.id,
+        ids = self.cost_data,
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonPutIntoDiscardPile,
+        skillName = self.name,
+        specialName = self.name,
+      })
+      player:removeCards(Player.Special, self.cost_data, "ty_ex__chengpu_chun")
+      local analeptic = Fk:cloneCard("analeptic")
+      room:useCard({
+        card = analeptic,
+        from = target.id,
+        tos = {{target.id}},
+        extra_data = {analepticRecover = true},
+        skillName = self.name,
+      })
+      if self.cost_data.name == "fire__slash" then
+        if player:isWounded() then
+          room:recover({
+            who = player,
+            num = 1,
+            recoverBy = player,
+            skillName = self.name
+          })
+        end
+      elseif self.cost_data.name == "thunder__slash" then
+         player:drawCards(2, self.name)
+      end
+    end
+  end,
+}
+chengpu:addSkill("lihuo")
+chengpu:addSkill(ty_ex__chunlao)
+Fk:loadTranslationTable{
+  ["ty_ex__chengpu"] = "界程普",
+  ["ty_ex__chunlao"] = "醇醪",
+  [":ty_ex__chunlao"] = "回合结束阶段开始时，若你的武将牌上没有牌，你可以将任意数量的【杀】置于你的武将牌上，称为“醇”；当一名角色处于濒死状态时，你可以将一张“醇”置入弃牌堆，视为该角色使用一张【酒】。若你此法置入弃牌堆的是【火杀】，你恢复一点体力，若是【雷杀】，你摸两张牌。",
+  ["ty_ex__chengpu_chun"] = "醇",
+  ["#ty_ex__chunlao-cost"] = "醇醪：你可以将任意张【杀】置为“醇”",
+  ["#ty_ex__chunlao-invoke"] = "醇醪：你可以将一张“醇”置入弃牌堆，视为 %dest 使用一张【酒】",
+}
 return extension

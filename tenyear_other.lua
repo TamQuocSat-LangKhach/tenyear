@@ -405,6 +405,14 @@ local jincui = fk.CreateTriggerSkill{
     end
     room:askForGuanxing(player, room:getNCards(player.hp))
   end,
+
+  refresh_events = {fk.DrawInitialCards},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name, true)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.num = data.num + 3
+  end,
 }
 local qingshi = fk.CreateTriggerSkill{
   name = "qingshi",

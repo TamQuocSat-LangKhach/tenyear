@@ -6,7 +6,82 @@ Fk:loadTranslationTable{
 }
 
 --笔舌如椽：杨修 骆统 王昶 程秉 杨彪 阮籍
---杨修
+local yangxiu = General(extension, "ty__yangxiu", "wei", 3)
+local ty__danlao = fk.CreateTriggerSkill{
+  name = "ty__danlao",
+  anim_type = "defensive",
+  events = {fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and (data.card.trueName == "slash" or data.card.type == Card.TypeTrick) and
+      #AimGroup:getAllTargets(data.tos) > 1
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#ty__danlao-invoke:::"..data.card:toLogString())
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(1, self.name)
+    table.insertIfNeed(data.nullifiedTargets, player.id)
+  end,
+}
+local ty__jilei = fk.CreateTriggerSkill{
+  name = "ty__jilei",
+  anim_type = "masochism",
+  events = {fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.from and not data.from.dead
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#ty__jilei-invoke::"..data.from.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local choice = room:askForChoice(player, {"basic", "trick", "equip"}, self.name)
+    local mark = data.from:getMark("@ty__jilei")
+    if mark == 0 then mark = {} end
+    table.insertIfNeed(mark, choice)
+    room:setPlayerMark(data.from, "@ty__jilei", mark)
+  end,
+
+  refresh_events = {fk.EventPhaseChanging},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark("@ty__jilei") ~= 0 and data.from == Player.RoundStart
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@ty__jilei", 0)
+  end,
+}
+local ty__jilei_prohibit = fk.CreateProhibitSkill{
+  name = "#ty__jilei_prohibit",
+  prohibit_use = function(self, player, card)
+    if player:getMark("@ty__jilei") ~= 0 then
+      return table.contains(player:getMark("@ty__jilei"), card:getTypeString())
+    end
+  end,
+  prohibit_response = function(self, player, card)
+    if player:getMark("@ty__jilei") ~= 0 then
+      return table.contains(player:getMark("@ty__jilei"), card:getTypeString())
+    end
+  end,
+  prohibit_discard = function(self, player, card)
+    if player:getMark("@ty__jilei") ~= 0 then
+      return table.contains(player:getMark("@ty__jilei"), card:getTypeString())
+    end
+  end,
+}
+ty__jilei:addRelatedSkill(ty__jilei_prohibit)
+yangxiu:addSkill(ty__danlao)
+yangxiu:addSkill(ty__jilei)
+Fk:loadTranslationTable{
+  ["ty__yangxiu"] = "杨修",
+  ["ty__danlao"] = "啖酪",
+  [":ty__danlao"] = "当你成为【杀】或锦囊牌的目标后，若你不是唯一目标，你可以摸一张牌，然后此牌对你无效。",
+  ["ty__jilei"] = "鸡肋",
+  [":ty__jilei"] = "当你受到伤害后，你可以声明一种牌的类别，伤害来源不能使用、打出或弃置你声明的此类手牌直到其下回合开始。",
+  ["#ty__danlao-invoke"] = "啖酪：你可以摸一张牌，令 %arg 对你无效",
+  ["#ty__jilei-invoke"] = "鸡肋：是否令 %dest 不能使用、打出、弃置一种类别的牌直到其下回合开始？",
+  ["@ty__jilei"] = "鸡肋",
+}
+
 local luotong = General(extension, "ty__luotong", "wu", 3)
 local renzheng = fk.CreateTriggerSkill{
   name = "renzheng",
@@ -3594,6 +3669,156 @@ Fk:loadTranslationTable{
 }
 
 --高山仰止：王朗 刘徽
+local wanglang = General(extension, "ty__wanglang", "wei", 3)
+local ty__gushe = fk.CreateActiveSkill{
+  name = "ty__gushe",
+  anim_type = "control",
+  card_num = 0,
+  min_target_num = 1,
+  max_target_num = 3,
+  can_use = function(self, player)
+    return not player:isKongcheng() and player:getMark("ty__gushe-turn") < 7 - player:getMark("@ty__raoshe")
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected < 3 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local targets = table.map(effect.tos, function(p) return room:getPlayerById(p) end)
+    local pindian = player:pindian(targets, self.name)
+    for _, target in ipairs(targets) do
+      local losers = {}
+      if pindian.results[target.id].winner then
+        if pindian.results[target.id].winner == player then
+          table.insert(losers, target)
+        else
+          table.insert(losers, player)
+        end
+      else
+        table.insert(losers, player)
+        table.insert(losers, target)
+      end
+      for _, p in ipairs(losers) do
+        if p == player then
+          room:addPlayerMark(player, "@ty__raoshe", 1)
+          if player:getMark("@ty__raoshe") >= 7 then
+            room:killPlayer({who = player.id,})
+          end
+        end
+        local cancelable = true
+        local prompt = "#ty__gushe-discard:"..player.id
+        if player.dead then
+          cancelable = false
+          prompt = "#ty__gushe2-discard"
+        end
+        if #room:askForDiscard(p, 1, 1, true, self.name, cancelable, ".", prompt) == 0 and not player.dead then
+          player:drawCards(1, self.name)
+        end
+      end
+    end
+  end,
+}
+local ty__gushe_record = fk.CreateTriggerSkill{
+  name = "#ty__gushe_record",
+
+  refresh_events = {fk.PindianResultConfirmed},
+  can_refresh = function(self, event, target, player, data)
+    return data.winner and data.winner == player
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:addPlayerMark(player, "ty__gushe-turn", 1)
+    if player:getMark("ty__gushe-turn") >= (7 - player:getMark("@ty__raoshe")) and player:hasSkill("ty__gushe", true) then
+      room:setPlayerMark(player, "@@ty__gushe-turn", 1)
+    end
+  end,
+}
+local ty__jici = fk.CreateTriggerSkill{
+  name = "ty__jici",
+  anim_type = "special",
+  frequency = Skill.Compulsory,
+  events = {fk.PindianCardsDisplayed, fk.Death},
+  can_trigger = function(self, event, target, player, data)
+    if event == fk.PindianCardsDisplayed then
+      if player:hasSkill(self.name) then
+        if data.from == player then
+          return data.fromCard.number <= player:getMark("@ty__raoshe")
+        elseif table.contains(data.tos, player) then
+          return data.results[player.id].toCard.number <= player:getMark("@ty__raoshe")
+        end
+      end
+    elseif event == fk.Death then
+      return player:hasSkill(self.name, false, true) and data.damage and data.damage.from and not data.damage.from.dead
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.PindianCardsDisplayed then
+      local card
+      if data.from == player then
+        card = data.fromCard
+      elseif table.contains(data.tos, player) then
+        card = data.results[player.id].toCard
+      end
+      card.number = card.number + player:getMark("@ty__raoshe")
+      if player.dead then return end
+      local n = card.number
+      if data.fromCard.number > n then
+        n = data.fromCard.number
+      end
+      for _, result in pairs(data.results) do
+        if result.toCard.number > n then
+          n = result.toCard.number
+        end
+      end
+      local cards = {}
+      if data.fromCard.number == n and room:getCardArea(data.fromCard) == Card.Processing then
+        table.insertIfNeed(cards, data.fromCard)
+      end
+      for _, result in pairs(data.results) do
+        if result.toCard.number == n and room:getCardArea(data.fromCard) == Card.Processing then
+          table.insertIfNeed(cards, result.toCard)
+        end
+      end
+      if #cards > 0 then
+        local dummy = Fk:cloneCard("dilu")
+        dummy:addSubcards(cards)
+        room:obtainCard(player.id, dummy, true, fk.ReasonJustMove)
+      end
+    elseif event == fk.Death then
+      local n = 7 - player:getMark("@ty__raoshe")
+      if n > 0 and not data.from:isNude() then
+        if #data.from:getCardIds{Player.Hand, Player.Equip} <= n then
+          data.from:throwAllCards("he")
+        else
+          room:askForDiscard(data.from, n, n, true, self.name, false)
+        end
+      end
+      if not data.from.dead then
+        room:loseHp(data.from, 1, self.name)
+      end
+    end
+  end,
+}
+ty__gushe:addRelatedSkill(ty__gushe_record)
+wanglang:addSkill(ty__gushe)
+wanglang:addSkill(ty__jici)
+Fk:loadTranslationTable{
+  ["ty__wanglang"] = "王朗",
+  ["ty__gushe"] = "鼓舌",
+  [":ty__gushe"] = "出牌阶段，你可以用一张手牌与至多三名角色同时拼点，没赢的角色选择一项: 1.弃置一张牌；2.令你摸一张牌。"..
+  "若你没赢，获得一个“饶舌”标记；若你有7个“饶舌”标记，你死亡。当你一回合内累计七次拼点赢时（每有一个“饶舌”标记，此累计次数减1），本回合此技能失效。",
+  ["ty__jici"] = "激词",
+  [":ty__jici"] = "锁定技，当你的拼点牌亮出后，若此牌点数小于等于X，则点数+X（X为“饶舌”标记的数量）且你获得本次拼点中点数最大的牌。"..
+  "你死亡时，杀死你的角色弃置7-X张牌并失去1点体力。",
+  ["#ty__gushe-discard"] = "鼓舌：你需弃置一张牌，否则 %src 摸一张牌",
+  ["#ty__gushe2-discard"] = "鼓舌：你需弃置一张牌",
+  ["@@ty__gushe-turn"] = "鼓舌失效",
+  ["@ty__raoshe"] = "饶舌",
+}
 
 --钟灵毓秀：董贵人 滕芳兰 张瑾云
 --董贵人

@@ -914,4 +914,12 @@ Fk:loadTranslationTable{
   ["#ty_ex__jiezhong-invoke"] = "竭忠：是否发动“竭忠”摸%arg张牌？ ",
 }
 
+Fk:loadTranslationTable{
+  ["ty_ex__huangyueying"] = "界黄月英",
+  ["ty_ex__jiqiao"] = "机巧",
+  [":ty_ex__jiqiao"] = "出牌阶段开始时，你可以弃置任意张牌，然后你亮出牌堆顶等量的牌，你弃置的牌中每有一张装备，则多亮出一张牌。然后你获得其中的非装备牌。",
+  ["ty_ex__linglong"] = "玲珑",
+  [":ty_ex__linglong"] = "锁定技，若你的装备区里没有防具牌，你视为装备【八卦阵】；若你的装备区里没有坐骑牌，你的手牌上限+2；"..
+  "若你的装备区里没有宝物牌，你视为拥有〖奇才〗。若均满足，你使用的【杀】和普通锦囊牌不能被响应。",
+}
 return extension

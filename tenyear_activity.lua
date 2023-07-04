@@ -968,6 +968,7 @@ local yijiao = fk.CreateActiveSkill{
   end,
   on_use = function(self, room, effect)
     local target = room:getPlayerById(effect.tos[1])
+    if not self.interaction.data then self.interaction.data = 1 end  --for AI
     room:addPlayerMark(target, "yijiao1", 10 * self.interaction.data)
     room:setPlayerMark(target, "@yijiao", target:getMark("yijiao1"))
     local mark = target:getMark("yijiao_src")
@@ -1014,7 +1015,9 @@ local yijiao_record = fk.CreateTriggerSkill{
       elseif n == 0 then
         room:broadcastSkillInvoke("yijiao", 2)
         room:notifySkillInvoked(p, "yijiao", "support")
-        p:drawCards(2, "yijiao")
+        if not p.dead then
+          p:drawCards(2, "yijiao")
+        end
         player:gainAnExtraTurn(true)
       else
         if not p.dead then
@@ -1053,6 +1056,7 @@ local qibie = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local n = player:getHandcardNum()
     player:throwAllCards("h")
+    if player.dead then return end
     if player:isWounded() then
       player.room:recover({
         who = player,

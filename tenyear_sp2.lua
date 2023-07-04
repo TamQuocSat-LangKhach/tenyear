@@ -3790,15 +3790,15 @@ local ty__jici = fk.CreateTriggerSkill{
       end
     elseif event == fk.Death then
       local n = 7 - player:getMark("@ty__raoshe")
-      if n > 0 and not data.from:isNude() then
-        if #data.from:getCardIds{Player.Hand, Player.Equip} <= n then
-          data.from:throwAllCards("he")
+      if n > 0 and not data.damage.from:isNude() then
+        if #data.damage.from:getCardIds{Player.Hand, Player.Equip} <= n then
+          data.damage.from:throwAllCards("he")
         else
-          room:askForDiscard(data.from, n, n, true, self.name, false)
+          room:askForDiscard(data.damage.from, n, n, true, self.name, false)
         end
       end
-      if not data.from.dead then
-        room:loseHp(data.from, 1, self.name)
+      if not data.damage.from.dead then
+        room:loseHp(data.damage.from, 1, self.name)
       end
     end
   end,

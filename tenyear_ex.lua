@@ -914,12 +914,133 @@ Fk:loadTranslationTable{
   ["#ty_ex__jiezhong-invoke"] = "竭忠：是否发动“竭忠”摸%arg张牌？ ",
 }
 
+local huangyueying = General(extension, "ty_ex__huangyueying", "qun", 3, 3, General.Female)
+local ty__jiqiao = fk.CreateTriggerSkill{
+  name = "ty__jiqiao",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and not player:isNude()
+  end,
+  on_cost = function(self, event, target, player, data)
+    local cards = player.room:askForDiscard(player, 1, 999, true, self.name, true, ".", "#ty__jiqiao-invoke", true)
+    if #cards > 0 then
+      self.cost_data = cards
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:throwCard(self.cost_data, self.name, player, player)
+    if player.dead then return end
+    local n = 0
+    for _, id in ipairs(self.cost_data) do
+      if Fk:getCardById(id).type == Card.TypeEquip then
+        n = n + 2
+      else
+        n = n + 1
+      end
+    end
+    local cards = room:getNCards(n)
+    room:moveCards{
+      ids = cards,
+      toArea = Card.Processing,
+      moveReason = fk.ReasonJustMove,
+      skillName = self.name,
+    }
+    local get = {}
+    for i = #cards, 1, -1 do
+      if Fk:getCardById(cards[i]).type ~= Card.TypeEquip then
+        table.insert(get, cards[i])
+        table.removeOne(cards, cards[i])
+      end
+    end
+    if #get > 0 then
+      room:delay(1000)
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(get)
+      room:obtainCard(player.id, dummy, true, fk.ReasonJustMove)
+    end
+    if #cards > 0 then
+      room:delay(1000)
+      room:moveCards{
+        ids = cards,
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonJustMove,
+        skillName = self.name,
+      }
+    end
+  end,
+}
+local ty__linglong = fk.CreateTriggerSkill{
+  name = "ty__linglong",
+  anim_type = "offensive",
+  events = {fk.CardUsing},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and (data.card.trueName == "slash" or data.card:isCommonTrick()) and
+      table.every({Card.SubtypeArmor, Card.SubtypeOffensiveRide, Card.SubtypeDefensiveRide, Card.SubtypeTreasure}, function(type)
+        return player:getEquipment(type) == nil end)
+  end,
+  on_use = function(self, event, target, player, data)
+    data.disresponsiveList = table.map(player.room.alive_players, function(p) return p.id end)
+  end,
+
+  refresh_events = {fk.GameStart, fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      if event == fk.GameStart then
+        return true
+      else
+        for _, move in ipairs(data) do
+          if move.from == player.id then
+            for _, info in ipairs(move.moveInfo) do
+              if info.fromArea == Card.PlayerEquip then
+                return true
+              end
+            end
+          end
+          if move.to == player.id and move.toArea == Player.Equip then
+            return true
+          end
+        end
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)  --FIXME: 虚拟装备技能应该用statusSkill而非triggerSkill
+    if player:getEquipment(Card.SubtypeArmor) == nil and not player:hasSkill("#eight_diagram_skill", true) then  --FIXME: 青釭剑的装备无效mark对技能无效
+      player.room:handleAddLoseSkills(player, "#eight_diagram_skill", self, false, true)
+    elseif player:getEquipment(Card.SubtypeArmor) ~= nil and player:hasSkill("#eight_diagram_skill", true) then
+      player.room:handleAddLoseSkills(player, "-#eight_diagram_skill", nil, false, true)
+    end
+    if player:getEquipment(Card.SubtypeTreasure) == nil and not player:hasSkill("qicai", true) then
+      player.room:handleAddLoseSkills(player, "qicai", self, false, true)
+    elseif player:getEquipment(Card.SubtypeTreasure) ~= nil and player:hasSkill("qicai", true) then
+      player.room:handleAddLoseSkills(player, "-qicai", nil, false, true)
+    end
+  end,
+}
+local ty__linglong_maxcards = fk.CreateMaxCardsSkill{
+  name = "#ty__linglong_maxcards",
+  correct_func = function(self, player)
+    if player:hasSkill("ty__linglong") and
+      player:getEquipment(Card.SubtypeOffensiveRide) == nil and player:getEquipment(Card.SubtypeDefensiveRide) == nil then
+      return 2
+    end
+    return 0
+  end,
+}
+ty__linglong:addRelatedSkill(ty__linglong_maxcards)
+huangyueying:addSkill(ty__jiqiao)
+huangyueying:addSkill(ty__linglong)
+huangyueying:addRelatedSkill("qicai")
 Fk:loadTranslationTable{
   ["ty_ex__huangyueying"] = "界黄月英",
-  ["ty_ex__jiqiao"] = "机巧",
-  [":ty_ex__jiqiao"] = "出牌阶段开始时，你可以弃置任意张牌，然后你亮出牌堆顶等量的牌，你弃置的牌中每有一张装备，则多亮出一张牌。然后你获得其中的非装备牌。",
-  ["ty_ex__linglong"] = "玲珑",
-  [":ty_ex__linglong"] = "锁定技，若你的装备区里没有防具牌，你视为装备【八卦阵】；若你的装备区里没有坐骑牌，你的手牌上限+2；"..
+  ["ty__jiqiao"] = "机巧",
+  [":ty__jiqiao"] = "出牌阶段开始时，你可以弃置任意张牌，然后你亮出牌堆顶等量的牌，你弃置的牌中每有一张装备牌，则多亮出一张牌。然后你获得其中的非装备牌。",
+  ["ty__linglong"] = "玲珑",
+  [":ty__linglong"] = "锁定技，若你的装备区里没有防具牌，你视为装备【八卦阵】；若你的装备区里没有坐骑牌，你的手牌上限+2；"..
   "若你的装备区里没有宝物牌，你视为拥有〖奇才〗。若均满足，你使用的【杀】和普通锦囊牌不能被响应。",
+  ["#ty__jiqiao-invoke"] = "机巧：你可以弃置任意张牌，亮出牌堆顶等量牌（每有一张装备牌额外亮出一张），获得非装备牌",
 }
 return extension

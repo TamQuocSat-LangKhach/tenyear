@@ -271,15 +271,16 @@ local ty__pingjian_trigger = fk.CreateTriggerSkill{
     if event == fk.Damaged then
       skills = table.filter({
         "guixin", "benyu", "ex__fankui", "ganglie", "yiji", "ex__jianxiong", "os_ex__enyuan", "chouce", "ol_ex__jieming",
-        "fangzhu", "chengxiang", "huituo", "wangxi", "yuce", "zhichi", "zhiyu", "wanggui", "qianlong",
-        "xianchou", "rangjie", "liejie"
+        "fangzhu", "chengxiang", "huituo", "wangxi", "yuce", "zhiyu", "wanggui", "qianlong", "ty__jilei",
+        "xianchou", "rangjie", "liejie", "os__fupan"
       }, function (skill_name)
         return not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
       end)
     elseif event == fk.EventPhaseStart then
       skills = table.filter({
-        "junbing", "zhiyan", "ex__biyue", "fujian", "kunfen", "ol_ex__jushou", "os_ex__bingyi", "miji",
-        "juece", "sp__youdi", "kuanshi", "ty__jieying", "suizheng", "m_ex__jieyue", "shenfu", "meihun"
+        "zhiyan", "ex__biyue", "fujian", "kunfen", "ol_ex__jushou", "os_ex__bingyi", "miji", "zhengu",
+        "juece", "sp__youdi", "kuanshi", "ty__jieying", "suizheng", "m_ex__jieyue", "shenfu", "meihun",
+        "pijing", "zhuihuan", "os__juchen", "os__xingbu"
       }, function (skill_name)
         return not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
       end)

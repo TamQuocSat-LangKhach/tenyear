@@ -174,7 +174,12 @@ Fk:loadTranslationTable{
   [":ty_ex__shangshi"] = "①当你受到伤害时，你可以弃置一张手牌；②每当你的手牌数小于你已损失的体力值时，可立即将手牌数补至等同于你已损失的体力值。",
   ["#shangshi-invoke"] = "伤逝:是否弃置一张手牌？",
   ["#jueqing-invoke"] = "绝情:是否令即将对%dest造成的%arg点伤害翻倍？然后你失去%arg2点体力",
-  ["~ty_ex__zhangchunhua"] = "暂无",
+  
+  ["$ty_ex__jueqing1"] = "不知情之所起，亦不知情之所终。",
+  ["$ty_ex__jueqing2"] = "唯有情字最伤人！",
+  ["$ty_ex__shangshi1"] = "半生韶华随流水，思君不见撷落花。",
+  ["$ty_ex__shangshi2"] = "西风知我意，送我三尺秋。",
+  ["~ty_ex__zhangchunhua"] = "仲达负我！",
 }
 
 local lingtong = General(extension, "ty_ex__lingtong", "wu", 4)
@@ -1042,5 +1047,11 @@ Fk:loadTranslationTable{
   [":ty__linglong"] = "锁定技，若你的装备区里没有防具牌，你视为装备【八卦阵】；若你的装备区里没有坐骑牌，你的手牌上限+2；"..
   "若你的装备区里没有宝物牌，你视为拥有〖奇才〗。若均满足，你使用的【杀】和普通锦囊牌不能被响应。",
   ["#ty__jiqiao-invoke"] = "机巧：你可以弃置任意张牌，亮出牌堆顶等量牌（每有一张装备牌额外亮出一张），获得非装备牌",
+  
+  ["$ty__jiqiao1"] = "机关将作之术，在乎手巧心灵。",
+  ["$ty__jiqiao2"] = "机巧藏于心，亦如君之容。",
+  ["$ty__linglong1"] = "我夫所赠之玫，遗香自长存。",
+  ["$ty__linglong2"] = "心有玲珑罩，不殇春与秋。",
+  ["~ty_ex__huangyueying"] = "此心欲留夏，奈何秋风起……",
 }
 return extension

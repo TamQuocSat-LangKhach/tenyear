@@ -6,12 +6,189 @@ Fk:loadTranslationTable{
 }
 
 --李婉 诸葛尚 陆凯 轲比能 韩龙 谯周 苏飞 武安国
+local liwan = General(extension, "liwan", "wei", 3, 3, General.Female)
+
+local liandui = fk.CreateTriggerSkill{
+  name = "liandui",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) or target.dead then return false end
+    local liandui_target = (data.extra_data or {}).liandui_lastplayer
+    return liandui_target ~= nil and ((liandui_target == player.id) ~= (player == target))
+      and not player.room:getPlayerById(liandui_target).dead
+  end,
+  on_cost = function(self, event, target, player, data)
+    local to = player.id
+    if player == target then
+      to = (data.extra_data or {}).liandui_lastplayer
+    end
+    if player.room:askForSkillInvoke(target, self.name, nil, "#liandui-invoke:"..player.id .. ":" .. to) then
+      self.cost_data = to
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local tar = player.room:getPlayerById(self.cost_data)
+    tar:drawCards(2, self.name)
+  end,
+
+  refresh_events = {fk.AfterCardUseDeclared},
+  can_refresh = function(self, event, target, player, data)
+    return target == player
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local liandui_target = {}
+    for _, p in ipairs(room.alive_players) do
+      if p:getMark("liandui_lastplayer") > 0 then
+        table.insert(liandui_target, p.id)
+        room:setPlayerMark(p, "liandui_lastplayer", 0)
+      end
+    end
+    if #liandui_target > 0 then
+      data.extra_data = data.extra_data or {}
+      data.extra_data.liandui_lastplayer = liandui_target[1]
+    end
+    if not player.dead then
+      room:setPlayerMark(player, "liandui_lastplayer", 1)
+    end
+  end,
+}
+local biejun = fk.CreateTriggerSkill{
+  name = "biejun",
+  anim_type = "defensive",
+  events = {fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and target == player and player:usedSkillTimes(self.name) == 0
+    and table.every(player:getCardIds(Player.Hand), function (id)
+      return Fk:getCardById(id):getMark("@@biejun") == 0
+    end)
+    and #player.room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
+      local damage = e.data[5]
+      if damage and player == damage.to then
+        return true
+      end
+    end, Player.HistoryTurn) == 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#biejun-invoke")
+  end,
+  on_use = function(self, event, target, player, data)
+    player:turnOver()
+    return true
+  end,
+
+  refresh_events = {fk.AfterCardsMove, fk.TurnEnd, fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.AfterCardsMove or event == fk.TurnEnd then
+      return true
+    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
+      return data == self
+    elseif event == fk.BuryVictim then
+      return player:hasSkill(self.name, true, true)
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.AfterCardsMove then
+      for _, move in ipairs(data) do
+        if move.from == player.id and (move.to ~= player.id or move.toArea ~= Card.PlayerHand) then
+          for _, info in ipairs(move.moveInfo) do
+            room:setCardMark(Fk:getCardById(info.cardId), "@@biejun", 0)
+          end
+        elseif move.to == player.id and move.toArea == Card.PlayerHand and move.skillName == "biejun" then
+          for _, info in ipairs(move.moveInfo) do
+            local id = info.cardId
+            if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player then
+              room:setCardMark(Fk:getCardById(id), "@@biejun", 1)
+            end
+          end
+        end
+      end
+    elseif event == fk.TurnEnd then
+      for _, id in ipairs(player:getCardIds(Player.Hand)) do
+        room:setCardMark(Fk:getCardById(id), "@@biejun", 0)
+      end
+    else
+      if table.every(room.alive_players, function (p)
+        return not p:hasSkill(self.name, true) or p == player
+      end) then
+        if player:hasSkill("biejun&", true, true) then
+          room:handleAddLoseSkills(player, "-biejun&", nil, false, true)
+        end
+      else
+        if not player:hasSkill("biejun&", true, true) then
+          room:handleAddLoseSkills(player, "biejun&", nil, false, true)
+        end
+      end
+    end
+  end,
+}
+local biejun_active = fk.CreateActiveSkill{
+  name = "biejun&",
+  anim_type = "support",
+  prompt = "#biejun-active",
+  card_num = 1,
+  target_num = 1,
+  can_use = function(self, player)
+    local targetRecorded = player:getMark("biejun_targets-phase")
+    return table.find(Fk:currentRoom().alive_players, function(p)
+      return p ~= player and p:hasSkill(biejun.name) and (type(targetRecorded) ~= "table" or not table.contains(targetRecorded, p.id))
+    end)
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Card.PlayerEquip
+  end,
+  target_filter = function(self, to_select, selected)
+    if #selected == 0 and to_select ~= Self.id and Fk:currentRoom():getPlayerById(to_select):hasSkill(biejun.name) then
+      local targetRecorded = Self:getMark("biejun_targets-phase")
+      return type(targetRecorded) ~= "table" or not table.contains(targetRecorded, to_select)
+    end
+  end,
+  on_use = function(self, room, effect)
+    room:broadcastSkillInvoke(biejun.name)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local targetRecorded = type(player:getMark("biejun_targets-phase")) == "table" and player:getMark("biejun_targets-phase") or {}
+    table.insertIfNeed(targetRecorded, target.id)
+    room:setPlayerMark(player, "biejun_targets-phase", targetRecorded)
+    local move = {
+      from = effect.from,
+      ids = effect.cards,
+      to = effect.tos[1],
+      toArea = Card.PlayerHand,
+      moveReason = fk.ReasonGive,
+      proposer = effect.from,
+      skillName = "biejun",
+    }
+    room:moveCards(move)
+  end,
+}
+
+Fk:addSkill(biejun_active)
+liwan:addSkill(liandui)
+liwan:addSkill(biejun)
+
 Fk:loadTranslationTable{
   ["liwan"] = "李婉",
   ["liandui"] = "联对",
   [":liandui"] = "当你使用一张牌时，若上一张牌的使用者不为你，你可以令其摸两张牌；其他角色使用一张牌时，若上一张牌的使用者为你，其可以令你摸两张牌。",
   ["biejun"] = "别君",
   [":biejun"] = "其他角色出牌阶段限一次，其可以交给你一张手牌。当你每回合第一次受到伤害时，若你手牌中没有本回合以此法获得的牌，你可以翻面并防止此伤害。",
+
+  ["biejun&"] = "别君",
+  [":biejun&"] = "出牌阶段限一次，你可以将一张手牌交给李婉。",
+
+  ["#liandui-invoke"] = "是否发动 %src 的联对，令 %dest 摸两张牌",
+  ["#biejun-invoke"] = "是否发动别君，翻面并防止此伤害",
+  ["@@biejun"] = "别君",
+  ["#biejun-active"] = "发动别君，选择一张手牌交给一名拥有别君的角色",
+
+  ["$liandui1"] = "以句相联，抒离散之苦。",
+  ["$liandui2"] = "以诗相对，颂哀怨之情。",
+  ["$biejun1"] = "彼岸荼蘼远，落寞北风凉。",
+  ["$biejun2"] = "此去经年，不知何时能归？",
+  ["~liwan"] = "生不能同寝，死亦难同穴……",
 }
 
 Fk:loadTranslationTable{

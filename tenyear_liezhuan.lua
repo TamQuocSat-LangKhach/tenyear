@@ -691,7 +691,7 @@ local lilu = fk.CreateTriggerSkill{
     return player.room:askForSkillInvoke(player, self.name, nil, "#lilu-invoke")
   end,
   on_use = function(self, event, target, player, data)
-    local n = math.min(player.maxHp - player:getHandcardNum(), 5)
+    local n = math.min(player.maxHp, 5) - player:getHandcardNum()
     if n > 0 then
       player:drawCards(n, self.name)
     end

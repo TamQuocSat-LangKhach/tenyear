@@ -3751,7 +3751,7 @@ local ty__jici = fk.CreateTriggerSkill{
         end
       end
     elseif event == fk.Death then
-      return player:hasSkill(self.name, false, true) and data.damage and data.damage.from and not data.damage.from.dead
+      return target == player and player:hasSkill(self.name, false, true) and data.damage and data.damage.from and not data.damage.from.dead
     end
   end,
   on_use = function(self, event, target, player, data)

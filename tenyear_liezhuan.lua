@@ -1183,7 +1183,13 @@ Fk:loadTranslationTable{
   ["#ty__huoshui-give"] = "祸水：你须交给%src一张手牌",
 }
 
---曹安民 郝萌
+--曹安民
+
+Fk:loadTranslationTable{
+  ["ty__haomeng"] = "郝萌",
+  ["xiongmang"] = "雄莽",
+  [":xiongmang"] = "你可以将任意张花色不同的手牌当【杀】使用，此【杀】目标数上限等于用于转化的牌数；此【杀】结算后，若没有造成伤害，你减1点体力上限。",
+}
 
 local yanfuren = General(extension, "yanfuren", "qun", 3, 3, General.Female)
 local channi_viewas = fk.CreateViewAsSkill{

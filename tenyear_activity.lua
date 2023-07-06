@@ -388,7 +388,157 @@ Fk:loadTranslationTable{
   ["~liangxing"] = "夏侯渊，你竟敢！",
 }
 
---唐姬 段煨
+local tangji = General(extension, "tangji", "qun", 3, 3, General.Female)
+local kangge = fk.CreateTriggerSkill{
+  name = "kangge",
+  events = {fk.EventPhaseChanging, fk.AfterCardsMove, fk.Death},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      if event == fk.EventPhaseChanging then
+        return player:getMark(self.name) == 0 and data.from == Player.RoundStart
+      elseif event == fk.AfterCardsMove then
+        if player:getMark(self.name) ~= 0 and player:getMark("kangge-turn") < 3 then
+          for _, move in ipairs(data) do
+            if move.to and player:getMark(self.name) == move.to and move.moveReason == fk.ReasonDraw and
+              player.room:getPlayerById(move.to).phase == Player.NotActive then
+              return true
+            end
+          end
+        end
+      elseif event == fk.Death then
+        return player:getMark(self.name) == target.id
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:broadcastSkillInvoke(self.name)
+    if event == fk.EventPhaseChanging then
+      room:notifySkillInvoked(player, self.name, "special")
+      local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#kangge-choose", self.name, false)
+      if #to > 0 then
+        to = to[1]
+      else
+        to = table.random(targets)
+      end
+      room:setPlayerMark(player, self.name, to)
+      room:setPlayerMark(room:getPlayerById(to), "@@kangge", 1)
+    elseif event == fk.AfterCardsMove then
+      local n = 0
+      for _, move in ipairs(data) do
+        if move.to and player:getMark(self.name) == move.to and move.moveReason == fk.ReasonDraw then
+          n = n + #move.moveInfo
+        end
+      end
+      if n > 0 then
+        room:notifySkillInvoked(player, self.name, "drawcard")
+        local x = math.min(n, 3 - player:getMark("kangge-turn"))
+        room:addPlayerMark(player, "kangge-turn", x)
+        player:drawCards(x, self.name)
+      end
+    elseif event == fk.Death then
+      room:notifySkillInvoked(player, self.name, "negative")
+      player:throwAllCards("he")
+      if not player.dead then
+        room:loseHp(player, 1, self.name)
+      end
+    end
+  end,
+}
+local kangge_trigger = fk.CreateTriggerSkill{
+  name = "#kangge_trigger",
+  mute = true,
+  events = {fk.EnterDying},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill("kangge") and player:getMark("kangge") == target.id and player:usedSkillTimes(self.name, Player.HistoryRound) == 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:broadcastSkillInvoke("kangge")
+    room:notifySkillInvoked(player, "kangge", "support")
+    room:doIndicate(player.id, {target.id})
+    room:recover({
+      who = target,
+      num = 1 - target.hp,
+      recoverBy = player,
+      skillName = "kangge"
+    })
+  end,
+}
+local jielie = fk.CreateTriggerSkill{
+  name = "jielie",
+  anim_type = "defensive",
+  events = {fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and
+      (not data.from or (data.from ~= player.id and data.from ~= player:getMark("kangge")))
+  end,
+  on_cost = function(self, event, target, player, data)
+    local prompt = "#jielie1-invoke"
+    if data.from and player:getMark("kangge") ~= 0 and not player.room:getPlayerById(player:getMark("kangge")).dead and
+      #player.room.discard_pile > 0 then
+      prompt = "#jielie2-invoke::"..player:getMark("kangge")
+    end
+    if player.room:askForSkillInvoke(player, self.name, nil, prompt) then
+      self.cost_data = string.sub(prompt, 8, 8)
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local suit, to = ""
+    if self.cost_data == "2" then
+      local suits = {"spade", "heart", "club", "diamond"}
+      local choices = table.map(suits, function(s) return Fk:translate("log_"..s) end)
+      local choice = room:askForChoice(player, choices, self.name, "#jielie-choice::"..player:getMark("kangge"))
+      suit = suits[table.indexOf(choices, choice)]
+      to = room:getPlayerById(player:getMark("kangge"))
+      room:doIndicate(player.id, {to.id})
+    end
+    room:loseHp(player, data.damage, self.name)
+    if not to.dead then
+      local cards = room:getCardsFromPileByRule(".|.|"..suit, data.damage, "discardPile")
+      if #cards > 0 then
+        room:moveCards({
+          ids = cards,
+          to = to.id,
+          toArea = Card.PlayerHand,
+          moveReason = fk.ReasonJustMove,
+          proposer = player.id,
+          skillName = self.name,
+        })
+      end
+    end
+    return true
+  end,
+}
+kangge:addRelatedSkill(kangge_trigger)
+tangji:addSkill(kangge)
+tangji:addSkill(jielie)
+Fk:loadTranslationTable{
+  ["tangji"] = "唐姬",
+  ["kangge"] = "抗歌",
+  [":kangge"] = "你的第一个回合开始时，你选择一名其他角色：<br>1.当该角色于其回合外摸牌后，你摸等量的牌（每回合最多摸三张）；<br>"..
+  "2.每轮限一次，当该角色进入濒死状态时，你可以令其将体力回复至1点；<br>3.当该角色死亡时，你弃置所有牌并失去1点体力。",
+  ["jielie"] = "节烈",
+  [":jielie"] = "当你受到你或〖抗歌〗角色以外的角色造成的伤害时，你可以防止此伤害并选择一种花色，失去X点体力，"..
+  "令〖抗歌〗角色从弃牌堆中随机获得X张此花色的牌（X为伤害值）。",
+  ["#kangge-choose"] = "抗歌：请选择“抗歌”角色",
+  ["@@kangge"] = "抗歌",
+  ["#jielie1-invoke"] = "节烈：你可以防止你受到的伤害，改为失去等量体力",
+  ["#jielie2-invoke"] = "节烈：你可以防止你受到的伤害，改为失去体力，令 %dest 获得等量弃牌堆中你选择花色的牌",
+  ["#jielie-choice"] = "节烈：选择令 %dest 获得牌的花色",
+}
+
+--段煨
 
 local zhangheng = General(extension, "zhangheng", "qun", 8)
 local liangjue = fk.CreateTriggerSkill{
@@ -488,7 +638,104 @@ Fk:loadTranslationTable{
   ["~zhangheng"] = "军粮匮乏。",
 }
 
---牛辅
+local niufu = General(extension, "niufu", "qun", 4, 7)
+local xiaoxi = fk.CreateTriggerSkill{
+  name = "xiaoxi",
+  anim_type = "offensive",
+  frequency = Skill.Compulsory,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local choices = {"1", "2"}
+    if player.maxHp == 1 then
+      choices = {"1"}
+    end
+    local n = tonumber(room:askForChoice(player, choices, self.name, "#xiaoxi1-choice"))
+    room:changeMaxHp(player, -n)
+    if player.dead then return end
+    local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+      return player:inMyAttackRange(p) end), function (p) return p.id end)
+    if #targets == 0 then return end
+    local to = room:askForChoosePlayers(player, targets, 1, 1, "#xiaoxi-choose", self.name, false)
+    if #to > 0 then
+      to = room:getPlayerById(to[1])
+    else
+      to = room:getPlayerById(table.random(targets))
+    end
+    choices = {"xiaoxi_prey", "xiaoxi_slash"}
+    if #to:getCardIds{Player.Hand, Player.Equip} < n then
+      choices = {"xiaoxi_slash"}
+    elseif player:isProhibited(to, Fk:cloneCard("slash")) then
+      choices = {"xiaoxi_prey"}
+    end
+    local choice = room:askForChoice(player, choices, self.name, "#xiaoxi2-choice::"..to.id..":"..n)
+    if choice == "xiaoxi_prey" then
+      local cards = room:askForCardsChosen(player, to, 2, 2, "he", self.name)
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(cards)
+      room:obtainCard(player, dummy, false, fk.ReasonPrey)
+    else
+      for i = 1, n, 1 do
+        if player.dead or to.dead then return end
+        room:useVirtualCard("slash", nil, player, to, self.name, true)
+      end
+    end
+  end,
+}
+local xiongrao = fk.CreateTriggerSkill{
+  name = "xiongrao",
+  anim_type = "offensive",
+  frequency = Skill.Limited,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Start and
+      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#xiongrao-invoke")
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, p in ipairs(room:getOtherPlayers(player)) do
+      room:setPlayerMark(p, "@@xiongrao-turn", 1)
+    end
+    local x = 7 - player.maxHp
+    if x > 0 then
+      room:changeMaxHp(player, x)
+      player:drawCards(x, self.name)
+    end
+  end,
+}
+local xiongrao_invalidity = fk.CreateInvaliditySkill {
+  name = "#xiongrao_invalidity",
+  invalidity_func = function(self, from, skill)
+    return from:getMark("@@xiongrao-turn") > 0 and
+      skill.frequency ~= Skill.Compulsory and skill.frequency ~= Skill.Limited and skill.frequency ~= Skill.Wake and
+      not (skill:isEquipmentSkill() or skill.name:endsWith("&"))
+  end
+}
+xiongrao:addRelatedSkill(xiongrao_invalidity)
+niufu:addSkill(xiaoxi)
+niufu:addSkill(xiongrao)
+Fk:loadTranslationTable{
+  ["niufu"] = "牛辅",
+  ["xiaoxi"] = "宵袭",
+  [":xiaoxi"] = "锁定技，出牌阶段开始时，你需减少1或2点体力上限，然后选择一项：1.获得你攻击范围内一名其他角色等量的牌；"..
+  "2.视为对你攻击范围内的一名其他角色使用等量张【杀】。",
+  ["xiongrao"] = "熊扰",
+  [":xiongrao"] = "限定技，准备阶段，你可以令所有其他角色本回合除锁定技、限定技、觉醒技以外的技能全部失效，"..
+  "然后你将体力上限增加至7并摸等同于增加体力上限张数的牌。",
+  ["#xiaoxi1-choice"] = "宵袭：你需减少1或2点体力上限",
+  ["#xiaoxi-choose"] = "宵袭：选择攻击范围内一名角色，获得其等量牌或视为对其使用等量【杀】",
+  ["#xiaoxi2-choice"] = "宵袭：选择对 %dest 执行的一项（X为%arg）",
+  ["xiaoxi_prey"] = "获得其X张牌",
+  ["xiaoxi_slash"] = "视为对其使用X张【杀】",
+  ["#xiongrao-invoke"] = "熊扰：你可以令其他角色本回合非锁定技无效，你体力上限增加至7！",
+  ["@@xiongrao-turn"] = "熊扰",
+}
 
 --逐鹿天下：张恭 吕凯 卫温诸葛直
 

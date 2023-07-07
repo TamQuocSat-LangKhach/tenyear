@@ -80,6 +80,12 @@ Fk:loadTranslationTable{
   ["#ty__danlao-invoke"] = "啖酪：你可以摸一张牌，令 %arg 对你无效",
   ["#ty__jilei-invoke"] = "鸡肋：是否令 %dest 不能使用、打出、弃置一种类别的牌直到其下回合开始？",
   ["@ty__jilei"] = "鸡肋",
+  
+  ["$ty__danlao1"] = "此酪味美，诸君何不与我共食之？",
+  ["$ty__danlao2"] = "来来来，丞相美意，不可辜负啊。",
+  ["$ty__jilei1"] = "今进退两难，势若鸡肋，魏王必当罢兵而还。",
+  ["$ty__jilei2"] = "汝可令士卒收拾行装，魏王明日必定退兵。",
+  ["~ty__yangxiu"] = "自作聪明，作茧自缚，悔之晚矣……",
 }
 
 local luotong = General(extension, "ty__luotong", "wu", 3)
@@ -683,6 +689,12 @@ Fk:loadTranslationTable{
   ["@@zhaowen"] = "昭文",
   ["#jiudun-invoke"] = "酒遁：你可以摸一张牌，视为使用【酒】",
   ["#jiudun-card"] = "酒遁：你可以弃置一张手牌，令%arg对你无效",
+
+  ["$zhaowen1"] = "我辈昭昭，正始之音浩荡。",
+  ["$zhaowen2"] = "正文之昭，微言之绪，绝而复续。",
+  ["$jiudun1"] = "籍不胜酒力，恐失言失仪。",
+  ["$jiudun2"] = "秋月春风正好，不如大醉归去。",
+  ["~ruanji"] = "诸君，欲与我同醉否？",
 }
 
 --豆蔻梢头：花鬘 薛灵芸 芮姬 段巧笑
@@ -1422,6 +1434,12 @@ Fk:loadTranslationTable{
   ["yuwei"] = "余威",
   [":yuwei"] = "主公技，锁定技，其他群雄角色的回合内，〖诗怨〗改为“每回合每项限两次”。",
   ["#dushi-choose"] = "毒逝：令一名其他角色获得〖毒逝〗",
+  
+  ["$shiyuan1"] = "感怀诗于前，绝怨赋于后。",
+  ["$shiyuan2"] = "汉宫楚歌起，四面无援矣。",
+  ["$dushi1"] = "孤无病，此药无需服。",
+  ["$dushi2"] = "辟恶之毒，为最毒。",
+  ["~liubian"] = "侯非侯，王非王……",
 }
 
 local liuyu = General(extension, "ty__liuyu", "qun", 3)

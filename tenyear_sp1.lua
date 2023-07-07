@@ -56,6 +56,13 @@ Fk:loadTranslationTable{
   ["ty__zhengnan"] = "征南",
   [":ty__zhengnan"] = "每名角色限一次，当一名角色进入濒死状态时，你可以回复1点体力，然后摸一张牌并选择获得下列技能中的一个："..
   "〖武圣〗，〖当先〗和〖制蛮〗（若技能均已获得，则改为摸三张牌）。",
+  
+  ["$ty__zhengnan1"] = "南征之役，愿效死力。",
+  ["$ty__zhengnan2"] = "南征之险恶，吾已有所准备。",
+  ["$wusheng-ty__guansuo"] = "我敬佩你的勇气。",
+  ["$dangxian-ty__guansuo"] = "时时居先，方可快人一步。",
+  ["$zhiman-ty__guansuo"] = "败军之将，自当纳贡！",
+  ["~ty__guansuo"] = "索，至死不辱家风！",
 }
 
 local zhaoxiang = General(extension, "ty__zhaoxiang", "shu", 4, 4, General.Female)
@@ -184,6 +191,12 @@ Fk:loadTranslationTable{
   "武将牌中选择并获得至多两个技能（限定技、觉醒技、主公技除外）。若此时你是体力值最低的角色，你回复1点体力。",
   ["#ty__fuhan-invoke"] = "扶汉：你可以移去“梅影”标记，获得两个蜀势力武将的技能！",
   ["#ty__fuhan-choice"] = "扶汉：选择你要获得的技能",
+  
+  ["$ty__fanghun1"] = "芳年华月，不负期望。",
+  ["$ty__fanghun2"] = "志洁行芳，承父高志。",
+  ["$ty__fuhan1"] = "汉盛刘兴，定可指日成之。",
+  ["$ty__fuhan2"] = "蜀汉兴存，吾必定尽力而为。",
+  ["~ty__zhaoxiang"] = "此生为汉臣，死为汉芳魂……",
 }
 
 local baosanniang = General(extension, "ty__baosanniang", "shu", 3, 3, General.Female)
@@ -298,6 +311,14 @@ Fk:loadTranslationTable{
   ["#ty__xushen-choose"] = "许身：你可以令一名其他角色摸三张牌并选择是否变身为十周年关索！",
   ["#ty__xushen-invoke"]= "许身：你可以变身为十周年关索！",
   ["#ty__zhennan-choose"] = "镇南：你可以对一名其他角色造成1点伤害",
+  
+  ["$ty__wuniang1"] = "得公亲传，彰其武威。",
+  ["$ty__wuniang2"] = "灵彩武动，娇影摇曳。",
+  ["$ty__xushen1"] = "倾郎心，许君身。",
+  ["$ty__xushen2"] = "世间只与郎君好。",
+  ["$ty__zhennan1"] = "遵丞相之志，护南中安乐。",
+  ["$ty__zhennan2"] = "哼，又想扰乱南中安宁？",
+  ["~ty__baosanniang"] = "彼岸花开红似火，花期苦短终别离……",
 }
 
 local xurong = General(extension, "xurong", "qun", 4)
@@ -527,6 +548,10 @@ Fk:loadTranslationTable{
   ["#ty__shanjia-choose"] = "缮甲：你可以视为使用【杀】",
   ["ty__shanjia_viewas"] = "缮甲",
   ["@ty__shanjia"] = "缮甲",
+  
+  ["$ty__shanjia1"] = "百锤锻甲，披之可陷靡阵、断神兵、破坚城！",
+  ["$ty__shanjia2"] = "千炼成兵，邀天下群雄引颈，且试我剑利否！",
+  ["~ty__caochun"] = "不胜即亡，唯一死而已！",
 }
 
 local zhangqiying = General(extension, "zhangqiying", "qun", 3, 3, General.Female)

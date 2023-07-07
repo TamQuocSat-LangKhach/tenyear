@@ -131,6 +131,12 @@ Fk:loadTranslationTable{
   ["jiexing"] = "节行",
   [":jiexing"] = "当你的体力值变化后，你可以摸一张牌，此牌不计入你本回合的手牌上限。",
   ["#jiexing-invoke"] = "节行：你可以摸一张牌，此牌本回合不计入手牌上限",
+
+  ["$fangdu1"] = "浮萍却红尘，何意染是非？",
+  ["$fangdu2"] = "我本无意争春，奈何群芳相妒。",
+  ["$jiexing1"] = "女子有节，安能贰其行？",
+  ["$jiexing2"] = "坐收雨露，皆为君恩。",
+  ["~yuanji"] = "妾本蒲柳，幸荣君恩……",
 }
 
 Fk:loadTranslationTable{
@@ -417,38 +423,46 @@ local jincui = fk.CreateTriggerSkill{
   name = "jincui",
   anim_type = "control",
   frequency = Skill.Compulsory,
-  events = {fk.EventPhaseStart},
+  mute = true,
+  events = {fk.EventPhaseStart, fk.GameStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Start
+    if event == fk.GameStart then
+      return player:hasSkill(self.name) and player:getHandcardNum() < 7
+    elseif event == fk.EventPhaseStart then
+      return target == player and player:hasSkill(self.name) and player.phase == Player.Start
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local n = 0
-    for _, id in ipairs(room.draw_pile) do
-      if Fk:getCardById(id).number == 7 then
-        n = n + 1
+    if event == fk.GameStart then
+      room:notifySkillInvoked(player, self.name, "drawcard")
+      room:broadcastSkillInvoke(self.name)
+      local n = 7 - player:getHandcardNum()
+      if n > 0 then
+        player:drawCards(n, self.name)
       end
+    elseif event == fk.EventPhaseStart then
+      room:notifySkillInvoked(player, self.name)
+      room:broadcastSkillInvoke(self.name)
+      local n = 0
+      for _, id in ipairs(room.draw_pile) do
+        if Fk:getCardById(id).number == 7 then
+          n = n + 1
+        end
+      end
+      n = math.max(n, 1)
+      if player.hp > n then
+        room:loseHp(player, player.hp - n, self.name)
+      elseif player.hp < n then
+        room:recover({
+          who = player,
+          num = math.min(n - player.hp, player:getLostHp()),
+          recoverBy = player,
+          skillName = self.name
+        })
+      end
+      room:askForGuanxing(player, room:getNCards(player.hp))
     end
-    n = math.max(n, 1)
-    if player.hp > n then
-      room:loseHp(player, player.hp - n, self.name)
-    elseif player.hp < n then
-      room:recover({
-        who = player,
-        num = math.min(n - player.hp, player:getLostHp()),
-        recoverBy = player,
-        skillName = self.name
-      })
-    end
-    room:askForGuanxing(player, room:getNCards(player.hp))
-  end,
-
-  refresh_events = {fk.DrawInitialCards},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, true)
-  end,
-  on_refresh = function(self, event, target, player, data)
-    data.num = data.num + 3
   end,
 }
 local qingshi = fk.CreateTriggerSkill{
@@ -642,8 +656,8 @@ zhugeliang:addSkill(zhizhe)
 Fk:loadTranslationTable{
   ["wm__zhugeliang"] = "诸葛亮",
   ["jincui"] = "尽瘁",
-  [":jincui"] = "锁定技，准备阶段，你的体力值调整为与牌堆中点数为7的游戏牌数量相等（至少为1）。然后你观看牌堆顶X张牌，"..
-  "将这些牌以任意顺序放回牌堆顶或牌堆底（X为你的体力值）",
+  [":jincui"] = "锁定技，游戏开始时，你将手牌补至7张。准备阶段，你的体力值调整为与牌堆中点数为7的游戏牌数量相等（至少为1）。"..
+  "然后你观看牌堆顶X张牌，将这些牌以任意顺序放回牌堆顶或牌堆底（X为你的体力值）",
   ["qingshi"] = "情势",
   [":qingshi"] = "当你于出牌阶段内使用一张牌时（每种牌名每回合限一次），若手牌中有同名牌，你可以选择一项：1.令此牌对其中一个目标造成的伤害值+1："..
   "2.令任意名其他角色各摸一张牌；3.摸三张牌，然后此技能本回合失效。",
@@ -659,6 +673,14 @@ Fk:loadTranslationTable{
   ["#qingshi1-choose"] = "情势：令%arg对其中一名目标造成伤害+1",
   ["#qingshi2-choose"] = "情势：令任意名其他角色各摸一张牌",
   ["#zhizhe_filter"] = "智哲",
+
+  ["$jincui1"] = "情记三顾之恩，亮必继之以死。",
+  ["$jincui2"] = "身负六尺之孤，臣当鞠躬尽瘁。",
+  ["$qingshi1"] = "兵者，行霸道之势，彰王道之实。",
+  ["$qingshi2"] = "将为军魂，可因势而袭，其有战无类。",
+  ["$zhizhe1"] = "轻舟载浊酒，此去，我欲借箭十万。",
+  ["$zhizhe2"] = "主公有多大胆略，亮便有多少谋略。",
+  ["~wm__zhugeliang"] = "天下事，了犹未了，终以不了了之……",
 }
 
 -- 城孙权
@@ -831,6 +853,12 @@ Fk:loadTranslationTable{
   ["beifen"] = "悲愤",
   [":beifen"] = "锁定技，当你失去“胡笳”后，你获得与手中“胡笳”花色均不同的牌各一张。你手中“胡笳”少于其他牌时，你使用牌无距离和次数限制。",
   ["@@shuangjia"] = "胡笳",
+
+  ["$shuangjia1"] = "塞外青鸟匿，不闻折柳声。",
+  ["$shuangjia2"] = "向晚吹霜笳，雪落白发生。",
+  ["$beifen1"] = "此心如置冰壶，无物可暖。",
+  ["$beifen2"] = "年少爱登楼，欲说语还休。",
+  ["~mu__caiwenji"] = "天何薄我，天何薄我……",
 }
 
 return extension

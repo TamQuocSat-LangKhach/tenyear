@@ -685,6 +685,7 @@ local shuangjia = fk.CreateTriggerSkill{
     for _, id in ipairs(player.player_cards[Player.Hand]) do
       player.room:setCardMark(Fk:getCardById(id), "@@shuangjia", 1)
     end
+    player.room:setPlayerMark(player, "shuangjia", player:getHandcardNum())
   end,
 
   refresh_events = {fk.AfterCardsMove},
@@ -696,7 +697,10 @@ local shuangjia = fk.CreateTriggerSkill{
     for _, move in ipairs(data) do
       for _, info in ipairs(move.moveInfo) do
         if info.fromArea == Card.PlayerHand then
-          room:setCardMark(Fk:getCardById(info.cardId), "@@shuangjia", 0)
+          if Fk:getCardById(info.cardId):getMark("@@shuangjia") > 0 then
+            room:setCardMark(Fk:getCardById(info.cardId), "@@shuangjia", 0)
+            room:removePlayerMark(room:getPlayerById(move.from), "shuangjia", 1)
+          end
         end
       end
     end
@@ -711,8 +715,8 @@ local shuangjia_maxcards = fk.CreateMaxCardsSkill{
 local shuangjia_distance = fk.CreateDistanceSkill{
   name = "#shuangjia_distance",
   correct_func = function(self, from, to)
-    if to:hasSkill("shuangjia") and not to:isKongcheng() then
-      return math.min(#table.filter(to.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@shuangjia") > 0 end), 5)
+    if to:hasSkill("shuangjia") and to:getMark("shuangjia") > 0 then
+      return math.min(to:getMark("shuangjia"), 5)
     end
   end,
 }

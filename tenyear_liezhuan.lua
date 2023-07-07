@@ -5,6 +5,7 @@ Fk:loadTranslationTable{
   ["tenyear_liezhuan"] = "十周年-武将列传",
 }
 
+--黄巾之乱：韩遂 刘宏 朱儁 许劭
 local hansui = General(extension, "ty__hansui", "qun", 4)
 local ty__niluan = fk.CreateViewAsSkill{
   name = "ty__niluan",
@@ -335,7 +336,6 @@ Fk:loadTranslationTable{
   ["#ty__pingjian_trigger"] = "评荐",
   [":ty__pingjian"] = "出牌阶段，或结束阶段，或当你受到伤害后，你可以从对应时机的技能池中随机抽取三个技能，"..
     "然后你选择并视为拥有其中一个技能直到时机结束（每个技能限发动一次）。",
-
   ["#ty__pingjian-active"] = "发动评荐，从三个出牌阶段的技能中选择一个学习",
   ["#ty__pingjian-choice"] = "评荐：选择要学习的技能",
 
@@ -344,8 +344,8 @@ Fk:loadTranslationTable{
   ["~ty__xushao"] = "守节好耻，不可逡巡……",
 }
 
+--诸侯伐董：丁原 王荣 麹义 韩馥
 local dingyuan = General(extension, "ty__dingyuan", "qun", 4)
-
 local cixiao = fk.CreateTriggerSkill{
   name = "cixiao",
   anim_type = "control",
@@ -461,11 +461,9 @@ local panshi = fk.CreateTriggerSkill{
     player.room:setPlayerMark(player, "@@panshi_son", event == fk.EventAcquireSkill and 1 or 0)
   end,
 }
-
 dingyuan:addSkill(cixiao)
 dingyuan:addSkill(xianshuai)
 dingyuan:addRelatedSkill(panshi)
-
 Fk:loadTranslationTable{
   ["ty__dingyuan"] = "丁原",
   ["cixiao"] = "慈孝",
@@ -474,7 +472,6 @@ Fk:loadTranslationTable{
   [":xianshuai"] = "锁定技，一名角色造成伤害后，若此伤害是本轮第一次造成伤害，你摸一张牌。若伤害来源为你，你对受到伤害的角色造成1点伤害。",
   ["panshi"] = "叛弑",
   [":panshi"] = "锁定技，准备阶段，你将一张手牌交给拥有技能〖慈孝〗的角色；你于出牌阶段使用的【杀】对其造成伤害时，此伤害+1且你于造成伤害后结束出牌阶段。",
-
   ["#cixiao-choose"] = "慈孝：可选择一名其他角色，令其获得义子标记",
   ["#cixiao-discard"] = "慈孝：可弃置一张牌来转移将义子标记",
   ["@@panshi_son"] = "义子",
@@ -498,8 +495,9 @@ Fk:loadTranslationTable{
   [":zhuide"] = "当你死亡时，你可以令一名其他角色摸四张不同牌名的基本牌。",
 }
 
-local hanfu = General(extension, "hanfu", "qun", 4)
+--麹义
 
+local hanfu = General(extension, "hanfu", "qun", 4)
 local function getUseExtraTargets(room, data, bypass_distances)
   if not (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) then return {} end
   local ban_cards = {"jink", "nullification", "adaptation", "collateral"} --stupid collateral
@@ -605,7 +603,6 @@ local ty__jieying_prohibit = fk.CreateProhibitSkill{
     return type(player:getMark("@ty__jieying")) == "table" and table.contains(player:getMark("@ty__jieying"), "ty__jieying_prohibit")
   end,
 }
-
 local ty__weipo = fk.CreateTriggerSkill{
   name = "ty__weipo",
   events = {fk.TargetConfirming},
@@ -625,7 +622,6 @@ local ty__weipo = fk.CreateTriggerSkill{
     end
   end,
 }
-
 local ty__weipo_delay = fk.CreateTriggerSkill{
   name = "#ty__weipo_delay",
   events = {fk.CardUseFinished},
@@ -649,14 +645,12 @@ local ty__weipo_delay = fk.CreateTriggerSkill{
     room:addPlayerMark(player, "@@ty__weipo_invalidity-round")
   end,
 }
-
 ty__jieying:addRelatedSkill(ty__jieying_delay)
 ty__jieying:addRelatedSkill(ty__jieying_targetmod)
 ty__jieying:addRelatedSkill(ty__jieying_prohibit)
 ty__weipo:addRelatedSkill(ty__weipo_delay)
 hanfu:addSkill(ty__jieying)
 hanfu:addSkill(ty__weipo)
-
 Fk:loadTranslationTable{
   ["hanfu"] = "韩馥",
   ["ty__jieying"] = "节应",
@@ -679,6 +673,7 @@ Fk:loadTranslationTable{
   ["~hanfu"] = "袁本初，你为何不放过我！",
 }
 
+--徐州风云：陶谦 曹嵩 张邈 丘力居
 local caosong = General(extension, "ty__caosong", "wei", 4)
 local lilu = fk.CreateTriggerSkill{
   name = "lilu",
@@ -842,6 +837,7 @@ Fk:loadTranslationTable{
   [":suirenq"] = "你死亡时，可以将手牌中伤害牌交给一名其他角色。",
 }
 
+--中原狼烟：董承 胡车儿 邹氏 曹安民
 local dongcheng = General(extension, "ty__dongcheng", "qun", 4)
 local xuezhao = fk.CreateActiveSkill{
   name = "xuezhao",
@@ -920,7 +916,6 @@ Fk:loadTranslationTable{
 }
 
 local hucheer = General(extension, "ty__hucheer", "qun", 4)
-
 local ty__daoji = fk.CreateTriggerSkill{
   name = "ty__daoji",
   anim_type = "control",
@@ -1036,7 +1031,6 @@ hucheer:addSkill(ty__daoji)
 hucheer:addSkill(fuzhong)
 fuzhong:addRelatedSkill(fuzhong_distance)
 fuzhong:addRelatedSkill(fuzhong_maxcards)
-
 Fk:loadTranslationTable{
   ["ty__hucheer"] = "胡车儿",
   ["ty__daoji"] = "盗戟",
@@ -1185,6 +1179,56 @@ Fk:loadTranslationTable{
 
 --曹安民
 
+--虓虎悲歌：郝萌 严夫人 朱灵 阎柔
+local haomeng = General(extension, "ty__haomeng", "qun", 7)
+local xiongmang = fk.CreateViewAsSkill{
+  name = "xiongmang",
+  anim_type = "offensive",
+  pattern = "slash",
+  card_filter = function(self, to_select, selected)
+    if Fk:currentRoom():getCardArea(to_select) == Player.Equip then return end
+    if #selected == 0 then
+      return true
+    else
+      return table.every(selected, function (id) return Fk:getCardById(to_select).suit ~= Fk:getCardById(id).suit end)
+    end
+  end,
+  view_as = function(self, cards)
+    if #cards == 0 then return end
+    local card = Fk:cloneCard("slash")
+    card.skillName = self.name
+    card:addSubcards(cards)
+    return card
+  end,
+  enabled_at_response = function(self, player, response)
+    return not response
+  end,
+}
+local xiongmang_targetmod = fk.CreateTargetModSkill{
+  name = "#xiongmang_targetmod",
+  extra_target_func = function(self, player, skill, card)
+    if player:hasSkill("xiongmang") and skill.trueName == "slash_skill" and table.contains(card.skillNames, "xiongmang") then
+      return #card.subcards - 1
+    end
+  end,
+}
+local xiongmang_trigger = fk.CreateTriggerSkill{
+  name = "#xiongmang_trigger",
+  mute = true,
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and table.contains(data.card.skillNames, "xiongmang") and not data.damageDealt and not player.dead
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:changeMaxHp(player, -1)
+  end,
+}
+xiongmang:addRelatedSkill(xiongmang_trigger)
+xiongmang:addRelatedSkill(xiongmang_targetmod)
+haomeng:addSkill(xiongmang)
 Fk:loadTranslationTable{
   ["ty__haomeng"] = "郝萌",
   ["xiongmang"] = "雄莽",

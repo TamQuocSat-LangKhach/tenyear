@@ -2058,19 +2058,22 @@ local qingyan = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     if player:getHandcardNum() < math.min(player.hp, player.maxHp) then
-      return player.room:askForSkillInvoke(player, self.name, nil, "#qingyan-invoke")
+      if player.room:askForSkillInvoke(player, self.name, nil, "#qingyan-invoke") then
+        self.cost_data = {"draw"}
+        return true
+      end
     else
       local card = player.room:askForDiscard(player, 1, 1, false, self.name, true, ".", "#qingyan-card", true)
       if #card > 0 then
-        self.cost_data = card
+        self.cost_data = {"discard", card}
         return true
       end
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if self.cost_data then
-      room:throwCard(self.cost_data, self.name, player, player)
+    if self.cost_data[1] == "discard" then
+      room:throwCard({self.cost_data[2]}, self.name, player, player)
       room:addPlayerMark(player, MarkEnum.AddMaxCards, 1)
     else
       player:drawCards(player.maxHp - player:getHandcardNum(), self.name)

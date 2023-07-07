@@ -396,11 +396,11 @@ local kangge = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self.name) then
       if event == fk.EventPhaseChanging then
-        return player:getMark(self.name) == 0 and data.from == Player.RoundStart
+        return target == player and player:getMark(self.name) == 0 and data.from == Player.RoundStart
       elseif event == fk.AfterCardsMove then
         if player:getMark(self.name) ~= 0 and player:getMark("kangge-turn") < 3 then
           for _, move in ipairs(data) do
-            if move.to and player:getMark(self.name) == move.to and move.moveReason == fk.ReasonDraw and
+            if move.to and player:getMark(self.name) == move.to and move.toArea == Card.PlayerHand and
               player.room:getPlayerById(move.to).phase == Player.NotActive then
               return true
             end
@@ -431,7 +431,7 @@ local kangge = fk.CreateTriggerSkill{
     elseif event == fk.AfterCardsMove then
       local n = 0
       for _, move in ipairs(data) do
-        if move.to and player:getMark(self.name) == move.to and move.moveReason == fk.ReasonDraw then
+        if move.to and player:getMark(self.name) == move.to and move.toArea == Card.PlayerHand then
           n = n + #move.moveInfo
         end
       end
@@ -526,7 +526,7 @@ tangji:addSkill(jielie)
 Fk:loadTranslationTable{
   ["tangji"] = "唐姬",
   ["kangge"] = "抗歌",
-  [":kangge"] = "你的第一个回合开始时，你选择一名其他角色：<br>1.当该角色于其回合外摸牌后，你摸等量的牌（每回合最多摸三张）；<br>"..
+  [":kangge"] = "你的第一个回合开始时，你选择一名其他角色：<br>1.当该角色于其回合外获得手牌后，你摸等量的牌（每回合最多摸三张）；<br>"..
   "2.每轮限一次，当该角色进入濒死状态时，你可以令其将体力回复至1点；<br>3.当该角色死亡时，你弃置所有牌并失去1点体力。",
   ["jielie"] = "节烈",
   [":jielie"] = "当你受到你或〖抗歌〗角色以外的角色造成的伤害时，你可以防止此伤害并选择一种花色，失去X点体力，"..

@@ -1739,7 +1739,7 @@ local qianzheng_trigger = fk.CreateTriggerSkill{
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
     return data.extra_data and data.extra_data.qianzheng and data.extra_data.qianzheng == player.id and
-      player.room:getCardArea(data.card) == Card.Processing
+      player.room:getCardArea(data.card) == Card.Processing and not player.dead
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, "qianzheng", nil, "#qianzheng-invoke:::"..data.card:toLogString())

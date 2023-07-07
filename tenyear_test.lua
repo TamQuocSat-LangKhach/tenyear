@@ -702,6 +702,12 @@ local shuangjia = fk.CreateTriggerSkill{
     end
   end,
 }
+local shuangjia_maxcards = fk.CreateMaxCardsSkill{
+  name = "#shuangjia_maxcards",
+  exclude_from = function(self, player, card)
+    return card:getMark("@@shuangjia") > 0
+  end,
+}
 local shuangjia_distance = fk.CreateDistanceSkill{
   name = "#shuangjia_distance",
   correct_func = function(self, from, to)
@@ -809,6 +815,7 @@ local beifen_targetmod = fk.CreateTargetModSkill{
     end
   end,
 }
+shuangjia:addRelatedSkill(shuangjia_maxcards)
 shuangjia:addRelatedSkill(shuangjia_distance)
 beifen:addRelatedSkill(beifen_targetmod)
 caiwenji:addSkill(shuangjia)

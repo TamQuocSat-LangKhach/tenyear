@@ -1764,7 +1764,7 @@ local fudao = fk.CreateTriggerSkill{
       elseif event == fk.TargetSpecified then
         local to = player.room:getPlayerById(data.to)
         return ((player == target and player:getMark(self.name) == to.id) or (player == to and player:getMark(self.name) == target.id)) and
-          player:getMark("fudao_specified") == 0
+          player:getMark("fudao_specified-turn") == 0
       elseif event == fk.TargetConfirmed then
         return target == player and data.from ~= player.id and player.room:getPlayerById(data.from):getMark("@@juelie") > 0 and
           data.card.color == Card.Black
@@ -1785,7 +1785,7 @@ local fudao = fk.CreateTriggerSkill{
       end
     elseif event == fk.TargetSpecified then
       room:notifySkillInvoked(player, self.name)
-      room:addPlayerMark(player, "fudao_specified")
+      room:addPlayerMark(player, "fudao_specified-turn")
       local targets = {player.id, player:getMark(self.name)}
       room:sortPlayersByAction(targets)
       room:doIndicate(player.id, targets)

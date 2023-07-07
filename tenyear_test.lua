@@ -711,7 +711,7 @@ local shuangjia_maxcards = fk.CreateMaxCardsSkill{
 local shuangjia_distance = fk.CreateDistanceSkill{
   name = "#shuangjia_distance",
   correct_func = function(self, from, to)
-    if to:hasSkill(self.name) and not to:isKongcheng() then
+    if to:hasSkill("shuangjia") and not to:isKongcheng() then
       return math.min(#table.filter(to.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@shuangjia") > 0 end), 5)
     end
   end,

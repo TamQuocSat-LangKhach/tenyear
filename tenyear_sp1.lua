@@ -2020,17 +2020,311 @@ Fk:loadTranslationTable{
   ["~godzhangjiao"] = "诸君唤我为贼，然我所窃何物？",
 }
 
+local goddengai = General(extension, "goddengai", "god", 4)
+local tuoyu = fk.CreateTriggerSkill{
+  name = "tuoyu",
+  anim_type = "special",
+  frequency = Skill.Compulsory,
+  events = {fk.EventPhaseStart, fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play and
+      table.find({"1", "2", "3"}, function(n) return player:getMark("tuoyu"..n) > 0 end) and not player:isKongcheng()
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for i = 1, 3, 1 do
+      if player:getMark("tuoyu"..i) > 0 then
+        local cards = room:askForCard(player, 1, 5, false, self.name, true, ".", "#tuoyu"..i.."-cards")
+        if #cards > 0 then
+          for _, id in ipairs(player.player_cards[Player.Hand]) do
+            local card = Fk:getCardById(id)
+            if card:getMark("@@tuoyu"..i) > 0 and not table.contains(cards, id) then
+              room:setCardMark(card, "@@tuoyu"..i, 0)
+            elseif table.contains(cards, id) then
+              for j = 1, 3, 1 do
+                room:setCardMark(card, "@@tuoyu"..j, 0)
+              end
+              room:setCardMark(card, "@@tuoyu"..i, 1)
+            end
+          end
+        end
+      end
+    end
+  end,
+
+  refresh_events = {fk.AfterCardsMove, fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.AfterCardsMove then
+      return true
+    elseif event == fk.EventLoseSkill then
+      return target == player and data == self
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.AfterCardsMove then
+      for _, move in ipairs(data) do
+        if move.from == player.id and move.toArea ~= Card.Processing then
+          for _, info in ipairs(move.moveInfo) do
+            room:setCardMark(Fk:getCardById(info.cardId), "@@tuoyu1", 0)
+            room:setCardMark(Fk:getCardById(info.cardId), "@@tuoyu2", 0)
+            room:setCardMark(Fk:getCardById(info.cardId), "@@tuoyu3", 0)
+          end
+        end
+      end
+    elseif event == fk.EventLoseSkill then
+      for _, id in ipairs(player.player_cards[Player.Hand]) do
+        room:setCardMark(Fk:getCardById(id), "@@tuoyu1", 0)
+        room:setCardMark(Fk:getCardById(id), "@@tuoyu2", 0)
+        room:setCardMark(Fk:getCardById(id), "@@tuoyu3", 0)
+      end
+    end
+  end,
+}
+local tuoyu_targetmod = fk.CreateTargetModSkill{
+  name = "#tuoyu_targetmod",
+  residue_func = function(self, player, skill, scope, card)
+    if player:hasSkill("tuoyu") and card:getMark("@@tuoyu2") > 0 then
+      return 999
+    end
+  end,
+  distance_limit_func =  function(self, player, skill, card)
+    if player:hasSkill("tuoyu") and card:getMark("@@tuoyu2") > 0 then
+      return 999
+    end
+  end,
+}
+local tuoyu_trigger = fk.CreateTriggerSkill{
+  name = "#tuoyu_trigger",
+  mute = true,
+  frequency = Skill.Compulsory,
+  events = {fk.CardUsing, fk.CardResponding},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and (data.card:getMark("@@tuoyu1") > 0 or data.card:getMark("@@tuoyu3") > 0)
+  end,
+  on_use = function(self, event, target, player, data)
+    if data.card:getMark("@@tuoyu1") > 0 then
+      if data.card.is_damage_card then
+        data.additionalDamage = (data.additionalDamage or 0) + 1
+      elseif data.card.name == "peach" or (data.card.name == "analeptic" and data.extra_data and data.extra_data.analepticRecover) then
+        data.additionalRecover = (data.additionalRecover or 0) + 1
+      end
+      --[[if data.card.trueName == "slash" and data.extra_data and data.extra_data.drankBuff then
+        data.additionalDamage = (data.additionalDamage or 0) + data.extra_data.drankBuff
+      end]]--
+    elseif data.card:getMark("@@tuoyu3") > 0 then
+      data.disresponsiveList = table.map(player.room.alive_players, function(p) return p.id end)
+    end
+  end,
+}
+local xianjin = fk.CreateTriggerSkill{
+  name = "xianjin",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.Damage, fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name)
+  end,
+  on_trigger = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.Damage then
+      room:addPlayerMark(player, "xianjin_damage", 1)
+      if player:getMark("xianjin_damage") < 2 then return end
+      room:setPlayerMark(player, "xianjin_damage", 0)
+    elseif event == fk.Damaged then
+      room:addPlayerMark(player, "xianjin_damaged", 1)
+      if player:getMark("xianjin_damaged") < 2 then return end
+      room:setPlayerMark(player, "xianjin_damaged", 1)
+    end
+    self:doCost(event, target, player, data)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local choices = table.map(table.filter({"1", "2", "3"}, function(n)
+      return player:getMark("tuoyu"..n) == 0 end), function(n) return "tuoyu"..n end)
+    if #choices > 0 then
+      local choice = room:askForChoice(player, choices, self.name, "#xianjin-choice", true)
+      room:setPlayerMark(player, choice, 1)
+    end
+    if table.every(room.alive_players, function(p) return player:getHandcardNum() >= p:getHandcardNum() end) then
+      player:drawCards(1, self.name)
+    else
+      player:drawCards(#table.filter({"1", "2", "3"}, function(n) return player:getMark("tuoyu"..n) > 0 end), self.name)
+    end
+  end,
+}
+local qijing = fk.CreateTriggerSkill{
+  name = "qijing",
+  frequency = Skill.Wake,
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and
+      #player.room.alive_players > 2 and  --傻逼
+      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  can_wake = function(self, event, target, player, data)
+    return player:getMark("tuoyu1") > 0 and player:getMark("tuoyu2") > 0 and player:getMark("tuoyu3") > 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:changeMaxHp(player, -1)
+    if player.dead then return end
+    if #room.alive_players > 2 then
+      local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p)
+        return p.id end), 1, 1, "#qijing-choose", self.name, false)
+      if #to > 0 then
+        to = room:getPlayerById(to[1])
+        if to:getNextAlive() ~= player then
+          local players = table.simpleClone(room.players)
+          local n
+          for i, v in ipairs(room.players) do
+            if v == to then
+              if i == #room.players then
+                n = 1
+              else
+                n = i + 1
+              end
+              break
+            end
+          end
+          players[n] = player
+          for i = 1, #room.players do
+            for j = 1, #room.players do
+              if i ~= n and not table.contains(players, room.players[j]) then
+                players[i] = room.players[j]
+              end
+            end
+          end
+          room.players = players
+          local player_circle = {}
+          for i = 1, #room.players do
+            room.players[i].seat = i
+            table.insert(player_circle, room.players[i].id)
+          end
+          for i = 1, #room.players - 1 do
+            room.players[i].next = room.players[i + 1]
+          end
+          room.players[#room.players].next = room.players[1]
+          room:doBroadcastNotify("ArrangeSeats", json.encode(player_circle))
+        end
+      end
+    end
+    room:handleAddLoseSkills(player, "cuixin", nil, true, false)
+    player:gainAnExtraTurn(true)
+  end,
+}
+local cuixin = fk.CreateTriggerSkill{
+  name = "cuixin",
+  anim_type = "offensive",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.extra_data and data.extra_data.cuixin_tos
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = {}
+    if #data.extra_data.cuixin_tos == 1 then
+      if #data.extra_data.cuixin_adjacent == 1 then
+        if not player:isProhibited(player:getNextAlive(), data.card) then
+          table.insert(targets, player:getNextAlive().id)
+        else
+          return
+        end
+      else
+        for _, id in ipairs(data.extra_data.cuixin_adjacent) do
+          if id ~= data.extra_data.cuixin_tos[1] then
+            local p = room:getPlayerById(id)
+            if not p.dead and not player:isProhibited(p, data.card) then
+              table.insert(targets, id)
+              break
+            end
+          end
+        end
+      end
+    else
+      for _, id in ipairs(data.extra_data.cuixin_adjacent) do
+        local p = room:getPlayerById(id)
+        if not p.dead and not player:isProhibited(p, data.card) then
+          table.insert(targets, id)
+        end
+      end
+    end
+    if #targets == 0 then
+      return
+    elseif #targets == 1 then
+      if room:askForSkillInvoke(player, self.name, nil, "#cuixin-invoke::"..targets[1]..":"..data.card.name) then
+        self.cost_data = targets[1]
+        return true
+      end
+    elseif #targets == 2 then
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#cuixin2-choose:::"..data.card.name, self.name, true)
+      if #to > 0 then
+        self.cost_data = to[1]
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:useVirtualCard(data.card.name, nil, player, player.room:getPlayerById(self.cost_data), self.name, true)
+  end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name, true) and not table.contains(data.card.skillNames, self.name) and
+      data.card.type ~= Card.TypeEquip and data.card.sub_type ~= Card.SubtypeDelayedTrick
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local tos, adjacent = {}, {}
+    for _, p in ipairs(room.alive_players) do
+      if player:getNextAlive() == p or p:getNextAlive() == player then
+        table.insertIfNeed(adjacent, p.id)
+        if table.contains(TargetGroup:getRealTargets(data.tos), p.id) then
+          table.insertIfNeed(tos, p.id)
+        end
+      end
+    end
+    if #tos > 0 then
+      data.extra_data = data.extra_data or {}
+      data.extra_data.cuixin_tos = tos
+      data.extra_data.cuixin_adjacent = adjacent
+    end
+  end,
+}
+tuoyu:addRelatedSkill(tuoyu_targetmod)
+tuoyu:addRelatedSkill(tuoyu_trigger)
+goddengai:addSkill(tuoyu)
+goddengai:addSkill(xianjin)
+goddengai:addSkill(qijing)
+goddengai:addRelatedSkill(cuixin)
 Fk:loadTranslationTable{
   ["goddengai"] = "神邓艾",
   ["tuoyu"] = "拓域",
-  [":tuoyu"] = "锁定技，你的手牌区域添加三个未开发的副区域：<br>丰田：伤害和回复值+1；<br>清渠：无距离和次数限制；峻山：不能被响应。<br>"..
-  "出牌阶段开始时和结束时，你将手牌分配至已开发的副区域中。",
+  [":tuoyu"] = "锁定技，你的手牌区域添加三个未开发的副区域：<br>丰田：伤害和回复值+1；<br>清渠：无距离和次数限制；<br>峻山：不能被响应。<br>"..
+  "出牌阶段开始时和结束时，你将手牌分配至已开发的副区域中，每个区域至多五张。"..
+  "<br><font color='red'>注意！由于技能歧义过多，可能产生大量与官方不同的结算，日后会逐步修正",
   ["xianjin"] = "险进",
   [":xianjin"] = "锁定技，你每造成或受到两次伤害后开发一个手牌副区域，摸X张牌（X为你已开发的手牌副区域数，若你手牌全场最多则改为1）。",
   ["qijing"] = "奇径",
   [":qijing"] = "觉醒技，每个回合结束时，若你的手牌副区域均已开发，你减1点体力上限，将座次移动至两名其他角色之间，获得〖摧心〗并执行一个额外回合。",
   ["cuixin"] = "摧心",
   [":cuixin"] = "当你不以此法对上家/下家使用的牌结算后，你可以视为对下家/上家使用一张同名牌。",
+  ["tuoyu1"] = "丰田",
+  ["@@tuoyu1"] = "丰田",
+  [":tuoyu1"] = "伤害和回复值+1",
+  ["#tuoyu1-cards"] = "拓域：你可以将至多五张手牌置入“丰田”（伤害和回复值+1）",
+  ["tuoyu2"] = "清渠",
+  ["@@tuoyu2"] = "清渠",
+  [":tuoyu2"] = "无距离和次数限制",
+  ["#tuoyu2-cards"] = "拓域：你可以将至多五张手牌置入“清渠”（无距离和次数限制）",
+  ["tuoyu3"] = "峻山",
+  ["@@tuoyu3"] = "峻山",
+  [":tuoyu3"] = "不能被响应",
+  ["#tuoyu3-cards"] = "拓域：你可以将至多五张手牌置入“峻山”（不能被响应）",
+  ["#xianjin-choice"] = "险进：选择你要开发的手牌副区域",
+  ["#qijing-choose"] = "奇径：选择一名角色，你移动座次成为其下家",
+  ["#cuixin-invoke"] = "摧心：你可以视为对 %dest 使用【%arg】",
+  ["#cuixin2-choose"] = "摧心：你可以视为对其中一名角色使用【%arg】",
 }
 
 --百战虎贲：兀突骨 文鸯 皇甫嵩 王双 留赞 黄祖 雷铜 吴兰

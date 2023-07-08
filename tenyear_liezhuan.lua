@@ -438,7 +438,7 @@ local panshi = fk.CreateTriggerSkill{
         local tos, id = room:askForChooseCardAndPlayers(player, table.map(fathers, function (p)
           return p.id end), 1, 1, ".|.|.|hand", "#panshi-give", self.name, false)
         if #tos > 0 and id then
-          room:obtainCard(tos[1].id, id, false, fk.ReasonGive)
+          room:obtainCard(tos[1], id, false, fk.ReasonGive)
         end
       end
     elseif event == fk.DamageCaused then

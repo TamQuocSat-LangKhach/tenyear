@@ -2049,4 +2049,172 @@ Fk:loadTranslationTable{
   ["~gongsundu"] = "为何都不愿出仕！",
 }
 
+--正音雅乐：蔡文姬
+local caiwenji = General(extension, "mu__caiwenji", "qun", 3, 3, General.Female)
+local shuangjia = fk.CreateTriggerSkill{
+  name = "shuangjia",
+  anim_type = "special",
+  frequency = Skill.Compulsory,
+  events = {fk.GameStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name)
+  end,
+  on_use = function(self, event, target, player, data)
+    for _, id in ipairs(player.player_cards[Player.Hand]) do
+      player.room:setCardMark(Fk:getCardById(id), "@@shuangjia", 1)
+    end
+    player.room:setPlayerMark(player, "shuangjia", player:getHandcardNum())
+  end,
+
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return true
+  end,
+  on_refresh = function(self, event, target, player, data)
+  local room = player.room
+    for _, move in ipairs(data) do
+      for _, info in ipairs(move.moveInfo) do
+        if info.fromArea == Card.PlayerHand then
+          if Fk:getCardById(info.cardId):getMark("@@shuangjia") > 0 then
+            room:setCardMark(Fk:getCardById(info.cardId), "@@shuangjia", 0)
+            room:removePlayerMark(room:getPlayerById(move.from), "shuangjia", 1)
+          end
+        end
+      end
+    end
+  end,
+}
+local shuangjia_maxcards = fk.CreateMaxCardsSkill{
+  name = "#shuangjia_maxcards",
+  exclude_from = function(self, player, card)
+    return card:getMark("@@shuangjia") > 0
+  end,
+}
+local shuangjia_distance = fk.CreateDistanceSkill{
+  name = "#shuangjia_distance",
+  correct_func = function(self, from, to)
+    if to:hasSkill("shuangjia") and to:getMark("shuangjia") > 0 then
+      return math.min(to:getMark("shuangjia"), 5)
+    end
+  end,
+}
+local beifen = fk.CreateTriggerSkill{
+  name = "beifen",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      for _, move in ipairs(data) do
+        if move.from == player.id and move.extra_data and move.extra_data.beifen then
+          return true
+        end
+      end
+    end
+  end,
+  on_trigger = function(self, event, target, player, data)
+    local n = 0
+    for _, move in ipairs(data) do
+      if move.from == player.id and move.extra_data and move.extra_data.beifen then
+        n = n + move.extra_data.beifen
+      end
+    end
+    for i = 1, n, 1 do
+      self:doCost(event, target, player, data)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local suits = {"spade", "club", "heart", "diamond"}
+    local cards = {}
+    while #suits > 0 do
+      local pattern = table.random(suits)
+      if not table.find(player.player_cards[Player.Hand], function(id)
+        return Fk:getCardById(id):getMark("@@shuangjia") > 0 and Fk:getCardById(id):getSuitString() == pattern end) then
+        table.insertTable(cards, room:getCardsFromPileByRule(".|.|"..pattern))
+      end
+      table.removeOne(suits, pattern)
+    end
+    if #cards > 0 then
+      room:moveCards({
+        ids = cards,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonJustMove,
+        proposer = player.id,
+        skillName = self.name,
+      })
+    end
+  end,
+
+  refresh_events = {fk.BeforeCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      for _, move in ipairs(data) do
+        if move.from == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand and Fk:getCardById(info.cardId):getMark("@@shuangjia") > 0 then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    for _, move in ipairs(data) do
+      if move.from == player.id then
+        local n = 0
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand and Fk:getCardById(info.cardId):getMark("@@shuangjia") > 0 then
+            n = n + 1
+          end
+        end
+        if n > 0 then
+          move.extra_data = move.extra_data or {}
+          move.extra_data.beifen = n
+        end
+      end
+    end
+  end,
+}
+local beifen_targetmod = fk.CreateTargetModSkill{
+  name = "#beifen_targetmod",
+  residue_func = function(self, player, skill, scope)
+    if player:hasSkill("beifen") then
+      local n = #table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@shuangjia") > 0 end)
+      if player:getHandcardNum() > 2 * n then
+        return 999
+      end
+    end
+  end,
+  distance_limit_func =  function(self, player, skill)
+    if player:hasSkill("beifen") then
+      local n = #table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@shuangjia") > 0 end)
+      if player:getHandcardNum() > 2 * n then
+        return 999
+      end
+    end
+  end,
+}
+shuangjia:addRelatedSkill(shuangjia_maxcards)
+shuangjia:addRelatedSkill(shuangjia_distance)
+beifen:addRelatedSkill(beifen_targetmod)
+caiwenji:addSkill(shuangjia)
+caiwenji:addSkill(beifen)
+Fk:loadTranslationTable{
+  ["mu__caiwenji"] = "蔡文姬",
+  ["shuangjia"] = "霜笳",
+  [":shuangjia"] = "锁定技，游戏开始时，你的初始手牌增加“胡笳”标记且不计入手牌上限。你每拥有一张“胡笳”，其他角色计算与你距离+1（最多+5）。",
+  ["beifen"] = "悲愤",
+  [":beifen"] = "锁定技，当你失去“胡笳”后，你获得与手中“胡笳”花色均不同的牌各一张。你手中“胡笳”少于其他牌时，你使用牌无距离和次数限制。",
+  ["@@shuangjia"] = "胡笳",
+
+  ["$shuangjia1"] = "塞外青鸟匿，不闻折柳声。",
+  ["$shuangjia2"] = "向晚吹霜笳，雪落白发生。",
+  ["$beifen1"] = "此心如置冰壶，无物可暖。",
+  ["$beifen2"] = "年少爱登楼，欲说语还休。",
+  ["~mu__caiwenji"] = "天何薄我，天何薄我……",
+}
+
 return extension

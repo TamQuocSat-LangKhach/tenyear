@@ -286,28 +286,26 @@ local ty_ex__xuanfeng = fk.CreateTriggerSkill{
         return not p:isNude() end), function (p) return p.id end)
       if #targets > 0 then
         local tos = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__xuanfeng-choose", self.name, true)
-        if #tos == 0 then
-          tos = {table.random(targets)}
-        end
-        room:doIndicate(player.id, tos)
-         local card = room:askForCardChosen(player, room:getPlayerById(tos[1]), "he", self.name)
-        room:throwCard({card}, self.name, room:getPlayerById(tos[1]), player)
-        if player.phase ~= Player.NotActive then
-          table.insert(targetsx, tos[1])
+        if #tos > 0 then
+          room:doIndicate(player.id, tos)
+          local card = room:askForCardChosen(player, room:getPlayerById(tos[1]), "he", self.name)
+          room:throwCard({card}, self.name, room:getPlayerById(tos[1]), player)
+           if player.phase ~= Player.NotActive then
+               table.insert(targetsx, tos[1])
+           end
         end
       end
     end
     if #targetsx > 0 then
       local tos = room:askForChoosePlayers(player, targetsx, 1, 1, "#ty_ex__xuanfeng-damage", self.name, true)
-      if #tos == 0 then
-        tos = {table.random(targetsx)}
+      if #tos > 0 then
+        room:damage{
+          from = player,
+          to = room:getPlayerById(tos[1]),
+          damage = 1,
+           skillName = self.name,
+        }
       end
-       room:damage{
-         from = player,
-         to = room:getPlayerById(tos[1]),
-         damage = 1,
-          skillName = self.name,
-       }
     else return end
   end,
 
@@ -694,7 +692,9 @@ local guanxingzhangbao = General(extension, "ty_ex__guanxingzhangbao", "shu", 4)
 local ty_ex__tongxin = fk.CreateAttackRangeSkill{
   name = "ty_ex__tongxin",
   correct_func = function (self, from, to)
-    return 2
+    if from:hasSkill(self.name) then
+      return 2
+    end
   end,
 }
 guanxingzhangbao:addSkill("fuhun")
@@ -787,7 +787,7 @@ local ty_ex__chunlao = fk.CreateTriggerSkill{
   events = {fk.EventPhaseEnd, fk.AskForPeaches},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self.name) then
-      if event == fk.EventPhaseStart then
+      if event == fk.EventPhaseEnd then
         return target == player and player.phase == Player.Play and #player:getPile("ty_ex__chengpu_chun") == 0 and not player:isKongcheng()
       else
         return target.dying and #player:getPile("ty_ex__chengpu_chun") > 0

@@ -261,13 +261,59 @@ local shixian = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.CardUseFinished},
+  refresh_events = {fk.CardUseFinished, fk.AfterCardUseDeclared, fk.AfterCardsMove, fk.TurnEnd},
   can_refresh = function(self, event, target, player, data)
-    return data.extra_data and data.extra_data.shixian
+    if event == fk.CardUseFinished then
+      return data.extra_data and data.extra_data.shixian
+    elseif event == fk.AfterCardUseDeclared then
+      return player == target
+    elseif event == fk.AfterCardsMove then
+      return player:hasSkill(self.name, true) and player:getMark("shixian_name") ~= 0
+    elseif event == fk.TurnEnd then
+      return player:getMark("shixian_name") ~= 0
+    end
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:doCardUseEffect(data)
-    data.extra_data.shixian = false
+    local room = player.room
+    if event == fk.CardUseFinished then
+      player.room:doCardUseEffect(data)
+      data.extra_data.shixian = false
+      return false
+    elseif event == fk.AfterCardUseDeclared then
+      room:setPlayerMark(player, "shixian_name", data.card.trueName)
+    elseif event == fk.TurnEnd then
+      room:setPlayerMark(player, "shixian_name", 0)
+    elseif event == fk.AfterCardsMove then
+      local no_change = true
+      for _, move in ipairs(data) do
+        if move.from == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            room:setCardMark(Fk:getCardById(info.cardId), "@@shixian_rhyme", 0)
+          end
+        end
+        if move.to == player.id and move.toArea == Card.PlayerHand then
+          no_change = false
+        end
+      end
+      if no_change then return false end
+    end
+    local lastcardname = player:getMark("shixian_name")
+    for _, id in ipairs(player:getCardIds(Player.Hand)) do
+      local card = Fk:getCardById(id)
+      local cardname = card.trueName
+      local marked = 0
+      if player:hasSkill(self.name, true) then
+        for _, p in ipairs(shixian_pairs) do
+          if table.contains(p, cardname) and table.contains(p, lastcardname) then
+            marked = 1
+            break
+          end
+        end
+      end
+      if marked ~= card:getMark("@@shixian_rhyme") then
+        room:setCardMark(card, "@@shixian_rhyme", marked)
+      end
+    end
   end,
 }
 jiuxian:addRelatedSkill(jiuxian_targetmod)
@@ -281,6 +327,14 @@ Fk:loadTranslationTable{
   [":shixian"] = "你使用一张牌时，若此牌与你本回合使用的上一张牌押韵，你可以摸一张牌并令此牌额外执行一次效果。",
   ["@shixian-turn"] = "诗仙",
   ["#shixian-invoke"] = "诗仙：%arg押韵！你可以摸一张牌并令此牌额外执行一次效果！",
+
+  ["@@shixian_rhyme"] = "押韵",
+
+  ["$jiuxian1"] = "地若不爱酒，地应无酒泉。",
+  ["$jiuxian2"] = "天若不爱酒，酒星不在天。",
+  ["$shixian1"] = "武侯立岷蜀，壮志吞咸京。",
+  ["$shixian2"] = "鱼水三顾合，风云四海生。",
+  ["~libai"] = "谁识卧龙客，长吟愁鬓斑。",
 }
 
 return extension

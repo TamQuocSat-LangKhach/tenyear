@@ -2134,7 +2134,7 @@ local xianjin = fk.CreateTriggerSkill{
     elseif event == fk.Damaged then
       room:addPlayerMark(player, "xianjin_damaged", 1)
       if player:getMark("xianjin_damaged") < 2 then return end
-      room:setPlayerMark(player, "xianjin_damaged", 1)
+      room:setPlayerMark(player, "xianjin_damaged", 0)
     end
     self:doCost(event, target, player, data)
   end,
@@ -2325,6 +2325,16 @@ Fk:loadTranslationTable{
   ["#qijing-choose"] = "奇径：选择一名角色，你移动座次成为其下家",
   ["#cuixin-invoke"] = "摧心：你可以视为对 %dest 使用【%arg】",
   ["#cuixin2-choose"] = "摧心：你可以视为对其中一名角色使用【%arg】",
+
+  ["$tuoyu1"] = "本尊目之所及，皆为麾下王土。",
+  ["$tuoyu2"] = "擎五丁之神力，碎万仞之高山。",
+  ["$xianjin1"] = "大风！大雨！大景！！",
+  ["$xianjin2"] = "行役沙场，不战胜，则战死！",
+  ["$qijing1"] = "今神兵于天降，贯奕世之长虹！",
+  ["$qijing2"] = "辟罗浮之险径，捣伪汉之黄龙！",
+  ["$cuixin1"] = "今兵临城下，其王庭可摧。",
+  ["$cuixin2"] = "四面皆奏楚歌，问汝降是不降？",
+  ["~goddengai"] = "灭蜀者，邓氏士载也！",
 }
 
 --百战虎贲：兀突骨 文鸯 皇甫嵩 王双 留赞 黄祖 雷铜 吴兰

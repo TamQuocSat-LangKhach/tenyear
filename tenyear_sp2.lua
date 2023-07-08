@@ -4206,53 +4206,61 @@ local jincui = fk.CreateTriggerSkill{
   name = "jincui",
   anim_type = "control",
   frequency = Skill.Compulsory,
-  events = {fk.EventPhaseStart},
+  mute = true,
+  events = {fk.EventPhaseStart, fk.GameStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Start
+    if event == fk.GameStart then
+      return player:hasSkill(self.name) and player:getHandcardNum() < 7
+    elseif event == fk.EventPhaseStart then
+      return target == player and player:hasSkill(self.name) and player.phase == Player.Start
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local n = 0
-    for _, id in ipairs(room.draw_pile) do
-      if Fk:getCardById(id).number == 7 then
-        n = n + 1
+    if event == fk.GameStart then
+      room:notifySkillInvoked(player, self.name, "drawcard")
+      room:broadcastSkillInvoke(self.name)
+      local n = 7 - player:getHandcardNum()
+      if n > 0 then
+        player:drawCards(n, self.name)
       end
+    elseif event == fk.EventPhaseStart then
+      room:notifySkillInvoked(player, self.name)
+      room:broadcastSkillInvoke(self.name)
+      local n = 0
+      for _, id in ipairs(room.draw_pile) do
+        if Fk:getCardById(id).number == 7 then
+          n = n + 1
+        end
+      end
+      n = math.max(n, 1)
+      if player.hp > n then
+        room:loseHp(player, player.hp - n, self.name)
+      elseif player.hp < n then
+        room:recover({
+          who = player,
+          num = math.min(n - player.hp, player:getLostHp()),
+          recoverBy = player,
+          skillName = self.name
+        })
+      end
+      room:askForGuanxing(player, room:getNCards(player.hp))
     end
-    n = math.max(n, 1)
-    if player.hp > n then
-      room:loseHp(player, player.hp - n, self.name)
-    elseif player.hp < n then
-      room:recover({
-        who = player,
-        num = math.min(n - player.hp, player:getLostHp()),
-        recoverBy = player,
-        skillName = self.name
-      })
-    end
-    room:askForGuanxing(player, room:getNCards(player.hp))
-  end,
-
-  refresh_events = {fk.DrawInitialCards},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, true)
-  end,
-  on_refresh = function(self, event, target, player, data)
-    data.num = data.num + 3
   end,
 }
 local qingshi = fk.CreateTriggerSkill{
   name = "qingshi",
-  anim_type = "drawcard",
   events = {fk.CardUsing},
+  mute = true,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and player.phase == Player.Play and player:getMark("@@qingshi-turn") == 0 and
       table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id).trueName == data.card.trueName end) and
       (player:getMark("@$qingshi-turn") == 0 or not table.contains(player:getMark("@$qingshi-turn"), data.card.trueName))
   end,
   on_cost = function(self, event, target, player, data)
-    local choices = {"Cancel", "qingshi2", "qingshi3"}
+    local choices = {"qingshi2", "qingshi3", "Cancel"}
     if data.card.is_damage_card and data.tos then
-      table.insert(choices, 2, "qingshi1")
+      table.insert(choices, 1, "qingshi1")
     end
     local choice = player.room:askForChoice(player, choices, self.name, "#qingshi-invoke:::"..data.card:toLogString())
     if choice ~= "Cancel" then
@@ -4267,6 +4275,8 @@ local qingshi = fk.CreateTriggerSkill{
     table.insert(mark, data.card.trueName)
     room:setPlayerMark(player, "@$qingshi-turn", mark)
     if self.cost_data == "qingshi1" then
+      room:notifySkillInvoked(player, self.name, "offensive")
+      room:broadcastSkillInvoke(self.name)
       local to = room:askForChoosePlayers(player, TargetGroup:getRealTargets(data.tos), 1, 1,
         "#qingshi1-choose:::"..data.card:toLogString(), self.name, false)
       if #to > 0 then
@@ -4277,6 +4287,8 @@ local qingshi = fk.CreateTriggerSkill{
       data.extra_data = data.extra_data or {}
       data.extra_data.qingshi = to
     elseif self.cost_data == "qingshi2" then
+      room:notifySkillInvoked(player, self.name, "support")
+      room:broadcastSkillInvoke(self.name)
       local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
       local tos = room:askForChoosePlayers(player, targets, 1, 10, "#qingshi2-choose", self.name, false)
       if #tos == 0 then
@@ -4289,6 +4301,8 @@ local qingshi = fk.CreateTriggerSkill{
         end
       end
     elseif self.cost_data == "qingshi3" then
+      room:notifySkillInvoked(player, self.name, "drawcard")
+      room:broadcastSkillInvoke(self.name)
       player:drawCards(3, self.name)
       room:setPlayerMark(player, "@@qingshi-turn", 1)
     end
@@ -4318,7 +4332,7 @@ local zhizhe = fk.CreateActiveSkill{
     return player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and not player:isKongcheng()
   end,
   card_filter = function(self, to_select, selected)
-    local card = Fk:currentRoom():getCardArea(to_select)
+    local card = Fk:getCardById(to_select)
     return #selected == 0 and Fk:currentRoom():getCardArea(to_select) == Card.PlayerHand and
       card.type ~= Card.TypeEquip and card.sub_type ~= Card.SubtypeDelayedTrick
   end,
@@ -4415,8 +4429,8 @@ zhugeliang:addSkill(zhizhe)
 Fk:loadTranslationTable{
   ["wm__zhugeliang"] = "诸葛亮",
   ["jincui"] = "尽瘁",
-  [":jincui"] = "锁定技，准备阶段，你的体力值调整为与牌堆中点数为7的游戏牌数量相等（至少为1）。然后你观看牌堆顶X张牌，"..
-  "将这些牌以任意顺序放回牌堆顶或牌堆底（X为你的体力值）",
+  [":jincui"] = "锁定技，游戏开始时，你将手牌补至7张。准备阶段，你的体力值调整为与牌堆中点数为7的游戏牌数量相等（至少为1）。"..
+  "然后你观看牌堆顶X张牌（X为你的体力值），将这些牌以任意顺序放回牌堆顶或牌堆底。",
   ["qingshi"] = "情势",
   [":qingshi"] = "当你于出牌阶段内使用一张牌时（每种牌名每回合限一次），若手牌中有同名牌，你可以选择一项：1.令此牌对其中一个目标造成的伤害值+1："..
   "2.令任意名其他角色各摸一张牌；3.摸三张牌，然后此技能本回合失效。",

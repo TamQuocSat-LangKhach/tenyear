@@ -694,6 +694,8 @@ local ty_ex__tongxin = fk.CreateAttackRangeSkill{
   correct_func = function (self, from, to)
     if from:hasSkill(self.name) then
       return 2
+    else
+      return 0
     end
   end,
 }

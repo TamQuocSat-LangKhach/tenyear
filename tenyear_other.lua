@@ -487,4 +487,135 @@ Fk:loadTranslationTable{
   ["@wudao-turn"] = "悟道",
 }
 
+local zhutiexiong = General(extension, "zhutiexiong", "god", 3)
+local bianzhuang_skills = {
+  --standard
+  "wushuang", "tieji", "ex__tieji",
+  "liegong", "kuanggu", "mengjin", "lieren", "wansha", "jiang",
+  "moukui", "kuangfu", "jyie", "nuzhan", "zhiman", "re__pojun",
+  "jueqing", "pojun", "nos__qianxi", "anjian", "zenhui", "qingxi",
+  --ol
+  "fengpo", "fuji", "gangzhi", "lingren", "qigong", "saodi", "huanfu", "yimie",
+  "ol_ex__kuanggu", "ol_ex__liegong", "ol_ex__jianchu",
+  --monile
+  "shidi", "dengli", "quedi",
+  --overseas
+  "os__cuijin", "os__zhenxi", "os__moukui", "os__hengjiang", "os__jintao", "os__gongge", "os__fenghan", "os__yulong", "os__zhenhu",
+  "os_ex__qingxi",
+  --tenyear
+  "ty__wuniang", "zhuilie", "xiaojun", "qingshi", "xingluan", "jiedao", "yangzhong", "funing", "benshi", "choutao", "yiyong", "jinglan",
+  "wanggui", "suoliang", "ty_ex__jueqing", "ty_ex__zhiman",
+  --jsrg
+  "juelie", "fendi", "zhenqiao",
+  --wandian
+  "wd__ciqiu", "wd__fenkai",
+}
+local bianzhuang = fk.CreateActiveSkill{
+  name = "bianzhuang",
+  anim_type = "special",
+  card_num = 0,
+  target_num = 0,
+  prompt = "#bianzhuang",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local n = player:usedSkillTimes(self.name, Player.HistoryGame) > 3 and 3 or 2
+    local skills = table.random(bianzhuang_skills, n)
+    local generals = {}
+    for _, name in ipairs(Fk.package_names) do
+      if Fk.packages[name].type == Package.GeneralPack then
+        for _, general in ipairs(Fk.packages[name].generals) do
+          for _, skill in ipairs(general:getSkillNameList()) do
+            if table.contains(skills, skill) and not player:hasSkill(skill, true) then
+              table.insertIfNeed(generals, general.name)
+            end
+          end
+        end
+      end
+    end
+    generals = table.random(generals, n)
+    local general = room:askForGeneral(player, generals, 1)
+    local bianzhuang_info = {player.general, player.gender, player.kingdom}
+    player.general = general
+    room:broadcastProperty(player, "general")
+    player.gender = Fk.generals[general].gender
+    room:broadcastProperty(player, "gender")
+    player.kingdom = Fk.generals[general].kingdom
+    room:broadcastProperty(player, "kingdom")
+    local skill_name = table.filter(Fk.generals[general]:getSkillNameList(), function(s) return table.contains(skills, s) end)[1]
+    room:handleAddLoseSkills(player, skill_name, nil, false, false)
+
+    local success, data = room:askForUseActiveSkill(player, "bianzhuang_viewas", "#bianzhuang-slash:::"..skill_name, false)
+    if success then
+      local card = Fk:cloneCard("slash")
+      card.skillName = self.name
+      room:useCard{
+        from = player.id,
+        tos = table.map(data.targets, function(id) return {id} end),
+        card = card,
+        extraUse = true,
+      }
+    end
+
+    room:handleAddLoseSkills(player, "-"..skill_name, nil, false, false)
+    player.general = bianzhuang_info[1]
+    room:broadcastProperty(player, "general")
+    player.gender = bianzhuang_info[2]
+    room:broadcastProperty(player, "gender")
+    player.kingdom = bianzhuang_info[3]
+    room:broadcastProperty(player, "kingdom")
+  end,
+}
+local bianzhuang_viewas = fk.CreateViewAsSkill{
+  name = "bianzhuang_viewas",
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  view_as = function(self, cards)
+    local card = Fk:cloneCard("slash")
+    card.skillName = "bianzhuang"
+    return card
+  end,
+}
+local bianzhuang_targetmod = fk.CreateTargetModSkill{
+  name = "#bianzhuang_targetmod",
+  distance_limit_func =  function(self, player, skill, card)
+    if card and table.contains(card.skillNames, "bianzhuang") then
+      return 999
+    end
+  end,
+  bypass_times = function(self, player, skill, scope, card)
+    return card and table.contains(card.skillNames, "bianzhuang")
+  end,
+}
+local bianzhuang_record = fk.CreateTriggerSkill{
+  name = "#bianzhuang_record",
+
+  refresh_events = {fk.CardUseFinished},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and data.card.type == Card.TypeEquip and player:usedSkillTimes("bianzhuang", Player.HistoryPhase) > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player:setSkillUseHistory("bianzhuang", 0, Player.HistoryPhase)
+  end,
+}
+Fk:addSkill(bianzhuang_viewas)
+bianzhuang:addRelatedSkill(bianzhuang_targetmod)
+bianzhuang:addRelatedSkill(bianzhuang_record)
+zhutiexiong:addSkill(bianzhuang)
+Fk:loadTranslationTable{
+  ["zhutiexiong"] = "朱铁雄",
+  ["bianzhuang"] = "变装",
+  [":bianzhuang"] = "出牌阶段限一次，你可以从两名武将中选择一个进行变装，然后视为使用一张【杀】（无距离和次数限制），根据变装此【杀】获得额外效果。"..
+  "当你使用装备牌后，重置本阶段〖变装〗发动次数。当你发动三次〖变装〗后，本局游戏你进行变装时增加一个选项。",
+  ["#bianzhuang"] = "变装：你可以进行“变装”！然后视为使用一张【杀】",
+  ["bianzhuang_viewas"] = "变装",
+  ["#bianzhuang-slash"] = "变装：视为使用一张【杀】，附带“%arg”的技能效果！",
+}
+
 return extension

@@ -1161,7 +1161,7 @@ Fk:loadTranslationTable{
   ["~duanqiaoxiao"] = "佳人时光少，君王总薄情……",
 }
 
---皇家贵胄：曹髦 刘辩 刘虞 全惠解 丁尚涴 谢灵毓 袁姬
+--皇家贵胄：曹髦 刘辩 刘虞 全惠解 丁尚涴 袁姬 谢灵毓
 local caomao = General(extension, "caomao", "wei", 3, 4)
 local qianlong = fk.CreateTriggerSkill{
   name = "qianlong",
@@ -1874,6 +1874,86 @@ Fk:loadTranslationTable{
   ["~dingfuren"] = "吾儿既丧，天地无光……",
 }
 
+local yuanji = General(extension, "yuanji", "wu", 3, 3, General.Female)
+local fangdu = fk.CreateTriggerSkill{
+  name = "fangdu",
+  anim_type = "masochism",
+  events = {fk.Damaged},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and ((player:getMark("fangdu1-round") == 0 and data.damageType == fk.NormalDamage) or
+    (player:getMark("fangdu2-round") == 0 and data.damageType ~= fk.NormalDamage))
+  end,
+  on_trigger = function(self, event, target, player, data)
+    local room = player.room
+    if data.damageType == fk.NormalDamage then
+      room:setPlayerMark(player, "fangdu1-round", 1)
+      if not player:isWounded() then return end
+    else
+      room:setPlayerMark(player, "fangdu2-round", 1)
+      if not data.from or data.from == player or data.from:isKongcheng() then return end
+    end
+    if player.phase ~= Player.NotActive then return end
+    self:doCost(event, target, player, data)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if data.damageType == fk.NormalDamage then
+      room:recover{
+        who = player,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      }
+    else
+      local id = table.random(data.from.player_cards[Player.Hand])
+      room:obtainCard(player.id, id, false, fk.ReasonPrey)
+    end
+  end
+}
+local jiexing = fk.CreateTriggerSkill{
+  name = "jiexing",
+  anim_type = "drawcard",
+  events = {fk.HpChanged},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name)
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#jiexing-invoke")
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local id = player:drawCards(1, self.name)[1]
+    local mark = player:getMark("jiexing-turn")
+    if mark == 0 then mark = {} end
+    table.insertIfNeed(mark, id)
+    room:setPlayerMark(player, "jiexing-turn", mark)
+  end,
+}
+local jiexing_maxcards = fk.CreateMaxCardsSkill{
+  name = "#jiexing_maxcards",
+  exclude_from = function(self, player, card)
+    return player:getMark("jiexing-turn") ~= 0 and table.contains(player:getMark("jiexing-turn"), card.id)
+  end,
+}
+jiexing:addRelatedSkill(jiexing_maxcards)
+yuanji:addSkill(fangdu)
+yuanji:addSkill(jiexing)
+Fk:loadTranslationTable{
+  ["yuanji"] = "袁姬",
+  ["fangdu"] = "芳妒",
+  [":fangdu"] = "锁定技，你的回合外，你每轮第一次受到普通伤害后回复1点体力，你每轮第一次受到属性伤害后随机获得伤害来源一张手牌。",
+  ["jiexing"] = "节行",
+  [":jiexing"] = "当你的体力值变化后，你可以摸一张牌，此牌不计入你本回合的手牌上限。",
+  ["#jiexing-invoke"] = "节行：你可以摸一张牌，此牌本回合不计入手牌上限",
+
+  ["$fangdu1"] = "浮萍却红尘，何意染是非？",
+  ["$fangdu2"] = "我本无意争春，奈何群芳相妒。",
+  ["$jiexing1"] = "女子有节，安能贰其行？",
+  ["$jiexing2"] = "坐收雨露，皆为君恩。",
+  ["~yuanji"] = "妾本蒲柳，幸荣君恩……",
+}
+
 local xielingyu = General(extension, "xielingyu", "wu", 3, 3, General.Female)
 local yuandi = fk.CreateTriggerSkill{
   name = "yuandi",
@@ -1987,86 +2067,6 @@ Fk:loadTranslationTable{
   ["$xinyou1"] = "我有幽月一斛，可醉十里春风。",
   ["$xinyou2"] = "心在方外，故而不闻市井之声。",
   ["~xielingyu"] = "翠瓦红墙处，最折意中人。",
-}
-
-local yuanji = General(extension, "yuanji", "wu", 3, 3, General.Female)
-local fangdu = fk.CreateTriggerSkill{
-  name = "fangdu",
-  anim_type = "masochism",
-  events = {fk.Damaged},
-  frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and ((player:getMark("fangdu1-round") == 0 and data.damageType == fk.NormalDamage) or
-    (player:getMark("fangdu2-round") == 0 and data.damageType ~= fk.NormalDamage))
-  end,
-  on_trigger = function(self, event, target, player, data)
-    local room = player.room
-    if data.damageType == fk.NormalDamage then
-      room:setPlayerMark(player, "fangdu1-round", 1)
-      if not player:isWounded() then return end
-    else
-      room:setPlayerMark(player, "fangdu2-round", 1)
-      if not data.from or data.from == player or data.from:isKongcheng() then return end
-    end
-    if player.phase ~= Player.NotActive then return end
-    self:doCost(event, target, player, data)
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    if data.damageType == fk.NormalDamage then
-      room:recover{
-        who = player,
-        num = 1,
-        recoverBy = player,
-        skillName = self.name
-      }
-    else
-      local id = table.random(data.from.player_cards[Player.Hand])
-      room:obtainCard(player.id, id, false, fk.ReasonPrey)
-    end
-  end
-}
-local jiexing = fk.CreateTriggerSkill{
-  name = "jiexing",
-  anim_type = "drawcard",
-  events = {fk.HpChanged},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name)
-  end,
-  on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#jiexing-invoke")
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local id = player:drawCards(1, self.name)[1]
-    local mark = player:getMark("jiexing-turn")
-    if mark == 0 then mark = {} end
-    table.insertIfNeed(mark, id)
-    room:setPlayerMark(player, "jiexing-turn", mark)
-  end,
-}
-local jiexing_maxcards = fk.CreateMaxCardsSkill{
-  name = "#jiexing_maxcards",
-  exclude_from = function(self, player, card)
-    return player:getMark("jiexing-turn") ~= 0 and table.contains(player:getMark("jiexing-turn"), card.id)
-  end,
-}
-jiexing:addRelatedSkill(jiexing_maxcards)
-yuanji:addSkill(fangdu)
-yuanji:addSkill(jiexing)
-Fk:loadTranslationTable{
-  ["yuanji"] = "袁姬",
-  ["fangdu"] = "芳妒",
-  [":fangdu"] = "锁定技，你的回合外，你每轮第一次受到普通伤害后回复1点体力，你每轮第一次受到属性伤害后随机获得伤害来源一张手牌。",
-  ["jiexing"] = "节行",
-  [":jiexing"] = "当你的体力值变化后，你可以摸一张牌，此牌不计入你本回合的手牌上限。",
-  ["#jiexing-invoke"] = "节行：你可以摸一张牌，此牌本回合不计入手牌上限",
-
-  ["$fangdu1"] = "浮萍却红尘，何意染是非？",
-  ["$fangdu2"] = "我本无意争春，奈何群芳相妒。",
-  ["$jiexing1"] = "女子有节，安能贰其行？",
-  ["$jiexing2"] = "坐收雨露，皆为君恩。",
-  ["~yuanji"] = "妾本蒲柳，幸荣君恩……",
 }
 
 --章台春望：郭照 樊玉凤 阮瑀 杨婉 潘淑

@@ -3,6 +3,7 @@ extension.extensionName = "tenyear"
 
 Fk:loadTranslationTable{
   ["tenyear_sp2"] = "十周年-限定专属2",
+  ["wm"] = "武",
 }
 
 --笔舌如椽：杨修 骆统 王昶 程秉 杨彪 阮籍

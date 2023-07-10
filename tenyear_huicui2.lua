@@ -3,6 +3,7 @@ extension.extensionName = "tenyear"
 
 Fk:loadTranslationTable{
   ["tenyear_huicui2"] = "十周年-群英荟萃2",
+  ["mu"] = "乐",
 }
 
 --江湖之远：管宁 黄承彦 胡昭 王烈 孟节

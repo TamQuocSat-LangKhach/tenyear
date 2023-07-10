@@ -3,8 +3,6 @@ extension.extensionName = "tenyear"
 
 Fk:loadTranslationTable{
   ["tenyear_test"] = "十周年-测试服",
-  ["wm"] = "武",
-  ["mu"] = "乐",
 }
 
 --嵇康 曹不兴
@@ -12,17 +10,93 @@ Fk:loadTranslationTable{
 Fk:loadTranslationTable{
   ["ty__sunhanhua"] = "孙寒华",
   ["huiling"] = "汇灵",
-  [":huiling"] = "锁定技，弃牌堆中的红色牌数量多于黑色牌时，你使用牌时回复1点体力并获得一个“灵”标记；"..
-  "弃牌堆中黑色牌数量多于红色牌时，你使用牌时可弃置一名其他角色区域内的一张牌。",
+  [":huiling"] = "锁定技，你使用牌时，若弃牌堆中的红色牌数量多于黑色牌，你回复1点体力；"..
+  "黑色牌数量多于红色牌，你可以弃置一名其他角色区域内的一张牌；牌数较少的颜色与你使用牌的颜色相同，你获得一个“灵”标记。",
   ["chongxu"] = "冲虚",
-  [":chongxu"] = "锁定技，出牌阶段，若“灵”的数量不小于4，你可以失去〖汇灵〗，增加等量的体力上限，并获得〖踏寂〗和〖清荒〗。",
+  [":chongxu"] = "限定技，出牌阶段，若“灵”的数量不小于4，你可以失去〖汇灵〗，增加等量的体力上限，并获得〖踏寂〗和〖清荒〗。",
   ["taji"] = "踏寂",
   [":taji"] = "当你失去手牌时，根据此牌的失去方式执行以下效果：使用-此牌不能被响应；打出-摸一张牌；弃置-回复1点体力；其他-你下次对其他角色造成的伤害+1。",
   ["qinghuang"] = "清荒",
-  [":qinghuang"] = "出牌阶段开始时，你可以减1点体力上限，然后你本回合失去牌时触发〖踏寂〗时随机额外获得一种效果。",
+  [":qinghuang"] = "出牌阶段开始时，你可以减1点体力上限，然后你本回合发动〖踏寂〗时随机额外执行一种效果。",
 }
 
--- 孙桓
+local sunhuan = General(extension, "sunhuan", "wu", 4)
+local niji = fk.CreateTriggerSkill{
+  name = "niji",
+  anim_type = "drawcard",
+  events = {fk.TargetConfirmed, fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if event == fk.TargetConfirmed then
+      return target == player and player:hasSkill(self.name) and data.firstTarget and data.card.type ~= Card.TypeEquip
+    elseif event == fk.EventPhaseStart then
+      return target.phase == Player.Finish and not player:isKongcheng() and
+        table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji") > 0 end)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.TargetConfirmed then
+      return player.room:askForSkillInvoke(player, self.name, nil, "#niji-invoke")
+    else
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.TargetConfirmed then
+      local id = player:drawCards(1, self.name)[1]
+      if room:getCardOwner(id) == player and room:getCardArea(id) == Card.PlayerHand then
+        room:setCardMark(Fk:getCardById(id), "@@niji", 1)
+      end
+    else
+      local cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji") > 0 end)
+      if player:hasSkill(self.name) and #cards >= player.hp then
+        local pattern = "^(jink,nullification)|.|.|.|.|.|"..table.concat(cards, ",")
+        local use = room:askForUseCard(player, "", pattern, "#niji-use", true)
+        if use then
+          room:useCard(use)
+        end
+      end
+      if not player.dead then
+        cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji") > 0 end)
+        room:throwCard(cards, self.name, player, player)
+      end
+    end
+  end,
+
+  refresh_events = {fk.AfterCardsMove, fk.TurnEnd},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.AfterCardsMove then
+      return true
+    else
+      return not player:isKongcheng()
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.AfterCardsMove then
+      for _, move in ipairs(data) do
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand then
+            room:setCardMark(Fk:getCardById(info.cardId), "@@niji", 0)
+          end
+        end
+      end
+    elseif event == fk.TurnEnd then
+      for _, id in ipairs(player.player_cards[Player.Hand]) do
+        room:setCardMark(Fk:getCardById(id), "@@niji", 0)
+      end
+    end
+  end,
+}
+sunhuan:addSkill(niji)
+Fk:loadTranslationTable{
+  ["sunhuan"] = "孙桓",
+  ["niji"] = "逆击",
+  [":niji"] = "当你成为非装备牌的目标后，你可以摸一张牌，本回合结束阶段弃置这些牌。若将要弃置的牌数不小于你的体力值，你可以先使用其中一张牌。",
+  ["@@niji"] = "逆击",
+  ["#niji-invoke"] = "逆击：你可以摸一张牌，本回合结束阶段弃置之",
+  ["#niji-use"] = "逆击：即将弃置所有“逆击”牌，你可以先使用其中一张牌",
+}
 
 local peiyuanshao = General(extension, "peiyuanshao", "qun", 4)
 local moyu = fk.CreateActiveSkill{
@@ -227,7 +301,7 @@ local xianjiao = fk.CreateActiveSkill{
   card_num = 2,
   target_num = 1,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name) == 0 and not player:isKongcheng()
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
   end,
   card_filter = function(self, to_select, selected)
     if Fk:currentRoom():getCardArea(to_select) ~= Player.Equip then
@@ -241,7 +315,7 @@ local xianjiao = fk.CreateActiveSkill{
     end
   end,
   target_filter = function(self, to_select, selected)
-    return #selected == 0 and to_select ~= Self.id
+    return #selected == 0 and to_select ~= Self.id and not Self:isProhibited(Fk:currentRoom():getPlayerById(to_select), Fk:cloneCard("slash"))
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -286,7 +360,163 @@ Fk:loadTranslationTable{
   ["#shengdu-choose"] = "生妒：选择一名角色，其下次摸牌阶段摸牌后，你摸等量的牌",
 }
 
---袁胤 高翔 桓范 孟优 陈泰 孙綝 孙瑜 郤正 刘宠骆俊 乐綝 张曼成
+--袁胤 高翔
+
+--桓范 孟优 陈泰 孙綝 孙瑜 郤正 刘宠骆俊 乐綝 张曼成
+Fk:loadTranslationTable{
+  ["huanfan"] = "桓范",
+  ["jianzheng"] = "谏诤",
+  [":jianzheng"] = "出牌阶段限一次，你可以观看一名其他角色的手牌，然后若其中有你可以使用的牌，你可以获得并使用其中一张。"..
+  "若你未获得或未使用，则横置你与其武将牌，然后其观看你的手牌。",
+  ["fumou"] = "腹谋",
+  [":fumou"] = "当你受到1点伤害后，你可以令至多X名角色依次选择一项：1.移动场上一张牌；2.弃置所有手牌并摸两张牌；3.弃置装备区所有牌并回复1点体力。"..
+  "（X为你已损失的体力值）",
+}
+
+Fk:loadTranslationTable{
+  ["sunchen"] = "孙綝",
+  ["zigu"] = "自固",
+  [":zigu"] = "出牌阶段限一次，你可以弃置一张牌，然后获得场上一张装备牌。若你没有因此获得其他角色的牌，你摸一张牌。",
+  ["zuowei"] = "作威",
+  [":zuowei"] = "当你于回合内使用牌时，若你当前手牌数：大于X，你可以令此牌不可响应；等于X，你可以对一名其他角色造成1点伤害；小于X，"..
+  "你可以摸两张牌并令本回合此技能失效。（X为你装备区内的牌数且至少为1）",
+}
+
+Fk:loadTranslationTable{
+  ["sunyu"] = "孙瑜",
+  ["quanshou"] = "劝守",
+  [":quanshou"] = "一名角色回合开始时，若其手牌数小于其体力上限，你可以令其选择一项：1.将手牌摸至体力上限（至多摸五张），然后"..
+  "本回合出牌阶段使用【杀】次数上限-1；2.本回合使用的牌被抵消后你摸一张牌。",
+  ["shexue"] = "设学",
+  [":shexue"] = "出牌阶段开始时，你可以将一张牌当上回合的角色出牌阶段使用的最后一张基本牌或普通锦囊牌使用；"..
+  "出牌阶段结束时，你可以令下回合的角色于其出牌阶段开始时可以将一张牌当你本阶段使用的最后一张基本牌或普通锦囊牌使用。",
+}
+
+Fk:loadTranslationTable{
+  ["xizheng"] = "郤正",
+  ["danyi"] = "耽意",
+  [":danyi"] = "你使用牌指定目标后，若此牌目标与你使用的上一张牌完全相同，你可以摸X张牌（X为此牌目标数）。",
+  ["wencan"] = "文灿",
+  [":wencan"] = "出牌阶段限一次，你可以选择至多两名体力值不同且与你不同的角色，这些角色依次选择一项：1.弃置两张花色不同的牌，2.本回合你对其使用牌无次数限制。",
+}
+
+Fk:loadTranslationTable{
+  ["liuchongluojun"] = "刘宠骆俊",
+  ["minze"] = "悯泽",
+  [":minze"] = "出牌阶段每名角色限一次，你可以将至多两张牌名不同的牌交给一名手牌数小于你的角色，若其因此手牌数大于你，本阶段此技能失效。"..
+  "结束阶段，你将手牌补至X张（X为本回合你因此技能失去牌的牌名数，至多为5）。",
+  ["jini"] = "击逆",
+  [":jini"] = "当你受到伤害后，你可以重铸任意张手牌（每回合以此法重铸的牌数不能超过你的体力上限），若你以此法获得了【杀】，"..
+  "你可以对伤害来源使用一张无视距离且不可响应的【杀】。",
+}
+
+Fk:loadTranslationTable{
+  ["yuechen"] = "乐綝",
+  ["porui"] = "破锐",
+  [":porui"] = "每轮限一次，其他角色的结束阶段，你可以弃置一张基本牌并选择一名此回合内失去过牌的另一名其他角色，你视为对该角色依次使用X+1张【杀】，"..
+  "然后你交给其X张手牌（X为你的体力值，不足则全给）。",
+  ["gonghu"] = "共护",
+  [":gonghu"] = "锁定技，当你于回合外失去基本牌后，〖破锐〗最后增加描述“若其没有因此受到伤害，你回复1点体力”；当你于回合外造成或受到伤害后，"..
+  "你删除〖破锐〗中交给牌的效果。若以上两个效果均已触发，则你本局游戏使用红色基本牌无法响应，使用红色普通锦囊牌可以额外指定一个目标。",
+}
+
+local zhangmancheng = General(extension, "ty__zhangmancheng", "qun", 4)
+local lvecheng = fk.CreateActiveSkill{
+  name = "lvecheng",
+  anim_type = "offensive",
+  card_num = 0,
+  target_num = 1,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    room:setPlayerMark(target, "@@lvecheng-turn", player.id)
+  end,
+}
+local lvecheng_targetmod = fk.CreateTargetModSkill{
+  name = "#lvecheng_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    return to:getMark("@@lvecheng-turn") ~= 0 and to:getMark("@@lvecheng-turn") == player.id and
+      card.trueName == "slash" and scope == Player.HistoryPhase
+  end,
+}
+local lvecheng_trigger = fk.CreateTriggerSkill{
+  name = "#lvecheng_trigger",
+  mute = true,
+  events = {fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    return player:getMark("@@lvecheng-turn") ~= 0 and player:getMark("@@lvecheng-turn") == target.id and
+      target.phase == Player.Finish and not player:isKongcheng()
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:broadcastSkillInvoke("lvecheng")
+    room:notifySkillInvoked(target, "lvecheng", "negative")
+    room:doIndicate(player.id, {target.id})
+    player:showCards(player.player_cards[Player.Hand])
+    while table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id).trueName == "slash" end)
+      and not player.dead and not target.dead do
+      local use = room:askForUseCard(player, "slash", "slash|.|.|hand", "#lvecheng-slash::"..target.id, true,
+        {must_targets = {target.id}, bypass_distances = true, bypass_times = true})
+      if use then
+        room:useCard(use)
+      else
+        break
+      end
+    end
+  end,
+}
+local zhongji = fk.CreateTriggerSkill{
+  name = "zhongji",
+  anim_type = "drawcard",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) and player:getHandcardNum() < player.maxHp then
+      return player:isKongcheng() or
+        not table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id).suit == data.card.suit end)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil,
+      "#zhongji-invoke:::"..(player.maxHp - player:getHandcardNum())..":"..player:usedSkillTimes(self.name, Player.HistoryTurn) + 1)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:drawCards(player.maxHp - player:getHandcardNum(), self.name)
+    local n = player:usedSkillTimes(self.name, Player.HistoryTurn)
+    if #player:getCardIds{Player.Hand, Player.Equip} <= n then
+      player:throwAllCards("he")
+    else
+      room:askForDiscard(player, n, n, true, self.name, false)
+    end
+  end,
+}
+lvecheng:addRelatedSkill(lvecheng_targetmod)
+lvecheng:addRelatedSkill(lvecheng_trigger)
+zhangmancheng:addSkill(lvecheng)
+zhangmancheng:addSkill(zhongji)
+Fk:loadTranslationTable{
+  ["ty__zhangmancheng"] = "张曼成",
+  ["lvecheng"] = "掠城",
+  [":lvecheng"] = "出牌阶段限一次，你可以指定一名其他角色，本回合你对其使用【杀】无次数限制。若如此做，此回合结束阶段，其展示手牌：若其中有【杀】，"..
+  "其可以依次对你使用手牌中所有的【杀】。",
+  ["zhongji"] = "螽集",
+  [":zhongji"] = "当你使用牌时，若你没有该花色的手牌，你可将手牌摸至体力上限并弃置X张牌（X为本回合发动此技能的次数）。",
+  ["@@lvecheng-turn"] = "掠城",
+  ["#lvecheng-slash"] = "掠城：你可以依次对 %dest 使用手牌中所有【杀】！",
+  ["#zhongji-invoke"] = "螽集：你可以摸%arg张牌，然后弃置%arg2张牌",
+}
 
 -- 城孙权
 
@@ -296,7 +526,7 @@ Fk:loadTranslationTable{
   [":jianguo"] = "出牌阶段限一次，你可以选择一项：令一名角色摸一张牌然后弃置一半的手牌（向下取整）；"..
   "令一名角色弃置一张牌然后摸与当前手牌数一半数量的牌（向下取整）",
   ["qingshid"] = "倾势",
-  [":qingshid"] = "当你于回合内使用【杀】或锦囊牌指定一名其他角色为目标后，若此牌是你本回合使用的第X张牌，你可对其中一名目标角色造成1点伤害（X为你的手牌数）",
+  [":qingshid"] = "当你于回合内使用【杀】或锦囊牌指定其他角色为目标后，若此牌是你本回合使用的第X张牌，你可以对其中一名目标角色造成1点伤害（X为你的手牌数）",
 }
 
 return extension

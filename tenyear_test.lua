@@ -362,7 +362,7 @@ Fk:loadTranslationTable{
 
 --袁胤 高翔
 
---桓范 孟优 陈泰 孙綝 孙瑜 郤正 刘宠骆俊 乐綝 张曼成
+--桓范 孟优 陈泰 孙綝 孙瑜 郤正 乐綝 张曼成
 Fk:loadTranslationTable{
   ["huanfan"] = "桓范",
   ["jianzheng"] = "谏诤",
@@ -397,17 +397,8 @@ Fk:loadTranslationTable{
   ["danyi"] = "耽意",
   [":danyi"] = "你使用牌指定目标后，若此牌目标与你使用的上一张牌完全相同，你可以摸X张牌（X为此牌目标数）。",
   ["wencan"] = "文灿",
-  [":wencan"] = "出牌阶段限一次，你可以选择至多两名体力值不同且与你不同的角色，这些角色依次选择一项：1.弃置两张花色不同的牌，2.本回合你对其使用牌无次数限制。",
-}
-
-Fk:loadTranslationTable{
-  ["liuchongluojun"] = "刘宠骆俊",
-  ["minze"] = "悯泽",
-  [":minze"] = "出牌阶段每名角色限一次，你可以将至多两张牌名不同的牌交给一名手牌数小于你的角色，若其因此手牌数大于你，本阶段此技能失效。"..
-  "结束阶段，你将手牌补至X张（X为本回合你因此技能失去牌的牌名数，至多为5）。",
-  ["jini"] = "击逆",
-  [":jini"] = "当你受到伤害后，你可以重铸任意张手牌（每回合以此法重铸的牌数不能超过你的体力上限），若你以此法获得了【杀】，"..
-  "你可以对伤害来源使用一张无视距离且不可响应的【杀】。",
+  [":wencan"] = "出牌阶段限一次，你可以选择至多两名体力值不同且均与你不同的角色，这些角色依次选择一项：1.弃置两张花色不同的牌；"..
+  "2.本回合你对其使用牌无次数限制。",
 }
 
 Fk:loadTranslationTable{
@@ -527,6 +518,129 @@ Fk:loadTranslationTable{
   "令一名角色弃置一张牌然后摸与当前手牌数一半数量的牌（向下取整）",
   ["qingshid"] = "倾势",
   [":qingshid"] = "当你于回合内使用【杀】或锦囊牌指定其他角色为目标后，若此牌是你本回合使用的第X张牌，你可以对其中一名目标角色造成1点伤害（X为你的手牌数）",
+}
+
+local ganfurenmifuren = General(extension, "ganfurenmifuren", "shu", 3, 3, General.Female)
+local chanjuan = fk.CreateTriggerSkill{
+  name = "chanjuan",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and (data.card:isCommonTrick() or data.card.type == Card.TypeBasic) and
+      data.tos and #TargetGroup:getRealTargets(data.tos) == 1 and
+      (player:getMark("@$chanjuan") == 0 or not table.contains(player:getMark("@$chanjuan"), data.card.trueName))
+  end,
+  on_trigger = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, self.name, {data.card.name, TargetGroup:getRealTargets(data.tos)[1]})
+    self:doCost(event, target, player, data)
+    room:setPlayerMark(player, self.name, 0)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local success, dat = player.room:askForUseActiveSkill(player, "chanjuan_viewas",
+      "#chanjuan-invoke::"..TargetGroup:getRealTargets(data.tos)[1]..":"..data.card.name, true)
+    if success then
+      self.cost_data = dat
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local card = Fk:cloneCard(player:getMark(self.name)[1])
+    local mark = player:getMark("@$chanjuan")
+    if mark == 0 then mark = {} end
+    table.insert(mark, card.trueName)
+    room:setPlayerMark(player, "@$chanjuan", mark)
+    if #self.cost_data.targets == 1 and player:getMark(self.name) ~= 0 and self.cost_data.targets[1] == player:getMark(self.name)[2] then
+      player:drawCards(1, self.name)
+    end
+    room:useCard{
+      from = player.id,
+      tos = table.map(self.cost_data.targets, function(id) return {id} end),
+      card = card,
+    }
+  end,
+}
+local chanjuan_viewas = fk.CreateViewAsSkill{
+  name = "chanjuan_viewas",
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  view_as = function(self, cards)
+    if Self:getMark("chanjuan") == 0 then return end
+    local card = Fk:cloneCard(Self:getMark("chanjuan")[1])
+    card.skillName = "chanjuan"
+    return card
+  end,
+}
+local chanjuan_targetmod = fk.CreateTargetModSkill{
+  name = "#chanjuan_targetmod",
+  bypass_times = function(self, player, skill, scope, card)
+    return card and table.contains(card.skillNames, "chanjuan")
+  end,
+}
+local xunbie = fk.CreateTriggerSkill{
+  name = "xunbie",
+  anim_type = "defensive",
+  frequency = Skill.Limited,
+  events = {fk.EnterDying},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.dying and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local generals = {}
+    if not table.find(room.alive_players, function(p) return p.general == "ty__ganfuren" end) then
+      table.insert(generals, "ty__ganfuren")
+    end
+    if not table.find(room.alive_players, function(p) return p.general == "ty__mifuren" end) then
+      table.insert(generals, "ty__mifuren")
+    end
+    if #generals == 0 then
+      generals = {"ganfuren"}  --策划就没想过两个都有的情况吗？
+    end
+    local general = room:askForGeneral(player, generals, 1)
+    room:changeHero(player, general, false, false, true)
+    if not player.dead and player:isWounded() then
+      room:recover({
+        who = player,
+        num = 1 - player.hp,
+        recoverBy = player,
+        skillName = self.name
+      })
+    end
+    room:setPlayerMark(player, "@@xunbie-turn", 1)
+  end,
+}
+local xunbie_trigger = fk.CreateTriggerSkill{
+  name = "#xunbie_trigger",
+  mute = true,
+  events = {fk.DamageInflicted},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:usedSkillTimes("xunbie", Player.HistoryTurn) > 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:broadcastSkillInvoke("xunbie")
+    room:notifySkillInvoked(player, "xunbie")
+    return true
+  end,
+}
+chanjuan_viewas:addRelatedSkill(chanjuan_targetmod)
+Fk:addSkill(chanjuan_viewas)
+xunbie:addRelatedSkill(xunbie_trigger)
+ganfurenmifuren:addSkill(chanjuan)
+ganfurenmifuren:addSkill(xunbie)
+Fk:loadTranslationTable{
+  ["ganfurenmifuren"] = "甘夫人糜夫人",
+  ["chanjuan"] = "婵娟",
+  [":chanjuan"] = "你使用指定唯一目标的基本牌或普通锦囊牌结算完毕后，你可以视为使用一张同名牌，若目标完全相同，你摸一张牌。每种牌名限一次。",
+  ["xunbie"] = "殉别",
+  [":xunbie"] = "限定技，当你进入濒死状态时，你可以将武将牌改为甘夫人或糜夫人，然后回复体力至1并防止你受到的伤害直到回合结束。",
+  ["@$chanjuan"] = "婵娟",
+  ["#chanjuan-invoke"] = "婵娟：你可以视为使用【%arg】，若目标为 %dest ，你摸一张牌",
+  ["chanjuan_viewas"] = "婵娟",
+  ["@@xunbie-turn"] = "殉别",
 }
 
 return extension

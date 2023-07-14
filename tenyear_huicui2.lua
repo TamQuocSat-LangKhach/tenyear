@@ -603,7 +603,7 @@ Fk:loadTranslationTable{
   ["#yinlu-yunxiang"] = "♣芸香：你可以消耗所有“芸香”，防止等量的伤害",
 }
 
---悬壶济世：吉平 郑浑
+--悬壶济世：吉平 郑浑 刘宠骆俊
 --吉平
 
 local zhenghun = General(extension, "zhenghun", "wei", 3)
@@ -736,6 +736,130 @@ Fk:loadTranslationTable{
   ["#qiangzhiz-choose"] = "强峙：弃置双方共计三张牌",
   ["#pitian-invoke"] = "辟田：你可以将手牌摸至手牌上限，然后重置本技能增加的手牌上限",
   ["@pitian"] = "辟田",
+}
+
+local liuchongluojun = General(extension, "liuchongluojun", "qun", 3)
+local minze = fk.CreateActiveSkill{
+  name = "minze",
+  anim_type = "support",
+  min_card_num = 1,
+  max_card_num = 2,
+  target_num = 1,
+  can_use = function(self, player)
+    return player:getMark("@@minze-phase") == 0 and not player:isNude()
+  end,
+  card_filter = function(self, to_select, selected)
+    if #selected == 0 then
+      return true
+    elseif #selected == 1 then
+      return Fk:getCardById(to_select).trueName ~= Fk:getCardById(selected[1]).trueName
+    end
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    local target = Fk:currentRoom():getPlayerById(to_select)
+    return #selected == 0 and Self:getHandcardNum() > target:getHandcardNum() and target:getMark("minze-phase") == 0
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local mark = player:getMark("@$minze-turn")
+    if mark == 0 then mark = {} end
+    for _, id in ipairs(effect.cards) do
+      table.insertIfNeed(mark, Fk:getCardById(id).trueName)
+    end
+    room:setPlayerMark(player, "@$minze-turn", mark)
+    room:setPlayerMark(target, "minze-phase", 1)
+    local dummy = Fk:cloneCard("dilu")
+    dummy:addSubcards(effect.cards)
+    room:obtainCard(target, dummy, false, fk.ReasonGive)
+    if target:getHandcardNum() > player:getHandcardNum() then
+      room:setPlayerMark(player, "@@minze-phase", 1)
+    end
+  end,
+}
+local minze_trigger = fk.CreateTriggerSkill{
+  name = "#minze_trigger",
+  mute = true,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill("minze") and player.phase == Player.Finish and
+      player:getMark("@$minze-turn") ~= 0 and player:getHandcardNum() < math.min(#player:getMark("@$minze-turn"), 5)
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:broadcastSkillInvoke("minze")
+    room:notifySkillInvoked(player, "minze", "drawcard")
+    player:drawCards(math.min(#player:getMark("@$minze-turn"), 5) - player:getHandcardNum(), "minze")
+  end,
+}
+local jini = fk.CreateTriggerSkill{
+  name = "jini",
+  anim_type = "masochism",
+  events ={fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and not player:isKongcheng() and player:getMark("jini-turn") < player.maxHp
+  end,
+  on_cost = function(self, event, target, player, data)
+    local n = player.maxHp - player:getMark("jini-turn")
+    local prompt = "#jini1-invoke:::"..n
+    if data.from and data.from ~= player and not data.from.dead then
+      prompt = "#jini2-invoke::"..data.from.id..":"..n
+    end
+    local cards = player.room:askForCard(player, 1, n, false, self.name, true, ".", prompt)
+    if #cards > 0 then
+      self.cost_data = cards
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local n = #self.cost_data
+    room:moveCards({
+      ids = self.cost_data,
+      from = player.id,
+      toArea = Card.DiscardPile,
+      skillName = self.name,
+      moveReason = fk.ReasonPutIntoDiscardPile,
+      proposer = target.id
+    })
+    room:sendLog{
+      type = "#RecastBySkill",
+      from = player.id,
+      card = self.cost_data,
+      arg = self.name,
+    }
+    local cards = player:drawCards(n, self.name)
+    room:addPlayerMark(player, "jini-turn", n)
+    if player.dead or not data.from or data.from == player or data.from.dead then return end
+    if table.find(cards, function(id) return Fk:getCardById(id, true).trueName == "slash" end) then
+      local use = room:askForUseCard(player, "slash", "slash", "#jini-slash::"..data.from.id, true,
+        {must_targets = {data.from.id}, bypass_distances = true, bypass_times = true})
+      if use then
+        use.disresponsiveList = {data.from.id}
+        room:useCard(use)
+      end
+    end
+  end,
+}
+minze:addRelatedSkill(minze_trigger)
+liuchongluojun:addSkill(minze)
+liuchongluojun:addSkill(jini)
+Fk:loadTranslationTable{
+  ["liuchongluojun"] = "刘宠骆俊",
+  ["minze"] = "悯泽",
+  [":minze"] = "出牌阶段每名角色限一次，你可以将至多两张牌名不同的牌交给一名手牌数小于你的角色，然后若其手牌数大于你，本阶段此技能失效。"..
+  "结束阶段，你将手牌补至X张（X为本回合你因此技能失去牌的牌名数，至多为5）。",
+  ["jini"] = "击逆",
+  [":jini"] = "当你受到伤害后，你可以重铸任意张手牌（每回合以此法重铸的牌数不能超过你的体力上限），若你以此法获得了【杀】，"..
+  "你可以对伤害来源使用一张无距离限制且不可响应的【杀】。",
+  ["@@minze-phase"] = "悯泽失效",
+  ["@$minze-turn"] = "悯泽",
+  ["#jini1-invoke"] = "击逆：你可以重铸至多%arg张手牌",
+  ["#jini2-invoke"] = "击逆：你可以重铸至多%arg张手牌，若摸到了【杀】，你可以对 %dest 使用一张无距离限制且不可响应的【杀】",
+  ["#jini-slash"] = "击逆：你可以对 %dest 使用一张无距离限制且不可响应的【杀】",
 }
 
 --纵横捭阖：陆郁生 祢衡 华歆 荀谌 冯熙 邓芝 宗预 羊祜

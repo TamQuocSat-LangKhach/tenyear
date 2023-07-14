@@ -1260,7 +1260,7 @@ local jiufa = fk.CreateTriggerSkill{
     if mark == 0 then mark = {} end
     table.insertIfNeed(mark, data.card.trueName)
     room:setPlayerMark(player, "@$jiufa", mark)
-    if #mark < 9 or not room:askForSkillInvoke(player, self.name, nil, "#jiufa-invoke") then return fasle end
+    if #mark < 9 or not room:askForSkillInvoke(player, self.name, nil, "#jiufa-invoke") then return false end
     room:setPlayerMark(player, "@$jiufa", 0)
     local card_ids = room:getNCards(9)
     local get, throw = {}, {}

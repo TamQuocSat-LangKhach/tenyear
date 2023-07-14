@@ -2064,7 +2064,7 @@ local tuoyu = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.AfterCardsMove then
       for _, move in ipairs(data) do
-        if move.from == player.id and move.toArea ~= Card.Processing then
+        if move.toArea ~= Card.Processing then
           for _, info in ipairs(move.moveInfo) do
             room:setCardMark(Fk:getCardById(info.cardId), "@@tuoyu1", 0)
             room:setCardMark(Fk:getCardById(info.cardId), "@@tuoyu2", 0)

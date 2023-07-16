@@ -335,11 +335,17 @@ local ex__yongjin = fk.CreateActiveSkill{
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
+    local excludeIds = {}
     for i = 1, 3, 1 do
-      if #room:canMoveCardInBoard() == 0 or player.dead then break end
-      local to = room:askForChooseToMoveCardInBoard(player, "#ex__yongjin-choose", self.name, true, "e")
+      if #room:canMoveCardInBoard("e", nil, excludeIds) == 0 or player.dead then break end
+      local to = room:askForChooseToMoveCardInBoard(player, "#ex__yongjin-choose", self.name, true, "e", false, excludeIds)
       if #to == 2 then
-        room:askForMoveCardInBoard(player, room:getPlayerById(to[1]), room:getPlayerById(to[2]), self.name, "e")
+        local result = room:askForMoveCardInBoard(player, room:getPlayerById(to[1]), room:getPlayerById(to[2]), self.name, "e", nil, excludeIds)
+        if result then
+          table.insert(excludeIds, result.card:getEffectiveId())
+        else
+          break
+        end
       else
         break
       end

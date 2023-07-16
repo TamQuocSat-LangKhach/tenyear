@@ -522,7 +522,7 @@ local zhaowen = fk.CreateViewAsSkill{
   end,
   card_filter = function(self, to_select, selected)
     local card = Fk:getCardById(to_select)
-    return #selected == 0 and card.color == Card.Black and card:getMark("@@zhaowen") > 0
+    return #selected == 0 and card.color == Card.Black and card:getMark("@@zhaowen-turn") > 0
   end,
   view_as = function(self, cards)
     if #cards ~= 1 or not self.interaction.data then return nil end
@@ -540,13 +540,13 @@ local zhaowen = fk.CreateViewAsSkill{
   enabled_at_play = function(self, player)
     return not player:isKongcheng() and player:usedSkillTimes("#zhaowen_trigger", Player.HistoryTurn) > 0 and
       table.find(player.player_cards[Player.Hand], function(id)
-        return Fk:getCardById(id).color == Card.Black and Fk:getCardById(id):getMark("@@zhaowen") > 0 end)
+        return Fk:getCardById(id).color == Card.Black and Fk:getCardById(id):getMark("@@zhaowen-turn") > 0 end)
   end,
   enabled_at_response = function(self, player, response)
     return not response and Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):matchExp(self.pattern) and
       not player:isKongcheng() and player:usedSkillTimes("#zhaowen_trigger", Player.HistoryTurn) > 0 and
       table.find(player.player_cards[Player.Hand], function(id)
-        return Fk:getCardById(id).color == Card.Black and Fk:getCardById(id):getMark("@@zhaowen") > 0 end)
+        return Fk:getCardById(id).color == Card.Black and Fk:getCardById(id):getMark("@@zhaowen-turn") > 0 end)
   end,
 }
 local zhaowen_trigger = fk.CreateTriggerSkill{
@@ -558,7 +558,7 @@ local zhaowen_trigger = fk.CreateTriggerSkill{
       if event == fk.EventPhaseStart then
         return not player:isKongcheng()
       else
-        return data.card.color == Card.Red and not data.card:isVirtual() and data.card:getMark("@@zhaowen") > 0
+        return data.card.color == Card.Red and not data.card:isVirtual() and data.card:getMark("@@zhaowen-turn") > 0
       end
     end
   end,
@@ -579,7 +579,7 @@ local zhaowen_trigger = fk.CreateTriggerSkill{
       if not player.dead and not player:isKongcheng() then
         room:setPlayerMark(player, "zhaowen-turn", cards)
         for _, id in ipairs(cards) do
-          room:setCardMark(Fk:getCardById(id, true), "@@zhaowen", 1)
+          room:setCardMark(Fk:getCardById(id, true), "@@zhaowen-turn", 1)
         end
       end
     else
@@ -588,7 +588,7 @@ local zhaowen_trigger = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.AfterCardsMove, fk.TurnEnd, fk.Death},
+  refresh_events = {fk.AfterCardsMove, fk.Death},
   can_refresh = function(self, event, target, player, data)
     if event == fk.Death and player ~= target then return end
     return player:getMark("zhaowen-turn") ~= 0
@@ -601,18 +601,14 @@ local zhaowen_trigger = fk.CreateTriggerSkill{
         if move.toArea ~= Card.Processing then
           for _, info in ipairs(move.moveInfo) do
             table.removeOne(mark, info.cardId)
-            room:setCardMark(Fk:getCardById(info.cardId), "@@zhaowen", 0)
+            room:setCardMark(Fk:getCardById(info.cardId), "@@zhaowen-turn", 0)
           end
         end
       end
       room:setPlayerMark(player, "zhaowen-turn", mark)
-    elseif event == fk.TurnEnd then
-      for _, id in ipairs(mark) do
-        room:setCardMark(Fk:getCardById(id), "@@zhaowen", 0)
-      end
     elseif event == fk.Death then
       for _, id in ipairs(mark) do
-        room:setCardMark(Fk:getCardById(id), "@@zhaowen", 0)
+        room:setCardMark(Fk:getCardById(id), "@@zhaowen-turn", 0)
       end
     end
   end,
@@ -687,7 +683,7 @@ Fk:loadTranslationTable{
   ["@$zhaowen-turn"] = "昭文",
   ["#zhaowen_trigger"] = "昭文",
   ["#zhaowen-invoke"] = "昭文：你可以展示手牌，本回合其中黑色牌可以当任意锦囊牌使用，红色牌使用时摸一张牌",
-  ["@@zhaowen"] = "昭文",
+  ["@@zhaowen-turn"] = "昭文",
   ["#jiudun-invoke"] = "酒遁：你可以摸一张牌，视为使用【酒】",
   ["#jiudun-card"] = "酒遁：你可以弃置一张手牌，令%arg对你无效",
 
@@ -3199,13 +3195,15 @@ local jiqiaos_trigger = fk.CreateTriggerSkill{
   name = "#jiqiaos_trigger",
   anim_type = "drawcard",
   expand_pile = "jiqiaos",
-  events = {fk.EventPhaseEnd, fk.CardUseFinished},
+  events = {fk.EventPhaseEnd, fk.CardUseFinished, fk.EventLoseSkill},
   can_trigger = function(self, event, target, player, data)
     if target == player and #player:getPile("jiqiaos") > 0 then
       if event == fk.EventPhaseEnd then
         return player.phase == Player.Play
-      else
+      elseif event == fk.CardUseFinished then
         return true
+      elseif event == fk.EventLoseSkill then
+        return data.name == "jiqiaos"
       end
     end
   end,
@@ -3214,7 +3212,7 @@ local jiqiaos_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.EventPhaseEnd then
+    if event == fk.EventPhaseEnd or event == fk.EventLoseSkill then
       room:moveCards({
         from = player.id,
         ids = player:getPile("jiqiaos"),

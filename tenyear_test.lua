@@ -30,7 +30,7 @@ local niji = fk.CreateTriggerSkill{
       return target == player and player:hasSkill(self.name) and data.firstTarget and data.card.type ~= Card.TypeEquip
     elseif event == fk.EventPhaseStart then
       return target.phase == Player.Finish and not player:isKongcheng() and
-        table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji") > 0 end)
+        table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji-inhand") > 0 end)
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -45,10 +45,10 @@ local niji = fk.CreateTriggerSkill{
     if event == fk.TargetConfirmed then
       local id = player:drawCards(1, self.name)[1]
       if room:getCardOwner(id) == player and room:getCardArea(id) == Card.PlayerHand then
-        room:setCardMark(Fk:getCardById(id), "@@niji", 1)
+        room:setCardMark(Fk:getCardById(id), "@@niji-inhand", 1)
       end
     else
-      local cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji") > 0 end)
+      local cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji-inhand") > 0 end)
       if player:hasSkill(self.name) and #cards >= player.hp then
         local pattern = "^(jink,nullification)|.|.|.|.|.|"..table.concat(cards, ",")
         local use = room:askForUseCard(player, "", pattern, "#niji-use", true)
@@ -57,34 +57,19 @@ local niji = fk.CreateTriggerSkill{
         end
       end
       if not player.dead then
-        cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji") > 0 end)
+        cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji-inhand") > 0 end)
         room:throwCard(cards, self.name, player, player)
       end
     end
   end,
 
-  refresh_events = {fk.AfterCardsMove, fk.TurnEnd},
+  refresh_events = {fk.TurnEnd},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.AfterCardsMove then
-      return true
-    else
-      return not player:isKongcheng()
-    end
+    return not player:isKongcheng()
   end,
   on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.AfterCardsMove then
-      for _, move in ipairs(data) do
-        for _, info in ipairs(move.moveInfo) do
-          if info.fromArea == Card.PlayerHand then
-            room:setCardMark(Fk:getCardById(info.cardId), "@@niji", 0)
-          end
-        end
-      end
-    elseif event == fk.TurnEnd then
-      for _, id in ipairs(player.player_cards[Player.Hand]) do
-        room:setCardMark(Fk:getCardById(id), "@@niji", 0)
-      end
+    for _, id in ipairs(player.player_cards[Player.Hand]) do
+      player.room:setCardMark(Fk:getCardById(id), "@@niji-inhand", 0)
     end
   end,
 }
@@ -93,7 +78,7 @@ Fk:loadTranslationTable{
   ["sunhuan"] = "孙桓",
   ["niji"] = "逆击",
   [":niji"] = "当你成为非装备牌的目标后，你可以摸一张牌，本回合结束阶段弃置这些牌。若将要弃置的牌数不小于你的体力值，你可以先使用其中一张牌。",
-  ["@@niji"] = "逆击",
+  ["@@niji-inhand"] = "逆击",
   ["#niji-invoke"] = "逆击：你可以摸一张牌，本回合结束阶段弃置之",
   ["#niji-use"] = "逆击：即将弃置所有“逆击”牌，你可以先使用其中一张牌",
 }

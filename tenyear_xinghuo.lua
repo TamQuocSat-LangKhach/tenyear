@@ -643,26 +643,33 @@ local qinguo = fk.CreateTriggerSkill{
     end
   end,
 }
-local qinguo_vs = fk.CreateViewAsSkill{
-  name = "#qinguo_vs",
+local qinguo_viewas = fk.CreateViewAsSkill{
+  name = "qinguo_viewas",
   pattern = "slash",
   card_filter = function()
     return false
   end,
   view_as = function(self, cards)
-    local card = Fk:cloneCard(self.pattern)
+    local card = Fk:cloneCard("slash")
     card.skillName = "qinguo"
     return card
   end,
 }
-qinguo:addRelatedSkill(qinguo_vs)
+local qinguo_targetmod = fk.CreateTargetModSkill{
+  name = "#qinguo_targetmod",
+  bypass_times = function(self, player, skill, scope, card)
+    return card and table.contains(card.skillNames, "qinguo")
+  end,
+}
+Fk:addSkill(qinguo_viewas)
+qinguo:addRelatedSkill(qinguo_targetmod)
 lvdai:addSkill(qinguo)
 Fk:loadTranslationTable{
   ["lvdai"] = "吕岱",
   ["qinguo"] = "勤国",
   [":qinguo"] = "当你于回合内使用装备牌结算结束后，你可视为使用一张不计入次数限制的【杀】；当你的装备区里的牌数变化后，"..
   "若你装备区里的牌数与你的体力值相等，你回复1点体力。",
-  ["#qinguo_vs"] = "勤国",
+  ["qinguo_viewas"] = "勤国",
   ["#qinguo-ask"] = "勤国：你可以视为使用一张【杀】",
 
   ["$qinguo1"] = "为国勤事，体素精勤。",

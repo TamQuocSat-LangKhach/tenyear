@@ -2025,7 +2025,9 @@ local juying = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self.name) and player.phase == Player.Play then
       local n = 1
-      local skill = Fk.skills["slash_skill"]
+      if player.room.settings.gameMode == "m_1v2_mode" and player.role == "lord" then
+        n = 2
+      end
       local status_skills = player.room.status_skills[TargetModSkill] or Util.DummyTable
       for _, skill in ipairs(status_skills) do
         local correct = skill:getResidueNum(player, skill, Player.HistoryPhase, Fk:cloneCard("slash"), nil)

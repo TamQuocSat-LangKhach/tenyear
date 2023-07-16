@@ -490,14 +490,14 @@ Fk:loadTranslationTable{
 local zhutiexiong = General(extension, "zhutiexiong", "god", 3)
 local bianzhuang_skills = {
   --standard
-  "wushuang", "tieji", "ex__tieji",
-  "liegong", "kuanggu", "mengjin", "lieren", "wansha", "jiang",
+  "wushuang", "tieqi", "ex__tieji",
+  "liegong", "kuanggu", "mengjin", "lieren", "wansha",
   "moukui", "kuangfu", "jyie", "nuzhan", "zhiman", "re__pojun",
   "jueqing", "pojun", "nos__qianxi", "anjian", "zenhui", "qingxi",
   --ol
   "fengpo", "fuji", "gangzhi", "lingren", "qigong", "saodi", "huanfu", "yimie",
-  "ol_ex__kuanggu", "ol_ex__liegong", "ol_ex__jianchu",
-  --monile
+  "ol_ex__kuanggu", "ol_ex__liegong", "ol_ex__jianchu", "qin__shanwu",
+  --mobile
   "shidi", "dengli", "quedi",
   --overseas
   "os__cuijin", "os__zhenxi", "os__moukui", "os__hengjiang", "os__jintao", "os__gongge", "os__fenghan", "os__yulong", "os__zhenhu",

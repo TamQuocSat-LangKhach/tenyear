@@ -1011,17 +1011,9 @@ local fuxue = fk.CreateTriggerSkill{
           end
         end
         return #player.tag[self.name] > 0
-      end
-      if player.phase == Player.Finish then
-        local cards = player:getMark("fuxue-turn")
-        if cards == 0 then
-          return true
-        else
-          for _, id in ipairs(player.player_cards[Player.Hand]) do
-            if table.contains(cards, id) then return end
-          end
-          return true
-        end
+      elseif player.phase == Player.Finish then
+        return player:isKongcheng() or
+          table.every(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@fuxue-inhand") == 0 end)
       end
     end
   end,
@@ -1053,31 +1045,43 @@ local fuxue = fk.CreateTriggerSkill{
         local dummy = Fk:cloneCard("dilu")
         dummy:addSubcards(get)
         room:obtainCard(player.id, dummy, true, fk.ReasonJustMove)
-        room:setPlayerMark(player, "fuxue-turn", get)
+        for _, id in ipairs(get) do
+          if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player then
+            room:setCardMark(Fk:getCardById(id), "@@fuxue-inhand", 1)
+          end
+        end
       end
     else
       player:drawCards(player.hp, self.name)
     end
   end,
 
-  refresh_events = {fk.AfterCardsMove},
+  refresh_events = {fk.AfterCardsMove, fk.TurnEnd},
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self.name, true)
+    if event == fk.AfterCardsMove then
+      return player:hasSkill(self.name, true)
+    else
+      return target == player and not player:isKongcheng()
+    end
   end,
   on_refresh = function(self, event, target, player, data)
-    for _, move in ipairs(data) do
-      if move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then --TODO: ReasonJudge
-        player.tag[self.name] = player.tag[self.name] or {}
-        for _, info in ipairs(move.moveInfo) do
-          if Fk:getCardById(info.cardId).sub_type ~= Card.SubtypeDelayedTrick or info.fromArea ~= Card.Processing then
+    if event == fk.AfterCardsMove then
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then
+          player.tag[self.name] = player.tag[self.name] or {}
+          for _, info in ipairs(move.moveInfo) do
             table.insertIfNeed(player.tag[self.name], info.cardId)
           end
         end
-      end
-      for _, info in ipairs(move.moveInfo) do
-        if info.fromArea == Card.DiscardPile and player.tag[self.name] and #player.tag[self.name] > 0 then
-          table.removeOne(player.tag[self.name], info.cardId)
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.DiscardPile and player.tag[self.name] and #player.tag[self.name] > 0 then
+            table.removeOne(player.tag[self.name], info.cardId)
+          end
         end
+      end
+    else
+      for _, id in ipairs(player.player_cards[Player.Hand]) do
+        player.room:setCardMark(Fk:getCardById(id), "@@fuxue-inhand", 0)
       end
     end
   end,
@@ -1187,10 +1191,12 @@ Fk:loadTranslationTable{
   ["fuxue"] = "复学",
   [":fuxue"] = "准备阶段，你可以从弃牌堆中获得至多X张不因使用而进入弃牌堆的牌。结束阶段，若你手中没有以此法获得的牌，你摸X张牌。（X为你的体力值）",
   ["yaoyi"] = "邀弈",
-  [":yaoyi"] = "锁定技，游戏开始时，所有没有转换技的角色获得〖手谈〗；你发动〖手谈〗无需弃置牌且无次数限制。所有角色使用牌只能指定自己及与自己转换技状态不同的角色为目标。",
+  [":yaoyi"] = "锁定技，游戏开始时，所有没有转换技的角色获得〖手谈〗；你发动〖手谈〗无需弃置牌且无次数限制。"..
+  "所有角色使用牌只能指定自己及与自己转换技状态不同的角色为目标。",
   ["shoutan"] = "手谈",
   [":shoutan"] = "转换技，出牌阶段限一次，你可以弃置一张：阳：非黑色手牌；阴：黑色手牌。",
   ["#fuxue-invoke"] = "复学：你可以获得弃牌堆中至多%arg张不因使用而进入弃牌堆的牌",
+  ["@@fuxue-inhand"] = "复学",
   
   ["$fuxue1"] = "普天之大，唯此处可安书桌。",
   ["$fuxue2"] = "书中自有风月，何故东奔西顾？",
@@ -3796,7 +3802,6 @@ local wumei = fk.CreateTriggerSkill{
     end
   end,
 }
-
 local wumei_delay = fk.CreateTriggerSkill{
   name = "#wumei_delay",
   events = {fk.EventPhaseStart},
@@ -3810,12 +3815,10 @@ local wumei_delay = fk.CreateTriggerSkill{
     room:notifySkillInvoked(player, wumei.name, "special")
     local hp_record = player:getMark("wumei_record")
     if type(hp_record) ~= "table" then return false end
-
     for _, p in ipairs(room:getAlivePlayers()) do
       local p_record = table.find(hp_record, function (sub_record)
         return #sub_record == 2 and sub_record[1] == p.id
       end)
-
       if p_record then
         p.hp = math.min(p.maxHp, p_record[2])
         room:broadcastProperty(p, "hp")
@@ -3823,7 +3826,6 @@ local wumei_delay = fk.CreateTriggerSkill{
     end
   end,
 }
-
 local zhanmeng = fk.CreateTriggerSkill{
   name = "zhanmeng",
   events = {fk.CardUsing},
@@ -3840,7 +3842,7 @@ local zhanmeng = fk.CreateTriggerSkill{
     local room = player.room
     local choices = {}
     self.cost_data = {}
-    if player:getMark("zhanmeng1-turn") == 0 and not table.contains(room:getTag("zhanmeng1"), data.card.trueName) then
+    if player:getMark("zhanmeng1-turn") == 0 and not table.contains(room:getTag("zhanmeng1") or {}, data.card.trueName) then
       table.insert(choices, "zhanmeng1")
     end
     if player:getMark("zhanmeng2-turn") == 0 then

@@ -60,8 +60,8 @@ local biejun = fk.CreateTriggerSkill{
   events = {fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self.name) and target == player and player:usedSkillTimes(self.name) == 0
-    and table.every(player:getCardIds(Player.Hand), function (id)
-      return Fk:getCardById(id):getMark("@@biejun") == 0
+    and table.every(player:getCardIds(Player.Hand), function(id)
+      return Fk:getCardById(id):getMark("@@biejun-inhand") == 0
     end)
     and #player.room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
       local damage = e.data[5]
@@ -78,9 +78,9 @@ local biejun = fk.CreateTriggerSkill{
     return true
   end,
 
-  refresh_events = {fk.AfterCardsMove, fk.TurnEnd, fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
+  refresh_events = {fk.TurnEnd, fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.AfterCardsMove or event == fk.TurnEnd then
+    if event == event == fk.TurnEnd then
       return true
     elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
       return data == self
@@ -90,29 +90,12 @@ local biejun = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.AfterCardsMove then
-      for _, move in ipairs(data) do
-        if move.from == player.id and (move.to ~= player.id or move.toArea ~= Card.PlayerHand) then
-          for _, info in ipairs(move.moveInfo) do
-            room:setCardMark(Fk:getCardById(info.cardId), "@@biejun", 0)
-          end
-        elseif move.to == player.id and move.toArea == Card.PlayerHand and move.skillName == "biejun" then
-          for _, info in ipairs(move.moveInfo) do
-            local id = info.cardId
-            if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player then
-              room:setCardMark(Fk:getCardById(id), "@@biejun", 1)
-            end
-          end
-        end
-      end
-    elseif event == fk.TurnEnd then
+    if event == fk.TurnEnd then
       for _, id in ipairs(player:getCardIds(Player.Hand)) do
-        room:setCardMark(Fk:getCardById(id), "@@biejun", 0)
+        room:setCardMark(Fk:getCardById(id), "@@biejun-inhand", 0)
       end
     else
-      if table.every(room.alive_players, function (p)
-        return not p:hasSkill(self.name, true) or p == player
-      end) then
+      if table.every(room.alive_players, function(p) return not p:hasSkill(self.name, true) or p == player end) then
         if player:hasSkill("biejun&", true, true) then
           room:handleAddLoseSkills(player, "-biejun&", nil, false, true)
         end
@@ -152,16 +135,11 @@ local biejun_active = fk.CreateActiveSkill{
     local targetRecorded = type(player:getMark("biejun_targets-phase")) == "table" and player:getMark("biejun_targets-phase") or {}
     table.insertIfNeed(targetRecorded, target.id)
     room:setPlayerMark(player, "biejun_targets-phase", targetRecorded)
-    local move = {
-      from = effect.from,
-      ids = effect.cards,
-      to = effect.tos[1],
-      toArea = Card.PlayerHand,
-      moveReason = fk.ReasonGive,
-      proposer = effect.from,
-      skillName = "biejun",
-    }
-    room:moveCards(move)
+    local id = effect.cards[1]
+    room:obtainCard(target, id, false, fk.ReasonGive)
+    if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == target then
+      room:setCardMark(Fk:getCardById(id), "@@biejun-inhand", 1)
+    end
   end,
 }
 
@@ -175,14 +153,13 @@ Fk:loadTranslationTable{
   [":liandui"] = "当你使用一张牌时，若上一张牌的使用者不为你，你可以令其摸两张牌；其他角色使用一张牌时，若上一张牌的使用者为你，其可以令你摸两张牌。",
   ["biejun"] = "别君",
   [":biejun"] = "其他角色出牌阶段限一次，其可以交给你一张手牌。当你每回合第一次受到伤害时，若你手牌中没有本回合以此法获得的牌，你可以翻面并防止此伤害。",
-
   ["biejun&"] = "别君",
   [":biejun&"] = "出牌阶段限一次，你可以将一张手牌交给李婉。",
 
   ["#liandui-invoke"] = "是否发动 %src 的联对，令 %dest 摸两张牌",
-  ["#biejun-invoke"] = "是否发动别君，翻面并防止此伤害",
-  ["@@biejun"] = "别君",
-  ["#biejun-active"] = "发动别君，选择一张手牌交给一名拥有别君的角色",
+  ["#biejun-invoke"] = "别君：你可以翻面，防止你受到的伤害",
+  ["@@biejun-inhand"] = "别君",
+  ["#biejun-active"] = "别君：选择一张手牌交给一名拥有“别君”的角色",
 
   ["$liandui1"] = "以句相联，抒离散之苦。",
   ["$liandui2"] = "以诗相对，颂哀怨之情。",

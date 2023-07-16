@@ -1432,14 +1432,22 @@ local xingchong = fk.CreateTriggerSkill{
       table.insert(choices, tostring(i))
     end
     local choice = room:askForChoice(player, choices, self.name, "#xingchong-draw")
-    player:drawCards(tonumber(choice), self.name)
+    if choice ~= "0" then
+      player:drawCards(tonumber(choice), self.name)
+    end
     if player:isKongcheng() then return end
     n = n - tonumber(choice)
     local cards = room:askForCard(player, 1, n, false, self.name, true, ".", "#xingchong-card:::"..tostring(n))
     if #cards > 0 then
       player:showCards(cards)
       room:sendCardVirtName(cards, self.name)
-      room:setPlayerMark(player, "xingchong-round", cards)
+      if not player.dead then
+        for _, id in ipairs(cards) do
+          if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player then
+            room:setCardMark(Fk:getCardById(id), "@@xingchong-round", 1)
+          end
+        end
+      end
     end
   end,
 }
@@ -1448,7 +1456,7 @@ local xingchong_trigger = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:getMark("xingchong-round") ~= 0 and #player:getMark("xingchong-round") > 0 then
+    if player:usedSkillTimes("xingchong", Player.HistoryRound) > 0 then
       for _, move in ipairs(data) do
         if move.from == player.id then
           return true
@@ -1465,13 +1473,9 @@ local xingchong_trigger = fk.CreateTriggerSkill{
     for _, move in ipairs(data) do
       if move.from == player.id then
         for _, info in ipairs(move.moveInfo) do
-          if info.fromArea == Card.PlayerHand then
-            local mark = player:getMark("xingchong-round")
-            if table.contains(mark, info.cardId) then
-              n = n + 1
-              table.removeOne(mark, info.cardId)
-              room:setPlayerMark(player, "xingchong-round", mark)
-            end
+          if Fk:getCardById(info.cardId):getMark("@@xingchong-round") > 0 and info.fromArea == Card.PlayerHand then
+            n = n + 1
+            room:setCardMark(Fk:getCardById(info.cardId), "@@xingchong-round", 0)
           end
         end
       end
@@ -1528,7 +1532,8 @@ Fk:loadTranslationTable{
   ["#xingchong-invoke"] = "幸宠：你可以摸牌、展示牌合计至多%arg张，本轮失去展示的牌后摸两张牌",
   ["#xingchong-draw"] = "幸宠：选择摸牌数",
   ["#xingchong-card"] = "幸宠：展示至多%arg张牌，本轮失去一张展示牌后摸两张牌",
-  
+  ["@@xingchong-round"] = "幸宠",
+
   ["$xingchong1"] = "佳人有荣幸，好女天自怜。",
   ["$xingchong2"] = "世间万般宠爱，独聚我于一身。",
   ["$liunian1"] = "佳期若梦，似水流年。",
@@ -1546,19 +1551,22 @@ local yiyong = fk.CreateTriggerSkill{
       data.to and data.to ~= player and not player:isNude() and not data.to:isNude()
   end,
   on_cost = function(self, event, target, player, data)
-    local cards = player.room:askForDiscard(player, 1, 999, true, self.name, true, ".", "#yiyong-invoke::"..data.to.id)
+    local cards = player.room:askForDiscard(player, 1, 999, true, self.name, true, ".", "#yiyong-invoke::"..data.to.id, true)
     if #cards > 0 then
       self.cost_data = cards
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
-    local cards = player.room:askForDiscard(data.to, 1, 999, true, self.name, false, ".", "#yiyong-discard:"..player.id)
+    local room = player.room
+    room:throwCard(self.cost_data, self.name, player, player)
     local n1 = 0
-    local n2 = 0
     for _, id in ipairs(self.cost_data) do
       n1 = n1 + Fk:getCardById(id).number
     end
+    local cards = player.room:askForDiscard(data.to, 1, 999, true, self.name, false, ".",
+      "#yiyong-discard:"..player.id.."::"..tostring(n1))
+    local n2 = 0
     for _, id in ipairs(cards) do
       n2 = n2 + Fk:getCardById(id).number
     end
@@ -1574,9 +1582,10 @@ panghui:addSkill(yiyong)
 Fk:loadTranslationTable{
   ["panghui"] = "庞会",
   ["yiyong"] = "异勇",
-  [":yiyong"] = "每回合限两次，当你对其他角色造成伤害时，你可以弃置任意张牌，令该角色弃置任意张牌。若你弃置的牌的点数之和：不大于其，你摸X张牌（X为该角色弃置的牌数）；不小于其，此伤害+1。",
+  [":yiyong"] = "每回合限两次，当你对其他角色造成伤害时，你可以弃置任意张牌，令该角色弃置任意张牌。若你弃置的牌的点数之和：不大于其，你摸X张牌"..
+  "（X为该角色弃置的牌数）；不小于其，此伤害+1。",
   ["#yiyong-invoke"] = "异勇：你可以弃置任意张牌，令 %dest 弃置任意张牌，根据双方弃牌点数之和执行效果",
-  ["#yiyong-discard"] = "异勇：你需弃置任意张牌，若点数之和大则 %src 摸牌，若点数小则伤害+1",
+  ["#yiyong-discard"] = "异勇：弃置任意张牌，若点数之和大于等于%arg则 %src 摸牌，若小于则伤害+1",
 
   ["$yiyong1"] = "关氏鼠辈，庞令明之子来邪！",
   ["$yiyong2"] = "凭一腔勇力，父仇定可报还。",

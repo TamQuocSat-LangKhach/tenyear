@@ -296,7 +296,7 @@ local huagui = fk.CreateTriggerSkill{
         table.insert(choices, "huagui2")
       end
       local card = Fk:getCardById(id)
-      p.request_data = json.encode({ choices, self.name, "#huagui-choice:"..player.id.."::"..card:toLogString() })
+      p.request_data = json.encode({ choices, choices, self.name, "#huagui-choice:"..player.id.."::"..card:toLogString() })
     end
     room:notifyMoveFocus(room.alive_players, self.name)
     room:doBroadcastRequest("AskForChoice", tos)

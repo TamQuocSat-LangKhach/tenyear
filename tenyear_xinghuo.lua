@@ -438,7 +438,7 @@ local jixu = fk.CreateActiveSkill{
     local targets = table.map(effect.tos, function(id) return room:getPlayerById(id) end)
     for _, p in ipairs(targets) do
       local choices = {"yes", "no"}
-      p.request_data = json.encode({choices, self.name, "#jixu-choice:"..player.id})
+      p.request_data = json.encode({choices, choices, self.name, "#jixu-choice:"..player.id})
     end
     room:notifyMoveFocus(room.alive_players, self.name)
     room:doBroadcastRequest("AskForChoice", targets)

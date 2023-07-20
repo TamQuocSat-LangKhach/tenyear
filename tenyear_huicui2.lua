@@ -872,6 +872,122 @@ Fk:loadTranslationTable{
   "你弃牌阶段弃置的牌均被该角色获得。准备阶段，若场上没有“至微”角色，你可以重新选择一名其他角色。",
 }
 
+local miheng = General(extension, "ty__miheng", "qun", 3)
+local kuangcai = fk.CreateTriggerSkill{
+  name = "kuangcai",
+  mute = true,
+  frequency = Skill.Compulsory,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) then
+      if player.phase == Player.Discard then
+        local n = 0
+        for _, v in pairs(player.cardUsedHistory) do
+          if v[Player.HistoryTurn] > 0 then
+            n = 1
+            break
+          end
+        end
+        if n == 0 then
+          return true
+        else
+          return player:getMark("@kuangcai-turn") == 0 and player:getMaxCards() > 0
+        end
+      elseif player.phase == Player.Finish then
+        return player:getMark("@kuangcai-turn") > 0
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:broadcastSkillInvoke(self.name)
+    if player.phase == Player.Discard then
+      local n = 0
+      for _, v in pairs(player.cardUsedHistory) do
+        if v[Player.HistoryTurn] > 0 then
+          n = 1
+          break
+        end
+      end
+      if n == 0 then
+        room:notifySkillInvoked(player, self.name, "support")
+        room:addPlayerMark(player, MarkEnum.AddMaxCards, 1)
+      else
+        room:notifySkillInvoked(player, self.name, "negative")
+        room:addPlayerMark(player, MarkEnum.MinusMaxCards, 1)
+      end
+    elseif player.phase == Player.Finish then
+      room:notifySkillInvoked(player, self.name, "drawcard")
+      player:drawCards(math.min(player:getMark("@kuangcai-turn"), 5))
+    end
+  end,
+
+  refresh_events = {fk.Damage},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player.phase < Player.Finish
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:addPlayerMark(player, "kuangcai-turn", data.damage)
+    if player:hasSkill(self.name, true) then
+      room:setPlayerMark(player, "@kuangcai-turn", player:getMark("kuangcai-turn"))
+    end
+  end,
+}
+local kuangcai_targetmod = fk.CreateTargetModSkill{
+  name = "#kuangcai_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    return player:hasSkill("kuangcai") and scope == Player.HistoryPhase and player.phase ~= Player.NotActive
+  end,
+  bypass_distances = function(self, player, skill, card, to)
+    return player:hasSkill("kuangcai") and player.phase ~= Player.NotActive
+  end,
+}
+local shejian = fk.CreateTriggerSkill{
+  name = "shejian",
+  anim_type = "control",
+  events = {fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.firstTarget and data.from ~= player.id and
+      #TargetGroup:getRealTargets(data.tos) == 1 and
+      #player:getCardIds("he") > 1 and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2
+  end,
+  on_cost = function(self, event, target, player, data)
+    local cards = player.room:askForDiscard(player, 2, 999, false, self.name, true, ".|.|.|hand", "#shejian-card::"..data.from, true)
+    if #cards == 2 then
+      self.cost_data = cards
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local from = room:getPlayerById(data.from)
+    local n = #self.cost_data
+    room:throwCard(self.cost_data, self.name, player, player)
+    if not (player.dead or from.dead) then
+      room:doIndicate(player.id, {data.from})
+      local choices = {"damage1"}
+      if #from:getCardIds("he") >= n then
+        table.insert(choices, 1, "discard_skill")
+      end
+      local choice = room:askForChoice(player, choices, self.name, "#shejian-choice::"..data.from)
+      if choice == "discard_skill" then
+        local cards = room:askForCardsChosen(player, from, n, n, "he", self.name)
+        room:throwCard(cards, self.name, from, player)
+      else
+        room:damage{
+          from = player,
+          to = from,
+          damage = 1,
+          skillName = self.name
+        }
+      end
+    end
+  end,
+}
+kuangcai:addRelatedSkill(kuangcai_targetmod)
+miheng:addSkill(kuangcai)
+miheng:addSkill(shejian)
 Fk:loadTranslationTable{
   ["ty__miheng"] = "祢衡",
   ["kuangcai"] = "狂才",
@@ -879,6 +995,10 @@ Fk:loadTranslationTable{
   "使用过牌且没有造成伤害，你手牌上限-1。<br>③结束阶段，若你本回合造成过伤害，你摸等于伤害值数量的牌（最多摸五张）。",
   ["shejian"] = "舌剑",
   [":shejian"] = "每回合限两次，当你成为其他角色使用牌的唯一目标后，你可以弃置至少两张手牌，然后弃置其等量的牌或对其造成1点伤害。",
+  ["@kuangcai-turn"] = "狂才",
+  ["#shejian-card"] = "舌剑：你可以弃置至少两张手牌，弃置 %dest 等量的牌或对其造成1点伤害",
+  ["damage1"] = "造成1点伤害",
+  ["#shejian-choice"] = "舌剑：选择对 %dest 执行的一项",
 }
 
 local huaxin = General(extension, "ty__huaxin", "wei", 3)
@@ -936,12 +1056,14 @@ local xibing = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self.name) and target ~= player and target.phase == Player.Play and data.firstTarget and
       data.card.color == Card.Black and (data.card.trueName == "slash" or data.card:isCommonTrick()) and
-      target:getHandcardNum() < math.min(target.hp, 5) and #AimGroup:getAllTargets(data.tos) == 1
+      target:getHandcardNum() < math.min(target.hp, 5) and #AimGroup:getAllTargets(data.tos) == 1 and
+      player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#xibing-invoke::"..target.id)
   end,
   on_use = function(self, event, target, player, data)
+    player.room:doIndicate(player.id, {target.id})
     target:drawCards(math.min(target.hp, 5) - target:getHandcardNum())
     player.room:setPlayerMark(target, "xibing-turn", 1)
   end,
@@ -1156,7 +1278,7 @@ local qiao = fk.CreateTriggerSkill{
     local room = player.room
     local from = room:getPlayerById(data.from)
     local id = room:askForCardChosen(player, from, "he", self.name)
-    room:throwCard(id, self.name, from, player)
+    room:throwCard({id}, self.name, from, player)
     if not player:isNude() then
       room:askForDiscard(player, 1, 1, true, self.name, false)
     end

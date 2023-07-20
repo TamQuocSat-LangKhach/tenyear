@@ -379,7 +379,7 @@ Fk:loadTranslationTable{
 local yangbiao = General(extension, "ty__yangbiao", "qun", 3)
 local ty__zhaohan = fk.CreateTriggerSkill{
   name = "ty__zhaohan",
-  anim_type = "drawCards",
+  anim_type = "drawcard",
   events = {fk.DrawNCards},
   on_use = function(self, event, target, player, data)
     data.n = data.n + 2

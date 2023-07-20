@@ -611,7 +611,7 @@ local qinguo = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     if event == fk.CardUseFinished then
       local room = player.room
-      local success, dat = room:askForUseViewAsSkill(player, "#qinguo_vs", "#qinguo-ask", true)
+      local success, dat = room:askForUseViewAsSkill(player, "qinguo_viewas", "#qinguo-ask", true)
       if success then
         self.cost_data = dat
         return true
@@ -625,7 +625,7 @@ local qinguo = fk.CreateTriggerSkill{
     room:broadcastSkillInvoke(self.name)
     if event == fk.CardUseFinished then
       room:notifySkillInvoked(player, self.name, "offensive")
-      local card = Fk.skills["#qinguo_vs"]:viewAs(self.cost_data.cards)
+      local card = Fk.skills["qinguo_viewas"]:viewAs(self.cost_data.cards)
       room:useCard{
         from = player.id,
         tos = table.map(self.cost_data.targets, function(id) return {id} end),

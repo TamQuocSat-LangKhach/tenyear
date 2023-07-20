@@ -1175,6 +1175,12 @@ Fk:loadTranslationTable{
   ["#ty__huoshui-choose"] = "祸水：选择至多%arg名角色，按照选择的顺序：<br>1.本回合非锁定技失效，2.交给你一张手牌，3.弃置装备区里的所有牌",
   ["ty__huoshui_active"] = "祸水",
   ["#ty__huoshui-give"] = "祸水：你须交给%src一张手牌",
+
+  ["$ty__huoshui1"] = "呵呵，走不动了嘛。",
+  ["$ty__huoshui2"] = "别走了，再玩一会儿嘛。",
+  ["$ty__qingcheng1"] = "我和你们真是投缘呐。",
+  ["$ty__qingcheng2"] = "哼，眼睛都直了呀。",
+  ["~ty__zoushi"] = "年老色衰了吗……",
 }
 
 --曹安民

@@ -1949,7 +1949,7 @@ Fk:loadTranslationTable{
   ["$fangdu1"] = "浮萍却红尘，何意染是非？",
   ["$fangdu2"] = "我本无意争春，奈何群芳相妒。",
   ["$jiexing1"] = "女子有节，安能贰其行？",
-  ["$jiexing2"] = "坐收雨露，皆为君恩。",
+  ["$jiexing2"] = "坐受雨露，皆为君恩。",
   ["~yuanji"] = "妾本蒲柳，幸荣君恩……",
 }
 
@@ -2143,18 +2143,17 @@ local xunbie = fk.CreateTriggerSkill{
     if not table.find(room.alive_players, function(p) return p.general == "ty__mifuren" end) then
       table.insert(generals, "ty__mifuren")
     end
-    if #generals == 0 then
-      generals = {"ganfuren"}  --策划就没想过两个都有的情况吗？
-    end
-    local general = room:askForGeneral(player, generals, 1)
-    room:changeHero(player, general, false, false, true)
-    if not player.dead and player:isWounded() then
-      room:recover({
-        who = player,
-        num = 1 - player.hp,
-        recoverBy = player,
-        skillName = self.name
-      })
+    if #generals > 0 then
+      local general = room:askForGeneral(player, generals, 1)
+      room:changeHero(player, general, false, false, true)
+      if not player.dead and player:isWounded() then
+        room:recover({
+          who = player,
+          num = 1 - player.hp,
+          recoverBy = player,
+          skillName = self.name
+        })
+      end
     end
     room:setPlayerMark(player, "@@xunbie-turn", 1)
   end,
@@ -2189,6 +2188,12 @@ Fk:loadTranslationTable{
   ["#chanjuan-invoke"] = "婵娟：你可以视为使用【%arg】，若目标为 %dest ，你摸一张牌",
   ["chanjuan_viewas"] = "婵娟",
   ["@@xunbie-turn"] = "殉别",
+
+  ["$chanjuan1"] = "姐妹一心，共侍玄德无忧。",
+  ["$chanjuan2"] = "双姝从龙，姊妹宠荣与共。",
+  ["$xunbie1"] = "既为君之妇，何惧为君之鬼。",
+  ["$xunbie2"] = "今临难将罹，唯求不负皇叔。",
+  ["~ganfurenmifuren"] = "人生百年，奈何于我十不存一……",
 }
 
 local ganfuren = General(extension, "ty__ganfuren", "shu", 3, 3, General.Female)
@@ -2277,6 +2282,12 @@ Fk:loadTranslationTable{
   ["#ty__shushen-choice"] = "淑慎：选择令 %dest 执行的一项",
   ["ty__shushen_draw"] = "各摸一张牌",
   ["#ty__shenzhi-invoke"] = "神智：你可以弃置一张手牌，回复1点体力",
+
+  ["$ty__shushen1"] = "妾身无恙，相公请安心征战。",
+  ["$ty__shushen2"] = "船到桥头自然直。",
+  ["$ty__shenzhi1"] = "子龙将军，一切都托付给你了。",
+  ["$ty__shenzhi2"] = "阿斗，相信妈妈，没事的。",
+  ["~ty__ganfuren"] = "请替我照顾好阿斗……",
 }
 
 local mifuren = General(extension, "ty__mifuren", "shu", 3, 3, General.Female)
@@ -2374,6 +2385,14 @@ Fk:loadTranslationTable{
   ["#ty__yongjue-invoke"] = "勇决：你可以令此%arg不计入使用次数，或获得之",
   ["ty__yongjue_time"] = "不计入次数",
   ["ty__yongjue_obtain"] = "获得之",
+
+  ["$ty__guixiu1"] = "闺楼独看花月，倚窗顾影自怜。",
+  ["$ty__guixiu2"] = "闺中女子，亦可秀气英拔。",
+  ["$ty__cunsi1"] = "存汉室之嗣，留汉室之本。",
+  ["$ty__cunsi2"] = "一切，便托付将军了！",
+  ["$ty__yongjue1"] = "能救一个是一个！",
+  ["$ty__yongjue2"] = "扶幼主，成霸业！",
+  ["~ty__mifuren"] = "阿斗被救，妾身……再无牵挂……",
 }
 
 --章台春望：郭照 樊玉凤 阮瑀 杨婉 潘淑
@@ -3166,42 +3185,91 @@ Fk:loadTranslationTable{
 }
 
 --锦瑟良缘：曹金玉 孙翊 冯妤 来莺儿 曹华 张奋
---local caojinyu = General(extension, "caojinyu", "wei", 3, 3, General.Female)
+local caojinyu = General(extension, "caojinyu", "wei", 3, 3, General.Female)
 local yuqi = fk.CreateTriggerSkill{
   name = "yuqi",
   anim_type = "masochism",
   events = {fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and not player.dead and not target.dead and
-    (target == player or player:distanceTo(target) <= player:getMark("yuqi1")) and player:getMark("yuqi-turn") < 2
+    return player:hasSkill(self.name) and not target.dead and player:usedSkillTimes(self.name) < 2 and
+    (target == player or player:distanceTo(target) <= player:getMark("yuqi1"))
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:addPlayerMark(player, "yuqi-turn", 1)
-    --local card_ids = room:getNCards(player:getMark("yuqi2"))
-
-    --FIXME: askForCardsChosen? or yiji?
-    local n1, n2 = 0, 0
-    if player:getMark("yuqi2") >= player:getMark("yuqi4") then
-      n2 = player:getMark("yuqi4")
-      n1 = math.min(player:getMark("yuqi3"), player:getMark("yuqi2") - player:getMark("yuqi4"))
-    else
-      n2 = player:getMark("yuqi2")
+    local n1, n2, n3 = player:getMark("yuqi2"), player:getMark("yuqi3"), player:getMark("yuqi4")
+    if n1 < 2 and n2 < 1 and n3 < 1 then
+      return false
     end
-    target:drawCards(n1)
-    player:drawCards(n2)
+    local cards = room:getNCards(n1)
+    local result = room:askForCustomDialog(player, self.name,
+    "packages/tenyear/qml/YuqiBox.qml", {
+      cards,
+      target.general, n2,
+      player.general, n3,
+    })
+    local top, bottom
+    if result ~= "" then
+      local d = json.decode(result)
+      top = d[2]
+      bottom = d[3]
+    else
+      top = {cards[1]}
+      bottom = {cards[2]}
+    end
+    local moveInfos = {}
+    if #top > 0 then
+      table.insert(moveInfos, {
+        ids = top,
+        to = target.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonGive,
+        proposer = player.id,
+        skillName = self.name,
+      })
+      for _, id in ipairs(top) do
+        table.removeOne(cards, id)
+      end
+    end
+    if #bottom > 0 then
+      table.insert(moveInfos, {
+        ids = bottom,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonJustMove,
+        proposer = player.id,
+        skillName = self.name,
+      })
+      for _, id in ipairs(bottom) do
+        table.removeOne(cards, id)
+      end
+    end
+    if #cards > 0 then
+      for i = #cards, 1, -1 do
+        table.insert(room.draw_pile, 1, cards[i])
+      end
+    end
+    room:moveCards(table.unpack(moveInfos))
   end,
 
-  refresh_events = {fk.GameStart},
+  refresh_events = {fk.EventLoseSkill, fk.EventAcquireSkill},
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self.name)
+    return player == target and data == self
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    room:setPlayerMark(player, "yuqi2", 3)
-    room:setPlayerMark(player, "yuqi3", 1)
-    room:setPlayerMark(player, "yuqi4", 1)
-    room:setPlayerMark(player, "@" .. self.name, string.format("%d-%d-%d-%d", 0, 3, 1, 1))
+    if event == fk.EventAcquireSkill then
+      room:setPlayerMark(player, "yuqi1", 0)
+      room:setPlayerMark(player, "yuqi2", 3)
+      room:setPlayerMark(player, "yuqi3", 1)
+      room:setPlayerMark(player, "yuqi4", 1)
+      room:setPlayerMark(player, "@" .. self.name, string.format("%d-%d-%d-%d", 0, 3, 1, 1))
+    else
+      room:setPlayerMark(player, "yuqi1", 0)
+      room:setPlayerMark(player, "yuqi2", 0)
+      room:setPlayerMark(player, "yuqi3", 0)
+      room:setPlayerMark(player, "yuqi4", 0)
+      room:setPlayerMark(player, "@" .. self.name, 0)
+    end
   end,
 }
 local function AddYuqi(player, skillName, num)
@@ -3275,9 +3343,9 @@ local xianjing = fk.CreateTriggerSkill{
     end
   end,
 }
---caojinyu:addSkill(yuqi)
---caojinyu:addSkill(shanshen)
---caojinyu:addSkill(xianjing)
+caojinyu:addSkill(yuqi)
+caojinyu:addSkill(shanshen)
+caojinyu:addSkill(xianjing)
 Fk:loadTranslationTable{
   ["caojinyu"] = "曹金玉",
   ["yuqi"] = "隅泣",
@@ -3292,6 +3360,7 @@ Fk:loadTranslationTable{
   ["yuqi2"] = "观看牌数",
   ["yuqi3"] = "交给受伤角色牌数",
   ["yuqi4"] = "自己获得牌数",
+  ["#yuqi"] = "隅泣：请分配卡牌，余下的牌以原顺序置于牌堆顶",
 
   ["$yuqi1"] = "孤影独泣，困于隅角。",
   ["$yuqi2"] = "向隅而泣，黯然伤感。",

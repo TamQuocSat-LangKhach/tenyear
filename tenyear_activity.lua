@@ -833,8 +833,210 @@ Fk:loadTranslationTable{
   ["$jiedao2"] = "我这大刀，可是不看情面的。",
   ["~mangyachang"] = "黄骠马也跑不快了……",
 }
---许贡 张昌蒲
 
+local xugong = General(extension, "ty__xugong", "wu", 3)
+local biaozhao = fk.CreateTriggerSkill{
+  name = "biaozhao",
+  mute = true,
+  events = {fk.EventPhaseStart, fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) then return false end
+    if event == fk.EventPhaseStart then
+      return (player.phase == Player.Finish and #player:getPile("biaozhao_message") == 0) or
+      (player.phase == Player.Start and #player:getPile("biaozhao_message") > 0)
+    elseif event == fk.AfterCardsMove and #player:getPile("biaozhao_message") > 0 then
+      local pile = Fk:getCardById(player:getPile("biaozhao_message")[1])
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile then
+          for _, info in ipairs(move.moveInfo) do
+            local card = Fk:getCardById(info.cardId)
+            if card:compareNumberWith(pile) and card:compareSuitWith(pile) then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart and player.phase == Player.Finish then
+      local cards = room:askForCard(player, 1, 1, true, self.name, true, ".", "#biaozhao-cost")
+      if #cards > 0 then
+        self.cost_data = cards
+        return true
+      end
+      return false
+    end
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart then
+      room:notifySkillInvoked(player, self.name, "support")
+      room:broadcastSkillInvoke(self.name)
+      if player.phase == Player.Finish then
+        player:addToPile("biaozhao_message", self.cost_data, true, self.name)
+      else
+        room:moveCards({
+          from = player.id,
+          ids = player:getPile("biaozhao_message"),
+          toArea = Card.DiscardPile,
+          moveReason = fk.ReasonPutIntoDiscardPile,
+          skillName = self.name,
+        })
+        local targets = room:askForChoosePlayers(player, table.map(room.alive_players, function (p)
+          return p.id end), 1, 1, "#biaozhao-choose", self.name, false)
+        if #targets > 0 then
+          local to = room:getPlayerById(targets[1])
+          if to:isWounded() then
+            room:recover{
+              who = to,
+              num = 1,
+              recoverBy = player,
+              skillName = self.name,
+            }
+            if not to.dead then
+              local x = 0
+              for _, p in ipairs(room.alive_players) do
+                x = math.max(x, p:getHandcardNum())
+              end
+              x = x - to:getHandcardNum()
+              if x > 0 then
+                room:drawCards(to, math.min(5, x), self.name)
+              end
+            end
+          end
+        end
+      end
+    elseif event == fk.AfterCardsMove then
+      room:notifySkillInvoked(player, self.name, "negative")
+      room:broadcastSkillInvoke(self.name)
+      local pile = Fk:getCardById(player:getPile("biaozhao_message")[1])
+      local targets = {}
+      for _, move in ipairs(data) do
+        if move.moveReason == fk.ReasonDiscard and move.toArea == Card.DiscardPile and move.from ~= nil and
+        move.from ~= player.id and not room:getPlayerById(move.from).dead then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+              local card = Fk:getCardById(info.cardId)
+              if card:compareNumberWith(pile) and card:compareSuitWith(pile) then
+                table.insertIfNeed(targets, move.from)
+              end
+            end
+          end
+        end
+      end
+      if #targets > 1 then
+        targets = room:askForChoosePlayers(player, targets, 1, 1, "#biaozhao-target:::" .. pile:toLogString(), self.name, false)
+      end
+      if #targets > 0 then
+        room:obtainCard(targets[1], pile, false, fk.ReasonPrey)
+      end
+      if #targets == 0 then
+        room:moveCards({
+          from = player.id,
+          ids = {pile.id},
+          toArea = Card.DiscardPile,
+          moveReason = fk.ReasonPutIntoDiscardPile,
+          skillName = self.name,
+        })
+        if not player.dead then
+          room:loseHp(player, 1, self.name)
+        end
+      end
+    end
+  end,
+}
+local yechou = fk.CreateTriggerSkill{
+  name = "yechou",
+  anim_type = "offensive",
+  events = {fk.Death},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name, false, true) and table.find(player.room.alive_players, function (p)
+      return p:getLostHp() > 1
+    end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.filter(room.alive_players, function (p)
+      return p:getLostHp() > 1
+    end)
+    local p = room:askForChoosePlayers(player, table.map(targets, function (p)
+      return p.id
+    end), 1, 1, "#yechou-choose", self.name, true)
+    if #p > 0 then
+      self.cost_data = p[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    room:addPlayerMark(to, "@@yechou", 1)
+  end,
+
+  refresh_events = {fk.EventPhaseChanging},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark("@@yechou") > 0 and data.from == Player.NotActive
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@@yechou", 0)
+  end,
+}
+local yechou_delay = fk.CreateTriggerSkill{
+  name = "#yechou_delay",
+  anim_type = "negative",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target.phase == Player.Finish and not player.dead and player:getMark("@@yechou") > 0
+  end,
+  on_cost = function () return true end,
+  on_use = function(self, event, target, player, data)
+    player.room:loseHp(player, 1, yechou.name)
+  end,
+}
+yechou:addRelatedSkill(yechou_delay)
+xugong:addSkill(biaozhao)
+xugong:addSkill(yechou)
+Fk:loadTranslationTable{
+  ["ty__xugong"] = "许贡",
+  ["biaozhao"] = "表召",
+  [":biaozhao"] = "结束阶段，你可将一张牌置于武将牌上，称为“表”。当一张与“表”花色点数均相同的牌进入弃牌堆时，若此牌是其他角色弃置的牌，"..
+  "则其获得“表”，否则你移去“表”并失去1点体力。准备阶段，你移去“表”，令一名角色回复1点体力，其将手牌摸至与手牌最多的角色相同（至多摸五张）。",
+  ["yechou"] = "业仇",
+  ["#yechou_delay"] = "业仇",
+  [":yechou"] = "你死亡时，你可以选择一名已损失的体力值大于1的角色。若如此做，每名角色的结束阶段，其失去1点体力，直到其下回合开始。",
+
+  ["biaozhao_message"] = "表",
+  ["#biaozhao-cost"] = "你可以发动表召，选择一张牌作为表置于武将牌上",
+  ["#biaozhao-choose"] = "表召：选择一名角色，令其回复1点体力并补充手牌",
+  ["#biaozhao-target"] = "表召：选择一名角色，令其获得你的“表”%arg",
+  ["#yechou-choose"] = "你可以发动表召，选择一名角色，令其于下个回合开始之前的每名角色的结束阶段都会失去1点体力",
+  ["@@yechou"] = "业仇",
+
+  ["$biaozhao1"] = "此人有祸患之像，望丞相慎之。",
+  ["$biaozhao2"] = "孙策宜加贵宠，须召还京邑！",
+  ["$yechou1"] = "会有人替我报仇的！",
+  ["$yechou2"] = "我的门客，是不会放过你的！",
+  ["~ty__xugong"] = "终究……还是被其所害……",
+}
+
+Fk:loadTranslationTable{
+  ["ty__zhangchangpu"] = "张昌蒲",
+  ["yanjiao"] = "严教",
+  [":yanjiao"] = "出牌阶段限一次，你可以选择一名其他角色并亮出牌堆顶的四张牌，然后令该角色将这些牌分成点数之和相等的两组，"..
+    "将这两组牌分配给你与其，且将剩余未分组的牌置入弃牌堆。若未分组的牌超过一张，你本回合手牌上限-1。",
+  ["xingshen"] = "省身",
+  [":xingshen"] = "当你受到伤害后，你可以摸一张牌并令下一次发动〖严教〗亮出的牌数+1。若你的手牌数为全场最少，改为摸两张牌；"..
+  "若你的体力值为全场最少，〖严教〗亮出的牌数改为+2（加值总数至多为4）。",
+
+  ["$yanjiao1"] = "会虽童稚，勤见规诲。",
+  ["$yanjiao2"] = "性矜严教，明于教训。",
+  ["$xingshen1"] = "居上不骄，制节谨度。",
+  ["$xingshen2"] = "君子之行，皆积小以致高大。",
+  ["~ty__zhangchangpu"] = "我还是小看了，孙氏的伎俩……",
+}
 --上兵伐谋：辛毗 张温 李肃
 --辛毗
 

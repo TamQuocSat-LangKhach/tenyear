@@ -2321,17 +2321,6 @@ local beifen = fk.CreateTriggerSkill{
       end
     end
   end,
-  on_trigger = function(self, event, target, player, data)
-    local n = 0
-    for _, move in ipairs(data) do
-      if move.from == player.id and move.extra_data and move.extra_data.beifen then
-        n = n + move.extra_data.beifen
-      end
-    end
-    for i = 1, n, 1 do
-      self:doCost(event, target, player, data)
-    end
-  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local suits = {"spade", "club", "heart", "diamond"}

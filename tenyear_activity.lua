@@ -741,6 +741,12 @@ Fk:loadTranslationTable{
   ["xiaoxi_slash"] = "视为对其使用X张【杀】",
   ["#xiongrao-invoke"] = "熊扰：你可以令其他角色本回合非锁定技无效，你体力上限增加至7！",
   ["@@xiongrao-turn"] = "熊扰",
+
+  ["$xiaoxi1"] = "夜深枭啼，亡命夺袭！",
+  ["$xiaoxi2"] = "以夜为幕，纵兵逞凶！",
+  ["$xiongrao1"] = "势如熊罴，威震四海！",
+  ["$xiongrao2"] = "啸聚熊虎，免走狐惊！",
+  ["~niufu"] = "胡儿安敢杀我！",
 }
 
 --逐鹿天下：张恭 吕凯 卫温诸葛直

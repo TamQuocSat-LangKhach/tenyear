@@ -863,7 +863,14 @@ Fk:loadTranslationTable{
 }
 
 --纵横捭阖：陆郁生 祢衡 华歆 荀谌 冯熙 邓芝 宗预 羊祜
---陆郁生
+Fk:loadTranslationTable{
+  ["luyusheng"] = "陆郁生",
+  ["zhente"] = "贞特",
+  [":zhente"] = "每名角色的回合限一次，当你成为其他角色使用基本牌或普通锦囊牌的目标后，你可令其选择一项：1.本回合不能再使用此颜色的牌；2.此牌对你无效。",
+  ["zhiwei"] = "至微",
+  [":zhiwei"] = "游戏开始时，你选择一名其他角色，该角色造成伤害后，你摸一张牌；该角色受到伤害后，你随机弃置一张手牌。"..
+  "你弃牌阶段弃置的牌均被该角色获得。准备阶段，若场上没有“至微”角色，你可以重新选择一名其他角色。",
+}
 
 Fk:loadTranslationTable{
   ["ty__miheng"] = "祢衡",
@@ -871,8 +878,7 @@ Fk:loadTranslationTable{
   [":kuangcai"] = "①锁定技，你的回合内，你使用牌无距离和次数限制。<br>②弃牌阶段开始时，若你本回合：没有使用过牌，你的手牌上限+1；"..
   "使用过牌且没有造成伤害，你手牌上限-1。<br>③结束阶段，若你本回合造成过伤害，你摸等于伤害值数量的牌（最多摸五张）。",
   ["shejian"] = "舌剑",
-  [":shejian"] = "每回合限两次，当你成为其他角色使用牌的唯一目标后，你可以弃置至少两张手牌。若如此做，你选择一项："..
-  "1.弃置该角色等量的牌，2.对其造成1点伤害。",
+  [":shejian"] = "每回合限两次，当你成为其他角色使用牌的唯一目标后，你可以弃置至少两张手牌，然后弃置其等量的牌或对其造成1点伤害。",
 }
 
 local huaxin = General(extension, "ty__huaxin", "wei", 3)
@@ -1125,7 +1131,14 @@ Fk:loadTranslationTable{
   ["yusui_loseHp"] = "令其失去体力值至与你相同",
 }
 
---邓芝
+Fk:loadTranslationTable{
+  ["ty__dengzhi"] = "邓芝",
+  ["jianliang"] = "简亮",
+  [":jianliang"] = "摸牌阶段开始时，若你的手牌数不为全场最多，你可以令至多两名角色各摸一张牌。",
+  ["weimeng"] = "危盟",
+  [":weimeng"] = "出牌阶段限一次，你可以获得一名其他角色至多X张手牌，然后交给其等量的牌（X为你的体力值）。"..
+  "若你给出的牌点数之和：大于获得的牌，你摸一张牌；小于获得的牌，你弃置该角色区域内一张牌。",
+}
 
 local zongyu = General(extension, "ty__zongyu", "shu", 3)
 local qiao = fk.CreateTriggerSkill{
@@ -1687,6 +1700,73 @@ Fk:loadTranslationTable{
   ["~ty__huangquan"] = "败军之将，何言忠乎？",
 }
 
+--local huojun = General(extension, "ty__huojun", "shu", 4)
+local gue = fk.CreateViewAsSkill{
+  name = "gue",
+  anim_type = "defensive",
+  pattern = "slash,jink",
+  prompt = "#gue",
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  view_as = function(self, cards)
+    local name = "jink"
+    local slash  = Fk:cloneCard("slash")
+    if Fk.currentResponsePattern == nil and slash.skill:canUse(Self, slash) and not Self:prohibitUse(slash) then
+      name = "slash"
+    else
+      for _, n in ipairs({"slash", "jink"}) do
+        if Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(Fk:cloneCard(n)) then
+          name = n
+          break
+        end
+      end
+    end
+    local card = Fk:cloneCard(name)
+    card.skillName = self.name
+    return card
+  end,
+  enabled_at_play = function(self, player)
+    return false
+  end,
+  enabled_at_response = function(self, player, response)
+    return not player:isKongcheng() and player.phase == Player.NotActive and
+      player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
+  end,
+}
+local gue_trigger = fk.CreateTriggerSkill{
+  name = "#gue_trigger",
+  events = {fk.PreCardUse, fk.PreCardRespond},
+  mute = true,
+  priority = 10,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and table.contains(data.card.skillNames, "gue")
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    player:showCards(player:getCardIds("h"))
+    if player.dead then return end
+    local n = #table.filter(player:getCardIds("h"), function(id)
+      return Fk:getCardById(id).trueName == "slash" or Fk:getCardById(id).trueName == "jink" end)
+    if n > 1 then
+      return true
+    end
+  end,
+}
+gue:addRelatedSkill(gue_trigger)
+--huojun:addSkill(gue)
+Fk:loadTranslationTable{
+  ["ty__huojun"] = "霍峻",
+  ["gue"] = "孤扼",
+  [":gue"] = "每名其他角色的回合内限一次，当你需要使用或打出【杀】或【闪】时，你可以展示所有手牌，若其中【杀】和【闪】的总数不大于1，视为你使用或打出之。",
+  ["sigong"] = "伺攻",
+  [":sigong"] = "其他角色的回合结束时，若其本回合内使用牌被响应过，你可以将手牌调整至一张，视为对其使用一张需要X张【闪】抵消且伤害+1的【杀】"..
+  "（X为你以此法弃置牌数且至少为1） 。若此【杀】造成伤害，此技能本轮失效。",
+  ["#gue"] = "孤扼：你可以展示所有手牌，若【杀】【闪】总数不大于1，视为你使用或打出之",
+}
+
 local furongfuqian = General(extension, "furongfuqian", "shu", 4, 6)
 local ty__xuewei = fk.CreateTriggerSkill{
   name = "ty__xuewei",
@@ -1959,7 +2039,7 @@ local xiangshuz = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if target ~= player and player:hasSkill(self.name) and target.phase == Player.Play then
       if event == fk.EventPhaseStart then
-        return #target.player_cards[Player.Hand] >= target.hp
+        return target:getHandcardNum() >= target.hp
       else
         return player:usedSkillTimes(self.name, Player.HistoryPhase) > 0
       end
@@ -1975,6 +2055,7 @@ local xiangshuz = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.EventPhaseStart then
+      room:doIndicate(player.id, {target.id})
       local choices = {}
       for i = 0, 5, 1 do
         table.insert(choices, tostring(i))
@@ -1986,7 +2067,8 @@ local xiangshuz = fk.CreateTriggerSkill{
       end
       room:setPlayerMark(target, mark, choice)
     else
-      local n1 = #target.player_cards[Player.Hand]
+      room:doIndicate(player.id, {target.id})
+      local n1 = target:getHandcardNum()
       local n2 = math.max(tonumber(target:getMark(self.name)), tonumber(target:getMark("@"..self.name)))
       room:setPlayerMark(target, self.name, 0)
       room:setPlayerMark(target, "@"..self.name, 0)

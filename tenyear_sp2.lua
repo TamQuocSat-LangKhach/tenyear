@@ -1754,7 +1754,7 @@ local fengyan = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     room:setPlayerMark(player, self.interaction.data, 1)
     if self.interaction.data == "fengyan1-phase" then
-      local card = room:askForCard(target, 1, 1, true, self.name, false, ".", "#fengyan-give:"..player.id)
+      local card = room:askForCard(target, 1, 1, false, self.name, false, ".|.|.|hand", "#fengyan-give:"..player.id)
       room:obtainCard(player.id, card[1], false, fk.ReasonGive)
     elseif self.interaction.data == "fengyan2-phase" then
       room:useVirtualCard("slash", nil, player, target, self.name, true)
@@ -4007,7 +4007,7 @@ local wanglu = fk.CreateTriggerSkill{
     local room = player.room
     if player:getEquipment(Card.SubtypeTreasure) then
       if Fk:getCardById(player:getEquipment(Card.SubtypeTreasure)).name == "siege_engine" then
-        room:addPlayerMark(player, self.name, 1)
+        player:gainAnExtraPhase(Player.Play)
         return
       end
     else
@@ -4029,15 +4029,6 @@ local wanglu = fk.CreateTriggerSkill{
         break
       end
     end
-  end,
-
-  refresh_events = {fk.EventPhaseChanging},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player:getMark(self.name) > 0 and data.from == Player.Start
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:setPlayerMark(player, self.name, 0)
-    player:gainAnExtraPhase(Player.Play)
   end,
 }
 local xianzhu = fk.CreateTriggerSkill{

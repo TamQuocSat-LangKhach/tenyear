@@ -208,29 +208,17 @@ local guanwei = fk.CreateTriggerSkill{
     return #player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#guanwei-invoke::"..target.id) > 0
   end,
   on_use = function(self, event, target, player, data)
-    player.room:addPlayerMark(target, "guanwei-turn", 1)
+    player:drawCards(2, self.name)
+    player:gainAnExtraPhase(Player.Play)
   end,
 
-  refresh_events = {fk.AfterCardUseDeclared, fk.EventPhaseChanging},
+  refresh_events = {fk.AfterCardUseDeclared},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.AfterCardUseDeclared then
-      return player:hasSkill(self.name, true) and target.phase == Player.Play
-    else
-      return target == player and data.from == Player.Play
-    end
+    return player:hasSkill(self.name, true) and target.phase == Player.Play
   end,
   on_refresh = function(self, event, target, player, data)
-    if event == fk.AfterCardUseDeclared then
-      target.tag[self.name] = target.tag[self.name] or {}
-      table.insert(target.tag[self.name], data.card.suit)
-    else
-      if player:getMark("guanwei-turn") > 0 then
-        player.room:setPlayerMark(player, "guanwei-turn", 0)
-        player:drawCards(2, self.name)
-        player:gainAnExtraPhase(Player.Play)
-      end
-      player.tag[self.name] = {}
-    end
+    target.tag[self.name] = target.tag[self.name] or {}
+    table.insert(target.tag[self.name], data.card.suit)
   end,
 }
 local gongqing = fk.CreateTriggerSkill{

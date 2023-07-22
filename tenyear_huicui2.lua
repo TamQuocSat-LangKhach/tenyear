@@ -2348,12 +2348,12 @@ local rihui = fk.CreateTriggerSkill{
     if to:getMark("@@xinzhong") == 0 then
       for _, p in ipairs(room:getOtherPlayers(to)) do
         if p:getMark("@@xinzhong") > 0 then
-          return room:askForSkillInvoke(player, self.name, data, "#rihui-use")
+          return room:askForSkillInvoke(player, self.name, data, "#rihui-use::" .. to.id .. ":" .. data.card.name)
         end
       end
     else
       if to:isAllNude() then return end
-      return room:askForSkillInvoke(player, self.name, data, "#rihui-get")
+      return room:askForSkillInvoke(player, self.name, data, "#rihui-get::" .. to.id)
     end
   end,
   on_use = function(self, event, target, player, data)
@@ -2404,15 +2404,15 @@ Fk:loadTranslationTable{
   ["@@xinzhong"] = "信众",
   ["#jizhong-discard1"] = "集众：你需弃置三张手牌，否则成为“信众”",
   ["#jizhong-discard2"] = "集众：你需弃置三张手牌",
-  ["#rihui-use"] = "聚逞：你可以令所有“信众”视为对其使用此牌",
-  ["#rihui-get"] = "聚逞：你可以获得其区域内一张牌",
+  ["#rihui-use"] = "日慧：你可以令所有“信众”视为对 %dest 使用一张【%arg】",
+  ["#rihui-get"] = "日慧：你可以获得 %dest 区域内一张牌",
 
-  ["$jizhong1"] = "聚八方之众，召黄天之民。",
-  ["$jizhong2"] = "怜苦厄黎庶，传大道太平。",
+  ["$jizhong1"] = "聚八方之众，昭黄天之明。",
+  ["$jizhong2"] = "联苦厄黎庶，传大道太平。",
   ["$rihui1"] = "甲子双至，黄巾再起。",
   ["$rihui2"] = "日中必彗，操刀必割。",
   ["$guangshi1"] = "舍身饲火，光耀人间。",
-  ["$guangshi2"] = "愿为奉光之新柴，照太平于人间。",
+  ["$guangshi2"] = "愿为奉光之薪柴，照太平于人间。",
   ["~zhangchu"] = "苦难不尽，黄天不死……",
 }
 

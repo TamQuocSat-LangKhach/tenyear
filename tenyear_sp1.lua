@@ -1029,17 +1029,15 @@ local fuxue = fk.CreateTriggerSkill{
       local room = player.room
       local cards = player.tag[self.name]
       local get = {}
-      while #cards > 0 and #get < player.hp do
-        room:fillAG(player, cards)
-        local id = room:askForAG(player, cards, true, self.name)  --TODO: temporarily use AG. AG function need cancelable!
-        if id ~= nil then
-          table.removeOne(cards, id)
-          table.insert(get, id)
-          room:closeAG(player)
-        else
-          room:closeAG(player)
-          break
-        end
+      local result = room:askForCustomDialog(player, self.name,
+      "packages/tenyear/qml/LargeAG.qml", {
+        cards,
+        1, player.hp,
+      })
+      if result ~= "" then
+        get = json.decode(result)
+      else
+        get = table.random(cards, 1)
       end
       if #get > 0 then
         local dummy = Fk:cloneCard("dilu")
@@ -1198,6 +1196,8 @@ Fk:loadTranslationTable{
   ["#fuxue-invoke"] = "复学：你可以获得弃牌堆中至多%arg张不因使用而进入弃牌堆的牌",
   ["@@fuxue-inhand"] = "复学",
   
+  ["is_selected"] = "已选择",
+
   ["$fuxue1"] = "普天之大，唯此处可安书桌。",
   ["$fuxue2"] = "书中自有风月，何故东奔西顾？",
   ["$yaoyi1"] = "对弈未分高下，胜负可问春风。",

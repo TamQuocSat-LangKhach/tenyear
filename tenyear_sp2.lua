@@ -731,14 +731,31 @@ local xialei = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local ids = room:getNCards(3 - player:getMark("xialei-turn"))
-    room:fillAG(player, ids)
-    local chosen = room:askForAG(player, ids, false, self.name)
-    table.removeOne(ids, chosen)
-    room:obtainCard(player.id, chosen, false, fk.ReasonPrey)
-    room:closeAG(player)
+    local to_return = table.random(ids, 1)
+    local choice = "xialei_top"
+    if #ids > 1 then
+      local result = room:askForCustomDialog(player, self.name,
+        "packages/tenyear/qml/XiaLeiBox.qml", {
+          ids,
+          {"xialei_top", "xialei_bottom"}
+        })
+      
+      if result ~= "" then
+        local reply = json.decode(result)
+        to_return = reply.cards
+        choice = reply.choice
+      end
+    end
+    local moveInfos = {
+      ids = to_return,
+      to = player.id,
+      toArea = Card.PlayerHand,
+      moveReason = fk.ReasonJustMove,
+      proposer = player.id,
+      skillName = self.name,
+    }
+    table.removeOne(ids, to_return[1])
     if #ids > 0 then
-      local choice = room:askForChoice(player, {"xialei_top", "xialei_bottom"}, self.name)
-      local place = 1
       if choice == "xialei_top" then
         for i = #ids, 1, -1 do
           table.insert(room.draw_pile, 1, ids[i])
@@ -749,6 +766,7 @@ local xialei = fk.CreateTriggerSkill{
         end
       end
     end
+    room:moveCards(moveInfos)
     room:addPlayerMark(player, "xialei-turn", 1)
   end,
 }
@@ -787,15 +805,20 @@ local anzhi = fk.CreateActiveSkill{
         return p ~= room.current end), function(p) return p.id end), 1, 1, "#anzhi-choose", self.name, true)
       if #to > 0 then
         local get = {}
-        room:fillAG(player, ids)
-        while #get < 2 and #ids > 0 do
-          local id = room:askForAG(player, ids, true)
-          if id == nil then break end
-          table.insert(get, id)
-          table.removeOne(ids, id)
-          room:takeAG(player, id, {player})
+        if #ids > 2 then
+          local result = room:askForCustomDialog(player, self.name,
+          "packages/tenyear/qml/LargeAG.qml", {
+            ids,
+            2, 2,
+          })
+          if result ~= "" then
+            get = json.decode(result)
+          else
+            get = table.random(ids, 2)
+          end
+        else
+          get = ids
         end
-        room:closeAG(player)
         if #get > 0 then
           room:moveCards({
             ids = get,

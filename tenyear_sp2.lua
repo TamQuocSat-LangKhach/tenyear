@@ -890,7 +890,7 @@ Fk:loadTranslationTable{
   ["#xili-invoke"] = "系力：你可以弃置一张牌，令 %src 对 %dest 造成的伤害+1，你与 %src 各摸两张牌",
 
   ["$ty__manyi1"] = "蛮族的力量，你可不要小瞧！",
-  ["$ty__manyi2"] = "	南蛮女子，该当英勇善战！",
+  ["$ty__manyi2"] = "南蛮女子，该当英勇善战！",
   ["$mansi1"] = "多谢父母怜爱。",
   ["$mansi2"] = "承父母庇护，得此福气。",
   ["$souying1"] = "真薮影移，险战不惧！",
@@ -4753,15 +4753,12 @@ local ty__luochong = fk.CreateTriggerSkill{
       local cards = room:askForCardsChosen(player, to, 1, n, "hej", self.name)
       if #cards > 0 then
         room:throwCard(cards, self.name, to, player)
-        if #cards > 2 then
-          room:addPlayerMark(player, self.name, 1)
-        end
+        room:addPlayerMark(to, "ty__luochong_target", #cards)
         n = n - #cards
         if n <= 0 then break end
       end
-      room:setPlayerMark(to, "ty__luochong_target", 1)
       local targets = table.map(table.filter(room.alive_players, function(p)
-        return not p:isAllNude() and p:getMark("ty__luochong_target") == 0 end), function(p) return p.id end)
+        return not p:isAllNude() end), function(p) return p.id end)
       if #targets == 0 then break end
       local tos = room:askForChoosePlayers(player, targets, 1, 1,
         "#ty__luochong-choose:::"..tostring(total)..":"..tostring(n), self.name, true)
@@ -4771,7 +4768,10 @@ local ty__luochong = fk.CreateTriggerSkill{
         break
       end
     until total == 0 or player.dead
-    for _, p in ipairs(room.alive_players) do
+    if table.find(room.players, function(p) return p:getMark("ty__luochong_target") > 2 end) then
+      room:addPlayerMark(player, self.name, 1)
+    end
+    for _, p in ipairs(room.players) do
       room:setPlayerMark(p, "ty__luochong_target", 0)
     end
   end,
@@ -4783,7 +4783,7 @@ local ty__aichen = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove, fk.EventPhaseChanging, fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self.name) then
-      if event == fk.AfterCardsMove and #player.room.draw_pile > 80 then
+      if event == fk.AfterCardsMove and #player.room.draw_pile > 80 and player:usedSkillTimes(self.name, Player.HistoryRound) == 0 then
         for _, move in ipairs(data) do
           if move.skillName == "ty__luochong" and move.from == player.id then
             return true

@@ -80,7 +80,8 @@ local ty__fanghun = fk.CreateViewAsSkill{
     else
       return false
     end
-    return (Fk.currentResponsePattern == nil and c.skill:canUse(Self)) or (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(c))
+    return (Fk.currentResponsePattern == nil and c.skill:canUse(Self)) or
+      (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(c))
   end,
   view_as = function(self, cards)
     if #cards ~= 1 then
@@ -93,7 +94,6 @@ local ty__fanghun = fk.CreateViewAsSkill{
     elseif _c.name == "jink" then
       c = Fk:cloneCard("slash")
     end
-    --c.skillName = self.name
     c.skillNames = c.skillNames or {}
     table.insert(c.skillNames, "ty__fanghun")
     table.insert(c.skillNames, "longdan")
@@ -1581,7 +1581,8 @@ Fk:loadTranslationTable{
   ["shouli"] = "狩骊",
   ["#shouli_trigger"] = "狩骊",
   ["#shouli_delay"] = "狩骊",
-  [":shouli"] = "游戏开始时，从下家开始所有角色随机使用牌堆中的一张坐骑。你可将场上的一张进攻马当【杀】（不计入次数，有次数限制）、防御马当【闪】使用或打出，以此法失去坐骑的其他角色本回合非锁定技失效，你与其本回合受到的伤害+1且改为雷电伤害（不叠加）。",
+  [":shouli"] = "游戏开始时，从下家开始所有角色随机使用牌堆中的一张坐骑。你可将场上的一张进攻马当【杀】（不计入次数，有次数限制）、"..
+  "防御马当【闪】使用或打出，以此法失去坐骑的其他角色本回合非锁定技失效，你与其本回合受到的伤害+1且改为雷电伤害（不叠加）。",
   ["hengwu"] = "横骛",
   [":hengwu"] = "当你使用或打出牌时，若你没有该花色的手牌，你可摸X张牌（X为场上与此牌花色相同的装备数量）。",
 
@@ -2344,7 +2345,57 @@ Fk:loadTranslationTable{
 }
 
 --百战虎贲：兀突骨 文鸯 皇甫嵩 王双 留赞 黄祖 雷铜 吴兰
-
+local wutugu = General(extension, "ty__wutugu", "qun", 15)
+local ty__ranshang = fk.CreateTriggerSkill{
+  name = "ty__ranshang",
+  anim_type = "negative",
+  frequency = Skill.Compulsory,
+  events = {fk.Damaged, fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) then
+      if event == fk.Damaged then
+        return data.damageType == fk.FireDamage
+      else
+        return player.phase == Player.Finish and player:getMark("@wutugu_ran") > 0
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.Damaged then
+      room:addPlayerMark(player, "@wutugu_ran", data.damage)
+    else
+      room:loseHp(player, player:getMark("@wutugu_ran"), self.name)
+      if not player.dead and player:getMark("@wutugu_ran") > 2 then
+        room:changeMaxHp(player, -2)
+        if not player.dead then
+          player:drawCards(2, self.name)
+        end
+      end
+    end
+  end,
+}
+local ty__hanyong = fk.CreateTriggerSkill{
+  name = "ty__hanyong",
+  anim_type = "offensive",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player:isWounded() and
+      (table.contains({"savage_assault", "archery_attack"}, data.card.trueName) or (data.card.name == "slash" and data.card.suit == Card.Spade))
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#ty__hanyong-invoke:::"..data.card:toLogString())
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    data.additionalDamage = (data.additionalDamage or 0) + 1
+    if player.hp > room:getTag("RoundCount") then
+      room:addPlayerMark(player, "@wutugu_ran", 1)
+    end
+  end,
+}
+wutugu:addSkill(ty__ranshang)
+wutugu:addSkill(ty__hanyong)
 Fk:loadTranslationTable{
   ["ty__wutugu"] = "兀突骨",
   ["ty__ranshang"] = "燃殇",
@@ -2353,6 +2404,7 @@ Fk:loadTranslationTable{
   ["ty__hanyong"] = "悍勇",
   [":ty__hanyong"] = "当你使用【南蛮入侵】、【万箭齐发】或♠普通【杀】时，若你已受伤，你可以令此牌造成的伤害+1，然后若你的体力值大于游戏轮数，"..
   "你获得一个“燃”标记。",
+  ["#ty__hanyong-invoke"] = "悍勇：你可以令此%arg伤害+1",
 }
 
 local wenyang = General(extension, "wenyang", "wei", 5)
@@ -2361,8 +2413,8 @@ local lvli = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.Damage, fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) and #player.player_cards[Player.Hand] ~= player.hp then
-      if #player.player_cards[Player.Hand] > player.hp and not player:isWounded() then return end
+    if target == player and player:hasSkill(self.name) and player:getHandcardNum() ~= player.hp then
+      if player:getHandcardNum() > player.hp and not player:isWounded() then return end
       local n = 1
       if player:usedSkillTimes("choujue", Player.HistoryGame) > 0 then
         if player.phase ~= Player.NotActive then
@@ -2377,7 +2429,7 @@ local lvli = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    local n = #player.player_cards[Player.Hand] - player.hp
+    local n = player:getHandcardNum() - player.hp
     if n < 0 then
       player:drawCards(-n, self.name)
     else
@@ -2399,7 +2451,7 @@ local choujue = fk.CreateTriggerSkill{
     return player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   can_wake = function(self, event, target, player, data)
-    return math.abs(#player.player_cards[Player.Hand] - player.hp) > 2
+    return math.abs(player:getHandcardNum() - player.hp) > 2
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -2418,7 +2470,7 @@ local beishui = fk.CreateTriggerSkill{
       player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   can_wake = function(self, event, target, player, data)
-    return #player.player_cards[Player.Hand] < 2 or player.hp < 2
+    return player:getHandcardNum() < 2 or player.hp < 2
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -2734,7 +2786,8 @@ Fk:loadTranslationTable{
   ["ty__fenyin"] = "奋音",
   [":ty__fenyin"] = "锁定技，你的回合内，每当有一种花色的牌进入弃牌堆后（每回合每种花色各限一次），你摸一张牌。",
   ["liji"] = "力激",
-  [":liji"] = "出牌阶段限0次，你可以弃置一张牌然后对一名其他角色造成1点伤害。你的回合内，本回合进入弃牌堆的牌每次达到8的倍数张时（存活人数小于5时改为4的倍数），此技能使用次数+1。",
+  [":liji"] = "出牌阶段限0次，你可以弃置一张牌然后对一名其他角色造成1点伤害。你的回合内，本回合进入弃牌堆的牌每次达到8的倍数张时"..
+  "（存活人数小于5时改为4的倍数），此技能使用次数+1。",
 
   ["$ty__fenyin1"] = "斗志高歌，士气昂扬！",
   ["$ty__fenyin2"] = "抗音而歌，左右应之！",
@@ -3438,17 +3491,168 @@ Fk:loadTranslationTable{
   ["~guanlu"] = "怀我好英，心非草木……",
 }
 
+local gexuan = General(extension, "gexuan", "wu", 3)
+local lianhua = fk.CreateTriggerSkill{
+  name = "lianhua",
+  anim_type = "special",
+  events = {fk.Damaged, fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      if event == fk.Damaged then
+        return target ~= player and player.phase == Player.NotActive
+      elseif event == fk.EventPhaseStart then
+        return target == player and player.phase == Player.Start
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.Damaged then
+      local color = "black"
+      if table.contains({"lord", "loyalist"}, player.role) and table.contains({"lord", "loyalist"}, player.role) or
+        (player.role == target.role) then
+        color = "red"
+      end
+      room:addPlayerMark(player, "lianhua-"..color, 1)
+      room:setPlayerMark(player, "@lianhua", player:getMark("lianhua-red") + player:getMark("lianhua-black"))
+    elseif event == fk.EventPhaseStart then
+      local pattern, skill
+      if player:getMark("@lianhua") < 4 then
+        pattern, skill = "peach", "ex__yingzi"
+      else
+        if player:getMark("lianhua-red") > player:getMark("lianhua-black") then
+          pattern, skill = "ex_nihilo", "ex__guanxing"
+        elseif player:getMark("lianhua-red") < player:getMark("lianhua-black") then
+          pattern, skill = "snatch", "zhiyan"
+        elseif player:getMark("lianhua-red") == player:getMark("lianhua-black") then
+          pattern, skill = "slash", "gongxin"
+        end
+      end
+      local cards = room:getCardsFromPileByRule(pattern)
+      if player:getMark("@lianhua") > 3 and player:getMark("lianhua-red") == player:getMark("lianhua-black") then
+        table.insertTable(cards, room:getCardsFromPileByRule("duel"))
+      end
+      if #cards > 0 then
+        room:moveCards({
+          ids = cards,
+          to = player.id,
+          toArea = Card.PlayerHand,
+          moveReason = fk.ReasonJustMove,
+          proposer = player.id,
+          skillName = self.name,
+        })
+      end
+      if not player:hasSkill(skill, true) then
+        room:setPlayerMark(player, "lianhua-turn", skill)
+        room:handleAddLoseSkills(player, skill, nil, true, false)
+      end
+    end
+  end,
+}
+local lianhua_trigger = fk.CreateTriggerSkill{
+  name = "#lianhua_trigger",
+  mute = true,
+  events = {fk.EventPhaseStart, fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    if target == player then
+      if event == fk.EventPhaseStart then
+        return player:getMark("@lianhua") > 0 and player.phase == Player.Play
+      elseif event == fk.TurnEnd then
+        return player:getMark("lianhua-turn") ~= 0
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart then
+      room:setPlayerMark(player, "@lianhua", 0)
+      room:setPlayerMark(player, "lianhua-red", 0)
+      room:setPlayerMark(player, "lianhua-black", 0)
+    elseif event == fk.TurnEnd then
+      room:handleAddLoseSkills(player, "-"..player:getMark("lianhua-turn"), nil, true, false)
+    end
+  end,
+}
+local zhafu = fk.CreateActiveSkill{
+  name = "zhafu",
+  anim_type = "control",
+  card_num = 0,
+  target_num = 1,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local mark = target:getMark("@@zhafu")
+    if mark == 0 then mark = {} end
+    table.insertIfNeed(mark, player.id)
+    room:setPlayerMark(target, "@@zhafu", mark)
+  end,
+}
+local zhafu_trigger = fk.CreateTriggerSkill{
+  name = "#zhafu_trigger",
+  mute = true,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player.phase == Player.Discard and player:getMark("@@zhafu") ~= 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local src = room:getPlayerById(player:getMark("@@zhafu")[1])
+    room:setPlayerMark(player, "@@zhafu", 0)
+    if player:getHandcardNum() < 2 or src.dead then return end
+    room:doIndicate(src.id, {player.id})
+    room:broadcastSkillInvoke("zhafu")
+    room:notifySkillInvoked(src, "zhafu", "control")
+    local card = room:askForCard(player, 1, 1, false, "zhafu", false, ".|.|.|hand", "#zhafu-invoke:"..src.id)
+    if #card > 0 then
+      card = card[1]
+    else
+      card = table.random(player.player_cards[Player.Hand])
+    end
+    local dummy = Fk:cloneCard("dilu")
+    dummy:addSubcards(table.filter(player.player_cards[Player.Hand], function(id) return id ~= card end))
+    room:obtainCard(src, dummy, false, fk.ReasonGive)
+  end,
+}
+lianhua:addRelatedSkill(lianhua_trigger)
+zhafu:addRelatedSkill(zhafu_trigger)
+gexuan:addSkill(lianhua)
+gexuan:addSkill(zhafu)
+gexuan:addRelatedSkill("ex__yingzi")
+gexuan:addRelatedSkill("ex__guanxing")
+gexuan:addRelatedSkill("zhiyan")
+gexuan:addRelatedSkill("gongxin")
 Fk:loadTranslationTable{
   ["gexuan"] = "葛玄",
   ["lianhua"] = "炼化",
-  [":lianhua"] = "你的回合外，每当有其他角色受到伤害后，你获得一个 “丹血”标记，直到你的出牌阶段开始。<br>"..
-  "准备阶段，根据你获得的“丹血”标记的数量和颜色，你获得相应的游戏牌以及获得相应技能直到回合结束。<br>"..
-  "3枚或以下：“英姿”和【桃】；<br>"..
-  "超过3枚且红色“丹血”较多：“观星”和【无中生有】；<br>"..
-  "超过3枚且黑色“丹血”较多：“直言”和【顺手牵羊】；<br>"..
-  "超过3枚且红色和黑色一样多：【杀】、【决斗】和“攻心”。",
+  [":lianhua"] = "你的回合外，当其他角色受到伤害后，你获得一枚“丹血”标记（阵营与你相同为红色，不同则为黑色，颜色不可见）直到你的出牌阶段开始。<br>"..
+  "准备阶段，根据“丹血”标记的数量和颜色，你获得相应的游戏牌，获得相应的技能直到回合结束：<br>"..
+  "3枚或以下：【桃】和〖英姿〗；<br>"..
+  "超过3枚且红色“丹血”较多：【无中生有】和〖观星〗；<br>"..
+  "超过3枚且黑色“丹血”较多：【顺手牵羊】和〖直言〗；<br>"..
+  "超过3枚且红色和黑色一样多：【杀】、【决斗】和〖攻心〗。",
   ["zhafu"] = "札符",
   [":zhafu"] = "限定技，出牌阶段，你可以选择一名其他角色。该角色的下个弃牌阶段开始时，其选择保留一张手牌，将其余手牌交给你。",
+  ["@lianhua"] = "丹血",
+  ["@@zhafu"] = "札符",
+  ["#zhafu-invoke"] = "札符：选择一张保留的手牌，其他手牌全部交给 %src ！",
 
   ["$lianhua1"] = "白日青山，飞升化仙。",
   ["$lianhua2"] = "草木精炼，万物化丹。",
@@ -3487,7 +3691,7 @@ local xiangmian = fk.CreateActiveSkill{
     room:judge(judge)
     room:setPlayerMark(target, "xiangmian_suit", judge.card:getSuitString(true))
     room:setPlayerMark(target, "xiangmian_num", judge.card.number)
-    room:setPlayerMark(target, "@xiangmian", string.format("%s%d",Fk:translate(target:getMark("xiangmian_suit")), target:getMark("xiangmian_num")))
+    room:setPlayerMark(target, "@xiangmian", string.format("%s%d", Fk:translate(target:getMark("xiangmian_suit")), target:getMark("xiangmian_num")))
   end,
 }
 local xiangmian_record = fk.CreateTriggerSkill{
@@ -4131,7 +4335,7 @@ local weicheng = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) and #player.player_cards[Player.Hand] < player.hp then
+    if player:hasSkill(self.name) and player:getHandcardNum() < player.hp then
       for _, move in ipairs(data) do
         if move.from and move.from == player.id and move.to and move.to ~= player.id and move.toArea == Card.PlayerHand then
           for _, info in ipairs(move.moveInfo) do

@@ -114,9 +114,9 @@ local ty__kuangfu = fk.CreateActiveSkill{
       from = player.id,
       tos = {{to}},
       card = Fk:cloneCard("slash"),
-      skillName = self.name,
       extraUse = true,
     }
+    use.card.skillName = self.name
     room:useCard(use)
     if not player.dead then
       if effect.from == effect.tos[1] and use.damageDealt then
@@ -3053,7 +3053,7 @@ local suizheng = fk.CreateTriggerSkill{
     if event == fk.EventPhaseStart then
       return target == player and player:getMark("@@suizheng") > 0 and player.phase == Player.Play
     else
-      return player:hasSkill(self.name, true) and target:getMark("@@suizheng-turn") > 0 and data.to ~= player and not data.to.dead
+      return player:hasSkill(self.name, true) and data.from and target:getMark("@@suizheng-turn") > 0 and data.to ~= player and not data.to.dead
     end
   end,
   on_refresh = function(self, event, target, player, data)

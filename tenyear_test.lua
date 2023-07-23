@@ -90,7 +90,7 @@ local moyu = fk.CreateActiveSkill{
   card_num = 0,
   target_num = 1,
   can_use = function(self, player)
-    return player:getMark("moyu-turn") == 0
+    return player:getMark("@@moyu-turn") == 0
   end,
   card_filter = function(self, to_select, selected)
     return false
@@ -104,36 +104,27 @@ local moyu = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     local id = room:askForCardChosen(player, target, "hej", self.name)
     room:obtainCard(player.id, id, false, fk.ReasonPrey)
-    room:addPlayerMark(target, "moyu-turn", 1)
-    local use = room:askForUseCard(target, "slash", "slash", "#moyu-use::"..player.id..":"..player:usedSkillTimes(self.name), true,
-      {must_targets = {player.id}, bypass_distances = true, bypass_times = true})
+    if target.dead then return end
+    room:setPlayerMark(target, "moyu-turn", 1)
+    local use = room:askForUseCard(target, "slash", "slash", "#moyu-slash::"..player.id..":"..player:usedSkillTimes(self.name), true,
+      {must_targets = {player.id}, bypass_times = true})
     if use then
       use.additionalDamage = (use.additionalDamage or 0) + player:usedSkillTimes(self.name) - 1
-      use.card.extra_data = use.card.extra_data or {}
-      table.insert(use.card.extra_data, self.name)
       room:useCard(use)
+      if not player.dead and use.damageDealt and use.damageDealt[player.id] then
+        room:setPlayerMark(player, "@@moyu-turn", 1)
+      end
     end
   end,
 }
-local moyu_record = fk.CreateTriggerSkill{
-  name = "#moyu_record",
-
-  refresh_events = {fk.DamageInflicted},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card and data.card.extra_data and table.contains(data.card.extra_data, "moyu")
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "moyu-turn", 1)
-  end,
-}
-moyu:addRelatedSkill(moyu_record)
 peiyuanshao:addSkill(moyu)
 Fk:loadTranslationTable{
   ["peiyuanshao"] = "裴元绍",
   ["moyu"] = "没欲",
-  [":moyu"] = "出牌阶段每名角色限一次，你可以获得一名其他角色区域内的一张牌，然后该角色可以对你使用一张无距离限制且伤害值为X的【杀】"..
+  [":moyu"] = "出牌阶段每名角色限一次，你可以获得一名其他角色区域内的一张牌，然后该角色可以对你使用一张伤害值为X的【杀】"..
   "（X为本回合本技能发动次数），若此【杀】对你造成了伤害，本技能于本回合失效。",
-  ["#moyu-use"] = "没欲：你可以对 %dest 使用一张【杀】，伤害基数为%arg",
+  ["#moyu-slash"] = "没欲：你可以对 %dest 使用一张【杀】，伤害基数为%arg",
+  ["@@moyu-turn"] = "没欲失效",
 }
 
 local dongwan = General(extension, "dongwan", "qun", 3, 3, General.Female)
@@ -354,12 +345,13 @@ local zhongji = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil,
-      "#zhongji-invoke:::"..(player.maxHp - player:getHandcardNum())..":"..player:usedSkillTimes(self.name, Player.HistoryTurn) + 1)
+      "#zhongji-invoke:::"..(player.maxHp - player:getHandcardNum())..":"..player:usedSkillTimes(self.name, Player.HistoryTurn))
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(player.maxHp - player:getHandcardNum(), self.name)
-    local n = player:usedSkillTimes(self.name, Player.HistoryTurn)
+    local n = player:usedSkillTimes(self.name, Player.HistoryTurn) - 1
+    if n == 0 then return end
     if #player:getCardIds{Player.Hand, Player.Equip} <= n then
       player:throwAllCards("he")
     else
@@ -392,6 +384,13 @@ Fk:loadTranslationTable{
   "令一名角色弃置一张牌然后摸与当前手牌数一半数量的牌（向下取整）",
   ["qingshid"] = "倾势",
   [":qingshid"] = "当你于回合内使用【杀】或锦囊牌指定其他角色为目标后，若此牌是你本回合使用的第X张牌，你可以对其中一名目标角色造成1点伤害（X为你的手牌数）",
+}
+
+Fk:loadTranslationTable{
+  ["ty__wuban"] = "吴班",
+  ["youzhan"] = "诱战",
+  [":youzhan"] = "锁定技，其他角色在你的回合失去牌后，你摸—张牌，其本回合下次受到的伤害+1。结束阶段，若这些角色本回合未受伤，其摸X张牌"..
+  "（X为其本回合失去牌的次数）。",
 }
 
 return extension

@@ -123,7 +123,7 @@ local renzheng = fk.CreateTriggerSkill{
       local e = player.room.logic:getCurrentEvent():findParent(GameEvent.Damage)
       if e then
         local dat = e.data[1]
-        if dat.damage < dat.extra_data.renzheng then
+        if dat.extra_data and dat.extra_data.renzheng and dat.damage < dat.extra_data.renzheng then
           dat.extra_data.renzheng_invoke = true
         end
       end
@@ -5201,6 +5201,7 @@ local zhizhe_trigger = fk.CreateTriggerSkill{
             table.removeOne(mark, info.cardId)
             if #mark == 0 then mark = 0 end
             player.room:setPlayerMark(player, "zhizhe", mark)
+            if mark == 0 then return end
           end
         end
       end

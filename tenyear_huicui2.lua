@@ -41,11 +41,11 @@ local dunshi = fk.CreateViewAsSkill{
   enabled_at_play = function(self, player)
     if player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then return false end
     local names = {"slash", "jink", "peach", "analeptic"}
-    local mark = Self:getMark("dunshi")
+    local mark = player:getMark("dunshi")
     for _, name in ipairs(names) do
       if type(mark) ~= "table" or not table.contains(mark, name) then
         local to_use = Fk:cloneCard(name)
-        if to_use.skill:canUse(Self, to_use) and not Self:prohibitUse(to_use) then
+        if to_use.skill:canUse(player, to_use) and not player:prohibitUse(to_use) then
           return true
         end
       end
@@ -54,7 +54,7 @@ local dunshi = fk.CreateViewAsSkill{
   enabled_at_response = function(self, player, response)
     if player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then return false end
     local names = {"slash", "jink", "peach", "analeptic"}
-    local mark = Self:getMark("dunshi")
+    local mark = player:getMark("dunshi")
     for _, name in ipairs(names) do
       if type(mark) ~= "table" or not table.contains(mark, name) then
         local to_use = Fk:cloneCard(name)

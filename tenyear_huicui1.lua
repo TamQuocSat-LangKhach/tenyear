@@ -2184,17 +2184,9 @@ local jinglan = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if player:getHandcardNum() > player.hp then
-      if player:getHandcardNum() < 4 then
-        player:throwAllCards("h")
-      else
-        room:askForDiscard(player, 3, 3, false, self.name, false)
-      end
+      room:askForDiscard(player, 4, 4, false, self.name, false)
     elseif player:getHandcardNum() == player.hp then
-      if player:getHandcardNum() < 2 then
-        player:throwAllCards("h")
-      else
-        room:askForDiscard(player, 1, 1, false, self.name, false)
-      end
+      room:askForDiscard(player, 1, 1, true, self.name, false)
       if player:isWounded() then
         room:recover{
           who = player,
@@ -2211,7 +2203,7 @@ local jinglan = fk.CreateTriggerSkill{
         skillName = self.name,
       }
       if not player.dead then
-        player:drawCards(4, self.name)
+        player:drawCards(5, self.name)
       end
     end
   end,
@@ -2223,8 +2215,8 @@ Fk:loadTranslationTable{
   ["lianzhou"] = "连舟",
   [":lianzhou"] = "锁定技，准备阶段，将你的武将牌横置，然后横置任意名体力值等于你的角色。",
   ["jinglan"] = "惊澜",
-  [":jinglan"] = "锁定技，当你造成伤害后，若你的手牌数：大于体力值，你弃三张手牌；等于体力值，你弃一张手牌并回复1点体力；"..
-  "小于体力值，你受到1点火焰伤害并摸四张牌。",
+  [":jinglan"] = "锁定技，当你造成伤害后，若你的手牌数：大于体力值，你弃四张手牌；等于体力值，你弃一张牌并回复1点体力；"..
+  "小于体力值，你受到1点火焰伤害并摸五张牌。",
   ["#lianzhou-choose"] = "连舟：你可以横置任意名体力值等于你的角色",
 }
 
@@ -3000,9 +2992,10 @@ Fk:loadTranslationTable{
 Fk:loadTranslationTable{
   ["ty__mamidi"] = "马日磾",
   ["bingjie"] = "秉节",
-  [":bingjie"] = "出牌阶段开始时，你可以减1点体力上限，然后当你本回合使用【杀】或普通锦囊牌指定目标后，除你以外的目标角色各弃置一张牌。",
+  [":bingjie"] = "出牌阶段开始时，你可以减1点体力上限，然后当你本回合使用【杀】或普通锦囊牌指定目标后，除你以外的目标角色各弃置一张牌，"..
+  "若弃置的牌与你使用的牌颜色相同，其无法响应此牌。",
   ["zhengding"] = "正订",
-  [":zhengding"] = "锁定技，你的回合外，当你使用或打出牌响应其他角色使用的牌时，若你使用或打出的牌与其使用的牌颜色相同，你加1点体力上限。",
+  [":zhengding"] = "锁定技，你的回合外，当你使用或打出牌响应其他角色使用的牌时，若你使用或打出的牌与其使用的牌颜色相同，你加1点体力上限，回复1点体力。",
 }
 
 local zhangxun = General(extension, "zhangxun", "qun", 4)

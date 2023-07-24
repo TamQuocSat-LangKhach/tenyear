@@ -1805,7 +1805,6 @@ local xunshi_targetmod = fk.CreateTargetModSkill{
     return player:hasSkill(xunshi.name) and card and card.color == Card.NoColor
   end,
 }
-shencai:addRelatedSkill(shencai_record)
 shencai:addRelatedSkill(shencai_delay)
 shencai:addRelatedSkill(shencai_maxcards)
 xunshi:addRelatedSkill(xunshi_trigger)

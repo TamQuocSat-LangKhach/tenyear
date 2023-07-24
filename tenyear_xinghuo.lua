@@ -208,8 +208,8 @@ local guanwei = fk.CreateTriggerSkill{
     return #player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#guanwei-invoke::"..target.id) > 0
   end,
   on_use = function(self, event, target, player, data)
-    player:drawCards(2, self.name)
-    player:gainAnExtraPhase(Player.Play)
+    target:drawCards(2, self.name)
+    target:gainAnExtraPhase(Player.Play)
   end,
 
   refresh_events = {fk.AfterCardUseDeclared},

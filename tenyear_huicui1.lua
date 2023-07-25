@@ -914,7 +914,408 @@ Fk:loadTranslationTable{
   ["#mingluan-invoke"] = "鸣鸾：你可以弃置任意张牌（可以不弃置），然后摸 %dest 手牌数的牌，最多摸至五张",
 }
 
---赵嫣 滕胤
+local zhaoyanw = General(extension, "zhaoyanw", "wu", 3, 3, General.Female)
+local jinhui = fk.CreateActiveSkill{
+  name = "jinhui",
+  anim_type = "support",
+  card_num = 0,
+  target_num = 0,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local names = {}
+    for _, id in ipairs(room.draw_pile) do
+      local card = Fk:getCardById(id)
+      if not card.is_damage_card and (card.skill.target_num == 1 or card.type == Card.TypeEquip or
+        table.contains({"peach", "ex_nihilo", "collateral", "lightning", "analeptic", "foresight"}, card.trueName)) then
+        table.insertIfNeed(names, card.trueName)
+      end
+    end
+    if #names == 0 then return end
+    names = table.random(names, math.min(3, #names))
+    local cards = {}
+    for _, name in ipairs(names) do
+      table.insertTable(cards, room:getCardsFromPileByRule(name))
+    end
+    if #cards == 0 then return end
+    local dummy = Fk:cloneCard("dilu")
+    dummy:addSubcards(cards)
+    player:addToPile(self.name, dummy, true, self.name)
+    local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
+    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#jinhui-choose", self.name, false)
+    local to
+    if #tos > 0 then
+      to = room:getPlayerById(tos[1])
+    else
+      to = room:getPlayerById(table.random(targets))
+    end
+    local ids = table.simpleClone(player:getPile(self.name))
+    local fakemove = {
+      toArea = Card.PlayerHand,
+      to = to.id,
+      moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.Void} end),
+      moveReason = fk.ReasonJustMove,
+    }
+    room:notifyMoveCards({to}, {fakemove})
+    local availableCards = {}
+    for _, id in ipairs(ids) do
+      local card = Fk:getCardById(id)
+      if not to:prohibitUse(card) and card.skill:canUse(to) then
+        table.insertIfNeed(availableCards, id)
+      end
+    end
+    room:setPlayerMark(to, "jinhui_cards", {availableCards, {player.id, to.id}})
+    local success, dat = room:askForUseActiveSkill(to, "jinhui_viewas", "#jinhui-use:"..player.id, false)
+    room:setPlayerMark(to, "jinhui_cards", 0)
+    fakemove = {
+      from = to.id,
+      toArea = Card.Void,
+      moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
+      moveReason = fk.ReasonJustMove,
+    }
+    room:notifyMoveCards({to}, {fakemove})
+    if success then
+      room:moveCards({
+        from = player.id,
+        ids = dat.cards,
+        toArea = Card.Processing,
+        moveReason = fk.ReasonUse,
+        skillName = self.name,
+      })
+      local card = Fk.skills["jinhui_viewas"]:viewAs(dat.cards)
+      room:useCard{
+        from = to.id,
+        tos = table.map(dat.targets, function(id) return {id} end),
+        card = card,
+        extraUse = true,
+      }
+    else
+      room:moveCards({
+        from = player.id,
+        ids = player:getPile(self.name),
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonJustMove,
+        skillName = self.name,
+      })
+    end
+    while not player.dead and #player:getPile(self.name) > 0 do
+      ids = table.simpleClone(player:getPile(self.name))
+      fakemove = {
+        toArea = Card.PlayerHand,
+        to = player.id,
+        moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.Void} end),
+        moveReason = fk.ReasonJustMove,
+      }
+      room:notifyMoveCards({player}, {fakemove})
+      availableCards = {}
+      for _, id in ipairs(ids) do
+        local card = Fk:getCardById(id)
+        if not player:prohibitUse(card) and card.skill:canUse(player) then
+          table.insertIfNeed(availableCards, id)
+        end
+      end
+      room:setPlayerMark(player, "jinhui_cards", {availableCards, {player.id, to.id}})
+      success, dat = room:askForUseActiveSkill(player, "jinhui_viewas", "#jinhui2-use::"..to.id, true)
+      room:setPlayerMark(player, "jinhui_cards", 0)
+      fakemove = {
+        from = player.id,
+        toArea = Card.Void,
+        moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
+        moveReason = fk.ReasonJustMove,
+      }
+      room:notifyMoveCards({player}, {fakemove})
+      if success then
+        room:moveCards({
+          from = player.id,
+          ids = dat.cards,
+          toArea = Card.Processing,
+          moveReason = fk.ReasonUse,
+          skillName = self.name,
+        })
+        local card = Fk.skills["jinhui_viewas"]:viewAs(dat.cards)
+        room:useCard{
+          from = player.id,
+          tos = table.map(dat.targets, function(id) return {id} end),
+          card = card,
+          extraUse = true,
+        }
+      else
+        break
+      end
+    end
+    room:moveCards({
+      from = player.id,
+      ids = player:getPile(self.name),
+      toArea = Card.DiscardPile,
+      moveReason = fk.ReasonJustMove,
+      skillName = self.name,
+    })
+  end
+}
+local jinhui_viewas = fk.CreateViewAsSkill{
+  name = "jinhui_viewas",
+  card_filter = function(self, to_select, selected)
+    if #selected == 0 then
+      local mark = Self:getMark("jinhui_cards")
+      return type(mark) == "table" and table.contains(mark[1], to_select)
+    end
+  end,
+  view_as = function(self, cards)
+    if #cards == 1 then
+      local card = Fk:getCardById(cards[1])
+      card.skillName = "jinhui"
+      return card
+    end
+  end,
+}
+local jinhui_prohibit = fk.CreateProhibitSkill{
+  name = "#jinhui_prohibit",
+  is_prohibited = function(self, from, to, card)
+    return from:getMark("jinhui_cards") ~= 0 and table.contains(card.skillNames, "jinhui") and
+      not table.contains(from:getMark("jinhui_cards")[2], to.id)
+  end,
+}
+local jinhui_targetmod = fk.CreateTargetModSkill{
+  name = "#jinhui_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    return card and table.contains(card.skillNames, "jinhui")
+  end,
+  bypass_distances =  function(self, player, skill, card, to)
+    return card and table.contains(card.skillNames, "jinhui")
+  end,
+}
+local qingman = fk.CreateTriggerSkill{
+  name = "qingman",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.EventPhaseChanging},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and data.to == Player.NotActive and player:getHandcardNum() < 5 - #target:getCardIds("e")
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(5 - #target:getCardIds("e") - player:getHandcardNum(), self.name)
+  end,
+}
+Fk:addSkill(jinhui_viewas)
+jinhui:addRelatedSkill(jinhui_prohibit)
+jinhui:addRelatedSkill(jinhui_targetmod)
+zhaoyanw:addSkill(jinhui)
+zhaoyanw:addSkill(qingman)
+Fk:loadTranslationTable{
+  ["zhaoyanw"] = "赵嫣",
+  ["jinhui"] = "锦绘",
+  [":jinhui"] = "出牌阶段限一次，你可以将牌堆中随机三张不同名且目标数为一的非伤害牌置于你的武将牌上，然后选择一名其他角色，该角色使用其中一张，"..
+  "然后你可以依次使用其余两张（必须选择你或其为目标，无距离和次数限制）。",
+  ["qingman"] = "轻幔",
+  [":qingman"] = "锁定技，每个回合结束时，你将手牌摸至X张（X为当前回合角色装备区内的空位数）。",
+  ["#jinhui-choose"] = "锦绘：令一名其他角色使用其中一张牌，然后你可以使用其余两张",
+  ["#jinhui-use"] = "锦绘：使用其中一张牌（必须指定你或 %src 为目标），然后其可以使用其余两张",
+  ["#jinhui2-use"] = "锦绘：你可以使用剩余的牌（必须指定你或 %dest 为目标）",
+  ["jinhui_viewas"] = "锦绘",
+}
+
+local tengyin = General(extension, "tengyin", "wu", 3)
+local chenjian = fk.CreateTriggerSkill{
+  name = "chenjian",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Start
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local ids = room:getNCards(3 + player:getMark(self.name))
+    room:moveCards({
+      ids = ids,
+      toArea = Card.Processing,
+      moveReason = fk.ReasonJustMove,
+      skillName = self.name,
+    })
+    local choices = {"Cancel", "chenjian1", "chenjian2"}
+    local n = 0
+    while not player.dead and #ids > 0 do
+      ids = table.filter(ids, function(id) return room:getCardArea(id) == Card.Processing end)
+      if table.contains(choices, "chenjian1") then
+        for _, id in ipairs(player:getCardIds("he")) do
+          if table.find(ids, function(i) return Fk:getCardById(id).suit == Fk:getCardById(i).suit end) and
+            not player:prohibitDiscard(Fk:getCardById(id)) then
+            --continue
+          else
+            table.removeOne(choices, "chenjian1")
+          end
+        end
+      end
+
+      --TODO: 理应也判断chenjian2的，但现在All choices有bug
+
+      local choice = room:askForChoice(player, choices, self.name)
+      if choice == "Cancel" then
+        break
+      else
+        table.removeOne(choices, choice)
+        if choice == "chenjian1" then
+          local suits = {}
+          for _, id in ipairs(ids) do
+            table.insertIfNeed(suits, Fk:getCardById(id):getSuitString())
+          end
+          local to, card =  room:askForChooseCardAndPlayers(player, table.map(player.room.alive_players, function(p)
+            return p.id end), 1, 1, ".|.|"..table.concat(suits, ","), "#chenjian-choose", self.name, true)
+          if #to > 0 and card then
+            local suit = Fk:getCardById(card).suit
+            room:throwCard({card}, self.name, player, player)
+            local dummy = Fk:cloneCard("dilu")
+            for i = #ids, 1, -1 do
+              if Fk:getCardById(ids[i]).suit == suit then
+                dummy:addSubcard(ids[i])
+                table.removeOne(ids, ids[i])
+              end
+            end
+            if not room:getPlayerById(to[1]).dead then
+              room:obtainCard(to[1], dummy, true, fk.ReasonJustMove)
+            end
+            n = n + 1
+          end
+        elseif choice == "chenjian2" then
+          local fakemove = {
+            toArea = Card.PlayerHand,
+            to = player.id,
+            moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.Void} end),
+            moveReason = fk.ReasonJustMove,
+          }
+          room:notifyMoveCards({player}, {fakemove})
+          local availableCards = {}
+          for _, id in ipairs(ids) do
+            local card = Fk:getCardById(id)
+            if not player:prohibitUse(card) and card.skill:canUse(player) then
+              table.insertIfNeed(availableCards, id)
+            end
+          end
+          room:setPlayerMark(player, "chenjian_cards", availableCards)
+          local success, dat = room:askForUseActiveSkill(player, "chenjian_viewas", "#chenjian-use", true)
+          room:setPlayerMark(player, "chenjian_cards", 0)
+          fakemove = {
+            from = player.id,
+            toArea = Card.Void,
+            moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
+            moveReason = fk.ReasonJustMove,
+          }
+          room:notifyMoveCards({player}, {fakemove})
+          if success then
+            room:moveCards({
+              from = player.id,
+              ids = dat.cards,
+              toArea = Card.Processing,
+              moveReason = fk.ReasonUse,
+              skillName = self.name,
+            })
+            local card = Fk.skills["chenjian_viewas"]:viewAs(dat.cards)
+            room:useCard{
+              from = player.id,
+              tos = table.map(dat.targets, function(id) return {id} end),
+              card = card,
+              extraUse = true,
+            }
+            n = n + 1
+          end
+        end
+      end
+    end
+    ids = table.filter(ids, function(id) return room:getCardArea(id) == Card.Processing end)
+    if #ids > 0 then
+      room:moveCards({
+        ids = ids,
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonJustMove,
+        skillName = self.name,
+      })
+    end
+    if n == 2 and not player.dead then
+      if player:getMark(self.name) < 2 then
+        room:addPlayerMark(player, self.name, 1)
+      end
+      if not player:isKongcheng() then
+        room:recastCard(player:getCardIds("h"), player, self.name)
+      end
+    end
+  end
+}
+local chenjian_viewas = fk.CreateViewAsSkill{
+  name = "chenjian_viewas",
+  card_filter = function(self, to_select, selected)
+    if #selected == 0 then
+      local ids = Self:getMark("chenjian_cards")
+      return type(ids) == "table" and table.contains(ids, to_select)
+    end
+  end,
+  view_as = function(self, cards)
+    if #cards == 1 then
+      return Fk:getCardById(cards[1])
+    end
+  end,
+}
+local xixiu = fk.CreateTriggerSkill{
+  name = "xixiu",
+  anim_type = "defensive",
+  frequency = Skill.Compulsory,
+  events = {fk.TargetConfirming, fk.BeforeCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      if event == fk.TargetConfirming then
+        return target == player and data.from ~= player.id and
+          table.find(player:getCardIds("e"), function(id) return Fk:getCardById(id).suit == data.card.suit end)
+      else
+        if #player:getCardIds("e") ~= 1 then return end
+        for _, move in ipairs(data) do
+          if move.from == player.id and move.moveReason == fk.ReasonDiscard and (move.proposer ~= player and move.proposer ~= player.id) then
+            for _, info in ipairs(move.moveInfo) do
+              if info.fromArea == Card.PlayerEquip then
+                return true
+              end
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    if event == fk.TargetConfirming then
+      player:drawCards(1, self.name)
+    else
+      for _, move in ipairs(data) do
+        if move.from == player.id and move.moveReason == fk.ReasonDiscard and (move.proposer ~= player and move.proposer ~= player.id) then
+          for i = #move.moveInfo, 1, -1 do
+            local info = move.moveInfo[i]
+            if info.fromArea == Card.PlayerEquip then
+              table.removeOne(move.moveInfo, info)
+              break
+            end
+          end
+        end
+      end
+    end
+  end,
+}
+Fk:addSkill(chenjian_viewas)
+tengyin:addSkill(chenjian)
+tengyin:addSkill(xixiu)
+Fk:loadTranslationTable{
+  ["tengyin"] = "滕胤",
+  ["chenjian"] = "陈见",
+  [":chenjian"] = "准备阶段，你可以亮出牌堆顶的三张牌并可以执行：1.弃置一张牌，令一名角色获得其中此牌花色的牌；2.使用其中一张牌。"..
+  "若两项均执行，则本局游戏你发动〖陈见〗亮出牌数+1（最多五张），然后你重铸所有手牌。",
+  ["xixiu"] = "皙秀",
+  [":xixiu"] = "锁定技，当你成为其他角色使用牌的目标时，若你装备区内有与此牌花色相同的牌，你摸一张牌；其他角色不能弃置你装备区内的最后一张牌。",
+  ["chenjian1"] = "弃一张牌，令一名角色获得此花色的牌",
+  ["chenjian2"] = "使用其中一张牌",
+  ["#chenjian-choose"] = "陈见：弃置一张牌并选择一名角色，令其获得与之相同花色的牌",
+  ["chenjian_viewas"] = "陈见",
+  ["#chenjian-use"] = "陈见：使用其中一张牌",
+}
 
 local zhangxuan = General(extension, "zhangxuan", "wu", 4, 4, General.Female)
 local tongli = fk.CreateTriggerSkill{

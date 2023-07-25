@@ -997,20 +997,40 @@ Fk:loadTranslationTable{
 }
 
 local luyi = General(extension, "luyi", "qun", 3, 3, General.Female)
+
+local function searchFuxueCards(room, findOne)
+  if #room.discard_pile == 0 then return {} end
+  local ids = {}
+  local discard_pile = table.simpleClone(room.discard_pile)
+  local logic = room.logic
+  local events = logic.event_recorder[GameEvent.MoveCards] or Util.DummyTable
+  for i = #events, 1, -1 do
+    local e = events[i]
+    for _, move in ipairs(e.data) do
+      for _, id in ipairs(move.ids) do
+        if table.removeOne(discard_pile, id) then
+          if move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then
+            table.insertIfNeed(ids, id)
+            if findOne then
+              return ids
+            end
+          end
+        end
+      end
+    end
+    if #discard_pile == 0 then break end
+  end
+  return ids
+end
+
 local fuxue = fk.CreateTriggerSkill{
   name = "fuxue",
   anim_type = "drawcard",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self.name) then
-      if player.phase == Player.Start and player.tag[self.name] and #player.tag[self.name] > 0 then
-        local tag = player.tag[self.name]
-        for i = #tag, 1, -1 do
-          if player.room:getCardArea(tag[i]) ~= Card.DiscardPile then
-            table.removeOne(player.tag[self.name], tag[i])
-          end
-        end
-        return #player.tag[self.name] > 0
+      if player.phase == Player.Start then
+        return #searchFuxueCards(player.room, true) > 0
       elseif player.phase == Player.Finish then
         return player:isKongcheng() or
           table.every(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@fuxue-inhand") == 0 end)
@@ -1027,7 +1047,24 @@ local fuxue = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     if player.phase == Player.Start then
       local room = player.room
-      local cards = player.tag[self.name]
+      local cards = searchFuxueCards(room, false)
+      if #cards == 0 then return false end
+      table.sort(cards, function (a, b)
+        local cardA, cardB = Fk:getCardById(a), Fk:getCardById(b)
+        if cardA.type == cardB.type then
+          if cardA.sub_type == cardB.sub_type then
+            if cardA.name == cardB.name then
+              return a > b
+            else
+              return cardA.name > cardB.name
+            end
+          else
+            return cardA.sub_type < cardB.sub_type
+          end
+        else
+          return cardA.type < cardB.type
+        end
+      end)
       local get = {}
       local result = room:askForCustomDialog(player, self.name,
       "packages/tenyear/qml/LargeAG.qml", {
@@ -1054,33 +1091,13 @@ local fuxue = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.AfterCardsMove, fk.TurnEnd},
+  refresh_events = {fk.TurnEnd},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.AfterCardsMove then
-      return player:hasSkill(self.name, true)
-    else
-      return target == player and not player:isKongcheng()
-    end
+    return target == player and not player:isKongcheng()
   end,
   on_refresh = function(self, event, target, player, data)
-    if event == fk.AfterCardsMove then
-      for _, move in ipairs(data) do
-        if move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then
-          player.tag[self.name] = player.tag[self.name] or {}
-          for _, info in ipairs(move.moveInfo) do
-            table.insertIfNeed(player.tag[self.name], info.cardId)
-          end
-        end
-        for _, info in ipairs(move.moveInfo) do
-          if info.fromArea == Card.DiscardPile and player.tag[self.name] and #player.tag[self.name] > 0 then
-            table.removeOne(player.tag[self.name], info.cardId)
-          end
-        end
-      end
-    else
-      for _, id in ipairs(player.player_cards[Player.Hand]) do
-        player.room:setCardMark(Fk:getCardById(id), "@@fuxue-inhand", 0)
-      end
+    for _, id in ipairs(player.player_cards[Player.Hand]) do
+      player.room:setCardMark(Fk:getCardById(id), "@@fuxue-inhand", 0)
     end
   end,
 }

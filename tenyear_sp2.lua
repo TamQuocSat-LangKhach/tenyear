@@ -1041,10 +1041,11 @@ local anzhi = fk.CreateActiveSkill{
       room:addPlayerMark(player, "anzhi-turn", 1)
       local ids = {}
       room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
-        local move = e.data[1]
-        if move.toArea == Card.DiscardPile then
-          for _, id in ipairs(move.ids) do
-            table.insertIfNeed(ids, id)
+        for _, move in ipairs(e.data) do
+          if move.toArea == Card.DiscardPile then
+            for _, id in ipairs(move.ids) do
+              table.insertIfNeed(ids, id)
+            end
           end
         end
         return false

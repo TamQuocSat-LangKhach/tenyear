@@ -1814,7 +1814,7 @@ local libang_record = fk.CreateTriggerSkill{
   end,
 }
 local libang_active = fk.CreateActiveSkill{
-  name = "#libang_active",
+  name = "libang_active",
   mute = true,
   card_num = 2,
   target_num = 1,
@@ -1890,6 +1890,7 @@ Fk:loadTranslationTable{
   [":wujie"] = "锁定技，你使用的无色牌不计入次数且无距离限制；其他角色杀死你后不执行奖惩。",
   ["#libang-card"] = "利傍：交给其中一名角色两张牌，否则失去1点体力",
   ["#libang-slash"] = "利傍：视为对其中一名角色使用一张【杀】",
+  ["libang_active"] = "利傍",
 }
 
 local shiyi = General(extension, "shiyi", "wu", 3)

@@ -748,7 +748,7 @@ local souying = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) and data.tos and #TargetGroup:getRealTargets(data.tos) == 1 and
+    if player:hasSkill(self.name) and data.tos and data.firstTarget and #AimGroup:getAllTargets(data.tos) == 1 and
       not player:isNude() and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 then
       local room = player.room
       local events = {}

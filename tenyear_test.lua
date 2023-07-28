@@ -428,7 +428,140 @@ Fk:loadTranslationTable{
 --袁胤 高翔
 
 --桓范 孟优 陈泰 孙綝 孙瑜 郤正 乐綝 张曼成
---local huanfan = General(extension, "huanfan", "wei", 3)
+local huanfan = General(extension, "huanfan", "wei", 3)
+local jianzheng = fk.CreateActiveSkill{
+  name = "jianzheng",
+  anim_type = "control",
+  target_num = 1,
+  card_num = 0,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function()
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local cards = target.player_cards[Player.Hand]
+    local availableCards = {}
+    for _, id in ipairs(cards) do
+      local card = Fk:getCardById(id)
+      if not player:prohibitUse(card) and card.skill:canUse(player) then
+        table.insertIfNeed(availableCards, id)
+      end
+    end
+    room:fillAG(player, cards)
+    local yes = false
+    for i = #cards, 1, -1 do
+      if not table.contains(availableCards, cards[i]) then
+        room:takeAG(player, cards[i], room.players)
+      end
+    end
+    if #availableCards == 0 then
+      room:delay(3000)
+      room:closeAG(player)
+    else
+      local id = room:askForAG(player, availableCards, true, self.name)
+      room:closeAG(player)
+      if id then
+        room:obtainCard(player.id, id, false, fk.ReasonPrey)
+        if not player.dead and room:getCardOwner(id) == player and room:getCardArea(id) == Card.PlayerHand then
+          local card = Fk:getCardById(id)
+          local use = room:askForUseCard(player, card.name, "^(jink,nullification)|.|.|.|.|.|"..tostring(id),
+            "#jianzheng-use:::"..card:toLogString(), true)
+          if use then
+            use.extraUse = true
+            room:useCard(use)
+            yes = true
+          end
+        end
+      end
+    end
+    if not yes then
+      if not player.dead and not player.chained then
+        player:setChainState(true)
+      end
+      if not target.dead and not target.chained then
+        target:setChainState(true)
+      end
+      if not player.dead and not target.dead and not player:isKongcheng() then
+        room:fillAG(target, player:getCardIds("h"))
+        room:delay(3000)
+        room:closeAG(target)
+      end
+    end
+  end,
+}
+local fumou = fk.CreateTriggerSkill{
+  name = "fumou",
+  anim_type = "masochism",
+  events = {fk.Damaged},
+  on_trigger = function(self, event, target, player, data)
+    self.cancel_cost = false
+    for i = 1, data.damage do
+      if self.cancel_cost then break end
+      self:doCost(event, target, player, data)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.map(room.alive_players, function(p) return p.id end)
+    local tos = room:askForChoosePlayers(player, targets, 1, player:getLostHp(), "#fumou-choose:::"..player:getLostHp(), self.name, true)
+    if #tos > 0 then
+      self.cost_data = tos
+      return true
+    end
+    self.cancel_cost = true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, id in ipairs(self.cost_data) do
+      local p = room:getPlayerById(id)
+      if not p.dead then
+        local choices = {}
+        if #room:canMoveCardInBoard() > 0 then
+          table.insert(choices, "fumou1")
+        end
+        if not p:isKongcheng() then
+          table.insert(choices, "fumou2")
+        end
+        if #p:getCardIds("e") > 0 then
+          table.insert(choices, "fumou3")
+        end
+        if #choices == 0 then
+          --continue
+        else
+          local choice = room:askForChoice(p, choices, self.name)
+          if choice == "fumou1" then
+            local targets = room:askForChooseToMoveCardInBoard(p, "#fumou-move", self.name, false)
+            room:askForMoveCardInBoard(p, room:getPlayerById(targets[1]), room:getPlayerById(targets[2]), self.name)
+          elseif choice == "fumou2" then
+            p:throwAllCards("h")
+            if not p.dead then
+              p:drawCards(2, self.name)
+            end
+          elseif choice == "fumou3" then
+            p:throwAllCards("e")
+            if p:isWounded() then
+              room:recover({
+                who = p,
+                num = 1,
+                recoverBy = player,
+                skillName = self.name
+              })
+            end
+          end
+        end
+      end
+    end
+  end,
+}
+huanfan:addSkill(jianzheng)
+huanfan:addSkill(fumou)
 Fk:loadTranslationTable{
   ["huanfan"] = "桓范",
   ["jianzheng"] = "谏诤",
@@ -437,6 +570,12 @@ Fk:loadTranslationTable{
   ["fumou"] = "腹谋",
   [":fumou"] = "当你受到1点伤害后，你可以令至多X名角色依次选择一项：1.移动场上一张牌；2.弃置所有手牌并摸两张牌；3.弃置装备区所有牌并回复1点体力。"..
   "（X为你已损失的体力值）",
+  ["#jianzheng-use"] = "谏诤：你可以使用%arg",
+  ["#fumou-choose"] = "腹谋：你可以令至多%arg名角色依次选择执行一项",
+  ["fumou1"] = "移动场上一张牌",
+  ["fumou2"] = "弃置所有手牌，摸两张牌",
+  ["fumou3"] = "弃置所有装备，回复1点体力",
+  ["#fumou-move"] = "腹谋：请选择要移动装备的角色",
 }
 
 local chentai = General(extension, "chentai", "wei", 4)
@@ -723,7 +862,8 @@ local qingshid = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase ~= Player.NotActive and player:getHandcardNum() == player:getMark("qingshid-turn") and
+    return target == player and player:hasSkill(self.name) and player.phase ~= Player.NotActive and
+      player:getHandcardNum() == player:getMark("qingshid-turn") and
       data.tos and data.firstTarget and table.find(AimGroup:getAllTargets(data.tos), function(id) return id ~= player.id end)
   end,
   on_cost = function(self, event, target, player, data)
@@ -770,11 +910,96 @@ Fk:loadTranslationTable{
   ["#qingshid-choose"] = "倾势：你可以对其中一名目标角色造成1点伤害",
 }
 
+local wuban = General(extension, "ty__wuban", "shu", 4)
+local youzhan = fk.CreateTriggerSkill{
+  name = "youzhan",
+  mute = true,
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) and player.phase ~= Player.NotActive then
+      for _, move in ipairs(data) do
+        if move.from and move.from ~= player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, move in ipairs(data) do
+      if move.from and move.from ~= player.id then
+        local yes = false
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+            yes = true
+          end
+        end
+        if yes then
+          room:broadcastSkillInvoke(self.name)
+          room:notifySkillInvoked(player, self.name, "drawcard")
+          player:drawCards(1, self.name)
+          local to = room:getPlayerById(move.from)
+          if not to.dead then
+            room:addPlayerMark(to, "@youzhan-turn", 1)
+            room:addPlayerMark(to, "youzhan-turn", 1)
+          end
+        end
+      end
+    end
+  end,
+
+  refresh_events = {fk.Damaged},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark("youzhan-turn") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "youzhan_fail-turn", 1)
+  end,
+}
+local youzhan_trigger = fk.CreateTriggerSkill{
+  name = "#youzhan_trigger",
+  mute = true,
+  frequency = Skill.Compulsory,
+  events = {fk.DamageInflicted, fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if player:getMark("youzhan-turn") > 0 then
+      if event == fk.DamageInflicted then
+        return target == player and player:getMark("@youzhan-turn") > 0
+      else
+        return target.phase == Player.Finish and player:getMark("youzhan_fail-turn") == 0
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:broadcastSkillInvoke("youzhan")
+    if event == fk.DamageInflicted then
+      if room.current then
+        room:notifySkillInvoked(room.current, "youzhan", "offensive")
+        room:doIndicate(room.current.id, {player.id})
+      end
+      data.damage = data.damage + player:getMark("@youzhan-turn")
+      room:setPlayerMark(player, "@youzhan-turn", 0)
+    else
+      room:notifySkillInvoked(target, "youzhan", "drawcard")
+      room:doIndicate(target.id, {player.id})
+      player:drawCards(player:getMark("youzhan-turn"), "youzhan")
+    end
+  end,
+}
+youzhan:addRelatedSkill(youzhan_trigger)
+wuban:addSkill(youzhan)
 Fk:loadTranslationTable{
   ["ty__wuban"] = "吴班",
   ["youzhan"] = "诱战",
-  [":youzhan"] = "锁定技，其他角色在你的回合失去牌后，你摸—张牌，其本回合下次受到的伤害+1。结束阶段，若这些角色本回合未受伤，其摸X张牌"..
+  [":youzhan"] = "锁定技，其他角色在你的回合失去牌后，你摸一张牌，其本回合下次受到的伤害+1。结束阶段，若这些角色本回合未受到过伤害，其摸X张牌"..
   "（X为其本回合失去牌的次数）。",
+  ["@youzhan-turn"] = "诱战",
 }
 
 return extension

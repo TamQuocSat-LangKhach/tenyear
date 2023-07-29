@@ -2360,7 +2360,7 @@ Fk:loadTranslationTable{
   ["~goddengai"] = "灭蜀者，邓氏士载也！",
 }
 
---百战虎贲：兀突骨 文鸯 皇甫嵩 王双 留赞 黄祖 雷铜 吴兰
+--百战虎贲：兀突骨 文鸯 皇甫嵩 王双 留赞 黄祖 雷铜 吴兰 陈泰
 local wutugu = General(extension, "ty__wutugu", "qun", 15)
 local ty__ranshang = fk.CreateTriggerSkill{
   name = "ty__ranshang",
@@ -3096,6 +3096,112 @@ Fk:loadTranslationTable{
   ["$cuoruiw1"] = "减辎疾行，挫敌军锐气。",
   ["$cuoruiw2"] = "外物当舍，摄敌为重。",
   ["~wulan"] = "蛮狗，尔敢杀我！",
+}
+
+local chentai = General(extension, "chentai", "wei", 4)
+local jiuxianc = fk.CreateActiveSkill{
+  name = "jiuxianc",
+  anim_type = "support",
+  card_num = function()
+    return (1 + Self:getHandcardNum()) // 2
+  end,
+  target_num = 0,
+  prompt = function(self)
+    return "#jiuxianc:::"..(1 + Self:getHandcardNum()) // 2
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected < (1 + Self:getHandcardNum()) // 2 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:recastCard(effect.cards, player, self.name)
+    local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+      return not player:isProhibited(p, Fk:cloneCard("duel")) end), function(p) return p.id end)
+    if #targets > 0 and not player.dead then
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#jiuxianc-slash", self.name, false)
+      if #to > 0 then
+        to = room:getPlayerById(to[1])
+      else
+        to = room:getPlayerById(table.random(targets))
+      end
+      targets = table.filter(room:getOtherPlayers(player), function(p) return to:inMyAttackRange(p) and p:isWounded() end)
+      local use = {
+        from = player.id,
+        tos = {{to.id}},
+        card = Fk:cloneCard("duel"),
+      }
+      use.card.skillName = self.name
+      room:useCard(use)
+      if not player.dead and use.damageDealt and use.damageDealt[to.id] then
+        if to.dead then
+          targets = table.map(table.filter(targets, function(p) return not p.dead and p:isWounded() end), function(p) return p.id end)
+        else
+          targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+            return to:inMyAttackRange(p) and p:isWounded() end), function(p) return p.id end)
+        end
+        if #targets > 0 then
+          to = room:askForChoosePlayers(player, targets, 1, 1, "#jiuxianc-recover", self.name, true)
+          if #to > 0 then
+            room:recover({
+              who = room:getPlayerById(to[1]),
+              num = 1,
+              recoverBy = player,
+              skillName = self.name
+            })
+          end
+        end
+      end
+    end
+  end
+}
+local chenyong = fk.CreateTriggerSkill{
+  name = "chenyong",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish and player:getMark("chenyong-turn") ~= 0
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(#player:getMark("chenyong-turn"), self.name)
+  end,
+
+  refresh_events = {fk.CardUsing},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player.phase < Player.NotActive
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local mark = player:getMark("chenyong-turn")
+    if mark == 0 then mark = {} end
+    table.insertIfNeed(mark, data.card:getTypeString())
+    room:setPlayerMark(player, "chenyong-turn", mark)
+    if player:hasSkill(self.name, true) then
+      room:setPlayerMark(player, "@chenyong-turn", #player:getMark("chenyong-turn"))
+    end
+  end,
+}
+chentai:addSkill(jiuxianc)
+chentai:addSkill(chenyong)
+Fk:loadTranslationTable{
+  ["chentai"] = "陈泰",
+  ["jiuxianc"] = "救陷",
+  [":jiuxianc"] = "出牌阶段限一次，你可以重铸一半手牌（向上取整），然后视为使用一张【决斗】。此牌对目标角色造成伤害后，"..
+  "你可令其攻击范围内的一名其他角色回复1点体力。",
+  ["chenyong"] = "沉勇",
+  [":chenyong"] = "结束阶段，你可以摸X张牌（X为本回合你使用过牌的类型数）。",
+  ["#jiuxianc"] = "救陷：你可以重铸一半手牌（%arg张），然后视为使用一张【决斗】",
+  ["#jiuxianc-slash"] = "救陷：选择一名角色，视为对其使用【决斗】",
+  ["#jiuxianc-recover"] = "救陷：你可以令其中一名角色回复1点体力",
+  ["@chenyong-turn"] = "沉勇",
+
+  ["$jiuxianc1"] = "救袍泽于水火，返清明于天下。",
+  ["$jiuxianc2"] = "与君共扼王旗，焉能见死不救。",
+  ["$chenyong1"] = "将者，当泰山崩于前而不改色。",
+  ["$chenyong2"] = "救将陷之城，焉求益兵之助。",
+  ["~chentai"] = "公非旦，我非勃……",
 }
 
 --奇人异士：张宝 司马徽 蒲元 管辂 葛玄 杜夔 朱建平 吴范 赵直 周宣 笮融
@@ -4342,7 +4448,7 @@ Fk:loadTranslationTable{
   ["~zerong"] = "此劫，不可避……",
 }
 
---计将安出：程昱 蒋干 赵昂 刘晔 杨弘
+--计将安出：程昱 蒋干 赵昂 刘晔 杨弘 桓范
 --程昱
 
 local jianggan = General(extension, "jianggan", "wei", 3)
@@ -4725,6 +4831,162 @@ Fk:loadTranslationTable{
   ["yuanmo_add"] = "攻击范围+1，获得因此进入攻击范围的角色各一张牌",
   ["yuanmo_minus"] = "攻击范围-1，摸两张牌",
   ["#yuanmo-choose"] = "远谟：你可以获得任意名角色各一张牌",
+}
+
+local huanfan = General(extension, "huanfan", "wei", 3)
+local jianzheng = fk.CreateActiveSkill{
+  name = "jianzheng",
+  anim_type = "control",
+  target_num = 1,
+  card_num = 0,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function()
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local cards = target.player_cards[Player.Hand]
+    local availableCards = {}
+    for _, id in ipairs(cards) do
+      local card = Fk:getCardById(id)
+      if not player:prohibitUse(card) and card.skill:canUse(player) then
+        table.insertIfNeed(availableCards, id)
+      end
+    end
+    room:fillAG(player, cards)
+    local yes = false
+    for i = #cards, 1, -1 do
+      if not table.contains(availableCards, cards[i]) then
+        room:takeAG(player, cards[i], room.players)
+      end
+    end
+    if #availableCards == 0 then
+      room:delay(3000)
+      room:closeAG(player)
+    else
+      local id = room:askForAG(player, availableCards, true, self.name)
+      room:closeAG(player)
+      if id then
+        room:obtainCard(player.id, id, false, fk.ReasonPrey)
+        if not player.dead and room:getCardOwner(id) == player and room:getCardArea(id) == Card.PlayerHand then
+          local card = Fk:getCardById(id)
+          local use = room:askForUseCard(player, card.name, "^(jink,nullification)|.|.|.|.|.|"..tostring(id),
+            "#jianzheng-use:::"..card:toLogString(), true)
+          if use then
+            use.extraUse = true
+            room:useCard(use)
+            yes = true
+          end
+        end
+      end
+    end
+    if not yes then
+      if not player.dead and not player.chained then
+        player:setChainState(true)
+      end
+      if not target.dead and not target.chained then
+        target:setChainState(true)
+      end
+      if not player.dead and not target.dead and not player:isKongcheng() then
+        room:fillAG(target, player:getCardIds("h"))
+        room:delay(3000)
+        room:closeAG(target)
+      end
+    end
+  end,
+}
+local fumou = fk.CreateTriggerSkill{
+  name = "fumou",
+  anim_type = "masochism",
+  events = {fk.Damaged},
+  on_trigger = function(self, event, target, player, data)
+    self.cancel_cost = false
+    for i = 1, data.damage do
+      if self.cancel_cost then break end
+      self:doCost(event, target, player, data)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.map(room.alive_players, function(p) return p.id end)
+    local tos = room:askForChoosePlayers(player, targets, 1, player:getLostHp(), "#fumou-choose:::"..player:getLostHp(), self.name, true)
+    if #tos > 0 then
+      self.cost_data = tos
+      return true
+    end
+    self.cancel_cost = true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, id in ipairs(self.cost_data) do
+      local p = room:getPlayerById(id)
+      if not p.dead then
+        local choices = {}
+        if #room:canMoveCardInBoard() > 0 then
+          table.insert(choices, "fumou1")
+        end
+        if not p:isKongcheng() then
+          table.insert(choices, "fumou2")
+        end
+        if #p:getCardIds("e") > 0 then
+          table.insert(choices, "fumou3")
+        end
+        if #choices == 0 then
+          --continue
+        else
+          local choice = room:askForChoice(p, choices, self.name)
+          if choice == "fumou1" then
+            local targets = room:askForChooseToMoveCardInBoard(p, "#fumou-move", self.name, false)
+            room:askForMoveCardInBoard(p, room:getPlayerById(targets[1]), room:getPlayerById(targets[2]), self.name)
+          elseif choice == "fumou2" then
+            p:throwAllCards("h")
+            if not p.dead then
+              p:drawCards(2, self.name)
+            end
+          elseif choice == "fumou3" then
+            p:throwAllCards("e")
+            if p:isWounded() then
+              room:recover({
+                who = p,
+                num = 1,
+                recoverBy = player,
+                skillName = self.name
+              })
+            end
+          end
+        end
+      end
+    end
+  end,
+}
+huanfan:addSkill(jianzheng)
+huanfan:addSkill(fumou)
+Fk:loadTranslationTable{
+  ["huanfan"] = "桓范",
+  ["jianzheng"] = "谏诤",
+  [":jianzheng"] = "出牌阶段限一次，你可以观看一名其他角色的手牌，然后若其中有你可以使用的牌，你可以获得并使用其中一张。"..
+  "若你未获得或未使用，则横置你与其武将牌，然后其观看你的手牌。",
+  ["fumou"] = "腹谋",
+  [":fumou"] = "当你受到1点伤害后，你可以令至多X名角色依次选择一项：1.移动场上一张牌；2.弃置所有手牌并摸两张牌；3.弃置装备区所有牌并回复1点体力。"..
+  "（X为你已损失的体力值）",
+  ["#jianzheng-use"] = "谏诤：你可以使用%arg",
+  ["#fumou-choose"] = "腹谋：你可以令至多%arg名角色依次选择执行一项",
+  ["fumou1"] = "移动场上一张牌",
+  ["fumou2"] = "弃置所有手牌，摸两张牌",
+  ["fumou3"] = "弃置所有装备，回复1点体力",
+  ["#fumou-move"] = "腹谋：请选择要移动装备的角色",
+
+  ["$jianzheng1"] = "将军今出洛阳，恐难再回。",
+  ["$jianzheng2"] = "贼示弱于外，必包藏祸心。",
+  ["$fumou1"] = "某有良谋，可为将军所用。",
+  ["$fumou2"] = "吾负十斗之囊，其盈一石之智。",
+  ["~huanfan"] = "有良言而不用，君何愚哉……",
 }
 
 return extension

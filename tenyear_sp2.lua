@@ -4992,15 +4992,24 @@ local huizhi = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self.name) and player.phase == Player.Draw
   end,
   on_cost = function(self, event, target, player, data)
-    local cards = player.room:askForDiscard(player, 1, 999, false, self.name, true, ".", "#huizhi-invoke", true)
-    if #cards > 0 then
-      self.cost_data = cards
+    local discard_data = {
+      num = 999,
+      min_num = 0,
+      include_equip = false,
+      skillName = self.name,
+      pattern = ".",
+    }
+    local success, ret = player.room:askForUseActiveSkill(player, "discard_skill", "#huizhi-invoke", true, discard_data)
+    if success then
+      self.cost_data = ret.cards
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:throwCard(self.cost_data, self.name, player, player)
+    if #self.cost_data > 0 then
+      room:throwCard(self.cost_data, self.name, player, player)
+    end
     local n = player:getHandcardNum()
     for _, p in ipairs(room:getAlivePlayers()) do
       if #p.player_cards[Player.Hand] > n then
@@ -5033,28 +5042,34 @@ local jijiao = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     local ids = {}
-    local events = room.logic.all_game_events[1]:searchEvents(GameEvent.UseCard, 999, function(e)
-      local use = e.data[1]
-      return use.from == player.id and use.card:isCommonTrick() and not use.card:isVirtual()
-    end, room.logic:getCurrentEvent())
-    for _, e in ipairs(events) do
-      local use = e.data[1]
-      if room:getCardArea(use.card.id) == Card.DiscardPile then
-        table.insertIfNeed(ids, use.card.id)
-      end
-    end
-    events = room.logic.all_game_events[1]:searchEvents(GameEvent.MoveCards, 999, function(e)
-      local move = e.data[1]
-      return move.from == player.id and move.moveReason == fk.ReasonDiscard
-    end, room.logic:getCurrentEvent())
-    for _, e in ipairs(events) do
-      local move = e.data[1]
-      for _, id in ipairs(move.ids) do
-        if Fk:getCardById(id):isCommonTrick() and room:getCardArea(id) == Card.DiscardPile then
-          table.insertIfNeed(ids, id)
+    local discard_pile = table.simpleClone(room.discard_pile)
+    local logic = room.logic
+    local events = logic.event_recorder[GameEvent.MoveCards] or Util.DummyTable
+    for i = #events, 1, -1 do
+      local e = events[i]
+      local move_by_use = false
+      local parentUseEvent = e:findParent(GameEvent.UseCard)
+      if parentUseEvent then
+        local use = parentUseEvent.data[1]
+        if use.from == effect.from then
+          move_by_use = true
         end
       end
+      for _, move in ipairs(e.data) do
+        for _, id in ipairs(move.ids) do
+          if table.removeOne(discard_pile, id) and Fk:getCardById(id):isCommonTrick() then
+            if move.toArea == Card.DiscardPile then
+              if (move.moveReason == fk.ReasonUse and move_by_use) or
+              (move.moveReason == fk.ReasonDiscard and move.from == player.id) then
+                table.insert(ids, id)
+              end
+            end
+          end
+        end
+      end
+      if #discard_pile == 0 then break end
     end
+
     if #ids > 0 then
       local dummy = Fk:cloneCard("dilu")
       dummy:addSubcards(ids)
@@ -5135,13 +5150,13 @@ zhangjinyun:addSkill(jijiao)
 Fk:loadTranslationTable{
   ["zhangjinyun"] = "张瑾云",
   ["huizhi"] = "蕙质",
-  [":huizhi"] = "摸牌阶段结束时，你可以弃置任意张手牌，然后将手牌摸至与全场手牌最多的角色相同（至少摸一张，最多摸五张）。",
+  [":huizhi"] = "摸牌阶段结束时，你可以弃置任意张手牌（可不弃），然后将手牌摸至与全场手牌最多的角色相同（至少摸一张，最多摸五张）。",
   ["jijiao"] = "继椒",
   [":jijiao"] = "限定技，出牌阶段，你可以令一名角色获得弃牌堆中本局游戏你使用和弃置的所有普通锦囊牌，这些牌不能被【无懈可击】响应。"..
   "每回合结束后，若此回合内牌堆洗过牌或有角色死亡，复原此技能。",
   ["#huizhi-invoke"] = "蕙质：你可以弃置任意张手牌，然后将手牌摸至与全场手牌最多的角色相同（最多摸五张）",
   ["#jijiao_record"] = "继椒",
-  
+
   ["$huizhi1"] = "妾有一席幽梦，予君三千暗香。",
   ["$huizhi2"] = "我有玲珑之心，其情唯衷陛下。",
   ["$jijiao1"] = "哀吾姊早逝，幸陛下垂怜。",

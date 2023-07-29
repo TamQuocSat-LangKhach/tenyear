@@ -4881,12 +4881,14 @@ local jianzheng = fk.CreateActiveSkill{
           if use then
             use.extraUse = true
             room:useCard(use)
-            yes = true
+            if table.contains(TargetGroup:getRealTargets(use.tos), target.id) then
+              yes = true
+            end
           end
         end
       end
     end
-    if not yes then
+    if yes then
       if not player.dead and not player.chained then
         player:setChainState(true)
       end
@@ -4905,12 +4907,8 @@ local fumou = fk.CreateTriggerSkill{
   name = "fumou",
   anim_type = "masochism",
   events = {fk.Damaged},
-  on_trigger = function(self, event, target, player, data)
-    self.cancel_cost = false
-    for i = 1, data.damage do
-      if self.cancel_cost then break end
-      self:doCost(event, target, player, data)
-    end
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -4971,9 +4969,9 @@ Fk:loadTranslationTable{
   ["huanfan"] = "桓范",
   ["jianzheng"] = "谏诤",
   [":jianzheng"] = "出牌阶段限一次，你可以观看一名其他角色的手牌，然后若其中有你可以使用的牌，你可以获得并使用其中一张。"..
-  "若你未获得或未使用，则横置你与其武将牌，然后其观看你的手牌。",
+  "若此牌指定了其为目标，则横置你与其武将牌，然后其观看你的手牌。",
   ["fumou"] = "腹谋",
-  [":fumou"] = "当你受到1点伤害后，你可以令至多X名角色依次选择一项：1.移动场上一张牌；2.弃置所有手牌并摸两张牌；3.弃置装备区所有牌并回复1点体力。"..
+  [":fumou"] = "当你受到伤害后，你可以令至多X名角色依次选择一项：1.移动场上一张牌；2.弃置所有手牌并摸两张牌；3.弃置装备区所有牌并回复1点体力。"..
   "（X为你已损失的体力值）",
   ["#jianzheng-use"] = "谏诤：你可以使用%arg",
   ["#fumou-choose"] = "腹谋：你可以令至多%arg名角色依次选择执行一项",

@@ -328,13 +328,272 @@ Fk:loadTranslationTable{
   ["#bushil3-choice"] = "卜筮：成为此花色牌目标后可弃置一张手牌对你无效",
 }
 
+local kebineng = General(extension, "kebineng", "qun", 4)
+local koujing = fk.CreateTriggerSkill{
+  name = "koujing",
+  anim_type = "offensive",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == player.Play and not player:isKongcheng()
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local cards = room:askForCard(player, 1, player:getHandcardNum(), false, self.name, true, ".", "#koujing-invoke")
+    if #cards > 0 then
+      self.cost_data = cards
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    for _, id in ipairs(self.cost_data) do
+      player.room:setCardMark(Fk:getCardById(id), "@@koujing-turn", 1)
+    end
+  end,
+
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return true
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    for _, move in ipairs(data) do
+      if move.toArea ~= Card.Processing then
+        for _, info in ipairs(move.moveInfo) do
+          room:setCardMark(Fk:getCardById(info.cardId), "@@koujing-turn", 0)
+        end
+      end
+    end
+  end,
+}
+local koujing_filter = fk.CreateFilterSkill{
+  name = "#koujing_filter",
+  anim_type = "offensive",
+  card_filter = function(self, card, player)
+    return card:getMark("@@koujing-turn") > 0
+  end,
+  view_as = function(self, card)
+    local c = Fk:cloneCard("slash", card.suit, card.number)
+    c.skillName = "koujing"
+    return c
+  end,
+}
+local koujing_targetmod = fk.CreateTargetModSkill{
+  name = "#koujing_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    return card and scope == Player.HistoryPhase and table.contains(card.skillNames, "koujing")
+  end,
+}
+local koujing_trigger = fk.CreateTriggerSkill{
+  name = "#koujing_trigger",
+  mute = true,
+  events = {fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    if data.from and data.from == player and target ~= player and not player.dead and
+      data.card and table.contains(data.card.skillNames, "koujing") then
+      return table.find(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@koujing-turn") > 0 end)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local ids = table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@koujing-turn") > 0 end)
+    player:showCards(ids)
+    if player.dead or target.dead or target:isKongcheng() then return end
+    room:doIndicate(player.id, {target.id})
+    if room:askForSkillInvoke(target, "koujing", nil, "#koujing-card:"..player.id) then
+      local cards1 = table.simpleClone(target:getCardIds("h"))
+      local cards2 = table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@koujing-turn") > 0 end)
+      local move1 = {
+        from = target.id,
+        ids = cards1,
+        toArea = Card.Processing,
+        moveReason = fk.ReasonExchange,
+        proposer = player.id,
+        skillName = self.name,
+      }
+      local move2 = {
+        from = player.id,
+        ids = cards2,
+        toArea = Card.Processing,
+        moveReason = fk.ReasonExchange,
+        proposer = player.id,
+        skillName = self.name,
+      }
+      room:moveCards(move1, move2)
+      local move3 = {ids = table.filter(cards1, function(id) return room:getCardArea(id) == Card.Processing end),
+        fromArea = Card.Processing,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonExchange,
+        proposer = player.id,
+        skillName = self.name,
+      }
+      local move4 = {
+        ids = table.filter(cards2, function(id) return room:getCardArea(id) == Card.Processing end),
+        fromArea = Card.Processing,
+        to = target.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonExchange,
+        proposer = player.id,
+        skillName = self.name,
+      }
+      room:moveCards(move3, move4)
+    end
+  end,
+}
+koujing:addRelatedSkill(koujing_filter)
+koujing:addRelatedSkill(koujing_targetmod)
+koujing:addRelatedSkill(koujing_trigger)
+kebineng:addSkill(koujing)
 Fk:loadTranslationTable{
   ["kebineng"] = "轲比能",
   ["koujing"] = "寇旌",
   [":koujing"] = "出牌阶段开始时，你可以选择任意张手牌，这些牌本回合视为不计入次数的【杀】。其他角色受到以此法使用的【杀】的伤害后展示这些牌，"..
   "其可用所有手牌交换这些牌。",
+  ["#koujing-invoke"] = "寇旌：你可以将任意张手牌作为“寇旌”牌，本回合视为不计入次数的【杀】",
+  ["@@koujing-turn"] = "寇旌",
+  ["#koujing_filter"] = "寇旌",
+  ["#koujing-card"] = "寇旌：你可以用所有手牌交换 %src 这些“寇旌”牌",
 }
 
+local wuanguo = General(extension, "wuanguo", "qun", 4)
+local diezhang = fk.CreateTriggerSkill{
+  name = "diezhang",
+  anim_type = "switch",
+  switch_skill_name = "diezhang",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) and data.responseToEvent then
+      if player:getSwitchSkillState(self.name, false) == fk.SwitchYang then
+        if data.responseToEvent.from == player.id and not player:isNude() then
+          return target ~= player and not target.dead and not player:isProhibited(target, Fk:cloneCard("slash"))
+        end
+      else
+        if target == player then
+          local from = player.room:getPlayerById(data.responseToEvent.from)
+          return from ~= player and not from.dead and not player:isProhibited(from, Fk:cloneCard("slash"))
+        end
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if player:getSwitchSkillState(self.name, false) == fk.SwitchYang then
+      local card = room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#diezhang1-invoke::"..target.id, true)
+      if #card > 0 then
+        self.cost_data = {target.id, card}
+        return true
+      end
+    else
+      if room:askForSkillInvoke(player, self.name, nil, "#diezhang2-invoke::"..data.responseToEvent.from) then
+        self.cost_data = {data.responseToEvent.from}
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
+      room:throwCard(self.cost_data[2], self.name, player, player)
+    else
+      player:drawCards(1, self.name)
+    end
+    local to = room:getPlayerById(self.cost_data[1])
+    if not player.dead and not to.dead then
+      room:useVirtualCard("slash", nil, player, to, self.name, true)
+    end
+  end,
+}
+local diezhang_targetmod = fk.CreateTargetModSkill{
+  name = "#diezhang_targetmod",
+  residue_func = function(self, player, skill, scope, card)
+    if card and player:hasSkill("diezhang") and card.trueName == "slash" and scope == Player.HistoryPhase then
+      return 1
+    end
+  end,
+}
+local duanwan = fk.CreateTriggerSkill{
+  name = "duanwan",
+  anim_type = "defensive",
+  frequency = Skill.Limited,
+  events = {fk.AskForPeaches},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.dying and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#duanwan-invoke")
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:recover({
+      who = player,
+      num = math.min(2, player.maxHp) - player.hp,
+      recoverBy = player,
+      skillName = self.name
+    })
+    if not player:hasSkill("diezhang", true) then return end
+    local skill = "diezhangYang"
+    if player:getSwitchSkillState("diezhang", false) == fk.SwitchYang then
+      skill = "diezhangYin"
+    end
+    room:handleAddLoseSkills(player, "-diezhang|"..skill, nil, false, true)
+  end,
+}
+local diezhangYang = fk.CreateTriggerSkill{
+  name = "diezhangYang",
+  anim_type = "offensive",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+      return player:hasSkill(self.name) and data.responseToEvent and data.responseToEvent.from == player.id and not player:isNude() and
+        target ~= player and not target.dead and not player:isProhibited(target, Fk:cloneCard("slash"))
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local card = room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#diezhangYang-invoke::"..target.id, true)
+    if #card > 0 then
+      self.cost_data = card
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:throwCard(self.cost_data, self.name, player, player)
+    for i = 1, 2, 1 do
+      if not player.dead and not target.dead then
+        room:useVirtualCard("slash", nil, player, target, self.name, true)
+      end
+    end
+  end,
+}
+local diezhangYin = fk.CreateTriggerSkill{
+  name = "diezhangYin",
+  anim_type = "offensive",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) and data.responseToEvent then
+      local from = player.room:getPlayerById(data.responseToEvent.from)
+      return from ~= player and not from.dead and not player:isProhibited(from, Fk:cloneCard("slash"))
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#diezhangYin-invoke::"..data.responseToEvent.from)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(data.responseToEvent.from)
+    player:drawCards(2, self.name)
+    if not player.dead and not to.dead then
+      room:useVirtualCard("slash", nil, player, to, self.name, true)
+    end
+  end,
+}
+diezhang:addRelatedSkill(diezhang_targetmod)
+wuanguo:addSkill(diezhang)
+wuanguo:addSkill(duanwan)
+Fk:addSkill(diezhangYang)
+Fk:addSkill(diezhangYin)
 Fk:loadTranslationTable{
   ["wuanguo"] = "武安国",
   ["diezhang"] = "叠嶂",
@@ -343,9 +602,14 @@ Fk:loadTranslationTable{
   ["duanwan"] = "断腕",
   [":duanwan"] = "限定技，当你处于濒死状态时，你可以将体力回复至2点，然后修改〖叠嶂〗：失去当前状态的效果，括号内的数字+1。",
   ["diezhangYang"] = "叠嶂",
-  [":diezhangYang"] = "你出牌阶段使用【杀】次数上限+1。每回合限一次，当你使用牌被其他角色抵消后，你可以弃置一张牌视为对其使用两张【杀】。",
+  [":diezhangYang"] = "每回合限一次，当你使用牌被其他角色抵消后，你可以弃置一张牌视为对其使用两张【杀】。",
   ["diezhangYin"] = "叠嶂",
-  [":diezhangYin"] = "你出牌阶段使用【杀】次数上限+1。每回合限一次，当你使用牌抵消其他角色使用的牌后，你可以摸两张牌视为对其使用一张【杀】",
+  [":diezhangYin"] = "每回合限一次，当你使用牌抵消其他角色使用的牌后，你可以摸两张牌视为对其使用一张【杀】。",
+  ["#diezhang1-invoke"] = "叠嶂：你可以弃置一张牌，视为对 %dest 使用【杀】",
+  ["#diezhang2-invoke"] = "叠嶂：你可以摸一张牌，视为对 %dest 使用【杀】",
+  ["#duanwan-invoke"] = "断腕：你可以回复体力至2点，删除现在的“叠嶂”状态！",
+  ["#diezhangYang-invoke"] = "叠嶂：你可以弃置一张牌，视为对 %dest 使用两张【杀】",
+  ["#diezhangYin-invoke"] = "叠嶂：你可以摸两张牌，视为对 %dest 使用【杀】",
 }
 
 return extension

@@ -175,6 +175,58 @@ Fk:loadTranslationTable{
   ["~longwang"] = "三年之期已到，哥们要回家啦…",
 }
 
+local wuzixu = General(extension, "wuzixu", "god", 4)
+local ty__nutao = fk.CreateTriggerSkill{
+  name = "ty__nutao",
+  anim_type = "offensive",
+  frequency = Skill.Compulsory,
+  events = {fk.TargetSpecifying, fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) then
+      if event == fk.TargetSpecifying then
+        return data.card.type == Card.TypeTrick and data.firstTarget and
+          table.find(AimGroup:getAllTargets(data.tos), function(id) return id ~= player.id end)
+      else
+        return player.phase == Player.Play and data.damageType == fk.ThunderDamage
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.TargetSpecifying then
+      local targets = table.filter(AimGroup:getAllTargets(data.tos), function(id)
+        return id ~= player.id and not room:getPlayerById(id).dead end)
+      local to = room:getPlayerById(table.random(targets))
+      room:doIndicate(player.id, {to.id})
+      room:damage{
+        from = player,
+        to = to,
+        damage = 1,
+        damageType = fk.ThunderDamage,
+        skillName = self.name,
+      }
+    else
+      room:addPlayerMark(player, "@ty__nutao-phase", 1)
+    end
+  end,
+}
+local ty__nutao_targetmod = fk.CreateTargetModSkill{
+  name = "#ty__nutao_targetmod",
+  residue_func = function(self, player, skill, scope, card, to)
+    if card and card.trueName == "slash" and player:getMark("@ty__nutao-phase") > 0 and scope == Player.HistoryPhase then
+      return player:getMark("@ty__nutao-phase")
+    end
+  end,
+}
+ty__nutao:addRelatedSkill(ty__nutao_targetmod)
+wuzixu:addSkill(ty__nutao)
+Fk:loadTranslationTable{
+  ["wuzixu"] = "涛神",
+  ["ty__nutao"] = "怒涛",
+  [":ty__nutao"] = "锁定技，当你使用锦囊牌指定目标时，你随机对一名其他目标角色造成1点雷电伤害；当你于出牌阶段造成雷电伤害后，你本阶段使用【杀】次数上限+1。",
+  ["@ty__nutao-phase"] = "怒涛",
+}
+
 local libai = General(extension, "libai", "god", 3)
 local jiuxian = fk.CreateViewAsSkill{
   name = "jiuxian",
@@ -492,10 +544,10 @@ local bianzhuang_skills = {
   --standard
   "wushuang", "tieqi", "ex__tieji",
   "liegong", "kuanggu", "mengjin", "lieren", "wansha",
-  "moukui", "kuangfu", "jyie", "nuzhan", "zhiman", "re__pojun",
+  "moukui", "kuangfu", "nuzhan", "zhiman", "re__pojun",
   "jueqing", "pojun", "nos__qianxi", "anjian", "zenhui", "qingxi",
   --ol
-  "fengpo", "fuji", "gangzhi", "lingren", "qigong", "saodi", "huanfu", "yimie",
+  "fengpo", "fuji", "gangzhi", "lingren", "qigong", "saodi", "huanfu", "yimie", "guangao",
   "ol_ex__kuanggu", "ol_ex__liegong", "ol_ex__jianchu", "qin__shanwu",
   --mobile
   "shidi", "dengli", "quedi",
@@ -507,8 +559,12 @@ local bianzhuang_skills = {
   "wanggui", "suoliang", "ty_ex__jueqing", "ty_ex__zhiman",
   --jsrg
   "juelie", "fendi", "zhenqiao",
+  --yjtw
+  "tw__baobian",
   --wandian
   "wd__ciqiu", "wd__fenkai",
+  --tuguo
+  "tg__fenwei", "tg__danding",
 }
 local bianzhuang = fk.CreateActiveSkill{
   name = "bianzhuang",

@@ -1816,6 +1816,222 @@ Fk:loadTranslationTable{
   ["#ty_ex__xiantu-give"] = "献图：选择交给 %dest 的两张牌",
 }
 
+local ty_ex__guyong = General(extension, "ty_ex__guyong", "wu", 3)
+local ty_ex__shenxing = fk.CreateActiveSkill{
+  name = "ty_ex__shenxing",
+  anim_type = "drawcard",
+  card_num = function(self)
+    return math.min(2, Self:usedSkillTimes(self.name, Player.HistoryPhase))
+  end,
+  target_num = 0,
+  prompt = function(self)
+    local n = Self:usedSkillTimes(self.name, Player.HistoryPhase)
+    if n == 0 then
+      return "#ty_ex__shenxing-draw"
+    else
+      return "#ty_ex__shenxing:::"..math.min(2, n)
+    end
+  end,
+  can_use = function(self, player)
+    return true
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected < math.min(2, Self:usedSkillTimes(self.name, Player.HistoryPhase))
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:throwCard(effect.cards, self.name, player, player)
+    player:drawCards(1, self.name)
+  end
+}
+local ty_ex__bingyi = fk.CreateTriggerSkill{
+  name = "ty_ex__bingyi",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish and not player:isKongcheng()
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = player:getCardIds("h")
+    player:showCards(cards)
+    if player.dead then return end
+    if table.every(cards, function(id) return Fk:getCardById(id).color == Fk:getCardById(cards[1]).color end) then
+      local tos = room:askForChoosePlayers(player, table.map(room:getAlivePlayers(), function(p)
+        return p.id end), 1, #cards, "#ty_ex__bingyi-choose:::"..#cards, self.name, true)
+      if #tos > 0 then
+        for _, p in ipairs(tos) do
+          room:getPlayerById(p):drawCards(1, self.name)
+        end
+        if table.every(cards, function(id) return Fk:getCardById(id).number == Fk:getCardById(cards[1]).number end) then
+          player:drawCards(1, self.name)
+        end
+      end
+    end
+  end,
+}
+ty_ex__guyong:addSkill(ty_ex__shenxing)
+ty_ex__guyong:addSkill(ty_ex__bingyi)
+Fk:loadTranslationTable{
+  ["ty_ex__guyong"] = "界顾雍",
+  ["ty_ex__shenxing"] = "慎行",
+  [":ty_ex__shenxing"] = "出牌阶段，你可以弃置X张牌，然后摸一张牌（X为你此阶段发动本技能次数，至多为2）。",
+  ["ty_ex__bingyi"] = "秉壹",
+  [":ty_ex__bingyi"] = "结束阶段开始时，你可以展示所有手牌，若均为同一颜色，你可以令至多X名角色各摸一张牌（X为你的手牌数）；若点数也相同，你摸一张牌。",
+  ["#ty_ex__shenxing-draw"] = "慎行：你可以摸一张牌",
+  ["#ty_ex__shenxing"] = "慎行：你可以弃置%arg张牌，摸一张牌",
+  ["#ty_ex__bingyi-choose"] = "秉壹：你可以令至多%arg名角色各摸一张牌",
+}
+
+local zhuzhi = General(extension, "ty_ex__zhuzhi", "wu", 4)
+local function doty_ex__anguo(player, type, source)
+  local room = player.room
+  if type == "draw" then
+    if table.every(room.alive_players, function (p) return p:getHandcardNum() >= player:getHandcardNum() end) then
+      player:drawCards(1, "ty_ex__anguo")
+      return true
+    end
+  elseif type == "recover" then
+    if player:isWounded() and table.every(room.alive_players, function (p) return p.hp >= player.hp end) then
+      room:recover({
+        who = player,
+        num = 1,
+        recoverBy = source,
+        skillName = "ty_ex__anguo",
+      })
+      return true
+    end
+  elseif type == "equip" then
+    if #player:getCardIds("e") < 5 and table.every(room.alive_players, function(p)
+      return #p:getCardIds("e") >= #player:getCardIds("e") end) then
+      local types = {Card.SubtypeWeapon, Card.SubtypeArmor, Card.SubtypeDefensiveRide, Card.SubtypeOffensiveRide, Card.SubtypeTreasure}
+      local cards = {}
+      for i = 1, #room.draw_pile, 1 do
+        local card = Fk:getCardById(room.draw_pile[i])
+        for _, t in ipairs(types) do
+          if card.sub_type == t and player:getEquipment(t) == nil then
+            table.insertIfNeed(cards, room.draw_pile[i])
+          end
+        end
+      end
+      if #cards > 0 then
+        room:useCard({
+          from = player.id,
+          tos = {{player.id}},
+          card = Fk:getCardById(table.random(cards)),
+        })
+        return true
+      end
+    end
+  end
+  return false
+end
+local ty_ex__anguo = fk.CreateActiveSkill{
+  name = "ty_ex__anguo",
+  anim_type = "support",
+  card_num = 0,
+  target_num = 1,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function()
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local types = {"equip", "recover", "draw"}
+    for i = 3, 1, -1 do
+      if target.dead then break end
+      if doty_ex__anguo(target, types[i], player) then
+        table.removeOne(types, types[i])
+      end
+    end
+    for i = #types, 1, -1 do
+      if player.dead then break end
+      if doty_ex__anguo(player, types[i], player) then
+        table.removeOne(types, types[i])
+      end
+    end
+    if #types ==0 and not player.dead and not player:isNude() then
+      local cards = room:askForCard(player, 1, 999, true, self.name, true, ".", "#ty_ex__anguo-card")
+      if #cards > 0 then
+        room:recastCard(cards, player, self.name)
+      end
+    end
+  end,
+}
+zhuzhi:addSkill(ty_ex__anguo)
+Fk:loadTranslationTable{
+  ["ty_ex__zhuzhi"] = "界朱治",
+  ["ty_ex__anguo"] = "安国",
+  [":ty_ex__anguo"] = "出牌阶段限一次，你可以选择一名其他角色，若其手牌数为全场最少，其摸一张牌；体力值为全场最低，回复1点体力；"..
+  "装备区内牌数为全场最少，随机使用一张装备牌。然后若该角色有未执行的效果且你满足条件，你执行之。若双方执行了全部分支，你可以重铸任意张牌。",
+  ["#ty_ex__anguo-card"] = "安国：你可以重铸任意张牌",
+}
+
+local gongsunyuan = General(extension, "ty_ex__gongsunyuan", "qun", 4)
+local ty_ex__huaiyi = fk.CreateActiveSkill{
+  name = "ty_ex__huaiyi",
+  anim_type = "control",
+  card_num = 0,
+  target_num = 0,
+  can_use = function(self, player)
+    return player:getMark("huaiyi-phase") < 2 and not player:isKongcheng()
+  end,
+  card_filter = function()
+    return false
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:addPlayerMark(player, "huaiyi-phase", 2)
+    local cards = table.clone(player:getCardIds("h"))
+    player:showCards(cards)
+    local colors = {}
+    for _, id in ipairs(cards) do
+      table.insertIfNeed(colors, Fk:getCardById(id):getColorString())
+    end
+    if #colors < 2 then
+      player:drawCards(1, self.name)
+      room:removePlayerMark(player, "huaiyi-phase", 1)
+    else
+      local color = room:askForChoice(player, colors, self.name)
+      local throw = {}
+      for _, id in ipairs(cards) do
+        if Fk:getCardById(id):getColorString() == color then
+          table.insert(throw, id)
+        end
+      end
+      room:throwCard(throw, self.name, player, player)
+      local targets = room:askForChoosePlayers(player, table.map(table.filter(room:getOtherPlayers(player), function(p)
+        return (not p:isNude()) end), function(p) return p.id end), 1, #throw, "#huaiyi-choose:::"..tostring(#throw), self.name, true)
+      if #targets > 0 then
+        local get = {}
+        for _, p in ipairs(targets) do
+          local id = room:askForCardChosen(player, room:getPlayerById(p), "he", self.name)
+          table.insert(get, id)
+        end
+        for _, id in ipairs(get) do
+          room:obtainCard(player, id, false, fk.ReasonPrey)
+        end
+        if #get > 1 and not player.dead then
+          room:loseHp(player, 1, self.name)
+        end
+      end
+    end
+  end,
+}
+gongsunyuan:addSkill(ty_ex__huaiyi)
+Fk:loadTranslationTable{
+  ["ty_ex__gongsunyuan"] = "界公孙渊",
+  ["ty_ex__huaiyi"] = "怀异",
+  [":ty_ex__huaiyi"] = "出牌阶段限一次，你可以展示所有手牌。若仅有一种颜色，你摸一张牌，然后此技能本阶段改为“出牌阶段限两次”；"..
+  "若有两种颜色，你弃置其中一种颜色的牌，然后获得至多X名角色各一张牌（X为弃置的手牌数），若你获得的牌大于一张，你失去1点体力。",
+}
+
 local huangyueying = General(extension, "ty_ex__huangyueying", "qun", 3, 3, General.Female)
 local ty__jiqiao = fk.CreateTriggerSkill{
   name = "ty__jiqiao",

@@ -1281,7 +1281,7 @@ local ty_ex__quanji = fk.CreateTriggerSkill{
       self.cancel_cost = false
       for i = 1, data.damage do
         if self.cancel_cost then break end
-       self:doCost(event, target, player, data)
+        self:doCost(event, target, player, data)
       end
     else
       return false
@@ -1299,7 +1299,7 @@ local ty_ex__quanji = fk.CreateTriggerSkill{
     player:drawCards(1, self.name)
     if not player:isKongcheng() then
       local card = room:askForCard(player, 1, 1, false, self.name, false)
-      player:addToPile("zhonghui_quan", card, false, self.name)
+      player:addToPile("zhonghui_quan", card, true, self.name)
     end
   end,
 }
@@ -1388,7 +1388,7 @@ local ty_ex__paiyi = fk.CreateActiveSkill{
     })
     room:setPlayerMark(player, self.interaction.data.."-phase", 1)
     if self.interaction.data == "ty_ex__paiyi_draw" then
-     target:drawCards(math.max(#player:getPile("zhonghui_quan"),1), self.name)
+      target:drawCards(math.max(#player:getPile("zhonghui_quan"),1), self.name)
     else
       for _, id in ipairs(effect.tos) do
         local p = room:getPlayerById(id)

@@ -1582,7 +1582,7 @@ local yuanyu_trigger = fk.CreateTriggerSkill{
       if targetRecorded == 0 then break end
       if not to.dead and not to:isKongcheng() and table.contains(targetRecorded, to.id) then
         local card = room:askForCard(to, 1, 1, false, self.name, false, ".|.|.|hand", "#yuanyu-push:" .. player.id)
-        player:addToPile("yuanyu_resent", card, false, self.name)
+        player:addToPile("yuanyu_resent", card, true, self.name) --原为false
       end
     end
   end,

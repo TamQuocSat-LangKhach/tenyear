@@ -793,7 +793,7 @@ local zengdao = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local target = room:getPlayerById(effect.tos[1])
     local cards = effect.cards
-    target:addToPile(self.name, cards, false, self.name)
+    target:addToPile(self.name, cards, true, self.name)
   end,
 }
 local zengdao_trigger = fk.CreateTriggerSkill{

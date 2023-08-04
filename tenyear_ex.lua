@@ -1883,6 +1883,21 @@ Fk:loadTranslationTable{
   ["#ty_ex__bingyi-choose"] = "秉壹：你可以令至多%arg名角色各摸一张牌",
 }
 
+
+Fk:loadTranslationTable{
+  ["ty_ex__jvshou"] = "界沮授",
+  ["ty_ex__jianying"] = "渐营",
+  [":ty_ex__jianying"] = "当你使用牌时，若此牌与你使用的上一张牌点数或花色相同，你可以摸一张牌。",
+  ["ty_ex__shibei"] = "矢北",
+  [":ty_ex__shibei"] = "锁定技，当你受到伤害后，若此次伤害：是你本回合受到的第一次伤害，你回复1点体力；是你本回合受到的第二次伤害，你失去1点体力。",
+
+  ["$ty_ex__jianying1"] = "步步为营，缓缓而进。",
+  ["$ty_ex__jianying2"] = "以强击弱，何必心急？",
+  ["$ty_ex__shibei1"] = "宁向北而死，不面南而生。",
+  ["$ty_ex__shibei2"] = "主公在北，吾心亦在北！",
+  ["~ty_ex__jvshou"] = "身处河南，魂归河北……",
+}
+
 local zhuzhi = General(extension, "ty_ex__zhuzhi", "wu", 4)
 local function doty_ex__anguo(player, type, source)
   local room = player.room

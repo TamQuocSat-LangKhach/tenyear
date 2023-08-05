@@ -3947,8 +3947,11 @@ local xiaowu = fk.CreateActiveSkill{
   prompt = "#xiaowu",
   max_card_num = 0,
   target_num = 1,
+  interaction = function(self)
+    return UI.ComboBox { choices = {"xiaowu_clockwise", "xiaowu_anticlockwise"} }
+  end,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
   end,
   card_filter = function() return false end,
   target_filter = function(self, to_select, selected, selected_cards)
@@ -3959,8 +3962,7 @@ local xiaowu = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     local players = room:getOtherPlayers(player)
     local targets = {}
-    local choice = #players == 1 and "xiaowu_clockwise" or
-    room:askForChoice(player, {"xiaowu_clockwise", "xiaowu_anticlockwise"}, self.name, "#xiawu_order::" .. target.id)
+    local choice = self.interaction.data
     for i = 1, #players, 1 do
       local real_i = i
       if choice == "xiaowu_anticlockwise" then
@@ -4045,7 +4047,7 @@ local huaping = fk.CreateTriggerSkill{
   end,
 }
 local shawu_select = fk.CreateActiveSkill{
-  name = "#shawu_select",
+  name = "shawu_select",
   can_use = function() return false end,
   target_num = 0,
   max_card_num = 2,
@@ -4068,7 +4070,7 @@ local shawu = fk.CreateTriggerSkill{
       (player:getMark("@xiaowu_sand") > 0 or player:getHandcardNum() > 1) and not player.room:getPlayerById(data.to).dead
   end,
   on_cost = function(self, event, target, player, data)
-    local _, ret = player.room:askForUseActiveSkill(player, "#shawu_select", "#shawu-invoke::" .. data.to, true)
+    local _, ret = player.room:askForUseActiveSkill(player, "shawu_select", "#shawu-invoke::" .. data.to, true)
     if ret then
       self.cost_data = ret.cards
       return true
@@ -4092,7 +4094,7 @@ local shawu = fk.CreateTriggerSkill{
     end
   end,
 }
-shawu:addRelatedSkill(shawu_select)
+Fk:addSkill(shawu_select)
 laiyinger:addSkill(xiaowu)
 laiyinger:addSkill(huaping)
 laiyinger:addRelatedSkill(shawu)
@@ -4105,16 +4107,15 @@ Fk:loadTranslationTable{
   [":huaping"] = "限定技，一名其他角色死亡时，你可以获得其所有武将技能，然后你失去〖绡舞〗和所有“沙”标记并摸等量的牌。"..
   "你死亡时，若此技能未发动过，你可令一名其他角色获得技能〖沙舞〗和所有“沙”标记。",
   ["shawu"] = "沙舞",
-  ["#shawu_select"] = "沙舞",
+  ["shawu_select"] = "沙舞",
   [":shawu"] = "当你使用【杀】指定目标后，你可以弃置两张手牌或1枚“沙”标记对目标角色造成1点伤害。若你弃置的是“沙”标记，你摸两张牌。",
 
-  ["#xiaowu"] = "绡舞：选择作为终点的目标角色，然后选择顺时针或逆时针顺序",
-  ["@xiaowu_sand"] = "沙",
-  ["#xiawu_order"] = "绡舞：选择从你至终点为%dest的目标顺序",
+  ["#xiaowu"] = "发动绡舞，选择按顺时针或逆时针顺序结算，并选择作为终点的目标角色",
   ["xiaowu_clockwise"] = "顺时针顺序",
   ["xiaowu_anticlockwise"] = "逆时针顺序",
   ["#xiawu_draw"] = "绡舞：选择令%src摸一张牌或自己摸一张牌",
   ["xiaowu_draw1"] = "令其摸一张牌",
+  ["@xiaowu_sand"] = "沙",
   ["#huaping-choose"] = "化萍：选择一名角色，令其获得沙舞",
   ["#huaping-invoke"] = "化萍：你可以获得%dest的所有武将技能，然后失去绡舞",
   ["#shawu-invoke"] = "沙舞：你可选择两张手牌弃置，或直接点确定弃置沙标记。来对%dest造成1点伤害",

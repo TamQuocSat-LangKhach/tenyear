@@ -1117,6 +1117,12 @@ Fk:loadTranslationTable{
   ["#jinhui-use"] = "锦绘：使用其中一张牌（必须指定你或 %src 为目标），然后其可以使用其余两张",
   ["#jinhui2-use"] = "锦绘：你可以使用剩余的牌（必须指定你或 %dest 为目标）",
   ["jinhui_viewas"] = "锦绘",
+
+  ["$jinhui1"] = "大则盈尺，小则方寸。",
+  ["$jinhui2"] = "十指纤纤，万分机巧。",
+  ["$qingman1"] = "经纬分明，片片罗縠。",
+  ["$qingman2"] = "罗帐轻幔，可消酷暑烦躁。",
+  ["~zhaoyanw"] = "彩绘锦绣，二者不可缺其一。",
 }
 
 local tengyin = General(extension, "tengyin", "wu", 3)

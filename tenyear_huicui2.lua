@@ -1866,7 +1866,8 @@ local liuzhuan = fk.CreateTriggerSkill{
         local mark = player:getMark("liuzhuan_record")
         if move.toArea == Card.DiscardPile and type(mark) == "table" then
           for _, info in ipairs(move.moveInfo) do
-            if table.contains(mark, info.cardId) and room:getCardArea(info.cardId) == Card.DiscardPile then
+            --for stupid manjuan
+            if info.fromArea ~= Card.DiscardPile and table.contains(mark, info.cardId) and room:getCardArea(info.cardId) == Card.DiscardPile then
               return true
             end
           end
@@ -1893,7 +1894,8 @@ local liuzhuan = fk.CreateTriggerSkill{
       if move.toArea == Card.DiscardPile then
         for _, info in ipairs(move.moveInfo) do
           local id = info.cardId
-          if table.contains(mark, info.cardId) and room:getCardArea(info.cardId) == Card.DiscardPile then
+          --for stupid manjuan
+          if info.fromArea ~= Card.DiscardPile and table.contains(mark, info.cardId) and room:getCardArea(info.cardId) == Card.DiscardPile then
             table.insertIfNeed(toObtain, id)
           end
         end

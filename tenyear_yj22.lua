@@ -7,7 +7,6 @@ Fk:loadTranslationTable{
 
 --李婉 诸葛尚 陆凯 轲比能 韩龙 谯周 苏飞 武安国
 local liwan = General(extension, "liwan", "wei", 3, 3, General.Female)
-
 local liandui = fk.CreateTriggerSkill{
   name = "liandui",
   events = {fk.CardUsing},
@@ -60,15 +59,7 @@ local biejun = fk.CreateTriggerSkill{
   events = {fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self.name) and target == player and player:usedSkillTimes(self.name) == 0
-    and table.every(player:getCardIds(Player.Hand), function(id)
-      return Fk:getCardById(id):getMark("@@biejun-inhand") == 0
-    end)
-    and #player.room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
-      local damage = e.data[5]
-      if damage and player == damage.to then
-        return true
-      end
-    end, Player.HistoryTurn) == 0
+      and table.every(player:getCardIds(Player.Hand), function(id) return Fk:getCardById(id):getMark("@@biejun-inhand") == 0 end)
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#biejun-invoke")
@@ -142,21 +133,18 @@ local biejun_active = fk.CreateActiveSkill{
     end
   end,
 }
-
 Fk:addSkill(biejun_active)
 liwan:addSkill(liandui)
 liwan:addSkill(biejun)
-
 Fk:loadTranslationTable{
   ["liwan"] = "李婉",
   ["liandui"] = "联对",
   [":liandui"] = "当你使用一张牌时，若上一张牌的使用者不为你，你可以令其摸两张牌；其他角色使用一张牌时，若上一张牌的使用者为你，其可以令你摸两张牌。",
   ["biejun"] = "别君",
-  [":biejun"] = "其他角色出牌阶段限一次，其可以交给你一张手牌。当你每回合第一次受到伤害时，若你手牌中没有本回合以此法获得的牌，你可以翻面并防止此伤害。",
+  [":biejun"] = "其他角色出牌阶段限一次，其可以交给你一张手牌。当你受到伤害时，若你手牌中没有本回合以此法获得的牌，你可以翻面并防止此伤害。",
   ["biejun&"] = "别君",
   [":biejun&"] = "出牌阶段限一次，你可以将一张手牌交给李婉。",
-
-  ["#liandui-invoke"] = "是否发动 %src 的联对，令 %dest 摸两张牌",
+  ["#liandui-invoke"] = "联对：你可以发动 %src 的“联对”，令 %dest 摸两张牌",
   ["#biejun-invoke"] = "别君：你可以翻面，防止你受到的伤害",
   ["@@biejun-inhand"] = "别君",
   ["#biejun-active"] = "别君：选择一张手牌交给一名拥有“别君”的角色",
@@ -168,13 +156,162 @@ Fk:loadTranslationTable{
   ["~liwan"] = "生不能同寝，死亦难同穴……",
 }
 
+local zhugeshang = General(extension, "zhugeshang", "shu", 3)
+local sangu = fk.CreateTriggerSkill{
+  name = "sangu",
+  anim_type = "support",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and target.phase == Player.Play and target:getHandcardNum() >= target.maxHp
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#sangu-invoke::"..target.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local ids = room:getNCards(3)
+    local fakemove = {
+      toArea = Card.PlayerHand,
+      to = player.id,
+      moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.Void} end),
+      moveReason = fk.ReasonJustMove,
+    }
+    room:notifyMoveCards({player}, {fakemove})
+    local availableCards = {}
+    for _, id in ipairs(ids) do
+      local card = Fk:getCardById(id)
+      if card.type == Card.TypeBasic or card:isCommonTrick() then
+        table.insertIfNeed(availableCards, id)
+      end
+    end
+    room:setPlayerMark(player, "sangu_cards", availableCards)
+    local success, dat = room:askForUseActiveSkill(player, "sangu_show", "#sangu-show::"..target.id, true)
+    room:setPlayerMark(player, "sangu_cards", 0)
+    fakemove = {
+      from = player.id,
+      toArea = Card.Void,
+      moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
+      moveReason = fk.ReasonJustMove,
+    }
+    room:notifyMoveCards({player}, {fakemove})
+    for i = #ids, 1, -1 do
+      table.insert(room.draw_pile, 1, ids[i])
+    end
+    if success then
+      room:doIndicate(player.id, {target.id})
+      room:moveCards({
+        fromArea = Card.DrawPile,
+        ids = dat.cards,
+        toArea = Card.Processing,
+        moveReason = fk.ReasonJustMove,
+        skillName = self.name,
+      })
+      room:sendFootnote(dat.cards, {
+        type = "##ShowCard",
+        from = player.id,
+      })
+      room:delay(2000)
+      room:moveCards({
+        ids = dat.cards,
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonJustMove,
+        skillName = self.name,
+      })
+      if not target.dead then
+        local mark = table.map(dat.cards, function(id) return Fk:getCardById(id).name end)
+        room:setPlayerMark(target, "@$sangu-phase", mark)
+        room:handleAddLoseSkills(target, "sangu&", nil, false, true)
+      end
+    end
+  end,
+
+  refresh_events = {fk.EventPhaseEnd},
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill("sangu&", true, true)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:handleAddLoseSkills(target, "-sangu&", nil, false, true)
+  end,
+}
+local sangu_show = fk.CreateActiveSkill{
+  name = "sangu_show",
+  mute = true,
+  min_card_num = 1,
+  target_num = 0,
+  card_filter = function(self, to_select, selected)
+    local ids = Self:getMark("sangu_cards")
+    return ids ~= 0 and table.contains(ids, to_select) and
+      table.every(selected, function(id) return Fk:getCardById(to_select).trueName ~= Fk:getCardById(id).trueName end)
+  end,
+}
+local sangu_active = fk.CreateViewAsSkill{
+  name = "sangu&",
+  pattern = ".",
+  prompt = "#sangu",
+  interaction = function()
+    return UI.ComboBox {choices = Self:getMark("@$sangu-phase")}
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) == Player.Hand
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 or not self.interaction.data then return end
+    local card = Fk:cloneCard(self.interaction.data)
+    card:addSubcard(cards[1])
+    card.skillName = self.name
+    return card
+  end,
+  before_use = function(self, player, use)
+    local mark = player:getMark("@$sangu-phase")
+    if mark ~= 0 then
+      table.removeOne(mark, use.card.name)
+      if #mark == 0 then mark = 0 end
+    end
+    player.room:setPlayerMark(player, "@$sangu-phase", mark)
+  end,
+  enabled_at_play = function(self, player)
+    return not player:isKongcheng() and player:getMark("@$sangu-phase") ~= 0
+  end,
+  enabled_at_response = function(self, player, response)
+    return not response and not player:isKongcheng() and player:getMark("@$sangu-phase") ~= 0
+  end,
+}
+local yizu = fk.CreateTriggerSkill{
+  name = "yizu",
+  anim_type = "defensive",
+  frequency = Skill.Compulsory,
+  events = {fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.firstTarget and table.contains({"slash", "duel"}, data.card.trueName) and
+      player.room:getPlayerById(data.from).hp >= player.hp and player:isWounded() and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:recover({
+      who = player,
+      num = 1,
+      recoverBy = player,
+      skillName = self.name
+    })
+  end,
+}
+Fk:addSkill(sangu_show)
+Fk:addSkill(sangu_active)
+zhugeshang:addSkill(sangu)
+zhugeshang:addSkill(yizu)
 Fk:loadTranslationTable{
   ["zhugeshang"] = "诸葛尚",
   ["sangu"] = "三顾",
-  [":sangu"] = "结束阶段，你可依次选择至多三个【杀】或普通锦囊牌牌名并指定一名其他角色，其下个出牌阶段使用的前等量张牌视为你选择的牌。"..
-  "若你选择的牌均为本回合你使用过的牌，防止“三顾”牌对你造成的伤害。",
+  [":sangu"] = "一名角色出牌阶段开始时，若其手牌数不小于其体力上限，你可以观看牌堆顶三张牌并亮出其中任意张牌名不同的基本牌或普通锦囊牌。若如此做，"..
+  "此阶段每种牌名限一次，该角色可以将一张手牌当你亮出的一张牌使用。",
   ["yizu"] = "轶祖",
-  [":yizu"] = "锁定技，每回合限一次，当你成为【杀】或【决斗】的目标后，若你的体力值小于等于使用者的体力值，你回复1点体力。",
+  [":yizu"] = "锁定技，每回合限一次，当你成为【杀】或【决斗】的目标后，若你的体力值不大于使用者的体力值，你回复1点体力。",
+  ["#sangu-invoke"] = "三顾：你可以观看牌堆顶三张牌，令 %dest 本阶段可以将手牌当其中的牌使用",
+  ["sangu_show"] = "三顾",
+  ["#sangu-show"] = "三顾：你可以亮出其中的基本牌或普通锦囊牌，%dest 本阶段可以将手牌当亮出的牌使用",
+  ["@$sangu-phase"] = "三顾",
+  ["sangu&"] = "三顾",
+  [":sangu&"] = "出牌阶段每种牌名限一次，你可以将一张手牌当一张“三顾”牌使用。",
+  ["#sangu"] = "三顾：你可以将一张手牌当一张“三顾”牌使用",
 }
 
 local lukai = General(extension, "lukai", "wu", 4)

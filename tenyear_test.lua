@@ -147,8 +147,8 @@ local shengdu = fk.CreateTriggerSkill{
     end
   end,
 }
-local xianjiao = fk.CreateActiveSkill{
-  name = "xianjiao",
+local jieling = fk.CreateActiveSkill{
+  name = "jieling",
   anim_type = "offensive",
   card_num = 2,
   target_num = 1,
@@ -172,25 +172,25 @@ local xianjiao = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    room:useVirtualCard("slash", effect.cards, player, target, self.name, false)
+    room:useVirtualCard("slash", effect.cards, player, target, self.name, true)
   end,
 }
-local xianjiao_record = fk.CreateTriggerSkill{
-  name = "#xianjiao_record",
+local jieling_record = fk.CreateTriggerSkill{
+  name = "#jieling_record",
 
   refresh_events = {fk.Damage, fk.CardUseFinished},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card and table.contains(data.card.skillNames, "xianjiao")
+    return target == player and player:hasSkill(self.name) and data.card and table.contains(data.card.skillNames, "jieling")
   end,
   on_refresh = function(self, event, target, player, data)
     if event == fk.Damage then
       data.card.extra_data = data.card.extra_data or {}
-      table.insert(data.card.extra_data, "xianjiao")
+      table.insert(data.card.extra_data, "jieling")
     else
       local room = player.room
       for _, p in ipairs(TargetGroup:getRealTargets(data.tos)) do
         local to = room:getPlayerById(p)
-        if data.card.extra_data and table.contains(data.card.extra_data, "xianjiao") then
+        if data.card.extra_data and table.contains(data.card.extra_data, "jieling") then
           room:loseHp(to, 1, self.name)
         else
           room:addPlayerMark(to, "shengdu", 1)
@@ -199,15 +199,15 @@ local xianjiao_record = fk.CreateTriggerSkill{
     end
   end,
 }
-xianjiao:addRelatedSkill(xianjiao_record)
+jieling:addRelatedSkill(jieling_record)
 dongwan:addSkill(shengdu)
-dongwan:addSkill(xianjiao)
+dongwan:addSkill(jieling)
 Fk:loadTranslationTable{
   ["dongwan"] = "董绾",
   ["shengdu"] = "生妒",
   [":shengdu"] = "回合开始时，你可以选择一名其他角色，该角色下个摸牌阶段摸牌后，你摸等量的牌。",
-  ["xianjiao"] = "献绞",
-  [":xianjiao"] = "出牌阶段限一次，你可以将两张颜色不同的手牌当无距离和次数限制的【杀】使用。"..
+  ["jieling"] = "介绫",
+  [":jieling"] = "出牌阶段限一次，你可以将两张颜色不同的手牌当无距离和次数限制的【杀】使用。"..
   "若此【杀】：造成伤害，则目标角色失去1点体力；没造成伤害，则你对目标角色发动一次〖生妒〗。",
   ["#shengdu-choose"] = "生妒：选择一名角色，其下次摸牌阶段摸牌后，你摸等量的牌",
 }
@@ -234,6 +234,111 @@ Fk:loadTranslationTable{
   "出牌阶段结束时，你可以令下回合的角色于其出牌阶段开始时可以将一张牌当你本阶段使用的最后一张基本牌或普通锦囊牌使用。",
 }
 
+local xizheng = General(extension, "xizheng", "shu", 3)
+local danyi = fk.CreateTriggerSkill{
+  name = "danyi",
+  anim_type = "drawcard",
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) and data.firstTarget then
+      local room = player.room
+      local events = room.logic.event_recorder[GameEvent.UseCard]
+      if #events < 2 then return end
+      for i = #events - 1, 1, -1 do
+        local use = events[i].data[1]
+        if use.from == player.id then
+          if use.tos then
+            if #TargetGroup:getRealTargets(use.tos) ~= #TargetGroup:getRealTargets(data.tos) then return false end
+            for _, id in ipairs(TargetGroup:getRealTargets(use.tos)) do
+              if not table.contains(TargetGroup:getRealTargets(data.tos), id) then
+                return false
+              end
+            end
+            for _, id in ipairs(TargetGroup:getRealTargets(data.tos)) do
+              if not table.contains(TargetGroup:getRealTargets(use.tos), id) then
+                return false
+              end
+            end
+            return true
+          else
+            return false
+          end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(#TargetGroup:getRealTargets(data.tos), self.name)
+  end,
+}
+local wencan = fk.CreateActiveSkill{
+  name = "wencan",
+  anim_type = "control",
+  card_num = 0,
+  min_target_num = 1,
+  max_target_num = 2,
+  prompt = "#wencan",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    if #selected > 1 or to_select == Self.id then return false end
+    local target = Fk:currentRoom():getPlayerById(to_select)
+    if #selected == 0 then
+      return target.hp ~= Self.hp
+    elseif #selected == 1 then
+      return target.hp ~= Self.hp and target.hp ~= Fk:currentRoom():getPlayerById(selected[1]).hp
+    else
+      return false
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    for _, id in ipairs(effect.tos) do
+      local p = room:getPlayerById(id)
+      if not p.dead then
+        if #p:getCardIds("he") < 2 or not room:askForUseActiveSkill(p, "wencan_active", "#wencan-discard:"..player.id, true) then
+          room:setPlayerMark(p, "@@wencan-turn", 1)
+        end
+      end
+    end
+  end,
+}
+local wencan_active = fk.CreateActiveSkill{
+  name = "wencan_active",
+  mute = true,
+  card_num = 2,
+  target_num = 0,
+  card_filter = function(self, to_select, selected)
+    local card = Fk:getCardById(to_select)
+    if not Self:prohibitDiscard(card) and card.suit ~= Card.NoSuit then
+      if #selected == 0 then
+        return true
+      elseif #selected == 1 then
+        return card.suit ~= Fk:getCardById(selected[1]).suit
+      else
+        return false
+      end
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:throwCard(effect.cards, "wencan", player, player)
+  end,
+}
+local wencan_targetmod = fk.CreateTargetModSkill{
+  name = "#wencan_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    return player:usedSkillTimes("wencan", Player.HistoryTurn) > 0 and scope == Player.HistoryPhase and to:getMark("@@wencan-turn") > 0
+  end,
+}
+Fk:addSkill(wencan_active)
+wencan:addRelatedSkill(wencan_targetmod)
+xizheng:addSkill(danyi)
+xizheng:addSkill(wencan)
 Fk:loadTranslationTable{
   ["xizheng"] = "郤正",
   ["danyi"] = "耽意",
@@ -241,6 +346,10 @@ Fk:loadTranslationTable{
   ["wencan"] = "文灿",
   [":wencan"] = "出牌阶段限一次，你可以选择至多两名体力值不同且均与你不同的角色，这些角色依次选择一项：1.弃置两张花色不同的牌；"..
   "2.本回合你对其使用牌无次数限制。",
+  ["#wencan"] = "文灿：选择至多两名体力值不同且均与你不同的角色，其弃牌或你对其使用牌无次数限制",
+  ["@@wencan-turn"] = "文灿",
+  ["wencan_active"] = "文灿",
+  ["#wencan-discard"] = "文灿：弃置两张不同花色的牌，否则 %src 本回合对你使用牌无次数限制",
 }
 
 Fk:loadTranslationTable{
@@ -610,5 +719,26 @@ Fk:loadTranslationTable{
   ["#changqu-card"] = "长驱：交给 %src %arg张手牌以使战舰驶向下一名角色",
   ["@changqu"] = "长驱",
 }
+
+Fk:loadTranslationTable{
+  ["dongxie"] = "董翓",
+  ["jiaoxia"] = "狡黠",
+  [":jiaoxia"] = "出牌阶段开始时，你可以令本阶段你的手牌均视为【杀】。若你以此法使用的【杀】造成了伤害，此【杀】结算后你视为使用原牌名的牌。"..
+  "出牌阶段，你对每名角色使用第一张【杀】无次数限制。",
+  ["humei"] = "狐魅",
+  [":humei"] = "出牌阶段每项限一次，你可以选择一项，令一名体力值不大于X的角色执行：1.摸一张牌；2.交给你一张牌；3.回复1点体力"..
+  "（X为你本阶段造成伤害次数）。",
+}
+
+Fk:loadTranslationTable{
+  ["tianshangyi"] = "田尚衣",
+  ["posuo"] = "婆娑",
+  [":posuo"] = "出牌阶段每种花色限一次，若你本阶段未对其他角色造成过伤害，你可以将一张手牌当本局游戏所用牌堆中有此花色的伤害牌使用。",
+  ["xiaoren"] = "绡刃",
+  [":xiaoren"] = "每回合限一次，当你造成伤害后，你可以判定，若结果为：红色，你可以令一名角色回复1点体力；黑色，你对受伤角色的上家或下家造成1点"..
+  "伤害，然后你可以对同一方向的下一名角色重复此流程，直到有角色死亡或此角色为你。",
+}
+
+--马铁 车胄 韩嵩 诸葛梦雪 诸葛若雪 孙翎鸾
 
 return extension

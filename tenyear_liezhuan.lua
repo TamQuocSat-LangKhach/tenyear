@@ -485,6 +485,167 @@ Fk:loadTranslationTable{
   ["~ty__dingyuan"] = "你我父子，此恩今日断！",
 }
 
+local wangrong = General(extension, "ty__wangrongh", "qun", 3, 3, General.Female)
+local minsi = fk.CreateActiveSkill{
+  name = "minsi",
+  anim_type = "drawcard",
+  min_card_num = 1,
+  target_num = 0,
+  prompt = "#minsi",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isNude()
+  end,
+  card_filter = function(self, to_select, selected)
+    if not Self:prohibitDiscard(Fk:getCardById(to_select)) then
+      local num = 0
+      for _, id in ipairs(selected) do
+        num = num + Fk:getCardById(id).number
+      end
+      return num + Fk:getCardById(to_select).number <= 13
+    end
+  end,
+  feasible = function (self, selected, selected_cards)
+    local num = 0
+    for _, id in ipairs(selected_cards) do
+      num = num + Fk:getCardById(id).number
+    end
+    return num == 13
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:throwCard(effect.cards, self.name, player, player)
+    if player.dead then return end
+    local cards = player:drawCards(2 * #effect.cards, self.name)
+    if player.dead then return end
+    cards = table.filter(cards, function(id) return room:getCardOwner(id) == player and room:getCardArea(id) == Card.PlayerHand end)
+    if #cards == 0 then return end
+    for _, id in ipairs(cards) do
+      room:setCardMark(Fk:getCardById(id), "@@minsi-inhand", 1)
+    end
+  end,
+}
+local minsi_record = fk.CreateTriggerSkill{
+  name = "#minsi_record",
+
+  refresh_events = {fk.TurnEnd},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:usedSkillTimes("minsi", Player.HistoryTurn) > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    for _, id in ipairs(player:getCardIds("h")) do
+      player.room:setCardMark(Fk:getCardById(id), "@@minsi-inhand", 0)
+    end
+  end,
+}
+local minsi_targetmod = fk.CreateTargetModSkill{
+  name = "#minsi_targetmod",
+  bypass_distances =  function(self, player, skill, card, to)
+    return card and card:getMark("@@minsi-inhand") > 0 and card.color == Card.Black
+  end,
+}
+local minsi_maxcards = fk.CreateMaxCardsSkill{
+  name = "#minsi_maxcards",
+  exclude_from = function(self, player, card)
+    return card:getMark("@@minsi-inhand") > 0 and card.color == Card.Red
+  end,
+}
+local jijing = fk.CreateTriggerSkill{
+  name = "jijing",
+  anim_type = "defensive",
+  events = {fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local judge = {
+      who = player,
+      reason = self.name,
+    }
+    room:judge(judge)
+    if player.dead or player:isNude() then return end
+    local n = judge.card.number
+    room:setPlayerMark(player, "jijing-tmp", n)
+    local success, dat = room:askForUseActiveSkill(player, "jijing_active", "#jijing-discard:::"..n, true)
+    room:setPlayerMark(player, "jijing-tmp", 0)
+    if success then
+      room:throwCard(dat.cards, self.name, player, player)
+      if not player.dead and player:isWounded() then
+        room:recover{
+          who = player,
+          num = 1,
+          recoverBy = player,
+          skillName = self.name,
+        }
+      end
+    end
+  end,
+}
+local jijing_active = fk.CreateActiveSkill{
+  name = "jijing_active",
+  mute = true,
+  min_card_num = 1,
+  target_num = 0,
+  card_filter = function(self, to_select, selected)
+    if not Self:prohibitDiscard(Fk:getCardById(to_select)) then
+      local num = 0
+      for _, id in ipairs(selected) do
+        num = num + Fk:getCardById(id).number
+      end
+      return num + Fk:getCardById(to_select).number <= Self:getMark("jijing-tmp")
+    end
+  end,
+  feasible = function (self, selected, selected_cards)
+    local num = 0
+    for _, id in ipairs(selected_cards) do
+      num = num + Fk:getCardById(id).number
+    end
+    return num == Self:getMark("jijing-tmp")
+  end,
+}
+local zhuide = fk.CreateTriggerSkill{
+  name = "zhuide",
+  anim_type = "support",
+  events = {fk.Death},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name, false, true)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.map(room:getOtherPlayers(player), function (p) return p.id end)
+    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#zhuide-choose", self.name, true)
+    if #tos > 0 then
+      self.cost_data = tos[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local names = {}
+    for _, id in ipairs(room.draw_pile) do
+      local card = Fk:getCardById(id)
+      if card.type == Card.TypeBasic and not table.find(names, function(name) return Fk:cloneCard(name).trueName == card.trueName end) then
+        table.insert(names, card.name)
+      end
+    end
+    if #names == 0 then return end
+    names = table.random(names, 4)
+    local dummy = Fk:cloneCard("slash")
+    for _, name in ipairs(names) do
+      dummy:addSubcards(room:getCardsFromPileByRule(name))
+    end
+    if #dummy.subcards > 0 then
+      room:obtainCard(room:getPlayerById(self.cost_data), dummy, false, fk.ReasonDraw)
+    end
+  end,
+}
+minsi:addRelatedSkill(minsi_record)
+minsi:addRelatedSkill(minsi_targetmod)
+minsi:addRelatedSkill(minsi_maxcards)
+Fk:addSkill(jijing_active)
+wangrong:addSkill(minsi)
+wangrong:addSkill(jijing)
+wangrong:addSkill(zhuide)
 Fk:loadTranslationTable{
   ["ty__wangrongh"] = "王荣",
   ["minsi"] = "敏思",
@@ -493,6 +654,11 @@ Fk:loadTranslationTable{
   [":jijing"] = "当你受到伤害后，你可以判定，然后你可以弃置任意张点数之和等于判定结果的牌，若如此做，你回复1点体力",
   ["zhuide"] = "追德",
   [":zhuide"] = "当你死亡时，你可以令一名其他角色摸四张不同牌名的基本牌。",
+  ["#minsi"] = "敏思：弃置任意张点数之和为13的牌，摸两倍的牌",
+  ["@@minsi-inhand"] = "敏思",
+  ["jijing_active"] = "吉境",
+  ["#jijing-discard"] = "吉境：你可以弃置任意张点数之和为%arg的牌，回复1点体力",
+  ["#zhuide-choose"] = "追德：你可以令一名角色摸四张不同牌名的基本牌",
 }
 
 --麹义

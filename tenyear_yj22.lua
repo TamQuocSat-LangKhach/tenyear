@@ -58,8 +58,8 @@ local biejun = fk.CreateTriggerSkill{
   anim_type = "defensive",
   events = {fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and target == player and player:usedSkillTimes(self.name) == 0
-      and table.every(player:getCardIds(Player.Hand), function(id) return Fk:getCardById(id):getMark("@@biejun-inhand") == 0 end)
+    return player:hasSkill(self.name) and target == player and
+      table.every(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@biejun-inhand") == 0 end)
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#biejun-invoke")
@@ -71,7 +71,7 @@ local biejun = fk.CreateTriggerSkill{
 
   refresh_events = {fk.TurnEnd, fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
   can_refresh = function(self, event, target, player, data)
-    if event == event == fk.TurnEnd then
+    if event == fk.TurnEnd then
       return true
     elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
       return data == self

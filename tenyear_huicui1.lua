@@ -3065,7 +3065,7 @@ local qingyan = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if self.cost_data[1] == "discard" then
-      room:throwCard({self.cost_data[2]}, self.name, player, player)
+      room:throwCard(self.cost_data[2], self.name, player, player)
       room:addPlayerMark(player, MarkEnum.AddMaxCards, 1)
     else
       player:drawCards(player.maxHp - player:getHandcardNum(), self.name)

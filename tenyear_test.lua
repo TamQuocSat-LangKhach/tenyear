@@ -14,7 +14,7 @@ local niji = fk.CreateTriggerSkill{
   events = {fk.TargetConfirmed, fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     if event == fk.TargetConfirmed then
-      return target == player and player:hasSkill(self.name) and data.firstTarget and data.card.type ~= Card.TypeEquip
+      return target == player and player:hasSkill(self.name) and data.card.type ~= Card.TypeEquip
     elseif event == fk.EventPhaseStart then
       return target.phase == Player.Finish and not player:isKongcheng() and
         table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji-inhand") > 0 end)
@@ -248,13 +248,13 @@ local danyi = fk.CreateTriggerSkill{
         local use = events[i].data[1]
         if use.from == player.id then
           if use.tos then
-            if #TargetGroup:getRealTargets(use.tos) ~= #TargetGroup:getRealTargets(data.tos) then return false end
+            if #TargetGroup:getRealTargets(use.tos) ~= #AimGroup:getAllTargets(data.tos) then return false end
             for _, id in ipairs(TargetGroup:getRealTargets(use.tos)) do
-              if not table.contains(TargetGroup:getRealTargets(data.tos), id) then
+              if not table.contains(AimGroup:getAllTargets(data.tos), id) then
                 return false
               end
             end
-            for _, id in ipairs(TargetGroup:getRealTargets(data.tos)) do
+            for _, id in ipairs(AimGroup:getAllTargets(data.tos)) do
               if not table.contains(TargetGroup:getRealTargets(use.tos), id) then
                 return false
               end
@@ -268,7 +268,7 @@ local danyi = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    player:drawCards(#TargetGroup:getRealTargets(data.tos), self.name)
+    player:drawCards(#AimGroup:getAllTargets(data.tos), self.name)
   end,
 }
 local wencan = fk.CreateActiveSkill{

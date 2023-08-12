@@ -1171,8 +1171,7 @@ local shejian = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.firstTarget and data.from ~= player.id and
-      #TargetGroup:getRealTargets(data.tos) == 1 and
+    return target == player and player:hasSkill(self.name) and data.from ~= player.id and #AimGroup:getAllTargets(data.tos) == 1 and
       #player:getCardIds("he") > 1 and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2
   end,
   on_cost = function(self, event, target, player, data)

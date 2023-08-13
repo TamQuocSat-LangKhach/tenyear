@@ -80,7 +80,7 @@ local ty__fanghun = fk.CreateViewAsSkill{
     else
       return false
     end
-    return (Fk.currentResponsePattern == nil and c.skill:canUse(Self)) or
+    return (Fk.currentResponsePattern == nil and c.skill:canUse(Self, c)) or
       (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(c))
   end,
   view_as = function(self, cards)
@@ -1431,7 +1431,7 @@ local shouli = fk.CreateViewAsSkill{
   interaction = function()
     local names = {}
     local pat = Fk.currentResponsePattern
-    if pat == nil and Fk:cloneCard("slash").skill:canUse(Self) and table.find(Fk:currentRoom().alive_players, function(p)
+    if pat == nil and Self:canUse(Fk:cloneCard("slash")) and table.find(Fk:currentRoom().alive_players, function(p)
       return p:getEquipment(Card.SubtypeOffensiveRide) ~= nil end) then
       table.insert(names, "slash")
     else
@@ -1522,7 +1522,7 @@ local shouli_trigger = fk.CreateTriggerSkill{
         for i = 1, #room.draw_pile, 1 do
           local card = Fk:getCardById(room.draw_pile[i])
           if (card.sub_type == Card.SubtypeOffensiveRide or card.sub_type == Card.SubtypeDefensiveRide) and
-              card.skill.canUse(card.skill, p, card) and not p:prohibitUse(card) then
+              card.skill:canUse(p, card) and not p:prohibitUse(card) then
             table.insertIfNeed(cards, card)
           end
         end
@@ -4955,7 +4955,7 @@ local jianzheng = fk.CreateActiveSkill{
     local availableCards = {}
     for _, id in ipairs(cards) do
       local card = Fk:getCardById(id)
-      if not player:prohibitUse(card) and card.skill:canUse(player) then
+      if not player:prohibitUse(card) and player:canUse(card) then
         table.insertIfNeed(availableCards, id)
       end
     end

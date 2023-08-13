@@ -965,7 +965,7 @@ local jinhui = fk.CreateActiveSkill{
     local availableCards = {}
     for _, id in ipairs(ids) do
       local card = Fk:getCardById(id)
-      if not to:prohibitUse(card) and card.skill:canUse(to) then
+      if not to:prohibitUse(card) and card.skill:canUse(to, card) then
         table.insertIfNeed(availableCards, id)
       end
     end
@@ -1015,7 +1015,7 @@ local jinhui = fk.CreateActiveSkill{
       availableCards = {}
       for _, id in ipairs(ids) do
         local card = Fk:getCardById(id)
-        if not player:prohibitUse(card) and card.skill:canUse(player) then
+        if not player:prohibitUse(card) and card.skill:canUse(player, card) then
           table.insertIfNeed(availableCards, id)
         end
       end
@@ -1197,7 +1197,7 @@ local chenjian = fk.CreateTriggerSkill{
           local availableCards = {}
           for _, id in ipairs(ids) do
             local card = Fk:getCardById(id)
-            if not player:prohibitUse(card) and card.skill:canUse(player) then
+            if not player:prohibitUse(card) and card.skill:canUse(player, card) then
               table.insertIfNeed(availableCards, id)
             end
           end

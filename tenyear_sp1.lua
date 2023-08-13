@@ -1007,7 +1007,8 @@ local function searchFuxueCards(room, findOne)
   for i = #events, 1, -1 do
     local e = events[i]
     for _, move in ipairs(e.data) do
-      for _, id in ipairs(move.ids) do
+      for _, info in ipairs(move.moveInfo) do
+        local id = info.cardId
         if table.removeOne(discard_pile, id) then
           if move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then
             table.insertIfNeed(ids, id)
@@ -5084,6 +5085,130 @@ Fk:loadTranslationTable{
   ["$fumou1"] = "某有良谋，可为将军所用。",
   ["$fumou2"] = "吾负十斗之囊，其盈一石之智。",
   ["~huanfan"] = "有良言而不用，君何愚哉……",
+}
+
+local xizheng = General(extension, "xizheng", "shu", 3)
+local danyi = fk.CreateTriggerSkill{
+  name = "danyi",
+  anim_type = "drawcard",
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) and data.firstTarget then
+      local room = player.room
+      local events = room.logic.event_recorder[GameEvent.UseCard]
+      if #events < 2 then return end
+      for i = #events - 1, 1, -1 do
+        local use = events[i].data[1]
+        if use.from == player.id then
+          if use.tos then
+            if #TargetGroup:getRealTargets(use.tos) ~= #AimGroup:getAllTargets(data.tos) then return false end
+            for _, id in ipairs(TargetGroup:getRealTargets(use.tos)) do
+              if not table.contains(AimGroup:getAllTargets(data.tos), id) then
+                return false
+              end
+            end
+            for _, id in ipairs(AimGroup:getAllTargets(data.tos)) do
+              if not table.contains(TargetGroup:getRealTargets(use.tos), id) then
+                return false
+              end
+            end
+            return true
+          else
+            return false
+          end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(#AimGroup:getAllTargets(data.tos), self.name)
+  end,
+}
+local wencan = fk.CreateActiveSkill{
+  name = "wencan",
+  anim_type = "control",
+  card_num = 0,
+  min_target_num = 1,
+  max_target_num = 2,
+  prompt = "#wencan",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    if #selected > 1 or to_select == Self.id then return false end
+    local target = Fk:currentRoom():getPlayerById(to_select)
+    if #selected == 0 then
+      return target.hp ~= Self.hp
+    elseif #selected == 1 then
+      return target.hp ~= Self.hp and target.hp ~= Fk:currentRoom():getPlayerById(selected[1]).hp
+    else
+      return false
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    for _, id in ipairs(effect.tos) do
+      local p = room:getPlayerById(id)
+      if not p.dead then
+        if #p:getCardIds("he") < 2 or not room:askForUseActiveSkill(p, "wencan_active", "#wencan-discard:"..player.id, true) then
+          room:setPlayerMark(p, "@@wencan-turn", 1)
+        end
+      end
+    end
+  end,
+}
+local wencan_active = fk.CreateActiveSkill{
+  name = "wencan_active",
+  mute = true,
+  card_num = 2,
+  target_num = 0,
+  card_filter = function(self, to_select, selected)
+    local card = Fk:getCardById(to_select)
+    if not Self:prohibitDiscard(card) and card.suit ~= Card.NoSuit then
+      if #selected == 0 then
+        return true
+      elseif #selected == 1 then
+        return card.suit ~= Fk:getCardById(selected[1]).suit
+      else
+        return false
+      end
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:throwCard(effect.cards, "wencan", player, player)
+  end,
+}
+local wencan_targetmod = fk.CreateTargetModSkill{
+  name = "#wencan_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    return player:usedSkillTimes("wencan", Player.HistoryTurn) > 0 and scope == Player.HistoryPhase and to:getMark("@@wencan-turn") > 0
+  end,
+}
+Fk:addSkill(wencan_active)
+wencan:addRelatedSkill(wencan_targetmod)
+xizheng:addSkill(danyi)
+xizheng:addSkill(wencan)
+Fk:loadTranslationTable{
+  ["xizheng"] = "郤正",
+  ["danyi"] = "耽意",
+  [":danyi"] = "你使用牌指定目标后，若此牌目标与你使用的上一张牌完全相同，你可以摸X张牌（X为此牌目标数）。",
+  ["wencan"] = "文灿",
+  [":wencan"] = "出牌阶段限一次，你可以选择至多两名体力值不同且均与你不同的角色，这些角色依次选择一项：1.弃置两张花色不同的牌；"..
+  "2.本回合你对其使用牌无次数限制。",
+  ["#wencan"] = "文灿：选择至多两名体力值不同且均与你不同的角色，其弃牌或你对其使用牌无次数限制",
+  ["@@wencan-turn"] = "文灿",
+  ["wencan_active"] = "文灿",
+  ["#wencan-discard"] = "文灿：弃置两张不同花色的牌，否则 %src 本回合对你使用牌无次数限制",
+  
+  ["$danyi1"] = "满城锦绣，何及笔下春秋？",
+  ["$danyi2"] = "一心向学，不闻窗外风雨。",
+  ["$wencan1"] = "宴友以文，书声喧哗，众宾欢也。",
+  ["$wencan2"] = "众星灿于九天，犹雅文耀于万世。",
+  ["~xizheng"] = "此生有涯，奈何学海无涯……",
 }
 
 return extension

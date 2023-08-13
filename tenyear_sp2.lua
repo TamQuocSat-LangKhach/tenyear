@@ -1043,8 +1043,8 @@ local anzhi = fk.CreateActiveSkill{
       room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
         for _, move in ipairs(e.data) do
           if move.toArea == Card.DiscardPile then
-            for _, id in ipairs(move.ids) do
-              table.insertIfNeed(ids, id)
+            for _, info in ipairs(move.moveInfo) do
+              table.insertIfNeed(ids, info.cardId)
             end
           end
         end
@@ -5057,12 +5057,16 @@ local jijiao = fk.CreateActiveSkill{
         end
       end
       for _, move in ipairs(e.data) do
-        for _, id in ipairs(move.ids) do
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
           if table.removeOne(discard_pile, id) and Fk:getCardById(id):isCommonTrick() then
             if move.toArea == Card.DiscardPile then
-              if (move.moveReason == fk.ReasonUse and move_by_use) or
-              (move.moveReason == fk.ReasonDiscard and move.from == player.id) then
+              if move.moveReason == fk.ReasonUse and move_by_use then
                 table.insert(ids, id)
+              elseif move.moveReason == fk.ReasonDiscard and move.from == player.id then
+                if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+                  table.insert(ids, id)
+                end
               end
             end
           end

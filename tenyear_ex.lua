@@ -1883,6 +1883,107 @@ Fk:loadTranslationTable{
   ["#ty_ex__bingyi-choose"] = "秉壹：你可以令至多%arg名角色各摸一张牌",
 }
 
+local jvshou = General(extension, "ty_ex__jvshou", "qun", 3)
+local ty_ex__jianying = fk.CreateTriggerSkill{
+  name = "ty_ex__jianying",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    if player ~= target or not player:hasSkill(self.name) then return false end
+    local room = player.room
+    local logic = room.logic
+    local use_event = logic:getCurrentEvent()
+    local events = logic.event_recorder[GameEvent.UseCard] or Util.DummyTable
+    local last_find = false
+    for i = #events, 1, -1 do
+      local e = events[i]
+      if e.data[1].from == player.id then
+        if e.id == use_event.id then
+          last_find = true
+        elseif last_find then
+          local last_use = e.data[1]
+          return data.card:compareSuitWith(last_use.card) or data.card:compareNumberWith(last_use.card)
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(1, self.name)
+  end,
+
+  refresh_events = {fk.AfterCardUseDeclared, fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.AfterCardUseDeclared then
+      return target == player and player:hasSkill(self.name, true)
+    elseif event == fk.EventLoseSkill then
+      return data == self
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.AfterCardUseDeclared then
+      room:setPlayerMark(player, "@ty_ex__jianying", {data.card:getSuitString(true), data.card:getNumberStr()})
+    elseif event == fk.EventLoseSkill then
+      room:setPlayerMark(player, "@ty_ex__jianying", 0)
+    end
+  end,
+}
+local ty_ex__shibei = fk.CreateTriggerSkill{
+  name = "ty_ex__shibei",
+  mute = true,
+  anim_type = "defensive",
+  frequency = Skill.Compulsory,
+  events = {fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    if target ~= player or not player:hasSkill(self.name) then return false end
+    local room = player.room
+    local damage_event = room.logic:getCurrentEvent()
+    local mark = player:getMark("ty_ex__shibei_record-turn")
+    if type(mark) ~= "table" then
+      mark = {}
+    end
+    if #mark < 2 and not table.contains(mark, damage_event.id) then
+      local damage_ids = {}
+      room.logic:getEventsOfScope(GameEvent.ChangeHp, 2, function (e)
+        if e.data[1] == player and e.data[3] == "damage" then
+          local first_damage_event = e:findParent(GameEvent.Damage)
+          if first_damage_event then
+            table.insert(damage_ids, first_damage_event.id)
+            return true
+          end
+        end
+        return false
+      end, Player.HistoryRound)
+      if #damage_ids > #mark then
+        mark = damage_ids
+        room:setPlayerMark(player, "ty_ex__shibei_record-turn", mark)
+      end
+    end
+    return table.contains(mark, damage_event.id) and not (mark[1] == damage_event.id and not player:isWounded())
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local mark = player:getMark("ty_ex__shibei_record-turn")
+    if type(mark) ~= "table" or #mark == 0 then return false end
+    local damage_event = room.logic:getCurrentEvent():findParent(GameEvent.Damage, true)
+    if not damage_event then return false end
+    if mark[1] == damage_event.id then
+      room:broadcastSkillInvoke(self.name, 1)
+      room:notifySkillInvoked(player, self.name)
+      room:recover{
+        who = player,
+        num = 1,
+        skillName = self.name
+      }
+    end
+    if #mark > 1 and mark[2] == damage_event.id then
+      room:broadcastSkillInvoke(self.name, 2)
+      room:notifySkillInvoked(player, self.name, "negative")
+      room:loseHp(player, 1, self.name)
+    end
+  end,
+}
+jvshou:addSkill(ty_ex__jianying)
+jvshou:addSkill(ty_ex__shibei)
 
 Fk:loadTranslationTable{
   ["ty_ex__jvshou"] = "界沮授",
@@ -1890,6 +1991,8 @@ Fk:loadTranslationTable{
   [":ty_ex__jianying"] = "当你使用牌时，若此牌与你使用的上一张牌点数或花色相同，你可以摸一张牌。",
   ["ty_ex__shibei"] = "矢北",
   [":ty_ex__shibei"] = "锁定技，当你受到伤害后，若此次伤害：是你本回合受到的第一次伤害，你回复1点体力；是你本回合受到的第二次伤害，你失去1点体力。",
+
+  ["@ty_ex__jianying"] = "渐营",
 
   ["$ty_ex__jianying1"] = "步步为营，缓缓而进。",
   ["$ty_ex__jianying2"] = "以强击弱，何必心急？",

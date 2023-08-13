@@ -391,8 +391,25 @@ local xianshuai = fk.CreateTriggerSkill{
   events = {fk.Damage},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryRound) == 0
-    -- FIXME: first time, not once pre round
+    if not player:hasSkill(self.name) then return false end
+    local room = player.room
+    local damage__event = room.logic:getCurrentEvent()
+    if not damage__event then return false end
+    local x = player:getMark("xianshuai_record-round")
+    if x == 0 then
+      room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
+        local reason = e.data[3]
+        if reason == "damage" then
+          local first_damage_event = e:findParent(GameEvent.Damage)
+          if first_damage_event then
+            x = first_damage_event.id
+            room:setPlayerMark(player, "xianshuai_record-round", x)
+          end
+          return true
+        end
+      end, Player.HistoryRound)
+    end
+    return damage__event.id == x
   end,
   on_use = function(self, event, target, player, data)
     player:drawCards(1, self.name)
@@ -448,8 +465,7 @@ local panshi = fk.CreateTriggerSkill{
     elseif event == fk.Damage then
       room:notifySkillInvoked(player, self.name, "negative")
       room:broadcastSkillInvoke(self.name)
-      room.logic:getCurrentEvent():findParent(GameEvent.Phase):shutdown()
-      -- FIXME: finish phase when free time, not shutdown GameEvent.Phase
+      player:endPlayPhase()
     end
   end,
 
@@ -659,6 +675,14 @@ Fk:loadTranslationTable{
   ["jijing_active"] = "吉境",
   ["#jijing-discard"] = "吉境：你可以弃置任意张点数之和为%arg的牌，回复1点体力",
   ["#zhuide-choose"] = "追德：你可以令一名角色摸四张不同牌名的基本牌",
+
+  ["$minsi1"] = "能书会记，心思灵巧。",
+  ["$minsi2"] = "才情兼备，选入掖庭。",
+  ["$jijing1"] = "吉梦赐福，顺应天命。",
+  ["$jijing2"] = "梦之指引，必为吉运。",
+  ["$zhuide1"] = "思美人，两情悦。",
+  ["$zhuide2"] = "花香蝶恋，君德妾慕。",
+  ["~ty__wangrongh"] = "谁能护妾身幼子……",
 }
 
 --麹义

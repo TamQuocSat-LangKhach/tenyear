@@ -1421,6 +1421,13 @@ Fk:loadTranslationTable{
   ["#ty_ex__paiyi_damage"] = "排异：对至多%arg名角色各造成1点伤害",
   ["ty_ex__paiyi_draw"] = "摸牌",
   ["ty_ex__paiyi_damage"] = "伤害",
+  ["$ty_ex__quanji1"] = "操权弄略，舍小利，而谋大计!",
+  ["$ty_ex__quanji2"] = "大丈夫行事，岂较一兵一将之得失?",
+  ["$ty_ex__zili1"] = "烧去剑阁八百里，蜀中自有一片天!",
+  ["$ty_ex__zili2"] = "天下风流出我辈，一遇风云便化龙。",
+  ["$ty_ex__paiyi1"] = "蜀川三千里，皆由我一言决之!",
+  ["$ty_ex__paiyi2"] = "顺我者，封侯拜将!，逆我者，斧钺加身!",
+  ["~ty_ex__zhonghui"] = "这就是...自食恶果..的下场吗？....",
 }
 
 local caochong = General(extension, "ty_ex__caochong", "wei", 3)

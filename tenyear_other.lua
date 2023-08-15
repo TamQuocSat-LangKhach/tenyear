@@ -250,30 +250,40 @@ local jiuxian_targetmod = fk.CreateTargetModSkill{
     return player:hasSkill("jiuxian") and card.trueName == "analeptic" and scope == Player.HistoryTurn
   end,
 }
-local shixian_pairs = {{"slash", "archery_attack", "vine", "enemy_at_the_gates"},
-  {"indulgence", "crossbow", "axe", "chitu", "dilu", "wonder_map", "taigong_tactics"},
+local shixian_pairs = {
+  {"slash", "archery_attack", "vine", "enemy_at_the_gates", "glittery_armor", "shangyang_reform"},
+  {"steel_lance", "wd_crossbow_tank", "wd_stop_thirst"},
+  {"looting"},
   {"dark_armor", "underhanding"},
-  {"peach", "blade", "spear", "dismantlement", "guding_blade", "daggar_in_smile", "seven_stars_sword"},
-  {"ex_nihilo", "duel", "huailiu", "analeptic"},
+  {"redistribute", "defeating_the_double", "floating_thunder", "wd_save_energy"},
+  {"peach", "blade", "spear", "dismantlement", "guding_blade", "daggar_in_smile", "seven_stars_sword", 
+    "crafty_escape", "reinforcement", "await_exhausted", "triblade", "wd_seven_stars_sword"},
+  {"ex_nihilo", "duel", "huailiu", "analeptic", "wd_run"},
   {"jink", "lightning", "qinggang_sword", "double_swords", "ice_sword", "zhuahuangfeidian", "dayuan",
-    "supply_shortage", "fan", "iron_chain", "black_chain", "five_elements_fan", "chasing_near"},
-  {"collateral", "savage_assault", "eight_diagram", "nioh_shield", "drowning"},
-  {"amazing_grace", "kylin_bow", "jueying", "zixing", "fire_attack", "breastplate", "raid_and_frontal_attack"},
-  {"god_salvation", "nullification", "halberd", "silver_lion", "unexpectation", "foresight", "honey_trap"},
+    "supply_shortage", "fan", "iron_chain", "black_chain", "five_elements_fan", "chasing_near", "n_brick", "six_swords", "qin_dragon_sword"},
+  {"collateral", "savage_assault", "eight_diagram", "nioh_shield", "drowning", "horsetail_whisk", "wd_drowning", "wd_gold"},
+  {"snatch", "substituting", "moon_spear", "wd_rice"},
+  {"amazing_grace", "kylin_bow", "jueying", "zixing", "fire_attack", "breastplate", "raid_and_frontal_attack",
+    "abandoning_armor", "paranoid", "befriend_attacking", "wd_breastplate", "wd_let_off_enemy"},
+  {"god_salvation", "nullification", "halberd", "silver_lion", "unexpectation", "foresight", "honey_trap",
+    "avoiding_disadvantages", "diversion", "time_flying", "known_both", "wd_sun_moon_halberd"},
+  {"indulgence", "crossbow", "axe", "chitu", "dilu", "wonder_map", "taigong_tactics", "poison", 
+    "replace_with_a_fake", "sincere_treat", "wenhe_chaos", "n_relx_v", "peace_spell", "golden_comb", "jade_comb", "rhino_comb",
+    "celestial_calabash", "talisman", "wd_baihu", "wd_lure_in_deep"},
 }
---a ia ua：杀，万箭齐发，藤甲，兵临城下，
---o e uo：乐不思蜀，诸葛连弩，贯石斧，赤兔，的卢，天机图，太公阴符，
---ie ve
+--a ia ua：杀，万箭齐发，藤甲，兵临城下，烂银甲，商鞅变法
+--o e uo：衠钢槊，连弩战车，望梅止渴
+--ie ve：趁火打劫
 --ai uai：黑光铠，瞒天过海
---ei ui：调剂盐梅
---ao iao：桃，青龙偃月刀，丈八蛇矛，过河拆桥，古锭刀，笑里藏刀，七宝刀，
---ou iu：无中生有，决斗，骅骝，酒，
---an ian uan van：闪，闪电，青釭剑，雌雄双股剑，寒冰剑，爪黄飞电，大宛，兵粮寸断，朱雀羽扇，铁索连环，乌铁锁链，五行鹤翎扇，逐近弃远，
---en in un vn：借刀杀人，南蛮入侵，八卦阵，仁王盾，水淹七军
---ang iang uang：顺手牵羊
---eng ing ong ung：五谷丰登，麒麟弓，绝影，紫骍，火攻，护心镜，奇正相生，
---i er v：桃园结义，无懈可击，方天画戟，白银狮子，出其不意，洞烛先机，美人计，
---u
+--ei ui：调剂盐梅，以半击倍，浮雷，养精蓄锐
+--ao iao：桃，青龙偃月刀，丈八蛇矛，过河拆桥，古锭刀，笑里藏刀，七宝刀，金蝉脱壳，增兵减灶，以逸待劳，三尖两刃刀，七星刀
+--ou iu：无中生有，决斗，骅骝，酒，走
+--an ian uan van：闪，闪电，青釭剑，雌雄双股剑，寒冰剑，爪黄飞电，大宛，兵粮寸断，朱雀羽扇，铁索连环，乌铁锁链，五行鹤翎扇，逐近弃远，砖，吴六剑，真龙长剑
+--en in un vn：借刀杀人，南蛮入侵，八卦阵，仁王盾，水淹七军，太极拂尘，金
+--ang iang uang：顺手牵羊，李代桃僵，银月枪，粮
+--eng ing ong ung：五谷丰登，麒麟弓，绝影，紫骍，火攻，护心镜，奇正相生，弃甲曳兵，草木皆兵，远交近攻，欲擒故纵
+--i er v：桃园结义，无懈可击，方天画戟，白银狮子，出其不意，洞烛先机，美人计，违害就利，声东击西，斗转星移，知己知彼，日月戟
+--u：乐不思蜀，诸葛连弩，贯石斧，赤兔，的卢，天机图，太公阴符，毒，偷梁换柱，推心置腹，文和乱武，悦刻五，太平要术，金梳，琼梳，犀梳，灵宝仙葫，冲应神符，白鹄，诱敌深入
 local shixian = fk.CreateTriggerSkill{
   name = "shixian",
   anim_type = "special",

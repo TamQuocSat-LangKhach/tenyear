@@ -160,7 +160,202 @@ Fk:loadTranslationTable{
   ["~guanning"] = "高节始终，无憾矣。",
 }
 
---黄承彦 胡昭
+local huangchengyan = General(extension, "ty__huangchengyan", "qun", 3)
+local jiezhen = fk.CreateActiveSkill{
+  name = "jiezhen",
+  anim_type = "control",
+  prompt = "#jiezhen-active",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
+  end,
+  card_filter = function() return false end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id and Fk:currentRoom():getPlayerById(to_select):getMark("@@jiezhen") == 0
+  end,
+  target_num = 1,
+  on_use = function(self, room, effect)
+    local target = room:getPlayerById(effect.tos[1])
+    room:setPlayerMark(target, "@@jiezhen", 1)
+    room:setPlayerMark(target, "jiezhen_source", effect.from)
+    if not target:hasSkill("bazhen", true) then
+      room:addPlayerMark(target, "jiezhen_tmpbazhen")
+      room:handleAddLoseSkills(target, "bazhen", nil, true, false)
+    end
+  end,
+}
+local jiezhen_trigger = fk.CreateTriggerSkill{
+  name = "#jiezhen_trigger",
+  events = {fk.FinishJudge, fk.TurnStart},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(jiezhen.name) then
+      if event == fk.FinishJudge then
+        return not target.dead and table.contains({"bazhen", "eight_diagram"}, data.reason) and
+        target:getMark("jiezhen_source") == player.id
+      elseif event == fk.TurnStart then
+        if target == player then
+          for _, p in ipairs(player.room.alive_players) do
+            if p:getMark("jiezhen_source") == player.id then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_cost = function() return true end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local tos = {}
+    if event == fk.TurnStart then
+      tos = table.filter(room.alive_players, function (p) return p:getMark("jiezhen_source") == player.id end)
+    else
+      table.insert(tos, target)
+    end
+    room:doIndicate(player.id, table.map(tos, function (p) return p.id end))
+    for _, to in ipairs(tos) do
+      if player.dead then break end
+      room:setPlayerMark(to, "jiezhen_source", 0)
+      room:setPlayerMark(to, "@@jiezhen", 0)
+      if to:getMark("jiezhen_tmpbazhen") > 0 then
+        room:handleAddLoseSkills(to, "-bazhen", nil, true, false)
+      end
+      if not to:isAllNude() then
+        local card = room:askForCardChosen(player, to, "hej", jiezhen.name)
+        room:obtainCard(player.id, card, false, fk.ReasonPrey)
+      end
+    end
+  end,
+}
+local jiezhen_invalidity = fk.CreateInvaliditySkill {
+  name = "#jiezhen_invalidity",
+  invalidity_func = function(self, from, skill)
+    if from:getMark("@@jiezhen") > 0 then
+      return not (table.contains({Skill.Compulsory, Skill.Limited, Skill.Wake}, skill.frequency) or
+        skill.name:endsWith("&") or skill.lordSkill)
+    end
+  end
+}
+local zecai = fk.CreateTriggerSkill{
+  name = "zecai",
+  frequency = Skill.Limited,
+  events = {fk.RoundEnd},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryGame) < 1
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local player_table = {}
+    room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+      local use = e.data[1]
+      if use.card.type == Card.TypeTrick then
+        local from = use.from
+        player_table[from] = (player_table[from] or 0) + 1
+      end
+    end, Player.HistoryRound)
+    local max_time, max_pid = 0, nil
+    for pid, time in pairs(player_table) do
+      if time > max_time then
+        max_pid, max_time = pid, time
+      elseif time == max_time then
+        max_pid = 0
+      end
+    end
+    local max_p = nil
+    if max_pid ~= 0 then
+      max_p = room:getPlayerById(max_pid)
+    end
+    if max_p and not max_p.dead then
+      room:setPlayerMark(max_p, "@@zecai_extra", 1)
+    end
+    local to = room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), function (p)
+      return p.id end), 1, 1, "#zecai-choose", self.name, true)
+    if max_p and not max_p.dead then
+      room:setPlayerMark(max_p, "@@zecai_extra", 0)
+    end
+    if #to > 0 then
+      self.cost_data = {to[1], max_pid}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local tar = room:getPlayerById(self.cost_data[1])
+    if not tar:hasSkill("ex__jizhi", true) then
+      room:addPlayerMark(tar, "zecai_tmpjizhi")
+      room:handleAddLoseSkills(tar, "ex__jizhi", nil, true, false)
+    end
+    if self.cost_data[1] == self.cost_data[2] then
+      tar:gainAnExtraTurn()
+    end
+  end,
+
+  refresh_events = {fk.RoundEnd},
+  can_refresh = function(self, event, target, player, data)
+    return player:getMark("zecai_tmpjizhi") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:handleAddLoseSkills(player, "-ex__jizhi", nil, true, false)
+  end,
+}
+local yinshih = fk.CreateTriggerSkill{
+  name = "yinshih",
+  frequency = Skill.Compulsory,
+  anim_type = "defensive",
+  events = {fk.FinishJudge, fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      if event == fk.FinishJudge then
+        return table.contains({"bazhen", "eight_diagram"}, data.reason) and player.room:getCardArea(data.card) == Card.Processing
+      elseif event == fk.DamageInflicted then
+        return player == target and (not data.card or data.card.color == Card.NoColor) and player:getMark("yinshih_defensive-turn") == 0 and
+        #player.room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
+          local damage = e.data[5]
+          if damage and damage.to == player and (not damage.card or damage.card.color == Card.NoColor) then
+            return true
+          end
+        end, Player.HistoryTurn) == 0
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    if event == fk.FinishJudge then
+      player.room:obtainCard(player.id, data.card, true, fk.ReasonJustMove)
+    elseif event == fk.DamageInflicted then
+      player.room:setPlayerMark(player, "yinshih_defensive-turn", 1)
+      return true
+    end
+  end,
+}
+jiezhen:addRelatedSkill(jiezhen_trigger)
+jiezhen:addRelatedSkill(jiezhen_invalidity)
+huangchengyan:addSkill(jiezhen)
+huangchengyan:addSkill(zecai)
+huangchengyan:addSkill(yinshih)
+Fk:loadTranslationTable{
+  ["ty__huangchengyan"] = "黄承彦",
+  ["jiezhen"] = "解阵",
+  ["#jiezhen_trigger"] = "解阵",
+  [":jiezhen"] = "出牌阶段限一次，你可令一名其他角色的所有技能替换为“八阵”（锁定技，限定技，觉醒技，主公技除外），你的下回合开始或当其【八卦阵】判定后，其失去“八阵”并获得原技能，然后你获得其区域里的一张牌。",
+  ["zecai"] = "择才",
+  [":zecai"] = "限定技，一轮结束时，你可令一名其他角色获得“集智”直到下一轮结束，若其是本轮使用锦囊牌数唯一最多的角色，其执行一个额外的回合。",
+  ["yinshih"] = "隐世",
+  [":yinshih"] = "锁定技，你每回合首次受到无色牌或非游戏牌造成的伤害时，防止此伤害。当场上有角色判定【八卦阵】时，你获得其生效的判定牌。",
+
+  ["#jiezhen-active"] = "发动解阵，将一名角色的技能替换为八阵",
+  ["@@jiezhen"] = "解阵",
+  ["#zecai-choose"] = "你可以发动择才，令一名其他角色获得集智直到下轮结束",
+  ["@@zecai_extra"] = "择才 额外回合",
+
+  ["$jiezhen1"] = "八阵无破，唯解死而向生。",
+  ["$jiezhen2"] = "此阵，可由景门入、生门出。",
+  ["$zecai1"] = "诸葛良才，可为我佳婿。",
+  ["$zecai2"] = "梧桐亭亭，必引凤而栖。",
+  ["$yinshih1"] = "南阳隐世，耕读传家。",
+  ["$yinshih2"] = "手扶耒耜，不闻风雷。",
+  ["~ty__huangchengyan"] = "卧龙出山天伦逝，悔教吾婿离南阳……",
+}
+
+--胡昭
 
 local wanglie = General(extension, "wanglie", "qun", 3)
 local chongwang = fk.CreateTriggerSkill{

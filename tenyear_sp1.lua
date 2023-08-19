@@ -1234,8 +1234,8 @@ local lingyue = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self.name) or not target then return false end
     local room = player.room
-    local damage__event = room.logic:getCurrentEvent()
-    if not damage__event then return false end
+    local damage_event = room.logic:getCurrentEvent()
+    if not damage_event then return false end
     local x = target:getMark("lingyue_record-round")
     if x == 0 then
       room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
@@ -1250,7 +1250,7 @@ local lingyue = fk.CreateTriggerSkill{
         end
       end, Player.HistoryRound)
     end
-    return damage__event.id == x
+    return damage_event.id == x
   end,
   on_use = function(self, event, target, player, data)
     if target.phase == Player.NotActive then
@@ -3599,8 +3599,60 @@ local changqu_trigger = fk.CreateTriggerSkill{
     player.room:setPlayerMark(player, "@changqu", 0)
   end,
 }
+local tongye = fk.CreateTriggerSkill{
+  name = "tongye",
+  frequency = Skill.Compulsory,
+  events = {fk.GameStart, fk.Deathed, fk.DrawNCards},
+  anim_type = "drawcard",
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and (event ~= fk.DrawNCards or (player == target and player:getMark("@tongye_count") > 3))
+  end,
+  on_use = function(self, event, target, player, data)
+    if event == fk.DrawNCards then
+      data.n = data.n + 3
+    else
+      local room = player.room
+      local kingdoms = {}
+      for _, p in ipairs(room.alive_players) do
+        table.insertIfNeed(kingdoms, p.kingdom)
+      end
+      local x = 5 - #kingdoms
+      if x > 0 then
+        room:setPlayerMark(player, "@tongye_count", x)
+      end
+    end
+  end,
+}
+local tongye_maxcards = fk.CreateMaxCardsSkill{
+  name = "#tongye_maxcards",
+  correct_func = function(self, player)
+    if player:hasSkill(tongye.name) and player:getMark("@tongye_count") > 0 then
+      return 3
+    end
+  end,
+}
+local tongye_attackrange = fk.CreateAttackRangeSkill{
+  name = "#tongye_attackrange",
+  correct_func = function (self, from, to)
+    if from:hasSkill(tongye.name) and from:getMark("@tongye_count") > 1 then
+      return 3
+    end
+  end,
+}
+local tongye_targetmod = fk.CreateTargetModSkill{
+  name = "#tongye_targetmod",
+  residue_func = function(self, player, skill, scope)
+    if skill.trueName == "slash_skill" and player:hasSkill(tongye.name) and player:getMark("@tongye_count") > 2 then
+      return 3
+    end
+    return 0
+  end,
+}
 changqu:addRelatedSkill(changqu_trigger)
-wangjun:addSkill(mianyao)
+tongye:addRelatedSkill(tongye_maxcards)
+tongye:addRelatedSkill(tongye_attackrange)
+tongye:addRelatedSkill(tongye_targetmod)
+wangjun:addSkill(tongye)
 wangjun:addSkill(changqu)
 Fk:loadTranslationTable{
   ["ty__wangjun"] = "王濬",
@@ -3615,6 +3667,7 @@ Fk:loadTranslationTable{
   ["@@battleship"] = "战舰",
   ["#changqu-card"] = "长驱：交给 %src %arg张手牌以使战舰驶向下一名角色",
   ["@changqu"] = "长驱",
+  ["@tongye_count"] = "统业",
 
   ["$tongye1"] = "白首全金瓯，著风流于春秋。",
   ["$tongye2"] = "长戈斩王气，统大业于四海。",

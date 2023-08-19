@@ -393,8 +393,8 @@ local xianshuai = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self.name) then return false end
     local room = player.room
-    local damage__event = room.logic:getCurrentEvent()
-    if not damage__event then return false end
+    local damage_event = room.logic:getCurrentEvent()
+    if not damage_event then return false end
     local x = player:getMark("xianshuai_record-round")
     if x == 0 then
       room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
@@ -409,7 +409,7 @@ local xianshuai = fk.CreateTriggerSkill{
         end
       end, Player.HistoryRound)
     end
-    return damage__event.id == x
+    return damage_event.id == x
   end,
   on_use = function(self, event, target, player, data)
     player:drawCards(1, self.name)

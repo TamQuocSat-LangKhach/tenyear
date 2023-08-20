@@ -1314,6 +1314,10 @@ local pandi_refresh = fk.CreateTriggerSkill{
       player.room:addPlayerMark(player, "pandi_damaged-turn")
     elseif event == fk.EventAcquireSkill then
       local room = player.room
+      local current_event = room.logic:getCurrentEvent()
+      if current_event == nil then return false end
+      local start_event = current_event:findParent(GameEvent.Turn, true)
+      if start_event == nil then return false end
       room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
         local damage = e.data[5]
         if damage and damage.from then
@@ -1366,6 +1370,7 @@ Fk:loadTranslationTable{
   [":pandi"] = "出牌阶段，你可以选择一名本回合未造成过伤害的其他角色，你此阶段选择使用的下一张牌改为由其对你选择的目标使用。" ..
   '<br /><font color="red">（村：发动后必须立即使用牌，且不支持转化使用，否则必须使用一张牌之后才能再次发动此技能）</font>',
 
+  ["pandi_use"] = "盻睇",
   ["#pandi-use"] = "盻睇：选择一张牌，视为由 %dest 使用（若需要选目标则你来选择目标）",
 
   ["$lingyue1"] = "宫商催角羽，仙乐自可聆。	",
@@ -2092,8 +2097,8 @@ local sijun = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Start
-    and player:getMark("@zhangjiao_huang") > #player.room.draw_pile
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Start and
+    player:getMark("@zhangjiao_huang") > #player.room.draw_pile
   end,
   on_use = function(self, event, tar, player, data)
     local room = player.room

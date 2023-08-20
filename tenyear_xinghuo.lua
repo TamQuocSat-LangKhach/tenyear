@@ -182,7 +182,7 @@ Fk:loadTranslationTable{
   [":tushe"] = "当你使用非装备牌指定目标后，若你没有基本牌，则你可以摸X张牌（X为此牌指定的目标数）。",
   ["limu"] = "立牧",
   [":limu"] = "出牌阶段，你可以将一张方块牌当【乐不思蜀】对自己使用，然后回复1点体力；你的判定区有牌时，你对攻击范围内的其他角色使用牌没有次数和距离限制。",
-  
+
   ["#limu"] = "立牧：选择一张方块牌当【乐不思蜀】对自己使用，然后回复1点体力",
 
   ["$tushe1"] = "据险以图进，备策而施为！",
@@ -198,27 +198,39 @@ local guanwei = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) and target.phase == Player.Play and target.tag[self.name] and
+    if player:hasSkill(self.name) and target.phase == Player.Play and
       player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and not player:isNude() then
-      local tag = target.tag[self.name]
-      return #tag > 1 and table.every(tag, function (suit) return suit == tag[1] end) and not table.contains(tag, Card.NoSuit)
+        local x = 0
+        local suit = nil
+        player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+          local use = e.data[1]
+          if use.from == target.id then
+            if suit == nil then
+              suit = use.card.suit
+            elseif suit ~= use.card.suit then
+              x = 0
+              return true
+            end
+            x = x + 1
+          end
+        end, Player.HistoryTurn)
+        return x > 1
     end
   end,
   on_cost = function(self, event, target, player, data)
-    return #player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#guanwei-invoke::"..target.id) > 0
+    local cards = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#guanwei-invoke::"..target.id, true)
+    if #cards > 0 then
+      player.room:doIndicate(player.id, {target.id})
+      self.cost_data = cards
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
-    target:drawCards(2, self.name)
-    target:gainAnExtraPhase(Player.Play)
-  end,
-
-  refresh_events = {fk.AfterCardUseDeclared},
-  can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self.name, true) and target.phase == Player.Play
-  end,
-  on_refresh = function(self, event, target, player, data)
-    target.tag[self.name] = target.tag[self.name] or {}
-    table.insert(target.tag[self.name], data.card.suit)
+    player.room:throwCard(self.cost_data, self.name, player, player)
+    if not target.dead then
+      target:drawCards(2, self.name)
+      target:gainAnExtraPhase(Player.Play)
+    end
   end,
 }
 local gongqing = fk.CreateTriggerSkill{

@@ -1959,7 +1959,7 @@ local ty_ex__shibei = fk.CreateTriggerSkill{
           end
         end
         return false
-      end, Player.HistoryRound)
+      end, Player.HistoryTurn)
       if #damage_ids > #mark then
         mark = damage_ids
         room:setPlayerMark(player, "ty_ex__shibei_record-turn", mark)

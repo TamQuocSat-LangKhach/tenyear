@@ -780,16 +780,67 @@ local zhukou = fk.CreateTriggerSkill{
   events = {fk.Damage, fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self.name) then
+      local room = player.room
       if event == fk.Damage then
-        local room = player.room
-        if room.current and room.current.phase == Player.Play and player:getMark("zhukou-turn") == 0 then
-          room:addPlayerMark(player, "zhukou-turn", 1)
-          if player:getMark("@zhukou-turn") > 0 then
-            return true
+        if room.current and room.current.phase == Player.Play then
+          local damage_event = room.logic:getCurrentEvent()
+          if not damage_event then return false end
+          local x = player:getMark("zhukou_record-phase")
+          if x == 0 then
+            room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
+              local reason = e.data[3]
+              if reason == "damage" then
+                local first_damage_event = e:findParent(GameEvent.Damage)
+                if first_damage_event and first_damage_event.data[1].from == player then
+                  x = first_damage_event.id
+                  room:setPlayerMark(player, "zhukou_record-phase", x)
+                end
+                return true
+              end
+            end, Player.HistoryPhase)
+          end
+          if damage_event.id == x then
+            local events = room.logic.event_recorder[GameEvent.UseCard] or Util.DummyTable
+            local end_id = player:getMark("zhukou_record-turn")
+            if end_id == 0 then
+              local turn_event = damage_event:findParent(GameEvent.Turn, false)
+              end_id = turn_event.id
+            end
+            room:setPlayerMark(player, "zhukou_record-turn", room.logic.current_event_id)
+            local y = player:getMark("zhukou_usecard-turn")
+            for i = #events, 1, -1 do
+              local e = events[i]
+              if e.id < end_id then break end
+              local use = e.data[1]
+              if use.from == player.id then
+                y = y + 1
+              end
+            end
+            room:setPlayerMark(player, "zhukou_usecard-turn", y)
+            return y > 0
           end
         end
       else
-        return player.phase == Player.Finish and player:getMark("zhukou-turn") == 0
+        if player.phase == Player.Finish and #room.alive_players > 2 then
+          if player:getMark("zhukou_damaged-turn") > 0 then return false end
+          local events = room.logic.event_recorder[GameEvent.ChangeHp] or Util.DummyTable
+          local end_id = player:getMark("zhukou_damage_record-turn")
+          if end_id == 0 then
+            local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
+            end_id = turn_event.id
+          end
+          room:setPlayerMark(player, "zhukou_damage_record-turn", room.logic.current_event_id)
+          for i = #events, 1, -1 do
+            local e = events[i]
+            if e.id < end_id then break end
+            local damage = e.data[5]
+            if damage and damage.from == player then
+              room:setPlayerMark(player, "zhukou_damaged-turn", 1)
+              return true
+            end
+          end
+          return player:getMark("zhukou_damaged-turn") == 0
+        end
       end
     end
   end,
@@ -798,7 +849,7 @@ local zhukou = fk.CreateTriggerSkill{
     if event == fk.Damage then
       return room:askForSkillInvoke(player, self.name)
     else
-      local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
+      local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
       if #targets < 2 then return end
       local tos = room:askForChoosePlayers(player, targets, 2, 2, "#zhukou-choose", self.name, true)
       if #tos == 2 then
@@ -808,28 +859,26 @@ local zhukou = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    local room = player.room
     if event == fk.Damage then
-      player:drawCards(player:getMark("@zhukou-turn"), self.name)
-      room:setPlayerMark(player, "@zhukou-turn", 0)
+      local x = player:getMark("zhukou_usecard-turn")
+      if x > 0 then
+        player:drawCards(x, self.name)
+      end
     else
+      local room = player.room
+      local tar
       for _, p in ipairs(self.cost_data) do
-        room:damage{
-          from = player,
-          to = room:getPlayerById(p),
-          damage = 1,
-          skillName = self.name,
-        }
+        tar = room:getPlayerById(p)
+        if not tar.dead then
+          room:damage{
+            from = player,
+            to = tar,
+            damage = 1,
+            skillName = self.name,
+          }
+        end
       end
     end
-  end,
-
-  refresh_events = {fk.AfterCardUseDeclared},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, true) and player:getMark("zhukou-turn") == 0 and player.phase < Player.Discard
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "@zhukou-turn", 1)
   end,
 }
 local mengqing = fk.CreateTriggerSkill{
@@ -975,8 +1024,7 @@ Fk:loadTranslationTable{
   "3.本回合没有手牌上限；<br>"..
   "4.获得一名其他角色区域内的一张牌；<br>"..
   "5.令一名其他角色将手牌摸至体力上限（最多摸至5）。",
-  ["@zhukou-turn"] = "逐寇",
-  ["#zhukou-choose"] = "逐寇：你可以对两名其他角色各造成1点伤害",
+  ["#zhukou-choose"] = "是否发动逐寇，选择2名其他角色，对其各造成1点伤害",
   ["yuyun1"] = "摸两张牌",
   ["yuyun2"] = "对一名其他角色造成1点伤害，本回合对其使用【杀】无距离和次数限制",
   ["yuyun3"] = "本回合没有手牌上限",
@@ -1272,6 +1320,7 @@ local lingyue = fk.CreateTriggerSkill{
 local pandi = fk.CreateActiveSkill{
   name = "pandi",
   anim_type = "control",
+  prompt = "#pandi-active",
   can_use = function(self, player)
     return player:getMark("pandi_prohibit-phase") == 0
   end,
@@ -1285,8 +1334,19 @@ local pandi = fk.CreateActiveSkill{
     local target = effect.tos[1]
     room:setPlayerMark(player, "pandi_prohibit-phase", 1)
     room:setPlayerMark(player, "pandi_target", target)
+    
+    local general_info = {player.general, player.deputyGeneral}
+    local tar_player = room:getPlayerById(target)
+    player.general = tar_player.general
+    player.deputyGeneral = tar_player.deputyGeneral
+    room:broadcastProperty(player, "general")
+    room:broadcastProperty(player, "deputyGeneral")
     local _, ret = room:askForUseActiveSkill(player, "pandi_use", "#pandi-use::" .. target, true)
     room:setPlayerMark(player, "pandi_target", 0)
+    player.general = general_info[1]
+    player.deputyGeneral = general_info[2]
+    room:broadcastProperty(player, "general")
+    room:broadcastProperty(player, "deputyGeneral")
     if ret then
       room:useCard({
         from = target,
@@ -1329,7 +1389,6 @@ local pandi_refresh = fk.CreateTriggerSkill{
     end
   end,
 }
-
 local pandi_use = fk.CreateActiveSkill{
   name = "pandi_use",
   card_filter = function(self, to_select, selected)
@@ -1345,17 +1404,21 @@ local pandi_use = fk.CreateActiveSkill{
     if #selected_cards ~= 1 then return false end
     local card = Fk:getCardById(selected_cards[1])
     local card_skill = card.skill
-    if card_skill:getMinTargetNum() == 0 or #selected >= card_skill:getMaxTargetNum() then return false end
     local room = Fk:currentRoom()
     local target_id = Self:getMark("pandi_target")
-    return not room:getPlayerById(target_id):isProhibited(room:getPlayerById(to_select), card) and
+    local target = room:getPlayerById(target_id)
+    if card_skill:getMinTargetNum() == 0 or #selected >= card_skill:getMaxTargetNum(target, card) then return false end
+    return not target:isProhibited(room:getPlayerById(to_select), card) and
       card_skill:modTargetFilter(to_select, selected, target_id, card, true)
   end,
   feasible = function(self, selected, selected_cards)
     if #selected_cards ~= 1 then return false end
     local card = Fk:getCardById(selected_cards[1])
     local card_skill = card.skill
-    return #selected >= card_skill:getMinTargetNum() and #selected <= card_skill:getMaxTargetNum()
+    local room = Fk:currentRoom()
+    local target_id = Self:getMark("pandi_target")
+    local target = room:getPlayerById(target_id)
+    return #selected >= card_skill:getMinTargetNum() and #selected <= card_skill:getMaxTargetNum(target, card)
   end,
 }
 Fk:addSkill(pandi_use)
@@ -1367,10 +1430,11 @@ Fk:loadTranslationTable{
   ["lingyue"] = "聆乐",
   [":lingyue"] = "锁定技，一名角色在本轮首次造成伤害后，你摸一张牌。若此时是该角色回合外，改为摸X张牌（X为本回合全场造成的伤害值）。",
   ["pandi"] = "盻睇",
-  [":pandi"] = "出牌阶段，你可以选择一名本回合未造成过伤害的其他角色，你此阶段选择使用的下一张牌改为由其对你选择的目标使用。" ..
+  [":pandi"] = "出牌阶段，你可以选择一名本回合未造成过伤害的其他角色，你此阶段内使用的下一张牌改为由其对你选择的目标使用。" ..
   '<br /><font color="red">（村：发动后必须立即使用牌，且不支持转化使用，否则必须使用一张牌之后才能再次发动此技能）</font>',
 
   ["pandi_use"] = "盻睇",
+  ["#pandi-active"] = "发动盻睇，选择一名其他角色，下一张牌视为由该角色使用",
   ["#pandi-use"] = "盻睇：选择一张牌，视为由 %dest 使用（若需要选目标则你来选择目标）",
 
   ["$lingyue1"] = "宫商催角羽，仙乐自可聆。	",
@@ -1583,6 +1647,7 @@ local godmachao = General(extension, "godmachao", "god", 4)
 local shouli = fk.CreateViewAsSkill{
   name = "shouli",
   pattern = "slash,jink",
+  prompt = "#shouli-active",
   interaction = function()
     local names = {}
     local pat = Fk.currentResponsePattern
@@ -1759,6 +1824,7 @@ Fk:loadTranslationTable{
   ["hengwu"] = "横骛",
   [":hengwu"] = "当你使用或打出牌时，若你没有该花色的手牌，你可摸X张牌（X为场上与此牌花色相同的装备数量）。",
 
+  ["#shouli-active"] = "发动狩骊，将场上的一张进攻马当【杀】、防御马当【闪】使用或打出",
   ["@@shouli-turn"] = "狩骊",
   ["#shouli-horse"] = "狩骊：选择一名装备着 %arg 的角色",
 
@@ -1772,6 +1838,7 @@ Fk:loadTranslationTable{
 local godzhangfei = General(extension, "godzhangfei", "god", 4)
 local shencai = fk.CreateActiveSkill{
   name = "shencai",
+  prompt = "#shencai-active",
   anim_type = "offensive",
   card_num = 0,
   target_num = 1,
@@ -1901,47 +1968,20 @@ local xunshi = fk.CreateFilterSkill{
     return card
   end,
 }
-
 local function getUseExtraTargets(room, data, bypass_distances)
   if not (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) then return {} end
-  local ban_cards = {"jink", "nullification", "adaptation", "collateral"} --stupid collateral
-  if table.contains(ban_cards, data.card.trueName) then return {} end
+  if data.card.skill:getMinTargetNum() > 1 then return {} end --stupid collateral
   local tos = {}
   local current_targets = TargetGroup:getRealTargets(data.tos)
-  local aoe_names = {"savage_assault", "archery_attack"}
-
-  Self = room:getPlayerById(data.from) -- for targetFilter
-
   for _, p in ipairs(room.alive_players) do
-    if not table.contains(current_targets, p.id) and not Self:isProhibited(p, data.card) then
-      if data.card.skill:getMinTargetNum() == 0 then
-        if data.card.trueName == "peach" then
-          if p:isWounded() then
-            table.insertIfNeed(tos, p.id)
-          end
-        elseif table.contains(aoe_names, data.card.name) then
-          if p.id ~= data.from then
-            table.insertIfNeed(tos, p.id)
-          end
-        else
-          table.insertIfNeed(tos, p.id)
-        end
-      else
-        room:setPlayerMark(Self, MarkEnum.BypassTimesLimit, 1)
-        if bypass_distances then
-          room:setPlayerMark(Self, MarkEnum.BypassDistancesLimit, 1)
-        end
-        if data.card.skill:targetFilter(p.id, {}, {}, data.card) then
-          table.insertIfNeed(tos, p.id)
-        end
-        room:setPlayerMark(Self, MarkEnum.BypassTimesLimit, 0)
-        room:setPlayerMark(Self, MarkEnum.BypassDistancesLimit, 0)
+    if not table.contains(current_targets, p.id) and not room:getPlayerById(data.from):isProhibited(p, data.card) then
+      if data.card.skill:modTargetFilter(p.id, {}, data.from, data.card, not bypass_distances) then
+        table.insert(tos, p.id)
       end
     end
   end
   return tos
 end
-
 local xunshi_trigger = fk.CreateTriggerSkill{
   name = "#xunshi_trigger",
   anim_type = "offensive",
@@ -2003,6 +2043,7 @@ Fk:loadTranslationTable{
   ["@@shencai_tu"] = "徒",
   ["@@shencai_liu"] = "流",
   ["@shencai_si"] = "死",
+  ["#shencai-active"] = "发动神裁，选择一名其他角色，令其判定",
   ["#xunshi-choose"] = "巡使：可为此【%arg】额外指定任意个目标",
 
   ["$shencai1"] = "我有三千炼狱，待汝万世轮回！",
@@ -2133,7 +2174,6 @@ local sijun = fk.CreateTriggerSkill{
     for i = nn, 1, -1 do
       postsum[i] = postsum[i+1] + nums[i]
     end
-
     local function nSum(n, l, r, target)
       local ret = {}
       if n == 1 then
@@ -2180,7 +2220,6 @@ local sijun = fk.CreateTriggerSkill{
       end
       return ret
     end
-
     local ret = {}
     if #nums > 3 then
       for i = 3, total, 1 do
@@ -2211,7 +2250,6 @@ local sijun = fk.CreateTriggerSkill{
         table.insert(cards, id)
       end
     end
-
     if #cards > 0 then
       room:moveCards({
         ids = cards,

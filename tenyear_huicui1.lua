@@ -1870,18 +1870,40 @@ local guowu = fk.CreateTriggerSkill{
       room:addPlayerMark(player, "guowu3-phase", 1)
     end
   end,
-
-  refresh_events = {fk.TargetSpecifying},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player:getMark("guowu3-phase") > 0 and data.firstTarget and data.card:isCommonTrick()
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    local targets = AskForAddTarget(player, room:getAlivePlayers(), 2, false, "#guowu-choose:::"..data.card:toLogString(), self.name, data)
-    if #targets > 0 then
-      for _, id in ipairs(targets) do
-        TargetGroup:pushTargets(data.targetGroup, id)
+}
+local function getUseExtraTargets(room, data, bypass_distances)
+  if not (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) then return {} end
+  if data.card.skill:getMinTargetNum() > 1 then return {} end --stupid collateral
+  local tos = {}
+  local current_targets = TargetGroup:getRealTargets(data.tos)
+  for _, p in ipairs(room.alive_players) do
+    if not table.contains(current_targets, p.id) and not room:getPlayerById(data.from):isProhibited(p, data.card) then
+      if data.card.skill:modTargetFilter(p.id, {}, data.from, data.card, not bypass_distances) then
+        table.insert(tos, p.id)
       end
+    end
+  end
+  return tos
+end
+local guowu_delay = fk.CreateTriggerSkill{
+  name = "#guowu_delay",
+  anim_type = "offensive",
+  frequency = Skill.Compulsory,
+  events = {fk.CardUsing},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:getMark("guowu3-phase") > 0 and not player.dead and
+      (data.card:isCommonTrick() or data.card.trueName == "slash") and #getUseExtraTargets(player.room, data) > 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local targets = getUseExtraTargets(room, data)
+    if #targets == 0 then return false end
+    local tos = room:askForChoosePlayers(player, targets, 1, 2, "#guowu-choose:::"..data.card:toLogString(), guowu.name, true)
+    if #tos > 0 then
+      table.forEach(tos, function (id)
+        table.insert(data.tos, {id})
+      end)
     end
   end,
 }
@@ -1889,11 +1911,6 @@ local guowu_targetmod = fk.CreateTargetModSkill{
   name = "#guowu_targetmod",
   bypass_distances =  function(self, player)
     return player:getMark("guowu2-phase") > 0
-  end,
-  extra_target_func = function(self, player, skill)
-    if player:getMark("guowu3-phase") > 0 and skill.trueName == "slash_skill" then
-      return 2
-    end
   end,
 }
 local zhuangrong = fk.CreateTriggerSkill{
@@ -1924,6 +1941,7 @@ local zhuangrong = fk.CreateTriggerSkill{
     room:handleAddLoseSkills(player, "shenwei|wushuang", nil, true, false)
   end,
 }
+guowu:addRelatedSkill(guowu_delay)
 guowu:addRelatedSkill(guowu_targetmod)
 lvlingqi:addSkill(guowu)
 lvlingqi:addSkill(zhuangrong)
@@ -1932,6 +1950,7 @@ lvlingqi:addRelatedSkill("wushuang")
 Fk:loadTranslationTable{
   ["lvlingqi"] = "吕玲绮",
   ["guowu"] = "帼武",
+  ["#guowu_delay"] = "帼武",
   [":guowu"] = "出牌阶段开始时，你可以展示所有手牌，若包含的类别数：不小于1，你从弃牌堆中获得一张【杀】；不小于2，你本阶段使用牌无距离限制；"..
   "不小于3，你本阶段使用【杀】或普通锦囊牌可以多指定两个目标。",
   ["zhuangrong"] = "妆戎",

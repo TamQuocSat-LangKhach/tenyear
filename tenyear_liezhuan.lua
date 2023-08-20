@@ -690,44 +690,18 @@ Fk:loadTranslationTable{
 local hanfu = General(extension, "hanfu", "qun", 4)
 local function getUseExtraTargets(room, data, bypass_distances)
   if not (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) then return {} end
-  local ban_cards = {"jink", "nullification", "adaptation", "collateral"} --stupid collateral
-  if table.contains(ban_cards, data.card.trueName) then return {} end
+  if data.card.skill:getMinTargetNum() > 1 then return {} end --stupid collateral
   local tos = {}
   local current_targets = TargetGroup:getRealTargets(data.tos)
-  local aoe_names = {"savage_assault", "archery_attack"}
-
-  Self = room:getPlayerById(data.from) -- for targetFilter
-
   for _, p in ipairs(room.alive_players) do
-    if not table.contains(current_targets, p.id) and not Self:isProhibited(p, data.card) then
-      if data.card.skill:getMinTargetNum() == 0 then
-        if data.card.trueName == "peach" then
-          if p:isWounded() then
-            table.insertIfNeed(tos, p.id)
-          end
-        elseif table.contains(aoe_names, data.card.name) then
-          if p.id ~= data.from then
-            table.insertIfNeed(tos, p.id)
-          end
-        else
-          table.insertIfNeed(tos, p.id)
-        end
-      else
-        room:setPlayerMark(Self, MarkEnum.BypassTimesLimit, 1)
-        if bypass_distances then
-          room:setPlayerMark(Self, MarkEnum.BypassDistancesLimit, 1)
-        end
-        if data.card.skill:targetFilter(p.id, {}, {}, data.card) then
-          table.insertIfNeed(tos, p.id)
-        end
-        room:setPlayerMark(Self, MarkEnum.BypassTimesLimit, 0)
-        room:setPlayerMark(Self, MarkEnum.BypassDistancesLimit, 0)
+    if not table.contains(current_targets, p.id) and not room:getPlayerById(data.from):isProhibited(p, data.card) then
+      if data.card.skill:modTargetFilter(p.id, {}, data.from, data.card, not bypass_distances) then
+        table.insert(tos, p.id)
       end
     end
   end
   return tos
 end
-
 local ty__jieying = fk.CreateTriggerSkill{
   name = "ty__jieying",
   anim_type = "control",

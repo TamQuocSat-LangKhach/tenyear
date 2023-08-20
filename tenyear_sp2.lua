@@ -1249,13 +1249,21 @@ local liying = fk.CreateTriggerSkill{
     if player.phase ~= Player.NotActive and #player:getPile("ruiji_wang") < #room.players then
       prompt = "#liying2-invoke"
     end
-    return player.room:askForUseActiveSkill(player, "liying_active", prompt, true)
+    local _, ret = player.room:askForUseActiveSkill(player, "liying_active", prompt, true)
+    if ret then
+      self.cost_data = ret
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    local ret = self.cost_data
+    local dummy = Fk:cloneCard("dilu")
+    dummy:addSubcards(ret.cards)
+    room:obtainCard(room:getPlayerById(ret.targets[1]), dummy, false, fk.ReasonGive)
     if not player.dead then
       player:drawCards(1, self.name)
-      if player.phase ~= Player.NotActive and #player:getPile("ruiji_wang") < #room.players then
+      if not player.dead and player.phase ~= Player.NotActive and #player:getPile("ruiji_wang") < #room.players then
         local skill = Fk.skills["wangyuan"]
         skill:use(event, target, player, data)
       end
@@ -1272,12 +1280,6 @@ local liying_active = fk.CreateActiveSkill{
   end,
   target_filter = function(self, to_select, selected, selected_cards)
     return #selected == 0 and to_select ~= Self.id
-  end,
-  on_use = function(self, room, effect)
-    local target = room:getPlayerById(effect.tos[1])
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(effect.cards)
-    room:obtainCard(target, dummy, false, fk.ReasonGive)
   end,
 }
 lingyin:addRelatedSkill(lingyin_trigger)

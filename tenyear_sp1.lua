@@ -836,10 +836,10 @@ local zhukou = fk.CreateTriggerSkill{
             local damage = e.data[5]
             if damage and damage.from == player then
               room:setPlayerMark(player, "zhukou_damaged-turn", 1)
-              return true
+              return false
             end
           end
-          return player:getMark("zhukou_damaged-turn") == 0
+          return true
         end
       end
     end
@@ -923,64 +923,60 @@ local yuyun = fk.CreateTriggerSkill{
     else
       room:loseHp(player, 1, self.name)
     end
-    local choices = {"Cancel", "yuyun1", "yuyun2", "yuyun3"}
-    if table.find(room:getOtherPlayers(player), function(p) return not p:isNude() end) then
-      table.insert(choices, "yuyun4")
-    end
-    if table.find(room:getOtherPlayers(player), function(p) return p:getHandcardNum() < p.maxHp end) then
-      table.insert(choices, "yuyun5")
-    end
+    local choices = {"yuyun1", "yuyun2", "yuyun3", "yuyun4", "yuyun5", "Cancel"}
     local n = 1 + player:getLostHp()
     for i = 1, n, 1 do
-      if player.dead then return end
+      if player.dead or #choices < 2 then return end
       local choice = room:askForChoice(player, choices, self.name)
       if choice == "Cancel" then return end
       table.removeOne(choices, choice)
       if choice == "yuyun1" then
         player:drawCards(2, self.name)
       elseif choice == "yuyun2" then
-        local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
-        local to = room:askForChoosePlayers(player, targets, 1, 1, "#yuyun2-choose", self.name, false)
-        if #to > 0 then
-          to = to[1]
-        else
-          to = table.random(targets)
+        local targets = table.map(room:getOtherPlayers(player, false), function(p) return p.id end)
+        if #targets > 0 then
+          local to = room:askForChoosePlayers(player, targets, 1, 1, "#yuyun2-choose", self.name, false)
+          if #to > 0 then
+            local tar = room:getPlayerById(to[1])
+            room:damage{
+              from = player,
+              to = tar,
+              damage = 1,
+              skillName = self.name,
+            }
+            if not tar.dead then
+              room:addPlayerMark(tar, "@@yuyun-turn")
+              local targetRecorded = type(player:getMark("yuyun2-turn")) == "table" and player:getMark("yuyun2-turn") or {}
+              table.insertIfNeed(targetRecorded, to[1])
+              room:setPlayerMark(player, "yuyun2-turn", targetRecorded)
+            end
+          end
         end
-        room:damage{
-          from = player,
-          to = room:getPlayerById(to),
-          damage = 1,
-          skillName = self.name,
-        }
-        room:addPlayerMark(room:getPlayerById(to), "@@yuyun-turn")
-        local targetRecorded = type(player:getMark("yuyun2-turn")) == "table" and player:getMark("yuyun2-turn") or {}
-        table.insertIfNeed(targetRecorded, to)
-        room:setPlayerMark(player, "yuyun2-turn", targetRecorded)
       elseif choice == "yuyun3" then
         room:addPlayerMark(player, "@@yuyun-turn")
         room:addPlayerMark(player, "yuyun3-turn", 1)
       elseif choice == "yuyun4" then
-        local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+        local targets = table.map(table.filter(room:getOtherPlayers(player, false), function(p)
           return not p:isAllNude() end), function(p) return p.id end)
-        local to = room:askForChoosePlayers(player, targets, 1, 1, "#yuyun4-choose", self.name, false)
-        if #to > 0 then
-          to = to[1]
-        else
-          to = table.random(targets)
+        if #targets > 0 then
+          local to = room:askForChoosePlayers(player, targets, 1, 1, "#yuyun4-choose", self.name, false)
+          if #to > 0 then
+            local id = room:askForCardChosen(player, room:getPlayerById(to[1]), "hej", self.name)
+            room:obtainCard(player.id, id, false, fk.ReasonPrey)
+          end
         end
-        local id = room:askForCardChosen(player, room:getPlayerById(to), "hej", self.name)
-        room:obtainCard(player.id, id, false, fk.ReasonPrey)
       elseif choice == "yuyun5" then
-        local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
-          return p:getHandcardNum() < math.min(p.maxHp, 5) end), function(p) return p.id end)
-        local to = room:askForChoosePlayers(player, targets, 1, 1, "#yuyun5-choose", self.name)
-        if #to > 0 then
-          to = to[1]
-        else
-          to = table.random(targets)
+        local targets = table.map(room:getOtherPlayers(player, false), function(p) return p.id end)
+        if #targets > 0 then
+          local to = room:askForChoosePlayers(player, targets, 1, 1, "#yuyun5-choose", self.name, false)
+          if #to > 0 then
+            local p = room:getPlayerById(to[1])
+            local x = math.min(p.maxHp, 5) - p:getHandcardNum()
+            if x > 0 then
+              room:drawCards(p, x, self.name)
+            end
+          end
         end
-        local p = room:getPlayerById(to)
-        p:drawCards(math.min(p.maxHp, 5) - p:getHandcardNum(), self.name)
       end
     end
   end,
@@ -1334,7 +1330,6 @@ local pandi = fk.CreateActiveSkill{
     local target = effect.tos[1]
     room:setPlayerMark(player, "pandi_prohibit-phase", 1)
     room:setPlayerMark(player, "pandi_target", target)
-    
     local general_info = {player.general, player.deputyGeneral}
     local tar_player = room:getPlayerById(target)
     player.general = tar_player.general

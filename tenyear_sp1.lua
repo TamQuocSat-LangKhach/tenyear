@@ -810,7 +810,7 @@ local zhukou = fk.CreateTriggerSkill{
             local y = player:getMark("zhukou_usecard-turn")
             for i = #events, 1, -1 do
               local e = events[i]
-              if e.id < end_id then break end
+              if e.id <= end_id then break end
               local use = e.data[1]
               if use.from == player.id then
                 y = y + 1
@@ -832,7 +832,7 @@ local zhukou = fk.CreateTriggerSkill{
           room:setPlayerMark(player, "zhukou_damage_record-turn", room.logic.current_event_id)
           for i = #events, 1, -1 do
             local e = events[i]
-            if e.id < end_id then break end
+            if e.id <= end_id then break end
             local damage = e.data[5]
             if damage and damage.from == player then
               room:setPlayerMark(player, "zhukou_damaged-turn", 1)
@@ -1298,13 +1298,25 @@ local lingyue = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     if target.phase == Player.NotActive then
-      local x = 0
-      player.room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
+      local room = player.room
+      local events = room.logic.event_recorder[GameEvent.ChangeHp] or Util.DummyTable
+      local end_id = player:getMark("lingyue_record-turn")
+      if end_id == 0 then
+        local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
+        if not turn_event then return false end
+        end_id = turn_event.id
+      end
+      room:setPlayerMark(player, "lingyue_record-turn", room.logic.current_event_id)
+      local x = player:getMark("lingyue_damage-turn")
+      for i = #events, 1, -1 do
+        local e = events[i]
+        if e.id <= end_id then break end
         local damage = e.data[5]
         if damage and damage.from then
           x = x + damage.damage
         end
-      end, Player.HistoryTurn)
+      end
+      room:setPlayerMark(player, "lingyue_damage-turn", x)
       if x > 0 then
         player:drawCards(x, self.name)
       end
@@ -2055,7 +2067,7 @@ local yizhao = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.CardUsing, fk.CardResponding},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card.number
+    return target == player and player:hasSkill(self.name) and data.card.number > 0
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -2141,102 +2153,105 @@ local sijun = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "@zhangjiao_huang", 0)
     room:shuffleDrawPile()
     local cards = {}
-    local total = 36
-    local numnums = {}
-    local maxs = {}
-    local pileToSearch = {}
-    for i = 1, 13, 1 do
-      table.insert(numnums, 0)
-      table.insert(maxs, 36//i)
-      table.insert(pileToSearch, {})
-    end
-    for _, id in ipairs(room.draw_pile) do
-      local x = Fk:getCardById(id).number
-      table.insert(pileToSearch[x], id)
-      if numnums[x] < maxs[x] then
-        numnums[x] = numnums[x] + 1
-      end
-    end
-    local nums = {}
-    for index, value in ipairs(numnums) do
-      for _ = 1, value, 1 do
-        table.insert(nums, index)
-      end
-    end
-    local postsum = {}
-    local nn = #nums
-    postsum[nn+1] = 0
-    for i = nn, 1, -1 do
-      postsum[i] = postsum[i+1] + nums[i]
-    end
-    local function nSum(n, l, r, target)
+    if #room.draw_pile > 3 then
       local ret = {}
-      if n == 1 then
-        for i = l, r, 1 do
-          if nums[i] == target then
-            table.insert(ret, {target})
-            break
+      local total = 36
+      local numnums = {}
+      local maxs = {}
+      local pileToSearch = {}
+      for i = 1, 13, 1 do
+        table.insert(numnums, 0)
+        table.insert(maxs, 36//i)
+        table.insert(pileToSearch, {})
+      end
+      for _, id in ipairs(room.draw_pile) do
+        local x = Fk:getCardById(id).number
+        if x > 0 and x < 14 then
+          table.insert(pileToSearch[x], id)
+          if numnums[x] < maxs[x] then
+            numnums[x] = numnums[x] + 1
           end
         end
-      elseif n == 2 then
-        while l < r do
-          local now = nums[l] + nums[r]
-          if now > target then
-            r = r - 1
-          elseif now < target then
-            l = l + 1
-          else
-            table.insert(ret, {nums[l], nums[r]})
-            l = l + 1
-            r = r - 1
-            while l < r and nums[l] == nums[l-1] do
-              l = l + 1
-            end
-            while l < r and nums[r] == nums[r+1] do
-              r = r - 1
-            end
-          end
+      end
+      local nums = {}
+      for index, value in ipairs(numnums) do
+        for _ = 1, value, 1 do
+          table.insert(nums, index)
         end
-      else
-        for i = l, r-(n-1), 1 do
-          if (i > l and nums[i] == nums[i-1]) or
-            (nums[i] + postsum[r - (n-1) + 1] < target) then
-          else
-            if postsum[i] - postsum[i+n] > target then
+      end
+      local postsum = {}
+      local nn = #nums
+      postsum[nn+1] = 0
+      for i = nn, 1, -1 do
+        postsum[i] = postsum[i+1] + nums[i]
+      end
+      local function nSum(n, l, r, target)
+        local ret = {}
+        if n == 1 then
+          for i = l, r, 1 do
+            if nums[i] == target then
+              table.insert(ret, {target})
               break
             end
-            local v = nSum(n-1, i+1, r, target - nums[i])
-            for j = 1, #v, 1 do
-              table.insert(v[j], nums[i])
-              table.insert(ret, v[j])
+          end
+        elseif n == 2 then
+          while l < r do
+            local now = nums[l] + nums[r]
+            if now > target then
+              r = r - 1
+            elseif now < target then
+              l = l + 1
+            else
+              table.insert(ret, {nums[l], nums[r]})
+              l = l + 1
+              r = r - 1
+              while l < r and nums[l] == nums[l-1] do
+                l = l + 1
+              end
+              while l < r and nums[r] == nums[r+1] do
+                r = r - 1
+              end
+            end
+          end
+        else
+          for i = l, r-(n-1), 1 do
+            if (i > l and nums[i] == nums[i-1]) or
+              (nums[i] + postsum[r - (n-1) + 1] < target) then
+            else
+              if postsum[i] - postsum[i+n] > target then
+                break
+              end
+              local v = nSum(n-1, i+1, r, target - nums[i])
+              for j = 1, #v, 1 do
+                table.insert(v[j], nums[i])
+                table.insert(ret, v[j])
+              end
             end
           end
         end
+        return ret
       end
-      return ret
-    end
-    local ret = {}
-    if #nums > 3 then
       for i = 3, total, 1 do
         table.insertTable(ret, nSum(i, 1, #nums, total))
       end
-    end
-    if #ret > 0 then
-      local compare = table.random(ret)
-      table.sort(compare)
-      local x = 0
-      local current_n = compare[1]
-      for _, value in ipairs(compare) do
-        if value == current_n then
-          x = x + 1
-        else
-          table.insertTable(cards, table.random(pileToSearch[current_n], x))
-          x = 1
-          current_n = value
+      if #ret > 0 then
+        local compare = table.random(ret)
+        table.sort(compare)
+        local x = 0
+        local current_n = compare[1]
+        for _, value in ipairs(compare) do
+          if value == current_n then
+            x = x + 1
+          else
+            table.insertTable(cards, table.random(pileToSearch[current_n], x))
+            x = 1
+            current_n = value
+          end
         end
+        table.insertTable(cards, table.random(pileToSearch[current_n], x))
       end
-      table.insertTable(cards, table.random(pileToSearch[current_n], x))
-    else
+    end
+    if #cards == 0 then
       local tmp_drawPile = table.simpleClone(room.draw_pile)
       local sum = 0
       while sum < 36 and #tmp_drawPile > 0 do

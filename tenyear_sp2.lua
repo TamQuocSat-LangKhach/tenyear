@@ -1050,11 +1050,7 @@ local anzhi = fk.CreateActiveSkill{
         end
         return false
       end, Player.HistoryTurn)
-      for _, id in ipairs(ids) do
-        if room:getCardArea(id) ~= Card.DiscardPile then
-          table.removeOne(ids, id)
-        end
-      end
+      ids = table.filter(ids, function (id) return room:getCardArea(id) == Card.DiscardPile end)
       if #ids == 0 then return end
       local to = room:askForChoosePlayers(player, table.map(table.filter(room:getAlivePlayers(), function(p)
         return p ~= room.current end), function(p) return p.id end), 1, 1, "#anzhi-choose", self.name, true)
@@ -1088,8 +1084,8 @@ local anzhi = fk.CreateActiveSkill{
     end
   end,
 }
-local anzhi_record = fk.CreateTriggerSkill{
-  name = "#anzhi_record",
+local anzhi_trigger = fk.CreateTriggerSkill{
+  name = "#anzhi_trigger",
   anim_type = "support",
   events = {fk.Damaged},
   can_trigger = function(self, event, target, player, data)
@@ -1099,7 +1095,7 @@ local anzhi_record = fk.CreateTriggerSkill{
     player.room:askForUseActiveSkill(player, "anzhi", "#anzhi-invoke", true)
   end,
 }
-anzhi:addRelatedSkill(anzhi_record)
+anzhi:addRelatedSkill(anzhi_trigger)
 xuelingyun:addSkill(xialei)
 xuelingyun:addSkill(anzhi)
 Fk:loadTranslationTable{
@@ -1107,6 +1103,7 @@ Fk:loadTranslationTable{
   ["xialei"] = "霞泪",
   [":xialei"] = "当你的红色牌进入弃牌堆后，你可观看牌堆顶的三张牌，然后你获得一张并可将其他牌置于牌堆底，你本回合观看牌数-1。",
   ["anzhi"] = "暗织",
+  ["#anzhi_trigger"] = "暗织",
   [":anzhi"] = "出牌阶段或当你受到伤害后，你可以进行一次判定，若结果为：红色，重置〖霞泪〗；"..
   "黑色，你可以令一名非当前回合角色获得本回合进入弃牌堆的两张牌，且你本回合不能再发动此技能。",
   ["xialei_top"] = "将剩余牌置于牌堆顶",

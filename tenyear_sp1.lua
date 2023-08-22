@@ -1519,33 +1519,38 @@ local jiufa = fk.CreateTriggerSkill{
       toArea = Card.Processing,
       moveReason = fk.ReasonJustMove,
     })
-    table.forEach(room.players, function(p) room:fillAG(p, card_ids) end)
-    local numbers = {}
+
+    local number_table = {}
+    for _ = 1, 13, 1 do
+      table.insert(number_table, 0)
+    end
     for _, id in ipairs(card_ids) do
-      local num = Fk:getCardById(id, true).number
-      numbers[num] = (numbers[num] or 0) + 1
-    end
-    while true do
-      for i = #card_ids, 1, -1 do
-        local id = card_ids[i]
-        if numbers[Fk:getCardById(id, true).number] < 2 then
-          room:takeAG(player, id, room.players)
-          table.insert(throw, id)
-          table.removeOne(card_ids, id)
-        end
+      local x = Fk:getCardById(id).number
+      number_table[x] = number_table[x] + 1
+      if number_table[x] == 2 then
+        table.insert(get, id)
+      else
+        table.insert(throw, id)
       end
-      if #card_ids == 0 then break end
-      local card_id = room:askForAG(player, card_ids, false, self.name)
-      --if card_id == nil then break end
-      room:takeAG(player, card_id, room.players)
-      table.insert(get, card_id)
-      table.removeOne(card_ids, card_id)
-      numbers[Fk:getCardById(card_id, true).number] = 0
-      if #card_ids == 0 then break end
     end
-    table.forEach(room.players, function(p)
-      room:closeAG(p)
-    end)
+    local patterns = {}
+    for index, value in ipairs(number_table) do
+      if value > 1 then
+        table.insert(patterns, ".|"..index)
+      end
+    end
+
+    local result = room:askForCustomDialog(player, self.name,
+    "packages/tenyear/qml/JiufaBox.qml", {
+      card_ids, patterns, #patterns, #patterns, "#jiufa", "AGCards", "toGetCards"
+    })
+
+    if result ~= "" then
+      local d = json.decode(result)
+      throw = d[1]
+      get = d[2]
+    end
+
     if #get > 0 then
       local dummy = Fk:cloneCard("dilu")
       dummy:addSubcards(get)
@@ -1640,6 +1645,10 @@ Fk:loadTranslationTable{
   ["#jiufa-invoke"] = "九伐：是否亮出牌堆顶九张牌，获得重复点数的牌各一张！",
   ["pingxiang_viewas"] = "平襄",
   ["#pingxiang-slash"] = "平襄：你可以视为使用火【杀】（第%arg张，共9张）！",
+
+  ["#jiufa"] = "九伐：从亮出的牌中选择并获得其中每个重复点数的牌各一张",
+  ["AGCards"] = "亮出的牌",
+  ["toGetCards"] = "获得的牌",
 
   ["$tianren1"] = "举石补苍天，舍我更复其谁？",
   ["$tianren2"] = "天地同协力，何愁汉道不昌？",

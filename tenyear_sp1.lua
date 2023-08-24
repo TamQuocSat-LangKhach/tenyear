@@ -4716,10 +4716,9 @@ local zhouxuan = General(extension, "zhouxuan", "wei", 3)
 local wumei = fk.CreateTriggerSkill{
   name = "wumei",
   anim_type = "support",
-  events = {fk.EventPhaseChanging},
+  events = {fk.BeforeTurnStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.to == Player.RoundStart and player.faceup and
-      player:usedSkillTimes(self.name, Player.HistoryRound) == 0
+    return target == player and player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryRound) == 0
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -4739,27 +4738,17 @@ local wumei = fk.CreateTriggerSkill{
       table.insert(hp_record, {p.id, p.hp})
     end
     room:setPlayerMark(to, "wumei_record", hp_record)
-    if to == player then
-      room:addPlayerMark(to, "wumei_self", 1)
-    end
     to:gainAnExtraTurn()
-    player:gainAnExtraTurn()
-    --FIXME: 回合顺序反了！！
-    room.logic:breakTurn()
   end,
 
-  refresh_events = {fk.TurnEnd},
+  refresh_events = {fk.AfterTurnEnd},
   can_refresh = function(self, event, target, player, data)
     return target == player and player:getMark("@@wumei_extra") > 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if player:getMark("wumei_self") > 0 then
-      room:setPlayerMark(player, "wumei_self", 0)
-    else
-      room:setPlayerMark(player, "@@wumei_extra", 0)
-      room:setPlayerMark(player, "wumei_record", 0)
-    end
+    room:setPlayerMark(player, "@@wumei_extra", 0)
+    room:setPlayerMark(player, "wumei_record", 0)
   end,
 }
 local wumei_delay = fk.CreateTriggerSkill{

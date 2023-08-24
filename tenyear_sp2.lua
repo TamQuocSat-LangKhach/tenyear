@@ -2556,11 +2556,11 @@ local ty__guixiu = fk.CreateTriggerSkill{
   name = "ty__guixiu",
   anim_type = "support",
   frequency = Skill.Compulsory,
-  events = {fk.EventPhaseChanging, fk.AfterSkillEffect},
+  events = {fk.TurnStart, fk.AfterSkillEffect},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self.name) then
-      if event == fk.EventPhaseChanging then
-        return data.from == Player.RoundStart and player:getMark(self.name) == 0
+      if event == fk.TurnStart then
+        return player:getMark(self.name) == 0
       else
         return data.name == "ty__cunsi" and player:isWounded()
       end
@@ -2568,7 +2568,7 @@ local ty__guixiu = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.EventPhaseChanging then
+    if event == fk.TurnStart then
       player:drawCards(2, self.name)
       room:setPlayerMark(player, self.name, 1)
     else
@@ -4239,14 +4239,46 @@ local caiyi = fk.CreateTriggerSkill{
 local guili = fk.CreateTriggerSkill{
   name = "guili",
   anim_type = "control",
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnStart, fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self.name) then
-      if target == player and data.from == Player.RoundStart then
-        return player:getMark(self.name) == 0
-      else
-        return player:getMark(self.name) == target.id and data.to == Player.NotActive and
-        target:getMark("guili-round") == 1 and target:getMark("guili_damage-turn") == 0
+        local room = player.room
+      if target == player and event == fk.TurnStart then
+        local turn_event = room.logic:getCurrentEvent()
+        if not turn_event then return false end
+        local x = player:getMark("guili_record")
+        if x == 0 then
+          local events = room.logic.event_recorder[GameEvent.Turn] or Util.DummyTable
+          for _, e in ipairs(events) do
+            local current_player = e.data[1]
+            if current_player == player then
+              x = e.id
+              room:setPlayerMark(player, "guili_record", x)
+              break
+            end
+          end
+        end
+        return turn_event.id == x
+      elseif event == fk.TurnEnd and not target.dead and player:getMark(self.name) == target.id then
+        local turn_event = room.logic:getCurrentEvent()
+        if not turn_event then return false end
+        local x = target:getMark("guili_record-round")
+        if x == 0 then
+          room.logic:getEventsOfScope(GameEvent.Turn, 1, function (e)
+            local current_player = e.data[1]
+            if current_player == target then
+              x = e.id
+              room:setPlayerMark(target, "guili_record", x)
+              return true
+            end
+          end, Player.HistoryRound)
+        end
+        return turn_event.id == x and #room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
+          local damage = e.data[5]
+          if damage and target == damage.from then
+            return true
+          end
+        end, Player.HistoryTurn) == 0
       end
     end
   end,
@@ -4255,7 +4287,7 @@ local guili = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if player:getMark(self.name) == 0 then
+    if event == fk.TurnStart then
       local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
       local tos = room:askForChoosePlayers(player, targets, 1, 1, "#guili-choose", self.name, false, true)
       local to
@@ -4266,27 +4298,8 @@ local guili = fk.CreateTriggerSkill{
       end
       room:setPlayerMark(player, self.name, to)
       room:setPlayerMark(room:getPlayerById(to), "@@guili", 1)
-    else
+    elseif event == fk.TurnEnd then
       player:gainAnExtraTurn(true)
-    end
-  end,
-
-  refresh_events = {fk.EventPhaseChanging, fk.Damage},
-  can_refresh = function(self, event, target, player, data)
-    if player:getMark(self.name) ~= 0 and target and player:getMark(self.name) == target.id then
-      if event == fk.EventPhaseChanging then
-        return data.from == Player.RoundStart
-      else
-        return target.phase ~= Player.NotActive and target:getMark("guili-round") == 1
-      end
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.EventPhaseChanging then
-      room:addPlayerMark(target, "guili-round", 1)
-    else
-      room:setPlayerMark(target, "guili_damage-turn", 1)
     end
   end,
 }
@@ -4774,10 +4787,10 @@ local fengying = fk.CreateViewAsSkill{
 }
 local fengying_trigger = fk.CreateTriggerSkill{
   name = "#fengying_trigger",
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnStart},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(fengying.name) and data.from == Player.RoundStart
+    return player:hasSkill(fengying.name)
   end,
   on_cost = function(self, event, target, player, data)
     return true

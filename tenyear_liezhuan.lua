@@ -54,14 +54,14 @@ local weiwu = fk.CreateViewAsSkill{
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
 }
-local weiwu_prohibit = fk.CreateProhibitSkill{
-  name = "#weiwu_prohibit",
-  is_prohibited = function(self, from, to, card)
-    return table.contains(card.skillNames, "weiwu") and to:getHandcardNum() < from:getHandcardNum()
+local weiwu_targetmod = fk.CreateTargetModSkill{
+  name = "#weiwu_targetmod",
+  bypass_distances =  function(self, player, skill, card, to)
+    return table.contains(card.skillNames, weiwu.name)
   end,
 }
 ty__niluan:addRelatedSkill(ty__niluan_record)
-weiwu:addRelatedSkill(weiwu_prohibit)
+weiwu:addRelatedSkill(weiwu_targetmod)
 hansui:addSkill(ty__niluan)
 hansui:addSkill(weiwu)
 Fk:loadTranslationTable{
@@ -69,7 +69,7 @@ Fk:loadTranslationTable{
   ["ty__niluan"] = "逆乱",
   [":ty__niluan"] = "出牌阶段，你可以将一张黑色牌当【杀】使用；你以此法使用的【杀】结算后，若此【杀】未造成伤害，其不计入使用次数限制。",
   ["weiwu"] = "违忤",
-  [":weiwu"] = "出牌阶段限一次，你可以将一张红色牌当【顺手牵羊】对手牌数大于等于你的角色使用。",
+  [":weiwu"] = "出牌阶段限一次，你可以将一张红色牌当无距离限制的【顺手牵羊】使用。",
 }
 
 --刘宏
@@ -747,7 +747,7 @@ local ty__jieying_delay = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.TurnEnd},
+  refresh_events = {fk.AfterTurnEnd},
   can_refresh = function(self, event, target, player, data)
     return player == target and player:getMark("@ty__jieying") ~= 0
   end,

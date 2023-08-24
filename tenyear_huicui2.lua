@@ -2395,9 +2395,9 @@ local gue_trigger = fk.CreateTriggerSkill{
 local sigong = fk.CreateTriggerSkill{
   name = "sigong",
   anim_type = "offensive",
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) and data.to == Player.NotActive and target ~= player and player:getMark("@@sigong-round") == 0 and
+    if player:hasSkill(self.name) and target ~= player and player:getMark("@@sigong-round") == 0 and
       target and not target.dead and not player:isProhibited(target, Fk:cloneCard("slash")) then
       local events = player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e)
         local use = e.data[1]
@@ -2526,9 +2526,9 @@ local ty__xuewei = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventPhaseChanging},
+  refresh_events = {fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, true) and data.from == Player.RoundStart and
+    return target == player and player:hasSkill(self.name, true) and
       player.tag[self.name] and #player.tag[self.name] > 0
   end,
   on_refresh = function(self, event, target, player, data)
@@ -2541,9 +2541,9 @@ local ty__xuewei = fk.CreateTriggerSkill{
 local yuguan = fk.CreateTriggerSkill{
   name = "yuguan",
   anim_type = "drawcard",
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and data.to == Player.NotActive and
+    return player:hasSkill(self.name) and
       table.every(player.room:getOtherPlayers(player), function (p) return p:getLostHp() <= player:getLostHp() end)
   end,
   on_cost = function(self, event, target, player, data)

@@ -132,10 +132,10 @@ local ty__fanghun_trigger = fk.CreateTriggerSkill{
 }
 local ty__fuhan = fk.CreateTriggerSkill{
   name = "ty__fuhan",
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnStart},
   frequency = Skill.Limited,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.from == Player.RoundStart and player:getMark("@meiying") > 0 and
+    return target == player and player:hasSkill(self.name) and player:getMark("@meiying") > 0 and
       player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   on_cost = function(self, event, target, player, data)
@@ -1911,7 +1911,7 @@ local shencai = fk.CreateActiveSkill{
 local shencai_delay = fk.CreateTriggerSkill{
   name = "#shencai_delay",
   anim_type = "offensive",
-  events = {fk.FinishJudge, fk.Damaged, fk.TargetConfirmed, fk.AfterCardsMove, fk.EventPhaseStart, fk.EventPhaseChanging},
+  events = {fk.FinishJudge, fk.Damaged, fk.TargetConfirmed, fk.AfterCardsMove, fk.EventPhaseStart, fk.TurnEnd},
   mute = true,
   can_trigger = function(self, event, target, player, data)
     if player.dead then return false end
@@ -1933,8 +1933,8 @@ local shencai_delay = fk.CreateTriggerSkill{
       end
     elseif event == fk.EventPhaseStart then
       return player == target and player:getMark("@@shencai_liu") > 0 and player.phase == Player.Finish
-    elseif event == fk.EventPhaseChanging then
-      return player == target and data.to == Player.NotActive and player:getMark("@shencai_si") > #player.room.alive_players
+    elseif event == fk.TurnEnd then
+      return player == target and player:getMark("@shencai_si") > #player.room.alive_players
     end
   end,
   on_cost = function() return true end,
@@ -1958,7 +1958,7 @@ local shencai_delay = fk.CreateTriggerSkill{
       end
     elseif event == fk.EventPhaseStart then
       player:turnOver()
-    elseif event == fk.EventPhaseChanging then
+    elseif event == fk.TurnEnd then
       room:killPlayer({who = player.id})
     end
   end,
@@ -5178,12 +5178,9 @@ local liuye = General(extension, "ty__liuye", "wei", 3)
 local poyuan = fk.CreateTriggerSkill{
   name = "poyuan",
   anim_type = "control",
-  events = {fk.GameStart, fk.EventPhaseChanging},
+  events = {fk.GameStart, fk.TurnStart},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) then
-      return event == fk.GameStart or
-        (event == fk.EventPhaseChanging and target == player and data.from == Player.RoundStart)
-    end
+    return player:hasSkill(self.name) and (event == fk.GameStart or (event == fk.TurnStart and target == player))
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room

@@ -1093,9 +1093,9 @@ local qingman = fk.CreateTriggerSkill{
   name = "qingman",
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and data.to == Player.NotActive and player:getHandcardNum() < 5 - #target:getCardIds("e")
+    return player:hasSkill(self.name) and player:getHandcardNum() < 5 - #target:getCardIds("e")
   end,
   on_use = function(self, event, target, player, data)
     player:drawCards(5 - #target:getCardIds("e") - player:getHandcardNum(), self.name)
@@ -1467,9 +1467,9 @@ local xiecui = fk.CreateTriggerSkill{
 local youxu = fk.CreateTriggerSkill{
   name = "youxu",
   anim_type = "control",
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and data.to == Player.NotActive and #target.player_cards[Player.Hand] > target.hp and not target.dead and player:usedSkillTimes(self.name) == 0
+    return player:hasSkill(self.name) and target:getHandcardNum() > target.hp and not target.dead
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, data, "#youxu-invoke::"..target.id)
@@ -2396,8 +2396,8 @@ local yiyong = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player:usedSkillTimes(self.name) < 2 and
-      data.to and data.to ~= player and not player:isNude() and not data.to:isNude()
+    return target == player and player:hasSkill(self.name) and
+      data.to and data.to ~= player and not player:isNude()
   end,
   on_cost = function(self, event, target, player, data)
     local cards = player.room:askForDiscard(player, 1, 999, true, self.name, true, ".", "#yiyong-invoke::"..data.to.id, true)
@@ -2409,17 +2409,16 @@ local yiyong = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:throwCard(self.cost_data, self.name, player, player)
-    local n1 = 0
+    local n1, n2 = 0, 0
     for _, id in ipairs(self.cost_data) do
       n1 = n1 + Fk:getCardById(id).number
     end
     local cards = player.room:askForDiscard(data.to, 1, 999, true, self.name, false, ".",
       "#yiyong-discard:"..player.id.."::"..tostring(n1))
-    local n2 = 0
     for _, id in ipairs(cards) do
       n2 = n2 + Fk:getCardById(id).number
     end
-    if n1 <= n2 then
+    if n1 <= n2 and #cards > 0 then
       player:drawCards(#cards, self.name)
     end
     if n1 >= n2 then
@@ -2431,7 +2430,7 @@ panghui:addSkill(yiyong)
 Fk:loadTranslationTable{
   ["panghui"] = "庞会",
   ["yiyong"] = "异勇",
-  [":yiyong"] = "每回合限两次，当你对其他角色造成伤害时，你可以弃置任意张牌，令该角色弃置任意张牌。若你弃置的牌的点数之和：不大于其，你摸X张牌"..
+  [":yiyong"] = "当你对其他角色造成伤害时，你可以弃置任意张牌，令该角色弃置任意张牌。若你弃置的牌的点数之和：不大于其，你摸X张牌"..
   "（X为该角色弃置的牌数）；不小于其，此伤害+1。",
   ["#yiyong-invoke"] = "异勇：你可以弃置任意张牌，令 %dest 弃置任意张牌，根据双方弃牌点数之和执行效果",
   ["#yiyong-discard"] = "异勇：弃置任意张牌，若点数之和大于等于%arg则 %src 摸牌，若小于则伤害+1",
@@ -3230,7 +3229,7 @@ local ty__xingzhao = fk.CreateTriggerSkill{
         return target == player and data.card.type == Card.TypeEquip and
           #table.filter(player.room.alive_players, function(p) return p:isWounded() end) > 1
       elseif event == fk.EventPhaseChanging then
-        return target == player and data.to == Player.Discard and
+        return target == player and (data.to == Player.Judge or data.to == Player.Discard) and
           #table.filter(player.room.alive_players, function(p) return p:isWounded() end) > 2
       elseif event == fk.DamageCaused then
         return target == player and data.card and not data.chain and
@@ -3266,7 +3265,7 @@ Fk:loadTranslationTable{
   ["ty__tangzi"] = "唐咨",
   ["ty__xingzhao"] = "兴棹",
   [":ty__xingzhao"] = "锁定技，场上受伤的角色为1个或以上，你拥有技能〖恂恂〗；2个或以上，你使用装备牌时摸一张牌；"..
-  "3个或以上，你跳过弃牌阶段，4个或以上，你使用牌对目标角色造成的伤害+1。",
+  "3个或以上，你跳过判定和弃牌阶段，4个或以上，你使用牌对目标角色造成的伤害+1。",
 }
 
 --绕庭之鸦：孙资刘放 岑昏

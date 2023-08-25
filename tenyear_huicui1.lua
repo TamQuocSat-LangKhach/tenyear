@@ -1962,9 +1962,11 @@ Fk:loadTranslationTable{
   ["$guowu2"] = "武姬青丝利，巾帼女儿红。",
   ["$zhuangrong1"] = "锋镝鸣手中，锐戟映秋霜。",
   ["$zhuangrong2"] = "红妆非我愿，学武觅封侯。",
-  ["$shenwei1"] = "继父神威，无坚不摧！",
-  ["$shenwei2"] = "我乃温侯吕奉先之女！",
-  ["~lvlingqi"] = "父亲，女儿好累。",
+  ["$shenwei_lvlingqi1"] = "继父神威，无坚不摧！",
+  ["$shenwei_lvlingqi2"] = "我乃温侯吕奉先之女！",
+  ["$wushuang_lvlingqi1"] = "猛将策良骥，长戟破敌营。",
+  ["$wushuang_lvlingqi2"] = "杀气腾剑戟，严风卷戎装。",
+  ["~lvlingqi"] = "父亲，女儿好累……",
 }
 
 local liuyong = General(extension, "liuyong", "shu", 3)

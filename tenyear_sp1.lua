@@ -59,9 +59,9 @@ Fk:loadTranslationTable{
   
   ["$ty__zhengnan1"] = "南征之役，愿效死力。",
   ["$ty__zhengnan2"] = "南征之险恶，吾已有所准备。",
-  ["$wusheng-ty__guansuo"] = "我敬佩你的勇气。",
-  ["$dangxian-ty__guansuo"] = "时时居先，方可快人一步。",
-  ["$zhiman-ty__guansuo"] = "败军之将，自当纳贡！",
+  ["$ex__wusheng_ty__guansuo"] = "我敬佩你的勇气。",
+  ["$ty_ex__dangxian_ty__guansuo"] = "时时居先，方可快人一步。",
+  ["$ty_ex__zhiman_ty__guansuo"] = "败军之将，自当纳贡！",
   ["~ty__guansuo"] = "索，至死不辱家风！",
 }
 
@@ -4414,10 +4414,10 @@ Fk:loadTranslationTable{
   ["$lianhua2"] = "草木精炼，万物化丹。",
   ["$zhafu1"] = "垂恩广救，慈悲在怀。",
   ["$zhafu2"] = "行符敕鬼，神变善易。",
-  -- ["$ex__yingzi0"] = "仙人之姿，凡目岂见！",
-  -- ["$zhiyan0"] = "仙人之语，凡耳震聩！",
-  -- ["$gongxin0"] = "仙人之目，因果即现！",
-  -- ["$ex_guanxing0"] = "仙人之栖，群星浩瀚！",
+  ["$ex__yingzi_gexuan"] = "仙人之姿，凡目岂见！",
+  ["$zhiyan_gexuan"] = "仙人之语，凡耳震聩！",
+  ["$gongxin_gexuan"] = "仙人之目，因果即现！",
+  ["$ex__guanxing_gexuan"] = "仙人之栖，群星浩瀚！",
   ["~gexuan"] = "善变化，拙用身。",
 }
 

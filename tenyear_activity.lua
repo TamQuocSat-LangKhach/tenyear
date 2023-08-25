@@ -2265,6 +2265,14 @@ Fk:loadTranslationTable{
   [":nuchen"] = "出牌阶段限一次，你可以展示一名其他角色的一张手牌，然后你选择一项：1.弃置任意张相同花色的牌，对其造成等量的伤害；"..
   "2.获得其手牌中所有此花色的牌。",
   ["#nuchen-card"] = "怒嗔：你可以弃置任意张%arg牌对 %dest 造成等量伤害，或获得其全部此花色手牌",
+
+  ["$ex__wusheng_ty__guanyu1"] = "以义传魂，以武入圣！",
+  ["$ex__wusheng_ty__guanyu2"] = "义击逆流，武安黎庶。",
+  ["$ty__danji1"] = "单骑护嫂千里，只为桃园之义！	",
+  ["$ty__danji2"] = "独身远涉，赤心归国！",
+  ["$nuchen1"] = "触关某之逆鳞者，杀无赦！",
+  ["$nuchen2"] = "天下碌碌之辈，安敢小觑关某？！",
+  ["~ty__guanyu"] = "樊城一去，死亦无惧……",
 }
 
 local dufuren = General(extension, "dufuren", "wei", 3, 3, General.Female)

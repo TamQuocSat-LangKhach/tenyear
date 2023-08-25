@@ -3825,10 +3825,10 @@ Fk:loadTranslationTable{
   ["$jiqiaos2"] = "吾承父兄之志，危又何惧？",
   ["$xiongyis1"] = "此仇不报，吾恨难消！",
   ["$xiongyis2"] = "功业未立，汝可继之！",
-  ["$hunzi-sunyi1"] = "身临绝境，亦当心怀壮志！",
-  ["$hunzi-sunyi2"] = "危难之时，自当振奋以对！",
-  ["$yingzi-sunyi"] = "骁悍果烈，威震江东！",
-  ["$yinghun-sunyi"] = "兄弟齐心，以保父兄基业！",
+  ["$hunzi_ty__sunyi1"] = "身临绝境，亦当心怀壮志！",
+  ["$hunzi_ty__sunyi2"] = "危难之时，自当振奋以对！",
+  ["$ex__yingzi_ty__sunyi"] = "骁悍果烈，威震江东！",
+  ["$yinghun_ty__sunyi"] = "兄弟齐心，以保父兄基业！",
   ["~ty__sunyi"] = "功业未成而身先死，惜哉，惜哉！",
 }
 

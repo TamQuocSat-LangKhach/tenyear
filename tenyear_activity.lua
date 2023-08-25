@@ -434,7 +434,7 @@ local kangge = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke(self.name)
+    player:broadcastSkillInvoke(self.name)
     if event == fk.TurnStart then
       room:notifySkillInvoked(player, self.name, "special")
       local targets = table.map(room:getOtherPlayers(player, false), function(p) return p.id end)
@@ -493,7 +493,7 @@ local kangge_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("kangge")
+    player:broadcastSkillInvoke("kangge")
     room:notifySkillInvoked(player, "kangge", "support")
     room:doIndicate(player.id, {target.id})
     if player:getMark("@kangge") == 0 then
@@ -903,7 +903,7 @@ local biaozhao = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.EventPhaseStart then
       room:notifySkillInvoked(player, self.name, "support")
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       if player.phase == Player.Finish then
         player:addToPile("biaozhao_message", self.cost_data, true, self.name)
       else
@@ -940,7 +940,7 @@ local biaozhao = fk.CreateTriggerSkill{
       end
     elseif event == fk.AfterCardsMove then
       room:notifySkillInvoked(player, self.name, "negative")
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       local pile = Fk:getCardById(player:getPile("biaozhao_message")[1])
       local targets = {}
       for _, move in ipairs(data) do
@@ -1351,12 +1351,12 @@ local shizhao = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if player:getMark("@mushun_jin") > 0 then
-      room:broadcastSkillInvoke(self.name, 1)
+      player:broadcastSkillInvoke(self.name, 1)
       room:notifySkillInvoked(player, self.name, "drawcard")
       room:removePlayerMark(player, "@mushun_jin", 1)
       player:drawCards(2, self.name)
     else
-      room:broadcastSkillInvoke(self.name, 2)
+      player:broadcastSkillInvoke(self.name, 2)
       room:notifySkillInvoked(player, self.name, "negative")
       room:addPlayerMark(player, "@shizhao-turn", 1)
     end
@@ -1479,7 +1479,7 @@ local yijiao_record = fk.CreateTriggerSkill{
     local n = target:getMark("yijiao2") - target:getMark("yijiao1")
     room:doIndicate(player.id, {target.id})
     if n < 0 then
-      room:broadcastSkillInvoke("yijiao", 1)
+      player:broadcastSkillInvoke("yijiao", 1)
       room:notifySkillInvoked(player, "yijiao", "control")
       if not target:isKongcheng() then
         local cards = table.filter(target.player_cards[Player.Hand], function (id)
@@ -1494,12 +1494,12 @@ local yijiao_record = fk.CreateTriggerSkill{
         end
       end
     elseif n == 0 then
-      room:broadcastSkillInvoke("yijiao", 2)
+      player:broadcastSkillInvoke("yijiao", 2)
       room:notifySkillInvoked(player, "yijiao", "support")
       player:drawCards(2, "yijiao")
       target:gainAnExtraTurn(true)
     else
-      room:broadcastSkillInvoke("yijiao", 2)
+      player:broadcastSkillInvoke("yijiao", 2)
       room:notifySkillInvoked(player, "yijiao", "drawcard")
       player:drawCards(3, "yijiao")
     end
@@ -2733,10 +2733,9 @@ local tianze_draw = fk.CreateTriggerSkill{
   end,
   on_cost = function() return true end,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    player.room:broadcastSkillInvoke(tianze.name)
+    player:broadcastSkillInvoke(tianze.name)
     player.room:notifySkillInvoked(player, tianze.name, self.anim_type)
-    room:drawCards(player, 1, self.name)
+    player.room:drawCards(player, 1, self.name)
   end,
 }
 local difa = fk.CreateTriggerSkill{

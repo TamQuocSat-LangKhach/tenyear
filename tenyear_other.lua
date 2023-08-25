@@ -441,7 +441,7 @@ local tongliao_trigger = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, "tongliao", "drawcard")
-    room:broadcastSkillInvoke("tongliao")
+    player:broadcastSkillInvoke("tongliao")
     local n = 0
     for _, move in ipairs(data) do
       if move.from == player.id and move.extra_data and move.extra_data.tongliao then

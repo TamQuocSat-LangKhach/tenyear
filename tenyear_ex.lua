@@ -230,12 +230,12 @@ local ty_ex__enyuan = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event ==  fk.AfterCardsMove then
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       room:notifySkillInvoked(player, self.name, "support")
       room:doIndicate(player.id, {data[1]})
       room:getPlayerById(data[1]):drawCards(1, self.name)
     else
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       room:notifySkillInvoked(player, self.name, "masochism")
       room:doIndicate(player.id, {data.from.id})
       local card = room:askForCard(data.from, 1, 1, false, self.name, true, ".|.|.|hand|.|.", "#ty_ex__enyuan-give:"..player.id)
@@ -970,7 +970,7 @@ local ty_ex__lihuo_record = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("ty_ex__lihuo", 1)
+    player:broadcastSkillInvoke("ty_ex__lihuo", 1)
     room:notifySkillInvoked(player, "ty_ex__lihuo", "negative")
     room:loseHp(player, 1, "ty_ex__lihuo")
   end,
@@ -1624,7 +1624,7 @@ local ty_ex__danshou = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke(self.name)
+    player:broadcastSkillInvoke(self.name)
     if event == fk.TargetConfirmed then
       room:notifySkillInvoked(player, self.name, "drawcard")
       room:setPlayerMark(player, "@ty_ex__danshou-turn", 0)
@@ -1773,7 +1773,7 @@ local ty_ex__xiantu = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke(self.name)
+    player:broadcastSkillInvoke(self.name)
     room:notifySkillInvoked(player, self.name)
     player:drawCards(2, self.name)
     if player:isNude() then return end
@@ -1806,7 +1806,7 @@ local ty_ex__xiantu_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("ty_ex__xiantu")
+    player:broadcastSkillInvoke("ty_ex__xiantu")
     room:notifySkillInvoked(player, "ty_ex__xiantu", "negative")
     room:loseHp(player, 1, "ty_ex__xiantu")
   end,
@@ -1974,7 +1974,7 @@ local ty_ex__shibei = fk.CreateTriggerSkill{
     local damage_event = room.logic:getCurrentEvent():findParent(GameEvent.Damage, true)
     if not damage_event then return false end
     if mark[1] == damage_event.id then
-      room:broadcastSkillInvoke(self.name, 1)
+      player:broadcastSkillInvoke(self.name, 1)
       room:notifySkillInvoked(player, self.name)
       room:recover{
         who = player,
@@ -1983,7 +1983,7 @@ local ty_ex__shibei = fk.CreateTriggerSkill{
       }
     end
     if #mark > 1 and mark[2] == damage_event.id then
-      room:broadcastSkillInvoke(self.name, 2)
+      player:broadcastSkillInvoke(self.name, 2)
       room:notifySkillInvoked(player, self.name, "negative")
       room:loseHp(player, 1, self.name)
     end

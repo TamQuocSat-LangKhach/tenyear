@@ -446,7 +446,7 @@ local xunji_trigger = fk.CreateTriggerSkill{
       if player.dead then return end
       local p = room:getPlayerById(id)
       if not p.dead and not p:isProhibited(player, Fk:cloneCard("duel")) then
-        room:broadcastSkillInvoke("xunji")
+        p:broadcastSkillInvoke("xunji")
         room:notifySkillInvoked(p, "xunji", "offensive")
         room:doIndicate(p.id, {player.id})
         local use = {
@@ -545,7 +545,7 @@ local miyun = fk.CreateTriggerSkill{
       end)
       if #targets == 0 then return false end
       room:notifySkillInvoked(player, self.name, "control")
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       local tos = room:askForChoosePlayers(player, table.map(targets, function (p)
         return p.id end), 1, 1, "#miyun-choose", self.name, false, true)
       local cid = room:askForCardChosen(player, room:getPlayerById(tos[1]), "he", self.name)
@@ -561,7 +561,7 @@ local miyun = fk.CreateTriggerSkill{
       room:moveCards(move)
     elseif event == fk.RoundEnd then
       room:notifySkillInvoked(player, self.name, "drawcard")
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
 
       local cid = player:getMark(self.name)
       local card = Fk:getCardById(cid)
@@ -1803,7 +1803,7 @@ local tongyuan_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("tongyuan")
+    player:broadcastSkillInvoke("tongyuan")
     room:notifySkillInvoked(player, "tongyuan", "special")
     if data.card.type == Card.TypeTrick then
       if player:getMark("@tongyuan") == 0 then
@@ -3101,7 +3101,7 @@ local qizi = fk.CreateTriggerSkill{
     return player:hasSkill(self.name) and player:distanceTo(target) > 2
   end,
   on_use = function(self, event, target, player, data)
-    player.room:broadcastSkillInvoke(self.name)
+    player:broadcastSkillInvoke(self.name)
     player.room:notifySkillInvoked(player, self.name)
   end,
 }
@@ -3248,15 +3248,15 @@ local ty__xingzhao = fk.CreateTriggerSkill{
         room:handleAddLoseSkills(player, "xunxun", self.name, true, false)
       end
     elseif event == fk.CardUsing then
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       room:notifySkillInvoked(player, self.name, "drawcard")
       player:drawCards(1, self.name)
     elseif event == fk.EventPhaseChanging then
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       room:notifySkillInvoked(player, self.name, "defensive")
       return true
     elseif event == fk.DamageCaused then
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       room:notifySkillInvoked(player, self.name, "offensive")
       data.damage = data.damage + 1
     end

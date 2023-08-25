@@ -266,7 +266,7 @@ local ty__pingjian_trigger = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, ty__pingjian.name)
-    room:broadcastSkillInvoke(ty__pingjian.name)
+    player:broadcastSkillInvoke(ty__pingjian.name)
     local used_skills = type(player:getMark("ty__pingjian_used_skills")) == "table" and player:getMark("ty__pingjian_used_skills") or {}
     local skills = {}
     if event == fk.Damaged then
@@ -442,7 +442,7 @@ local panshi = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.EventPhaseStart then
       room:notifySkillInvoked(player, self.name, "negative")
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       local fathers = table.filter(room.alive_players, function (p) return p ~= player and p:hasSkill(cixiao.name, true) end)
       if #fathers == 1 then
         room:doIndicate(player.id, {fathers[1].id})
@@ -460,11 +460,11 @@ local panshi = fk.CreateTriggerSkill{
       end
     elseif event == fk.DamageCaused then
       room:notifySkillInvoked(player, self.name, "offensive")
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       data.damage = data.damage + 1
     elseif event == fk.Damage then
       room:notifySkillInvoked(player, self.name, "negative")
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       player:endPlayPhase()
     end
   end,
@@ -799,7 +799,7 @@ local ty__weipo_delay = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, ty__weipo.name, "negative")
-    room:broadcastSkillInvoke(ty__weipo.name)
+    player:broadcastSkillInvoke(ty__weipo.name)
     if not target.dead and not player:isKongcheng() then
       local card = room:askForCard(player, 1, 1, false, ty__weipo.name, false, ".", "#ty__weipo-give:"..target.id)
       if #card > 0 then
@@ -927,7 +927,7 @@ local yizhengc = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.EventPhaseStart then
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       room:notifySkillInvoked(player, self.name, "support")
       local to = room:getPlayerById(self.cost_data)
       local mark = to:getMark("@@yizhengc")
@@ -938,7 +938,7 @@ local yizhengc = fk.CreateTriggerSkill{
     else
       for _, id in ipairs(player:getMark("@@yizhengc")) do
         local p = player.room:getPlayerById(id)
-        room:broadcastSkillInvoke(self.name)
+        p:broadcastSkillInvoke(self.name)
         room:notifySkillInvoked(p, self.name, "support")
         room:changeMaxHp(p, -1)
         if event == fk.DamageCaused then
@@ -1150,15 +1150,15 @@ local fuzhong = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.AfterCardsMove then
       room:notifySkillInvoked(player, self.name)
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       room:addPlayerMark(player, "@fuzhong_weight")
     elseif event == fk.DrawNCards then
       room:notifySkillInvoked(player, self.name, "drawcard")
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       data.n = data.n + 1
     elseif event == fk.EventPhaseStart then
       room:notifySkillInvoked(player, self.name, "offensive")
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       local targets = room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), function (p)
         return p.id end), 1, 1, "#fuzhong-choose", self.name, false)
       if #targets > 0 then

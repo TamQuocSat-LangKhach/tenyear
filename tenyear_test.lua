@@ -285,7 +285,7 @@ local lvecheng_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("lvecheng")
+    player:broadcastSkillInvoke("lvecheng")
     room:notifySkillInvoked(target, "lvecheng", "negative")
     room:doIndicate(player.id, {target.id})
     player:showCards(player.player_cards[Player.Hand])
@@ -375,7 +375,7 @@ local youzhan = fk.CreateTriggerSkill{
           end
         end
         if yes then
-          room:broadcastSkillInvoke(self.name)
+          player:broadcastSkillInvoke(self.name)
           room:notifySkillInvoked(player, self.name, "drawcard")
           player:drawCards(1, self.name)
           local to = room:getPlayerById(move.from)
@@ -412,15 +412,16 @@ local youzhan_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("youzhan")
     if event == fk.DamageInflicted then
       if room.current then
+        room.current:broadcastSkillInvoke("youzhan")
         room:notifySkillInvoked(room.current, "youzhan", "offensive")
         room:doIndicate(room.current.id, {player.id})
       end
       data.damage = data.damage + player:getMark("@youzhan-turn")
       room:setPlayerMark(player, "@youzhan-turn", 0)
     else
+      target:broadcastSkillInvoke("youzhan")
       room:notifySkillInvoked(target, "youzhan", "drawcard")
       room:doIndicate(target.id, {player.id})
       player:drawCards(player:getMark("youzhan-turn"), "youzhan")

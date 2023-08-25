@@ -148,7 +148,7 @@ local jinjian = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke(self.name)
+    player:broadcastSkillInvoke(self.name)
     if player:usedSkillTimes(self.name, Player.HistoryTurn) % 2 == 1 then
       room:notifySkillInvoked(player, self.name, "offensive")
       data.damage = data.damage + 1
@@ -174,7 +174,7 @@ local jinjian_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("jinjian")
+    player:broadcastSkillInvoke("jinjian")
     if player:usedSkillTimes(self.name, Player.HistoryTurn) % 2 == 1 then
       room:notifySkillInvoked(player, "jinjian", "defensive")
       data.damage = data.damage - 1
@@ -571,7 +571,7 @@ local zhaowen_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("zhaowen")
+    player:broadcastSkillInvoke("zhaowen")
     if event == fk.EventPhaseStart then
       room:notifySkillInvoked(player, "zhaowen", "special")
       local cards = table.simpleClone(player.player_cards[Player.Hand])
@@ -739,7 +739,7 @@ local mansi_trigger = fk.CreateTriggerSkill{
     local room = player.room
     player:drawCards(1, "@mansi")
     room:addPlayerMark(player, "@mansi", 1)
-    room:broadcastSkillInvoke("mansi")
+    player:broadcastSkillInvoke("mansi")
     room:notifySkillInvoked(player, "mansi", "drawcard")
   end,
 }
@@ -784,7 +784,7 @@ local souying = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:throwCard(self.cost_data, self.name, player, player)
-    room:broadcastSkillInvoke(self.name)
+    player:broadcastSkillInvoke(self.name)
     if target == player then
       room:notifySkillInvoked(player, self.name, "drawcard")
       if not player.dead and room:getCardArea(data.card) == Card.Processing then
@@ -1204,7 +1204,7 @@ local lingyin_trigger = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     if event == fk.EventPhaseStart then
       local room = player.room
-      room:broadcastSkillInvoke("lingyin")
+      player:broadcastSkillInvoke("lingyin")
       room:notifySkillInvoked(player, "lingyin", "drawcard")
       local dummy = Fk:cloneCard("dilu")
       dummy:addSubcards(self.cost_data)
@@ -1391,11 +1391,11 @@ local huayi_trigger = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.TurnEnd then
-      room:broadcastSkillInvoke("huayi")
+      player:broadcastSkillInvoke("huayi")
       room:notifySkillInvoked(player, "huayi", "drawcard")
       player:drawCards(1, "huayi")
     elseif event == fk.Damaged then
-      room:broadcastSkillInvoke("huayi")
+      player:broadcastSkillInvoke("huayi")
       room:notifySkillInvoked(player, "huayi", "drawcard")
       player:drawCards(2, "huayi")
     end
@@ -1663,7 +1663,7 @@ local dushi = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self.name)
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:broadcastSkillInvoke(self.name)
+    player:broadcastSkillInvoke(self.name)
     player.room:notifySkillInvoked(player, self.name)
   end,
 }
@@ -2075,11 +2075,11 @@ local fudao = fk.CreateTriggerSkill{
       end
     elseif event == fk.Death then
       room:notifySkillInvoked(player, self.name, "offensive")
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       room:setPlayerMark(data.damage.from, "@@juelie", 1)
     elseif event == fk.TargetConfirmed then
       room:notifySkillInvoked(player, self.name, "control")
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       room:setPlayerMark(room:getPlayerById(data.from), "@@fudao-turn", 1)
     end
   end,
@@ -2095,7 +2095,7 @@ local fudao_delay = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     player.room:notifySkillInvoked(player, fudao.name, "offensive")
     if player:hasSkill(fudao.name, true) then
-      player.room:broadcastSkillInvoke(fudao.name)
+      player:broadcastSkillInvoke(fudao.name)
     end
     data.damage = data.damage + 1
   end,
@@ -2428,9 +2428,8 @@ local xunbie_trigger = fk.CreateTriggerSkill{
     return target == player and player:usedSkillTimes("xunbie", Player.HistoryTurn) > 0
   end,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    room:broadcastSkillInvoke("xunbie")
-    room:notifySkillInvoked(player, "xunbie")
+    player:broadcastSkillInvoke("xunbie")
+    player.room:notifySkillInvoked(player, "xunbie")
     return true
   end,
 }
@@ -3169,7 +3168,7 @@ local miaoxian_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     player.room:notifySkillInvoked(player, miaoxian.name, self.anim_type)
-    player.room:broadcastSkillInvoke(miaoxian.name)
+    player:broadcastSkillInvoke(miaoxian.name)
     player:drawCards(1, "miaoxian")
   end,
 }
@@ -4685,7 +4684,7 @@ local lianzhi_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("lianzhi")
+    player:broadcastSkillInvoke("lianzhi")
     room:notifySkillInvoked(player, "lianzhi", "support")
     local to = player:getMark("lianzhi")
     room:doIndicate(player.id, {to})
@@ -4964,14 +4963,14 @@ local ty__aichen = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.AfterCardsMove then
       player:drawCards(2, self.name)
-      room:broadcastSkillInvoke(self.name, 1)
+      player:broadcastSkillInvoke(self.name, 1)
       room:notifySkillInvoked(player, self.name, "drawcard")
     elseif event == fk.EventPhaseChanging then
-      room:broadcastSkillInvoke(self.name, 1)
+      player:broadcastSkillInvoke(self.name, 1)
       room:notifySkillInvoked(player, self.name, "defensive")
       return true
     elseif event == fk.TargetConfirmed then
-      room:broadcastSkillInvoke(self.name, 2)
+      player:broadcastSkillInvoke(self.name, 2)
       room:notifySkillInvoked(player, self.name, "negative")
       data.disresponsiveList = data.disresponsiveList or {}
       table.insertIfNeed(data.disresponsiveList, player.id)
@@ -5200,14 +5199,14 @@ local jincui = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.GameStart then
       room:notifySkillInvoked(player, self.name, "drawcard")
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       local n = 7 - player:getHandcardNum()
       if n > 0 then
         player:drawCards(n, self.name)
       end
     elseif event == fk.EventPhaseStart then
       room:notifySkillInvoked(player, self.name)
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       local n = 0
       for _, id in ipairs(room.draw_pile) do
         if Fk:getCardById(id).number == 7 then
@@ -5257,7 +5256,7 @@ local qingshi = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "@$qingshi-turn", mark)
     if self.cost_data == "qingshi1" then
       room:notifySkillInvoked(player, self.name, "offensive")
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       local to = room:askForChoosePlayers(player, TargetGroup:getRealTargets(data.tos), 1, 1,
         "#qingshi1-choose:::"..data.card:toLogString(), self.name, false)
       if #to > 0 then
@@ -5269,7 +5268,7 @@ local qingshi = fk.CreateTriggerSkill{
       data.extra_data.qingshi = to
     elseif self.cost_data == "qingshi2" then
       room:notifySkillInvoked(player, self.name, "support")
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
       local tos = room:askForChoosePlayers(player, targets, 1, 10, "#qingshi2-choose", self.name, false)
       if #tos == 0 then
@@ -5283,7 +5282,7 @@ local qingshi = fk.CreateTriggerSkill{
       end
     elseif self.cost_data == "qingshi3" then
       room:notifySkillInvoked(player, self.name, "drawcard")
-      room:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       player:drawCards(3, self.name)
       room:setPlayerMark(player, "@@qingshi-turn", 1)
     end

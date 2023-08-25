@@ -814,7 +814,7 @@ local huiling = fk.CreateTriggerSkill{
     local room = player.room
     local red = #table.filter(room.discard_pile, function(id) return Fk:getCardById(id).color == Card.Red end)
     local black = #table.filter(room.discard_pile, function(id) return Fk:getCardById(id).color == Card.Black end)
-    room:broadcastSkillInvoke(self.name)
+    player:broadcastSkillInvoke(self.name)
     if red > black then
       if player:isWounded() then
         room:notifySkillInvoked(player, self.name, "support")
@@ -927,7 +927,7 @@ local taji = fk.CreateTriggerSkill{
     local index = {}
     for _, move in ipairs(data) do
       if move.from == player.id then
-        room:broadcastSkillInvoke(self.name)
+        player:broadcastSkillInvoke(self.name)
         for _, info in ipairs(move.moveInfo) do
           if info.fromArea == Card.PlayerHand then
             if move.moveReason == fk.ReasonUse then
@@ -1208,7 +1208,7 @@ local minze_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("minze")
+    player:broadcastSkillInvoke("minze")
     room:notifySkillInvoked(player, "minze", "drawcard")
     player:drawCards(math.min(#player:getMark("@$minze-turn"), 5) - player:getHandcardNum(), "minze")
   end,
@@ -1318,7 +1318,7 @@ local kuangcai = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke(self.name)
+    player:broadcastSkillInvoke(self.name)
     if player.phase == Player.Discard then
       local n = 0
       for _, v in pairs(player.cardUsedHistory) do

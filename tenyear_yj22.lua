@@ -120,9 +120,9 @@ local biejun_active = fk.CreateActiveSkill{
     end
   end,
   on_use = function(self, room, effect)
-    room:broadcastSkillInvoke(biejun.name)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
+    player:broadcastSkillInvoke(biejun.name)
     local targetRecorded = type(player:getMark("biejun_targets-phase")) == "table" and player:getMark("biejun_targets-phase") or {}
     table.insertIfNeed(targetRecorded, target.id)
     room:setPlayerMark(player, "biejun_targets-phase", targetRecorded)
@@ -345,7 +345,7 @@ local bushil = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke(self.name)
+    player:broadcastSkillInvoke(self.name)
     if event == fk.EventPhaseStart and player.phase == Player.Start then
       room:notifySkillInvoked(player, self.name, "special")
       local suits = {"log_spade", "log_heart", "log_club", "log_diamond"}
@@ -438,11 +438,11 @@ local zhongzhuang = fk.CreateTriggerSkill{
     local room = player.room
     if player:getAttackRange() > 3 then
       data.damage = data.damage + 1
-      room:broadcastSkillInvoke(self.name, 1)
+      player:broadcastSkillInvoke(self.name, 1)
       room:notifySkillInvoked(player, self.name, "offensive")
     elseif player:getAttackRange() < 3 then
       data.damage = 1
-      room:broadcastSkillInvoke(self.name, 2)
+      player:broadcastSkillInvoke(self.name, 2)
       room:notifySkillInvoked(player, self.name, "negative")
     end
   end,

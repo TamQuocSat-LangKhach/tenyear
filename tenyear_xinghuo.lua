@@ -247,11 +247,11 @@ local gongqing = fk.CreateTriggerSkill{
     local room = player.room
     if data.from:getAttackRange() < 3 then
       data.damage = 1
-      room:broadcastSkillInvoke(self.name, 1)
+      player:broadcastSkillInvoke(self.name, 1)
       room:notifySkillInvoked(player, self.name, "defensive")
     elseif data.from:getAttackRange() > 3 then
       data.damage = data.damage + 1
-      room:broadcastSkillInvoke(self.name, 2)
+      player:broadcastSkillInvoke(self.name, 2)
       room:notifySkillInvoked(player, self.name, "negative")
     end
   end,
@@ -622,7 +622,7 @@ local qinguo = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke(self.name)
+    player:broadcastSkillInvoke(self.name)
     if event == fk.CardUseFinished then
       room:notifySkillInvoked(player, self.name, "offensive")
       local card = Fk.skills["qinguo_viewas"]:viewAs(self.cost_data.cards)

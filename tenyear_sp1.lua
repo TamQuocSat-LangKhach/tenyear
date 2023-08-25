@@ -125,7 +125,7 @@ local ty__fanghun_trigger = fk.CreateTriggerSkill{
     local room = player.room
     room:notifySkillInvoked(player, "ty__fanghun")
     if not table.contains(data.card.skillNames, "ty__fanghun") or event == fk.TargetConfirmed then
-      room:broadcastSkillInvoke("ty__fanghun")
+      player:broadcastSkillInvoke("ty__fanghun")
     end
     room:addPlayerMark(player, "@meiying")
   end,
@@ -1740,7 +1740,7 @@ local shouli_trigger = fk.CreateTriggerSkill{
   on_cost = function() return true end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke(shouli.name)
+    player:broadcastSkillInvoke(shouli.name)
     room:notifySkillInvoked(player, shouli.name)
     local temp = player.next
     local players = {}
@@ -1947,7 +1947,7 @@ local shencai_delay = fk.CreateTriggerSkill{
       return false
     end
     room:notifySkillInvoked(player, shencai.name, "negative")
-    room:broadcastSkillInvoke(shencai.name)
+    player:broadcastSkillInvoke(shencai.name)
     if event == fk.Damaged then
       room:loseHp(player, data.damage, shencai.name)
     elseif event == fk.TargetConfirmed then
@@ -2010,7 +2010,7 @@ local xunshi_trigger = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, xunshi.name)
-    room:broadcastSkillInvoke(xunshi.name)
+    player:broadcastSkillInvoke(xunshi.name)
     if player:getMark("xunshi") < 4 then
       player.room:addPlayerMark(player, "xunshi", 1)
     end
@@ -4374,7 +4374,7 @@ local zhafu_trigger = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "@@zhafu", 0)
     if player:getHandcardNum() < 2 or src.dead then return end
     room:doIndicate(src.id, {player.id})
-    room:broadcastSkillInvoke("zhafu")
+    src:broadcastSkillInvoke("zhafu")
     room:notifySkillInvoked(src, "zhafu", "control")
     local card = room:askForCard(player, 1, 1, false, "zhafu", false, ".|.|.|hand", "#zhafu-invoke:"..src.id)
     if #card > 0 then

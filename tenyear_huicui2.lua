@@ -2045,25 +2045,25 @@ local liuzhuan = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) and player.phase == Player.NotActive then
-      local room = player.room
-      local current = room.current
-      for _, move in ipairs(data) do
-        if current and current.phase ~= Player.Draw and move.to == current.id and move.toArea == Card.PlayerHand then
-          for _, info in ipairs(move.moveInfo) do
-            local id = info.cardId
-            if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == current then
-              return true
-            end
+    if not player:hasSkill(self.name) then return false end
+    local room = player.room
+    local current = room.current
+    if current == nil or current == player or current.phase == Player.NotActive then return false end
+    for _, move in ipairs(data) do
+      if current.phase ~= Player.Draw and move.to == current.id and move.toArea == Card.PlayerHand then
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == current then
+            return true
           end
         end
-        local mark = player:getMark("liuzhuan_record")
-        if move.toArea == Card.DiscardPile and type(mark) == "table" then
-          for _, info in ipairs(move.moveInfo) do
-            --for stupid manjuan
-            if info.fromArea ~= Card.DiscardPile and table.contains(mark, info.cardId) and room:getCardArea(info.cardId) == Card.DiscardPile then
-              return true
-            end
+      end
+      local mark = player:getMark("liuzhuan_record")
+      if move.toArea == Card.DiscardPile and type(mark) == "table" then
+        for _, info in ipairs(move.moveInfo) do
+          --for stupid manjuan
+          if info.fromArea ~= Card.DiscardPile and table.contains(mark, info.cardId) and room:getCardArea(info.cardId) == Card.DiscardPile then
+            return true
           end
         end
       end
@@ -2104,7 +2104,7 @@ local liuzhuan = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.AfterCardsMove, fk.TurnEnd, fk.Death},
+  refresh_events = {fk.AfterCardsMove, fk.AfterTurnEnd, fk.Death},
   can_refresh = function(self, event, target, player, data)
     if event == fk.Death and player ~= target then return false end
     return type(player:getMark("liuzhuan_record")) == "table"
@@ -2122,7 +2122,7 @@ local liuzhuan = fk.CreateTriggerSkill{
         end
       end
       room:setPlayerMark(player, "liuzhuan_record", mark)
-    elseif event == fk.TurnEnd then
+    elseif event == fk.AfterTurnEnd then
       for _, id in ipairs(mark) do
         room:setCardMark(Fk:getCardById(id), "@@liuzhuan", 0)
       end

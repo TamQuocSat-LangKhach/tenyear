@@ -181,7 +181,6 @@ local ty__fuhan = fk.CreateTriggerSkill{
 ty__fanghun:addRelatedSkill(ty__fanghun_trigger)
 zhaoxiang:addSkill(ty__fanghun)
 zhaoxiang:addSkill(ty__fuhan)
-zhaoxiang:addRelatedSkill("longdan")
 Fk:loadTranslationTable{
   ["ty__zhaoxiang"] = "赵襄",
   ["ty__fanghun"] = "芳魂",

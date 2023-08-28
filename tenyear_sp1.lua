@@ -1109,17 +1109,11 @@ local fuxue = fk.CreateTriggerSkill{
           return cardA.type < cardB.type
         end
       end)
-      local get = {}
-      local result = room:askForCustomDialog(player, self.name,
-      "packages/tenyear/qml/LargeAG.qml", {
-        cards,
-        1, player.hp,
-      })
-      if result ~= "" then
-        get = json.decode(result)
-      else
-        get = table.random(cards, 1)
-      end
+      local get = room:askForCardsChosen(player, player, 1, player.hp, {
+        card_data = {
+          { self.name, cards }
+        }
+      }, self.name)
       if #get > 0 then
         local dummy = Fk:cloneCard("dilu")
         dummy:addSubcards(get)

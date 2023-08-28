@@ -419,25 +419,4 @@ Fk:loadTranslationTable{
   "增加的效果+1。你回合外使用或打出基本牌时摸一张牌。离开装备区时销毁。",
 }
 
-local zhizheTokenSkill = fk.CreateActiveSkill{
-  name = "zhizhe_token_skill",
-  target_num = 1,
-  target_filter = function(self, to_select, selected)
-    return #selected == 0
-  end,
-}
-local zhizhe_token = fk.CreateTrickCard{
-  name = "&zhizhe_token",
-  skill = zhizheTokenSkill,
-}
-extension:addCards({
-  zhizhe_token:clone(),
-  zhizhe_token:clone(),
-  zhizhe_token:clone(),
-})
-Fk:loadTranslationTable{
-  ["zhizhe_token"] = "智哲",
-  [":zhizhe_token"] = "三顾频烦天下计，两朝开济老臣心。",
-}
-
 return extension

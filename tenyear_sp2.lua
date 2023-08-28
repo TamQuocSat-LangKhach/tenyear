@@ -909,6 +909,30 @@ local xialei = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self.name) or player:getMark("xialei-turn") > 2 then return false end
+    local room = player.room
+    local move_event = room.logic:getCurrentEvent()
+    local parent_event = move_event.parent
+    local card_ids = {}
+    if parent_event ~= nil then
+      if parent_event.event == GameEvent.UseCard or parent_event.event == GameEvent.RespondCard then
+        local parent_data = parent_event.data[1]
+        if parent_data.from == player.id then
+          card_ids = room:getSubcardsByRule(parent_data.card)
+        end
+      elseif parent_event.event == GameEvent.Pindian then
+        local pindianData = parent_event.data[1]
+        if pindianData.from == player then
+          card_ids = room:getSubcardsByRule(pindianData.fromCard)
+        else
+          for toId, result in pairs(pindianData.results) do
+            if player.id == toId then
+              card_ids = room:getSubcardsByRule(result.toCard)
+              break
+            end
+          end
+        end
+      end
+    end
     for _, move in ipairs(data) do
       if move.toArea == Card.DiscardPile then
         if move.from == player.id then
@@ -918,56 +942,11 @@ local xialei = fk.CreateTriggerSkill{
               return true
             end
           end
-        else
-          local room = player.room
-          local parentUseEvent = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
-          if parentUseEvent then
-            local useData = parentUseEvent.data[1]
-            if useData.from == player.id then
-              local card_ids = room:getSubcardsByRule(useData.card)
-              for _, info in ipairs(move.moveInfo) do
-                if info.fromArea == Card.Processing and table.contains(card_ids, info.cardId) and
-                Fk:getCardById(info.cardId).color == Card.Red then
-                  return true
-                end
-              end
-            end
-          end
-          local parentRespondEvent = player.room.logic:getCurrentEvent():findParent(GameEvent.RespondCard, true)
-          if parentRespondEvent then
-            local respondData = parentRespondEvent.data[1]
-            if respondData.from == player.id then
-              local card_ids = room:getSubcardsByRule(respondData.card)
-              for _, info in ipairs(move.moveInfo) do
-                if info.fromArea == Card.Processing and table.contains(card_ids, info.cardId) and
-                Fk:getCardById(info.cardId).color == Card.Red then
-                  return true
-                end
-              end
-            end
-          end
-          local parentPindianEvent = player.room.logic:getCurrentEvent():findParent(GameEvent.Pindian, true)
-          if parentPindianEvent then
-            local pindianData = parentPindianEvent.data[1]
-            if pindianData.from == player then
-              local leftFromCardIds = room:getSubcardsByRule(pindianData.fromCard)
-              for _, info in ipairs(move.moveInfo) do
-                if info.fromArea == Card.Processing and table.contains(leftFromCardIds, info.cardId) and
-                Fk:getCardById(info.cardId).color == Card.Red then
-                  return true
-                end
-              end
-            end
-            for toId, result in pairs(pindianData.results) do
-              if player.id == toId then
-                local leftToCardIds = room:getSubcardsByRule(result.toCard)
-                for _, info in ipairs(move.moveInfo) do
-                  if info.fromArea == Card.Processing and table.contains(leftToCardIds, info.cardId) and 
-                  Fk:getCardById(info.cardId).color == Card.Red then
-                    return true
-                  end
-                end
-              end
+        elseif #card_ids > 0 then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.Processing and table.contains(card_ids, info.cardId) and
+            Fk:getCardById(info.cardId).color == Card.Red then
+              return true
             end
           end
         end
@@ -1057,16 +1036,11 @@ local anzhi = fk.CreateActiveSkill{
       if #to > 0 then
         local get = {}
         if #ids > 2 then
-          local result = room:askForCustomDialog(player, self.name,
-          "packages/tenyear/qml/LargeAG.qml", {
-            ids,
-            2, 2,
-          })
-          if result ~= "" then
-            get = json.decode(result)
-          else
-            get = table.random(ids, 2)
-          end
+          get = room:askForCardsChosen(player, player, 2, 2, {
+            card_data = {
+              { self.name, ids }
+            }
+          }, self.name)
         else
           get = ids
         end
@@ -5304,104 +5278,151 @@ local qingshi = fk.CreateTriggerSkill{
 }
 local zhizhe = fk.CreateActiveSkill{
   name = "zhizhe",
+  prompt = "#zhizhe-active",
   anim_type = "special",
   frequency = Skill.Limited,
   card_num = 1,
   target_num = 0,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and not player:isKongcheng()
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   card_filter = function(self, to_select, selected)
-    local card = Fk:getCardById(to_select)
-    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) == Card.PlayerHand and
-      card.type ~= Card.TypeEquip and card.sub_type ~= Card.SubtypeDelayedTrick
+    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) == Card.PlayerHand and not Fk:getCardById(to_select).is_derived
   end,
   on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local card = nil
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      if Fk:getCardById(id).name == "zhizhe_token" and room:getCardArea(id) == Card.Void then
-        card = id
-        break
-      end
-    end
-    if card then
-      room:moveCards({
-        ids = {card},
-        fromArea = Card.Void,
-        to = player.id,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonJustMove,
-        proposer = player.id,
-        skillName = self.name,
-      })
-      local c = Fk:getCardById(effect.cards[1])
-      room:setCardMark(Fk:getCardById(card), self.name, {c.name, c.suit, c.number})
-      local mark = player:getMark(self.name)
-      if mark == 0 then mark = {} end
-      table.insertIfNeed(mark, card)
-      room:setPlayerMark(player, self.name, mark)
-    end
+    local c = Fk:getCardById(effect.cards[1], true)
+    local toGain = room:printCard(c.name, c.suit, c.number)
+    room:moveCards({
+      ids = {toGain.id},
+      to = effect.from,
+      toArea = Card.PlayerHand,
+      moveReason = fk.ReasonPrey,
+      proposer = effect.from,
+      skillName = self.name,
+      moveVisible = false,
+    })
   end
-}
-local zhizhe_filter = fk.CreateFilterSkill{
-  name = "#zhizhe_filter",
-  mute = true,
-  card_filter = function(self, card, player)
-    return card:getMark("zhizhe") ~= 0
-  end,
-  view_as = function(self, card)
-    return Fk:cloneCard(card:getMark("zhizhe")[1], card:getMark("zhizhe")[2], card:getMark("zhizhe")[3])
-  end,
 }
 local zhizhe_trigger = fk.CreateTriggerSkill{
   name = "#zhizhe_trigger",
   mute = true,
-  events = {fk.CardUseFinished, fk.CardRespondFinished},
+  events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    return target == player and data.card:getMark("zhizhe") ~= 0 and
-      player:getMark("zhizhe") ~= 0 and table.contains(player:getMark("zhizhe"), data.card:getEffectiveId()) and
-      player.room:getCardArea(data.card) == Card.Processing
-  end,
-  on_cost = function(self, event, target, player, data)
-    return true
-  end,
-  on_use = function(self, event, target, player, data)
-    player.room:obtainCard(player, data.card, true, fk.ReasonJustMove)
-  end,
-
-  refresh_events = {fk.AfterCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    return player:getMark("zhizhe") ~= 0
-  end,
-  on_refresh = function(self, event, target, player, data)
-    for _, move in ipairs(data) do
-      if move.toArea ~= Card.Processing and not (move.to and move.to == player.id and move.toArea == Card.PlayerHand) then
-        for _, info in ipairs(move.moveInfo) do
-          if table.contains(player:getMark("zhizhe"), info.cardId) then
-            local mark = player:getMark("zhizhe")
-            table.removeOne(mark, info.cardId)
-            if #mark == 0 then mark = 0 end
-            player.room:setPlayerMark(player, "zhizhe", mark)
-            if mark == 0 then return end
+    local mark = player:getMark("zhizhe")
+    if type(mark) ~= "table" then return false end
+    local room = player.room
+    local move_event = room.logic:getCurrentEvent()
+    local parent_event = move_event.parent
+    if parent_event and (parent_event.event == GameEvent.UseCard or parent_event.event == GameEvent.RespondCard) then
+      local parent_data = parent_event.data[1]
+      if parent_data.from == player.id then
+        local card_ids = room:getSubcardsByRule(parent_data.card)
+        for _, move in ipairs(data) do
+          if move.toArea == Card.DiscardPile then
+            for _, info in ipairs(move.moveInfo) do
+              local id = info.cardId
+              if info.fromArea == Card.Processing and room:getCardArea(id) == Card.DiscardPile and
+              table.contains(card_ids, id) and table.contains(mark, id) then
+                return true
+              end
+            end
           end
         end
       end
     end
   end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:notifySkillInvoked(player, self.name)
+    player:broadcastSkillInvoke(zhizhe.name)
+    local mark = player:getMark("zhizhe")
+    local to_get = {}
+    if type(mark) ~= "table" then return false end
+    local move_event = room.logic:getCurrentEvent():findParent(GameEvent.MoveCards, true)
+    local parent_event = move_event.parent
+    if parent_event and (parent_event.event == GameEvent.UseCard or parent_event.event == GameEvent.RespondCard) then
+      local parent_data = parent_event.data[1]
+      if parent_data.from == player.id then
+        local card_ids = room:getSubcardsByRule(parent_data.card)
+        for _, move in ipairs(data) do
+          if move.toArea == Card.DiscardPile then
+            for _, info in ipairs(move.moveInfo) do
+              local id = info.cardId
+              if info.fromArea == Card.Processing and room:getCardArea(id) == Card.DiscardPile and
+              table.contains(card_ids, id) and table.contains(mark, id) then
+                table.insertIfNeed(to_get, id)
+              end
+            end
+          end
+        end
+      end
+    end
+    if #to_get > 0 then
+      room:moveCards({
+        ids = to_get,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonPrey,
+        proposer = player.id,
+        skillName = zhizhe.name,
+        moveVisible = false,
+      })
+    end
+  end,
+
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return true
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local marked = type(player:getMark("zhizhe")) == "table" and player:getMark("zhizhe") or {}
+    local marked2 = type(player:getMark("zhizhe-turn")) == "table" and player:getMark("zhizhe-turn") or {}
+    marked2 = table.filter(marked2, function (id)
+      return room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player
+    end)
+    for _, move in ipairs(data) do
+      if move.to == player.id and move.toArea == Card.PlayerHand and move.skillName == zhizhe.name then
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player then
+            if info.fromArea == Card.Void then
+              table.insertIfNeed(marked, id)
+            else
+              table.insert(marked2, id)
+            end
+            room:setCardMark(Fk:getCardById(id), "@@zhizhe-inhand", 1)
+          end
+        end
+      elseif move.moveReason ~= fk.ReasonUse and move.moveReason ~= fk.ReasonResonpse then
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          table.removeOne(marked, id)
+        end
+      end
+    end
+    room:setPlayerMark(player, "zhizhe", marked)
+    room:setPlayerMark(player, "zhizhe-turn", marked2)
+  end,
 }
 local zhizhe_prohibit = fk.CreateProhibitSkill{
   name = "#zhizhe_prohibit",
   prohibit_use = function(self, player, card)
-    return player:getMark("zhizhe") ~= 0 and player:usedSkillTimes("#zhizhe_trigger", Player.HistoryTurn) > 0 and
-      table.contains(player:getMark("zhizhe"), card:getEffectiveId())
+    local mark = player:getMark("zhizhe-turn")
+    if type(mark) ~= "table" then return false end
+    local cardList = card:isVirtual() and card.subcards or {card.id}
+    return table.find(cardList, function (id) return table.contains(mark, id) end)
   end,
   prohibit_response = function(self, player, card)
-    return player:getMark("zhizhe") ~= 0 and player:usedSkillTimes("#zhizhe_trigger", Player.HistoryTurn) > 0 and
-      table.contains(player:getMark("zhizhe"), card:getEffectiveId())
+    local mark = player:getMark("zhizhe-turn")
+    if type(mark) ~= "table" then return false end
+    local cardList = card:isVirtual() and card.subcards or {card.id}
+    return table.find(cardList, function (id) return table.contains(mark, id) end)
   end,
 }
-zhizhe:addRelatedSkill(zhizhe_filter)
 zhizhe:addRelatedSkill(zhizhe_trigger)
 zhizhe:addRelatedSkill(zhizhe_prohibit)
 zhugeliang:addSkill(jincui)
@@ -5416,7 +5437,7 @@ Fk:loadTranslationTable{
   [":qingshi"] = "当你于出牌阶段内使用一张牌时（每种牌名每回合限一次），若手牌中有同名牌，你可以选择一项：1.令此牌对其中一个目标造成的伤害值+1："..
   "2.令任意名其他角色各摸一张牌；3.摸三张牌，然后此技能本回合失效。",
   ["zhizhe"] = "智哲",
-  [":zhizhe"] = "限定技，出牌阶段，你可以复制一张手牌。当你使用或打出此牌结算后，收回手牌，然后本回合你不能再使用或打出此牌。",
+  [":zhizhe"] = "限定技，出牌阶段，你可以复制一张手牌（衍生牌除外）。当你使用或打出此牌结算后，收回手牌，然后本回合你不能再使用或打出此牌。",
   ["@$qingshi-turn"] = "情势",
   ["@@qingshi-turn"] = "情势失效",
   ["#qingshi-invoke"] = "情势：请选择一项（当前使用牌为%arg）",
@@ -5425,7 +5446,9 @@ Fk:loadTranslationTable{
   ["qingshi3"] = "摸三张牌，然后此技能本回合失效",
   ["#qingshi1-choose"] = "情势：令%arg对其中一名目标造成伤害+1",
   ["#qingshi2-choose"] = "情势：令任意名其他角色各摸一张牌",
-  ["#zhizhe_filter"] = "智哲",
+  ["#zhizhe_trigger"] = "智哲",
+  ["#zhizhe-active"] = "发动 智哲，选择一张手牌（衍生牌除外），获得一张此牌的复制",
+  ["@@zhizhe-inhand"] = "智哲",
 
   ["$jincui1"] = "情记三顾之恩，亮必继之以死。",
   ["$jincui2"] = "身负六尺之孤，臣当鞠躬尽瘁。",

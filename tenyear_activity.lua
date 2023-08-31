@@ -778,6 +778,220 @@ Fk:loadTranslationTable{
   ["~niufu"] = "胡儿安敢杀我！",
 }
 
+local dongxie = General(extension, "dongxie", "qun", 4, 4, General.Female)
+local jiaoxia = fk.CreateTriggerSkill{
+  name = "jiaoxia",
+  anim_type = "offensive",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == player.Play
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#jiaoxia-invoke")
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@@jiaoxia-phase", 1)
+  end,
+
+  refresh_events = {fk.AfterCardTargetDeclared},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.card.trueName == "slash"
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local yes = false
+    for _, id in ipairs(TargetGroup:getRealTargets(data.tos)) do
+      local p = room:getPlayerById(id)
+      if p:getMark("jiaoxia-phase") == 0 then
+        room:setPlayerMark(p, "jiaoxia-phase", 1)
+        yes = true
+      end
+    end
+    if yes then
+      player:addCardUseHistory(data.card.trueName, -1)
+    end
+  end,
+}
+local jiaoxia_filter = fk.CreateFilterSkill{
+  name = "#jiaoxia_filter",
+  anim_type = "offensive",
+  card_filter = function(self, card, player)
+    return player:getMark("@@jiaoxia-phase") > 0 and not table.contains(player:getCardIds("ej"), card.id)
+  end,
+  view_as = function(self, card)
+    local c = Fk:cloneCard("slash", card.suit, card.number)
+    c.skillName = "jiaoxia"
+    return c
+  end,
+}
+local jiaoxia_trigger = fk.CreateTriggerSkill{
+  name = "#jiaoxia_trigger",
+  mute = true,
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and table.contains(data.card.skillNames, "jiaoxia") and not player.dead then
+      local c = Fk:getCardById(data.card:getEffectiveId())
+      local card = Fk:cloneCard(c.name)
+      return (card.type == Card.TypeBasic or card:isCommonTrick()) and not player:prohibitUse(card) and card.skill:canUse(player, card)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local name = Fk:getCardById(data.card:getEffectiveId()).name
+    room:setPlayerMark(player, "jiaoxia-tmp", name)
+    local success, dat = room:askForUseActiveSkill(player, "jiaoxia_viewas", "#jiaoxia-use:::"..name, true)
+    room:setPlayerMark(player, "jiaoxia-tmp", 0)
+    if success then
+      local card = Fk:cloneCard(name)
+      room:useCard{
+        from = player.id,
+        tos = table.map(dat.targets, function(id) return {id} end),
+        card = card,
+        skillName = "jiaoxia_viewas",
+        extraUse = true,
+      }
+    end
+  end,
+}
+local jiaoxia_viewas = fk.CreateViewAsSkill{
+  name = "jiaoxia_viewas",
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  view_as = function(self, cards)
+    if Self:getMark("jiaoxia-tmp") == 0 then return end
+    local card = Fk:cloneCard(Self:getMark("jiaoxia-tmp"))
+    card.skillName = self.name
+    return card
+  end,
+}
+local jiaoxia_targetmod = fk.CreateTargetModSkill{
+  name = "#jiaoxia_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    return card and scope == Player.HistoryPhase and table.contains(card.skillNames, "jiaoxia_viewas")
+  end,
+}
+local humei = fk.CreateActiveSkill{
+  name = "humei",
+  anim_type = "control",
+  card_num = 0,
+  target_num = 1,
+  prompt = function(self)
+    return "#humei:::"..Self:getMark("humei-phase")
+  end,
+  interaction = function(self)
+    local choices = {}
+    for i = 1, 3, 1 do
+      if Self:getMark("humei"..i.."-phase") == 0 then
+        table.insert(choices, "humei"..i.."-phase")
+      end
+    end
+    return UI.ComboBox { choices = choices }
+  end,
+  can_use = function(self, player)
+    for i = 1, 3, 1 do
+      if player:getMark("humei"..i.."-phase") == 0 then
+        return true
+      end
+    end
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    local target = Fk:currentRoom():getPlayerById(to_select)
+    if #selected == 0 and target.hp <= Self:getMark("humei-phase") then
+      if self.interaction.data == "humei1-phase" then
+        return true
+      elseif self.interaction.data == "humei2-phase" then
+        return not target:isNude()
+      elseif self.interaction.data == "humei3-phase" then
+        return target:isWounded()
+      end
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    room:setPlayerMark(player, self.interaction.data, 1)
+    if self.interaction.data == "humei1-phase" then
+      target:drawCards(1, self.name)
+    elseif self.interaction.data == "humei2-phase" then
+      local card = room:askForCard(target, 1, 1, true, self.name, false, ".", "#humei-give:"..player.id)
+      room:obtainCard(player, card[1], false, fk.ReasonGive)
+    elseif self.interaction.data == "humei3-phase" then
+      room:recover{
+        who = target,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      }
+    end
+  end,
+}
+local humei_record = fk.CreateTriggerSkill{
+  name = "#humei_record",
+
+  refresh_events = {fk.Damage, fk.EventAcquireSkill},
+  can_refresh = function(self, event, target, player, data)
+    if target == player and player.phase == Player.Play then
+      if event == fk.Damage then
+        return true
+      else
+        return data.name == "humei"
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.Damage then
+      room:addPlayerMark(player, "humei-phase", 1)
+    else
+      local events = room.logic:getEventsOfScope(GameEvent.ChangeHp, 999, function(e)
+        local damage = e.data[5]
+        if damage and player == damage.from then
+          room:addPlayerMark(player, "humei-phase", 1)
+        end
+      end, Player.HistoryPhase)
+    end
+  end,
+}
+Fk:addSkill(jiaoxia_viewas)
+jiaoxia:addRelatedSkill(jiaoxia_filter)
+jiaoxia:addRelatedSkill(jiaoxia_targetmod)
+jiaoxia:addRelatedSkill(jiaoxia_trigger)
+humei:addRelatedSkill(humei_record)
+dongxie:addSkill(jiaoxia)
+dongxie:addSkill(humei)
+Fk:loadTranslationTable{
+  ["dongxie"] = "董翓",
+  ["jiaoxia"] = "狡黠",
+  [":jiaoxia"] = "出牌阶段开始时，你可以令本阶段你的手牌均视为【杀】。若你以此法使用的【杀】造成了伤害，此【杀】结算后你视为使用原牌名的牌。"..
+  "出牌阶段，你对每名角色使用第一张【杀】无次数限制。",
+  ["humei"] = "狐魅",
+  [":humei"] = "出牌阶段每项限一次，你可以选择一项，令一名体力值不大于X的角色执行：1.摸一张牌；2.交给你一张牌；3.回复1点体力"..
+  "（X为你本阶段造成伤害次数）。",
+  ["#jiaoxia-invoke"] = "狡黠：你可以令本阶段你的手牌均视为【杀】，且结算后你视为使用原本牌名的牌！",
+  ["@@jiaoxia-phase"] = "狡黠",
+  ["#jiaoxia_filter"] = "狡黠",
+  ["jiaoxia_viewas"] = "狡黠",
+  ["#jiaoxia-use"] = "狡黠：请视为使用【%arg】",
+  ["#humei"] = "狐魅：令一名体力值不大于%arg的角色执行一项",
+  ["humei1-phase"] = "摸一张牌",
+  ["humei2-phase"] = "交给你一张牌",
+  ["humei3-phase"] = "回复1点体力",
+  ["#humei-give"] = "狐魅：请交给 %src 一张牌",
+  
+  ["$jiaoxia1"] = "暗剑匿踪，现时必捣黄龙！",
+  ["$jiaoxia2"] = "袖中藏刃，欲取诸君之头！",
+  ["$humei1"] = "尔为靴下之臣，当行顺我之事。",
+  ["$humei2"] = "妾身一笑，可倾将军之城否？",
+  ["~dongxie"] = "覆巢之下，断无完卵余生……",
+}
+
 --逐鹿天下：张恭 吕凯 卫温诸葛直
 
 --自走棋：沙摩柯 忙牙长 许贡 张昌蒲

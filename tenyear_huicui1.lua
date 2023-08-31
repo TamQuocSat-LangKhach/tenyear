@@ -1516,7 +1516,15 @@ Fk:loadTranslationTable{
   ["~ty__sunru"] = "伯言，抗儿便托付于你了。",
 }
 
---夏侯令女
+Fk:loadTranslationTable{
+  ["xiahoulingnv"] = "夏侯令女",
+  ["fuping"] = "浮萍",
+  [":fuping"] = "当其他角色以你为目标的牌结算后，若你未记录此牌，你可以废除一个装备栏并记录此牌。你可以将一张非基本牌当记录的牌使用或打出"..
+  "（每种牌名每回合限一次）。若你的装备栏均已废除，你使用牌无距离限制。",
+  ["weilie"] = "炜烈",
+  [":weilie"] = "每局游戏限一次，出牌阶段，你可以弃置一张牌令一名角色回复1点体力，然后若其已受伤，则其摸一张牌。你每次发动〖浮萍〗记录牌名时，"..
+  "此技能可发动次数+1。",
+}
 
 local zhangyao = General(extension, "zhangyao", "wu", 3, 3, General.Female)
 local yuanyu = fk.CreateActiveSkill{
@@ -2434,12 +2442,23 @@ Fk:loadTranslationTable{
   ["yiyong"] = "异勇",
   [":yiyong"] = "当你对其他角色造成伤害时，你可以弃置任意张牌，令该角色弃置任意张牌。若你弃置的牌的点数之和：不大于其，你摸X张牌"..
   "（X为该角色弃置的牌数）；不小于其，此伤害+1。",
+  --"当你对其他角色造成伤害时，你可以与其同时弃置任意张牌，若你弃置的牌点数之和：不大于其，你摸X张牌（X为该角色弃置的牌数）；不小于其，此伤害+1。",
   ["#yiyong-invoke"] = "异勇：你可以弃置任意张牌，令 %dest 弃置任意张牌，根据双方弃牌点数之和执行效果",
   ["#yiyong-discard"] = "异勇：弃置任意张牌，若点数之和大于等于%arg则 %src 摸牌，若小于则伤害+1",
 
   ["$yiyong1"] = "关氏鼠辈，庞令明之子来邪！",
   ["$yiyong2"] = "凭一腔勇力，父仇定可报还。",
   ["~panghui"] = "大仇虽报，奈何心有余创。",
+}
+
+Fk:loadTranslationTable{
+  ["yuechen"] = "乐綝",
+  ["porui"] = "破锐",
+  [":porui"] = "每轮限一次，其他角色的结束阶段，你可以弃置一张牌并选择本回合内失去过牌的另一名其他角色，你视为对该角色依次使用X+1张【杀】，然后你"..
+  "交给其X张手牌（X为其本回合失去的牌数且最多为5，不足则全交给）。",
+  ["gonghu"] = "共护",
+  [":gonghu"] = "锁定技，当你于回合外一回合失去超过一张基本牌后，〖破锐〗改为“每轮限两次”；当你于回合外一回合造成或受到伤害超过1点伤害后，"..
+  "你删除〖破锐〗中交给牌的效果。若以上两个效果均已触发，则你本局游戏使用红色基本牌无法响应，使用红色普通锦囊牌可以额外指定一个目标。",
 }
 
 --天下归心：魏贾诩 陈登 蔡瑁张允 高览 尹夫人 吕旷吕翔 陈珪 陈矫 秦朗 唐咨
@@ -3224,18 +3243,15 @@ local ty__xingzhao = fk.CreateTriggerSkill{
   events = {fk.HpChanged, fk.MaxHpChanged, fk.CardUsing, fk.EventPhaseChanging, fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self.name) then
+      local n = #table.filter(player.room.alive_players, function(p) return p:isWounded() end)
       if event == fk.HpChanged or event == fk.MaxHpChanged then
-        return (player:hasSkill("xunxun", true) and #table.filter(player.room.alive_players, function(p) return p:isWounded() end) == 0) or
-          (not player:hasSkill("xunxun", true) and #table.filter(player.room.alive_players, function(p) return p:isWounded() end) > 0)
+        return (player:hasSkill("xunxun", true) and n == 0) or (not player:hasSkill("xunxun", true) and n > 0)
       elseif event == fk.CardUsing then
-        return target == player and data.card.type == Card.TypeEquip and
-          #table.filter(player.room.alive_players, function(p) return p:isWounded() end) > 1
+        return target == player and data.card.type == Card.TypeEquip and n > 1
       elseif event == fk.EventPhaseChanging then
-        return target == player and (data.to == Player.Judge or data.to == Player.Discard) and
-          #table.filter(player.room.alive_players, function(p) return p:isWounded() end) > 2
+        return target == player and (data.to == Player.Judge or data.to == Player.Discard) and n > 2
       elseif event == fk.DamageCaused then
-        return target == player and data.card and not data.chain and
-          #table.filter(player.room.alive_players, function(p) return p:isWounded() end) > 3
+        return target == player and data.card and not data.chain and (n == 0 or n > 3)
       end
     end
   end,
@@ -3267,10 +3283,21 @@ Fk:loadTranslationTable{
   ["ty__tangzi"] = "唐咨",
   ["ty__xingzhao"] = "兴棹",
   [":ty__xingzhao"] = "锁定技，场上受伤的角色为1个或以上，你拥有技能〖恂恂〗；2个或以上，你使用装备牌时摸一张牌；"..
-  "3个或以上，你跳过判定和弃牌阶段，4个或以上，你使用牌对目标角色造成的伤害+1。",
+  "3个或以上，你跳过判定和弃牌阶段；0个、4个或以上，你使用牌对目标角色造成的伤害+1。",
 }
 
---绕庭之鸦：孙资刘放 岑昏
+--绕庭之鸦：黄皓 孙资刘放 岑昏
+Fk:loadTranslationTable{
+  ["ty__huanghao"] = "黄皓",
+  ["ty__qinqing"] = "寝情",
+  [":ty__qinqing"] = "结束阶段，你可以弃置攻击范围内含有一号位的一名其他角色的一张牌。然后若其手牌比一号位多，你摸一张牌。",
+  ["ty__huisheng"] = "贿生",
+  [":ty__huisheng"] = "当你受到其他角色对你造成的伤害时，你可以令其观看你任意张牌并令其选择一项：1.获得其中一张牌，防止此伤害，"..
+  "然后你不能再对其发动〖贿生〗；2.弃置等量的牌。",
+  ["cunwei"] = "存畏",
+  [":cunwei"] = "锁定技，当你成为锦囊牌的目标后，若你：是此牌唯一目标，你摸一张牌；不是此牌唯一目标，你弃置一张牌。",
+}
+
 local sunziliufang = General(extension, "ty__sunziliufang", "wei", 3)
 local qinshen = fk.CreateTriggerSkill{
   name = "qinshen",

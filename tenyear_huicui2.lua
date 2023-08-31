@@ -331,13 +331,16 @@ jiezhen:addRelatedSkill(jiezhen_invalidity)
 huangchengyan:addSkill(jiezhen)
 huangchengyan:addSkill(zecai)
 huangchengyan:addSkill(yinshih)
+huangchengyan:addRelatedSkill("bazhen")
+huangchengyan:addRelatedSkill("ex__jizhi")
 Fk:loadTranslationTable{
   ["ty__huangchengyan"] = "黄承彦",
   ["jiezhen"] = "解阵",
   ["#jiezhen_trigger"] = "解阵",
-  [":jiezhen"] = "出牌阶段限一次，你可令一名其他角色的所有技能替换为“八阵”（锁定技，限定技，觉醒技，主公技除外），你的下回合开始或当其【八卦阵】判定后，其失去“八阵”并获得原技能，然后你获得其区域里的一张牌。",
+  [":jiezhen"] = "出牌阶段限一次，你可令一名其他角色的所有技能替换为〖八阵〗（锁定技、限定技、觉醒技、主公技除外），"..
+  "你的下回合开始或当其【八卦阵】判定后，其失去〖八阵〗并获得原技能，然后你获得其区域里的一张牌。",
   ["zecai"] = "择才",
-  [":zecai"] = "限定技，一轮结束时，你可令一名其他角色获得“集智”直到下一轮结束，若其是本轮使用锦囊牌数唯一最多的角色，其执行一个额外的回合。",
+  [":zecai"] = "限定技，一轮结束时，你可令一名其他角色获得〖集智〗直到下一轮结束，若其是本轮使用锦囊牌数唯一最多的角色，其执行一个额外的回合。",
   ["yinshih"] = "隐世",
   [":yinshih"] = "锁定技，你每回合首次受到无色牌或非游戏牌造成的伤害时，防止此伤害。当场上有角色判定【八卦阵】时，你获得其生效的判定牌。",
 
@@ -355,7 +358,14 @@ Fk:loadTranslationTable{
   ["~ty__huangchengyan"] = "卧龙出山天伦逝，悔教吾婿离南阳……",
 }
 
---胡昭
+Fk:loadTranslationTable{
+  ["huzhao"] = "胡昭",
+  ["midu"] = "弥笃",
+  [":midu"] = "出牌阶段限一次，你可以选择一项：1.废除任意个装备栏或判定区，令一名角色摸等量的牌；2.恢复一个被废除的装备栏或判定区，"..
+  "你获得〖活墨〗直到你下个回合开始。",
+  ["xianwang"] = "贤望",
+  [":xianwang"] = "锁定技，若你有废除的装备栏，其他角色计算与你的距离+1，你计算与其他角色的距离-1；若你有至少三个废除的装备栏，以上数字改为2。",
+}
 
 local wanglie = General(extension, "wanglie", "qun", 3)
 local chongwang = fk.CreateTriggerSkill{
@@ -2683,7 +2693,7 @@ Fk:loadTranslationTable{
   ["#qianzheng-invoke"] = "愆正：你可以获得此%arg",
 }
 
---太平甲子：管亥 张闿 刘辟
+--太平甲子：管亥 张闿 刘辟 张楚 裴元绍
 local guanhai = General(extension, "guanhai", "qun", 4)
 local suoliang = fk.CreateTriggerSkill{
   name = "suoliang",
@@ -3008,6 +3018,50 @@ Fk:loadTranslationTable{
   ["$guangshi1"] = "舍身饲火，光耀人间。",
   ["$guangshi2"] = "愿为奉光之薪柴，照太平于人间。",
   ["~zhangchu"] = "苦难不尽，黄天不死……",
+}
+
+local peiyuanshao = General(extension, "peiyuanshao", "qun", 4)
+local moyu = fk.CreateActiveSkill{
+  name = "moyu",
+  anim_type = "offensive",
+  card_num = 0,
+  target_num = 1,
+  can_use = function(self, player)
+    return player:getMark("@@moyu-turn") == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    local target = Fk:currentRoom():getPlayerById(to_select)
+    return #selected == 0 and target ~= Self and target:getMark("moyu-turn") == 0 and not target:isAllNude()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local id = room:askForCardChosen(player, target, "hej", self.name)
+    room:obtainCard(player.id, id, false, fk.ReasonPrey)
+    if target.dead then return end
+    room:setPlayerMark(target, "moyu-turn", 1)
+    local use = room:askForUseCard(target, "slash", "slash", "#moyu-slash::"..player.id..":"..player:usedSkillTimes(self.name), true,
+      {must_targets = {player.id}, bypass_times = true})
+    if use then
+      use.additionalDamage = (use.additionalDamage or 0) + player:usedSkillTimes(self.name) - 1
+      room:useCard(use)
+      if not player.dead and use.damageDealt and use.damageDealt[player.id] then
+        room:setPlayerMark(player, "@@moyu-turn", 1)
+      end
+    end
+  end,
+}
+peiyuanshao:addSkill(moyu)
+Fk:loadTranslationTable{
+  ["peiyuanshao"] = "裴元绍",
+  ["moyu"] = "没欲",
+  [":moyu"] = "出牌阶段每名角色限一次，你可以获得一名其他角色区域内的一张牌，然后该角色可以对你使用一张伤害值为X的【杀】"..
+  "（X为本回合本技能发动次数），若此【杀】对你造成了伤害，本技能于本回合失效。",
+  ["#moyu-slash"] = "没欲：你可以对 %dest 使用一张【杀】，伤害基数为%arg",
+  ["@@moyu-turn"] = "没欲失效",
 }
 
 --异军突起：公孙度

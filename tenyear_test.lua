@@ -70,50 +70,6 @@ Fk:loadTranslationTable{
   ["#niji-use"] = "逆击：即将弃置所有“逆击”牌，你可以先使用其中一张牌",
 }
 
-local peiyuanshao = General(extension, "peiyuanshao", "qun", 4)
-local moyu = fk.CreateActiveSkill{
-  name = "moyu",
-  anim_type = "offensive",
-  card_num = 0,
-  target_num = 1,
-  can_use = function(self, player)
-    return player:getMark("@@moyu-turn") == 0
-  end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
-  target_filter = function(self, to_select, selected)
-    local target = Fk:currentRoom():getPlayerById(to_select)
-    return #selected == 0 and target ~= Self and target:getMark("moyu-turn") == 0 and not target:isAllNude()
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    local id = room:askForCardChosen(player, target, "hej", self.name)
-    room:obtainCard(player.id, id, false, fk.ReasonPrey)
-    if target.dead then return end
-    room:setPlayerMark(target, "moyu-turn", 1)
-    local use = room:askForUseCard(target, "slash", "slash", "#moyu-slash::"..player.id..":"..player:usedSkillTimes(self.name), true,
-      {must_targets = {player.id}, bypass_times = true})
-    if use then
-      use.additionalDamage = (use.additionalDamage or 0) + player:usedSkillTimes(self.name) - 1
-      room:useCard(use)
-      if not player.dead and use.damageDealt and use.damageDealt[player.id] then
-        room:setPlayerMark(player, "@@moyu-turn", 1)
-      end
-    end
-  end,
-}
-peiyuanshao:addSkill(moyu)
-Fk:loadTranslationTable{
-  ["peiyuanshao"] = "裴元绍",
-  ["moyu"] = "没欲",
-  [":moyu"] = "出牌阶段每名角色限一次，你可以获得一名其他角色区域内的一张牌，然后该角色可以对你使用一张伤害值为X的【杀】"..
-  "（X为本回合本技能发动次数），若此【杀】对你造成了伤害，本技能于本回合失效。",
-  ["#moyu-slash"] = "没欲：你可以对 %dest 使用一张【杀】，伤害基数为%arg",
-  ["@@moyu-turn"] = "没欲失效",
-}
-
 local dongwan = General(extension, "dongwan", "qun", 3, 3, General.Female)
 local shengdu = fk.CreateTriggerSkill{
   name = "shengdu",
@@ -232,16 +188,6 @@ Fk:loadTranslationTable{
   ["shexue"] = "设学",
   [":shexue"] = "出牌阶段开始时，你可以将一张牌当上回合的角色出牌阶段使用的最后一张基本牌或普通锦囊牌使用；"..
   "出牌阶段结束时，你可以令下回合的角色于其出牌阶段开始时可以将一张牌当你本阶段使用的最后一张基本牌或普通锦囊牌使用。",
-}
-
-Fk:loadTranslationTable{
-  ["yuechen"] = "乐綝",
-  ["porui"] = "破锐",
-  [":porui"] = "每轮限一次，其他角色的结束阶段，你可以弃置一张基本牌并选择一名此回合内失去过牌的另一名其他角色，你视为对该角色依次使用X+1张【杀】，"..
-  "然后你交给其X张手牌（X为你的体力值，不足则全给）。",
-  ["gonghu"] = "共护",
-  [":gonghu"] = "锁定技，当你于回合外失去基本牌后，〖破锐〗最后增加描述“若其没有因此受到伤害，你回复1点体力”；当你于回合外造成或受到伤害后，"..
-  "你删除〖破锐〗中交给牌的效果。若以上两个效果均已触发，则你本局游戏使用红色基本牌无法响应，使用红色普通锦囊牌可以额外指定一个目标。",
 }
 
 local zhangmancheng = General(extension, "ty__zhangmancheng", "qun", 4)

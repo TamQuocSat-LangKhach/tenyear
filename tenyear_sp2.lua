@@ -4604,7 +4604,7 @@ Fk:loadTranslationTable{
   ["~ty__wanglang"] = "我本东海弄墨客，如何枉做沙场魂……",
 }
 
---钟灵毓秀：董贵人 滕芳兰 张瑾云
+--钟灵毓秀：董贵人 滕芳兰 张瑾云 周不疑
 local dongguiren = General(extension, "dongguiren", "qun", 3, 3, General.Female)
 local lianzhi = fk.CreateTriggerSkill{
   name = "lianzhi",
@@ -5152,6 +5152,15 @@ Fk:loadTranslationTable{
   ["$jijiao1"] = "哀吾姊早逝，幸陛下垂怜。",
   ["$jijiao2"] = "居椒之殊荣，妾得之惶恐。",
   ["~zhangjinyun"] = "陛下，妾身来陪你了……",
+}
+
+Fk:loadTranslationTable{
+  ["zhoubuyi"] = "周不疑",
+  ["shijiz"] = "十计",
+  [":shijiz"] = "一名角色的结束阶段，若其本回合未造成伤害，你可以声明一种普通锦囊牌（每轮每种牌名限一次），其可以将一张牌当你声明的牌使用"..
+  "（不能指定其为目标）。",
+  ["silun"] = "四论",
+  [":silun"] = "准备阶段或当你受到伤害后，你可以摸四张牌，然后将四张牌依次置于场上、牌堆顶或牌堆底；若你将装备牌置于一名角色装备区，其复原武将牌。"
 }
 
 --武庙：诸葛亮

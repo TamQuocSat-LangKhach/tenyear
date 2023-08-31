@@ -1269,7 +1269,7 @@ local ty_ex__quanji = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if event == fk.AfterCardsMove and player:hasSkill(self.name) then
       for _, move in ipairs(data) do
-        if move.from == player.id and move.to and move.to ~= player.id then
+        if move.from == player.id and move.to and move.to ~= player.id and move.moveReason == fk.ReasonPrey then
           for _, info in ipairs(move.moveInfo) do
             if info.fromArea == Card.PlayerEquip or info.fromArea == Card.PlayerHand then
               self:doCost(event, target, player, data)
@@ -2008,6 +2008,64 @@ Fk:loadTranslationTable{
   ["~ty_ex__jvshou"] = "身处河南，魂归河北……",
 }
 
+local caorui = General(extension, "ty_ex__caorui", "wei", 3)
+local ty_ex__xingshuai = fk.CreateTriggerSkill{
+  name = "ty_ex__xingshuai$",
+  anim_type = "defensive",
+  frequency = Skill.Limited,
+  events = {fk.EnterDying},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and
+      not table.every(player.room:getOtherPlayers(player), function(p) return p.kingdom ~= "wei" end)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local targets = {}
+    for _, p in ipairs(room:getOtherPlayers(player)) do
+      if p.kingdom == "wei" and room:askForSkillInvoke(p, self.name, data, "#xingshuai-invoke::"..player.id) then
+        table.insert(targets, p)
+      end
+    end
+    if #targets > 0 then
+      for _, p in ipairs(targets) do
+        room:recover{
+          who = player,
+          num = 1,
+          recoverBy = p,
+          skillName = self.name
+        }
+      end
+    end
+    if not player.dying then
+      for _, p in ipairs(targets) do
+        room:damage{
+          to = p,
+          damage = 1,
+          skillName = self.name,
+        }
+      end
+    end
+  end,
+
+  refresh_events = {fk.Deathed},
+  can_refresh = function(self, event, target, player, data)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) > 0 and data.damage and data.damage.from and
+      data.damage.from:getMark("@@mingjian-turn") > 0 and data.damage.from.phase ~= Player.NotActive
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player:setSkillUseHistory(self.name, 0, Player.HistoryGame)
+  end,
+}
+caorui:addSkill("huituo")
+caorui:addSkill("mingjian")
+caorui:addSkill(ty_ex__xingshuai)
+Fk:loadTranslationTable{
+  ["ty_ex__caorui"] = "界曹叡",
+  ["ty_ex__xingshuai"] = "兴衰",
+  [":ty_ex__xingshuai"] = "主公技，限定技，当你进入濒死状态时，你可令其他魏势力角色依次选择是否令你回复1点体力。选择是的角色在此次濒死结算结束后受到1点"..
+  "无来源的伤害。有“明鉴”标记的角色于其回合内杀死一名角色后，此技能视为未发动过。",
+}
+
 local zhuzhi = General(extension, "ty_ex__zhuzhi", "wu", 4)
 local function doty_ex__anguo(player, type, source)
   local room = player.room
@@ -2155,6 +2213,13 @@ Fk:loadTranslationTable{
   ["ty_ex__huaiyi"] = "怀异",
   [":ty_ex__huaiyi"] = "出牌阶段限一次，你可以展示所有手牌。若仅有一种颜色，你摸一张牌，然后此技能本阶段改为“出牌阶段限两次”；"..
   "若有两种颜色，你弃置其中一种颜色的牌，然后获得至多X名角色各一张牌（X为弃置的手牌数），若你获得的牌大于一张，你失去1点体力。",
+}
+
+Fk:loadTranslationTable{
+  ["ty_ex__sundeng"] = "界孙登",
+  ["ty_ex__kuangbi"] = "匡弼",
+  [":ty_ex__kuangbi"] = "出牌阶段开始时，你可以令一名其他角色将至多三张牌置于你的武将牌上，回合结束移去“匡弼”牌。若如此做，当你本阶段使用牌时，"..
+  "若你：有相同花色的“匡弼”牌，则移去一张，然后你与该角色各摸一张牌；没有相同花色的“匡弼”牌，则随机移去一张，然后你摸一张牌。",
 }
 
 local huangyueying = General(extension, "ty_ex__huangyueying", "qun", 3, 3, General.Female)

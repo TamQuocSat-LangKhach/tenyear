@@ -5154,13 +5154,204 @@ Fk:loadTranslationTable{
   ["~zhangjinyun"] = "陛下，妾身来陪你了……",
 }
 
+local zhoubuyi = General(extension, "zhoubuyi", "wei", 3)
+local shijiz = fk.CreateTriggerSkill{
+  name = "shijiz",
+  anim_type = "support",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) and target ~= player and target.phase == Player.Finish and not target:isNude() then
+      local events = player.room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function(e)
+        local damage = e.data[5]
+        return damage and target == damage.from
+      end, Player.HistoryTurn)
+      return #events == 0
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local mark = player:getMark("@$shijiz-round")
+    if mark == 0 then mark = {} end
+    local names, choices = {"Cancel"}, {"Cancel"}
+    for _, id in ipairs(Fk:getAllCardIds()) do
+      local card = Fk:getCardById(id)
+      if card:isCommonTrick() and not card.is_derived then
+        table.insertIfNeed(names, card.trueName)
+        card.skillName = self.name
+        if not table.contains(mark, card.trueName) and card.skill:canUse(target, card) then
+          table.insertIfNeed(choices, card.trueName)
+        end
+      end
+    end
+    if #choices == 1 then return end
+    local choice = player.room:askForChoice(player, choices, self.name, "#shijiz-invoke::"..target.id, false, names)
+    if choice ~= "Cancel" then
+      self.cost_data = choice
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local mark = player:getMark("@$shijiz-round")
+    if mark == 0 then mark = {} end
+    table.insert(mark, self.cost_data)
+    room:setPlayerMark(player, "@$shijiz-round", mark)
+    room:doIndicate(player.id, {target.id})
+    room:setPlayerMark(target, "shijiz-tmp", self.cost_data)
+    local success, dat = room:askForUseViewAsSkill(target, "shijiz_viewas", "#shijiz-use:::"..self.cost_data, true)
+    room:setPlayerMark(target, "shijiz-tmp", 0)
+    if success then
+      local card = Fk:cloneCard(self.cost_data)
+      card:addSubcards(dat.cards)
+      card.skillName = self.name
+      room:useCard{
+        from = target.id,
+        tos = table.map(dat.targets, function(p) return {p} end),
+        card = card,
+      }
+    end
+  end,
+}
+local shijiz_viewas = fk.CreateViewAsSkill{
+  name = "shijiz_viewas",
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Self:getMark("shijiz-tmp") ~= 0
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 then return end
+    local card = Fk:cloneCard(Self:getMark("shijiz-tmp"))
+    card:addSubcard(cards[1])
+    card.skillName = "shijiz"
+    return card
+  end,
+}
+local shijiz_prohibit = fk.CreateProhibitSkill{
+  name = "#shijiz_prohibit",
+  is_prohibited = function(self, from, to, card)
+    return card and from == to and table.contains(card.skillNames, "shijiz")
+  end,
+  prohibit_use = function(self, player, card)
+    return card and table.contains(card.skillNames, "shijiz") and table.contains({"ex_nihilo", "foresight"}, card.trueName)
+  end,
+}
+local silun = fk.CreateTriggerSkill{
+  name = "silun",
+  anim_type = "masochism",
+  events = {fk.EventPhaseStart, fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) then
+      if event == fk.EventPhaseStart then
+        return player.phase == Player.Start
+      else
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:drawCards(4, self.name)
+    for i = 1, 4, 1 do
+      if player.dead or player:isNude() then return end
+      room:askForUseActiveSkill(player, "silun_active", "#silun-card", false)
+    end
+  end,
+}
+local silun_active = fk.CreateActiveSkill{
+  name = "silun_active",
+  mute = true,
+  card_num = 1,
+  max_target_num = 1,
+  interaction = function()
+    return UI.ComboBox {choices = {"Field", "Top", "Bottom"}}
+  end,
+  card_filter = function(self, to_select, selected, targets)
+    if #selected == 0 then
+      if self.interaction.data == "Field" then
+        local card = Fk:getCardById(to_select)
+        return card.type == Card.TypeEquip or card.sub_type == Card.SubtypeDelayedTrick
+      end
+      return true
+    end
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if #selected == 0 and self.interaction.data == "Field" and #selected_cards == 1 then
+      local card = Fk:getCardById(selected_cards[1])
+      local target = Fk:currentRoom():getPlayerById(to_select)
+      if card.type == Card.TypeEquip then
+        return target:hasEmptyEquipSlot(card.sub_type)
+      elseif card.sub_type == Card.SubtypeDelayedTrick then
+        return not target:hasDelayedTrick(card.trueName) and not target:isProhibited(target, card)
+      end
+      return false
+    end
+  end,
+  feasible = function(self, selected, selected_cards)
+    if #selected_cards == 1 then
+      if self.interaction.data == "Field" then
+        return #selected == 1
+      else
+        return true
+      end
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    if self.interaction.data == "Field" then
+      local target = room:getPlayerById(effect.tos[1])
+      local card = Fk:getCardById(effect.cards[1])
+      if card.type == Card.TypeEquip then
+        room:moveCardTo(card, Card.PlayerEquip, target, fk.ReasonPut, "silun", "", true, player.id)
+        if not target.dead then
+          if not target.faceup then
+            target:turnOver()
+          end
+          if target.chained then
+            target:setChainState(false)
+          end
+        end
+      elseif card.sub_type == Card.SubtypeDelayedTrick then
+        room:moveCardTo(card, Card.PlayerJudge, target, fk.ReasonPut, "silun", "", true, player.id)
+      end
+    else
+      local drawPilePosition = 1
+      if self.interaction.data == "Bottom" then
+        drawPilePosition = -1
+      end
+      room:moveCards({
+        ids = effect.cards,
+        from = player.id,
+        toArea = Card.DrawPile,
+        moveReason = fk.ReasonJustMove,
+        skillName = "silun",
+        drawPilePosition = drawPilePosition,
+      })
+    end
+  end,
+}
+Fk:addSkill(shijiz_viewas)
+shijiz:addRelatedSkill(shijiz_prohibit)
+Fk:addSkill(silun_active)
+zhoubuyi:addSkill(shijiz)
+zhoubuyi:addSkill(silun)
 Fk:loadTranslationTable{
   ["zhoubuyi"] = "周不疑",
   ["shijiz"] = "十计",
   [":shijiz"] = "一名角色的结束阶段，若其本回合未造成伤害，你可以声明一种普通锦囊牌（每轮每种牌名限一次），其可以将一张牌当你声明的牌使用"..
   "（不能指定其为目标）。",
   ["silun"] = "四论",
-  [":silun"] = "准备阶段或当你受到伤害后，你可以摸四张牌，然后将四张牌依次置于场上、牌堆顶或牌堆底；若你将装备牌置于一名角色装备区，其复原武将牌。"
+  [":silun"] = "准备阶段或当你受到伤害后，你可以摸四张牌，然后将四张牌依次置于场上、牌堆顶或牌堆底；若你将装备牌置于一名角色装备区，其复原武将牌。",
+  ["@$shijiz-round"] = "十计",
+  ["#shijiz-invoke"] = "十计：你可以选择一种锦囊，令 %dest 可以将一张牌当此牌使用（不能指定其自己为目标）",
+  ["shijiz_viewas"] = "十计",
+  ["#shijiz-use"] = "十计：你可以将一张牌当【%arg】使用",
+  ["silun_active"] = "四论",
+  ["#silun-card"] = "四论：将一张牌置于场上、牌堆顶或牌堆底",
+  ["Field"] = "场上",
+
+  ["$shijiz1"] = "区区十丈之城，何须丞相图画。",
+  ["$shijiz2"] = "顽垒在前，可依不疑之计施为。",
+  ["$silun1"] = "习守静之术，行务时之风。",
+  ["$silun2"] = "纵笔瑞白雀，满座尽高朋。",
+  ["~zhoubuyi"] = "人心者，叵测也。",
 }
 
 --武庙：诸葛亮

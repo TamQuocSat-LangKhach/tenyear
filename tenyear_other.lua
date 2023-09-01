@@ -1,8 +1,10 @@
 local extension = Package("tenyear_other")
 extension.extensionName = "tenyear"
+extension.game_modes_whitelist = { "m_1v2_mode" }
 
 Fk:loadTranslationTable{
-  ["tenyear_other"] = "十周年-其他",
+  ["tenyear_other"] = "十周年-斗地主模式",
+  ["tycl"] = "典",
 }
 
 local longwang = General(extension, "longwang", "god", 3)
@@ -165,7 +167,7 @@ Fk:loadTranslationTable{
   [":sitian4"] = "弃置一名角色所有手牌（没有手牌则失去1点体力）",
   ["sitian5"] = "大雾",
   [":sitian5"] = "所有其他角色使用的下一张基本牌无效",
-  ["@@lw_dawu"] = "大雾",
+  ["@@lw_dawu"] = "雾",
 
   ["$ty__longgong1"] = "停手，大哥！给东西能换条命不？",
   ["$ty__longgong2"] = "冤家宜解不宜结。",
@@ -682,6 +684,129 @@ Fk:loadTranslationTable{
   ["#bianzhuang"] = "变装：你可以进行“变装”！然后视为使用一张【杀】",
   ["bianzhuang_viewas"] = "变装",
   ["#bianzhuang-slash"] = "变装：视为使用一张【杀】，附带“%arg”的技能效果！",
+}
+
+local cl__caocao = General(extension, "tycl__caocao", "wei", 4)
+local tycl__jianxiong = fk.CreateTriggerSkill{
+  name = "tycl__jianxiong",
+  anim_type = "masochism",
+  events = {fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local n = math.min(player:usedSkillTimes(self.name, Player.HistoryGame), 5)
+    player:drawCards(n, self.name)
+    if not player.dead and table.every(data.card and data.card:isVirtual() and data.card.subcards or {data.card.id}, function(id)
+      return room:getCardArea(id) == Card.Processing end) then
+      room:obtainCard(player.id, data.card, true, fk.ReasonJustMove)
+    end
+  end,
+}
+cl__caocao:addSkill(tycl__jianxiong)
+Fk:loadTranslationTable{
+  ["tycl__caocao"] = "曹操",
+  ["tycl__jianxiong"] = "奸雄",
+  [":tycl__jianxiong"] = "当你受到伤害后，你可以摸一张牌，并获得造成伤害的牌。当你发动此技能后，摸牌数+1（至多为5）。",
+}
+
+local cl__liubei = General(extension, "tycl__liubei", "shu", 4)
+local tycl__rende = fk.CreateActiveSkill{
+  name = "tycl__rende",
+  anim_type = "offensive",
+  card_num = 0,
+  target_num = 1,
+  prompt = "#tycl__rende",
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    local target = Fk:currentRoom():getPlayerById(to_select)
+    return #selected == 0 and to_select ~= Self.id and target:getMark("tycl__rende-phase") == 0 and target:getHandcardNum() > 1
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    room:setPlayerMark(target, "tycl__rende-phase", 1)
+    local cards = room:askForCardsChosen(player, target, 2, 2, "h", self.name)
+    local dummy = Fk:cloneCard("dilu")
+    dummy:addSubcards(cards)
+    room:obtainCard(player.id, dummy, false, fk.ReasonPrey)
+    if player.dead then return end
+    local success, dat = room:askForUseViewAsSkill(player, "#ex__rende_vs", "#ex__rende-ask", true)
+    if success then
+      local card = Fk.skills["#ex__rende_vs"]:viewAs(dat.cards)
+      local use = {
+        from = player.id,
+        tos = table.map(dat.targets, function(e) return {e} end),
+        card = card,
+      }
+      room:useCard(use)
+    end
+  end,
+}
+cl__liubei:addSkill(tycl__rende)
+Fk:loadTranslationTable{
+  ["tycl__liubei"] = "刘备",
+  ["tycl__rende"] = "章武",
+  [":tycl__rende"] = "出牌阶段每名其他角色限一次，你可以获得一名其他角色两张手牌，然后视为使用一张基本牌。",
+  ["#tycl__rende"] = "章武：获得一名其他角色两张手牌，然后视为使用一张基本牌",
+}
+
+local cl__sunquan = General(extension, "tycl__sunquan", "wu", 4)
+local tycl__zhiheng = fk.CreateActiveSkill{
+  name = "tycl__zhiheng",
+  anim_type = "drawcard",
+  min_card_num = 1,
+  target_num = 0,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 + Self:getMark("@tycl__zhiheng-phase")
+  end,
+  card_filter = function(self, to_select, selected)
+    return not Self:prohibitDiscard(Fk:getCardById(to_select))
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local hand = player:getCardIds(Player.Hand)
+    local more = #hand > 0
+    for _, id in ipairs(hand) do
+      if not table.contains(effect.cards, id) then
+        more = false
+        break
+      end
+    end
+    room:throwCard(effect.cards, self.name, player, player)
+    if player.dead then return end
+    room:drawCards(player, #effect.cards + (more and 1 or 0), self.name)
+  end
+}
+local tycl__zhiheng_record = fk.CreateTriggerSkill{
+  name = "#tycl__zhiheng_record",
+
+  refresh_events = {fk.Damage},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:hasSkill("tycl__zhiheng") and player.phase == Player.Play and data.to ~= player.id
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local mark = player:getMark("tycl__zhiheng_record-phase")
+    if mark == 0 then mark = {} end
+    if not table.contains(mark, data.to.id) then
+      table.insert(mark, data.to.id)
+      room:setPlayerMark(player, "tycl__zhiheng_record-phase", mark)
+      room:addPlayerMark(player, "@tycl__zhiheng-phase", 1)
+    end
+  end,
+}
+tycl__zhiheng:addRelatedSkill(tycl__zhiheng_record)
+cl__sunquan:addSkill(tycl__zhiheng)
+Fk:loadTranslationTable{
+  ["tycl__sunquan"] = "孙权",
+  ["tycl__zhiheng"] = "制衡",
+  [":tycl__zhiheng"] = "出牌阶段限一次，你可以弃置任意张牌，然后摸等量的牌。若你以此法弃置了所有的手牌，额外摸1张牌。出牌阶段对每名角色限一次，"..
+  "当你对其他角色造成伤害后，此技能本阶段可发动次数+1。",
+  ["@tycl__zhiheng-phase"] = "制衡",
 }
 
 return extension

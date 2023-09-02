@@ -5160,7 +5160,7 @@ local shijiz = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) and target ~= player and target.phase == Player.Finish and not target:isNude() then
+    if player:hasSkill(self.name) and target.phase == Player.Finish and not target:isNude() then
       local events = player.room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function(e)
         local damage = e.data[5]
         return damage and target == damage.from
@@ -5169,22 +5169,36 @@ local shijiz = fk.CreateTriggerSkill{
     end
   end,
   on_cost = function(self, event, target, player, data)
-    local mark = player:getMark("@$shijiz-round")
-    if mark == 0 then mark = {} end
-    local names, choices = {"Cancel"}, {"Cancel"}
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card:isCommonTrick() and not card.is_derived then
-        table.insertIfNeed(names, card.trueName)
-        card.skillName = self.name
-        if not table.contains(mark, card.trueName) and card.skill:canUse(target, card) then
-          table.insertIfNeed(choices, card.trueName)
+    local room = player.room
+    local mark = player:getMark("shijiz_names")
+    if type(mark) ~= "table" then
+      mark = {}
+      for _, id in ipairs(Fk:getAllCardIds()) do
+        local card = Fk:getCardById(id)
+        if card:isCommonTrick() and not card.is_derived then
+          table.insertIfNeed(mark, card.name)
+        end
+      end
+      room:setPlayerMark(player, "shijiz_names", mark)
+    end
+    local mark2 = player:getMark("@$shijiz-round")
+    if mark2 == 0 then mark2 = {} end
+    local names, choices = {}, {}
+    for _, name in ipairs(mark) do
+      local card = Fk:cloneCard(name)
+      card.skillName = self.name
+      if target:canUse(card) and not target:prohibitUse(card) then
+        table.insert(names, name)
+        if not table.contains(mark2, name) then
+          table.insert(choices, name)
         end
       end
     end
-    if #choices == 1 then return end
-    local choice = player.room:askForChoice(player, choices, self.name, "#shijiz-invoke::"..target.id, false, names)
+    table.insert(names, "Cancel")
+    table.insert(choices, "Cancel")
+    local choice = room:askForChoice(player, choices, self.name, "#shijiz-invoke::"..target.id, false, names)
     if choice ~= "Cancel" then
+      room:doIndicate(player.id, {target.id})
       self.cost_data = choice
       return true
     end
@@ -5229,9 +5243,6 @@ local shijiz_prohibit = fk.CreateProhibitSkill{
   is_prohibited = function(self, from, to, card)
     return card and from == to and table.contains(card.skillNames, "shijiz")
   end,
-  prohibit_use = function(self, player, card)
-    return card and table.contains(card.skillNames, "shijiz") and table.contains({"ex_nihilo", "foresight"}, card.trueName)
-  end,
 }
 local silun = fk.CreateTriggerSkill{
   name = "silun",
@@ -5251,7 +5262,16 @@ local silun = fk.CreateTriggerSkill{
     player:drawCards(4, self.name)
     for i = 1, 4, 1 do
       if player.dead or player:isNude() then return end
-      room:askForUseActiveSkill(player, "silun_active", "#silun-card", false)
+      local success, _ = room:askForUseActiveSkill(player, "silun_active", "#silun-card:::" .. tostring(i), false)
+      if not success then
+        room:moveCards({
+          ids = {player:getCardIds("he")[1]},
+          from = player.id,
+          toArea = Card.DrawPile,
+          moveReason = fk.ReasonPut,
+          skillName = self.name,
+        })
+      end
     end
   end,
 }
@@ -5279,7 +5299,7 @@ local silun_active = fk.CreateActiveSkill{
       if card.type == Card.TypeEquip then
         return target:hasEmptyEquipSlot(card.sub_type)
       elseif card.sub_type == Card.SubtypeDelayedTrick then
-        return not target:hasDelayedTrick(card.trueName) and not target:isProhibited(target, card)
+        return not target:isProhibited(target, card)
       end
       return false
     end
@@ -5295,21 +5315,39 @@ local silun_active = fk.CreateActiveSkill{
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
+    local card_id = effect.cards[1]
+    local reset_self = room:getCardArea(card_id) == Card.PlayerEquip
     if self.interaction.data == "Field" then
       local target = room:getPlayerById(effect.tos[1])
-      local card = Fk:getCardById(effect.cards[1])
+      local card = Fk:getCardById(card_id)
       if card.type == Card.TypeEquip then
         room:moveCardTo(card, Card.PlayerEquip, target, fk.ReasonPut, "silun", "", true, player.id)
-        if not target.dead then
-          if not target.faceup then
-            target:turnOver()
+        if reset_self and not player.dead then
+          if player.chained then
+            player:setChainState(false)
           end
+          if not player.dead and not player.faceup then
+            player:turnOver()
+          end
+        end
+        if not target.dead then
           if target.chained then
             target:setChainState(false)
+          end
+          if not target.dead and not target.faceup then
+            target:turnOver()
           end
         end
       elseif card.sub_type == Card.SubtypeDelayedTrick then
         room:moveCardTo(card, Card.PlayerJudge, target, fk.ReasonPut, "silun", "", true, player.id)
+        if reset_self and not player.dead then
+          if player.chained then
+            player:setChainState(false)
+          end
+          if not player.dead and not player.faceup then
+            player:turnOver()
+          end
+        end
       end
     else
       local drawPilePosition = 1
@@ -5320,10 +5358,18 @@ local silun_active = fk.CreateActiveSkill{
         ids = effect.cards,
         from = player.id,
         toArea = Card.DrawPile,
-        moveReason = fk.ReasonJustMove,
+        moveReason = fk.ReasonPut,
         skillName = "silun",
         drawPilePosition = drawPilePosition,
       })
+      if reset_self and not player.dead then
+        if player.chained then
+          player:setChainState(false)
+        end
+        if not player.dead and not player.faceup then
+          player:turnOver()
+        end
+      end
     end
   end,
 }
@@ -5338,13 +5384,14 @@ Fk:loadTranslationTable{
   [":shijiz"] = "一名角色的结束阶段，若其本回合未造成伤害，你可以声明一种普通锦囊牌（每轮每种牌名限一次），其可以将一张牌当你声明的牌使用"..
   "（不能指定其为目标）。",
   ["silun"] = "四论",
-  [":silun"] = "准备阶段或当你受到伤害后，你可以摸四张牌，然后将四张牌依次置于场上、牌堆顶或牌堆底；若你将装备牌置于一名角色装备区，其复原武将牌。",
+  [":silun"] = "准备阶段或当你受到伤害后，你可以摸四张牌，然后将四张牌依次置于场上、牌堆顶或牌堆底，若此牌为你装备区里的牌，你复原武将牌，"..
+  "若你将装备牌置于一名角色装备区，其复原武将牌。",
   ["@$shijiz-round"] = "十计",
   ["#shijiz-invoke"] = "十计：你可以选择一种锦囊，令 %dest 可以将一张牌当此牌使用（不能指定其自己为目标）",
   ["shijiz_viewas"] = "十计",
   ["#shijiz-use"] = "十计：你可以将一张牌当【%arg】使用",
   ["silun_active"] = "四论",
-  ["#silun-card"] = "四论：将一张牌置于场上、牌堆顶或牌堆底",
+  ["#silun-card"] = "四论：将一张牌置于场上、牌堆顶或牌堆底（第%arg张/共4张）",
   ["Field"] = "场上",
 
   ["$shijiz1"] = "区区十丈之城，何须丞相图画。",

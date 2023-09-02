@@ -3044,7 +3044,7 @@ local moyu = fk.CreateActiveSkill{
     if target.dead then return end
     room:setPlayerMark(target, "moyu-turn", 1)
     local use = room:askForUseCard(target, "slash", "slash", "#moyu-slash::"..player.id..":"..player:usedSkillTimes(self.name), true,
-      {must_targets = {player.id}, bypass_times = true})
+      {must_targets = {player.id}, bypass_distances = true, bypass_times = true})
     if use then
       use.additionalDamage = (use.additionalDamage or 0) + player:usedSkillTimes(self.name) - 1
       room:useCard(use)
@@ -3058,11 +3058,11 @@ peiyuanshao:addSkill(moyu)
 Fk:loadTranslationTable{
   ["peiyuanshao"] = "裴元绍",
   ["moyu"] = "没欲",
-  [":moyu"] = "出牌阶段每名角色限一次，你可以获得一名其他角色区域内的一张牌，然后该角色可以对你使用一张伤害值为X的【杀】"..
+  [":moyu"] = "出牌阶段每名角色限一次，你可以获得一名其他角色区域内的一张牌，然后该角色可以对你使用一张无距离限制且伤害值为X的【杀】"..
   "（X为本回合本技能发动次数），若此【杀】对你造成了伤害，本技能于本回合失效。",
   ["#moyu-slash"] = "没欲：你可以对 %dest 使用一张【杀】，伤害基数为%arg",
   ["@@moyu-turn"] = "没欲失效",
-  
+
   ["$moyu1"] = "人之所有，我之所欲。",
   ["$moyu2"] = "胸有欲壑千丈，自当饥不择食。",
   ["~peiyuanshao"] = "好生厉害的白袍小将……",
@@ -3117,7 +3117,7 @@ local anliao = fk.CreateActiveSkill{
         n = n + 1
       end
     end
-    return player:usedSkillTimes(self.name) < n
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < n
   end,
   card_filter = function(self, to_select, selected)
     return false
@@ -3271,21 +3271,11 @@ local beifen = fk.CreateTriggerSkill{
 }
 local beifen_targetmod = fk.CreateTargetModSkill{
   name = "#beifen_targetmod",
-  residue_func = function(self, player, skill, scope)
-    if player:hasSkill("beifen") then
-      local n = #table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@shuangjia") > 0 end)
-      if player:getHandcardNum() > 2 * n then
-        return 999
-      end
-    end
+  bypass_times = function(self, player, skill, scope, card, to)
+    return player:hasSkill("beifen") and player:getHandcardNum() > 2 * player:getMark("shuangjia")
   end,
-  distance_limit_func =  function(self, player, skill)
-    if player:hasSkill("beifen") then
-      local n = #table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@shuangjia") > 0 end)
-      if player:getHandcardNum() > 2 * n then
-        return 999
-      end
-    end
+  bypass_distances =  function(self, player, skill, card, to)
+    return player:hasSkill("beifen") and player:getHandcardNum() > 2 * player:getMark("shuangjia")
   end,
 }
 shuangjia:addRelatedSkill(shuangjia_maxcards)

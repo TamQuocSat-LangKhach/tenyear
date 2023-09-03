@@ -4520,6 +4520,161 @@ Fk:loadTranslationTable{
   ["~zhujianping"] = "天机，不可泄露啊……",
 }
 
+local wufan = General(extension, "wufan", "wu", 4)
+local tianyun = fk.CreateTriggerSkill{
+  name = "tianyun",
+  events = {fk.GameStart, fk.TurnStart},
+  anim_type = "drawcard",
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) then return false end
+    if event == fk.GameStart then
+      local suits = {"spade", "heart", "club", "diamond"}
+      for _, id in ipairs(player:getCardIds(Player.Hand)) do
+        table.removeOne(suits, Fk:getCardById(id):getSuitString())
+      end
+      return #suits > 0
+    elseif event == fk.TurnStart then
+      return target.seat == player.room:getTag("RoundCount") and not player:isKongcheng()
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.GameStart then
+      return true
+    elseif event == fk.TurnStart then
+      return player.room:askForSkillInvoke(player, self.name)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local suits = {"spade", "heart", "club", "diamond"}
+    for _, id in ipairs(player:getCardIds(Player.Hand)) do
+      table.removeOne(suits, Fk:getCardById(id):getSuitString())
+    end
+    if event == fk.GameStart then
+      local cards = {}
+      while #suits > 0 do
+        local pattern = table.random(suits)
+        table.removeOne(suits, pattern)
+        table.insertTable(cards, room:getCardsFromPileByRule(".|.|"..pattern))
+      end
+      if #cards > 0 then
+        room:moveCards({
+          ids = cards,
+          to = player.id,
+          toArea = Card.PlayerHand,
+          moveReason = fk.ReasonPrey,
+          proposer = player.id,
+          skillName = self.name,
+        })
+      end
+    elseif event == fk.TurnStart then
+      local x = 4-#suits
+      if x == 0 then return false end
+      local result = room:askForGuanxing(player, room:getNCards(x))
+      if #result.top == 0 then
+        local targets = player.room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper),
+        1, 1, "#tianyun-choose:::" .. tostring(x), self.name, true)
+        if #targets > 0 then
+          room:drawCards(room:getPlayerById(targets[1]), x, self.name)
+          if not player.dead then
+            room:loseHp(player, 1, self.name)
+          end
+        end
+      end
+    end
+  end,
+}
+
+local yuyan = fk.CreateTriggerSkill{
+  name = "yuyan",
+  anim_type = "control",
+  events = {fk.RoundStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local to = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper),
+    1, 1, "#yuyan-choose", self.name, true, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "yuyan-round", self.cost_data)
+  end,
+}
+local yuyan_delay = fk.CreateTriggerSkill{
+  name = "#yuyan_delay",
+  anim_type = "control",
+  events = {fk.AfterDying, fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    if target == nil or player.dead or player:getMark("yuyan-round") ~= target.id then return false end
+    local room = player.room
+    if event == fk.AfterDying then
+      --FIXME:exit_funcs时，无法获取当前事件的信息（迷信规则集不可取……）
+      if player:getMark("yuyan_dying_effected-round") > 0 then return false end
+      local x = player:getMark("yuyan_dying_record-round")
+      if x == 0 then
+        room.logic:getEventsOfScope(GameEvent.Dying, 1, function (e)
+          local dying = e.data[1]
+          x = dying.who
+          room:setPlayerMark(player, "yuyan_dying_record-round", x)
+          return true
+        end, Player.HistoryRound)
+      end
+      return target.id == x
+    elseif event == fk.Damage then
+      local damage_event = room.logic:getCurrentEvent()
+      if not damage_event then return false end
+      local x = player:getMark("yuyan_damage_record-round")
+      if x == 0 then
+        room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
+          local reason = e.data[3]
+          if reason == "damage" then
+            local first_damage_event = e:findParent(GameEvent.Damage)
+            if first_damage_event then
+              x = first_damage_event.id
+              room:setPlayerMark(player, "yuyan_damage_record-round", x)
+            end
+            return true
+          end
+        end, Player.HistoryRound)
+      end
+      return damage_event.id == x
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    player:broadcastSkillInvoke(yuyan.name)
+    player.room:addPlayerMark(target, "@@yuyan-round")
+    if event == fk.AfterDying then
+      player.room:addPlayerMark(player, "yuyan_dying_effected-round")
+      if not player:hasSkill("ty__fenyin", true) then
+        player.room:addPlayerMark(player, "yuyan_tmpfenyin")
+        player.room:handleAddLoseSkills(player, "ty__fenyin", nil, true, false)
+      end
+    elseif event == fk.Damage then
+      player:drawCards(2, yuyan.name)
+    end
+  end,
+
+  refresh_events = {fk.AfterTurnEnd},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and player:getMark("yuyan_tmpfenyin") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:handleAddLoseSkills(player, "-ty__fenyin", nil, true, false)
+  end,
+}
+
+yuyan:addRelatedSkill(yuyan_delay)
+wufan:addSkill(tianyun)
+wufan:addSkill(yuyan)
+wufan:addRelatedSkill("ty__fenyin")
+
 Fk:loadTranslationTable{
   ["wufan"] = "吴范",
   ["tianyun"] = "天运",
@@ -4529,6 +4684,19 @@ Fk:loadTranslationTable{
   ["yuyan"] = "预言",
   [":yuyan"] = "每轮游戏开始时，你选择一名角色，若其是本轮第一个进入濒死状态的角色，则你获得技能〖奋音〗直到你的回合结束。"..
   "若其是本轮第一个造成伤害的角色，则你摸两张牌。",
+
+  ["#tianyun-choose"] = "天运：你可以令一名角色摸%arg张牌，然后你失去1点体力",
+  ["#yuyan-choose"] = "是否发动预言，选择一名角色，若其是本轮第一个进入濒死状态或造成伤害的角色，你获得增益",
+  ["#yuyan_delay"] = "预言",
+  ["@@yuyan-round"] = "预言",
+
+  ["$tianyun1"] = "天垂象，见吉凶。",
+  ["$tianyun2"] = "治历数，知风气。",
+  ["$yuyan1"] = "差若毫厘，谬以千里，需慎之。",
+  ["$yuyan2"] = "六爻之动，三极之道也。",
+  ["$ty__fenyin_wufan1"] = "奋音鼓劲，片甲不留！",
+  ["$ty__fenyin_wufan2"] = "奋勇杀敌，声罪致讨！",
+  ["~wufan"] = "天运之术今绝矣……",
 }
 
 local zhaozhi = General(extension, "zhaozhi", "shu", 3)

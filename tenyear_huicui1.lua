@@ -1516,14 +1516,174 @@ Fk:loadTranslationTable{
   ["~ty__sunru"] = "伯言，抗儿便托付于你了。",
 }
 
+local xiahoulingnv = General(extension, "xiahoulingnv", "wei", 4, 4, General.Female)
+local fuping = fk.CreateViewAsSkill{
+  name = "fuping",
+  anim_type = "special",
+  pattern = ".",
+  prompt = "#fuping-viewas",
+  interaction = function()
+    if type(Self:getMark("@$fuping")) ~= "table" then return end
+    local all_names, names = Self:getMark("@$fuping"), {}
+    local used_names = type(Self:getMark("fuping-turn")) == "table" and Self:getMark("fuping-turn") or {}
+    for _, name in ipairs(all_names) do
+      if not table.contains(used_names, name) then
+        local to_use = Fk:cloneCard(name)
+        to_use.skillName = "fuping"
+        if ((Fk.currentResponsePattern == nil and Self:canUse(to_use) and not Self:prohibitUse(to_use)) or
+          (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use))) then
+          table.insertIfNeed(names, name)
+        end
+      end
+    end
+    if #names == 0 then return end
+    return UI.ComboBox {choices = names, all_choices = all_names}
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected < 1 and Fk:getCardById(to_select).type ~= Card.TypeBasic
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 or not self.interaction.data then return end
+    local card = Fk:cloneCard(self.interaction.data)
+    card:addSubcard(cards[1])
+    card.skillName = self.name
+    return card
+  end,
+  enabled_at_play = function(self, player)
+    local names = player:getMark("@$fuping")
+    if type(names) ~= "table" then return false end
+    local used_names = type(player:getMark("fuping-turn")) == "table" and player:getMark("fuping-turn") or {}
+    for _, name in ipairs(names) do
+      if not table.contains(used_names, name) then
+        local to_use = Fk:cloneCard(name)
+        to_use.skillName = self.name
+        if player:canUse(to_use) and not player:prohibitUse(to_use) then
+          return true
+        end
+      end
+    end
+  end,
+  enabled_at_response = function(self, player, response)
+    local names = player:getMark("@$fuping")
+    if type(names) ~= "table" then return false end
+    local used_names = type(player:getMark("fuping-turn")) == "table" and player:getMark("fuping-turn") or {}
+    for _, name in ipairs(names) do
+      if not table.contains(used_names, name) then
+        local to_use = Fk:cloneCard(name)
+        to_use.skillName = self.name
+        if (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use)) then
+          return true
+        end
+      end
+    end
+  end,
+  before_use = function(self, player, useData)
+    local names = type(player:getMark("fuping-turn")) == "table" and player:getMark("fuping-turn") or {}
+    table.insert(names, useData.card.trueName)
+    player.room:setPlayerMark(player, "fuping-turn", names)
+  end,
+}
+local fuping_trigger = fk.CreateTriggerSkill{
+  name = "#fuping_trigger",
+  events = {fk.CardUseFinished},
+  main_skill = fuping,
+  can_trigger = function(self, event, target, player, data)
+    if target == player or not player:hasSkill(fuping.name) or #player:getAvailableEquipSlots() == 0 then return false end
+    if data.card.type ~= Card.TypeEquip and table.contains(TargetGroup:getRealTargets(data.tos), player.id) then
+      local mark = player:getMark("@$fuping")
+      return type(mark) ~= "table" or not table.contains(mark, data.card.trueName)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local all_choices = {"WeaponSlot", "ArmorSlot", "DefensiveRideSlot", "OffensiveRideSlot", "TreasureSlot"}
+    local subtypes = {Card.SubtypeWeapon, Card.SubtypeArmor, Card.SubtypeDefensiveRide, Card.SubtypeOffensiveRide, Card.SubtypeTreasure}
+    local choices = {}
+    for i = 1, 5, 1 do
+      if #player:getAvailableEquipSlots(subtypes[i]) > 0 then
+        table.insert(choices, all_choices[i])
+      end
+    end
+    table.insert(all_choices, "Cancel")
+    table.insert(choices, "Cancel")
+    local choice = player.room:askForChoice(player, choices, fuping.name, "#fuping-choice:::" .. data.card.trueName, false, all_choices)
+    if choice ~= "Cancel" then
+      self.cost_data = choice
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke(fuping.name)
+    room:abortPlayerArea(player, {self.cost_data})
+    local mark = type(player:getMark("@$fuping")) == "table" and player:getMark("@$fuping") or {}
+    table.insertIfNeed(mark, data.card.trueName)
+    room:setPlayerMark(player, "@$fuping", mark)
+  end,
+}
+local fuping_targetmod = fk.CreateTargetModSkill{
+  name = "#fuping_targetmod",
+  bypass_distances = function(self, player, skill, card, to)
+    return player:hasSkill(fuping.name) and #player:getAvailableEquipSlots() == 0
+  end,
+}
+local weilie = fk.CreateActiveSkill{
+  name = "weilie",
+  anim_type = "support",
+  prompt = function ()
+    local max_times = type(Self:getMark("@$fuping")) == "table" and #Self:getMark("@$fuping") or 0
+    return "#weilie-active:::" .. tostring(max_times - Self:usedSkillTimes("weilie", Player.HistoryGame) + 1)
+  end,
+  can_use = function(self, player)
+    local max_times = type(player:getMark("@$fuping")) == "table" and #player:getMark("@$fuping") or 0
+    return player:usedSkillTimes(self.name, Player.HistoryGame)  <= max_times
+  end,
+  card_filter = function(self, to_select, selected, targets)
+    return #selected == 0
+  end,
+  target_filter = function(self, to_select, selected, cards)
+    return #selected == 0 and Fk:currentRoom():getPlayerById(to_select):isWounded()
+  end,
+  target_num = 1,
+  card_num = 1,
+  on_use = function(self, room, effect)
+    local from = room:getPlayerById(effect.from)
+    room:throwCard(effect.cards, self.name, from, from)
+    local target = room:getPlayerById(effect.tos[1])
+    room:recover({
+      who = target,
+      num = 1,
+      recoverBy = from,
+      skillName = self.name
+    })
+    if not target.dead and target:isWounded() then
+      room:drawCards(target, 1, self.name)
+    end
+  end,
+}
+fuping:addRelatedSkill(fuping_trigger)
+fuping:addRelatedSkill(fuping_targetmod)
+xiahoulingnv:addSkill(fuping)
+xiahoulingnv:addSkill(weilie)
 Fk:loadTranslationTable{
   ["xiahoulingnv"] = "夏侯令女",
   ["fuping"] = "浮萍",
-  [":fuping"] = "当其他角色以你为目标的牌结算后，若你未记录此牌，你可以废除一个装备栏并记录此牌。你可以将一张非基本牌当记录的牌使用或打出"..
-  "（每种牌名每回合限一次）。若你的装备栏均已废除，你使用牌无距离限制。",
+  [":fuping"] = "当其他角色以你为目标的基本牌或锦囊牌牌结算后，若你未记录此牌，你可以废除一个装备栏并记录此牌。"..
+  "你可以将一张非基本牌当记录的牌使用或打出（每种牌名每回合限一次）。若你的装备栏均已废除，你使用牌无距离限制。",
   ["weilie"] = "炜烈",
   [":weilie"] = "每局游戏限一次，出牌阶段，你可以弃置一张牌令一名角色回复1点体力，然后若其已受伤，则其摸一张牌。你每次发动〖浮萍〗记录牌名时，"..
   "此技能可发动次数+1。",
+
+  ["#fuping_trigger"] = "浮萍",
+  ["#fuping-choice"] = "是否发动 浮萍，废除一个装备栏，记录牌名【%arg】",
+  ["@$fuping"] = "浮萍",
+  ["#fuping-viewas"] = "发动 浮萍，将一张非基本牌当记录过的牌使用",
+  ["#weilie-active"] = "发动 炜烈，弃置一张牌令一名已受伤的角色回复体力（剩余 %arg 次）",
+
+  ["$fuping1"] = "有草生清池，无根碧波上。",
+  ["$fuping2"] = "愿为浮萍草，托身寄清池。",
+  ["$weilie1"] = "好学尚贞烈，义形必沾巾。",
+  ["$weilie2"] = "贞烈过男子，何处弱须眉？",
+  ["~xiahoulingnv"] = "心存死志，绝不肯从！",
 }
 
 local zhangyao = General(extension, "zhangyao", "wu", 3, 3, General.Female)

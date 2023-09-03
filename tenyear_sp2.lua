@@ -2115,20 +2115,35 @@ local fangdu = fk.CreateTriggerSkill{
   events = {fk.Damaged},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and ((player:getMark("fangdu1-turn") == 0 and data.damageType == fk.NormalDamage) or
-      (player:getMark("fangdu2-turn") == 0 and data.damageType ~= fk.NormalDamage))
-  end,
-  on_trigger = function(self, event, target, player, data)
+    if player ~= target or not player:hasSkill(self.name) or player.phase ~= Player.NotActive then return false end
     local room = player.room
+    local damage_event = room.logic:getCurrentEvent()
+    if not damage_event then return false end
+    local mark_name = "fangdu1_record-turn"
     if data.damageType == fk.NormalDamage then
-      room:setPlayerMark(player, "fangdu1-turn", 1)
-      if not player:isWounded() then return end
+      if not player:isWounded() then return false end
     else
-      room:setPlayerMark(player, "fangdu2-turn", 1)
-      if not data.from or data.from == player or data.from:isKongcheng() then return end
+      if data.from == nil or data.from == player or data.from:isKongcheng() then return false end
+      mark_name = "fangdu2_record-turn"
     end
-    if player.phase ~= Player.NotActive then return end
-    self:doCost(event, target, player, data)
+    local x = player:getMark(mark_name)
+    if x == 0 then
+      room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
+        local reason = e.data[3]
+        if e.data[1] == player and reason == "damage" then
+          local first_damage_event = e:findParent(GameEvent.Damage)
+          if first_damage_event then
+            local damage = first_damage_event.data[1]
+            if damage.damageType == data.damageType then
+              x = first_damage_event.id
+              room:setPlayerMark(player, mark_name, x)
+              return true
+            end
+          end
+        end
+      end, Player.HistoryTurn)
+    end
+    return damage_event.id == x
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -2152,22 +2167,38 @@ local jiexing = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name)
   end,
-  on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#jiexing-invoke")
-  end,
   on_use = function(self, event, target, player, data)
+    player:drawCards(1, self.name)
+  end,
+
+  refresh_events = {fk.AfterCardsMove, fk.AfterTurnEnd},
+  can_refresh = function(self, event, target, player, data)
+    return true
+  end,
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
-    local id = player:drawCards(1, self.name)[1]
-    local mark = player:getMark("jiexing-turn")
-    if mark == 0 then mark = {} end
-    table.insertIfNeed(mark, id)
-    room:setPlayerMark(player, "jiexing-turn", mark)
+    if event == fk.AfterCardsMove then
+      for _, move in ipairs(data) do
+        if move.to == player.id and move.toArea == Card.PlayerHand and move.skillName == self.name then
+          for _, info in ipairs(move.moveInfo) do
+            local id = info.cardId
+            if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player then
+              room:setCardMark(Fk:getCardById(id), "@@jiexing-inhand", 1)
+            end
+          end
+        end
+      end
+    elseif event == fk.AfterTurnEnd then
+      for _, id in ipairs(player:getCardIds(Player.Hand)) do
+        room:setCardMark(Fk:getCardById(id), "@@jiexing-inhand", 0)
+      end
+    end
   end,
 }
 local jiexing_maxcards = fk.CreateMaxCardsSkill{
   name = "#jiexing_maxcards",
   exclude_from = function(self, player, card)
-    return player:getMark("jiexing-turn") ~= 0 and table.contains(player:getMark("jiexing-turn"), card.id)
+    return card:getMark("@@jiexing-inhand") > 0
   end,
 }
 jiexing:addRelatedSkill(jiexing_maxcards)
@@ -2179,7 +2210,9 @@ Fk:loadTranslationTable{
   [":fangdu"] = "锁定技，你的回合外，你每回合第一次受到普通伤害后回复1点体力，你每回合第一次受到属性伤害后随机获得伤害来源一张手牌。",
   ["jiexing"] = "节行",
   [":jiexing"] = "当你的体力值变化后，你可以摸一张牌，此牌不计入你本回合的手牌上限。",
+
   ["#jiexing-invoke"] = "节行：你可以摸一张牌，此牌本回合不计入手牌上限",
+  ["@@jiexing-inhand"] = "节行",
 
   ["$fangdu1"] = "浮萍却红尘，何意染是非？",
   ["$fangdu2"] = "我本无意争春，奈何群芳相妒。",

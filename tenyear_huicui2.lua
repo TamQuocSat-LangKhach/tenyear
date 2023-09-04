@@ -331,8 +331,6 @@ jiezhen:addRelatedSkill(jiezhen_invalidity)
 huangchengyan:addSkill(jiezhen)
 huangchengyan:addSkill(zecai)
 huangchengyan:addSkill(yinshih)
-huangchengyan:addRelatedSkill("bazhen")
-huangchengyan:addRelatedSkill("ex__jizhi")
 Fk:loadTranslationTable{
   ["ty__huangchengyan"] = "黄承彦",
   ["jiezhen"] = "解阵",
@@ -552,6 +550,12 @@ Fk:loadTranslationTable{
   ["#huagui-choice"] = "化归：选择将%arg交给 %src 或展示之",
   ["huagui1"] = "交出",
   ["huagui2"] = "展示",
+
+  ["$chongwang1"] = "乡人所崇者，烈之义行也。",
+  ["$chongwang2"] = "诸家争讼曲直，可质于我。",
+  ["$huagui1"] = "烈不才，难为君之朱紫。",
+  ["$huagui2"] = "一身风雨，难坐高堂。",
+  ["~wanglie"] = "烈尚不能自断，何断人乎？",
 }
 
 local mengjie = General(extension, "mengjie", "qun", 3)
@@ -806,6 +810,12 @@ Fk:loadTranslationTable{
   ["#yinlu3-invoke"] = "♠瘴气：你需弃置一张♠牌，否则失去1点体力",
   ["#yinlu4-invoke"] = "♣芸香：你可以弃置一张♣牌，获得一个可以防止1点伤害的“芸香”标记",
   ["#yinlu-yunxiang"] = "♣芸香：你可以消耗所有“芸香”，防止等量的伤害",
+  
+  ["$yinlu1"] = "南疆苦瘴，非土人不得过。",
+  ["$yinlu2"] = "闻丞相南征，某特来引之。",
+  ["$youqi1"] = "寒烟锁旧山，坐看云起出。",
+  ["$youqi2"] = "某隐居山野，不慕富贵功名。",
+  ["~mengjie"] = "蛮人无知，请丞相教之……",
 }
 
 --悬壶济世：吉平 孙寒华 郑浑 刘宠骆俊
@@ -1053,20 +1063,25 @@ local qiangzhiz = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local result = room:askForCustomDialog(player, self.name,
-      "packages/tenyear/qml/QiangzhiBox.qml", {
-        player.general, player:getCardIds(Player.Hand), player:getCardIds(Player.Equip),
-        target.general, target:getCardIds(Player.Hand), target:getCardIds(Player.Equip),
-      })
-    local cards
-    if result == "" then
-      local ids1 = table.simpleClone(player:getCardIds{Player.Hand, Player.Equip})
-      local ids2 = table.simpleClone(target:getCardIds{Player.Hand, Player.Equip})
-      table.insertTable(ids1, ids2)
-      cards = table.random(ids1, 3)
-    else
-      cards = json.decode(result)
+    local card_data = {}
+    if #target:getCardIds(Player.Hand) > 0 then
+      local handcards = {}
+      --FIXME：如何手动判定自动明牌的逻辑？
+      for _ = 1, #target:getCardIds(Player.Hand), 1 do
+        table.insert(handcards, -1)
+      end
+      table.insert(card_data, { "needhand", handcards })
     end
+    if #target:getCardIds(Player.Equip) > 0 then
+      table.insert(card_data, { "needequip", target:getCardIds(Player.Equip) })
+    end
+    if #player:getCardIds(Player.Hand) > 0 then
+      table.insert(card_data, { "wordhand", player:getCardIds(Player.Hand) })
+    end
+    if #player:getCardIds(Player.Equip) > 0 then
+      table.insert(card_data, { "wordequip", player:getCardIds(Player.Equip) })
+    end
+    local cards = room:askForCardsChosen(player, target, 3, 3, { card_data = card_data }, self.name)
     local cards1 = table.filter(cards, function(id) return table.contains(player:getCardIds{Player.Hand, Player.Equip}, id) end)
     local cards2 = table.filter(cards, function(id) return table.contains(target:getCardIds{Player.Hand, Player.Equip}, id) end)
     local moveInfos = {}
@@ -1164,6 +1179,17 @@ Fk:loadTranslationTable{
   ["#qiangzhiz-choose"] = "强峙：弃置双方共计三张牌",
   ["#pitian-invoke"] = "辟田：你可以将手牌摸至手牌上限，然后重置本技能增加的手牌上限",
   ["@pitian"] = "辟田",
+
+  ["wordhand"] = "我的手牌",
+  ["wordequip"] = "我的装备",
+  ["needhand"] = "对方手牌",
+  ["needequip"] = "对方装备",
+
+  ["$qiangzhiz1"] = "吾民在后，岂惧尔等魍魉。",
+  ["$qiangzhiz2"] = "凶兵来袭，当长戈相迎。",
+  ["$pitian1"] = "此间辟地数旬，必成良田千亩。",
+  ["$pitian2"] = "民以物力为天，物力唯田可得。",
+  ["~zhenghun"] = "此世为官，未辱青天之名……",
 }
 
 local liuchongluojun = General(extension, "liuchongluojun", "qun", 3)
@@ -1288,6 +1314,12 @@ Fk:loadTranslationTable{
   ["#jini1-invoke"] = "击逆：你可以重铸至多%arg张手牌",
   ["#jini2-invoke"] = "击逆：你可以重铸至多%arg张手牌，若摸到了【杀】，你可以对 %dest 使用一张无距离限制且不可响应的【杀】",
   ["#jini-slash"] = "击逆：你可以对 %dest 使用一张无距离限制且不可响应的【杀】",
+  
+  ["$minze1"] = "百姓千载皆苦，勿以苛政待之。",
+  ["$minze2"] = "黎庶待哺，人主当施恩德泽。",
+  ["$jini1"] = "备劲弩强刃，待恶客上门。",
+  ["$jini2"] = "逆贼犯境，诸君当共击之。",
+  ["~liuchongluojun"] = "袁术贼子，折我大汉基业……",
 }
 
 --纵横捭阖：陆郁生 祢衡 华歆 荀谌 冯熙 邓芝 宗预 羊祜
@@ -2491,6 +2523,12 @@ Fk:loadTranslationTable{
   ["#sigong-discard"] = "伺攻：你可以将手牌弃至一张，视为对 %dest 使用【杀】",
   ["#sigong-invoke"] = "伺攻：你可以视为对 %dest 使用【杀】",
   ["#sigong-draw"] = "伺攻：你可以摸一张牌，视为对 %dest 使用【杀】",
+  
+  ["$gue1"] = "哀兵必胜，况吾众志成城。",
+  ["$gue2"] = "扼守孤城，试问万夫谁开？",
+  ["$sigong1"] = "善守者亦善攻，不可死守。",
+  ["$sigong2"] = "璋军疲敝，可伺机而攻。",
+  ["~ty__huojun"] = "蒙君知恩，奈何早薨……",
 }
 
 local furongfuqian = General(extension, "furongfuqian", "shu", 4, 6)
@@ -2589,6 +2627,12 @@ Fk:loadTranslationTable{
   ["#ty__xuewei-choose"] = "血卫：你可以指定一名体力值不大于你的角色<br>直到你下回合开始前防止其受到的伤害，你失去1点体力并与其各摸一张牌",
   ["#yuguan-invoke"] = "御关：你可以减1点体力上限，令至多%arg名角色将手牌摸至体力上限",
   ["#yuguan-choose"] = "御关：令至多%arg名角色将手牌摸至体力上限",
+  
+  ["$ty__xuewei1"] = "慷慨赴国难，青山侠骨香。",
+  ["$ty__xuewei2"] = "舍身卫主之志，死犹未悔！",
+  ["$yuguan1"] = "城后即为汉土，吾等无路可退！",
+  ["$yuguan2"] = "舍身卫关，身虽死而志犹在。",
+  ["~furongfuqian"] = "此间，何有汉将军降者！",
 }
 
 local xianglang = General(extension, "xianglang", "shu", 3)
@@ -2691,6 +2735,12 @@ Fk:loadTranslationTable{
   ["#qianzheng1-card"] = "愆正：你可以重铸两张牌，若均不为%arg，结算后获得%arg2",
   ["#qianzheng2-card"] = "愆正：你可以重铸两张牌",
   ["#qianzheng-invoke"] = "愆正：你可以获得此%arg",
+  
+  ["$kanji1"] = "览文库全书，筑文心文胆。",
+  ["$kanji2"] = "世间学问，皆载韦编之上。",
+  ["$qianzheng1"] = "悔往昔之种种，恨彼时之切切。",
+  ["$qianzheng2"] = "罪臣怀咎难辞，有愧国恩。",
+  ["~xianglang"] = "识文重义而徇私，恨也……",
 }
 
 --太平甲子：管亥 张闿 刘辟 张楚 裴元绍
@@ -2755,6 +2805,12 @@ Fk:loadTranslationTable{
   ["qinbao"] = "侵暴",
   [":qinbao"] = "锁定技，手牌数大于等于你的其他角色不能响应你使用的【杀】或普通锦囊牌。",
   ["#suoliang-invoke"] = "索粮：你可以选择 %dest 最多其体力上限张牌，获得其中的<font color='red'>♥</font>和♣牌，若没有则弃置这些牌",
+  
+  ["$suoliang1"] = "奉上万石粮草，吾便退兵！",
+  ["$suoliang2"] = "听闻北海富庶，特来借粮。",
+  ["$qinbao1"] = "赤箓护身，神鬼莫当。",
+  ["$qinbao2"] = "头裹黄巾，代天征伐。",
+  ["~guanhai"] = "这红脸汉子，为何如此眼熟……",
 }
 
 local zhangkai = General(extension, "zhangkai", "qun", 4)
@@ -2823,6 +2879,10 @@ Fk:loadTranslationTable{
   ["#xiangshuz-choice"] = "相鼠：猜测 %dest 此阶段结束时的手牌数",
   ["#xiangshuz-discard"] = "相鼠：你可以弃置一张手牌令你猜测的数值不公布",
   ["@xiangshuz"] = "相鼠",
+
+  ["$xiangshuz1"] = "要财还是要命，选一个吧！",
+  ["$xiangshuz2"] = "有什么好东西，都给我交出来！",
+  ["~zhangkai"] = "报应竟来得这么快……",
 }
 
 local liupi = General(extension, "liupi", "qun", 4)
@@ -2899,6 +2959,10 @@ Fk:loadTranslationTable{
   ["juying1"] = "下个回合出牌阶段使用【杀】上限+1",
   ["juying2"] = "本回合手牌上限+2",
   ["juying3"] = "摸三张牌",
+
+  ["$juying1"] = "垒石为寨，纵万军亦可阻。",
+  ["$juying2"] = "如虎踞汝南，攻守自有我。",
+  ["~liupi"] = "玄德公高义，辟宁死不悔！",
 }
 
 local zhangchu = General(extension, "zhangchu", "qun", 3, 3, General.Female)

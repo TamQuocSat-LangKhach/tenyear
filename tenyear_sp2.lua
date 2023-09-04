@@ -39,13 +39,13 @@ local ty__jilei = fk.CreateTriggerSkill{
     local choice = room:askForChoice(player, {"basic", "trick", "equip"}, self.name)
     local mark = data.from:getMark("@ty__jilei")
     if mark == 0 then mark = {} end
-    table.insertIfNeed(mark, choice)
+    table.insertIfNeed(mark, choice .. "_char")
     room:setPlayerMark(data.from, "@ty__jilei", mark)
   end,
 
-  refresh_events = {fk.EventPhaseChanging},
+  refresh_events = {fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:getMark("@ty__jilei") ~= 0 and data.from == Player.RoundStart
+    return target == player and player:getMark("@ty__jilei") ~= 0
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@ty__jilei", 0)
@@ -54,19 +54,26 @@ local ty__jilei = fk.CreateTriggerSkill{
 local ty__jilei_prohibit = fk.CreateProhibitSkill{
   name = "#ty__jilei_prohibit",
   prohibit_use = function(self, player, card)
-    if player:getMark("@ty__jilei") ~= 0 then
-      return table.contains(player:getMark("@ty__jilei"), card:getTypeString())
+    local mark = player:getMark("@ty__jilei")
+    if type(mark) == "table" and table.contains(mark, card:getTypeString() .. "_char") then
+      local subcards = card:isVirtual() and card.subcards or {card.id}
+      return #subcards > 0 and table.every(subcards, function(id)
+        return table.contains(player:getCardIds(Player.Hand), id)
+      end)
     end
   end,
   prohibit_response = function(self, player, card)
-    if player:getMark("@ty__jilei") ~= 0 then
-      return table.contains(player:getMark("@ty__jilei"), card:getTypeString())
+    local mark = player:getMark("@ty__jilei")
+    if type(mark) == "table" and table.contains(mark, card:getTypeString() .. "_char") then
+      local subcards = card:isVirtual() and card.subcards or {card.id}
+      return #subcards > 0 and table.every(subcards, function(id)
+        return table.contains(player:getCardIds(Player.Hand), id)
+      end)
     end
   end,
   prohibit_discard = function(self, player, card)
-    if player:getMark("@ty__jilei") ~= 0 then
-      return table.contains(player:getMark("@ty__jilei"), card:getTypeString())
-    end
+    local mark = player:getMark("@ty__jilei")
+    return type(mark) == "table" and table.contains(mark, card:getTypeString() .. "_char")
   end,
 }
 ty__jilei:addRelatedSkill(ty__jilei_prohibit)

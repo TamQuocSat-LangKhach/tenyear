@@ -414,12 +414,12 @@ local kangge = fk.CreateTriggerSkill{
         end
         return turn_event.id == x
       elseif event == fk.AfterCardsMove then
-        local kange_id = player:getMark(self.name)
-        if kange_id ~= 0 and player:getMark("kangge-turn") < 3 then
-          local kangge_player = player.room:getPlayerById(kange_id)
+        local kangge_id = player:getMark(self.name)
+        if kangge_id ~= 0 and player:getMark("kangge-turn") < 3 then
+          local kangge_player = player.room:getPlayerById(kangge_id)
           if kangge_player.dead or kangge_player.phase ~= Player.NotActive then return false end
           for _, move in ipairs(data) do
-            if kange_id == move.to and move.toArea == Card.PlayerHand then
+            if kangge_id == move.to and move.toArea == Card.PlayerHand then
               return true
             end
           end
@@ -444,9 +444,9 @@ local kangge = fk.CreateTriggerSkill{
       end
     elseif event == fk.AfterCardsMove then
       local n = 0
-      local kange_id = player:getMark(self.name)
+      local kangge_id = player:getMark(self.name)
       for _, move in ipairs(data) do
-        if move.to and kange_id == move.to and move.toArea == Card.PlayerHand then
+        if move.to and kangge_id == move.to and move.toArea == Card.PlayerHand then
           n = n + #move.moveInfo
         end
       end
@@ -455,7 +455,7 @@ local kangge = fk.CreateTriggerSkill{
         local x = math.min(n, 3 - player:getMark("kangge-turn"))
         room:addPlayerMark(player, "kangge-turn", x)
         if player:getMark("@kangge") == 0 then
-          room:setPlayerMark(player, "@kangge", room:getPlayerById(kange_id).general)
+          room:setPlayerMark(player, "@kangge", room:getPlayerById(kangge_id).general)
         end
         player:drawCards(x, self.name)
       end
@@ -529,9 +529,9 @@ local jielie = fk.CreateTriggerSkill{
     local room = player.room
     local suit = self.cost_data
     room:loseHp(player, data.damage, self.name)
-    local kange_id = player:getMark(self.name)
-    if kange_id ~= 0 then
-      local to = room:getPlayerById(kange_id)
+    local kangge_id = player:getMark(self.name)
+    if kangge_id ~= 0 then
+      local to = room:getPlayerById(kangge_id)
       if to and not to.dead then
         room:setPlayerMark(player, "@kangge", to.general)
         local cards = room:getCardsFromPileByRule(".|.|"..suit, data.damage, "discardPile")

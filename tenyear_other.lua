@@ -421,67 +421,50 @@ local tongliao = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:setCardMark(Fk:getCardById(self.cost_data), "@@tongliao", 1)
+    local room = player.room
+    local id = self.cost_data
+    local mark = type(player:getMark("tongliao")) == "table" and player:getMark("tongliao") or {}
+    table.insertIfNeed(mark, id)
+    room:setPlayerMark(player, "tongliao", mark)
+    room:setCardMark(Fk:getCardById(id), "@@tongliao-inhand", 1)
   end,
 }
-local tongliao_trigger = fk.CreateTriggerSkill{
-  name = "#tongliao_trigger",
+local tongliao_delay = fk.CreateTriggerSkill{
+  name = "#tongliao_delay",
   mute = true,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill("tongliao") then
-      for _, move in ipairs(data) do
-        if move.from == player.id and move.extra_data and move.extra_data.tongliao then
-          return true
+    if player.dead or type(player:getMark("tongliao")) ~= "table" then return false end
+    local mark = player:getMark("tongliao")
+    for _, move in ipairs(data) do
+      if move.from == player.id then
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand and table.contains(mark, info.cardId) then
+            return true
+          end
         end
       end
     end
   end,
-  on_cost = function(self, event, target, player, data)
-    return true
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, "tongliao", "drawcard")
     player:broadcastSkillInvoke("tongliao")
-    local n = 0
-    for _, move in ipairs(data) do
-      if move.from == player.id and move.extra_data and move.extra_data.tongliao then
-        n = n + move.extra_data.tongliao
-      end
-    end
-    player:drawCards(n, "tongliao")
-  end,
-
-  refresh_events = {fk.BeforeCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    if player:hasSkill("tongliao") then
-      for _, move in ipairs(data) do
-        if move.from == player.id then
-          for _, info in ipairs(move.moveInfo) do
-            if info.fromArea == Card.PlayerHand and Fk:getCardById(info.cardId):getMark("@@tongliao") > 0 then
-              return true
-            end
-          end
-        end
-      end
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
+    local mark = player:getMark("tongliao")
+    local x = 0
     for _, move in ipairs(data) do
       if move.from == player.id then
-        local n = 0
         for _, info in ipairs(move.moveInfo) do
-          if info.fromArea == Card.PlayerHand and Fk:getCardById(info.cardId):getMark("@@tongliao") > 0 then
-            player.room:setCardMark(Fk:getCardById(info.cardId), "@@tongliao", 0)
-            n = n + Fk:getCardById(info.cardId).number
+          if info.fromArea == Card.PlayerHand and table.removeOne(mark, info.cardId) then
+            x = x + Fk:getCardById(info.cardId).number
           end
         end
-        if n > 0 then
-          move.extra_data = move.extra_data or {}
-          move.extra_data.tongliao = n
-        end
       end
+    end
+    room:setPlayerMark(player, "tongliao", #mark > 0 and mark or 0)
+    if x > 0 then
+      room:drawCards(player, x, "tongliao")
     end
   end,
 }
@@ -536,7 +519,7 @@ local wudao = fk.CreateTriggerSkill{
     player.room:setPlayerMark(player, self.name, data.card:getTypeString())
   end,
 }
-tongliao:addRelatedSkill(tongliao_trigger)
+tongliao:addRelatedSkill(tongliao_delay)
 khan:addSkill(tongliao)
 khan:addSkill(wudao)
 Fk:loadTranslationTable{
@@ -546,9 +529,18 @@ Fk:loadTranslationTable{
   ["wudao"] = "悟道",
   [":wudao"] = "当你连续使用两张相同类型的牌后，你使用此类型的牌伤害+1且不可被响应直到回合结束。",
   ["#tongliao-invoke"] = "通辽：你可以将一张点数最小的手牌标记为“通辽”牌",
-  ["@@tongliao"] = "通辽",
+  ["@@tongliao-inhand"] = "通辽",
+  ["#tongliao_delay"] = "通辽",
   ["#wudao-invoke"] = "悟道：你可以令你使用%arg伤害+1且不可被响应直到当前回合结束",
   ["@wudao-turn"] = "悟道",
+
+  ["$tongliao1"] = "发动偷袭。",
+  ["$tongliao2"] = "不够心狠手辣，怎配江山如画。",
+  ["$tongliao3"] = "必须出重拳，而且是物理意义上的出重拳。",
+  ["$wudao1"] = "众所周知，能力越大，能力也就越大。",
+  ["$wudao2"] = "龙争虎斗彼岸花，约翰给你一个家。",
+  ["$wudao3"] = "唯一能够打破命运牢笼的，只有我们自己。",
+  ["~khan"] = "留得青山在，老天爷饿不死瞎家雀。",
 }
 
 local zhutiexiong = General(extension, "zhutiexiong", "god", 3)
@@ -684,6 +676,10 @@ Fk:loadTranslationTable{
   ["#bianzhuang"] = "变装：你可以进行“变装”！然后视为使用一张【杀】",
   ["bianzhuang_viewas"] = "变装",
   ["#bianzhuang-slash"] = "变装：视为使用一张【杀】，附带“%arg”的技能效果！",
+
+  ["$bianzhuang1"] = "须知少日凌云志，曾许人间第一流。",
+  ["$bianzhuang2"] = "愿尽绵薄之力，盼国风盛行。",
+  ["~zhutiexiong"] = "那些看似很可笑的梦，是我们用尽全力守护的光……",
 }
 
 local cl__caocao = General(extension, "tycl__caocao", "wei", 4)

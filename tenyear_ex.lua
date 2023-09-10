@@ -2003,8 +2003,8 @@ Fk:loadTranslationTable{
 
   ["$ty_ex__jianying1"] = "步步为营，缓缓而进。",
   ["$ty_ex__jianying2"] = "以强击弱，何必心急？",
-  ["$ty_ex__shibei1"] = "宁向北而死，不面南而生。",
-  ["$ty_ex__shibei2"] = "主公在北，吾心亦在北！",
+  ["$ty_ex__shibei1"] = "主公在北，吾心亦在北！",
+  ["$ty_ex__shibei2"] = "宁向北而死，不面南而生。",
   ["~ty_ex__jvshou"] = "身处河南，魂归河北……",
 }
 

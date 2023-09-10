@@ -1067,13 +1067,22 @@ local anzhi = fk.CreateActiveSkill{
 }
 local anzhi_trigger = fk.CreateTriggerSkill{
   name = "#anzhi_trigger",
-  anim_type = "support",
+  anim_type = "masochism",
   events = {fk.Damaged},
+  main_skill = anzhi,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and player:getMark("anzhi-turn") == 0
   end,
   on_cost = function(self, event, target, player, data)
-    player.room:askForUseActiveSkill(player, "anzhi", "#anzhi-invoke", true)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#anzhi-invoke")
+  end,
+  on_use = function(self, event, target, player, data)
+    player:broadcastSkillInvoke(anzhi.name)
+    anzhi:onUse(player.room, {
+      from = player.id,
+      cards = {},
+      tos = {},
+    })
   end,
 }
 anzhi:addRelatedSkill(anzhi_trigger)
@@ -5002,7 +5011,7 @@ Fk:loadTranslationTable{
   "若剩余牌堆数大于40，你跳过弃牌阶段；若剩余牌堆数小于40，当你成为♠牌的目标后，你不能响应此牌。",
   ["#ty__luochong-choose"] = "落宠：你可以依次选择角色，弃置其区域内的牌（共计至多%arg张，还剩%arg2张）",
 
-  ["$ty__luochong1"] = "陛下独宠她人，奈何雨露不均？",
+  ["$ty__luochong1"] = "陛下独宠她人，奈何雨露不均。",
   ["$ty__luochong2"] = "妾贵于佳丽，然宠不及三千。",
   ["$ty__aichen1"] = "君可负妾，然妾不负君。",
   ["$ty__aichen2"] = "所思所想，皆系陛下。",
@@ -5363,30 +5372,15 @@ local silun_active = fk.CreateActiveSkill{
       if card.type == Card.TypeEquip then
         room:moveCardTo(card, Card.PlayerEquip, target, fk.ReasonPut, "silun", "", true, player.id)
         if reset_self and not player.dead then
-          if player.chained then
-            player:setChainState(false)
-          end
-          if not player.dead and not player.faceup then
-            player:turnOver()
-          end
+          player:reset()
         end
         if not target.dead then
-          if target.chained then
-            target:setChainState(false)
-          end
-          if not target.dead and not target.faceup then
-            target:turnOver()
-          end
+          target:reset()
         end
       elseif card.sub_type == Card.SubtypeDelayedTrick then
         room:moveCardTo(card, Card.PlayerJudge, target, fk.ReasonPut, "silun", "", true, player.id)
         if reset_self and not player.dead then
-          if player.chained then
-            player:setChainState(false)
-          end
-          if not player.dead and not player.faceup then
-            player:turnOver()
-          end
+          player:reset()
         end
       end
     else
@@ -5403,12 +5397,7 @@ local silun_active = fk.CreateActiveSkill{
         drawPilePosition = drawPilePosition,
       })
       if reset_self and not player.dead then
-        if player.chained then
-          player:setChainState(false)
-        end
-        if not player.dead and not player.faceup then
-          player:turnOver()
-        end
+        player:reset()
       end
     end
   end,
@@ -5724,7 +5713,7 @@ Fk:loadTranslationTable{
   [":qingshi"] = "当你于出牌阶段内使用一张牌时（每种牌名每回合限一次），若手牌中有同名牌，你可以选择一项：1.令此牌对其中一个目标造成的伤害值+1："..
   "2.令任意名其他角色各摸一张牌；3.摸三张牌，然后此技能本回合失效。",
   ["zhizhe"] = "智哲",
-  [":zhizhe"] = "限定技，出牌阶段，你可以复制一张手牌（衍生牌除外）。此牌因你使用或打出而进入弃牌堆，你从弃牌堆获得且本回合不能再使用或打出之。",
+  [":zhizhe"] = "限定技，出牌阶段，你可以复制一张手牌（衍生牌除外）。此牌因你使用或打出而进入弃牌堆后，你获得且本回合不能再使用或打出之。",
   ["@$qingshi-turn"] = "情势",
   ["@@qingshi-turn"] = "情势失效",
   ["#qingshi-invoke"] = "情势：请选择一项（当前使用牌为%arg）",

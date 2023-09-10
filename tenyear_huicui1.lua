@@ -139,6 +139,10 @@ Fk:loadTranslationTable{
   [":ty__kuangfu"] = "出牌阶段限一次，你可以弃置场上的一张装备牌，视为使用一张【杀】（此【杀】无距离限制且不计次数）。"..
   "若你弃置的不是你的牌且此【杀】未造成伤害，你弃置两张手牌；若弃置的是你的牌且此【杀】造成伤害，你摸两张牌。",
   ["#ty__kuangfu-slash"] = "狂斧：选择视为使用【杀】的目标",
+
+  ["$ty__kuangfu1"] = "大斧到处，片甲不留！",
+  ["$ty__kuangfu2"] = "你可接得住我一斧？",
+  ["~ty__panfeng"] = "来者……可是魔将？",
 }
 
 local xingdaorong = General(extension, "xingdaorong", "qun", 4, 6)
@@ -306,6 +310,12 @@ Fk:loadTranslationTable{
   ["zhanwan"] = "斩腕",
   [":zhanwan"] = "锁定技，受到〖流矢〗效果影响的角色弃牌阶段结束时，若其于此阶段内弃置过牌，你摸等量的牌，然后移除其〖流矢〗的效果。",
   ["@@liushi"] = "流矢",
+
+  ["$liushi1"] = "就你叫夏侯惇？",
+  ["$liushi2"] = "兀那贼将，且吃我一箭！",
+  ["$zhanwan1"] = "郝萌，尔敢造反不成？",
+  ["$zhanwan2"] = "健儿护主，奸逆断腕！",
+  ["~caoxing"] = "夏侯将军，有话好说……",
 }
 
 Fk:loadTranslationTable{
@@ -317,6 +327,14 @@ Fk:loadTranslationTable{
   [":liangying"] = "弃牌阶段开始时，你可以摸至多X张牌，然后交给等量的角色各一张手牌（X为“粮”的数量）。",
   ["shishou"] = "失守",
   [":shishou"] = "锁定技，当你使用【酒】或受到火焰伤害后，你失去1枚“粮”。准备阶段，若你没有“粮”，你失去1点体力。",
+  
+  ["$cangchu1"] = "广积粮草，有备无患。",
+  ["$cangchu2"] = "吾奉命于此、建仓储粮。",
+  ["$liangying1"] = "酒气上涌，精神倍长。",
+  ["$liangying2"] = "仲简在此，谁敢来犯？",
+  ["$shishou1"] = "腹痛骤发，痛不可当。",
+  ["$shishou2"] = "火光冲天，悔不当初。",
+  ["~caoxing"] = "这酒，饮不得啊……",
 }
 
 local xiahoujie = General(extension, "xiahoujie", "wei", 5)
@@ -393,8 +411,8 @@ Fk:loadTranslationTable{
 
   ["$liedan1"] = "声若洪钟，震胆发聩！",
   ["$liedan2"] = "阴雷滚滚，肝胆俱颤！",
-  ["$zhuangdan1"] = "我家丞相在此，哪个有胆敢动我？",
-  ["$zhuangdan2"] = "假丞相虎威，壮豪将龙胆。",
+  ["$zhuangdan1"] = "假丞相虎威，壮豪将龙胆。",
+  ["$zhuangdan2"] = "我家丞相在此，哪个有胆敢动我？",
   ["~xiahoujie"] = "你吼那么大声干嘛……",
 }
 
@@ -505,6 +523,12 @@ Fk:loadTranslationTable{
   [":jiaofeng"] = "锁定技，当你每回合首次造成伤害时，若你已损失体力值：大于0，你摸一张牌；大于1，此伤害+1；大于2，你回复1点体力。",
   ["#xunji"] = "寻嫉：选择一名其他角色，若其下回合内造成过伤害，则你视为对其使用【决斗】",
   ["@@xunji"] = "寻嫉",
+
+  ["$liedan1"] = "待拿下你，再找丞相谢罪。",
+  ["$liedan2"] = "姓关的，我现在就来抓你！",
+  ["$zhuangdan1"] = "此击透骨，亦解骨肉之痛。",
+  ["$zhuangdan2"] = "关羽？哼，不过如此！",
+  ["~caiyang"] = "何处来的鼓声？",
 }
 
 local zhoushan = General(extension, "zhoushan", "wu", 4)
@@ -877,6 +901,12 @@ Fk:loadTranslationTable{
   ["@huguan-turn"] = "护关",
   ["#yaopei-invoke"] = "摇佩：你可以弃置一张 %dest 此阶段未弃置过花色的牌，你与其一方回复1点体力，另一方摸两张牌",
   ["#yaopei-choose"] = "摇佩：选择回复体力的角色，另一方摸两张牌",
+  
+  ["$huguan_wangtao1"] = "共护边关，蜀汉可安。",
+  ["$huguan_wangtao2"] = "护君周全，妾身无悔。",
+  ["$yaopei1"] = "环佩春风，步摇桃粉。",
+  ["$yaopei2"] = "赠君摇佩，佑君安好。",
+  ["~wangtao"] = "落花有意，何人来摘……",
 }
 
 local wangyue = General(extension, "wangyues", "shu", 3, 3, General.Female)
@@ -912,6 +942,12 @@ Fk:loadTranslationTable{
   ["mingluan"] = "鸣鸾",
   [":mingluan"] = "其他角色的结束阶段，若本回合有角色回复过体力，你可以弃置任意张牌，然后摸等同于当前回合角色手牌数的牌（最多摸至五张）。",
   ["#mingluan-invoke"] = "鸣鸾：你可以弃置任意张牌（可以不弃置），然后摸 %dest 手牌数的牌，最多摸至五张",
+
+  ["$huguan_wangyues1"] = "此战虽险，悦亦可助之。",
+  ["$huguan_wangyues2"] = "葭萌关外，同君携手。",
+  ["$mingluan1"] = "鸾笺寄情，笙歌动心。",
+  ["$mingluan2"] = "鸾鸣轻歌，声声悦耳。",
+  ["~wangyues"] = "这次比试不算，再来。",
 }
 
 local zhaoyanw = General(extension, "zhaoyanw", "wu", 3, 3, General.Female)
@@ -1321,6 +1357,12 @@ Fk:loadTranslationTable{
   ["#chenjian-choose"] = "陈见：弃置一张牌并选择一名角色，令其获得与之相同花色的牌",
   ["chenjian_viewas"] = "陈见",
   ["#chenjian-use"] = "陈见：使用其中一张牌",
+
+  ["$chenjian1"] = "国有其弊，上书当陈。",
+  ["$chenjian2"] = "食君之禄，怎可默言。",
+  ["$xixiu1"] = "君子如玉，德形皓白。",
+  ["$xixiu2"] = "木秀于身，芬芳自如。",
+  ["~tengyin"] = "臣好洁，不堪与之合污！",
 }
 
 local zhangxuan = General(extension, "zhangxuan", "wu", 4, 4, General.Female)
@@ -2002,6 +2044,12 @@ Fk:loadTranslationTable{
   ["#cuijian-card"] = "摧坚：交给 %dest %arg张牌",
   ["@tongyuan"] = "同援",
   ["#tongyuan-choose"] = "同援：你可以为%arg额外指定一个目标",
+
+  ["$cuijian1"] = "一枪定顽敌，一骑破坚城！",
+  ["$cuijian2"] = "所当皆披靡，破坚若无人！",
+  ["$tongyuan1"] = "乐将军何在？随我共援上方谷！",
+  ["$tongyuan2"] = "袍泽有难，岂有坐视之理？",
+  ["~zhanghu"] = "虎父威犹在，犬子叹奈何……",
 }
 
 local lvlingqi = General(extension, "lvlingqi", "qun", 4, 4, General.Female)
@@ -2744,6 +2792,12 @@ Fk:loadTranslationTable{
   [":ty__yongdi"] = "限定技，出牌阶段，你可选择一名男性角色：若其体力值全场最少，其回复1点体力；体力上限全场最少，其加1点体力上限；"..
   "手牌数全场最少，其摸体力上限张牌（最多摸五张）。",
   ["#ty__jianshu-choose"] = "间书：选择另一名其他角色，令其和 %dest 拼点",
+
+  ["$ty__jianshu1"] = "令其相疑，则一鼓可破也。",
+  ["$ty__jianshu2"] = "貌合神离，正合用反间之计。",
+  ["$ty__yongdi1"] = "废长立幼，实乃取祸之道也。",
+  ["$ty__yongdi2"] = "长幼有序，不可紊乱。",
+  ["~ty__jiaxu"] = "算无遗策，然终有疏漏……",
 }
 
 Fk:loadTranslationTable{
@@ -2824,6 +2878,12 @@ Fk:loadTranslationTable{
   [":jinglan"] = "锁定技，当你造成伤害后，若你的手牌数：大于体力值，你弃四张手牌；等于体力值，你弃一张牌并回复1点体力；"..
   "小于体力值，你受到1点火焰伤害并摸五张牌。",
   ["#lianzhou-choose"] = "连舟：你可以横置任意名体力值等于你的角色",
+
+  ["$lianzhou1"] = "操练水军，以应东吴。",
+  ["$lianzhou2"] = "连锁环舟，方能共济。",
+  ["$jinglan1"] = "潮生潮落，风浪不息。",
+  ["$jinglan2"] = "狂风舟起，巨浪滔天。",
+  ["~caimaozhangyun"] = "丞相，冤枉，冤枉啊！",
 }
 
 local gaolan = General(extension, "ty__gaolan", "qun", 4)
@@ -3098,6 +3158,12 @@ Fk:loadTranslationTable{
   ["#shuhe-choose"] = "数合：选择一名其他角色，将%arg交给其",
   ["@ty__liehou"] = "列侯",
   ["#ty__liehou-discard"] = "列侯：你需弃置%arg张牌，否则失去1点体力",
+
+  ["$shuhe1"] = "齐心共举，万事俱成。",
+  ["$shuhe2"] = "手足协力，天下可往。",
+  ["$ty__liehou1"] = "论功行赏，加官进侯。",
+  ["$ty__liehou2"] = "增班列侯，赏赐无量！",
+  ["~ty__lvkuanglvxiang"] = "不避其死，以成其忠……",
 }
 
 local chengui = General(extension, "chengui", "qun", 3)
@@ -3311,6 +3377,12 @@ Fk:loadTranslationTable{
   ["#xieshou-choice"] = "协守：选择 %src 令你执行的一项",
   ["#qingyan-invoke"] = "清严：你可以将手牌摸至体力上限",
   ["#qingyan-card"] = "清严：你可以弃置一张手牌令手牌上限+1",
+
+  ["$xieshou1"] = "此城所能守者，在你我之协力。",
+  ["$xieshou2"] = "据地利而拥人和，其天时在我。",
+  ["$qingyan1"] = "清风盈大袖，严韵久长存。",
+  ["$qingyan2"] = "至清之人无徒，唯余雁阵惊寒。",
+  ["~chenjiao"] = "矫既死，则魏再无直臣哉……",
 }
 
 local qinlang = General(extension, "qinlang", "wei", 4)
@@ -3387,11 +3459,11 @@ Fk:loadTranslationTable{
   ["#jinjin-invoke"] = "矜谨：你可将手牌上限（当前为%arg）重置为体力值，令 %dest 弃至多等量的牌",
   ["#jinjin-discard"] = "矜谨：弃置1~%arg张牌，每少弃置一张 %src 便摸一张牌",
 
-  ["$haochong1"] = "幸得义父所重，必效死奉曹。",
-  ["$haochong2"] = "朗螟蛉之子，幸隆曹氏厚恩。",
+  ["$haochong1"] = "朗螟蛉之子，幸隆曹氏厚恩。",
+  ["$haochong2"] = "幸得义父所重，必效死奉曹。",
   ["$jinjin1"] = "螟蛉终非麒麟，不可气盛自矜。",
   ["$jinjin2"] = "我姓非曹，可敬人，不可欺人。",
-  ["~qinlang"] = "二姓之人，死无其所。",
+  ["~qinlang"] = "二姓之人，死无其所……",
 }
 
 local tangzi = General(extension, "ty__tangzi", "wei", 4)
@@ -3439,11 +3511,18 @@ local ty__xingzhao = fk.CreateTriggerSkill{
   end,
 }
 tangzi:addSkill(ty__xingzhao)
+tangzi:addRelatedSkill("xunxun")
 Fk:loadTranslationTable{
   ["ty__tangzi"] = "唐咨",
   ["ty__xingzhao"] = "兴棹",
   [":ty__xingzhao"] = "锁定技，场上受伤的角色为1个或以上，你拥有技能〖恂恂〗；2个或以上，你使用装备牌时摸一张牌；"..
   "3个或以上，你跳过判定和弃牌阶段；0个、4个或以上，你使用牌对目标角色造成的伤害+1。",
+  
+  ["$ty__xingzhao1"] = "野棹出浅滩，借风当显威。",
+  ["$ty__xingzhao2"] = "御棹水中行，前路皆助力。",
+  ["$xunxun_ty__tangzi1"] = "兵者凶器也，将者儒夫也，文可掌兵。",
+  ["$xunxun_ty__tangzi2"] = "良禽择木而栖，亦如君子不居于危墙。",
+  ["~ty__tangzi"] = "水载船，亦可覆……",
 }
 
 --绕庭之鸦：黄皓 孙资刘放 岑昏
@@ -3593,6 +3672,12 @@ Fk:loadTranslationTable{
   ["#weidang_active"] = "伪谠",
   ["#weidang-invoke"] = "伪谠：你可以将一张牌名字数为%arg的牌置于牌堆底，然后从牌堆获得一张字数相同的牌并使用之",
   ["#weidang-use"] = "伪谠：请使用%arg",
+
+  ["$qinshen1"] = "怀藏拙之心，赚不名之利。",
+  ["$qinshen2"] = "勤可补拙，慎可避祸。",
+  ["$weidang1"] = "臣等忠耿之言，绝无藏私之意。",
+  ["$weidang2"] = "假谠言之术，行利己之实。",
+  ["~ty__sunziliufang"] = "臣一心为国朝，冤枉呀……",
 }
 
 local cenhun = General(extension, "ty__cenhun", "wu", 4)
@@ -3698,6 +3783,10 @@ Fk:loadTranslationTable{
   ["@@suizheng-turn"] = "随征",
   ["#suizheng-choose"] = "随征：令一名角色下回合出牌阶段使用【杀】无距离限制且次数+1",
   ["#suizheng-slash"] = "随征：你可以视为对其中一名角色使用【杀】",
+
+  ["$suizheng1"] = "屡屡随征，战皆告捷。",
+  ["$suizheng2"] = "将勇兵强，大举出征！",
+  ["~zhangxun"] = "此役，死伤甚重……",
 }
 
 Fk:loadTranslationTable{

@@ -4919,7 +4919,7 @@ local wumei_delay = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return player == target and player.phase == Player.Finish and player:getMark("@@wumei_extra") > 0
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, wumei.name, "special")
@@ -4940,19 +4940,43 @@ local zhanmeng = fk.CreateTriggerSkill{
   name = "zhanmeng",
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) then
-      for i = 1, 3, 1 do
-        if player:getMark(self.name .. tostring(i).."-turn") == 0 then
-          return true
+    if target == player and player:hasSkill(self.name) then 
+      local room = player.room
+      local mark = player:getMark("zhanmeng_last-turn")
+      if type(mark) ~= "table" then
+        mark = {}
+        local logic = room.logic
+        local current_event = logic:getCurrentEvent()
+        local all_turn_events = logic.event_recorder[GameEvent.Turn]
+        local index = #all_turn_events
+        if index > 0 then
+          local turn_event = current_event:findParent(GameEvent.Turn)
+          if turn_event ~= nil then
+            index = index - 1
+          end
+          if index > 0 then
+            current_event = all_turn_events[index]
+            current_event:searchEvents(GameEvent.UseCard, 1, function (e)
+              table.insertIfNeed(mark, e.data[1].card.trueName)
+              return false
+            end)
+          end
         end
+        room:setPlayerMark(player, "zhanmeng_last-turn", mark)
       end
+      return (player:getMark("zhanmeng1-turn") == 0 and not table.contains(mark, data.card.trueName)) or
+        player:getMark("zhanmeng2-turn") == 0 or (player:getMark("zhanmeng3-turn") == 0 and
+        not table.every(room.alive_players, function (p)
+          return p == player or p:isNude()
+        end))
     end
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
+    local mark = player:getMark("zhanmeng_last-turn")
     local choices = {}
     self.cost_data = {}
-    if player:getMark("zhanmeng1-turn") == 0 and not table.contains(room:getTag("zhanmeng1") or {}, data.card.trueName) then
+    if player:getMark("zhanmeng1-turn") == 0 and not table.contains(mark, data.card.trueName) then
       table.insert(choices, "zhanmeng1")
     end
     if player:getMark("zhanmeng2-turn") == 0 then
@@ -4960,23 +4984,24 @@ local zhanmeng = fk.CreateTriggerSkill{
     end
     local targets = {}
     if player:getMark("zhanmeng3-turn") == 0 then
-      for _, p in ipairs(room:getOtherPlayers(player)) do
-        if not p:isNude() then
+      for _, p in ipairs(room.alive_players) do
+        if p ~= player and not p:isNude() then
           table.insertIfNeed(choices, "zhanmeng3")
           table.insert(targets, p.id)
         end
       end
     end
     table.insert(choices, "Cancel")
-    local choice = room:askForChoice(player, choices, self.name)
-    if choice == "Cancel" then return end
+    local choice = room:askForChoice(player, choices, self.name, "#zhanmeng-choice", false,
+    {"zhanmeng1", "zhanmeng2", "zhanmeng3", "Cancel"})
+    if choice == "Cancel" then return false end
     self.cost_data[1] = choice
     if choice == "zhanmeng3" then
-      local to = room:askForChoosePlayers(player, targets, 1, 1, "#zhanmeng-choose", self.name, false)
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#zhanmeng-choose", self.name, true)
       if #to > 0 then
         self.cost_data[2] = to[1]
       else
-        self.cost_data[2] = table.random(targets)
+        return false
       end
     end
     return true
@@ -4987,10 +5012,9 @@ local zhanmeng = fk.CreateTriggerSkill{
     room:setPlayerMark(player, choice.."-turn", 1)
     if choice == "zhanmeng1" then
       local cards = {}
-      for i = 1, #room.draw_pile, 1 do
-        local card = Fk:getCardById(room.draw_pile[i])
-        if not card.is_damage_card then
-          table.insertIfNeed(cards, room.draw_pile[i])
+      for _, id in ipairs(room.draw_pile) do
+        if not Fk:getCardById(id).is_damage_card then
+          table.insertIfNeed(cards, id)
         end
       end
       if #cards > 0 then
@@ -5005,16 +5029,15 @@ local zhanmeng = fk.CreateTriggerSkill{
         })
       end
     elseif choice == "zhanmeng2" then
-      room:setPlayerMark(player, "zhanmeng2_invoke", data.card.trueName)
+      room:setPlayerMark(player, "zhanmeng_delay-turn", data.card.trueName)
     elseif choice == "zhanmeng3" then
       local p = room:getPlayerById(self.cost_data[2])
-      local n = math.min(2, #p:getCardIds{Player.Hand, Player.Equip})
-      local cards = room:askForDiscard(p, n, 2, true, self.name, false, ".", "#zhanmeng-discard:"..player.id.."::"..tostring(n))
+      local cards = room:askForDiscard(p, 2, 2, true, self.name, false, ".", "#zhanmeng-discard:"..player.id)
       local x = Fk:getCardById(cards[1]).number
       if #cards == 2 then
         x = x + Fk:getCardById(cards[2]).number
       end
-      if x > 10 then
+      if x > 10 and not p.dead then
         room:damage{
           from = player,
           to = p,
@@ -5025,73 +5048,52 @@ local zhanmeng = fk.CreateTriggerSkill{
       end
     end
   end,
-}
-local zhanmeng_record = fk.CreateTriggerSkill{
-  name = "#zhanmeng_record",
 
-  refresh_events = {fk.CardUsing, fk.EventPhaseStart},
+  refresh_events = {fk.AfterTurnEnd},
   can_refresh = function(self, event, target, player, data)
-    if target == player then
-      if event == fk.CardUsing then
-        return true
-      else
-        return player.phase == Player.Start
-      end
-    end
+    return true
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.CardUsing then
-      local zhanmeng2 = room:getTag("zhanmeng2") or {}
-      if not table.contains(zhanmeng2, data.card.trueName) then
-        table.insert(zhanmeng2, data.card.trueName)
-        room:setTag("zhanmeng2", zhanmeng2)
+    room:setPlayerMark(player, "@zhanmeng_delay", player:getMark("zhanmeng_delay-turn"))
+  end,
+}
+local zhanmeng_delay = fk.CreateTriggerSkill{
+  name = "#zhanmeng_delay",
+  anim_type = "drawcard",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return player:usedSkillTimes(self.name) == 0 and player:getMark("@zhanmeng_delay") == data.card.trueName
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = {}
+    for _, id in ipairs(room.draw_pile) do
+      if Fk:getCardById(id).is_damage_card then
+        table.insertIfNeed(cards, id)
       end
-      for _, p in ipairs(room:getAlivePlayers()) do
-        if p:getMark("zhanmeng2_get-turn") == data.card.trueName then
-          room:setPlayerMark(p, "zhanmeng2_get-turn", 0)
-          local cards = {}
-          for i = 1, #room.draw_pile, 1 do
-            local card = Fk:getCardById(room.draw_pile[i])
-            if card.is_damage_card then
-              table.insertIfNeed(cards, room.draw_pile[i])
-            end
-          end
-          if #cards > 0 then
-            local card = table.random(cards)
-            room:moveCards({
-              ids = {card},
-              to = p.id,
-              toArea = Card.PlayerHand,
-              moveReason = fk.ReasonJustMove,
-              proposer = p.id,
-              skillName = "zhanmeng",
-            })
-          end
-        end
-      end
-    else
-      local zhanmeng2 = room:getTag("zhanmeng2") or {}
-      room:setTag("zhanmeng1", zhanmeng2)  --上回合使用的牌
-      zhanmeng2 = {}
-      room:setTag("zhanmeng2", zhanmeng2)  --当前回合使用的牌
-      for _, p in ipairs(room:getAlivePlayers()) do
-        if type(p:getMark("zhanmeng2_invoke")) == "string" then
-          room:setPlayerMark(p, "zhanmeng2_get-turn", p:getMark("zhanmeng2_invoke"))
-          room:setPlayerMark(p, "zhanmeng2_invoke", 0)
-        end
-      end
+    end
+    if #cards > 0 then
+      local card = table.random(cards)
+      room:moveCards({
+        ids = {card},
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonJustMove,
+        proposer = player.id,
+        skillName = self.name,
+      })
     end
   end,
 }
 wumei:addRelatedSkill(wumei_delay)
-zhanmeng:addRelatedSkill(zhanmeng_record)
+zhanmeng:addRelatedSkill(zhanmeng_delay)
 zhouxuan:addSkill(wumei)
 zhouxuan:addSkill(zhanmeng)
 Fk:loadTranslationTable{
   ["zhouxuan"] = "周宣",
   ["wumei"] = "寤寐",
-  ["#wumei_delay"] = "寤寐",
   [":wumei"] = "每轮限一次，回合开始前，你可以令一名角色执行一个额外的回合：该回合结束时，将所有存活角色的体力值调整为此额外回合开始时的数值。",
   ["zhanmeng"] = "占梦",
   [":zhanmeng"] = "你使用牌时，可以执行以下一项（每回合每项各限一次）：<br>"..
@@ -5099,12 +5101,16 @@ Fk:loadTranslationTable{
   "2.下一回合内，当同名牌首次被使用后，你获得一张伤害牌。<br>"..
   "3.令一名其他角色弃置两张牌，若点数之和大于10，对其造成1点火焰伤害。",
   ["#wumei-choose"] = "寤寐: 你可以令一名角色执行一个额外的回合",
+  ["#wumei_delay"] = "寤寐",
   ["@@wumei_extra"] = "寤寐",
   ["zhanmeng1"] = "你获得一张非伤害牌",
   ["zhanmeng2"] = "下一回合内，当同名牌首次被使用后，你获得一张伤害牌",
   ["zhanmeng3"] = "令一名其他角色弃置两张牌，若点数之和大于10，对其造成1点火焰伤害",
+  ["#zhanmeng_delay"] = "占梦",
+  ["@zhanmeng_delay"] = "占梦",
+  ["#zhanmeng-choice"] = "是否发动 占梦，选择一项效果",
   ["#zhanmeng-choose"] = "占梦: 令一名其他角色弃置两张牌，若点数之和大于10，对其造成1点火焰伤害",
-  ["#zhanmeng-discard"] = "占梦：弃置%arg张牌，若点数之和大于10，%src 对你造成1点火焰伤害",
+  ["#zhanmeng-discard"] = "占梦：弃置2张牌，若点数之和大于10，%src 对你造成1点火焰伤害",
 
   ["$wumei1"] = "大梦若期，皆付一枕黄粱。",
   ["$wumei2"] = "日所思之，故夜所梦之。",

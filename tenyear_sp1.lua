@@ -5259,13 +5259,12 @@ local weicheng = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) and player:getHandcardNum() < player.hp then
-      for _, move in ipairs(data) do
-        if move.from and move.from == player.id and move.to and move.to ~= player.id and move.toArea == Card.PlayerHand then
-          for _, info in ipairs(move.moveInfo) do
-            if info.fromArea == Card.PlayerHand then
-              return true
-            end
+    if not player:hasSkill(self.name) or player:getHandcardNum() >= player.hp then return false end
+    for _, move in ipairs(data) do
+      if move.from and move.from == player.id and move.to and move.to ~= player.id and move.toArea == Card.PlayerHand then
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand then
+            return true
           end
         end
       end
@@ -5280,22 +5279,21 @@ local daoshu = fk.CreateActiveSkill{
   card_num = 0,
   target_num = 1,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name) == 0
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
-  card_filter = function()
-    return false
-  end,
+  card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local suits = {"spade", "heart", "club", "diamond"}
+    local suits = {"log_spade", "log_club", "log_heart", "log_diamond"}
     local choice = room:askForChoice(player, suits, self.name)
+    room:doBroadcastNotify("ShowToast", Fk:translate("#daoshu_chose") .. Fk:translate(choice))
     local card = room:askForCardChosen(player, target, "h", self.name)
-    room:obtainCard(player, card, false, fk.ReasonPrey)
-    if Fk:getCardById(card):getSuitString() == choice then
+    room:obtainCard(player, card, true, fk.ReasonPrey)
+    if Fk:getCardById(card):getSuitString(true) == choice then
       room:damage{
         from = player,
         to = target,
@@ -5304,21 +5302,22 @@ local daoshu = fk.CreateActiveSkill{
       }
       player:addSkillUseHistory(self.name, -1)
     else
-      local suit = Fk:getCardById(card):getSuitString()
+      local suit = Fk:getCardById(card):getSuitString(true)
       table.removeOne(suits, suit)
-      local others = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getSuitString() ~= suit end)
+      suits = table.map(suits, function(s) return s:sub(5) end)
+      local others = table.filter(player:getCardIds(Player.Hand), function(id) return Fk:getCardById(id):getSuitString(true) ~= suit end)
       if #others > 0 then
         local cards = room:askForCard(player, 1, 1, false, self.name, false, ".|.|"..table.concat(suits, ","),
-          "#daoshu-give::"..target.id..":"..suit)
+          "#daoshu-give::"..target.id..":"..suit)[1]
         if #cards > 0 then
           cards = cards[1]
         else
           cards = table.random(others)
         end
         room:obtainCard(target, cards, true, fk.ReasonGive)
-        return
+      else
+        player:showCards(player:getCardIds(Player.Hand))
       end
-      player:showCards(player.player_cards[Player.Hand])
     end
   end,
 }
@@ -5329,9 +5328,10 @@ Fk:loadTranslationTable{
   ["weicheng"] = "伪诚",
   [":weicheng"] = "你交给其他角色手牌，或你的手牌被其他角色获得后，若你的手牌数小于体力值，你可以摸一张牌。",
   ["daoshu"] = "盗书",
-  [":daoshu"] = "出牌阶段限一次，你可以选择一名其他角色并选择一种花色，然后获得该角色一张手牌。若此牌与你选择的花色："..
-  "相同，你对其造成1点伤害且此技能视为未发动过；不同，你交给该角色一张其他花色的手牌（若没有需展示所有手牌）。",
-  ["#daoshu-give"] = "盗书：你需交给 %dest 一张非%arg手牌，若没有则展示所有手牌",
+  [":daoshu"] = "出牌阶段限一次，你可以选择一名其他角色并选择一种花色，然后获得其一张手牌。若此牌与你选择的花色："..
+  "相同，你对其造成1点伤害且此技能视为未发动过；不同，你交给其一张其他花色的手牌（若没有需展示所有手牌）。",
+  ["#daoshu_chose"] = "蒋干盗书选择了",
+  ["#daoshu-give"] = "盗书：交给 %dest 一张非%arg手牌",
 
   ["$weicheng1"] = "略施谋略，敌军便信以为真。",
   ["$weicheng2"] = "吾只观雅规，而非说客。",

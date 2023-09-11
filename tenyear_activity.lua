@@ -1486,6 +1486,12 @@ Fk:loadTranslationTable{
   [":ty__yanhuo"] = "当你死亡时，你可以令本局接下来所有【杀】的伤害基数值+1。",
   ["#mouzhu-give"] = "谋诛：交给%dest一张手牌，然后若你手牌数小于其，视为你对其使用【杀】或【决斗】",
   ["#yanhuo-invoke"] = "延祸：你可以令本局接下来所有【杀】的伤害基数值+1！",
+
+  ["$ty__mouzhu1"] = "尔等祸乱朝纲，罪无可赦，按律当诛！",
+  ["$ty__mouzhu2"] = "天下人之怨皆系于汝等，还不快认罪伏法？",
+  ["$ty__yanhuo1"] = "你们，都要为我殉葬！",
+  ["$ty__yanhuo2"] = "杀了我，你们也别想活！",
+  ["~ty__hejin"] = "诛宦不成，反遭其害，遗笑天下人矣……",
 }
 
 --冯方
@@ -1528,6 +1534,12 @@ Fk:loadTranslationTable{
   ["huangkong"] = "惶恐",
   [":huangkong"] = "锁定技，你的回合外，当你成为【杀】或普通锦囊牌的目标后，若你没有手牌，你摸两张牌。",
   ["#yangzhong-invoke"] = "殃众：你可以弃置两张牌，令 %dest 失去1点体力",
+
+  ["$yangzhong1"] = "窃权利己，弄祸殃众！",
+  ["$yangzhong2"] = "宦祸所起，池鱼所终！",
+  ["$huangkong1"] = "满腹忠心，如履薄冰！",
+  ["$huangkong2"] = "咱家乃皇帝之母，能有什么坏心思？",
+  ["~zhaozhong"] = "咱家忠心可鉴啊！！",
 }
 
 local mushun = General(extension, "mushun", "qun", 4)
@@ -1621,6 +1633,12 @@ Fk:loadTranslationTable{
   ["@mushun_jin"] = "劲",
   ["#jinjianm-invoke"] = "劲坚：你可以与 %dest 拼点，若赢，你回复1点体力",
   ["@shizhao-turn"] = "失诏",
+
+  ["$jinjianm1"] = "卑微之人，脊中亦有七寸硬骨！",
+  ["$jinjianm2"] = "目不识丁，胸中却含三分浩气！",
+  ["$shizhao1"] = "并无夹带，阁下多心了。",
+  ["$shizhao2"] = "将军多虑，顺安有忤逆之心？",
+  ["~mushun"] = "这，何来的大风？",
 }
 
 --兵临城下：牛金 李采薇 赵俨 王威 李异谢旌 孟达 是仪 孙狼
@@ -1671,6 +1689,12 @@ Fk:loadTranslationTable{
   [":cuirui"] = "限定技，出牌阶段，你可以选择至多X名其他角色（X为你的体力值），你获得这些角色各一张手牌。",
   ["ty__liewei"] = "裂围",
   [":ty__liewei"] = "你的回合内，有角色进入濒死状态时，你可以摸一张牌。",
+
+  ["$cuirui1"] = "摧折锐气，未战先衰。",
+  ["$cuirui2"] = "挫其锐气，折其旌旗。",
+  ["$ty__liewei1"] = "都给我交出来！",
+  ["$ty__liewei2"] = "还有点用，暂且饶你一命！",
+  ["~ty__niujin"] = "这酒有毒！",
 }
 
 local licaiwei = General(extension, "licaiwei", "qun", 3, 3, General.Female)
@@ -1902,6 +1926,12 @@ Fk:loadTranslationTable{
   ["#funing-invoke"] = "抚宁：你可以摸两张牌，然后弃置%arg张牌",
   ["@bingji-turn"] = "秉纪",
   ["#bingji-choose"] = "秉纪：选择一名角色视为对其使用【%arg】",
+
+  ["$funing1"] = "为国效力，不可逞一时之气。",
+  ["$funing2"] = "诸将和睦，方为国家之幸。",
+  ["$bingji1"] = "权其轻重，而后施令。",
+  ["$bingji2"] = "罪而后赦，以立恩威。",
+  ["~ty__zhaoyan"] = "背信食言，当有此劫……",
 }
 
 Fk:loadTranslationTable{
@@ -1984,6 +2014,10 @@ Fk:loadTranslationTable{
   ["liyixiejing"] = "李异谢旌",
   ["douzhen"] = "斗阵",
   [":douzhen"] = "转换技，锁定技，你的回合内，阳：你的黑色基本牌视为【决斗】，且使用时获得目标一张牌；阴：你的红色基本牌视为【杀】，且使用时无次数限制。",
+
+  ["$douzhen1"] = "擂鼓击柝，庆我兄弟凯旋。",
+  ["$douzhen2"] = "匹夫欺我江东无人乎。",
+  ["~liyixiejing"] = "蜀军凶猛，虽力战犹不敌……",
 }
 
 local mengda = General(extension, "ty__mengda", "wei", 4)
@@ -2151,6 +2185,12 @@ Fk:loadTranslationTable{
   ["#libang-card"] = "利傍：交给其中一名角色两张牌，否则失去1点体力",
   ["#libang-slash"] = "利傍：视为对其中一名角色使用一张【杀】",
   ["libang_active"] = "利傍",
+
+  ["$libang1"] = "天下熙攘，所为者利尔。",
+  ["$libang2"] = "我有武力傍身，必可待价而沽。",
+  ["$wujie1"] = "腹中有粮则脊自直，非节盈之。",
+  ["$wujie2"] = "气节？可当粟米果腹乎！",
+  ["~ty__mengda"] = "司马老贼害我，诸葛老贼误我……",
 }
 
 local shiyi = General(extension, "shiyi", "wu", 3)
@@ -2355,6 +2395,14 @@ Fk:loadTranslationTable{
   ["@zuojian-phase"] = "佐谏",
   ["zuojian1"] = "装备区牌数大于你的角色各摸一张牌",
   ["zuojian2"] = "你弃置装备区牌数小于你的角色各一张手牌",
+
+  ["$cuichuan1"] = "老臣在，必不使吴垒倾颓。",
+  ["$cuichuan2"] = "舍老朽之躯，擎广厦之柱。",
+  ["$zhengxu1"] = "陛下怜子无序，此取祸之道。",
+  ["$zhengxu2"] = "古语有云，上尊而下卑。",
+  ["$zuojian1"] = "关羽者，刘备之枭将，宜除之。",
+  ["$zuojian2"] = "主公虽非赵简子，然某可为周舍。",
+  ["~shiyi"] = "吾故后，务从省约……",
 }
 
 local sunlang = General(extension, "sunlang", "shu", 4)
@@ -2420,6 +2468,12 @@ Fk:loadTranslationTable{
   [":benshi"] = "锁定技，你装备区内的武器牌不提供攻击范围，你的攻击范围+1，你使用【杀】须指定攻击范围内所有角色为目标。",
   ["#tingxian-invoke"] = "铤险：你可以摸%arg张牌，然后可以令此【杀】对至多等量的目标无效",
   ["#tingxian-choose"] = "铤险：你可以令此【杀】对至多%arg名目标无效",
+
+  ["$tingxian1"] = "大争之世，当举兵行义。",
+  ["$tingxian2"] = "聚兵三千众，可为天下先。",
+  ["$benshi1"] = "今，或为鱼肉，或为刀俎。",
+  ["$benshi2"] = "所征徭者必死，可先斩之。",
+  ["~sunlang"] = "为关将军死，无憾……",
 }
 
 --千里单骑：关羽 杜夫人 秦宜禄 卞喜 胡班 关宁
@@ -2737,6 +2791,10 @@ Fk:loadTranslationTable{
   "移去一个“钝”，然后目标改为随机一名角色。若随机的目标与原本目标相同，则其失去1点体力并结束出牌阶段。",
   ["#dunxi-choose"] = "钝袭：你可以令一名角色获得“钝”标记，其使用下一张牌目标改为随机角色",
   ["@bianxi_dun"] = "钝",
+
+  ["$dunxi1"] = "看锤！",
+  ["$dunxi2"] = "且吃我一锤！",
+  ["~bianxi"] = "以力破巧，难挡其锋……",
 }
 
 local huban = General(extension, "ty__huban", "wei", 4)
@@ -2905,6 +2963,12 @@ Fk:loadTranslationTable{
   ["@$xiuwen"] = "修文",
   ["#longsong-invoke"] = "龙诵：你可以交给一名其他角色一张红色牌，本阶段获得其拥有的“出牌阶段”技能",
   ["longsong_active"] = "龙诵",
+
+  ["$xiuwen1"] = "书生笔下三尺剑，毫锋可杀人。",
+  ["$xiuwen2"] = "吾以书执剑，可斩世间魍魉。",
+  ["$longsong1"] = "百家诸子，且听九霄龙吟。",
+  ["$longsong2"] = "朗朗书声，岂虚于刀斧铮鸣。",
+  ["~guannings"] = "为国捐生，虽死无憾……",
 }
 
 --烽火连天：南华老仙 童渊 张宁 庞德公
@@ -3301,6 +3365,12 @@ Fk:loadTranslationTable{
   ["yanzhengn"] = "言政",
   [":yanzhengn"] = "准备阶段，若你的手牌数大于1，你可以选择一张手牌并弃置其余的牌，然后对至多等于弃置牌数的角色各造成1点伤害。",
   ["#yanzhengn-invoke"] = "言政：你可以选择保留一张手牌，弃置其余的手牌，对至多%arg名角色各造成1点伤害",
+
+  ["$gongxiu1"] = "福祸与共，业山可移。",
+  ["$gongxiu2"] = "修行退智，遂之道也。",
+  ["$jinghe1"] = "大哉乾元，万物资始。",
+  ["$jinghe2"] = "无极之外，复无无极。",
+  ["~ty__nanhualaoxian"] = "道亦有穷时……",
 }
 
 Fk:loadTranslationTable{

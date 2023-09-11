@@ -1427,7 +1427,7 @@ Fk:loadTranslationTable{
   ["$ty_ex__zili2"] = "天下风流出我辈，一遇风云便化龙。",
   ["$ty_ex__paiyi1"] = "蜀川三千里，皆由我一言决之!",
   ["$ty_ex__paiyi2"] = "顺我者，封侯拜将!，逆我者，斧钺加身!",
-  ["~ty_ex__zhonghui"] = "这就是...自食恶果..的下场吗？....",
+  ["~ty_ex__zhonghui"] = "这就是……自食恶果的下场吗？",
 }
 
 local caochong = General(extension, "ty_ex__caochong", "wei", 3)

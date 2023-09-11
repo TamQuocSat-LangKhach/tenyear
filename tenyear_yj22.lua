@@ -312,6 +312,12 @@ Fk:loadTranslationTable{
   ["sangu&"] = "三顾",
   [":sangu&"] = "出牌阶段每种牌名限一次，你可以将一张手牌当一张“三顾”牌使用。",
   ["#sangu"] = "三顾：你可以将一张手牌当一张“三顾”牌使用",
+
+  ["$sangu1"] = "思报君恩，尽父子之忠。",
+  ["$sangu2"] = "欲酬三顾，竭三代之力。",
+  ["$yizu1"] = "仿祖父行事，可阻敌袭。",
+  ["$yizu2"] = "习先人故智，可御寇侵。",
+  ["~zhugeshang"] = "父子荷国重恩，当尽忠以报！",
 }
 
 local lukai = General(extension, "lukai", "wu", 4)
@@ -463,6 +469,12 @@ Fk:loadTranslationTable{
   ["#bushil1-choice"] = "卜筮：使用此花色牌无次数限制",
   ["#bushil2-choice"] = "卜筮：使用或打出此花色牌后摸一张牌",
   ["#bushil3-choice"] = "卜筮：成为此花色牌目标后可弃置一张手牌对你无效",
+
+  ["$bushil1"] = "论演玄意，以筮辄验。",
+  ["$bushil2"] = "手不释书，好研经卷。",
+  ["$zhongzhuang1"] = "秽尘天听，卿有不测之祸！",
+  ["$zhongzhuang2"] = "倾乱国政，安得寿终正寝？",
+  ["~lukai"] = "不听忠言，国将亡矣……",
 }
 
 local kebineng = General(extension, "kebineng", "qun", 4)
@@ -593,6 +605,10 @@ Fk:loadTranslationTable{
   ["@@koujing-turn"] = "寇旌",
   ["#koujing_filter"] = "寇旌",
   ["#koujing-card"] = "寇旌：你可以用所有手牌交换 %src 这些“寇旌”牌",
+
+  ["$koujing1"] = "驰马掠野，塞外称雄。",
+  ["$koujing2"] = "控弦十万，纵横漠南。",
+  ["~kebineng"] = "草原雄鹰，折翼于此……",
 }
 
 local wuanguo = General(extension, "wuanguo", "qun", 4)
@@ -747,6 +763,12 @@ Fk:loadTranslationTable{
   ["#duanwan-invoke"] = "断腕：你可以回复体力至2点，删除现在的“叠嶂”状态！",
   ["#diezhangYang-invoke"] = "叠嶂：你可以弃置一张牌，视为对 %dest 使用两张【杀】",
   ["#diezhangYin-invoke"] = "叠嶂：你可以摸两张牌，视为对 %dest 使用【杀】",
+
+  ["$diezhang1"] = "某家这大锤，舞起来那叫一个万夫莫敌。",
+  ["$diezhang2"] = "贼吕布何在？某家来取汝性命了！",
+  ["$duanwan1"] = "好你个吕奉先，竟敢卸我膀子！",
+  ["$duanwan2"] = "汝这匹夫，为何往手腕上招呼？",
+  ["~wuanguo"] = "吕奉先，你给某家等着！",
 }
 
 return extension

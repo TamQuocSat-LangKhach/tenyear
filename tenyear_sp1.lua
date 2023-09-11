@@ -2722,6 +2722,12 @@ Fk:loadTranslationTable{
   [":ty__hanyong"] = "当你使用【南蛮入侵】、【万箭齐发】或♠普通【杀】时，若你已受伤，你可以令此牌造成的伤害+1，然后若你的体力值大于游戏轮数，"..
   "你获得一个“燃”标记。",
   ["#ty__hanyong-invoke"] = "悍勇：你可以令此%arg伤害+1",
+
+  ["$ty__ranshang1"] = "你会后悔的！啊！！",
+  ["$ty__ranshang2"] = "这是要赶尽杀绝吗？",
+  ["$ty__hanyong1"] = "找死！",
+  ["$ty__hanyong2"] = "这就让你们见识见识，哈哈哈哈哈哈哈。",
+  ["~ty__wutugu"] = "不可能！这不可能！",
 }
 
 local wenyang = General(extension, "wenyang", "wei", 5)
@@ -3181,6 +3187,12 @@ Fk:loadTranslationTable{
   [":xiaojun"] = "你使用牌指定其他角色为唯一目标后，你可以弃置其一半手牌（向下取整）。若其中有与你指定其为目标的牌花色相同的牌，"..
   "你弃置一张手牌。",
   ["#xiaojun-invoke"] = "骁隽：你可以弃置 %dest 一半手牌（%arg张），若其中有%arg2牌，你弃置一张手牌",
+
+  ["$jinggong1"] = "屈臂发弓，亲射猛虎。",
+  ["$jinggong2"] = "幼习弓弩，正为此时！",
+  ["$xiaojun1"] = "骁锐敢斗，威震江夏！",
+  ["$xiaojun2"] = "得隽为雄，气贯大江！",
+  ["~ty__huangzu"] = "周瑜小儿，竟破了我的埋伏？",
 }
 
 local leitong = General(extension, "leitong", "shu", 4)
@@ -5618,6 +5630,12 @@ Fk:loadTranslationTable{
   ["yuanmo_add"] = "攻击范围+1，获得因此进入攻击范围的角色各一张牌",
   ["yuanmo_minus"] = "攻击范围-1，摸两张牌",
   ["#yuanmo-choose"] = "远谟：你可以获得任意名角色各一张牌",
+
+  ["$ty__jianji1"] = "二虎和则我亡，二虎斗则我兴。",
+  ["$ty__jianji2"] = "备枭雄也，布虓虎也，当间之。",
+  ["$yuanmo1"] = "强敌不可战，弱敌不可恕。",
+  ["$yuanmo2"] = "孙伯符羽翼已丰，主公当图刘备。",
+  ["~yanghong"] = "主公为何不听我一言？",
 }
 
 local huanfan = General(extension, "huanfan", "wei", 3)
@@ -5890,7 +5908,7 @@ Fk:loadTranslationTable{
   ["@@wencan-turn"] = "文灿",
   ["wencan_active"] = "文灿",
   ["#wencan-discard"] = "文灿：弃置两张不同花色的牌，否则 %src 本回合对你使用牌无次数限制",
-  
+
   ["$danyi1"] = "满城锦绣，何及笔下春秋？",
   ["$danyi2"] = "一心向学，不闻窗外风雨。",
   ["$wencan1"] = "宴友以文，书声喧哗，众宾欢也。",

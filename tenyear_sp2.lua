@@ -291,6 +291,12 @@ Fk:loadTranslationTable{
   [":pingxi"] = "结束阶段，你可选择至多X名其他角色（X为本回合因弃置而进入弃牌堆的牌数），弃置这些角色各一张牌，然后视为对这些角色各使用一张【杀】。",
   ["#ty__kaiji-discard"] = "开济：你可以弃置至多%arg张牌",
   ["#pingxi-choose"] = "平袭：你可以选择至多%arg名角色，弃置这些角色各一张牌并视为对这些角色各使用一张【杀】",
+
+  ["$ty__kaiji1"] = "谋虑渊深，料远若近。",
+  ["$ty__kaiji2"] = "视昧而察，筹不虚运。",
+  ["$pingxi1"] = "国有常众，战无常胜。",
+  ["$pingxi2"] = "地有常险，守无常势。",
+  ["~ty__wangchang"] = "志存开济，人亡政息……",
 }
 
 local chengbing = General(extension, "chengbing", "wu", 3)
@@ -381,6 +387,12 @@ Fk:loadTranslationTable{
   ["enyu"] = "恩遇",
   [":enyu"] = "锁定技，当你成为其他角色使用基本牌或普通锦囊牌的目标后，若你本回合已成为过同名牌的目标，此牌对你无效。",
   ["#jingzao-discard"] = "经造：弃置一张同名牌使本回合“经造”亮出牌+1，或点“取消”令 %src 获得其中不同牌名各一张",
+
+  ["$jingzao1"] = "闭门绝韦编，造经教世人。",
+  ["$jingzao2"] = "著文成经，可教万世之人。",
+  ["$enyu1"] = "君以国士待我，我必国士报之。",
+  ["$enyu2"] = "吾本乡野腐儒，幸隆君之大恩。",
+  ["~chengbing"] = "著经未成，此憾事也……",
 }
 
 local yangbiao = General(extension, "ty__yangbiao", "qun", 3)
@@ -502,6 +514,14 @@ Fk:loadTranslationTable{
   ["#jinjie-invoke"] = "尽节：你可以令 %dest 回复1点体力",
   ["#jinjie-discard"] = "尽节：你可以弃置%arg张手牌，令 %dest 回复1点体力",
   ["#jue-choose"] = "举讹：你可以视为对一名未受伤的角色使用【杀】",
+  
+  ["$ty__zhaohan1"] = "此心昭昭，惟愿汉明。",
+  ["$ty__zhaohan2"] = "天曰昭德！天曰昭汉！",
+  ["$jinjie1"] = "大汉养士百载，今乃奉节之时。",
+  ["$jinjie2"] = "尔等皆忘天地君亲师乎？",
+  ["$jue1"] = "尔等一家之言，难堵天下悠悠之口。",
+  ["$jue2"] = "区区黄门而敛财千万，可诛其九族。",
+  ["~ty__yangbiao"] = "愧无日磾先见之明，犹怀老牛舐犊之爱……",
 }
 
 local ruanji = General(extension, "ruanji", "wei", 3)
@@ -1788,6 +1808,13 @@ Fk:loadTranslationTable{
   ["#suifu-invoke"] = "绥抚：你可以将 %dest 所有手牌置于牌堆顶，你视为使用【五谷丰登】",
   ["#pijing-choose"] = "辟境：你可以令包括你的任意名角色获得技能〖自牧〗直到下次发动〖辟境〗<br>"..
   "（锁定技，当你受到伤害后，有〖自牧〗的角色各摸一张牌，然后你失去〖自牧〗）",
+
+  ["$suifu1"] = "以柔克刚，方是良策。",
+  ["$suifu2"] = "镇抚边疆，为国家计。",
+  ["$pijing1"] = "群寇来袭，愿和将军同御外侮。",
+  ["$pijing2"] = "天下不宁，愿与阁下共守此州。",
+  ["$zimu"] = "既为汉吏，当遵汉律。",
+  ["~ty__liuyu"] = "公孙瓒谋逆，人人可诛！",
 }
 
 local quanhuijie = General(extension, "quanhuijie", "wu", 3, 3, General.Female)

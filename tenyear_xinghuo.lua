@@ -97,7 +97,7 @@ Fk:loadTranslationTable{
   ["$guanchao2"] = "月盈，潮起晨暮也；月亏，潮起日半也。",
   ["$xunxian1"] = "督军之才，子明强于我甚多。",
   ["$xunxian2"] = "此间重任，公卿可担之。",
-  ["~yanjun"] = "著作，还，没完成。",
+  ["~yanjun"] = "著作，还……没完成……",
 }
 
 Fk:loadTranslationTable{
@@ -514,6 +514,10 @@ Fk:loadTranslationTable{
   ["#jixu-choice"] = "击虚：猜测 %src 的手牌中是否有【杀】",
   ["#jixu-quest"] = "%from 猜测 %arg",
   ["@@jixu-turn"] = "击虚",
+
+  ["$jixu1"] = "击虚箭射，懈敌戒备。",
+  ["$jixu2"] = "虚实难辨，方迷敌方之心！",
+  ["~sp__taishici"] = "刘繇之见，短浅也……",
 }
 
 local zhoufang = General(extension, "zhoufang", "wu", 3)

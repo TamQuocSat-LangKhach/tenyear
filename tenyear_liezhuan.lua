@@ -70,6 +70,12 @@ Fk:loadTranslationTable{
   [":ty__niluan"] = "出牌阶段，你可以将一张黑色牌当【杀】使用；你以此法使用的【杀】结算后，若此【杀】未造成伤害，其不计入使用次数限制。",
   ["weiwu"] = "违忤",
   [":weiwu"] = "出牌阶段限一次，你可以将一张红色牌当无距离限制的【顺手牵羊】使用。",
+
+  ["$ty__niluan1"] = "如果不能功成名就，那就干脆为祸一方！",
+  ["$ty__niluan2"] = "哈哈哈哈哈，天下之事皆无常！",
+  ["$weiwu1"] = "凉州寸土，不可拱手让人。",
+  ["$weiwu2"] = "明遵旨，暗忤意。",
+  ["~ty__hansui"] = "马侄儿为何？啊！！",
 }
 
 --刘宏
@@ -166,6 +172,12 @@ Fk:loadTranslationTable{
   ["kuimang"] = "溃蟒",
   [":kuimang"] = "锁定技，当一名角色死亡时，若你对其造成过伤害，你摸两张牌。",
   ["#gongjian-choose"] = "攻坚：你可以选择其中相同的目标角色，弃置每名角色各至多两张牌，你获得其中的【杀】",
+
+  ["$gongjian1"] = "善攻者，敌不知其所守。",
+  ["$gongjian2"] = "围解自出，势必意散。",
+  ["$kuimang1"] = "黄巾流寇，不过如此。",
+  ["$kuimang2"] = "黄巾作乱，奉旨平叛！",
+  ["~ty__zhujun"] = "乞降不受，愿一战！",
 }
 
 local xushao = General(extension, "ty__xushao", "qun", 4)
@@ -1403,6 +1415,10 @@ Fk:loadTranslationTable{
   ["ty__haomeng"] = "郝萌",
   ["xiongmang"] = "雄莽",
   [":xiongmang"] = "你可以将任意张花色不同的手牌当【杀】使用，此【杀】目标数上限等于用于转化的牌数；此【杀】结算后，若没有造成伤害，你减1点体力上限。",
+
+  ["$xiongmang1"] = "力逮千军，唯武为雄！",
+  ["$xiongmang2"] = "莽行沙场，乱世称雄！",
+  ["~ty__haomeng"] = "曹性，汝欲反我不成？",
 }
 
 local yanfuren = General(extension, "yanfuren", "qun", 3, 3, General.Female)
@@ -1586,6 +1602,12 @@ Fk:loadTranslationTable{
   [":xiangshu"] = "限定技，结束阶段，若你本回合造成过伤害，你可令一名已受伤角色回复X点体力并摸X张牌（X为你本回合造成的伤害值且最多为5）。",
   ["#choutao-invoke"] = "仇讨：你可以弃置 %dest 一张牌令此【杀】不能被响应；若为你则此【杀】不计次",
   ["#xiangshu-invoke"] = "襄戍：你可令一名已受伤角色回复%arg点体力并摸%arg2张牌",
+
+  ["$choutao1"] = "大恨深仇，此剑讨之！",
+  ["$choutao2"] = "是非恩怨，此役决之！",
+  ["$xiangshu1"] = "得道多襄，为公是瞻！",
+  ["$xiangshu2"] = "愿为中原，永戍北疆！",
+  ["~yanrou"] = "寒风折戍矛，铁衣裹枯骨……",
 }
 
 return extension

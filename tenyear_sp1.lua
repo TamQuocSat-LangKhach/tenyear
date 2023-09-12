@@ -5308,7 +5308,7 @@ local daoshu = fk.CreateActiveSkill{
       local others = table.filter(player:getCardIds(Player.Hand), function(id) return Fk:getCardById(id):getSuitString(true) ~= suit end)
       if #others > 0 then
         local cards = room:askForCard(player, 1, 1, false, self.name, false, ".|.|"..table.concat(suits, ","),
-          "#daoshu-give::"..target.id..":"..suit)[1]
+          "#daoshu-give::"..target.id..":"..suit)
         if #cards > 0 then
           cards = cards[1]
         else

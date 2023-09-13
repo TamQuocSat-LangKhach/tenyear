@@ -154,7 +154,7 @@ local ty__fuhan = fk.CreateTriggerSkill{
       (function(p) return (p.kingdom ~= "shu") end)), function(g) return g.name end)
     local names = {}
     while #names < 2 do
-      local general = Fk.generals[room:askForGeneral(player, generals, 1)]
+      local general = Fk.generals[room:askForGeneral(player, generals, 1, true)]
       local choices = {}
       for _, s in ipairs(general:getSkillNameList()) do
         local skill = Fk.skills[s]

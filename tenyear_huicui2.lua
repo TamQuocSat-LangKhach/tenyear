@@ -231,7 +231,7 @@ local jiezhen_invalidity = fk.CreateInvaliditySkill {
   invalidity_func = function(self, from, skill)
     if from:getMark("@@jiezhen") > 0 then
       return not (table.contains({Skill.Compulsory, Skill.Limited, Skill.Wake}, skill.frequency) or
-        skill.name:endsWith("&") or skill.lordSkill)
+        skill.name:endsWith("&") or skill:isEquipmentSkill() or skill.lordSkill)
     end
   end
 }
@@ -342,9 +342,9 @@ Fk:loadTranslationTable{
   ["yinshih"] = "隐世",
   [":yinshih"] = "锁定技，你每回合首次受到无色牌或非游戏牌造成的伤害时，防止此伤害。当场上有角色判定【八卦阵】时，你获得其生效的判定牌。",
 
-  ["#jiezhen-active"] = "发动解阵，将一名角色的技能替换为八阵",
+  ["#jiezhen-active"] = "发动 解阵，将一名角色的技能替换为〖八阵〗",
   ["@@jiezhen"] = "解阵",
-  ["#zecai-choose"] = "你可以发动择才，令一名其他角色获得集智直到下轮结束",
+  ["#zecai-choose"] = "你可以发动择才，令一名其他角色获得〖集智〗直到下轮结束",
   ["@@zecai_extra"] = "择才 额外回合",
 
   ["$jiezhen1"] = "八阵无破，唯解死而向生。",

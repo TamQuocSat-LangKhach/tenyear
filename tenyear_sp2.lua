@@ -3788,9 +3788,14 @@ local jiqiaos_trigger = fk.CreateTriggerSkill{
         specialName = "jiqiaos",
       })
     else
-      local card = room:askForCard(player, 1, 1, false, "jiqiaos", false, ".|.|.|jiqiaos|.|.", "#jiqiaos-card", "jiqiaos")
-      if #card == 0 then card = {table.random(player:getPile("jiqiaos"))} end
-      room:obtainCard(player, card[1], true, fk.ReasonJustMove)
+      local cards = player:getPile("jiqiaos")
+      if #cards == 0 then return false end
+      local id = room:askForCardChosen(player, player, {
+        card_data = {
+          { "jiqiaos", cards }
+        }
+      }, "jiqiaos")
+      room:obtainCard(player, id, true, fk.ReasonJustMove)
       local red = #table.filter(player:getPile("jiqiaos"), function (id) return Fk:getCardById(id, true).color == Card.Red end)
       local black = #player:getPile("jiqiaos") - red  --除了不该出现的衍生牌，都有颜色
       if red == black then
@@ -3837,9 +3842,7 @@ local xiongyis = fk.CreateTriggerSkill{
         recoverBy = player,
         skillName = self.name
       })
-      room:changeHero(player, "xushi", false, false, true)
-      player.maxHp = maxHp
-      room:broadcastProperty(player, "maxHp")
+      room:changeHero(player, "xushi", false, false, true, false)
     else
       room:recover({
         who = player,

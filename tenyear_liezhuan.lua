@@ -253,7 +253,7 @@ local ty__pingjian = fk.CreateActiveSkill{
       "os_ex__gongqi", "huaiyi", "shanxi", "ol_ex__tiaoxin", "qingnang", "quji", "anguo", "limu", "ex__jieyin", "m_ex__anxu",
       "ty_ex__mingce", "ziyuan", "lijian", "mingjian", "rende", "mizhao", "mobile__yanjiao", "ol_ex__dimeng", "zhijian",
       "quhu", "nuchen", "kanji", "ol_ex__duanliang", "yangjie", "hongyi", "m_ex__junxing", "m_ex__yanzhu", "ol_ex__changbiao",
-      "fengzi", "yanxi", "jiwu", "xuanbei", "yushen"
+      "fengzi", "yanxi", "jiwu", "xuanbei", "yushen", "jinhui"
     }, function (skill_name)
       return not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
     end)

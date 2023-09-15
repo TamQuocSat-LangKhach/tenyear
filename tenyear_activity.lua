@@ -2718,7 +2718,7 @@ local bianxi = General(extension, "bianxi", "wei", 4)
 local dunxi = fk.CreateTriggerSkill{
   name = "dunxi",
   anim_type = "control",
-  events = {fk.CardUseFinished},
+  events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and data.card.is_damage_card and data.tos
   end,
@@ -2732,65 +2732,106 @@ local dunxi = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     player.room:addPlayerMark(player.room:getPlayerById(self.cost_data), "@bianxi_dun", 1)
   end,
-
-  refresh_events = {fk.TargetSpecifying, fk.CardUseFinished},
-  can_refresh = function(self, event, target, player, data)
-    if target == player then
-      if event == fk.TargetSpecifying then
-        return player:getMark("@bianxi_dun") > 0 and (data.card.type == Card.TypeBasic or data.card.type == Card.TypeTrick) and
-          data.firstTarget and data.tos and #AimGroup:getAllTargets(data.tos) == 1
-      else
-        return data.extra_data and data.extra_data.dunxi
+}
+local dunxi_delay = fk.CreateTriggerSkill{
+  name = "#dunxi_delay",
+  anim_type = "negative",
+  events = {fk.CardUsing, fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    if event == fk.CardUsing then
+      if player == target and player:getMark("@bianxi_dun") > 0 and
+      (data.card.type == Card.TypeBasic or data.card.type == Card.TypeTrick) and #TargetGroup:getRealTargets(data.tos) == 1 then
+        for _, p in ipairs(player.room.alive_players) do
+          if p.dying then
+            return false
+          end
+        end
+        return true
       end
+    elseif event == fk.CardUseFinished then
+      return not player.dead and data.extra_data and data.extra_data.dunxi_record and
+        table.contains(data.extra_data.dunxi_record, player.id)
     end
   end,
-  on_refresh = function(self, event, target, player, data)
-    if event == fk.TargetSpecifying then
-      local room = player.room
-      room:removePlayerMark(player, "@bianxi_dun", 1)
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.CardUsing then
+      room:removePlayerMark(player, "@bianxi_dun")
+      local orig_to = data.tos[1]
       local targets = {}
-      for _, p in ipairs(room:getAlivePlayers()) do
-        if not player:isProhibited(p, data.card) then
-          if (data.card.trueName == "slash" and p ~= player) or
-            (data.card.name == "peach" and p:isWounded()) or
-            (data.card.trueName ~= "slash" and data.card.name ~= "peach") then
-            table.insertIfNeed(targets, p.id)
+      if #orig_to > 1 then
+        --target_filter cheak, for collateral,diversion...
+        local c_pid
+        --FIXME：借刀需要补modTargetFilter，不给targetFilter传使用者真是离大谱，目前只能通过强制修改Self来实现
+        local Notify_from = room:getPlayerById(data.from)
+        Self = Notify_from
+        for _, p in ipairs(room.alive_players) do
+          if not player:isProhibited(p, data.card) and data.card.skill:modTargetFilter(p.id, {}, data.from, data.card, false) then
+            local ho_spair_target = {}
+            local ho_spair_cheak = true
+            for i = 2, #orig_to, 1 do
+              c_pid = orig_to[i]
+              if not data.card.skill:targetFilter(c_pid, ho_spair_target, {}, data.card) then
+                ho_spair_cheak = false
+                break
+              end
+              table.insert(ho_spair_target, c_pid)
+            end
+            if ho_spair_cheak then
+              table.insert(targets, p.id)
+            end
+          end
+        end
+      else
+        for _, p in ipairs(room.alive_players) do
+          if not player:isProhibited(p, data.card) and (data.card.sub_type == Card.SubtypeDelayedTrick or 
+          data.card.skill:modTargetFilter(p.id, {}, data.from, data.card, false)) then
+            table.insert(targets, p.id)
           end
         end
       end
-      local to = TargetGroup:getRealTargets(data.tos)[1]
-      local new_to = table.random(targets)
-      TargetGroup:removeTarget(data.targetGroup, to)
-      TargetGroup:pushTargets(data.targetGroup, new_to)
-      room:delay(1000)  --来一段市长动画？
-      room:doIndicate(player.id, {new_to})
-      if to == new_to then
-        room:loseHp(player, 1, self.name)
-        if not player.dead and player.phase == Player.Play then
+      if #targets > 0 then
+        local random_target = table.random(targets)
+        if random_target == orig_to[1] then
           data.extra_data = data.extra_data or {}
-          data.extra_data.dunxi = true
+          local dunxi_record = data.extra_data.dunxi_record or {}
+          table.insert(dunxi_record, player.id)
+          data.extra_data.dunxi_record = dunxi_record
+        else
+          orig_to[1] = random_target
+          data.tos = {orig_to}
         end
+      else
+        data.tos = {}
       end
-    else
-      local current = player.room.logic:getCurrentEvent()
-      local use_event = current:findParent(GameEvent.UseCard)
-      if not use_event then return end
-      local phase_event = use_event:findParent(GameEvent.Phase)
-      if not phase_event then return end
-      use_event:addExitFunc(function()
-        phase_event:shutdown()
-      end)
+    elseif event == fk.CardUseFinished then
+      room:loseHp(player, 1, self.name)
+      if player.phase == Player.Play then
+        player:endPlayPhase()
+      end
     end
   end,
 }
+dunxi:addRelatedSkill(dunxi_delay)
 bianxi:addSkill(dunxi)
 Fk:loadTranslationTable{
   ["bianxi"] = "卞喜",
   ["dunxi"] = "钝袭",
-  [":dunxi"] = "当你使用伤害牌结算后，你可令其中一个目标获得1个“钝”标记。有“钝”标记的角色使用基本牌或锦囊牌指定唯一目标时，"..
-  "移去一个“钝”，然后目标改为随机一名角色。若随机的目标与原本目标相同，则其失去1点体力并结束出牌阶段。",
+  [":dunxi"] = "当你使用伤害牌时，你可令其中一个目标获得1个“钝”标记。有“钝”标记的角色使用基本牌或锦囊牌时，"..
+  "若目标数为1且没有处于濒死状态的角色，其移去一个“钝”，然后目标改为随机一名角色。"..
+  "若随机的目标与原本目标相同，则其于此牌结算结束后失去1点体力并结束出牌阶段。",
+
+  --濒死使用桃不会触发，引申为隐藏条件：没有处于濒死状态的角色
+  --有距离限制，延迟锦囊牌无使用目标的限制（兵粮寸断能不能指定位存疑，只知道能转移给给自己），如果没有合法目标则会取消掉所有目标
+  --借刀杀人的逻辑依旧采取对原目标的副目标使用【杀】（实测并非如此，但测试结果有限，无法总结规律）
+  --实测结果：会随机到没有武器牌的角色，但是又存在能指定原目标的时候取消掉目标的情况
+  --最接近实测结果的逻辑推测是：先随机选取一名其他角色，若能对原副目标出杀则转移目标，不能则取消目标
+  --个人觉得不太好，故不采用
+
   ["#dunxi-choose"] = "钝袭：你可以令一名角色获得“钝”标记，其使用下一张牌目标改为随机角色",
   ["@bianxi_dun"] = "钝",
+  ["#dunxi_delay"] = "钝袭",
 
   ["$dunxi1"] = "看锤！",
   ["$dunxi2"] = "且吃我一锤！",

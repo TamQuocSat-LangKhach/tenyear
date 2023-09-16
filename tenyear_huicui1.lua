@@ -3723,88 +3723,113 @@ local dongwan = General(extension, "dongwan", "qun", 3, 3, General.Female)
 local shengdu = fk.CreateTriggerSkill{
   name = "shengdu",
   anim_type = "drawcard",
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.from == Player.RoundStart
+    return target == player and player:hasSkill(self.name)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local p = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p)
-      return p.id end), 1, 1, "#shengdu-choose", self.name, true)
+    local p = room:askForChoosePlayers(player, table.map(table.filter(room.alive_players, function (p)
+      return p ~= player and p:getMark("@@shengdu") == 0
+    end), Util.IdMapper), 1, 1, "#shengdu-choose", self.name, true)
     if #p > 0 then
       self.cost_data = p[1]
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:addPlayerMark(player.room:getPlayerById(self.cost_data), self.name, 1)
+    player.room:setPlayerMark(player.room:getPlayerById(self.cost_data), "@@shengdu", player.id)
   end,
-
-  refresh_events = {fk.AfterDrawNCards},
-  can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and target:getMark(self.name) > 0
+}
+local shengdu_delay = fk.CreateTriggerSkill{
+  name = "#shengdu_delay",
+  anim_type = "drawcard",
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    local to = player.room.current
+    if to == nil or to.phase ~= Player.Draw or to:getMark("@@shengdu") ~= player.id then return false end
+    for _, move in ipairs(data) do
+      if move.to == to.id and move.moveReason == fk.ReasonDraw then
+        return true
+      end
+    end
   end,
-  on_refresh = function(self, event, target, player, data)
-    local n = target:getMark(self.name)
-    player.room:setPlayerMark(target, self.name, 0)
-    for i = 1, n, 1 do
-      player:drawCards(data.n, self.name)  --yes! do n times!
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    player:broadcastSkillInvoke("shengdu")
+    local room = player.room
+    local x = 0
+    local to = room.current
+    room:setPlayerMark(to, "@@shengdu", 0)
+    for _, move in ipairs(data) do
+      if move.to == to.id and move.moveReason == fk.ReasonDraw then
+        x = x + #move.moveInfo
+      end
+    end
+    if x > 0 then
+      player:drawCards(x, "shengdu")
     end
   end,
 }
 local jieling = fk.CreateActiveSkill{
   name = "jieling",
   anim_type = "offensive",
+  prompt = "#jieling-active",
   card_num = 2,
-  target_num = 1,
+  min_target_num = 1,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   card_filter = function(self, to_select, selected)
     if Fk:currentRoom():getCardArea(to_select) ~= Player.Equip then
       if #selected == 0 then
         return true
       elseif #selected == 1 then
-        return Fk:getCardById(to_select).color ~= Fk:getCardById(selected[1]).color
+        if Fk:getCardById(to_select).color ~= Fk:getCardById(selected[1]).color then
+          local slash = Fk:cloneCard("slash")
+          slash.skillName = self.name
+          slash:addSubcard(selected[1])
+          slash:addSubcard(to_select)
+          return not Self:prohibitUse(slash)
+        end
       else
         return false
       end
     end
   end,
-  target_filter = function(self, to_select, selected)
-    return #selected == 0 and to_select ~= Self.id and not Self:isProhibited(Fk:currentRoom():getPlayerById(to_select), Fk:cloneCard("slash"))
+  target_filter = function(self, to_select, selected, cards)
+    if to_select == Self.id then return false end
+    local slash = Fk:cloneCard("slash")
+    slash.skillName = self.name
+    slash:addSubcards(cards)
+    return #selected < slash.skill:getMaxTargetNum(Self, slash) and not Self:isProhibited(Fk:currentRoom():getPlayerById(to_select), slash)
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    room:useVirtualCard("slash", effect.cards, player, target, self.name, true)
-  end,
-}
-local jieling_record = fk.CreateTriggerSkill{
-  name = "#jieling_record",
-
-  refresh_events = {fk.Damage, fk.CardUseFinished},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card and table.contains(data.card.skillNames, "jieling")
-  end,
-  on_refresh = function(self, event, target, player, data)
-    if event == fk.Damage then
-      data.card.extra_data = data.card.extra_data or {}
-      table.insert(data.card.extra_data, "jieling")
-    else
-      local room = player.room
-      for _, p in ipairs(TargetGroup:getRealTargets(data.tos)) do
-        local to = room:getPlayerById(p)
-        if data.card.extra_data and table.contains(data.card.extra_data, "jieling") then
+    local use = {
+      from = player.id,
+      tos = table.map(effect.tos, function (id)
+        return {id}
+      end),
+      card = Fk:cloneCard("slash"),
+    }
+    use.card:addSubcards(effect.cards)
+    use.card.skillName = self.name
+    room:useCard(use)
+    for _, id in ipairs(effect.tos) do
+      local to = room:getPlayerById(id)
+      if not to.dead then
+        if use.damageDealt and use.damageDealt[id] then
           room:loseHp(to, 1, self.name)
-        else
-          room:addPlayerMark(to, "shengdu", 1)
+        elseif not player.dead and to:getMark("@@shengdu") == 0 then
+          room:setPlayerMark(to, "@@shengdu", player.id)
         end
       end
     end
   end,
 }
-jieling:addRelatedSkill(jieling_record)
+
+shengdu:addRelatedSkill(shengdu_delay)
 dongwan:addSkill(shengdu)
 dongwan:addSkill(jieling)
 Fk:loadTranslationTable{
@@ -3815,6 +3840,9 @@ Fk:loadTranslationTable{
   [":jieling"] = "出牌阶段限一次，你可以将两张颜色不同的手牌当无距离和次数限制的【杀】使用。"..
   "若此【杀】：造成伤害，则目标角色失去1点体力；没造成伤害，则你对目标角色发动一次〖生妒〗。",
   ["#shengdu-choose"] = "生妒：选择一名角色，其下次摸牌阶段摸牌后，你摸等量的牌",
+  ["@@shengdu"] = "生妒",
+  ["#shengdu_delay"] = "生妒",
+  ["#jieling-active"] = "发动 介绫，将两张颜色不同的手牌当【杀】使用（无距离和次数限制）",
 
   ["$shengdu1"] = "姐姐有的，妹妹也要有。",
   ["$shengdu2"] = "你我同为佳丽，凭甚汝得独宠？",

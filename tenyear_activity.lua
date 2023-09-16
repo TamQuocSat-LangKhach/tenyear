@@ -2761,7 +2761,7 @@ local dunxi_delay = fk.CreateTriggerSkill{
       local orig_to = data.tos[1]
       local targets = {}
       if #orig_to > 1 then
-        --target_filter cheak, for collateral,diversion...
+        --target_filter check, for collateral,diversion...
         local c_pid
         --FIXME：借刀需要补modTargetFilter，不给targetFilter传使用者真是离大谱，目前只能通过强制修改Self来实现
         local Notify_from = room:getPlayerById(data.from)
@@ -2769,23 +2769,23 @@ local dunxi_delay = fk.CreateTriggerSkill{
         for _, p in ipairs(room.alive_players) do
           if not player:isProhibited(p, data.card) and data.card.skill:modTargetFilter(p.id, {}, data.from, data.card, false) then
             local ho_spair_target = {}
-            local ho_spair_cheak = true
+            local ho_spair_check = true
             for i = 2, #orig_to, 1 do
               c_pid = orig_to[i]
               if not data.card.skill:targetFilter(c_pid, ho_spair_target, {}, data.card) then
-                ho_spair_cheak = false
+                ho_spair_check = false
                 break
               end
               table.insert(ho_spair_target, c_pid)
             end
-            if ho_spair_cheak then
+            if ho_spair_check then
               table.insert(targets, p.id)
             end
           end
         end
       else
         for _, p in ipairs(room.alive_players) do
-          if not player:isProhibited(p, data.card) and (data.card.sub_type == Card.SubtypeDelayedTrick or 
+          if not player:isProhibited(p, data.card) and (data.card.sub_type == Card.SubtypeDelayedTrick or
           data.card.skill:modTargetFilter(p.id, {}, data.from, data.card, false)) then
             table.insert(targets, p.id)
           end
@@ -2823,7 +2823,7 @@ Fk:loadTranslationTable{
   "若随机的目标与原本目标相同，则其于此牌结算结束后失去1点体力并结束出牌阶段。",
 
   --濒死使用桃不会触发，引申为隐藏条件：没有处于濒死状态的角色
-  --有距离限制，延迟锦囊牌无使用目标的限制（兵粮寸断能不能指定位存疑，只知道能转移给给自己），如果没有合法目标则会取消掉所有目标
+  --有距离限制，延迟锦囊牌无使用目标的限制（兵粮寸断能不能指定远位存疑，只知道能转移给给自己），如果没有合法目标则会取消掉所有目标
   --借刀杀人的逻辑依旧采取对原目标的副目标使用【杀】（实测并非如此，但测试结果有限，无法总结规律）
   --实测结果：会随机到没有武器牌的角色，但是又存在能指定原目标的时候取消掉目标的情况
   --最接近实测结果的逻辑推测是：先随机选取一名其他角色，若能对原副目标出杀则转移目标，不能则取消目标

@@ -824,20 +824,29 @@ Fk:loadTranslationTable{
 local sunhanhua = General(extension, "ty__sunhanhua", "wu", 3, 3, General.Female)
 local huiling = fk.CreateTriggerSkill{
   name = "huiling",
-  mute = true,
   frequency = Skill.Compulsory,
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and #player.room.discard_pile > 0
+    return target == player and player:hasSkill(self.name)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local red = #table.filter(room.discard_pile, function(id) return Fk:getCardById(id).color == Card.Red end)
-    local black = #table.filter(room.discard_pile, function(id) return Fk:getCardById(id).color == Card.Black end)
-    player:broadcastSkillInvoke(self.name)
+    local red, black = 0, 0
+    local color
+    for _, id in ipairs(room.discard_pile) do
+      color = Fk:getCardById(id).color
+      if color == Card.Red then
+        red = red+1
+      elseif color == Card.Black then
+        black = black+1
+      end
+    end
     if red > black then
+      if data.card.color == Card.Black then
+        room:addPlayerMark(player, "ty__sunhanhua_ling", 1)
+        room:setPlayerMark(player, "@ty__sunhanhua_ling", "<font color='red'>" .. tostring(player:getMark("ty__sunhanhua_ling")) .. "</font>")
+      end
       if player:isWounded() then
-        room:notifySkillInvoked(player, self.name, "support")
         room:recover{
           who = player,
           num = 1,
@@ -845,26 +854,70 @@ local huiling = fk.CreateTriggerSkill{
           skillName = self.name,
         }
       end
-      if data.card.color == Card.Black then
-        room:notifySkillInvoked(player, self.name, "special")
-        room:addPlayerMark(player, "@ty__sunhanhua_ling", 1)
-      end
     elseif black > red then
+      if data.card.color == Card.Red then
+        room:addPlayerMark(player, "ty__sunhanhua_ling", 1)
+        room:setPlayerMark(player, "@ty__sunhanhua_ling", tostring(player:getMark("ty__sunhanhua_ling")))
+      end
       local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
         return not p:isAllNude() end), function(p) return p.id end)
       if #targets > 0 then
-        local to = room:askForChoosePlayers(player, targets, 1, 1, "#huiling-choose", self.name, false)
+        local to = room:askForChoosePlayers(player, targets, 1, 1, "#huiling-choose", self.name)
         if #to > 0 then
-          room:notifySkillInvoked(player, self.name, "control")
           to = room:getPlayerById(to[1])
           local id = room:askForCardChosen(player, to, "hej", self.name)
           room:throwCard({id}, self.name, to, player)
         end
       end
-      if data.card.color == Card.Red then
-        room:notifySkillInvoked(player, self.name, "special")
-        room:addPlayerMark(player, "@ty__sunhanhua_ling", 1)
+    end
+  end,
+
+  refresh_events = {fk.AfterCardsMove, fk.AfterDrawPileShuffle, fk.EventAcquireSkill, fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.AfterCardsMove then
+      if not player:hasSkill(self.name, true) then return false end
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile then
+          return true
+        end
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.DiscardPile then
+            return true
+          end
+        end
       end
+    elseif event == fk.AfterDrawPileShuffle then
+      return player:hasSkill(self.name, true)
+    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
+      return player == target and data == self
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventLoseSkill then
+      room:setPlayerMark(player, "ty__sunhanhua_ling", 0)
+      room:setPlayerMark(player, "@ty__sunhanhua_ling", 0)
+    else
+      local red, black = 0, 0
+      local color
+      for _, id in ipairs(room.discard_pile) do
+        color = Fk:getCardById(id).color
+        if color == Card.Red then
+          red = red+1
+        elseif color == Card.Black then
+          black = black+1
+        end
+      end
+      local x = player:getMark("ty__sunhanhua_ling")
+      local huiling_info = ""
+      if red > black then
+        huiling_info = "<font color='red'>" .. tostring(x) .. "</font>"
+      elseif red < black then
+        huiling_info = tostring(x)
+      else
+        huiling_info = "<font color='grey'>" .. tostring(x) .. "</font>"
+      end
+      room:setPlayerMark(player, "@ty__sunhanhua_ling", huiling_info)
     end
   end,
 }
@@ -874,20 +927,17 @@ local chongxu = fk.CreateActiveSkill{
   card_num = 0,
   target_num = 0,
   prompt = function(self)
-    return "#chongxu:::"..Self:getMark("@ty__sunhanhua_ling")
+    return "#chongxu:::"..tostring(Self:getMark("ty__sunhanhua_ling"))
   end,
   can_use = function(self, player)
-    return player:getMark("@ty__sunhanhua_ling") > 3 and player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and
-      player:hasSkill("huiling", true)
+    return player:getMark("ty__sunhanhua_ling") > 3 and player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and player:hasSkill("huiling", true)
   end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
+  card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
+    local x = player:getMark("ty__sunhanhua_ling")
     room:handleAddLoseSkills(player, "-huiling", nil, true, false)
-    room:changeMaxHp(player, player:getMark("@ty__sunhanhua_ling"))
-    room:setPlayerMark(player, "@ty__sunhanhua_ling", 0)
+    room:changeMaxHp(player, x)
     room:handleAddLoseSkills(player, "taji|qinghuang", nil, true, false)
   end
 }
@@ -899,17 +949,14 @@ local function doTaji(player, n)
     if #targets == 0 then return end
     local to = room:askForChoosePlayers(player, targets, 1, 1, "#taji-choose", "taji", false)
     if #to > 0 then
-      room:notifySkillInvoked(player, "taji", "control")
       to = room:getPlayerById(to[1])
       local id = room:askForCardChosen(player, to, "he", "taji")
       room:throwCard({id}, "taji", to, player)
     end
   elseif n == 2 then
-    room:notifySkillInvoked(player, "taji", "drawcard")
     player:drawCards(1, "taji")
   elseif n == 3 then
     if player:isWounded() then
-      room:notifySkillInvoked(player, "taji", "support")
       room:recover{
         who = player,
         num = 1,
@@ -918,13 +965,11 @@ local function doTaji(player, n)
       }
     end
   elseif n == 4 then
-    room:notifySkillInvoked(player, "taji", "offensive")
     room:addPlayerMark(player, "@taji", 1)
   end
 end
 local taji = fk.CreateTriggerSkill{
   name = "taji",
-  mute = true,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self.name) then
@@ -939,15 +984,10 @@ local taji = fk.CreateTriggerSkill{
       end
     end
   end,
-  on_cost = function(self, event, target, player, data)
-    return true
-  end,
   on_use = function(self, event, target, player, data)
-    local room = player.room
     local index = {}
     for _, move in ipairs(data) do
       if move.from == player.id then
-        player:broadcastSkillInvoke(self.name)
         for _, info in ipairs(move.moveInfo) do
           if info.fromArea == Card.PlayerHand then
             if move.moveReason == fk.ReasonUse then
@@ -981,9 +1021,7 @@ local taji_trigger = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and data.to ~= player and player:getMark("@taji") > 0
   end,
-  on_cost = function(self, event, target, player, data)
-    return true
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     data.damage = data.damage + player:getMark("@taji")
     player.room:setPlayerMark(player, "@taji", 0)

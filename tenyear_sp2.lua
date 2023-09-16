@@ -2471,7 +2471,6 @@ local xunbie = fk.CreateTriggerSkill{
 }
 local xunbie_trigger = fk.CreateTriggerSkill{
   name = "#xunbie_trigger",
-  mute = true,
   events = {fk.DamageInflicted},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
@@ -2479,7 +2478,6 @@ local xunbie_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     player:broadcastSkillInvoke("xunbie")
-    player.room:notifySkillInvoked(player, "xunbie")
     return true
   end,
 }
@@ -2914,20 +2912,20 @@ local bazhan = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     local isYang = player:getSwitchSkillState(self.name, true) == fk.SwitchYang
 
-    local to_cheak = {}
+    local to_check = {}
     if isYang and #effect.cards > 0 then
-      table.insertTable(to_cheak, effect.cards) 
+      table.insertTable(to_check, effect.cards)
       local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(to_cheak)
+      dummy:addSubcards(to_check)
       room:obtainCard(target.id, dummy, false, fk.ReasonGive)
     elseif not isYang and not target:isKongcheng() then
-      to_cheak = room:askForCardsChosen(player, target, 1, 2, "h", self.name)
+      to_check = room:askForCardsChosen(player, target, 1, 2, "h", self.name)
       local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(to_cheak)
+      dummy:addSubcards(to_check)
       room:obtainCard(player, dummy, false, fk.ReasonPrey)
       target = player
     end
-    if not player.dead and not target.dead and table.find(to_cheak, function (id)
+    if not player.dead and not target.dead and table.find(to_check, function (id)
     return Fk:getCardById(id).name == "analeptic" or Fk:getCardById(id).suit == Card.Heart end) then
       local choices = {"cancel"}
       if not target.faceup or target.chained then
@@ -4688,7 +4686,7 @@ local dongguiren = General(extension, "dongguiren", "qun", 3, 3, General.Female)
 local lianzhi = fk.CreateTriggerSkill{
   name = "lianzhi",
   anim_type = "special",
-  events = {fk.GameStart, fk.BeforeGameOverJudge},
+  events = {fk.GameStart, fk.Deathed},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self.name) then
       if event == fk.GameStart then
@@ -4705,14 +4703,13 @@ local lianzhi = fk.CreateTriggerSkill{
     local room = player.room
     local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
     if event == fk.GameStart then
-      local to = room:askForChoosePlayers(player, targets, 1, 1, "#lianzhi-choose", self.name, false)
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#lianzhi-choose", self.name, false, true)
       if #to > 0 then
         to = room:getPlayerById(to[1])
       else
         to = room:getPlayerById(table.random(targets))
       end
       room:setPlayerMark(player, self.name, to.id)
-      room:setPlayerMark(to, "@@lianzhi", 1)
     else
       local to = room:askForChoosePlayers(player, targets, 1, 1, "#lianzhi2-choose", self.name, true)
       if #to > 0 then
@@ -4739,8 +4736,12 @@ local lianzhi_trigger = fk.CreateTriggerSkill{
     local room = player.room
     player:broadcastSkillInvoke("lianzhi")
     room:notifySkillInvoked(player, "lianzhi", "support")
-    local to = player:getMark("lianzhi")
-    room:doIndicate(player.id, {to})
+    local lianzhi_id = player:getMark("lianzhi")
+    local to = room:getPlayerById(lianzhi_id)
+    if player:getMark("@lianzhi") == 0 then
+      room:setPlayerMark(player, "@lianzhi", to.general)
+    end
+    room:doIndicate(player.id, {lianzhi_id})
     room:recover({
       who = player,
       num = 1,
@@ -4749,7 +4750,9 @@ local lianzhi_trigger = fk.CreateTriggerSkill{
     })
     if not player.dead then
       player:drawCards(1, "lianzhi")
-      room:getPlayerById(to):drawCards(1, "lianzhi")
+    end
+    if not to.dead then
+      to:drawCards(1, "lianzhi")
     end
   end,
 }
@@ -4925,7 +4928,7 @@ Fk:loadTranslationTable{
   "每回合每种牌名限一次，你可以将一张点数不大于“绞”标记数的手牌当一张记录的牌使用，且无距离和次数限制。",
   ["shouze"] = "受责",
   [":shouze"] = "锁定技，结束阶段，你弃置一枚“绞”，然后随机获得弃牌堆一张黑色牌并失去1点体力。",
-  ["@@lianzhi"] = "连枝",
+  ["@lianzhi"] = "连枝",
   ["#lianzhi-choose"] = "连枝：选择一名角色成为“连枝”角色",
   ["#lianzhi2-choose"] = "连枝：你可以选择一名角色，你与其获得技能〖受责〗",
   ["@dongguiren_jiao"] = "绞",

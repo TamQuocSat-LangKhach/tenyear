@@ -294,8 +294,8 @@ Fk:loadTranslationTable{
 
   ["$ty__kaiji1"] = "谋虑渊深，料远若近。",
   ["$ty__kaiji2"] = "视昧而察，筹不虚运。",
-  ["$pingxi1"] = "国有常众，战无常胜。",
-  ["$pingxi2"] = "地有常险，守无常势。",
+  ["$pingxi1"] = "地有常险，守无常势。",
+  ["$pingxi2"] = "国有常众，战无常胜。",
   ["~ty__wangchang"] = "志存开济，人亡政息……",
 }
 
@@ -5078,17 +5078,11 @@ local huizhi = fk.CreateTriggerSkill{
     if #self.cost_data > 0 then
       room:throwCard(self.cost_data, self.name, player, player)
     end
-    local n = player:getHandcardNum()
-    for _, p in ipairs(room:getAlivePlayers()) do
-      if #p.player_cards[Player.Hand] > n then
-        n = #p.player_cards[Player.Hand]
-      end
+    local n = 0
+    for _, p in ipairs(room.alive_players) do
+      n = math.max(n, p:getHandcardNum())
     end
-    if n > player:getHandcardNum() then
-      player:drawCards(math.min(n - player:getHandcardNum()), 5)
-    else
-      player:drawCards(1, self.name)
-    end
+    room:drawCards(player, math.max(math.min(n - player:getHandcardNum(), 5), 1), self.name)
   end,
 }
 local jijiao = fk.CreateActiveSkill{

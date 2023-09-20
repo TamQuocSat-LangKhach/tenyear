@@ -6,6 +6,21 @@ Fk:loadTranslationTable{
   ["ty_ex"] = "新服界",
 }
 
+local function getUseExtraTargets(room, data, bypass_distances)
+  if not (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) then return {} end
+  if data.card.skill:getMinTargetNum() > 1 then return {} end --stupid collateral
+  local tos = {}
+  local current_targets = TargetGroup:getRealTargets(data.tos)
+  for _, p in ipairs(room.alive_players) do
+    if not table.contains(current_targets, p.id) and not room:getPlayerById(data.from):isProhibited(p, data.card) then
+      if data.card.skill:modTargetFilter(p.id, {}, data.from, data.card, bypass_distances) then
+        table.insert(tos, p.id)
+      end
+    end
+  end
+  return tos
+end
+
 local caozhi = General(extension, "ty_ex__caozhi", "wei", 3)
 local ty_ex__jiushi = fk.CreateViewAsSkill{
   name = "ty_ex__jiushi",
@@ -1833,11 +1848,139 @@ Fk:loadTranslationTable{
   ["~ty_ex__chenqun"] = "吾身虽亡，然吾志当遗百年……",
 }
 
+local wuyi = General(extension, "ty_ex__wuyi", "shu", 4)
+local benxi = fk.CreateTriggerSkill{
+  name = "ty_ex__benxi",
+  anim_type = "offensive",
+  frequency = Skill.Compulsory,
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase ~= Player.NotActive
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:addPlayerMark(player, "@ty_ex__benxi-turn", 1)
+  end,
+}
+local benxi_choice = fk.CreateTriggerSkill{
+  name = "#ty_ex__benxi_choice",
+  mute = true,
+  main_skill = benxi,
+  events = {fk.TargetSpecifying},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) and player.phase ~= Player.NotActive then
+      for _, p in ipairs(player.room:getOtherPlayers(player)) do
+        if player:distanceTo(p) > 1 then return end
+      end
+      local card_event = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
+      if not card_event then return end
+      return data.firstTarget and #TargetGroup:getRealTargets(card_event.data[1].tos) == 1 and
+        (data.card.trueName == "slash" or data.card:getSubtypeString() == "normal_trick")
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local card_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+    if not card_event then return end
+
+    local choices = {
+      "ty_ex__benxi_choice1",
+      "ty_ex__benxi_choice2",
+      "ty_ex__benxi_choice3",
+      "ty_ex__benxi_choice4",
+    }
+    local choice = room:askForChoice(player, choices, self.name)
+    table.removeOne(choices, choice)
+    table.insert(choices, "Cancel")
+    local choice2 = room:askForChoice(player, choices, self.name)
+
+    if choice == "ty_ex__benxi_choice1" or choice2 == "ty_ex__benxi_choice1" then
+      if (data.card.name == "collateral") then return end
+
+      local targets = getUseExtraTargets(room, card_event.data[1])
+      if #targets > 0 then
+        local tos = room:askForChoosePlayers(player, targets, 1, 1,
+        "#ty_ex__benxi-choose:::"..data.card:toLogString(), benxi.name, true)
+
+        if #tos > 0 then
+          table.forEach(tos, function (id)
+            table.insert(card_event.data[1].tos, {id})
+          end)
+        end
+      end
+    end
+
+    if choice == "ty_ex__benxi_choice2" or choice2 == "ty_ex__benxi_choice2" then
+      card_event.tybenxi_armor = true
+      for _, p in ipairs(room:getOtherPlayers(player)) do
+        room:addPlayerMark(p, fk.MarkArmorNullified)
+      end
+    end
+
+    if choice == "ty_ex__benxi_choice3" or choice2 == "ty_ex__benxi_choice3" then
+      card_event.data[1].unoffsetableList = table.map(room.alive_players, Util.IdMapper)
+    end
+
+    if choice == "ty_ex__benxi_choice4" or choice2 == "ty_ex__benxi_choice4" then
+      card_event.tybenxi_draw = player
+    end
+  end,
+}
+local benxi_effect = fk.CreateTriggerSkill{
+  name = "#ty_ex__benxi_effect",
+  mute = true,
+  events = {fk.DamageCaused, fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) then return end
+    local logic = player.room.logic
+    local card_event = logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
+    if event == fk.DamageCaused then
+      return card_event and card_event.tybenxi_draw == player and data.card == card_event.data[1].card
+    else
+      return target == player and card_event and card_event.tybenxi_armor
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+
+    if event == fk.DamageCaused then
+      player:drawCards(1)
+    else
+      for _, p in ipairs(room:getOtherPlayers(player)) do
+        room:removePlayerMark(p, fk.MarkArmorNullified)
+      end
+    end
+  end
+}
+local benxi_distance = fk.CreateDistanceSkill{
+  name = "#ty_ex__benxi_distance",
+  correct_func = function(self, from, to)
+    return -from:getMark("@ty_ex__benxi-turn")
+  end,
+}
+benxi:addRelatedSkill(benxi_choice)
+benxi:addRelatedSkill(benxi_effect)
+benxi:addRelatedSkill(benxi_distance)
+wuyi:addSkill(benxi)
+
 Fk:loadTranslationTable{
   ["ty_ex__wuyi"] = "界吴懿",
   ["ty_ex__benxi"] = "奔袭",
   [":ty_ex__benxi"] = "锁定技，当你于回合内使用牌时，本回合你至其他角色距离-1；你的回合内，若你与所有其他角色的距离均为1，你使用仅指定一个目标的"..
   "【杀】或普通锦囊牌时依次选择至多两项：1.为此牌额外指定一个目标；2.此牌无视防具；3.此牌不能被抵消；4.此牌造成伤害时，你摸一张牌。",
+  ["@ty_ex__benxi-turn"] = "奔袭",
+  ["#ty_ex__benxi_choice"] = "奔袭",
+  ["#ty_ex__benxi_effect"] = "奔袭",
+
+  ["#ty_ex__benxi-choose"] = "奔袭：请为此【%arg】额外指定一个目标",
+  ["ty_ex__benxi_choice1"] = "此牌额外指定一个目标",
+  ["ty_ex__benxi_choice2"] = "此牌无视防具",
+  ["ty_ex__benxi_choice3"] = "此牌不能被抵消",
+  ["ty_ex__benxi_choice4"] = "此牌造成伤害时，你摸一张牌",
+  ["$ty_ex__benxi1"] = "北伐曹魏，以弱制强！",
+  ["$ty_ex__benxi2"] = "引军汉中，以御敌袭！",
+  ["~ty_ex__wuyi"] = "终有疲惫之时！休矣！",
 }
 
 local zhangsong = General(extension, "ty_ex__zhangsong", "shu", 3)

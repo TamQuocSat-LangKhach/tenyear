@@ -513,7 +513,7 @@ local jielie = fk.CreateTriggerSkill{
   events = {fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and data.from and
-      data.from ~= player.id and data.from ~= player:getMark("kangge")
+      data.from ~= player and data.from.id ~= player:getMark("kangge")
   end,
   on_cost = function(self, event, target, player, data)
     local suits = {"spade", "heart", "club", "diamond"}
@@ -529,7 +529,7 @@ local jielie = fk.CreateTriggerSkill{
     local room = player.room
     local suit = self.cost_data
     room:loseHp(player, data.damage, self.name)
-    local kangge_id = player:getMark(self.name)
+    local kangge_id = player:getMark("kangge")
     if kangge_id ~= 0 then
       local to = room:getPlayerById(kangge_id)
       if to and not to.dead then

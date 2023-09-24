@@ -1,6 +1,6 @@
-local U = require "packages/utility/utility"
 local extension = Package("tenyear_huicui1")
 extension.extensionName = "tenyear"
+local U = require "packages/utility/utility"
 
 Fk:loadTranslationTable{
   ["tenyear_huicui1"] = "十周年-群英荟萃1",
@@ -2615,7 +2615,7 @@ local gonghu = fk.CreateTriggerSkill{
       end
       return x > 1
     else
-      if player:getMark("gonghu2") > 0 then return false end
+      if player ~= target or player:getMark("gonghu2") > 0 then return false end
       if data.damage > 1 then return true end
       local x = 0
       player.room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
@@ -3997,7 +3997,7 @@ Fk:loadTranslationTable{
   ["@@shengdu"] = "生妒",
   ["#shengdu_delay"] = "生妒",
   ["#jieling-active"] = "发动 介绫，将两张颜色不同的手牌当【杀】使用（无距离和次数限制）",
-  ["#jieling"] = "介绫",
+  ["#jieling_delay"] = "介绫",
 
   ["$shengdu1"] = "姐姐有的，妹妹也要有。",
   ["$shengdu2"] = "你我同为佳丽，凭甚汝得独宠？",

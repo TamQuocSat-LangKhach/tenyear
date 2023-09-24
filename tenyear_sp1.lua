@@ -1,5 +1,6 @@
 local extension = Package("tenyear_sp1")
 extension.extensionName = "tenyear"
+local U = require "packages/utility/utility"
 
 Fk:loadTranslationTable{
   ["tenyear_sp1"] = "十周年-限定专属1",
@@ -4426,12 +4427,168 @@ Fk:loadTranslationTable{
   ["~gexuan"] = "善变化，拙用身。",
 }
 
---杜夔
+local dukui = General(extension, "dukui", "wei", 3)
+local fanyin = fk.CreateTriggerSkill{
+  name = "fanyin",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local x, y = 13, 0
+    local cards = {}
+    for _, id in ipairs(room.draw_pile) do
+      y = Fk:getCardById(id).number
+      if y < x then
+        x = y
+        cards = {}
+      end
+      if x == y then
+        table.insert(cards, id)
+      end
+    end
+    if #cards == 0 then return false end
+    cards = table.random(cards, 1)
+    while true do
+      local to_use = Fk:getCardById(cards[1])
+      room:moveCards({
+        ids = cards,
+        toArea = Card.Processing,
+        skillName = self.name,
+        moveReason = fk.ReasonJustMove,
+      })
+      room:setPlayerMark(player, "fanyin_to_use", cards[1])
+      room:setPlayerMark(player, MarkEnum.BypassDistancesLimit .. "-tmp", 1)
+      local success, dat = room:askForUseViewAsSkill(player, "fanyin_view_as", "#fanyin-ask", true)
+      room:setPlayerMark(player, MarkEnum.BypassDistancesLimit .. "-tmp", 0)
+
+      room:setPlayerMark(player, "fanyin_to_use", 0)
+      if success then
+        local use = {
+          from = player.id,
+          tos = table.map(dat.targets, function(e) return {e} end),
+          card = to_use,
+          extraUse = true,
+        }
+        room:useCard(use)
+      else
+        room:moveCards({
+          ids = cards,
+          toArea = Card.DiscardPile,
+          moveReason = fk.ReasonPutIntoDiscardPile,
+          skillName = self.name,
+        })
+        room:addPlayerMark(player, "@fanyin-turn")
+      end
+      if player.dead then break end
+      x = 2*x
+      cards = room:getCardsFromPileByRule(".|" .. x)
+      if #cards == 0 then break end
+    end
+  end,
+}
+local fanyin_view_as = fk.CreateViewAsSkill{
+  name = "fanyin_view_as",
+  interaction = function()
+    local card = Fk:getCardById(Self:getMark("fanyin_to_use"))
+    if not card then return end
+    return UI.ComboBox {
+      choices = { Fk:translate(card.name) .. '[' .. card:getSuitCompletedString(true) .. ']' }
+    }
+  end,
+  card_filter = Util.FalseFunc,
+  view_as = function(self, cards)
+    local card = Fk:getCardById(Self:getMark("fanyin_to_use"))
+    if Self:canUse(card) and not Self:prohibitUse(card) then
+      return card
+    end
+  end,
+  enabled_at_play = function(self, player)
+    return false
+  end,
+  enabled_at_response = function(self, player)
+    return false
+  end,
+}
+local fanyin_delay = fk.CreateTriggerSkill{
+  name = "#fanyin_delay",
+  events = {fk.AfterCardTargetDeclared},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return not player.dead and player == target and player:getMark("@fanyin-turn") > 0 and
+    (data.card:isCommonTrick() or data.card.type == Card.TypeBasic)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local x = player:getMark("@fanyin-turn")
+    room:setPlayerMark(player, "@fanyin-turn", 0)
+    local targets = U.getUseExtraTargets(room, data)
+    if #targets == 0 then return false end
+    local tos = room:askForChoosePlayers(player, targets, 1, x,
+    "#fanyin-choose:::"..data.card:toLogString() .. ":" .. tostring(x), fanyin.name, true)
+    if #tos > 0 then
+      table.forEach(tos, function (id)
+        table.insert(data.tos, {id})
+      end)
+    end
+  end,
+}
+local peiqi = fk.CreateTriggerSkill{
+  name = "peiqi",
+  anim_type = "masochism",
+  events = {fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return player == target and player:hasSkill(self.name)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:askForChooseToMoveCardInBoard(player, "#peiqi-choose", self.name, true)
+    if #to == 2 and room:askForMoveCardInBoard(player, room:getPlayerById(to[1]), room:getPlayerById(to[2]), self.name) and
+    not player.dead and table.every(room.alive_players, function (p1)
+      return table.every(room.alive_players, function (p2)
+        return p1 == p2 or p1:inMyAttackRange(p2)
+      end)
+    end) then
+      to = room:askForChooseToMoveCardInBoard(player, "#peiqi-choose", self.name, true)
+      if #to == 2 then
+        room:askForMoveCardInBoard(player, room:getPlayerById(to[1]), room:getPlayerById(to[2]), self.name)
+      end
+    end
+  end
+}
+Fk:addSkill(fanyin_view_as)
+fanyin:addRelatedSkill(fanyin_delay)
+dukui:addSkill(fanyin)
+dukui:addSkill(peiqi)
+
+Fk:loadTranslationTable{
+  ["dukui"] = "杜夔",
+  ["fanyin"] = "泛音",
+  [":fanyin"] = "出牌阶段开始时，你可以亮出牌堆中点数最小的一张牌并选择一项：1.使用之（无距离限制）；"..
+  "2.令你本回合使用的下一张牌可以多选择一个目标。然后亮出牌堆中点数翻倍的一张牌并重复此流程。",
+  ["peiqi"] = "配器",
+  [":peiqi"] = "当你受到伤害后，你可以移动场上一张牌。然后若所有角色均在所有角色攻击范围内，你可再移动场上一张牌。",
+
+  ["#fanyin-ask"] = "泛音：使用亮出的牌，或点取消则令你本回合使用的下一张牌可多选目标",
+  ["fanyin_view_as"] = "泛音",
+  ["@fanyin-turn"] = "泛音",
+  ["#peiqi-choose"] = "配器：你可以移动场上的一张牌",
+  ["#fanyin-choose"] = "泛音：你可以为%arg额外指定至多%arg2个目标",
+
+  ["$fanyin1"] = "此音可协，此律可振。",
+  ["$fanyin2"] = "玄妙殊巧，可谓绝技。",
+  ["$peiqi1"] = "声依永，律和声。",
+  ["$peiqi2"] = "音律不协，不可用也。",
+  ["~dukui"] = "此钟不堪用，再铸！",
+}
 
 local zhujianping = General(extension, "zhujianping", "qun", 3)
 local xiangmian = fk.CreateActiveSkill{
   name = "xiangmian",
   anim_type = "offensive",
+  prompt = "#xiangmian-active",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
   end,
@@ -4523,6 +4680,7 @@ Fk:loadTranslationTable{
   "每名其他角色限一次。",
   ["tianji"] = "天机",
   [":tianji"] = "锁定技，生效后的判定牌进入弃牌堆后，你从牌堆随机获得与该牌类型、花色和点数相同的牌各一张。",
+  ["#xiangmian-active"] = "发动相面，令一名其他角色判定",
   ["@xiangmian"] = "相面",
 
   ["$xiangmian1"] = "以吾之见，阁下命不久矣。",

@@ -3183,9 +3183,7 @@ local juying = fk.CreateTriggerSkill{
       n = n + 1
     end
     if n > 0 and n > player.hp then
-      n = n - player.hp
-      if #player:getCardIds{Player.Hand, Player.Equip} < n then return end
-      room:askForDiscard(player, n, n, true, self.name, false)
+      room:askForDiscard(player, 1, 1, true, self.name, false)
     end
   end,
 
@@ -3211,7 +3209,7 @@ Fk:loadTranslationTable{
   ["liupi"] = "刘辟",
   ["juying"] = "踞营",
   [":juying"] = "出牌阶段结束时，若你本阶段使用【杀】的次数小于次数上限，你可以选择任意项：1.下个回合出牌阶段使用【杀】次数上限+1；"..
-  "2.本回合手牌上限+2；3.摸三张牌。若你选择的选项数大于你的体力值，每多一项你弃置一张牌（不足则不弃）。",
+  "2.本回合手牌上限+2；3.摸三张牌。若你选择的选项数大于你的体力值，你弃置一张牌。",
   ["#juying-choice"] = "踞营：你可以选择任意项，每比体力值多选一项便弃一张牌",
   ["juying1"] = "下个回合出牌阶段使用【杀】上限+1",
   ["juying2"] = "本回合手牌上限+2",

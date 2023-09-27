@@ -1,5 +1,6 @@
 local extension = Package("tenyear_sp2")
 extension.extensionName = "tenyear"
+local U = require "packages/utility/utility"
 
 Fk:loadTranslationTable{
   ["tenyear_sp2"] = "十周年-限定专属2",
@@ -987,9 +988,10 @@ local xialei = fk.CreateTriggerSkill{
     local choice = "xialei_top"
     if #ids > 1 then
       local result = room:askForCustomDialog(player, self.name,
-        "packages/tenyear/qml/XiaLeiBox.qml", {
+        "packages/utility/qml/ChooseCardsAndChoiceBox.qml", {
           ids,
-          {"xialei_top", "xialei_bottom"}
+          {"xialei_top", "xialei_bottom"},
+          "#xialei-chooose",
         })
       if result ~= "" then
         local reply = json.decode(result)
@@ -1116,6 +1118,7 @@ Fk:loadTranslationTable{
   ["#anzhi_trigger"] = "暗织",
   [":anzhi"] = "出牌阶段或当你受到伤害后，你可以进行一次判定，若结果为：红色，重置〖霞泪〗；"..
   "黑色，你可以令一名非当前回合角色获得本回合进入弃牌堆的两张牌，且你本回合不能再发动此技能。",
+  ["#xialei-chooose"] = "霞泪：选择一张卡牌获得",
   ["xialei_top"] = "将剩余牌置于牌堆顶",
   ["xialei_bottom"] = "将剩余牌置于牌堆底",
   ["#anzhi-active"] = "发动暗织，进行判定",
@@ -5055,9 +5058,9 @@ local zhangjinyun = General(extension, "zhangjinyun", "shu", 3, 3, General.Femal
 local huizhi = fk.CreateTriggerSkill{
   name = "huizhi",
   anim_type = "drawcard",
-  events = {fk.EventPhaseEnd},
+  events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Draw
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Start
   end,
   on_cost = function(self, event, target, player, data)
     local discard_data = {
@@ -5216,7 +5219,7 @@ zhangjinyun:addSkill(jijiao)
 Fk:loadTranslationTable{
   ["zhangjinyun"] = "张瑾云",
   ["huizhi"] = "蕙质",
-  [":huizhi"] = "摸牌阶段结束时，你可以弃置任意张手牌（可不弃），然后将手牌摸至与全场手牌最多的角色相同（至少摸一张，最多摸五张）。",
+  [":huizhi"] = "准备阶段，你可以弃置任意张手牌（可不弃），然后将手牌摸至与全场手牌最多的角色相同（至少摸一张，最多摸五张）。",
   ["jijiao"] = "继椒",
   [":jijiao"] = "限定技，出牌阶段，你可以令一名角色获得弃牌堆中本局游戏你使用和弃置的所有普通锦囊牌，这些牌不能被【无懈可击】响应。"..
   "每回合结束后，若此回合内牌堆洗过牌或有角色死亡，复原此技能。",

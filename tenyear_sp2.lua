@@ -991,7 +991,7 @@ local xialei = fk.CreateTriggerSkill{
         "packages/utility/qml/ChooseCardsAndChoiceBox.qml", {
           ids,
           {"xialei_top", "xialei_bottom"},
-          "#xialei-chooose",
+          "#xialei-chooose"
         })
       if result ~= "" then
         local reply = json.decode(result)
@@ -5460,7 +5460,7 @@ Fk:loadTranslationTable{
   ["~zhoubuyi"] = "人心者，叵测也。",
 }
 
---武庙：诸葛亮
+--武庙：诸葛亮、陆逊
 local zhugeliang = General(extension, "wm__zhugeliang", "shu", 4, 7)
 local jincui = fk.CreateTriggerSkill{
   name = "jincui",
@@ -5735,7 +5735,7 @@ zhugeliang:addSkill(jincui)
 zhugeliang:addSkill(qingshi)
 zhugeliang:addSkill(zhizhe)
 Fk:loadTranslationTable{
-  ["wm__zhugeliang"] = "诸葛亮",
+  ["wm__zhugeliang"] = "武诸葛亮",
   ["jincui"] = "尽瘁",
   [":jincui"] = "锁定技，游戏开始时，你将手牌补至7张。准备阶段，你的体力值调整为与牌堆中点数为7的游戏牌数量相等（至少为1）。"..
   "然后你观看牌堆顶X张牌（X为你的体力值），将这些牌以任意顺序放回牌堆顶或牌堆底。",
@@ -5763,6 +5763,178 @@ Fk:loadTranslationTable{
   ["$zhizhe1"] = "轻舟载浊酒，此去，我欲借箭十万。",
   ["$zhizhe2"] = "主公有多大胆略，亮便有多少谋略。",
   ["~wm__zhugeliang"] = "天下事，了犹未了，终以不了了之……",
+}
+
+local luxun = General(extension, "wm__luxun", "wu", 3)
+local xiongmu = fk.CreateTriggerSkill{
+  name = "xiongmu",
+  mute = true,
+  events = {fk.RoundStart, fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      if event == fk.RoundStart then
+        return true
+      else
+        return player == target and player:getHandcardNum() <= player.hp and player:getMark("xiongmu_defensive-turn") == 0 and
+        #player.room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
+          local damage = e.data[5]
+          return damage and damage.to == player
+        end, Player.HistoryTurn) == 0
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return event == fk.DamageInflicted or player.room:askForSkillInvoke(player, self.name)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.RoundStart then
+      player:broadcastSkillInvoke(self.name)
+      room:notifySkillInvoked(player, self.name, "drawcard")
+      local x = player.maxHp - player:getHandcardNum()
+      if x > 0 then
+        room:drawCards(player, x, self.name)
+        if player.dead then return false end
+      end
+      if player:isNude() then return false end
+      local cards = room:askForCard(player, 1, 998, true, self.name, true, ".", "#xiongmu-cards")
+      x = #cards
+      if x == 0 then return false end
+      table.shuffle(cards)
+      local positions = {}
+      local y = #room.draw_pile
+      for _ = 1, x, 1 do
+        table.insert(positions, math.random(y+1))
+      end
+      table.sort(positions, function (a, b)
+        return a > b
+      end)
+      local moveInfos = {}
+      for i = 1, x, 1 do
+        table.insert(moveInfos, {
+          ids = {cards[i]},
+          from = player.id,
+          toArea = Card.DrawPile,
+          moveReason = fk.ReasonJustMove,
+          skillName = self.name,
+          drawPilePosition = positions[i],
+        })
+      end
+      room:moveCards(table.unpack(moveInfos))
+      if player.dead then return false end
+      cards = room:getCardsFromPileByRule(".|8", x)
+      if x > #cards then
+        table.insertTable(cards, room:getCardsFromPileByRule(".|8", x - #cards, "discardPile"))
+      end
+      if #cards > 0 then
+        player.room:moveCards({
+          ids = cards,
+          to = player.id,
+          toArea = Player.Hand,
+          moveReason = fk.ReasonPrey,
+          proposer = player.id,
+          skillName = "xiongmu_get",
+        })
+      end
+    else
+      player:broadcastSkillInvoke(self.name)
+      room:notifySkillInvoked(player, self.name, "defensive")
+      room:setPlayerMark(player, "xiongmu_defensive-turn", 1)
+      data.damage = data.damage - 1
+    end
+  end,
+  
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return true
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.AfterCardsMove then
+      for _, move in ipairs(data) do
+        if move.to == player.id and move.toArea == Card.PlayerHand and move.skillName == "xiongmu_get" then
+          for _, info in ipairs(move.moveInfo) do
+            local id = info.cardId
+            if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player then
+              room:setCardMark(Fk:getCardById(id), "@@xiongmu-inhand", 1)
+            end
+          end
+        end
+      end
+    end
+  end,
+}
+local xiongmu_maxcards = fk.CreateMaxCardsSkill{
+  name = "#xiongmu_maxcards",
+  exclude_from = function(self, player, card)
+    return card:getMark("@@xiongmu-inhand") > 0
+  end,
+}
+local zhangcai = fk.CreateTriggerSkill{
+  name = "zhangcai",
+  anim_type = "drawcard",
+  events = {fk.CardUsing, fk.CardResponding},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and (player:getMark("@@ruxian") > 0 or data.card.number == 8)
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(math.max(1, #table.filter(player:getCardIds(Player.Hand), function (id)
+      return Fk:getCardById(id):compareNumberWith(data.card, false)
+    end)), self.name)
+  end,
+}
+local ruxian = fk.CreateActiveSkill{
+  name = "ruxian",
+  prompt = "#ruxian-active",
+  card_num = 0,
+  target_num = 0,
+  frequency = Skill.Limited,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  card_filter = function() return false end,
+  on_use = function(self, room, effect)
+    room:setPlayerMark(room:getPlayerById(effect.from), "@@ruxian", 1)
+  end,
+}
+local ruxian_refresh = fk.CreateTriggerSkill{
+  name = "#ruxian_refresh",
+
+  refresh_events = {fk.TurnStart},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark("@@ruxian") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@@ruxian", 0)
+  end,
+}
+xiongmu:addRelatedSkill(xiongmu_maxcards)
+ruxian:addRelatedSkill(ruxian_refresh)
+luxun:addSkill(xiongmu)
+luxun:addSkill(zhangcai)
+luxun:addSkill(ruxian)
+Fk:loadTranslationTable{
+  ["wm__luxun"] = "武陆逊",
+  ["xiongmu"] = "雄幕",
+  [":xiongmu"] = "每轮开始时，你可以将手牌摸至体力上限，然后将任意张牌随机置入牌堆，从牌堆或弃牌堆中获得等量的点数为8的牌，"..
+  "这些牌不计入你的手牌上限。当你每回合受到第一次伤害时，若你的手牌数小于等于体力值，此伤害-1。",
+  ["zhangcai"] = "彰才",
+  [":zhangcai"] = "当你使用或打出点数为8的牌时，你可摸X张牌（X为手牌中与使用的牌点数相同的牌的数量且至少为1）。",
+  ["ruxian"] = "儒贤",
+  [":ruxian"] = "限定技，出牌阶段，你可将〖彰才〗改为所有点数均可触发摸牌直到你的下回合开始。",
+
+  ["#xiongmu-cards"] = "雄幕：你可将任意张牌随机置入牌堆，然后获得等量张点数为8的牌",
+  ["@@xiongmu-inhand"] = "雄幕",
+  ["#ruxian-active"] = "发动 儒贤，令你发动〖彰才〗没有点数的限制直到你的下个回合开始",
+  ["@@ruxian"] = "儒贤",
+
+  ["$xiongmu1"] = "步步为营者，定无后顾之虞。",
+  ["$xiongmu2"] = "明公彀中藏龙卧虎，放之海内皆可称贤。",
+  ["$zhangcai1"] = "今提墨笔绘乾坤，湖海添色山永春。",
+  ["$zhangcai2"] = "手提玉剑斥千军，昔日锦鲤化金龙。",
+  ["$ruxian1"] = "儒道尚仁而有礼，贤者知命而独悟。",
+  ["$ruxian2"] = "儒门有言，仁为己任，此生不负孔孟之礼。",
+  ["~wm__luxun"] = "此生清白，不为浊泥所染……",
 }
 
 return extension

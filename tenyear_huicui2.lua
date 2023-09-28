@@ -3603,7 +3603,7 @@ beifen:addRelatedSkill(beifen_targetmod)
 caiwenji:addSkill(shuangjia)
 caiwenji:addSkill(beifen)
 Fk:loadTranslationTable{
-  ["mu__caiwenji"] = "蔡文姬",
+  ["mu__caiwenji"] = "乐蔡文姬",
   ["shuangjia"] = "霜笳",
   [":shuangjia"] = "锁定技，游戏开始时，你的初始手牌增加“胡笳”标记且不计入手牌上限。你每拥有一张“胡笳”，其他角色计算与你距离+1（最多+5）。",
   ["beifen"] = "悲愤",
@@ -3615,6 +3615,116 @@ Fk:loadTranslationTable{
   ["$beifen1"] = "此心如置冰壶，无物可暖。",
   ["$beifen2"] = "年少爱登楼，欲说语还休。",
   ["~mu__caiwenji"] = "天何薄我，天何薄我……",
+}
+
+local zhoufei = General(extension, "mu__zhoufei", "wu", 3, 3, General.Female)
+local lingkong = fk.CreateTriggerSkill{
+  name = "lingkong",
+  anim_type = "special",
+  frequency = Skill.Compulsory,
+  events = {fk.GameStart, fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) then return false end
+    local handcards = player:getCardIds(Player.Hand)
+    if event == fk.GameStart then
+      return #handcards > 0
+    elseif event == fk.AfterCardsMove then
+      if player.phase ~= Player.NotActive then return false end
+      local cards = {}
+      for _, move in ipairs(data) do
+        if move.to == player.id and move.toArea == Player.Hand then
+          for _, info in ipairs(move.moveInfo) do
+            local id = info.cardId
+            if table.contains(handcards, id) then
+              table.insert(cards, id)
+            end
+          end
+        end
+      end
+      if #cards > 0 then
+        self.cost_data = cards
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.GameStart then
+      for _, id in ipairs(player.player_cards[Player.Hand]) do
+        room:setCardMark(Fk:getCardById(id), "@@konghou-inhand", 1)
+      end
+    elseif event == fk.AfterCardsMove then
+      local id = table.random(self.cost_data)
+      room:setCardMark(Fk:getCardById(id), "@@konghou-inhand", 1)
+    end
+  end,
+}
+local lingkong_maxcards = fk.CreateMaxCardsSkill{
+  name = "#lingkong_maxcards",
+  exclude_from = function(self, player, card)
+    return card:getMark("@@konghou-inhand") > 0
+  end,
+}
+local xianshu = fk.CreateActiveSkill{
+  name = "xianshu",
+  card_num = 1,
+  target_num = 1,
+  prompt = "#xianshu-active",
+  anim_type = "drawcard",
+  can_use = function(self, player)
+    return true
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:getCardById(to_select):getMark("@@konghou-inhand") > 0
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local color = Fk:getCardById(effect.cards[1]).color
+    local player = room:getPlayerById(effect.from)
+    player:showCards(effect.cards)
+    room:delay(2000)
+    local target = room:getPlayerById(effect.tos[1])
+    room:obtainCard(target.id, effect.cards[1], true, fk.ReasonGive)
+    if player.dead or target.dead then return end
+    if color == Card.Red and target.hp <= player.hp and target:isWounded() then
+      room:recover{
+        who = target,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      }
+    end
+    if color == Card.Black and target.hp >= player.hp then
+      room:loseHp(target, 1, self.name)
+    end
+    if player.dead or target.dead then return end
+    local x = math.abs(player.hp - target.hp)
+    if x > 0 then
+      room:drawCards(player, math.min(x, 5), self.name)
+    end
+  end,
+}
+lingkong:addRelatedSkill(lingkong_maxcards)
+zhoufei:addSkill(lingkong)
+zhoufei:addSkill(xianshu)
+Fk:loadTranslationTable{
+  ["mu__zhoufei"] = "乐周妃",
+  ["lingkong"] = "灵箜",
+  [":lingkong"] = "锁定技，游戏开始时，你的初始手牌增加“箜篌”标记且不计入手牌上限。你于回合外得到牌后，随机将其中一张标记为“箜篌”牌。",
+  ["xianshu"] = "贤淑",
+  [":xianshu"] = "出牌阶段，你可以展示一张“箜篌”牌并交给一名其他角色。若此牌为红色，且该角色体力值小于等于你，该角色回复1点体力；"..
+  "若此牌为黑色，且该角色体力值大于等于你，该角色失去1点体力。然后，你摸X张牌（X为你与该角色体力值之差且至多为5）。",
+
+  ["@@konghou-inhand"] = "箜篌",
+  ["#xianshu-active"] = "发动 贤淑，选择一张带有“箜篌”标记的牌交给其他角色",
+
+  ["$lingkong1"] = "箜篌奏晚歌，渔樵有归期。",
+  ["$lingkong2"] = "吴宫绿荷惊涟漪，飞燕啄新泥。",
+  ["$xianshu1"] = "居宠而不骄，秉贤淑于内庭。",
+  ["$xianshu2"] = "心怀玲珑意，宜家国于春秋。",
+  ["~mu__zhoufei"] = "红颜薄命，望君珍重……",
 }
 
 return extension

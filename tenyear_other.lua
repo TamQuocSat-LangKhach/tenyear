@@ -694,7 +694,7 @@ local tycl__jianxiong = fk.CreateTriggerSkill{
     local room = player.room
     local n = math.min(player:usedSkillTimes(self.name, Player.HistoryGame), 5)
     player:drawCards(n, self.name)
-    if not player.dead and table.every(data.card and data.card:isVirtual() and data.card.subcards or {data.card.id}, function(id)
+    if not player.dead and data.card and table.every(data.card and data.card:isVirtual() and data.card.subcards or {data.card.id}, function(id)
       return room:getCardArea(id) == Card.Processing end) then
       room:obtainCard(player.id, data.card, true, fk.ReasonJustMove)
     end

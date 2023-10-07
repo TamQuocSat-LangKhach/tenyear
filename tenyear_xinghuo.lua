@@ -100,6 +100,62 @@ Fk:loadTranslationTable{
   ["~yanjun"] = "著作，还……没完成……",
 }
 
+local lidian = General(extension, "ty__lidian", "wei", 3)
+
+local ty__wangxi = fk.CreateTriggerSkill{
+  name = "ty__wangxi",
+  events = {fk.Damage, fk.Damaged},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and data.from and data.from ~= data.to and not (data.from.dead or data.to.dead)
+  end,
+  on_trigger = function(self, event, target, player, data)
+    self.cancel_cost = false
+    for i = 1, data.damage do
+      if self.cancel_cost then break end
+      if not self:triggerable(event, target, player, data) then break end
+      self:doCost(event, target, player, data)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local to = event == fk.Damage and data.to or data.from
+    if player.room:askForSkillInvoke(player, self.name, nil, "#ty__wangxi-invoke::"..to.id) then
+      player.room:doIndicate(player.id, {to.id})
+      return true
+    end
+    self.cancel_cost = true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke(self.name)
+    room:notifySkillInvoked(player, self.name, event == fk.Damaged and "masochism" or "drawcard")
+    room:drawCards(player, 2, self.name)
+    local to = event == fk.Damage and data.to or data.from
+    if player.dead or player:isNude() or to.dead then return false end
+    local card = room:askForCard(player, 1, 1, true, self.name, false, ".", "#ty__wangxi-give::"..to.id)
+    if #card > 0 then
+      room:moveCardTo(card, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
+    end
+  end
+}
+lidian:addSkill("xunxun")
+lidian:addSkill(ty__wangxi)
+
+Fk:loadTranslationTable{
+  ["ty__lidian"] = "李典",
+  ["ty__wangxi"] = "忘隙",
+  [":ty__wangxi"] = "当你对其他角色造成1点伤害后，或当你受到其他角色造成的1点伤害后，若其存活，你可以摸两张牌，然后将一张牌交给该角色。",
+
+  ["#ty__wangxi-invoke"] = "是否对 %dest 发动 忘隙",
+  ["#ty__wangxi-give"] = "忘隙：选择一张牌，交给 %dest",
+
+  ["$xunxun_ty__lidian1"] = "吾乃儒雅之士，不需与诸将争功。",
+  ["$xunxun_ty__lidian2"] = "读诗书，尚礼仪，守纲常。",
+  ["$ty__wangxi1"] = "小隙沉舟，同心方可戮力。",
+  ["$ty__wangxi2"] = "为天下苍生，自当化解私怨。",
+  ["~ty__lidian"] = "恩遇极此，惶恐之至……",
+}
+
 Fk:loadTranslationTable{
   ["duji"] = "杜畿",
   ["andong"] = "安东",

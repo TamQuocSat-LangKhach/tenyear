@@ -5460,6 +5460,176 @@ Fk:loadTranslationTable{
   ["~zhoubuyi"] = "人心者，叵测也。",
 }
 
+local xujing = General(extension, "ty__xujing", "shu", 3)
+
+local shangyu = fk.CreateTriggerSkill{
+  name = "shangyu",
+  events = {fk.AfterCardsMove, fk.Damage, fk.GameStart},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) then return false end
+    if event == fk.AfterCardsMove then
+      local cid = player:getMark("shangyu_slash")
+      if player.room:getCardArea(cid) ~= Card.DiscardPile then return false end
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile then
+          for _, info in ipairs(move.moveInfo) do
+            if info.cardId == cid then
+              return true
+            end
+          end
+        end
+      end
+    elseif event == fk.Damage then
+      if data.card and data.card.trueName == "slash" then
+        local cardlist = data.card:isVirtual() and data.card.subcards or {data.card.id}
+        if #cardlist == 1 and cardlist[1] == player:getMark("shangyu_slash") then
+          local room = player.room
+          local parentUseEvent = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+          if parentUseEvent then
+            local use = parentUseEvent.data[1]
+            local from = room:getPlayerById(use.from)
+            if from and not from.dead then
+              self.cost_data = use.from
+              return true
+            end
+          end
+        end
+      end
+    elseif event == fk.GameStart then
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.AfterCardsMove then
+      local targets = table.map(room.alive_players, Util.IdMapper)
+      local marks = player:getMark("shangyu_prohibit-turn")
+      if type(marks) == "table" then
+        targets = table.filter(targets, function (pid)
+          return not table.contains(marks, pid)
+        end)
+      else
+        marks = {}
+      end
+      if #targets == 0 then return false end
+      local card = Fk:getCardById(player:getMark("shangyu_slash"))
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#shangyu-give:::" .. card:toLogString(), self.name, false)
+      if #to > 0 then
+        table.insert(marks, to[1])
+        room:setPlayerMark(player, "shangyu_prohibit-turn", marks)
+        room:moveCardTo(card, Card.PlayerHand, room:getPlayerById(to[1]), fk.ReasonGive, self.name, nil, true, player.id)
+      end
+    elseif event == fk.Damage then
+      local target = room:getPlayerById(self.cost_data)
+      room:doIndicate(player.id, {self.cost_data})
+      room:drawCards(player, 1, self.name)
+      if not target.dead then
+        room:drawCards(target, 1, self.name)
+      end
+    elseif event == fk.GameStart then
+      local cards = room:getCardsFromPileByRule("slash", 1)
+      if #cards > 0 then
+        local cid = cards[1]
+        room:setPlayerMark(player, "shangyu_slash", cid)
+        local card = Fk:getCardById(cid)
+        room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
+        if player.dead or not table.contains(player:getCardIds(Player.Hand), cid) then return false end
+        local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1,
+        "#shangyu-give:::" .. card:toLogString(), self.name, true)
+        if #to > 0 then
+          room:moveCardTo(card, Card.PlayerHand, room:getPlayerById(to[1]), fk.ReasonGive, self.name, nil, true, player.id)
+        end
+      end
+    end
+  end,
+
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return not player.dead and player:getMark("shangyu_slash") ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local cid = player:getMark("shangyu_slash")
+    local card = Fk:getCardById(cid)
+    if room:getCardArea(cid) == Card.PlayerHand and card:getMark("@@shangyu-inhand") == 0 then
+      room:setCardMark(Fk:getCardById(cid), "@@shangyu-inhand", 1)
+    end
+  end,
+}
+
+local caixia = fk.CreateTriggerSkill{
+  name = "caixia",
+  events = {fk.Damage, fk.Damaged, fk.CardUsing},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self.name) then return false end
+    if event == fk.CardUsing then
+      return player == target and player:getMark("@caixia") > 0
+    else
+      return player == target and player:getMark("@caixia") == 0 
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.CardUsing then
+      return true
+    else
+      local room = player.room
+      local choices = {}
+      for i = 1, math.min(5, #room.players), 1 do
+        table.insert(choices, "caixia_draw" .. tostring(i))
+      end
+      table.insert(choices, "Cancel")
+      local choice = room:askForChoice(player, choices, self.name, "#caixia-draw")
+      if choice ~= "Cancel" then
+        self.cost_data = choice
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke(self.name)
+    if event == fk.CardUsing then
+      room:notifySkillInvoked(player, self.name)
+      room:removePlayerMark(player, "@caixia")
+    else
+      room:notifySkillInvoked(player, self.name, event == fk.Damaged and "masochism" or "drawcard")
+      local x = tonumber(string.sub(self.cost_data, 12, 12))
+      room:setPlayerMark(player, "@caixia", x)
+      room:drawCards(player, x, self.name)
+    end
+  end
+}
+
+xujing:addSkill(shangyu)
+xujing:addSkill(caixia)
+
+Fk:loadTranslationTable{
+  ["ty__xujing"] = "许靖",
+  ["shangyu"] = "赏誉",
+  [":shangyu"] = "锁定技，游戏开始时，你获得一张【杀】并标记之，然后可以将其交给一名角色。此【杀】：造成伤害后，你和使用者各摸一张牌；"..
+  "进入弃牌堆后，你将其交给一名本回合未以此法指定过的角色。",
+  ["caixia"] = "才瑕",
+  [":caixia"] = "当你造成或受到伤害后，你可以摸至多X张牌（X为游戏人数且至多为5）。若如此做，此技能失效直到你累计使用了等量的牌。",
+
+  ["@@shangyu-inhand"] = "赏誉",
+  ["#shangyu-give"] = "赏誉：将“赏誉”牌【%arg】交给一名角色",
+  ["#caixia-draw"] = "你可以发动 才瑕，选择摸牌的数量",
+  ["caixia_draw1"] = "摸一张牌",
+  ["caixia_draw2"] = "摸两张牌",
+  ["caixia_draw3"] = "摸三张牌",
+  ["caixia_draw4"] = "摸四张牌",
+  ["caixia_draw5"] = "摸五张牌",
+  ["@caixia"] = "才瑕",
+
+  ["$shangyu1"] = "君满腹才学，当为国之大器。",
+  ["$shangyu2"] = "一腔青云之志，正待梦日之时。",
+  ["$caixia1"] = "吾习扫天下之术，不善净一屋之秽。",
+  ["$caixia2"] = "玉有十色五光，微瑕难掩其瑜。",
+  ["~ty__xujing"] = "时人如江鲫，所逐者功利尔……",
+}
+
 --武庙：诸葛亮、陆逊
 local zhugeliang = General(extension, "wm__zhugeliang", "shu", 4, 7)
 local jincui = fk.CreateTriggerSkill{
@@ -5783,16 +5953,14 @@ local xiongmu = fk.CreateTriggerSkill{
       end
     end
   end,
-  on_cost = function(self, event, target, player, data)
-    return event == fk.DamageInflicted or player.room:askForSkillInvoke(player, self.name)
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.RoundStart then
       player:broadcastSkillInvoke(self.name)
       room:notifySkillInvoked(player, self.name, "drawcard")
       local x = player.maxHp - player:getHandcardNum()
-      if x > 0 then
+      if x > 0 and room:askForSkillInvoke(player, self.name, nil, "#xiongmu-draw:::" .. tostring(x)) then
         room:drawCards(player, x, self.name)
         if player.dead then return false end
       end
@@ -5844,7 +6012,7 @@ local xiongmu = fk.CreateTriggerSkill{
     end
   end,
   
-  refresh_events = {fk.AfterCardsMove},
+  refresh_events = {fk.AfterCardsMove, fk.RoundEnd},
   can_refresh = function(self, event, target, player, data)
     return true
   end,
@@ -5860,6 +6028,10 @@ local xiongmu = fk.CreateTriggerSkill{
             end
           end
         end
+      end
+    elseif event == fk.RoundEnd then
+      for _, id in ipairs(player:getCardIds(Player.Hand)) do
+        room:setCardMark(Fk:getCardById(id), "@@xiongmu-inhand", 0)
       end
     end
   end,
@@ -5917,12 +6089,13 @@ Fk:loadTranslationTable{
   ["wm__luxun"] = "武陆逊",
   ["xiongmu"] = "雄幕",
   [":xiongmu"] = "每轮开始时，你可以将手牌摸至体力上限，然后将任意张牌随机置入牌堆，从牌堆或弃牌堆中获得等量的点数为8的牌，"..
-  "这些牌不计入你的手牌上限。当你每回合受到第一次伤害时，若你的手牌数小于等于体力值，此伤害-1。",
+  "这些牌此轮内不计入你的手牌上限。当你每回合受到第一次伤害时，若你的手牌数小于等于体力值，此伤害-1。",
   ["zhangcai"] = "彰才",
   [":zhangcai"] = "当你使用或打出点数为8的牌时，你可摸X张牌（X为手牌中与使用的牌点数相同的牌的数量且至少为1）。",
   ["ruxian"] = "儒贤",
   [":ruxian"] = "限定技，出牌阶段，你可将〖彰才〗改为所有点数均可触发摸牌直到你的下回合开始。",
 
+  ["#xiongmu-draw"] = "雄幕：是否将手牌补至体力上限（摸%arg张牌）",
   ["#xiongmu-cards"] = "雄幕：你可将任意张牌随机置入牌堆，然后获得等量张点数为8的牌",
   ["@@xiongmu-inhand"] = "雄幕",
   ["#ruxian-active"] = "发动 儒贤，令你发动〖彰才〗没有点数的限制直到你的下个回合开始",

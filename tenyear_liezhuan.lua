@@ -1,5 +1,6 @@
 local extension = Package("tenyear_liezhuan")
 extension.extensionName = "tenyear"
+local U = require "packages/utility/utility"
 
 Fk:loadTranslationTable{
   ["tenyear_liezhuan"] = "十周年-武将列传",
@@ -700,20 +701,7 @@ Fk:loadTranslationTable{
 --麹义
 
 local hanfu = General(extension, "hanfu", "qun", 4)
-local function getUseExtraTargets(room, data, bypass_distances)
-  if not (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) then return {} end
-  if data.card.skill:getMinTargetNum() > 1 then return {} end --stupid collateral
-  local tos = {}
-  local current_targets = TargetGroup:getRealTargets(data.tos)
-  for _, p in ipairs(room.alive_players) do
-    if not table.contains(current_targets, p.id) and not room:getPlayerById(data.from):isProhibited(p, data.card) then
-      if data.card.skill:modTargetFilter(p.id, {}, data.from, data.card, not bypass_distances) then
-        table.insert(tos, p.id)
-      end
-    end
-  end
-  return tos
-end
+
 local ty__jieying = fk.CreateTriggerSkill{
   name = "ty__jieying",
   anim_type = "control",
@@ -749,7 +737,7 @@ local ty__jieying_delay = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.AfterCardTargetDeclared then
-      local tos = room:askForChoosePlayers(player, getUseExtraTargets(room, data), 1, 1,
+      local tos = room:askForChoosePlayers(player, U.getUseExtraTargets(room, data), 1, 1,
         "#ty__jieying-extra:::"..data.card:toLogString(), ty__jieying.name, true)
       if #tos == 1 then
         table.insert(data.tos, tos)

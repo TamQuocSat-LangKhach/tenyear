@@ -994,11 +994,8 @@ local yuyun_targetmod = fk.CreateTargetModSkill{
 }
 local yuyun_maxcards = fk.CreateMaxCardsSkill{
   name = "#yuyun_maxcards",
-  correct_func = function(self, player)
-    if player:getMark("yuyun3-turn") > 0 then
-      return 999
-    end
-    return 0
+  exclude_from = function(self, player, card)
+    return player:getMark("yuyun3-turn") > 0
   end,
 }
 yuyun:addRelatedSkill(yuyun_targetmod)
@@ -1830,7 +1827,8 @@ Fk:loadTranslationTable{
   ["#shouli_trigger"] = "狩骊",
   ["#shouli_delay"] = "狩骊",
   [":shouli"] = "游戏开始时，从下家开始所有角色随机使用牌堆中的一张坐骑。你可将场上的一张进攻马当【杀】（不计入次数）、"..
-  "防御马当【闪】使用或打出，以此法失去坐骑的其他角色本回合非锁定技失效，你与其本回合受到的伤害+1且改为雷电伤害。",
+  "防御马当【闪】使用或打出，以此法失去坐骑的其他角色本回合非锁定技失效，你与其本回合受到的伤害+1且改为雷电伤害。"..
+  '<br /><font color="red">（村：以此法使用的牌的合法性检测按无对应实体牌的牌处理，发动后先获得对应的坐骑牌，再从手牌区转化使用）</font>',
   ["hengwu"] = "横骛",
   [":hengwu"] = "当你使用或打出牌时，若你没有该花色的手牌，你可摸X张牌（X为场上与此牌花色相同的装备数量）。",
 
@@ -1978,20 +1976,7 @@ local xunshi = fk.CreateFilterSkill{
     return card
   end,
 }
-local function getUseExtraTargets(room, data, bypass_distances)
-  if not (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) then return {} end
-  if data.card.skill:getMinTargetNum() > 1 then return {} end --stupid collateral
-  local tos = {}
-  local current_targets = TargetGroup:getRealTargets(data.tos)
-  for _, p in ipairs(room.alive_players) do
-    if not table.contains(current_targets, p.id) and not room:getPlayerById(data.from):isProhibited(p, data.card) then
-      if data.card.skill:modTargetFilter(p.id, {}, data.from, data.card, not bypass_distances) then
-        table.insert(tos, p.id)
-      end
-    end
-  end
-  return tos
-end
+
 local xunshi_trigger = fk.CreateTriggerSkill{
   name = "#xunshi_trigger",
   anim_type = "offensive",
@@ -2008,7 +1993,7 @@ local xunshi_trigger = fk.CreateTriggerSkill{
     if player:getMark("xunshi") < 4 then
       player.room:addPlayerMark(player, "xunshi", 1)
     end
-    local targets = getUseExtraTargets(room, data)
+    local targets = U.getUseExtraTargets(room, data)
     local n = #targets
     if n == 0 then return false end
     local tos = room:askForChoosePlayers(player, targets, 1, n, "#xunshi-choose:::"..data.card:toLogString(), xunshi.name, true)

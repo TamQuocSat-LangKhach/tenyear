@@ -5279,19 +5279,12 @@ local cansi = fk.CreateTriggerSkill{
   name = "cansi",
   events = {fk.EventPhaseStart},
   frequency = Skill.Compulsory,
+  anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and player.phase == Player.Start
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
-    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#cansi-choose", self.name, false)
-    local to
-    if #tos > 0 then
-      to = room:getPlayerById(tos[1])
-    else
-      to = room:getPlayerById(table.random(targets))
-    end
     if player:isWounded() then
       room:recover({
         who = player,
@@ -5299,6 +5292,16 @@ local cansi = fk.CreateTriggerSkill{
         recoverBy = player,
         skillName = self.name
       })
+      if player.dead then return false end
+    end
+    local targets = table.map(room:getOtherPlayers(player, false), function(p) return p.id end)
+    if #targets == 0 then return false end
+    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#cansi-choose", self.name, false)
+    local to
+    if #tos > 0 then
+      to = room:getPlayerById(tos[1])
+    else
+      to = room:getPlayerById(table.random(targets))
     end
     if to:isWounded() then
       room:recover({
@@ -5308,61 +5311,85 @@ local cansi = fk.CreateTriggerSkill{
         skillName = self.name
       })
     end
-    room:setPlayerMark(player, self.name, to.id)
-    for _, name in ipairs({"slash", "duel", "fire_attack"}) do
+    for _, card_name in ipairs({"slash", "duel", "fire_attack"}) do
       if player.dead or to.dead then break end
-      room:useVirtualCard(name, nil, player, to, self.name)
+      local card = Fk:cloneCard(card_name)
+      card.skillName = self.name
+      if U.canUseCardTo(room, player, to, card) then
+        room:useCard({
+          from = player.id,
+          tos = {{to.id}},
+          card = card,
+          extraUse = true,
+          extra_data = {cansi_source = player.id, cansi_target = to.id}
+        })
+      end
     end
-    room:setPlayerMark(player, self.name, 0)
   end,
-
-  refresh_events = {fk.CardUseFinished},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and table.contains(data.card.skillNames, self.name) and not player.dead
-  end,
-  on_refresh = function(self, event, target, player, data)
-    if data.damageDealt and data.damageDealt[player:getMark(self.name)] then
-      player:drawCards(2*data.damageDealt[player:getMark(self.name)], self.name)
+}
+local cansi_draw = fk.CreateTriggerSkill{
+  name = "#cansi_draw",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.Damaged},
+  main_skill = cansi,
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(cansi.name) or not data.card then return false end
+    local use_event = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
+    if use_event then
+      local use = use_event.data[1]
+      return use.card == data.card and use.extra_data and
+      use.extra_data.cansi_source == player.id and use.extra_data.cansi_target == target.id
     end
+  end,
+  on_trigger = function(self, event, target, player, data)
+    for i = 1, data.damage do
+      if not player:hasSkill(cansi.name) then break end
+      self:doCost(event, target, player, data)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player:broadcastSkillInvoke(cansi.name)
+    player:drawCards(2, cansi.name)
   end,
 }
 local fozong = fk.CreateTriggerSkill{
   name = "fozong",
   events = {fk.EventPhaseStart},
   frequency = Skill.Compulsory,
+  anim_type = "negative",
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and player.phase == Player.Play and player:getHandcardNum() > 7
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local n = player:getHandcardNum() - 7
-    local cards = room:askForCard(player, n, n, false, self.name, false, ".", "#fozong-card:::"..n)
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(cards)
-    player:addToPile(self.name, dummy, true, self.name)
-    if #player:getPile(self.name) >= 7 then
-      for _, p in ipairs(room:getOtherPlayers(player)) do
-        if player.dead then return end
-        local choices = {"fozong_lose"}
-        if #player:getPile(self.name) > 0 then  --很难想象怎样才会不够发
-          table.insert(choices, 1, "fozong_get")
-        end
-        local choice = room:askForChoice(p, choices, self.name, "#fozong-choice:"..player.id)  --之后应该改成选牌框
-        if choice == "fozong_get" then
-          local cards = player:getPile(self.name)
-          table.forEach(room.players, function(p) room:fillAG(p, cards) end)
-          local id = room:askForAG(p, cards, false, self.name)
-          room:takeAG(p, id, room.players)
-          room:obtainCard(p.id, id, true, fk.ReasonJustMove)
-          table.removeOne(cards, id)
-          table.forEach(room.players, function(p) room:closeAG(p) end)
-          if player:isWounded() then
+    room:moveCardTo(room:askForCard(player, n, n, false, self.name, false, ".", "#fozong-card:::"..n),
+    Card.PlayerSpecial, player, fk.ReasonJustMove, self.name, self.name, true)
+    if #player:getPile(self.name) < 7 then return false end
+    for _, p in ipairs(room:getOtherPlayers(player)) do
+      if player.dead then break end
+      if not p.dead then
+        local result = room:askForCustomDialog(p, self.name,
+        "packages/utility/qml/ChooseCardsAndChoiceBox.qml", {
+          player:getPile(self.name),
+          {"fozong_get"},
+          "#fozong-choice:"..player.id,
+          {"fozong_lose"}
+        })
+        if result ~= "" then
+          local reply = json.decode(result)
+          if #reply.cards > 0 then
+            room:obtainCard(p, reply.cards[1], true, fk.ReasonPrey)
+            if player.dead then break end
             room:recover({
               who = player,
               num = 1,
-              recoverBy = player,
+              recoverBy = p,
               skillName = self.name
             })
+          else
+            room:loseHp(player, 1, self.name)
           end
         else
           room:loseHp(player, 1, self.name)
@@ -5371,8 +5398,10 @@ local fozong = fk.CreateTriggerSkill{
     end
   end,
 }
+cansi:addRelatedSkill(cansi_draw)
 zerong:addSkill(cansi)
 zerong:addSkill(fozong)
+
 Fk:loadTranslationTable{
   ["zerong"] = "笮融",
   ["cansi"] = "残肆",
@@ -5380,12 +5409,14 @@ Fk:loadTranslationTable{
   ["fozong"] = "佛宗",
   [":fozong"] = "锁定技，出牌阶段开始时，若你的手牌多于七张，你将超出数量的手牌置于武将牌上，然后若你武将牌上有至少七张牌，"..
   "其他角色依次选择一项：1.获得其中一张牌并令你回复1点体力；2.令你失去1点体力。",
-  ["#cansi-choose"] = "残肆：选择一名角色，你与其各回复1点体力，然后依次视为对其使用【杀】、【决斗】和【火攻】",
+
+  ["#cansi-choose"] = "残肆：选择一名角色，令其回复1点体力，然后依次视为对其使用【杀】、【决斗】和【火攻】",
+  ["#cansi_draw"] = "残肆",
   ["#fozong-card"] = "佛宗：将 %arg 张手牌置于武将牌上",
-  ["#fozong-choice"] = "佛宗：选择对 %src 执行的一项",
-  ["fozong_get"] = "获得一张“佛宗”牌，其回复1点体力",
-  ["fozong_lose"] = "其失去1点体力",
-  
+  ["#fozong-choice"] = "佛宗：选择令 %src 执行的一项",
+  ["fozong_get"] = "获得此牌并令其回复体力",
+  ["fozong_lose"] = "令其失去体力",
+
   ["$cansi1"] = "君不入地狱，谁入地狱？",
   ["$cansi2"] = "众生皆苦，唯渡众生于极乐。",
   ["$fozong1"] = "此身无长物，愿奉骨肉为浮屠。",
@@ -5483,7 +5514,124 @@ Fk:loadTranslationTable{
   ["~jianggan"] = "丞相，再给我一次机会啊！",
 }
 
---赵昂
+local zhaoang = General(extension, "zhaoang", "wei", 3, 4)
+local zhongjie = fk.CreateTriggerSkill{
+  name = "zhongjie",
+  anim_type = "support",
+  events = {fk.EnterDying},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryRound) == 0 and
+    not data.damage and not target.dead and target.hp < 1
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if room:askForSkillInvoke(player, self.name, data, "#zhongjie-invoke::"..target.id) then
+      room:doIndicate(player.id, {target.id})
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:recover{
+      who = target,
+      num = 1,
+      recoverBy = player,
+      skillName = self.name
+    }
+    if not target.dead then
+      target:drawCards(1, self.name)
+    end
+  end,
+}
+local sushou = fk.CreateTriggerSkill{
+  name = "sushou",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and target.phase == Player.Play and player.hp > 0 and not target.dead and
+    table.every(player.room.alive_players, function (p)
+      return p == target or p:getHandcardNum() < target:getHandcardNum()
+    end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if room:askForSkillInvoke(player, self.name, data, "#sushou-invoke::"..target.id) then
+      room:doIndicate(player.id, {target.id})
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:loseHp(player, 1, self.name)
+    if player.dead then return false end
+    local x = player:getLostHp()
+    if x > 0 then
+      room:drawCards(player, x, self.name)
+    end
+    if player == target then return false end
+    local cards = target:getCardIds(Player.Hand)
+    if #cards < 2 then return false end
+    cards = table.random(cards, #cards // 2)
+    local handcards = player:getCardIds(Player.Hand)
+
+    room:setPlayerMark(player, "sushou_count", x)
+    cards = room:askForPoxi(player, "sushou", {
+      { "对方", cards },
+      { "你自己", handcards },
+    })
+    room:setPlayerMark(player, "sushou_count", 0)
+
+    if #cards == 0 then return false end
+    handcards = table.filter(cards, function (id)
+      return table.contains(handcards, id)
+    end)
+    cards = table.filter(cards, function (id)
+      return not table.contains(handcards, id)
+    end)
+    U.swapCards(room, player, player, target, handcards, cards, self.name)
+  end,
+}
+Fk:addPoxiMethod{
+  name = "sushou",
+  card_filter = function(to_select, selected, data)
+    local handcards = Self:getCardIds(Player.Hand)
+    local x = #table.filter(selected, function (id)
+      return table.contains(handcards, id)
+    end)
+    if table.contains(handcards, to_select) then
+      return x*2 < #selected
+    end
+    return #selected < Self:getMark("sushou_count") + x
+  end,
+  feasible = function(selected, data)
+    local handcards = Self:getCardIds(Player.Hand)
+    return #table.filter(selected, function (id)
+      return table.contains(handcards, id)
+    end) *2 == #selected
+  end,
+  prompt = function ()
+    return "夙守：选择要交换的至多".. tostring(Self:getMark("sushou_count")) .. "张卡牌"
+  end
+}
+zhaoang:addSkill(zhongjie)
+zhaoang:addSkill(sushou)
+
+Fk:loadTranslationTable{
+  ["zhaoang"] = "赵昂",
+  ["zhongjie"] = "忠节",
+  [":zhongjie"] = "每轮限一次，当一名角色因失去体力而进入濒死状态时，你可以令其回复1点体力并摸一张牌。",
+  ["sushou"] = "夙守",
+  [":sushou"] = "一名角色的出牌阶段开始时，若其手牌数是全场唯一最多的，你可以失去1点体力并摸X张牌。"..
+  "若此时不是你的回合内，你观看当前回合角色一半数量的手牌（向下取整），你可以用至多X张手牌替换其中等量的牌。（X为你已损失的体力值）",
+
+  ["#zhongjie-invoke"] = "你可以对%dest发动 忠节，令其回复1点体力并摸一张牌",
+  ["#sushou-invoke"] = "你可以对%dest发动 夙守",
+
+  ["$zhongjie1"] = "气节之士，不可不救。",
+  ["$zhongjie2"] = "志士遭祸，应施以援手。",
+  ["$sushou1"] = "敌众我寡，怎可少谋？",
+  ["$sushou2"] = "临城据守，当出奇计。",
+  ["~zhaoang"] = "援军为何迟迟不至？",
+}
 
 local liuye = General(extension, "ty__liuye", "wei", 3)
 local poyuan = fk.CreateTriggerSkill{

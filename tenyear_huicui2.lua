@@ -3000,7 +3000,7 @@ Fk:loadTranslationTable{
   ["~xianglang"] = "识文重义而徇私，恨也……",
 }
 
---太平甲子：管亥 张闿 刘辟 张楚 裴元绍
+--太平甲子：管亥 张闿 刘辟 张楚 裴元绍 张曼成
 local guanhai = General(extension, "guanhai", "qun", 4)
 local suoliang = fk.CreateTriggerSkill{
   name = "suoliang",
@@ -3385,6 +3385,111 @@ Fk:loadTranslationTable{
   ["$moyu1"] = "人之所有，我之所欲。",
   ["$moyu2"] = "胸有欲壑千丈，自当饥不择食。",
   ["~peiyuanshao"] = "好生厉害的白袍小将……",
+}
+
+local zhangmancheng = General(extension, "ty__zhangmancheng", "qun", 4)
+local luecheng = fk.CreateActiveSkill{
+  name = "luecheng",
+  anim_type = "offensive",
+  card_num = 0,
+  target_num = 1,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    room:setPlayerMark(target, "@@luecheng-turn", player.id)
+  end,
+}
+local luecheng_targetmod = fk.CreateTargetModSkill{
+  name = "#luecheng_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    return to:getMark("@@luecheng-turn") ~= 0 and to:getMark("@@luecheng-turn") == player.id and
+      card.trueName == "slash" and scope == Player.HistoryPhase
+  end,
+}
+local luecheng_trigger = fk.CreateTriggerSkill{
+  name = "#luecheng_trigger",
+  mute = true,
+  events = {fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    return player:getMark("@@luecheng-turn") ~= 0 and player:getMark("@@luecheng-turn") == target.id and
+      target.phase == Player.Finish and not player:isKongcheng()
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke("luecheng")
+    room:notifySkillInvoked(target, "luecheng", "negative")
+    room:doIndicate(player.id, {target.id})
+    player:showCards(player.player_cards[Player.Hand])
+    while table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id).trueName == "slash" end)
+      and not player.dead and not target.dead do
+      local use = room:askForUseCard(player, "slash", "slash|.|.|hand", "#luecheng-slash::"..target.id, true,
+        {must_targets = {target.id}, bypass_distances = true, bypass_times = true})
+      if use then
+        room:useCard(use)
+      else
+        break
+      end
+    end
+  end,
+}
+local zhongji = fk.CreateTriggerSkill{
+  name = "zhongji",
+  anim_type = "drawcard",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) and player:getHandcardNum() < player.maxHp then
+      return player:isKongcheng() or
+        not table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id).suit == data.card.suit end)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil,
+      "#zhongji-invoke:::"..(player.maxHp - player:getHandcardNum())..":"..player:usedSkillTimes(self.name, Player.HistoryTurn))
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:drawCards(player.maxHp - player:getHandcardNum(), self.name)
+    local n = player:usedSkillTimes(self.name, Player.HistoryTurn) - 1
+    if n == 0 then return end
+    if #player:getCardIds{Player.Hand, Player.Equip} <= n then
+      player:throwAllCards("he")
+    else
+      room:askForDiscard(player, n, n, true, self.name, false)
+    end
+  end,
+}
+luecheng:addRelatedSkill(luecheng_targetmod)
+luecheng:addRelatedSkill(luecheng_trigger)
+zhangmancheng:addSkill(luecheng)
+zhangmancheng:addSkill(zhongji)
+Fk:loadTranslationTable{
+  ["ty__zhangmancheng"] = "张曼成",
+  ["luecheng"] = "掠城",
+  [":luecheng"] = "出牌阶段限一次，你可以指定一名其他角色，本回合你对其使用【杀】无次数限制。若如此做，此回合结束阶段，其展示手牌：若其中有【杀】，"..
+  "其可以依次对你使用手牌中所有的【杀】。",
+  ["zhongji"] = "螽集",
+  [":zhongji"] = "当你使用牌时，若你没有该花色的手牌，你可将手牌摸至体力上限并弃置X张牌（X为本回合发动此技能的次数）。",
+  ["@@luecheng-turn"] = "掠城",
+  ["#luecheng-slash"] = "掠城：你可以依次对 %dest 使用手牌中所有【杀】！",
+  ["#zhongji-invoke"] = "螽集：你可以摸%arg张牌，然后弃置%arg2张牌",
+
+  ["$luecheng1"] = "我等一无所有，普天又有何惧！",
+  ["$luecheng2"] = "我视百城为饵，皆可食之果腹。",
+  ["$zhongji1"] = "羸汉暴政不息，黄巾永世不绝。",
+  ["$zhongji2"] = "宛洛膏如秋实，怎可不生螟虫。",
+  ["~ty__zhangmancheng"] = "逡巡不前，坐以待毙。",
 }
 
 --异军突起：公孙度

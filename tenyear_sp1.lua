@@ -3542,7 +3542,7 @@ local mianyao = fk.CreateTriggerSkill{
       room:moveCards({
         ids = self.cost_data,
         from = player.id,
-        fromArea = Player.Hand,
+        fromArea = Card.PlayerHand,
         toArea = Card.DrawPile,
         moveReason = fk.ReasonJustMove,
         skillName = self.name,

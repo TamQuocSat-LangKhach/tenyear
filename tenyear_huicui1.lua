@@ -3624,7 +3624,7 @@ local weidang_active = fk.CreateActiveSkill{
     room:moveCards({
       ids = effect.cards,
       from = player.id,
-      fromArea = Player.Hand,
+      fromArea = Card.PlayerHand,
       toArea = Card.DrawPile,
       moveReason = fk.ReasonJustMove,
       skillName = self.name,

@@ -447,7 +447,8 @@ local panshi = fk.CreateTriggerSkill{
         return player.phase == Player.Start and table.find(player.room.alive_players, function (p)
           return p ~= player and p:hasSkill(cixiao.name, true) end)
       elseif event == fk.DamageCaused or event == fk.Damage then
-        return player.phase == Player.Play and data.to:hasSkill(cixiao.name, true) and data.card.trueName =="slash" and not data.chain
+        return player.phase == Player.Play and data.to:hasSkill(cixiao.name, true) and
+        data.card and data.card.trueName =="slash" and not data.chain
       end
     end
   end,

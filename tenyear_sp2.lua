@@ -728,32 +728,32 @@ local ty__zhongjian = fk.CreateActiveSkill{
   name = "ty__zhongjian",
   anim_type = "control",
   card_num = 0,
-  target_num = 1,
+  target_num = 0,
+  card_filter = Util.FalseFunc,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < (1 + player:getMark("ty__caishi_twice-turn"))
-  end,
-  card_filter = Util.FalseFunc,
-  target_filter = function(self, to_select, selected)
-    return #selected == 0 and Fk:currentRoom():getPlayerById(to_select):getMark("ty__zhongjian_target-turn") == 0
+    and table.find(Fk:currentRoom().alive_players, function(p) return p:getMark("ty__zhongjian_target-turn") == 0 end)
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    room:addPlayerMark(target, "ty__zhongjian_target-turn")
+    local targets = table.filter(room.alive_players, function(p) return p:getMark("ty__zhongjian_target-turn") == 0 end)
+    if #targets == 0 then return end
     local choice = room:askForChoice(player, {"ty__zhongjian_draw","ty__zhongjian_dis"}, self.name)    
-    room:addPlayerMark(target, "@@"..choice)
+    local tos = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#ty__zhongjian-choose:::"..choice, self.name, false, true)
+    local to = room:getPlayerById(#tos > 0 and tos[1] or table.random(targets))
+    room:addPlayerMark(to, "ty__zhongjian_target-turn")
+    room:addPlayerMark(to, choice)
   end,
 }
 local ty__zhongjian_trigger = fk.CreateTriggerSkill{
   name = "#ty__zhongjian_trigger",
-  anim_type = "control",
   events = {fk.Damage, fk.Damaged},
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self.name) then return false end
     if event == fk.Damage then
-      return target and not target.dead and target:getMark("@@ty__zhongjian_dis") > 0
+      return target and not target.dead and target:getMark("ty__zhongjian_dis") > 0
     else
-      return not target.dead and target:getMark("@@ty__zhongjian_draw") > 0
+      return not target.dead and target:getMark("ty__zhongjian_draw") > 0
     end
   end,
   on_cost = Util.TrueFunc,
@@ -761,10 +761,10 @@ local ty__zhongjian_trigger = fk.CreateTriggerSkill{
     local room = player.room
     player:broadcastSkillInvoke("ty__zhongjian")
     if event == fk.Damage then
-      room:setPlayerMark(target, "@@ty__zhongjian_dis", 0)
+      room:setPlayerMark(target, "ty__zhongjian_dis", 0)
       room:askForDiscard(target, 2, 2, true, "ty__zhongjian", false)
     else
-      room:setPlayerMark(target, "@@ty__zhongjian_draw", 0)
+      room:setPlayerMark(target, "ty__zhongjian_draw", 0)
       target:drawCards(2, "ty__zhongjian")
     end
     if not player.dead then
@@ -779,8 +779,8 @@ local ty__zhongjian_trigger = fk.CreateTriggerSkill{
   on_refresh = function (self, event, target, player, data)
     local room = player.room
     for _, p in ipairs(room.alive_players) do
-      room:setPlayerMark(p, "@@ty__zhongjian_dis", 0)
-      room:setPlayerMark(p, "@@ty__zhongjian_draw", 0)
+      room:setPlayerMark(p, "ty__zhongjian_dis", 0)
+      room:setPlayerMark(p, "ty__zhongjian_draw", 0)
     end
   end,
 }
@@ -805,7 +805,6 @@ local ty__caishi = fk.CreateTriggerSkill{
     end
   end,
   on_cost = function(self, event, target, player, data)
-    local room = player.room
     local ids = {}
     player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
       local move = e.data[1]
@@ -831,7 +830,7 @@ local ty__caishi = fk.CreateTriggerSkill{
     local different = self.cost_data
     if different then
       room:recover({ who = player,  num = 1, skillName = self.name })
-      room:addPlayerMark(player, "ty__caishi_self-turn")
+      room:addPlayerMark(player, "@@ty__caishi_self-turn")
     else
       room:setPlayerMark(player, "ty__caishi_twice-turn", 1)
     end
@@ -840,7 +839,7 @@ local ty__caishi = fk.CreateTriggerSkill{
 local ty__caishi_prohibit = fk.CreateProhibitSkill{
   name = "#ty__caishi_prohibit",
   is_prohibited = function(self, from, to)
-    return from:getMark("ty__caishi_self-turn") > 0 and from == to
+    return from:getMark("@@ty__caishi_self-turn") > 0 and from == to
   end,
 }
 ty__caishi:addRelatedSkill(ty__caishi_prohibit)
@@ -849,16 +848,16 @@ Fk:loadTranslationTable{
   ["ty__xinxianying"] = "辛宪英",
   
   ["ty__zhongjian"] = "忠鉴",
-  [":ty__zhongjian"] = "出牌阶段限一次，你可以选择一名角色并选择一项（效果至多直到你的下回合开始）：1.当该角色下次造成伤害后，其弃置两张牌；2.当该角色下次受到伤害后，其摸两张牌。当“忠鉴”被触发时，你摸一张牌。",
-  ["@@ty__zhongjian_draw"] = "忠鉴摸牌",
-  ["@@ty__zhongjian_dis"] = "忠鉴弃牌",
-  ["ty__zhongjian_draw"] = "该角色下次受到伤害后，摸两张牌",
-  ["ty__zhongjian_dis"] = "该角色下次造成伤害后，弃置两张牌",
+  [":ty__zhongjian"] = "出牌阶段限一次，你可以秘密选择以下一项，再秘密选择一名本回合未选择过的角色，直到你的下回合开始：1.当该角色下次造成伤害后，其弃置两张牌；2.当该角色下次受到伤害后，其摸两张牌。当“忠鉴”被触发时，你摸一张牌。",
+  ["ty__zhongjian_draw"] = "其下次受到伤害后，摸两张牌",
+  ["ty__zhongjian_dis"] = "其下次造成伤害后，弃置两张牌",
+  ["#ty__zhongjian-choose"] = "忠鉴：选择一名角色，%arg",
   ["#ty__zhongjian_trigger"] = "忠鉴",
 
   ["ty__caishi"] = "才识",
-  [":ty__caishi"] = "摸牌阶段结束时，若你本阶段摸的牌：花色相同，本回合“忠鉴”改为“出牌阶段限两次”（不能选择本回合选择过的角色）；花色不同，你可以回复1点体力，然后本回合你不能对自己使用牌。",
+  [":ty__caishi"] = "摸牌阶段结束时，若你本阶段摸的牌：花色相同，本回合“忠鉴”改为“出牌阶段限两次”；花色不同，你可以回复1点体力，然后本回合你不能对自己使用牌。",
   ["#ty__caishi-invoke"] = "你可以回复1点体力，然后本回合你不能对自己使用牌",
+  ["@@ty__caishi_self-turn"] = "才识",
   
   ["$ty__zhongjian1"] = "闻大忠似奸、大智若愚，不辨之难鉴之。",
   ["$ty__zhongjian2"] = "以眼为镜可正衣冠，以心为镜可鉴忠奸。",

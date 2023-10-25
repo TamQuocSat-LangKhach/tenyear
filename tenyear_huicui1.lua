@@ -3716,13 +3716,82 @@ Fk:loadTranslationTable{
 }
 
 --代汉涂高：马日磾 张勋 雷薄 桥蕤
+local ty__mamidi = General(extension, "ty__mamidi", "qun", 4, 6)
+local bingjie = fk.CreateTriggerSkill{
+  name = "bingjie",
+  events = { fk.EventPhaseStart , fk.TargetSpecified},
+  anim_type = "drawcard",
+  can_trigger = function(self, event, target, player, data)
+    if not (player:hasSkill(self.name) and target == player) then return false end
+    if event == fk.EventPhaseStart then
+      return player.phase == Player.Play
+    else
+      return player:getMark("@@bingjie-turn") > 0 and (data.card.trueName == "slash" or data.card:isCommonTrick()) and data.firstTarget and data.tos and table.find(AimGroup:getAllTargets(data.tos), function(id) return id ~= player.id end)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.EventPhaseStart then
+      return player.room:askForSkillInvoke(player, self.name)
+    else
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart then
+      room:addPlayerMark(player, "@@bingjie-turn")
+      room:changeMaxHp(player, -1)
+    elseif event == fk.TargetSpecified then
+      for _, pid in ipairs(AimGroup:getAllTargets(data.tos)) do
+        local to = room:getPlayerById(pid)
+        if not to.dead and not to:isNude() and to ~= player then
+          local throw = room:askForDiscard(to, 1, 1, true, self.name, false, ".", "#bingjie-discard:::"..data.card:getColorString()..":"..data.card:toLogString())
+          if #throw > 0 and Fk:getCardById(throw[1]).color == data.card.color then
+            data.disresponsiveList = data.disresponsiveList or {}
+            table.insertIfNeed(data.disresponsiveList, to.id)
+          end
+        end
+      end
+    end
+  end,
+}
+ty__mamidi:addSkill(bingjie)
+local zhengding = fk.CreateTriggerSkill{
+  name = "zhengding",
+  anim_type = "defensive",
+  frequency = Skill.Compulsory,
+  events = {fk.CardUsing, fk.CardResponding},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) and target == player and player.phase == Player.NotActive and data.responseToEvent then
+      if (event == fk.CardUsing and data.toCard and data.toCard.color == data.card.color) or
+        (event == fk.CardResponding and data.responseToEvent.card and data.responseToEvent.card.color == data.card.color) then
+        return data.responseToEvent.from ~= player.id
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:changeMaxHp(player, 1)
+    if not player.dead then
+      room:recover({ who = player,  num = 1, skillName = self.name })
+    end
+  end,
+}
+ty__mamidi:addSkill(zhengding)
 Fk:loadTranslationTable{
   ["ty__mamidi"] = "马日磾",
   ["bingjie"] = "秉节",
   [":bingjie"] = "出牌阶段开始时，你可以减1点体力上限，然后当你本回合使用【杀】或普通锦囊牌指定目标后，除你以外的目标角色各弃置一张牌，"..
   "若弃置的牌与你使用的牌颜色相同，其无法响应此牌。",
+  ["@@bingjie-turn"] = "秉节",
+  ["#bingjie-discard"] = "秉节：请弃置一张牌，若你弃置了%arg牌，无法响应%arg2",
   ["zhengding"] = "正订",
-  [":zhengding"] = "锁定技，你的回合外，当你使用或打出牌响应其他角色使用的牌时，若你使用或打出的牌与其使用的牌颜色相同，你加1点体力上限，回复1点体力。",
+  [":zhengding"] = "锁定技，你的回合外，当你使用或打出牌响应其他角色使用的牌时，若你使用或打出的牌与其使用的牌颜色相同，你增加1点体力上限，回复1点体力。",
+  ["$bingjie1"] = "秉节传旌，心存丹衷。",
+  ["$bingjie2"] = "秉节刚劲，奸佞务尽。",
+  ["$zhengding1"] = "行义修正，改故用新。",
+  ["$zhengding2"] = "义约谬误，有所正订。",
+  ["~ty__mamidi"] = "失节屈辱忧恚！",
 }
 
 local zhangxun = General(extension, "zhangxun", "qun", 4)

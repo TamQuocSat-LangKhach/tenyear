@@ -5103,18 +5103,20 @@ local zhanmeng = fk.CreateTriggerSkill{
         local logic = room.logic
         local current_event = logic:getCurrentEvent()
         local all_turn_events = logic.event_recorder[GameEvent.Turn]
-        local index = #all_turn_events
-        if index > 0 then
-          local turn_event = current_event:findParent(GameEvent.Turn)
-          if turn_event ~= nil then
-            index = index - 1
-          end
+        if type(all_turn_events) == "table" then
+          local index = #all_turn_events
           if index > 0 then
-            current_event = all_turn_events[index]
-            current_event:searchEvents(GameEvent.UseCard, 1, function (e)
-              table.insertIfNeed(mark, e.data[1].card.trueName)
-              return false
-            end)
+            local turn_event = current_event:findParent(GameEvent.Turn)
+            if turn_event ~= nil then
+              index = index - 1
+            end
+            if index > 0 then
+              current_event = all_turn_events[index]
+              current_event:searchEvents(GameEvent.UseCard, 1, function (e)
+                table.insertIfNeed(mark, e.data[1].card.trueName)
+                return false
+              end)
+            end
           end
         end
         room:setPlayerMark(player, "zhanmeng_last-turn", mark)
@@ -5209,8 +5211,7 @@ local zhanmeng = fk.CreateTriggerSkill{
     return true
   end,
   on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    room:setPlayerMark(player, "@zhanmeng_delay", player:getMark("zhanmeng_delay-turn"))
+    player.room:setPlayerMark(player, "@zhanmeng_delay", player:getMark("zhanmeng_delay-turn"))
   end,
 }
 local zhanmeng_delay = fk.CreateTriggerSkill{
@@ -5572,14 +5573,7 @@ local sushou = fk.CreateTriggerSkill{
     if #cards < 2 then return false end
     cards = table.random(cards, #cards // 2)
     local handcards = player:getCardIds(Player.Hand)
-
-    room:setPlayerMark(player, "sushou_count", x)
-    cards = room:askForPoxi(player, "sushou", {
-      { "对方", cards },
-      { "你自己", handcards },
-    })
-    room:setPlayerMark(player, "sushou_count", 0)
-
+    cards = U.askForExchange(player, "needhand", "wordhand", cards, handcards, "#sushou-exchange::"..target.id .. ":" .. tostring(x), x)
     if #cards == 0 then return false end
     handcards = table.filter(cards, function (id)
       return table.contains(handcards, id)
@@ -5590,28 +5584,7 @@ local sushou = fk.CreateTriggerSkill{
     U.swapCards(room, player, player, target, handcards, cards, self.name)
   end,
 }
-Fk:addPoxiMethod{
-  name = "sushou",
-  card_filter = function(to_select, selected, data)
-    local handcards = Self:getCardIds(Player.Hand)
-    local x = #table.filter(selected, function (id)
-      return table.contains(handcards, id)
-    end)
-    if table.contains(handcards, to_select) then
-      return x*2 < #selected
-    end
-    return #selected < Self:getMark("sushou_count") + x
-  end,
-  feasible = function(selected, data)
-    local handcards = Self:getCardIds(Player.Hand)
-    return #table.filter(selected, function (id)
-      return table.contains(handcards, id)
-    end) *2 == #selected
-  end,
-  prompt = function ()
-    return "夙守：选择要交换的至多".. tostring(Self:getMark("sushou_count")) .. "张卡牌"
-  end
-}
+
 zhaoang:addSkill(zhongjie)
 zhaoang:addSkill(sushou)
 
@@ -5625,6 +5598,7 @@ Fk:loadTranslationTable{
 
   ["#zhongjie-invoke"] = "你可以对%dest发动 忠节，令其回复1点体力并摸一张牌",
   ["#sushou-invoke"] = "你可以对%dest发动 夙守",
+  ["#sushou-exchange"] = "夙守：选择要交换你与%dest的至多%arg张手牌",
 
   ["$zhongjie1"] = "气节之士，不可不救。",
   ["$zhongjie2"] = "志士遭祸，应施以援手。",

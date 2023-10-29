@@ -1,5 +1,6 @@
 local extension = Package("tenyear_huicui2")
 extension.extensionName = "tenyear"
+local U = require "packages/utility/utility"
 
 Fk:loadTranslationTable{
   ["tenyear_huicui2"] = "十周年-群英荟萃2",
@@ -3504,7 +3505,7 @@ Fk:loadTranslationTable{
   ["~ty__zhangmancheng"] = "逡巡不前，坐以待毙……",
 }
 
---异军突起：公孙度
+--异军突起：公孙度 孟优
 local gongsundu = General(extension, "gongsundu", "qun", 4)
 local zhenze = fk.CreateTriggerSkill{
   name = "zhenze",
@@ -3585,6 +3586,117 @@ Fk:loadTranslationTable{
   ["$anliao1"] = "地阔天高，大有可为。",
   ["$anliao2"] = "水草丰沛，当展宏图。",
   ["~gongsundu"] = "为何都不愿出仕！",
+}
+
+local mengyou = General(extension, "mengyou", "qun", 5)
+
+local manzhi = fk.CreateTriggerSkill{
+  name = "manzhi",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if player ~= target or not player:hasSkill(self.name) or (player.phase ~= Player.Start and player.phase ~= Player.Finish) then return end
+    local room = player.room
+    if player.phase == Player.Finish then
+      if player:getMark("@manzhi-turn") == 0 or player.hp ~= tonumber(player:getMark("@manzhi-turn")) then return end
+      local record = U.getMark(player, "_manzhi-turn")
+      if #record >= 2 then return end
+      if table.contains(record, 2) then
+        return table.find(room.alive_players, function(p) return #p:getCardIds{Player.Hand, Player.Equip} > 1 and p ~= player end)
+      end
+    end
+    return table.find(room.alive_players, function(p) return not p:isNude() and p ~= player end) 
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.map(table.filter(room.alive_players, function(p) return not p:isNude() and p ~= player end), Util.IdMapper)
+    local target = room:askForChoosePlayers(player, targets, 1, 1, "#manzhi-ask", self.name, true)
+    if #target > 0 then
+      target = target[1]
+      local choices = {"manzhi_give", "manzhi_get"}
+      local record = U.getMark(player, "_manzhi-turn")
+      table.forEach(record, function(i) table.remove(choices, i) end)
+      if #room:getPlayerById(target):getCardIds{Player.Hand, Player.Equip} < 2 then table.removeOne(choices, "manzhi_give") end
+      if #choices == 0 then return end
+      local choice = room:askForChoice(player, choices, self.name)
+      table.insertIfNeed(record, table.indexOf(choices, choice))
+      room:setPlayerMark(player, "_manzhi-turn", record)
+      self.cost_data = {target, choice}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local target = room:getPlayerById(self.cost_data[1])
+    local choice = self.cost_data[2]
+    if choice == "manzhi_give" then
+      local cards = room:askForCard(target, 2, 2, true, self.name, false, nil, "#manzhi-give:" .. player.id)
+      room:moveCardTo(cards, Player.Hand, player, fk.ReasonGive, self.name, nil, false, player.id)
+      local card = Fk:cloneCard("slash")
+      card.skillName = self.name
+      if target.dead or target:prohibitUse(card) then return end
+      local max_num = card.skill:getMaxTargetNum(player, card)
+      local targets = {}
+      for _, p in ipairs(room:getOtherPlayers(target)) do
+        if not target:isProhibited(p, card) then
+          table.insert(targets, p.id)
+        end
+      end
+      if #targets == 0 or max_num == 0 then return end
+      local tos = room:askForChoosePlayers(target, targets, 1, max_num, "#manzhi_slash-ask", self.name, false)
+      room:useCard{
+        from = target.id,
+        tos = table.map(tos, function(pid) return { pid } end),
+        card = card,
+        extraUse = true,
+      }
+    else
+      local card = room:askForCardsChosen(player, target, 1, 2, "he", self.name)
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(card)
+      room:obtainCard(player, dummy, true, fk.ReasonPrey)
+      local num = #dummy.subcards
+      if player.dead then return false end
+      card = player:getCardIds{Player.Hand, Player.Equip}
+      if #card == 0 then return false
+      elseif #card > num then
+        card = room:askForCard(player, num, num, true, self.name, false, nil, "#manzhi-back::" .. target.id .. ":" .. num) 
+      end
+      room:moveCardTo(card, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
+      if not player.dead then player:drawCards(1, self.name) end
+    end
+  end,
+
+  refresh_events = {fk.EventPhaseStart},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and target:hasSkill(self.name) and player.phase == Player.Start -- ...
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@manzhi-turn", tostring(player.hp))
+  end,
+}
+
+mengyou:addSkill("manyi")
+mengyou:addSkill(manzhi)
+
+Fk:loadTranslationTable{
+  ["mengyou"] = "孟优",
+  ["manzhi"] = "蛮智",
+  [":manzhi"] = "准备阶段，你可以选择一名其他角色，然后选择一项：1.令其交给你两张牌，然后其视为使用一张无距离限制的【杀】；2.获得其区域内的至多两张牌，然后交给其等量牌并摸一张牌。结束阶段，若你的体力值与此回合准备阶段开始时相等，你可以执行此回合未选择过的一项。",
+
+  ["#manzhi-ask"] = "你可对一名其他角色发动“蛮智”",
+  ["manzhi_give"] = "令其交给你两张牌，然后其视为使用一张无距离限制的【杀】",
+  ["manzhi_get"] = "获得其区域内的至多两张牌，然后交给其等量牌并摸一张牌",
+  ["#manzhi-give"] = "蛮智：请交给%src两张牌",
+  ["#manzhi_slash-ask"] = "蛮智：视为使用一张无距离限制的【杀】",
+  ["#manzhi-back"] = "蛮智：交给%dest%arg张牌",
+  ["@manzhi-turn"] = "蛮智",
+
+  ["$manyi_mengyou1"] = "我辈蛮夷久居荒野，岂为兽虫所伤。",
+  ["$manyi_mengyou2"] = "我乃蛮王孟获之弟，谁敢伤我！",
+  ["$manzhi1"] = "吾有蛮勇可攻，亦有蛮智可御。",
+  ["$manzhi2"] = "远交近攻之法，怎可不为我所用。",
+  ["~mengyou"] = "大哥，诸葛亮又打来了。",
 }
 
 --正音雅乐：蔡文姬

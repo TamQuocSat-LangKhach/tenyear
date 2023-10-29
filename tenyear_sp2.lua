@@ -866,17 +866,15 @@ Fk:loadTranslationTable{
   ["~ty__xinxianying"] = "百无一用是女子。",
 }
 local huaman = General(extension, "ty__huaman", "shu", 3, 3, General.Female)
-local ty__manyi = fk.CreateTriggerSkill{
-  name = "ty__manyi",
+local manyi = fk.CreateTriggerSkill{
+  name = "manyi",
   anim_type = "defensive",
   frequency = Skill.Compulsory,
   events = {fk.PreCardEffect},
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self.name) and data.card.trueName == "savage_assault" and player.id == data.to
   end,
-  on_use = function()
-    return true
-  end,
+  on_use = Util.TrueFunc,
 }
 local mansi = fk.CreateViewAsSkill{
   name = "mansi",
@@ -1033,15 +1031,15 @@ local xili = fk.CreateTriggerSkill{
   end,
 }
 mansi:addRelatedSkill(mansi_trigger)
-huaman:addSkill(ty__manyi)
+huaman:addSkill(manyi)
 huaman:addSkill(mansi)
 huaman:addSkill(souying)
 huaman:addSkill(zhanyuan)
 huaman:addRelatedSkill(xili)
 Fk:loadTranslationTable{
   ["ty__huaman"] = "花鬘",
-  ["ty__manyi"] = "蛮裔",
-  [":ty__manyi"] = "锁定技，【南蛮入侵】对你无效。",
+  ["manyi"] = "蛮裔",
+  [":manyi"] = "锁定技，【南蛮入侵】对你无效。",
   ["mansi"] = "蛮嗣",
   [":mansi"] = "出牌阶段限一次，你可以将所有手牌当【南蛮入侵】使用；当一名角色受到【南蛮入侵】的伤害后，你摸一张牌。",
   ["souying"] = "薮影",
@@ -1059,8 +1057,8 @@ Fk:loadTranslationTable{
   ["#zhanyuan-choose"] = "战缘：你可以与一名男性角色获得技能〖系力〗",
   ["#xili-invoke"] = "系力：你可以弃置一张牌，令 %src 对 %dest 造成的伤害+1，你与 %src 各摸两张牌",
 
-  ["$ty__manyi1"] = "蛮族的力量，你可不要小瞧！",
-  ["$ty__manyi2"] = "南蛮女子，该当英勇善战！",
+  ["$manyi1"] = "蛮族的力量，你可不要小瞧！",
+  ["$manyi2"] = "南蛮女子，该当英勇善战！",
   ["$mansi1"] = "多谢父母怜爱。",
   ["$mansi2"] = "承父母庇护，得此福气。",
   ["$souying1"] = "真薮影移，险战不惧！",
@@ -6158,7 +6156,7 @@ local xiongmu = fk.CreateTriggerSkill{
         player.room:moveCards({
           ids = cards,
           to = player.id,
-          toArea = Player.Hand,
+          toArea = Card.PlayerHand,
           moveReason = fk.ReasonPrey,
           proposer = player.id,
           skillName = "xiongmu_get",

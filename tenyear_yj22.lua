@@ -221,16 +221,11 @@ local sangu = fk.CreateTriggerSkill{
         local mark = table.map(dat.cards, function(id) return Fk:getCardById(id).name end)
         room:setPlayerMark(target, "@$sangu-phase", mark)
         room:handleAddLoseSkills(target, "sangu&", nil, false, true)
+        room.logic:getCurrentEvent():findParent(GameEvent.Phase, true):addCleaner(function()
+          room:handleAddLoseSkills(target, '-sangu&', nil, false, true)
+        end)
       end
     end
-  end,
-
-  refresh_events = {fk.EventPhaseEnd},
-  can_refresh = function(self, event, target, player, data)
-    return player:hasSkill("sangu&", true, true)
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:handleAddLoseSkills(target, "-sangu&", nil, false, true)
   end,
 }
 local sangu_show = fk.CreateActiveSkill{

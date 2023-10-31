@@ -1305,7 +1305,126 @@ Fk:loadTranslationTable{
   ["~ty__zhangchangpu"] = "我还是小看了，孙氏的伎俩……",
 }
 --上兵伐谋：辛毗 张温 李肃
---辛毗
+local xinpi = General(extension, "xinpi", "wei", 3)
+local chijie = fk.CreateTriggerSkill{
+  name = "chijie",
+  anim_type = "control",
+  events = {fk.CardEffecting , fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    if event == fk.CardEffecting then
+      return player:hasSkill(self.name) and data.from ~= player.id and target == player and player:getMark("chijie_a-turn") == 0
+      and data.card.sub_type ~= Card.SubtypeDelayedTrick and data.tos and #TargetGroup:getRealTargets(data.tos) > 1
+    else
+      if target ~= player and player:hasSkill(self.name) and not data.damageDealt and player:getMark("chijie_b-turn") == 0 and data.tos and table.contains(TargetGroup:getRealTargets(data.tos), player.id) then
+        local cardList = data.card:isVirtual() and data.card.subcards or {data.card.id}
+        return table.find(cardList, function(id) return not player.room:getCardOwner(id) end)
+      end
+    end
+  end,
+  on_cost = function (self, event, target, player, data)
+    local room = player.room
+    if event == fk.CardEffecting then
+      return room:askForSkillInvoke(player, self.name, nil, "#chijie-nullify:::"..data.card.name)
+    else
+      return room:askForSkillInvoke(player, self.name, nil, "#chijie-give:::"..data.card.name)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.CardEffecting then
+      room:addPlayerMark(player, "chijie_a-turn")
+      local e = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+      if e and e.data[1] then
+        local use = e.data[1]
+        local list = use.nullifiedTargets or {}
+        for _, p in ipairs(room:getOtherPlayers(player)) do
+          table.insertIfNeed(list, p.id)
+        end
+        use.nullifiedTargets = list
+      end
+    else
+      room:addPlayerMark(player, "chijie_b-turn")
+      local cardList = data.card:isVirtual() and data.card.subcards or {data.card.id}
+      local cards = table.filter(cardList, function(id) return not room:getCardOwner(id) end)
+      if #cards == 0 then return end
+      local dummy = Fk:cloneCard("slash")
+      dummy:addSubcards(cards)
+      room:obtainCard(player, dummy, true, fk.ReasonJustMove)
+    end
+  end,
+}
+xinpi:addSkill(chijie)
+local yinju = fk.CreateActiveSkill{
+  name = "yinju",
+  anim_type = "support",
+  frequency = Skill.Limited,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  card_num = 0,
+  card_filter = Util.FalseFunc,
+  target_num = 1,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, use)
+    local player = room:getPlayerById(use.from)
+    local to = room:getPlayerById(use.tos[1])
+    local choice = room:askForChoice(player, {"yinju_choice1","yinju_choice2"}, self.name)
+    room:setPlayerMark(to, "@yinju-turn", tonumber(string.sub(choice,-1,-1)))
+  end,
+}
+local yinju_trigger = fk.CreateTriggerSkill{
+  name = "#yinju_trigger",
+  anim_type = "support",
+  events = {fk.DamageCaused, fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) and target == player then
+      if event == fk.DamageCaused then
+        return data.to ~= player and data.to:getMark("@yinju-turn") == 1
+      else
+        return data.to ~= player.id and player.room:getPlayerById(data.to):getMark("@yinju-turn") == 2
+      end
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke("yinju")
+    if event == fk.DamageCaused then
+      if data.to:isWounded() then
+        room:recover { num = data.damage, skillName = self.name, who = data.to , recoverBy = player}
+      end
+      return true
+    else
+      local to = room:getPlayerById(data.to)
+      player:drawCards(1, self.name)
+      if not to.dead then
+        to:drawCards(1, self.name)
+      end
+    end
+  end,
+}
+yinju:addRelatedSkill(yinju_trigger)
+xinpi:addSkill(yinju)
+Fk:loadTranslationTable{
+  ["xinpi"] = "辛毗",
+  ["chijie"] = "持节",
+  [":chijie"] = "每回合每项各限一次，<br>①当其他角色使用牌对你生效时，你可以令此牌在接下来的结算中对其他角色无效；<br>②当其他角色使用牌结算结束后，若你是目标之一且此牌没有造成过伤害，你可以获得之。",
+  ["#chijie-nullify"] = "持节：你可以令 %arg 在接下来的结算中对其他角色无效",
+  ["#chijie-give"] = "持节：你可以获得此 %arg",
+  ["yinju"] = "引裾",
+  [":yinju"] = "限定技，出牌阶段，你可以选择一名其他角色。本回合：1.当你对其造成伤害时，改为令其回复等量的体力；2.当你使用牌指定该角色为目标后，你与其各摸一张牌。",
+  ["@yinju-turn"] = "引裾",
+  ["#yinju_trigger"] = "引裾",
+  ["yinju_choice1"] = "本回合当你对其造成伤害时，改为令其回复等量的体力",
+  ["yinju_choice2"] = "本回合当你使用牌指定该角色为目标后，你与其各摸一张牌",
+  ["$chijie1"] = "持节阻战，奉帝赐诏。",
+  ["$chijie2"] = "此战不在急，请仲达明了。",
+  ["$yinju1"] = "据理直谏，吾人臣本分。",
+  ["$yinju2"] = "迁徙之计，危涉万民。",
+  ["~xinpi"] = "失民心，且无食。",
+}
 
 local zhangwen = General(extension, "ty__zhangwen", "wu", 3)
 local ty__songshu = fk.CreateActiveSkill{

@@ -1368,10 +1368,8 @@ local yinju = fk.CreateActiveSkill{
     return #selected == 0 and to_select ~= Self.id
   end,
   on_use = function(self, room, use)
-    local player = room:getPlayerById(use.from)
     local to = room:getPlayerById(use.tos[1])
-    local choice = room:askForChoice(player, {"yinju_choice1","yinju_choice2"}, self.name)
-    room:setPlayerMark(to, "@yinju-turn", tonumber(string.sub(choice,-1,-1)))
+    room:setPlayerMark(to, "@@yinju-turn", 1)
   end,
 }
 local yinju_trigger = fk.CreateTriggerSkill{
@@ -1381,9 +1379,9 @@ local yinju_trigger = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self.name) and target == player then
       if event == fk.DamageCaused then
-        return data.to ~= player and data.to:getMark("@yinju-turn") == 1
+        return data.to ~= player and data.to:getMark("@@yinju-turn") > 0
       else
-        return data.to ~= player.id and player.room:getPlayerById(data.to):getMark("@yinju-turn") == 2
+        return data.to ~= player.id and player.room:getPlayerById(data.to):getMark("@@yinju-turn") > 0
       end
     end
   end,
@@ -1415,10 +1413,8 @@ Fk:loadTranslationTable{
   ["#chijie-give"] = "持节：你可以获得此 %arg",
   ["yinju"] = "引裾",
   [":yinju"] = "限定技，出牌阶段，你可以选择一名其他角色。本回合：1.当你对其造成伤害时，改为令其回复等量的体力；2.当你使用牌指定该角色为目标后，你与其各摸一张牌。",
-  ["@yinju-turn"] = "引裾",
+  ["@@yinju-turn"] = "引裾",
   ["#yinju_trigger"] = "引裾",
-  ["yinju_choice1"] = "本回合当你对其造成伤害时，改为令其回复等量的体力",
-  ["yinju_choice2"] = "本回合当你使用牌指定该角色为目标后，你与其各摸一张牌",
   ["$chijie1"] = "持节阻战，奉帝赐诏。",
   ["$chijie2"] = "此战不在急，请仲达明了。",
   ["$yinju1"] = "据理直谏，吾人臣本分。",

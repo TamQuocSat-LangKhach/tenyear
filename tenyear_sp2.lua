@@ -1573,7 +1573,7 @@ Fk:loadTranslationTable{
   ["~duanqiaoxiao"] = "佳人时光少，君王总薄情……",
 }
 
---皇家贵胄：曹髦 刘辩 刘虞 全惠解 丁尚涴 袁姬 谢灵毓 甘夫人糜夫人
+--皇家贵胄：曹髦 刘辩 刘虞 全惠解 丁尚涴 袁姬 谢灵毓 甘夫人糜夫人 孙皓
 local caomao = General(extension, "caomao", "wei", 3, 4)
 local qianlong = fk.CreateTriggerSkill{
   name = "qianlong",

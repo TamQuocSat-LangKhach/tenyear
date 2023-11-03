@@ -430,7 +430,7 @@ local kangge = fk.CreateTriggerSkill{
     end
   end,
   on_cost = function(self, event, target, player, data)
-    return true
+    return player.room:askForSkillInvoke(player, "kangge", data, "#kangge-recover::"..target.id)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -564,6 +564,7 @@ Fk:loadTranslationTable{
   "令〖抗歌〗角色从弃牌堆中随机获得X张此花色的牌（X为伤害值）。",
   ["#kangge-choose"] = "抗歌：请选择“抗歌”角色",
   ["@kangge"] = "抗歌",
+  ["#kangge-recover"] = "抗歌：你可以令 %dest 将体力回复至1点",
   ["#jielie-choice"] = "是否发动 节烈，选择一种花色",
 
   ["$kangge1"] = "慷慨悲歌，以抗凶逆。",

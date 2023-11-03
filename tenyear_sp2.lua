@@ -2846,6 +2846,77 @@ Fk:loadTranslationTable{
   ["~ty__mifuren"] = "阿斗被救，妾身……再无牵挂……",
 }
 
+local ty__sunhao = General(extension, "ty__sunhao", "wu", 5)
+local ty__canshi = fk.CreateTriggerSkill{
+  name = "ty__canshi",
+  anim_type = "drawcard",
+  events ={fk.DrawNCards},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and not table.every(player.room:getAlivePlayers(false), function (p)
+      return not p:isWounded() and not (player:hasSkill("guiming") and p.kingdom == "wu" and p ~= player)
+    end)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local n = 0
+    for _, p in ipairs(room:getAlivePlayers()) do
+      if p:isWounded() or (player:hasSkill("guiming") and p.kingdom == "wu" and p ~= player) then
+        n = n + 1
+      end
+    end
+    data.n = data.n + n
+  end,
+}
+local ty__canshi_delay = fk.CreateTriggerSkill{
+  name = "#ty__canshi_delay",
+  anim_type = "negative",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and (data.card.trueName == "slash" or data.card:isCommonTrick()) and
+      player:usedSkillTimes(ty__canshi.name) > 0 and not player:isNude()
+  end,
+  on_cost = function()
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:askForDiscard(player, 1, 1, true, self.name, false)
+  end,
+}
+local ty__chouhai = fk.CreateTriggerSkill{
+  name = "ty__chouhai",
+  anim_type = "negative",
+  frequency = Skill.Compulsory,
+  events ={fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player:isKongcheng() and data.card and data.card.trueName == "slash"
+  end,
+  on_use = function(self, event, target, player, data)
+    data.damage = data.damage + 1
+  end,
+}
+ty__canshi:addRelatedSkill(ty__canshi_delay)
+ty__sunhao:addSkill(ty__canshi)
+ty__sunhao:addSkill(ty__chouhai)
+ty__sunhao:addSkill("guiming")
+Fk:loadTranslationTable{
+  ["ty__sunhao"] = "孙皓",
+  ["ty__canshi"] = "残蚀",
+  [":ty__canshi"] = "摸牌阶段，你可以多摸X张牌（X为已受伤的角色数），若如此做，当你于此回合内使用【杀】或普通锦囊牌时，你弃置一张牌。",
+  ["#ty__canshi_delay"] = "残蚀",
+  ["ty__chouhai"] = "仇海",
+  [":ty__chouhai"] = "锁定技，当你受到【杀】造成的伤害时，若你没有手牌，此伤害+1。",
+
+  ["$ty__canshi1"] = "天地不仁，当视苍生为刍狗！",
+  ["$ty__canshi2"] = "真龙天子，焉能不择人而噬！",
+  ["$ty__chouhai1"] = "大好头颅，谁当斫之？哈哈哈！",
+  ["$ty__chouhai2"] = "来来来！且试吾颈硬否！",
+  ["$guiming_ty__sunhao1"] = "朕奉天承运，谁敢不从！",
+  ["$guiming_ty__sunhao2"] = "朕一日为吴皇，则终生为吴皇！",
+  ["~ty__sunhao"] = "八十万人齐卸甲，一片降幡出石头。",
+}
+
+
+
 --章台春望：郭照 樊玉凤 阮瑀 杨婉 潘淑
 local guozhao = General(extension, "guozhao", "wei", 3, 3, General.Female)
 local pianchong = fk.CreateTriggerSkill{

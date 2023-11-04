@@ -1766,7 +1766,7 @@ Fk:loadTranslationTable{
   ["~zhangyao"] = "花开人赏，花败谁怜……",
 }
 
---芝兰玉树：张虎 吕玲绮 刘永 万年公主 滕公主 庞会
+--芝兰玉树：张虎 吕玲绮 刘永 万年公主 滕公主 庞会 袁谭袁尚袁熙
 local zhanghu = General(extension, "zhanghu", "wei", 4)
 local cuijian = fk.CreateActiveSkill{
   name = "cuijian",
@@ -2695,6 +2695,91 @@ Fk:loadTranslationTable{
   ["$gonghu1"] = "大都督中伏，吾等当舍命救之。",
   ["$gonghu2"] = "袍泽临难，但有共死而无坐视。",
   ["~yuechen"] = "天下犹魏，公休何故如此？",
+}
+local yuantanyuanshangyuanxi = General(extension, "yuantanyuanshangyuanxi", "qun", 4)
+local tenyear__neifa = fk.CreateTriggerSkill{
+  name = "tenyear__neifa",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Play
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:drawCards(3, self.name)
+    local card = room:askForDiscard(player, 1, 1, true, self.name, false)
+    if Fk:getCardById(card[1]).type == Card.TypeBasic then
+      local cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id).type == Card.TypeTrick end)
+      room:setPlayerMark(player, "@tenyear__neifa-turn", "basic")
+      room:setPlayerMark(player, "tenyear__neifa-turn", math.min(#cards, 5))
+    elseif  Fk:getCardById(card[1]).type == Card.TypeTrick  then
+      
+      room:setPlayerMark(player, "@tenyear__neifa-turn", "trick")   
+    end
+  end,
+}
+local tenyear__neifa_trigger = fk.CreateTriggerSkill{
+  name = "#tenyear__neifa_trigger",
+  anim_type = "control",
+  events = {fk.TargetSpecifying},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:getMark("@tenyear__neifa-turn") == "trick" and data.card:isCommonTrick() and data.firstTarget
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = AskForAddTarget(player, room:getAlivePlayers(), 1, true,
+      "#tenyear__neifa_trigger-choose:::"..data.card:toLogString(), self.name, data)
+    if #targets > 0 then
+      self.cost_data = targets[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    if table.contains(AimGroup:getAllTargets(data.tos), self.cost_data) then
+      TargetGroup:removeTarget(data.targetGroup, self.cost_data)
+    else
+      TargetGroup:pushTargets(data.targetGroup, self.cost_data)
+    end
+  end,
+}
+
+local tenyear__neifa_targetmod = fk.CreateTargetModSkill{
+  name = "#tenyear__neifa_targetmod",
+  residue_func = function(self, player, skill, scope)
+    if skill.trueName == "slash_skill" and player:getMark("@tenyear__neifa-turn") == "basic" and scope == Player.HistoryPhase then
+      return player:getMark("tenyear__neifa-turn")
+    end
+  end,
+  extra_target_func = function(self, player, skill)
+    if skill.trueName == "slash_skill" and player:getMark("@tenyear__neifa-turn") == "basic" then
+      return 1
+    end
+  end,
+}
+local neifa_prohibit = fk.CreateProhibitSkill{
+  name = "#neifa_prohibit",
+  prohibit_use = function(self, player, card)
+    return (player:getMark("@tenyear__neifa-turn") == "basic" and card.type == Card.TypeTrick) or
+      (player:getMark("@tenyear__neifa-turn") == "trick" and card.type == Card.TypeBasic)
+  end,
+}
+tenyear__neifa:addRelatedSkill(tenyear__neifa_targetmod)
+tenyear__neifa:addRelatedSkill(tenyear__neifa_prohibit)
+tenyear__neifa:addRelatedSkill(tenyear__neifa_trigger)
+yuantanyuanshangyuanxi:addSkill(tenyear__neifa)
+Fk:loadTranslationTable{
+  ["yuantanyuanshangyuanxi"] = "袁谭袁尚袁熙",
+  ["tenyear__neifa"] = "内伐",
+  [":tenyear__neifa"] = "出牌阶段开始时，你可以摸三张牌，然后弃置一张牌。若弃置的牌：是基本牌，你本回合不能使用非基本牌，"..
+  "本阶段使用【杀】次数上限+X，目标上限+1；是锦囊牌，你本回合不能使用基本牌，使用普通锦囊牌的目标+1或-1。"..
+  "（X为发动技能时手牌中因本技能不能使用的牌且至多为5）。",
+  ["@tenyear__neifa-turn"] = "内伐",
+  ["non_basic"] = "锦囊牌",
+  ["#tenyear__neifa_trigger-choose"] = "内伐：你可以为%arg增加/减少一个目标",
+  ["#neifa_trigger"] = "内伐",
+  ["$tenyear__neifa1"] = "",
+  ["$tenyear__neifa1"] = "",
+  ["~yuantanyuanshangyuanxi"] = "",
 }
 
 --天下归心：魏贾诩 陈登 蔡瑁张允 高览 尹夫人 吕旷吕翔 陈珪 陈矫 秦朗 唐咨

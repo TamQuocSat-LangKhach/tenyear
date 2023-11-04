@@ -11,7 +11,7 @@ local liandui = fk.CreateTriggerSkill{
   name = "liandui",
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self.name) or target.dead then return false end
+    if not player:hasSkill(self) or target.dead then return false end
     local liandui_target = (data.extra_data or {}).liandui_lastplayer
     return liandui_target ~= nil and ((liandui_target == player.id) ~= (player == target))
       and not player.room:getPlayerById(liandui_target).dead
@@ -58,7 +58,7 @@ local biejun = fk.CreateTriggerSkill{
   anim_type = "defensive",
   events = {fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and target == player and
+    return player:hasSkill(self) and target == player and
       table.every(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@biejun-inhand") == 0 end)
   end,
   on_cost = function(self, event, target, player, data)
@@ -162,7 +162,7 @@ local sangu = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name) and target.phase == Player.Play and target:getHandcardNum() >= target.maxHp
+    return player:hasSkill(self) and target.phase == Player.Play and target:getHandcardNum() >= target.maxHp
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#sangu-invoke::"..target.id)
@@ -277,7 +277,7 @@ local yizu = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.firstTarget and table.contains({"slash", "duel"}, data.card.trueName) and
+    return target == player and player:hasSkill(self) and data.firstTarget and table.contains({"slash", "duel"}, data.card.trueName) and
       player.room:getPlayerById(data.from).hp >= player.hp and player:isWounded() and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
   end,
   on_use = function(self, event, target, player, data)
@@ -321,7 +321,7 @@ local bushil = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.CardUseFinished, fk.CardRespondFinished, fk.TargetConfirmed, fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) then
+    if target == player and player:hasSkill(self) then
       if event == fk.CardUseFinished or event == fk.CardRespondFinished then
         return player:getMark("bushil2") == "log_"..data.card:getSuitString()
       elseif event == fk.TargetConfirmed then
@@ -432,7 +432,7 @@ local zhongzhuang = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card and data.card.trueName == "slash" and not data.chain and
+    return target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash" and not data.chain and
       (player:getAttackRange() > 3 or (player:getAttackRange() < 3 and data.damage > 1))
   end,
   on_use = function(self, event, target, player, data)
@@ -478,7 +478,7 @@ local koujing = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == player.Play and not player:isKongcheng()
+    return target == player and player:hasSkill(self) and player.phase == player.Play and not player:isKongcheng()
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -613,7 +613,7 @@ local diezhang = fk.CreateTriggerSkill{
   switch_skill_name = "diezhang",
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) and data.responseToEvent then
+    if player:hasSkill(self) and data.responseToEvent then
       if player:getSwitchSkillState(self.name, false) == fk.SwitchYang then
         if data.responseToEvent.from == player.id and not player:isNude() then
           return target ~= player and not target.dead and not player:isProhibited(target, Fk:cloneCard("slash"))
@@ -668,7 +668,7 @@ local duanwan = fk.CreateTriggerSkill{
   frequency = Skill.Limited,
   events = {fk.AskForPeaches},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.dying and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+    return target == player and player:hasSkill(self) and player.dying and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#duanwan-invoke")
@@ -694,7 +694,7 @@ local diezhangYang = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-      return player:hasSkill(self.name) and data.responseToEvent and data.responseToEvent.from == player.id and not player:isNude() and
+      return player:hasSkill(self) and data.responseToEvent and data.responseToEvent.from == player.id and not player:isNude() and
         target ~= player and not target.dead and not player:isProhibited(target, Fk:cloneCard("slash"))
   end,
   on_cost = function(self, event, target, player, data)
@@ -720,7 +720,7 @@ local diezhangYin = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) and data.responseToEvent then
+    if target == player and player:hasSkill(self) and data.responseToEvent then
       local from = player.room:getPlayerById(data.responseToEvent.from)
       return from ~= player and not from.dead and not player:isProhibited(from, Fk:cloneCard("slash"))
     end

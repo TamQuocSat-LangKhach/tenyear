@@ -14,7 +14,7 @@ local niji = fk.CreateTriggerSkill{
   events = {fk.TargetConfirmed, fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     if event == fk.TargetConfirmed then
-      return target == player and player:hasSkill(self.name) and data.card.type ~= Card.TypeEquip
+      return target == player and player:hasSkill(self) and data.card.type ~= Card.TypeEquip
     elseif event == fk.EventPhaseStart then
       return target.phase == Player.Finish and not player:isKongcheng() and
         table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji-inhand") > 0 end)
@@ -36,7 +36,7 @@ local niji = fk.CreateTriggerSkill{
       end
     else
       local cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji-inhand") > 0 end)
-      if player:hasSkill(self.name) and #cards >= player.hp then
+      if player:hasSkill(self) and #cards >= player.hp then
         local pattern = "^(jink,nullification)|.|.|.|.|.|"..table.concat(cards, ",")
         local use = room:askForUseCard(player, "", pattern, "#niji-use", true)
         if use then
@@ -101,7 +101,7 @@ local youzhan = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) and player.phase ~= Player.NotActive then
+    if player:hasSkill(self) and player.phase ~= Player.NotActive then
       for _, move in ipairs(data) do
         if move.from and move.from ~= player.id then
           for _, info in ipairs(move.moveInfo) do

@@ -9,7 +9,7 @@ local redSpearSkill = fk.CreateTriggerSkill{
   attached_equip = "red_spear",
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card and data.card.trueName == "slash" and
+    return target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash" and
       player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
   end,
   on_use = function(self, event, target, player, data)
@@ -55,7 +55,7 @@ local quenchedBladeSkill = fk.CreateTriggerSkill{
   attached_equip = "quenched_blade",
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card and data.card.trueName == "slash" and not data.chain and
+    return target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash" and not data.chain and
       player:usedSkillTimes(self.name, Player.HistoryTurn) < 2
   end,
   on_cost = function(self, event, target, player, data)
@@ -69,7 +69,7 @@ local quenched_blade_targetmod = fk.CreateTargetModSkill{
   name = "#quenched_blade_targetmod",
   attached_equip = "quenched_blade",
   residue_func = function(self, player, skill, scope)
-    if player:hasSkill(self.name) and skill.trueName == "slash_skill" and scope == Player.HistoryPhase then
+    if player:hasSkill(self) and skill.trueName == "slash_skill" and scope == Player.HistoryPhase then
       return 1
     end
   end,
@@ -97,7 +97,7 @@ local poisonousDaggerSkill = fk.CreateTriggerSkill{
   attached_equip = "poisonous_dagger",
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card and data.card.trueName == "slash"
+    return target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash"
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil,
@@ -130,7 +130,7 @@ local waterSwordSkill = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.TargetSpecifying},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2 and
+    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2 and
       (data.card.trueName == "slash" or data.card:isCommonTrick()) and data.targetGroup and #data.targetGroup == 1
   end,
   on_cost = function(self, event, target, player, data)
@@ -190,7 +190,7 @@ local thunderBladeSkill = fk.CreateTriggerSkill{
   attached_equip = "thunder_blade",
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card and data.card.trueName == "slash"
+    return target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash"
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#thunder_blade-invoke::"..data.to)
@@ -265,9 +265,9 @@ local siegeEngineSkill = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart, fk.Damage, fk.BeforeCardsMove, fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
     if event == fk.EventPhaseStart then
-      return target == player and player:hasSkill(self.name) and player.phase == Player.Play
+      return target == player and player:hasSkill(self) and player.phase == Player.Play
     elseif event == fk.Damage then
-      return target == player and player:hasSkill(self.name) and data.card and table.contains(data.card.skillNames, self.name) and
+      return target == player and player:hasSkill(self) and data.card and table.contains(data.card.skillNames, self.name) and
         not data.chain and not data.to.dead and not data.to:isNude()
     elseif event == fk.BeforeCardsMove then
       if player:getEquipment(Card.SubtypeTreasure) and Fk:getCardById(player:getEquipment(Card.SubtypeTreasure)).name == "siege_engine" and
@@ -277,7 +277,7 @@ local siegeEngineSkill = fk.CreateTriggerSkill{
         end
       end
     elseif event == fk.TargetSpecified then
-      return target == player and player:hasSkill(self.name) and data.card and table.contains(data.card.skillNames, self.name)
+      return target == player and player:hasSkill(self) and data.card and table.contains(data.card.skillNames, self.name)
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -379,7 +379,7 @@ local catapultSkill = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.CardUsing, fk.CardResponding},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.card.type == Card.TypeBasic
+    return target == player and player:hasSkill(self) and data.card.type == Card.TypeBasic
   end,
   on_use = function(self, event, target, player, data)
     if event == fk.CardUsing and player.phase ~= Player.NotActive then
@@ -399,7 +399,7 @@ local catapultSkill = fk.CreateTriggerSkill{
 local catapult_targetmod = fk.CreateTargetModSkill{
   name = "#catapult_targetmod",
   distance_limit_func =  function(self, player, skill, card)
-    if player:hasSkill(self.name) and player.phase ~= Player.NotActive and card and card.type == Card.TypeBasic then
+    if player:hasSkill(self) and player.phase ~= Player.NotActive and card and card.type == Card.TypeBasic then
       return 999
     end
   end,

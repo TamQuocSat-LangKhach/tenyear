@@ -13,7 +13,7 @@ local ty__longgong = fk.CreateTriggerSkill{
   anim_type = "defensive",
   events = {fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.from and not data.from.dead and
+    return target == player and player:hasSkill(self) and data.from and not data.from.dead and
       player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
   end,
   on_cost = function(self, event, target, player, data)
@@ -184,7 +184,7 @@ local ty__nutao = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.TargetSpecifying, fk.Damage},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) then
+    if target == player and player:hasSkill(self) then
       if event == fk.TargetSpecifying then
         return data.card.type == Card.TypeTrick and data.firstTarget and
           table.find(AimGroup:getAllTargets(data.tos), function(id) return id ~= player.id end)
@@ -291,7 +291,7 @@ local shixian = fk.CreateTriggerSkill{
   anim_type = "special",
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name)
+    return target == player and player:hasSkill(self)
   end,
   on_trigger = function(self, event, target, player, data)
     local room = player.room
@@ -407,7 +407,7 @@ local tongliao = fk.CreateTriggerSkill{
   anim_type = "special",
   events = {fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == player.Draw and not player:isKongcheng()
+    return target == player and player:hasSkill(self) and player.phase == player.Draw and not player:isKongcheng()
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -473,7 +473,7 @@ local wudao = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.CardUseFinished, fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) then
+    if target == player and player:hasSkill(self) then
       if event == fk.CardUseFinished then
         return data.extra_data and data.extra_data.wudao and
           (player:getMark("wudao-turn") == 0 or not table.contains(player:getMark("wudao-turn"), data.extra_data.wudao))
@@ -688,7 +688,7 @@ local tycl__jianxiong = fk.CreateTriggerSkill{
   anim_type = "masochism",
   events = {fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name)
+    return target == player and player:hasSkill(self)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

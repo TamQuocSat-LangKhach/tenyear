@@ -2770,7 +2770,7 @@ yuantanyuanshangyuanxi:addSkill(tenyear__neifa)
 Fk:loadTranslationTable{
   ["yuantanyuanshangyuanxi"] = "袁谭袁尚袁熙",
   ["tenyear__neifa"] = "内伐",
-  [":tenyear__neifa"] = "出牌阶段开始时，你可以摸三张牌，然后弃置一张牌。若弃置的牌：是基本牌，你本回合不能使用非基本牌，"..
+  [":tenyear__neifa"] = "出牌阶段开始时，你可以摸三张牌，然后弃置一张牌。若弃置的牌：是基本牌，你本回合不能使用锦囊牌，"..
   "本阶段使用【杀】次数上限+X，目标上限+1；是锦囊牌，你本回合不能使用基本牌，使用普通锦囊牌的目标+1或-1。"..
   "（X为发动技能时手牌中因本技能不能使用的牌且至多为5）。",
   ["@tenyear__neifa-turn"] = "内伐",

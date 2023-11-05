@@ -3800,7 +3800,7 @@ Fk:loadTranslationTable{
   ["ty__cenhun"] = "岑昏",
 }
 
---代汉涂高：马日磾 张勋 雷薄 桥蕤
+--代汉涂高：马日磾 张勋 雷薄 桥蕤 纪灵
 local ty__mamidi = General(extension, "ty__mamidi", "qun", 4, 6)
 local bingjie = fk.CreateTriggerSkill{
   name = "bingjie",
@@ -4158,6 +4158,88 @@ Fk:loadTranslationTable{
   ["$jieling1"] = "来人，送冯氏上路！",
   ["$jieling2"] = "我有一求，请姐姐赴之。",
   ["~dongwan"] = "陛下饶命，妾并无歹意……",
+}
+
+local ty__jiling = General(extension, "ty__jiling", "qun", 4)
+local ty__shuangren = fk.CreateTriggerSkill{
+  name = "ty__shuangren",
+  anim_type = "offensive",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and player.phase == Player.Play and not player:isKongcheng() and table.find(player.room:getOtherPlayers(player), function(p) return not p:isKongcheng() end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.filter(room:getOtherPlayers(player), function(p) return not p:isKongcheng() end)
+    if #targets == 0 then return false end
+    local tos = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#ty__shuangren-ask", self.name, true)
+    if #tos > 0 then
+      self.cost_data = tos[1]
+      return true
+    end
+    return false
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local pindian = player:pindian({to}, self.name)
+    if pindian.results[to.id].winner == player then
+      local slash = Fk:cloneCard("slash")
+      if player.dead or player:prohibitUse(slash) then return false end
+      local targets = table.filter(room:getOtherPlayers(player), function(p) return p.kingdom == to.kingdom and not player:isProhibited(p, slash) end)
+      if #targets == 0 then return false end
+      room:setPlayerMark(player, "ty__shuangren_kingdom", to.kingdom)
+      room:setPlayerMark(player, "ty__shuangren_target", to.id)
+      local success, dat = room:askForUseActiveSkill(player, "#ty__shuangren_active", "#ty__shuangren_slash-ask:" .. to.id, false)
+      local tos = success and table.map(dat.targets, Util.Id2PlayerMapper) or table.random(targets, 1)
+      room:useVirtualCard("slash", nil, player, tos, self.name, true)
+    else
+      room:addPlayerMark(player, "@@ty__shuangren_prohibit-phase")
+    end
+  end,
+}
+local ty__shuangren_active = fk.CreateActiveSkill{
+  name = "#ty__shuangren_active",
+  card_num = 0,
+  card_filter = Util.FalseFunc,
+  min_target_num = 1,
+  max_target_num = 2,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if #selected < 2 then
+      local to = Fk:currentRoom():getPlayerById(to_select)
+      return to.kingdom == Self:getMark("ty__shuangren_kingdom")
+    end
+  end,
+  feasible = function(self, selected, selected_cards)
+    if #selected_cards == 0 and #selected > 0 and #selected <= 2 then
+      return #selected == 1 or table.contains(selected, Self:getMark("ty__shuangren_target"))
+    end
+  end,
+}
+local ty__shuangren_prohibit = fk.CreateProhibitSkill{
+  name = "#ty__shuangren_prohibit",
+  prohibit_use = function(self, player, card)
+    return player:getMark("@@ty__shuangren_prohibit-phase") > 0 and card.trueName == "slash"
+  end,
+}
+ty__shuangren:addRelatedSkill(ty__shuangren_prohibit)
+ty__shuangren:addRelatedSkill(ty__shuangren_active)
+ty__jiling:addSkill(ty__shuangren)
+
+Fk:loadTranslationTable{
+  ["ty__jiling"] = "纪灵",
+  ["ty__shuangren"] = "双刃",
+  [":ty__shuangren"] = "出牌阶段开始时，你可以与一名角色拼点。若你赢，你选择与其势力相同的一至两名角色（若选择两名，其中一名须为该角色），然后你视为对选择的角色使用一张不计入次数的【杀】；若你没赢，你本阶段不能使用【杀】。",
+  ["#ty__shuangren_active"] = "双刃",
+  ["#ty__shuangren_prohibit"] = "双刃",
+  ["@@ty__shuangren_prohibit-phase"] = "双刃禁杀",
+  
+  ["#ty__shuangren-ask"] = "双刃：你可与一名角色拼点",
+  ["#ty__shuangren_slash-ask"] = "双刃：视为对与 %src 势力相同的一至两名角色使用【杀】(若选两名，其中一名须为%src)",
+
+  ["$ty__shuangren1"] = "这淮阴城下，正是葬汝尸骨的好地界。",
+  ["$ty__shuangren2"] = "吾众下大军已至，匹夫，以何敌我？",
+  ["~ty__jiling"] = "穷寇兵枪势猛，伏义实在不敌啊。",
 }
 
 return extension

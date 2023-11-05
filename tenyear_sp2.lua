@@ -2091,7 +2091,7 @@ local ty__lixia_distance = fk.CreateDistanceSkill{
   name = "#ty__lixia_distance",
   correct_func = function(self, from, to)
     if to:getMark("@ty__lixia") > 0 then
-      return -to:getMark("@ty__lixia")
+      return to:getMark("@ty__lixia")
     end
   end,
 }

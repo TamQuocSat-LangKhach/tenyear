@@ -1026,6 +1026,8 @@ Fk:loadTranslationTable{
   ["ty_ex__guanxingzhangbao"] = "界关兴张苞",
   ["ty_ex__tongxin"] = "同心",
   [":ty_ex__tongxin"] = "锁定技，你的攻击范围+2。",
+  ["ty_ex__fuhun"] = "父魂",
+  [":ty_ex__fuhun"] = "你可以将两张手牌当【杀】使用或打出；当你于出牌阶段内以此法造成伤害后，本回合获得〖武圣〗和〖咆哮〗。",
 
   ["$ty_ex__fuhun1"] = "擎刀执矛，以效先父之法。",
   ["$ty_ex__fuhun2"] = "苍天在上，儿必不堕父亲威名！",
@@ -2963,7 +2965,7 @@ local ty_ex__jigong_recover = fk.CreateTriggerSkill{
       local num = player:getMark("@ty_ex__jigong-turn")
       local num1 = player:getMark("@jigong_draw-turn")
       if target == player and player:usedSkillTimes("ty_ex__jigong", Player.HistoryTurn) > 0 and player.phase == Player.Discard then
-        return num > num1 and player:isWounded()
+        return num >= num1 and player:isWounded()
       end
   end,
   on_use = function(self, event, target, player, data)

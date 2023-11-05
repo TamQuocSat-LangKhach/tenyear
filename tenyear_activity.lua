@@ -430,7 +430,7 @@ local kangge = fk.CreateTriggerSkill{
     end
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, "kangge", data, "#kangge-recover::"..target.id)
+    return true
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -489,7 +489,7 @@ local kangge_trigger = fk.CreateTriggerSkill{
     return player:hasSkill("kangge") and player:getMark("kangge") == target.id and player:usedSkillTimes(self.name, Player.HistoryRound) == 0
   end,
   on_cost = function(self, event, target, player, data)
-    return true
+    return player.room:askForSkillInvoke(player, "kangge", data, "#kangge-recover::"..target.id)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

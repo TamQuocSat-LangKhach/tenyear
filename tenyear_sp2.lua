@@ -2043,7 +2043,7 @@ local ty__biluan = fk.CreateTriggerSkill{
   anim_type = "defensive",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) and player.phase == Player.Finish then
+    if target == player and player:hasSkill(self) and player.phase == Player.Finish then
       return table.find(player.room:getOtherPlayers(player), function(p) return p:distanceTo(player) == 1 end)
     end
   end,
@@ -2074,7 +2074,7 @@ local ty__lixia = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target ~= player and player:hasSkill(self.name) and target.phase == Player.Finish and not target:inMyAttackRange(player)
+    return target ~= player and player:hasSkill(self) and target.phase == Player.Finish and not target:inMyAttackRange(player)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

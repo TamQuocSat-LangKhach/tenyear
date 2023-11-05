@@ -2292,7 +2292,7 @@ Fk:loadTranslationTable{
   ["~ty__yanghu"] = "臣死之后，杜元凯可继之……",
 }
 
---匡鼎炎汉：刘巴 黄权 霍峻 傅肜傅佥 向朗
+--匡鼎炎汉：刘巴 黄权 霍峻 傅肜傅佥 向朗 高翔
 local liuba = General(extension, "ty__liuba", "shu", 3)
 local ty__zhubi = fk.CreateTriggerSkill{
   name = "ty__zhubi",
@@ -2993,12 +2993,56 @@ Fk:loadTranslationTable{
   ["#qianzheng1-card"] = "愆正：你可以重铸两张牌，若均不为%arg，结算后获得%arg2",
   ["#qianzheng2-card"] = "愆正：你可以重铸两张牌",
   ["#qianzheng-invoke"] = "愆正：你可以获得此%arg",
-  
+
   ["$kanji1"] = "览文库全书，筑文心文胆。",
   ["$kanji2"] = "世间学问，皆载韦编之上。",
   ["$qianzheng1"] = "悔往昔之种种，恨彼时之切切。",
   ["$qianzheng2"] = "罪臣怀咎难辞，有愧国恩。",
   ["~xianglang"] = "识文重义而徇私，恨也……",
+}
+
+local gaoxiang = General(extension, "gaoxiang", "shu", 4)
+local chiying = fk.CreateActiveSkill{
+  name = "chiying",
+  anim_type = "control",
+  card_num = 0,
+  target_num = 1,
+  prompt = "#chiying-invoke",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:currentRoom():getPlayerById(to_select).hp <= Self.hp
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local ids = {}
+    for _, p in ipairs(room:getOtherPlayers(player)) do
+      if target:inMyAttackRange(p) and not p.dead and not p:isNude() then
+        local card = room:askForDiscard(p, 1, 1, true, self.name, false, nil)
+        if target ~= player and #card > 0 and Fk:getCardById(card[1]).type == Card.TypeBasic then
+          table.insertIfNeed(ids, card[1])
+        end
+      end
+    end
+    if #ids == 0 or target.dead then return end
+    ids = table.filter(ids, function(id) return room:getCardArea(id) == Card.DiscardPile end)
+    if #ids == 0 then return end
+    local dummy = Fk:cloneCard("dilu")
+    dummy:addSubcards(ids)
+    room:obtainCard(target, dummy, true, fk.ReasonJustMove)
+  end,
+}
+gaoxiang:addSkill(chiying)
+Fk:loadTranslationTable{
+  ["gaoxiang"] = "高翔",
+  ["chiying"] = "驰应",
+  [":chiying"] = "出牌阶段限一次，你可以选择一名体力值不大于你的角色，令其攻击范围内的其他角色各弃置一张牌。若选择的角色不为你，其获得其中的基本牌。",
+  ["#chiying-invoke"] = "驰应：选择一名角色，其攻击范围内其他角色各弃一张牌",
 }
 
 --太平甲子：管亥 张闿 刘辟 裴元绍 张楚 张曼成
@@ -3150,16 +3194,8 @@ local juying = fk.CreateTriggerSkill{
   events = {fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and player.phase == Player.Play then
-      local n = 1
-      if player.room.settings.gameMode == "m_1v2_mode" and player.role == "lord" then
-        n = 2
-      end
-      local status_skills = player.room.status_skills[TargetModSkill] or Util.DummyTable
-      for _, skill in ipairs(status_skills) do
-        local correct = skill:getResidueNum(player, skill, Player.HistoryPhase, Fk:cloneCard("slash"), nil)
-        if correct == nil then correct = 0 end
-        n = n + correct
-      end
+      local card = Fk:cloneCard("slash")
+      local n = card.skill:getMaxUseTime(player, Player.HistoryPhase, card, nil)
       return player:usedCardTimes("slash", Player.HistoryPhase) < n
     end
   end,
@@ -3589,7 +3625,6 @@ Fk:loadTranslationTable{
 }
 
 local mengyou = General(extension, "mengyou", "qun", 5)
-
 local manzhi = fk.CreateTriggerSkill{
   name = "manzhi",
   anim_type = "control",

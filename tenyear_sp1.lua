@@ -505,7 +505,7 @@ local ty__shanjia = fk.CreateTriggerSkill{
     end
     if n > 0 then
       player.room:addPlayerMark(player, self.name, math.min(n, 3 - player:getMark(self.name)))
-      if player:hasSkill(self.name, true) then
+      if player:hasSkill(self, true) then
         player.room:setPlayerMark(player, "@ty__shanjia", player:getMark(self.name))
       end
     end
@@ -1163,7 +1163,7 @@ local yaoyi = fk.CreateTriggerSkill{
 
   refresh_events = {fk.Deathed},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, true, true)
+    return target == player and player:hasSkill(self, true, true)
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -2122,7 +2122,7 @@ local sanshou = fk.CreateTriggerSkill{
 
   refresh_events = {fk.AfterCardUseDeclared},
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self.name, true)
+    return player:hasSkill(self, true)
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:addPlayerMark(player, "sanshou_"..data.card:getTypeString().."-turn", 1)
@@ -2581,7 +2581,7 @@ local cuixin = fk.CreateTriggerSkill{
 
   refresh_events = {fk.PreCardUse},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, true) and not table.contains(data.card.skillNames, self.name) and
+    return target == player and player:hasSkill(self, true) and not table.contains(data.card.skillNames, self.name) and
       data.card.type ~= Card.TypeEquip and data.card.sub_type ~= Card.SubtypeDelayedTrick
   end,
   on_refresh = function(self, event, target, player, data)
@@ -3477,7 +3477,7 @@ local chenyong = fk.CreateTriggerSkill{
     if mark == 0 then mark = {} end
     table.insertIfNeed(mark, data.card:getTypeString())
     room:setPlayerMark(player, "chenyong-turn", mark)
-    if player:hasSkill(self.name, true) then
+    if player:hasSkill(self, true) then
       room:setPlayerMark(player, "@chenyong-turn", #player:getMark("chenyong-turn"))
     end
   end,
@@ -3802,7 +3802,7 @@ local qingshid = fk.CreateTriggerSkill{
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     room:addPlayerMark(player, "qingshid-turn", 1)
-    if player:hasSkill(self.name, true) then
+    if player:hasSkill(self, true) then
       room:setPlayerMark(player, "@qingshid-turn", player:getMark("qingshid-turn"))
     end
   end,
@@ -4004,7 +4004,7 @@ local zhuren_destruct = fk.CreateTriggerSkill{
 
   refresh_events = {fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)
-    if player:hasSkill(self.name, true, true) then
+    if player:hasSkill(self, true, true) then
       for _, move in ipairs(data) do
         return move.toArea == Card.DiscardPile
       end
@@ -4861,7 +4861,7 @@ local tongguan = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.EventPhaseChanging},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name, true) and data.from == Player.RoundStart and
+    return player:hasSkill(self, true) and data.from == Player.RoundStart and
       table.every({1, 2, 3, 4, 5}, function(i) return target:getMark("@@tongguan"..i) == 0 end)
   end,
   on_cost = function(self, event, target, player, data)
@@ -4892,7 +4892,7 @@ local mengjiez = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name, true) and (target:getMark(self.name) > 0 or
+    return player:hasSkill(self, true) and (target:getMark(self.name) > 0 or
       (target:getMark("@@tongguan2") > 0 and target:getHandcardNum() > target.hp))
   end,
   on_cost = function(self, event, target, player, data)

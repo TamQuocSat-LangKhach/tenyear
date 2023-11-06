@@ -606,15 +606,250 @@ Fk:loadTranslationTable{
   ["~kebineng"] = "草原雄鹰，折翼于此……",
 }
 
+local hanlong = General(extension, "hanlong", "wei", 4)
+local duwang = fk.CreateTriggerSkill{
+  name = "duwang",
+  anim_type = "special",
+  frequency = Skill.Compulsory,
+  events = {fk.AfterDrawInitialCards},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local dummy = Fk:cloneCard("dilu")
+    local n = 0
+    for _, id in ipairs(room.draw_pile) do
+      if Fk:getCardById(id).trueName ~= "slash" then
+        dummy:addSubcard(id)
+        n = n + 1
+      end
+      if n >= 5 then break end
+    end
+    player:addToPile("hanlong_ci", dummy, true, self.name)
+  end,
+}
+local duwang_distance = fk.CreateDistanceSkill{
+  name = "#duwang_distance",
+  frequency = Skill.Compulsory,
+  correct_func = function(self, from, to)
+    if #from:getPile("hanlong_ci") > 0 or #to:getPile("hanlong_ci") > 0 then
+      return 1
+    end
+    return 0
+  end,
+}
+local cibei = fk.CreateTriggerSkill{
+  name = "cibei",
+  anim_type = "special",
+  events = {fk.AfterCardsMove, fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and #player:getPile("hanlong_ci") > 0 then
+      if event == fk.AfterCardsMove then
+        if table.find(player:getPile("hanlong_ci"), function(id) return Fk:getCardById(id).trueName ~= "slash" end) then
+          for _, move in ipairs(data) do
+            if move.moveReason == fk.ReasonUse and move.toArea == Card.DiscardPile then
+              for _, info in ipairs(move.moveInfo) do
+                if Fk:getCardById(info.cardId).trueName == "slash" and player.room:getCardArea(info.cardId) == Card.DiscardPile then
+                  return true
+                end
+              end
+            end
+          end
+        end
+      else
+        return table.every(player:getPile("hanlong_ci"), function(id) return Fk:getCardById(id).trueName == "slash" end)
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.AfterCardsMove then
+      return player.room:askForSkillInvoke(player, self.name, nil, "#cibei-invoke")
+    else
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.AfterCardsMove then
+      local c = 0
+      for _, move in ipairs(data) do
+        if move.moveReason == fk.ReasonUse and move.toArea == Card.DiscardPile then
+          for _, info in ipairs(move.moveInfo) do
+            if Fk:getCardById(info.cardId).trueName == "slash" and room:getCardArea(info.cardId) == Card.DiscardPile then
+              c = info.cardId
+              break
+            end
+          end
+        end
+      end
+      local ids = table.filter(player:getPile("hanlong_ci"), function(id) return Fk:getCardById(id).trueName ~= "slash" end)
+      local piles = room:askForExchange(player, {{c}, ids}, {"slash", "hanlong_ci"}, self.name)
+      local c2 = 0
+      if piles[1][1] == c then
+        c2 = table.random(ids)
+      else
+        c2 = piles[1][1]
+      end
+      local moves = {{
+        ids = {c},
+        to = player.id,
+        toArea = Card.PlayerSpecial,
+        moveReason = fk.ReasonJustMove,
+        skillName = self.name,
+        specialName = "hanlong_ci",
+      }, {
+        ids = {c2},
+        from = player.id,
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonJustMove,
+        skillName = self.name,
+        fromSpecialName = "hanlong_ci",
+      }}
+      room:moveCards(table.unpack(moves))
+      local targets = table.map(table.filter(room.alive_players, function(p) return not p:isAllNude() end), Util.IdMapper)
+      if not player.dead and #targets > 0 then
+        local to = room:askForChoosePlayers(player, targets, 1, 1, "#cibei-choose", self.name, false)
+        if #to > 0 then
+          to = room:getPlayerById(to[1])
+        else
+          to = room:getPlayerById(table.random(targets))
+        end
+        local id = room:askForCardChosen(player, to, "hej", self.name)
+        room:throwCard({id}, self.name, to, player)
+      end
+    else
+      local dummy = Fk:cloneCard("dilu")
+      for _, id in ipairs(player:getPile("hanlong_ci")) do
+        room:setCardMark(Fk:getCardById(id), "@@cibei-inhand", 1)
+        dummy:addSubcard(id)
+      end
+      room:obtainCard(player, dummy, true, fk.ReasonJustMove)
+    end
+  end,
+}
+local cibei_prohibit = fk.CreateProhibitSkill{
+  name = "#cibei_prohibit",
+  prohibit_discard = function(self, player, card)
+    return card:getMark("@@cibei-inhand") > 0
+  end,
+}
+local cibei_maxcards = fk.CreateMaxCardsSkill{
+  name = "#cibei_maxcards",
+  exclude_from = function(self, player, card)
+    return card:getMark("@@cibei-inhand") > 0
+  end,
+}
+local cibei_targetmod = fk.CreateTargetModSkill{
+  name = "#cibei_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    return card and card:getMark("@@cibei-inhand") > 0
+  end,
+  bypass_distances =  function(self, player, skill, card, to)
+    return card and card:getMark("@@cibei-inhand") > 0
+  end,
+}
+duwang:addRelatedSkill(duwang_distance)
+cibei:addRelatedSkill(cibei_prohibit)
+cibei:addRelatedSkill(cibei_maxcards)
+cibei:addRelatedSkill(cibei_targetmod)
+hanlong:addSkill(duwang)
+hanlong:addSkill(cibei)
 Fk:loadTranslationTable{
   ["hanlong"] = "韩龙",
   ["duwang"] = "独往",
-  [":duwang"] = "游戏开始时，你将牌堆顶五张不为【杀】的牌置于武将牌上，称为“刺”。若你有“刺”，你与其他角色互相计算距离均+1。",
+  [":duwang"] = "锁定技，游戏开始时，你将牌堆顶五张不为【杀】的牌置于武将牌上，称为“刺”。若你有“刺”，你与其他角色互相计算距离均+1。",
   ["cibei"] = "刺北",
   [":cibei"] = "当任意角色使用【杀】结算完毕进入弃牌堆时，你可以将此牌与一张不为【杀】的“刺”交换，然后弃置一名角色区域内的一张牌。"..
   "一名角色的回合结束时，若所有“刺”均为【杀】，你获得所有“刺”，这些【杀】不能被弃置、不计入手牌上限、使用时无距离次数限制。",
+  ["hanlong_ci"] = "刺",
+  ["#cibei-invoke"] = "刺北：是否将此【杀】和一张“刺”交换？",
+  ["#cibei-choose"] = "刺北：选择一名角色，弃置其区域内一张牌",
+  ["@@cibei-inhand"] = "刺北",
 }
 
+local qiaozhou = General(extension, "ty__qiaozhou", "shu", 3)
+local shiming = fk.CreateTriggerSkill{
+  name = "shiming",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target.phase == Player.Draw and player:usedSkillTimes(self.name, Player.HistoryRound) == 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#shiming-invoke::"..target.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {target.id})
+    local cards = room:getNCards(2)
+    local result = room:askForGuanxing(player, cards, nil, {0, 1}, self.name, true, {"Top", "Bottom"})
+    if #result.bottom > 0 then
+      table.insert(room.draw_pile, 1, result.top[1])
+      table.insert(room.draw_pile, result.bottom[1])
+    else
+      table.insert(room.draw_pile, 1, cards[2])
+      table.insert(room.draw_pile, 1, cards[1])
+    end
+    if room:askForSkillInvoke(target, self.name, nil, "#shiming-damage") then
+      room:damage{
+        from = target,
+        to = target,
+        damage = 1,
+        skillName = self.name,
+      }
+      if not target.dead then
+        target:drawCards(3, self.name, "bottom")
+      end
+      return true
+    end
+  end,
+}
+local jiangxi = fk.CreateTriggerSkill{
+  name = "jiangxi",
+  anim_type = "support",
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      local events = player.room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function(e)
+        local damage = e.data[5]
+        return damage
+      end, Player.HistoryTurn)
+      return #events == 0
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#jiangxi-invoke::"..target.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(1, self.name)
+    if not target.dead then
+      target:drawCards(1, self.name)
+    end
+  end,
+
+  refresh_events = {fk.TurnEnd},  --偷懒_(:з」∠)_
+  can_refresh = function(self, event, target, player, data)
+    if player:hasSkill(self) and player:usedSkillTimes("shiming", Player.HistoryRound) > 0 then
+      local room = player.room
+      local events = room.logic:getEventsOfScope(GameEvent.Dying, 1, function(e)
+        local dying = e.data[1]
+        return room:getPlayerById(dying.who).seat == 1
+      end, Player.HistoryTurn)
+      if #events > 0 then return true end
+      events = room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function(e)
+        local damage = e.data[5]
+        return damage and damage.to.seat == 1
+      end, Player.HistoryTurn)
+      return #events == 0
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player:setSkillUseHistory("shiming", 0, Player.HistoryRound)
+  end,
+}
+qiaozhou:addSkill(shiming)
+qiaozhou:addSkill(jiangxi)
 Fk:loadTranslationTable{
   ["ty__qiaozhou"] = "谯周",
   ["shiming"] = "识命",
@@ -623,6 +858,9 @@ Fk:loadTranslationTable{
   ["jiangxi"] = "将息",
   [":jiangxi"] = "一名角色回合结束时，若一号位本回合进入过濒死状态或未受到过伤害，你重置〖识命〗；若所有角色均未受到过伤害，你可以与当前回合角色"..
   "各摸一张牌。",
+  ["#shiming-invoke"] = "识命：%dest 的摸牌阶段，你可以先观看牌堆顶两张牌，将其中一张置于牌堆底",
+  ["#shiming-damage"] = "识命：你可以对自己造成1点伤害，放弃摸牌，改为从牌堆底摸三张牌",
+  ["#jiangxi-invoke"] = "将息：你可以与 %dest 各摸一张牌",
 }
 
 local wuanguo = General(extension, "wuanguo", "qun", 4)

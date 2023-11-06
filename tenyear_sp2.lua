@@ -2049,13 +2049,17 @@ local ty__biluan = fk.CreateTriggerSkill{
   end,
   on_cost = function (self, event, target, player, data)
     local x = math.min(4, #player.room.alive_players)
-    return #player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#ty__biluan-invoke:::"..x) > 0
+    local card = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#ty__biluan-invoke:::"..x, true)
+    if #card > 0 then
+      self.cost_data = card
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    room:throwCard(self.cost_data, self.name, player, player)
     local x = math.min(4, #player.room.alive_players)
     updataShixieDistance(room, player, x)
-    return true
   end,
 }
 local ty__biluan_distance = fk.CreateDistanceSkill{

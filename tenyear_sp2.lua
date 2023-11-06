@@ -2030,20 +2030,12 @@ Fk:loadTranslationTable{
 }
 
 local ty__shixie = General(extension, "ty__shixie", "qun", 3)
-local updataShixieDistance = function (room, player, n)
-  local num = player:getMark("shixie_distance") + n
-  room:setPlayerMark(player,"shixie_distance",num)
-  local plus = math.max(0, num)
-  local minus = math.min(0, num)
-  room:setPlayerMark(player,"@ty__lixia",minus)
-  room:setPlayerMark(player,"@ty__biluan",plus)
-end
 local ty__biluan = fk.CreateTriggerSkill{
   name = "ty__biluan",
   anim_type = "defensive",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self) and player.phase == Player.Finish then
+    if target == player and player:hasSkill(self.name) and player.phase == Player.Finish then
       return table.find(player.room:getOtherPlayers(player), function(p) return p:distanceTo(player) == 1 end)
     end
   end,
@@ -2059,14 +2051,16 @@ local ty__biluan = fk.CreateTriggerSkill{
     local room = player.room
     room:throwCard(self.cost_data, self.name, player, player)
     local x = math.min(4, #player.room.alive_players)
-    updataShixieDistance(room, player, x)
+    local num = tonumber(player:getMark("@ty__shixie_distance"))+x
+    room:setPlayerMark(player,"@ty__shixie_distance",num > 0 and "+"..num or num)
   end,
 }
 local ty__biluan_distance = fk.CreateDistanceSkill{
   name = "#ty__biluan_distance",
   correct_func = function(self, from, to)
-    if to:getMark("@ty__biluan") > 0 then
-      return to:getMark("@ty__biluan")
+    local num = tonumber(to:getMark("@ty__shixie_distance"))
+    if num > 0 then
+      return num
     end
   end,
 }
@@ -2078,7 +2072,7 @@ local ty__lixia = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target ~= player and player:hasSkill(self) and target.phase == Player.Finish and not target:inMyAttackRange(player)
+    return target ~= player and player:hasSkill(self.name) and target.phase == Player.Finish and not target:inMyAttackRange(player)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -2088,14 +2082,16 @@ local ty__lixia = fk.CreateTriggerSkill{
     else
       target:drawCards(2, self.name)
     end
-    updataShixieDistance(room, player, -1)
+    local num = tonumber(player:getMark("@ty__shixie_distance"))-1
+    room:setPlayerMark(player,"@ty__shixie_distance",num > 0 and "+"..num or num)
   end,
 }
 local ty__lixia_distance = fk.CreateDistanceSkill{
   name = "#ty__lixia_distance",
   correct_func = function(self, from, to)
-    if to:getMark("@ty__lixia") < 0 then
-      return to:getMark("@ty__lixia")
+    local num = tonumber(to:getMark("@ty__shixie_distance"))
+    if num < 0 then
+      return num
     end
   end,
 }
@@ -2108,8 +2104,7 @@ Fk:loadTranslationTable{
   ["ty__lixia"] = "礼下",
   [":ty__lixia"] = "锁定技，其他角色的结束阶段，若你不在其攻击范围内，你选择一项：1.摸一张牌；2.令其摸两张牌。选择完成后，其他角色计算与你的距离-1。",
   ["#ty__biluan-invoke"] = "避乱：你可弃一张牌，令其他角色计算与你距离+%arg",
-  ["@ty__biluan"] = "避乱",
-  ["@ty__lixia"] = "礼下",
+  ["@ty__shixie_distance"] = "距离",
   ["ty__lixia_draw"] = "令%src摸两张牌",
 
   ["$ty__biluan1"] = "天下攘攘，难觅避乱之地。",

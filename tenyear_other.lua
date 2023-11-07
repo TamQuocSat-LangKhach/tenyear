@@ -58,7 +58,7 @@ local ty__sitian = fk.CreateActiveSkill{
     local choice = room:askForChoice(player, choices, self.name, "#ty__sitian-choice", true)
     local targets = room:getOtherPlayers(player)
     if choice ~= "sitian4" then
-      room:doIndicate(player.id, table.map(targets, function(p) return p.id end))
+      room:doIndicate(player.id, table.map(targets, Util.IdMapper))
     end
     if choice == "sitian1" then
       for _, p in ipairs(targets) do
@@ -107,7 +107,7 @@ local ty__sitian = fk.CreateActiveSkill{
       end
     end
     if choice == "sitian4" then
-      local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p) return p.id end), 1, 1,
+      local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1,
         "#sitian-choose", self.name, true)
       local to
       if #tos > 0 then
@@ -135,9 +135,7 @@ local sitian_trigger = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target:getMark("@@lw_dawu") > 0 and data.card.type == Card.TypeBasic
   end,
-  on_cost = function(self, event, target, player, data)
-    return true
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     player.room:setPlayerMark(target, "@@lw_dawu", 0)
     return true
@@ -498,7 +496,7 @@ local wudao = fk.CreateTriggerSkill{
       room:setPlayerMark(player, "@wudao-turn", table.concat(mark, ","))
       room:setPlayerMark(player, "wudao-turn", mark)
     else
-      data.disresponsiveList = table.map(room.alive_players, function(p) return p.id end)
+      data.disresponsiveList = table.map(room.alive_players, Util.IdMapper)
       if data.card.is_damage_card then
         data.additionalDamage = (data.additionalDamage or 0) + 1
       end
@@ -579,9 +577,7 @@ local bianzhuang = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
+  card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local n = player:usedSkillTimes(self.name, Player.HistoryGame) > 3 and 3 or 2
@@ -633,9 +629,7 @@ local bianzhuang = fk.CreateActiveSkill{
 }
 local bianzhuang_viewas = fk.CreateViewAsSkill{
   name = "bianzhuang_viewas",
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
+  card_filter = Util.FalseFunc,
   view_as = function(self, cards)
     local card = Fk:cloneCard("slash")
     card.skillName = "bianzhuang"
@@ -714,9 +708,7 @@ local tycl__rende = fk.CreateActiveSkill{
   card_num = 0,
   target_num = 1,
   prompt = "#tycl__rende",
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
+  card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     local target = Fk:currentRoom():getPlayerById(to_select)
     return #selected == 0 and to_select ~= Self.id and target:getMark("tycl__rende-phase") == 0 and target:getHandcardNum() > 1

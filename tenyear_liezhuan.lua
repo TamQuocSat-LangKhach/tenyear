@@ -99,7 +99,7 @@ local yujue = fk.CreateActiveSkill{
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 and #player:getAvailableEquipSlots() > 0
   end,
   card_num = 0,
-  card_filter = function() return false end,
+  card_filter = Util.FalseFunc,
   target_num = 1,
   target_filter = function(self, to_select, selected)
     return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
@@ -372,7 +372,7 @@ local ty__pingjian = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
-  card_filter = function() return false end,
+  card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local used_skills = type(player:getMark("ty__pingjian_used_skills")) == "table" and player:getMark("ty__pingjian_used_skills") or {}
@@ -501,15 +501,13 @@ local cixiao = fk.CreateTriggerSkill{
     local room = player.room
     if table.find(room.alive_players, function (p) return p:hasSkill("panshi", true) end) then
       local tos, id = room:askForChooseCardAndPlayers(player, table.map(table.filter(room.alive_players, function (p)
-        return p ~= player and not p:hasSkill("panshi", true) end), function (p)
-        return p.id end), 1, 1, ".", "#cixiao-discard", self.name, true)
+        return p ~= player and not p:hasSkill("panshi", true) end), Util.IdMapper), 1, 1, ".", "#cixiao-discard", self.name, true)
       if #tos > 0 and id then
         self.cost_data = {tos[1], id}
         return true
       end
     else
-      local tos = room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), function (p)
-        return p.id end), 1, 1, "#cixiao-choose", self.name, true)
+      local tos = room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#cixiao-choose", self.name, true)
       if #tos > 0 then
         self.cost_data = {tos[1]}
         return true
@@ -596,8 +594,7 @@ local panshi = fk.CreateTriggerSkill{
           room:obtainCard(fathers[1].id, card[1], false, fk.ReasonGive)
         end
       else
-        local tos, id = room:askForChooseCardAndPlayers(player, table.map(fathers, function (p)
-          return p.id end), 1, 1, ".|.|.|hand", "#panshi-give", self.name, false)
+        local tos, id = room:askForChooseCardAndPlayers(player, table.map(fathers, Util.IdMapper), 1, 1, ".|.|.|hand", "#panshi-give", self.name, false)
         if #tos > 0 and id then
           room:obtainCard(tos[1], id, false, fk.ReasonGive)
         end
@@ -772,7 +769,7 @@ local zhuide = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.map(room:getOtherPlayers(player), function (p) return p.id end)
+    local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
     local tos = room:askForChoosePlayers(player, targets, 1, 1, "#zhuide-choose", self.name, true)
     if #tos > 0 then
       self.cost_data = tos[1]
@@ -841,8 +838,7 @@ local ty__jieying = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and player.phase == Player.Finish
   end,
   on_cost = function(self, event, target, player, data)
-    local tos = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), function (p)
-      return p.id end), 1, 1, "#ty__jieying-choose", self.name, true)
+    local tos = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#ty__jieying-choose", self.name, true)
     if #tos > 0 then
       self.cost_data = tos[1]
       return true
@@ -864,7 +860,7 @@ local ty__jieying_delay = fk.CreateTriggerSkill{
       return true
     end
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.AfterCardTargetDeclared then
@@ -1045,8 +1041,7 @@ local yizhengc = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     if event == fk.EventPhaseStart then
-      local to = player.room:askForChoosePlayers(player, table.map(player.room:getAlivePlayers(), function(p)
-        return p.id end), 1, 1, "#yizhengc-choose", self.name, true)
+      local to = player.room:askForChoosePlayers(player, table.map(player.room:getAlivePlayers(), Util.IdMapper), 1, 1, "#yizhengc-choose", self.name, true)
       if #to > 0 then
         self.cost_data = to[1]
         return true
@@ -1290,8 +1285,7 @@ local fuzhong = fk.CreateTriggerSkill{
     elseif event == fk.EventPhaseStart then
       room:notifySkillInvoked(player, self.name, "offensive")
       player:broadcastSkillInvoke(self.name)
-      local targets = room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), function (p)
-        return p.id end), 1, 1, "#fuzhong-choose", self.name, false)
+      local targets = room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#fuzhong-choose", self.name, false)
       if #targets > 0 then
         room:damage{
           from = player,
@@ -1358,9 +1352,7 @@ local ty__huoshui_active = fk.CreateActiveSkill{
     local n = math.max(Self:getLostHp(), 1)
     return math.min(n, 3)
   end,
-  card_filter = function(self, to_select, selected, targets)
-    return false
-  end,
+  card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected, cards)
     if to_select ~= Self.id then
       local target = Fk:currentRoom():getPlayerById(to_select)
@@ -1409,9 +1401,7 @@ local ty__qingcheng = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
+  card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     local target = Fk:currentRoom():getPlayerById(to_select)
     return #selected == 0 and to_select ~= Self.id and target.gender == General.Male and Self:getHandcardNum() >= target:getHandcardNum()
@@ -1520,9 +1510,7 @@ local xiongmang_trigger = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and table.contains(data.card.skillNames, "xiongmang") and not data.damageDealt and not player.dead
   end,
-  on_cost = function(self, event, target, player, data)
-    return true
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     player.room:changeMaxHp(player, -1)
   end,
@@ -1681,7 +1669,7 @@ local xiangshu = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(table.filter(room:getAlivePlayers(), function(p)
-      return p:isWounded() end), function (p) return p.id end)
+      return p:isWounded() end), Util.IdMapper)
     if #targets == 0 then return end
     local n = math.min(player:getMark("xiangshu-turn"), 5)
     local to = room:askForChoosePlayers(player, targets, 1, 1, "#xiangshu-invoke:::"..n..":"..n, self.name, true)

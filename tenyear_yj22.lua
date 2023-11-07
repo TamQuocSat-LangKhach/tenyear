@@ -495,9 +495,7 @@ local koujing = fk.CreateTriggerSkill{
   end,
 
   refresh_events = {fk.AfterCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    return true
-  end,
+  can_refresh = Util.TrueFunc,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     for _, move in ipairs(data) do
@@ -537,9 +535,7 @@ local koujing_trigger = fk.CreateTriggerSkill{
       return table.find(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@koujing-turn") > 0 end)
     end
   end,
-  on_cost = function(self, event, target, player, data)
-    return true
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local ids = table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@koujing-turn") > 0 end)

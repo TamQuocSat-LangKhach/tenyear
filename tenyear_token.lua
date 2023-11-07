@@ -249,9 +249,7 @@ Fk:loadTranslationTable{
 
 local siege_engine_slash = fk.CreateViewAsSkill{
   name = "siege_engine_slash",
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
+  card_filter = Util.FalseFunc,
   view_as = function(self, cards)
     local card = Fk:cloneCard("slash")
     card.skillName = "#siege_engine_skill"

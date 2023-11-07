@@ -766,6 +766,12 @@ Fk:loadTranslationTable{
   ["#cibei-invoke"] = "刺北：是否将此【杀】和一张“刺”交换？",
   ["#cibei-choose"] = "刺北：选择一名角色，弃置其区域内一张牌",
   ["@@cibei-inhand"] = "刺北",
+
+  ["$duwang1"] = "此去，欲诛敌莽、杀单于。",
+  ["$duwang2"] = "风萧萧兮易水寒，壮士一去兮不复还！",
+  ["$cibei1"] = "匹夫一怒，流血二人，天下缟素。",
+  ["$cibei2"] = "我欲效专诸、聂政之旧事，逐天狼于西北。",
+  ["~hanlong"] = "杀轲比能者，韩龙也！",
 }
 
 local qiaozhou = General(extension, "ty__qiaozhou", "shu", 3)
@@ -861,6 +867,12 @@ Fk:loadTranslationTable{
   ["#shiming-invoke"] = "识命：%dest 的摸牌阶段，你可以先观看牌堆顶两张牌，将其中一张置于牌堆底",
   ["#shiming-damage"] = "识命：你可以对自己造成1点伤害，放弃摸牌，改为从牌堆底摸三张牌",
   ["#jiangxi-invoke"] = "将息：你可以与 %dest 各摸一张牌",
+
+  ["$shiming1"] = "今天命在北，我等已尽人事。",
+  ["$shiming2"] = "益州国疲民敝，非人力可续之。",
+  ["$jiangxi1"] = "典午忽兮，月酉没兮。",
+  ["$jiangxi2"] = "周慕孔子遗风，可与刘、扬同轨。",
+  ["~ty__qiaozhou"] = "炎汉百年之业，吾一言毁之……",
 }
 
 local wuanguo = General(extension, "wuanguo", "qun", 4)

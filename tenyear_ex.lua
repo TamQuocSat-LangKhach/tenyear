@@ -794,6 +794,10 @@ Fk:loadTranslationTable{
   ["ty_ex__pojun"] = "破军",
   [":ty_ex__pojun"] = "当你于出牌阶段内使用【杀】指定一个目标后，你可以将其至多X张牌扣置于该角色的武将牌旁（X为其体力值）,若其中有：装备牌，你弃置其中一张牌；锦囊牌，你摸一张牌。"..
   "若如此做，当前回合结束后，该角色获得其武将牌旁的所有牌。",
+
+  ["$ty_ex__pojun1"] = "奋身出命，为国建功！",
+  ["$ty_ex__pojun2"] = "披甲持戟，先登陷陈！",
+  ["~ty_ex__xusheng"] = "文向已无憾矣！",
 }
 local chengong = General(extension, "ty_ex__chengong", "qun", 3)
 local ty_ex__mingce = fk.CreateActiveSkill{
@@ -1711,9 +1715,10 @@ Fk:loadTranslationTable{
   ["jingce_draw"] = "执行一个摸牌阶段",
   ["jingce_play"] = "执行一个出牌阶段",
   ["#ty_ex__jingce-active"] = "精策:选择执行一个额外的摸牌阶段或者出牌阶段",
-  ["$ty_ex__jingce1"] = "暂无",
-  ["$ty_ex__jingce2"] = "暂无",
-  ["~ty_ex__guohuai"] = "暂无",
+
+  ["$ty_ex__jingce1"] = "精细入微，策敌制胜。",
+  ["$ty_ex__jingce2"] = "妙策如神，精兵强将，安有不胜之理？",
+  ["~ty_ex__guohuai"] = "岂料姜维……空手接箭！",
 }
 local manchong = General(extension, "ty_ex__manchong", "wei", 3)
 local ty_ex__junxing = fk.CreateActiveSkill{
@@ -1898,6 +1903,9 @@ Fk:loadTranslationTable{
   ["ty_ex__xiansi_viewasSkill"] = "陷嗣",
   [":ty_ex__xiansi_viewasSkill"] = "当你需使用【杀】时，若你的“逆”超过你的体力值，你可以弃置一张“逆”，视为使用一张【杀】。",
 
+  ["$ty_ex__xiansi1"] = "非我不救，实乃孟达谗言。",
+  ["$ty_ex__xiansi2"] = "此皆孟达之过也！",
+  ["~ty_ex__liufeng"] = "父亲，儿实无异心……",
 }
 local guanping = General(extension, "ty_ex__guanping", "shu", 4)
 local ty_ex__longyin = fk.CreateTriggerSkill{
@@ -2736,7 +2744,11 @@ Fk:loadTranslationTable{
   ["#ty_ex__xingxue-choose"] = "兴学：你可以令至多%arg名角色依次摸一张牌，然后其中手牌数量大于体力值的角色依次将一张牌置于牌堆顶",
   ["#ty_ex__xingxue-card"] = "兴学：将一张牌置于牌堆顶",
 
-  
+  ["$ty_ex__yanzhu1"] = "觥筹交错，杀人于无形！",
+  ["$ty_ex__yanzhu2"] = "子烈设宴，意在汝项上人头！",
+  ["$ty_ex__xingxue1"] = "案古置学官，以敦王化，以隆风俗。",
+  ["$ty_ex__xingxue2"] = "志善好学，未来可期！",
+  ["~ty_ex__sunxiu"] = "盛世未成，实为憾事！",
 }
 local zhuzhi = General(extension, "ty_ex__zhuzhi", "wu", 4)
 local function doty_ex__anguo(player, type, source)
@@ -2920,6 +2932,11 @@ Fk:loadTranslationTable{
   ["#ty_ex__yanyu_record"] = "燕语",
   ["#ty_ex__yanyu-draw"] = "燕语：你可以选择一名男性角色，令其摸%arg张牌",
 
+  ["$ty_ex__qiaoshi1"] = "暖风细雨，心有灵犀。",
+  ["$ty_ex__qiaoshi2"] = "樵采城郭外，忽见郎君来。",
+  ["$ty_ex__yanyu1"] = "边功未成，还请郎君努力。",
+  ["$ty_ex__yanyu2"] = "郎君有意倾心诉，妾身心中相思埋。",
+  ["~ty_ex__xiahoushi"] = "天气渐寒，郎君如今安在？",
 }
 local guotupangji = General(extension, "ty_ex__guotupangji", "qun", 3)
 local ty_ex__jigong = fk.CreateTriggerSkill{
@@ -2988,6 +3005,12 @@ Fk:loadTranslationTable{
   ["@jigong_draw-turn"] = "急攻 摸牌数",
   ["@ty_ex__jigong-turn"] = "急攻 伤害数",
   ["#ty_ex__jigong-choice"] = "急攻:请选择你要摸的牌数量",
+
+  ["$ty_ex__jigong1"] = "此时不战，更待何时！",
+  ["$ty_ex__jigong2"] = "箭在弦上，不得不发！",
+  ["$shifei_ty_ex__guotupangji1"] = "若依吾计而行，许昌旦夕可破！",
+  ["$shifei_ty_ex__guotupangji2"] = "先锋怯战，非谋策之过。",
+  ["~ty_ex__guotupangji"] = "主公，我还有一计啊！",
 }
 local gongsunyuan = General(extension, "ty_ex__gongsunyuan", "qun", 4)
 local ty_ex__huaiyi = fk.CreateActiveSkill{

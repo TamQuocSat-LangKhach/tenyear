@@ -2500,8 +2500,8 @@ Fk:loadTranslationTable{
 }
 
 local yuantanyuanshangyuanxi = General(extension, "yuantanyuanshangyuanxi", "qun", 4)
-local tenyear__neifa = fk.CreateTriggerSkill{
-  name = "tenyear__neifa",
+local ty__neifa = fk.CreateTriggerSkill{
+  name = "ty__neifa",
   anim_type = "drawcard",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
@@ -2513,25 +2513,25 @@ local tenyear__neifa = fk.CreateTriggerSkill{
     local card = room:askForDiscard(player, 1, 1, true, self.name, false)
     if Fk:getCardById(card[1]).type == Card.TypeBasic then
       local cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id).type == Card.TypeTrick end)
-      room:setPlayerMark(player, "@tenyear__neifa-turn", "basic")
-      room:setPlayerMark(player, "tenyear__neifa-turn", math.min(#cards, 5))
+      room:setPlayerMark(player, "@ty__neifa-turn", "basic")
+      room:setPlayerMark(player, "ty__neifa-turn", math.min(#cards, 5))
     elseif  Fk:getCardById(card[1]).type == Card.TypeTrick  then
       
-      room:setPlayerMark(player, "@tenyear__neifa-turn", "trick")   
+      room:setPlayerMark(player, "@ty__neifa-turn", "trick")   
     end
   end,
 }
-local tenyear__neifa_trigger = fk.CreateTriggerSkill{
-  name = "#tenyear__neifa_trigger",
+local ty__neifa_trigger = fk.CreateTriggerSkill{
+  name = "#ty__neifa_trigger",
   anim_type = "control",
   events = {fk.TargetSpecifying},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:getMark("@tenyear__neifa-turn") == "trick" and data.card:isCommonTrick() and data.firstTarget
+    return target == player and player:getMark("@ty__neifa-turn") == "trick" and data.card:isCommonTrick() and data.firstTarget
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = AskForAddTarget(player, room:getAlivePlayers(), 1, true,
-      "#tenyear__neifa_trigger-choose:::"..data.card:toLogString(), self.name, data)
+      "#ty__neifa_trigger-choose:::"..data.card:toLogString(), self.name, data)
     if #targets > 0 then
       self.cost_data = targets[1]
       return true
@@ -2545,15 +2545,15 @@ local tenyear__neifa_trigger = fk.CreateTriggerSkill{
     end
   end,
 }
-local tenyear__neifa_targetmod = fk.CreateTargetModSkill{
-  name = "#tenyear__neifa_targetmod",
+local ty__neifa_targetmod = fk.CreateTargetModSkill{
+  name = "#ty__neifa_targetmod",
   residue_func = function(self, player, skill, scope)
-    if skill.trueName == "slash_skill" and player:getMark("@tenyear__neifa-turn") == "basic" and scope == Player.HistoryPhase then
-      return player:getMark("tenyear__neifa-turn")
+    if skill.trueName == "slash_skill" and player:getMark("@ty__neifa-turn") == "basic" and scope == Player.HistoryPhase then
+      return player:getMark("ty__neifa-turn")
     end
   end,
   extra_target_func = function(self, player, skill)
-    if skill.trueName == "slash_skill" and player:getMark("@tenyear__neifa-turn") == "basic" then
+    if skill.trueName == "slash_skill" and player:getMark("@ty__neifa-turn") == "basic" then
       return 1
     end
   end,
@@ -2561,27 +2561,28 @@ local tenyear__neifa_targetmod = fk.CreateTargetModSkill{
 local neifa_prohibit = fk.CreateProhibitSkill{
   name = "#neifa_prohibit",
   prohibit_use = function(self, player, card)
-    return (player:getMark("@tenyear__neifa-turn") == "basic" and card.type == Card.TypeTrick) or
-      (player:getMark("@tenyear__neifa-turn") == "trick" and card.type == Card.TypeBasic)
+    return (player:getMark("@ty__neifa-turn") == "basic" and card.type == Card.TypeTrick) or
+      (player:getMark("@ty__neifa-turn") == "trick" and card.type == Card.TypeBasic)
   end,
 }
-tenyear__neifa:addRelatedSkill(tenyear__neifa_targetmod)
-tenyear__neifa:addRelatedSkill(tenyear__neifa_prohibit)
-tenyear__neifa:addRelatedSkill(tenyear__neifa_trigger)
-yuantanyuanshangyuanxi:addSkill(tenyear__neifa)
+ty__neifa:addRelatedSkill(ty__neifa_targetmod)
+ty__neifa:addRelatedSkill(ty__neifa_prohibit)
+ty__neifa:addRelatedSkill(ty__neifa_trigger)
+yuantanyuanshangyuanxi:addSkill(ty__neifa)
 Fk:loadTranslationTable{
   ["yuantanyuanshangyuanxi"] = "袁谭袁尚袁熙",
-  ["tenyear__neifa"] = "内伐",
-  [":tenyear__neifa"] = "出牌阶段开始时，你可以摸三张牌，然后弃置一张牌。若弃置的牌：是基本牌，你本回合不能使用锦囊牌，"..
+  ["ty__neifa"] = "内伐",
+  [":ty__neifa"] = "出牌阶段开始时，你可以摸三张牌，然后弃置一张牌。若弃置的牌：是基本牌，你本回合不能使用锦囊牌，"..
   "本阶段使用【杀】次数上限+X，目标上限+1；是锦囊牌，你本回合不能使用基本牌，使用普通锦囊牌的目标+1或-1。"..
   "（X为发动技能时手牌中因本技能不能使用的牌且至多为5）。",
-  ["@tenyear__neifa-turn"] = "内伐",
+  ["@ty__neifa-turn"] = "内伐",
   ["non_basic"] = "锦囊牌",
-  ["#tenyear__neifa_trigger-choose"] = "内伐：你可以为%arg增加/减少一个目标",
+  ["#ty__neifa_trigger-choose"] = "内伐：你可以为%arg增加/减少一个目标",
   ["#neifa_trigger"] = "内伐",
-  ["$tenyear__neifa1"] = "",
-  ["$tenyear__neifa1"] = "",
-  ["~yuantanyuanshangyuanxi"] = "",
+
+  ["$ty__neifa1"] = "同室操戈，胜者王、败者寇。",
+  ["$ty__neifa2"] = "兄弟无能，吾当继袁氏大统。",
+  ["~yuantanyuanshangyuanxi"] = "同室内伐，贻笑大方……",
 }
 
 local yuechen = General(extension, "yuechen", "wei", 4)
@@ -3971,6 +3972,87 @@ Fk:loadTranslationTable{
   ["~zhangxun"] = "此役，死伤甚重……",
 }
 
+local ty__jiling = General(extension, "ty__jiling", "qun", 4)
+local ty__shuangren = fk.CreateTriggerSkill{
+  name = "ty__shuangren",
+  anim_type = "offensive",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and player.phase == Player.Play and not player:isKongcheng() and table.find(player.room:getOtherPlayers(player), function(p) return not p:isKongcheng() end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.filter(room:getOtherPlayers(player), function(p) return not p:isKongcheng() end)
+    if #targets == 0 then return false end
+    local tos = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#ty__shuangren-ask", self.name, true)
+    if #tos > 0 then
+      self.cost_data = tos[1]
+      return true
+    end
+    return false
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local pindian = player:pindian({to}, self.name)
+    if pindian.results[to.id].winner == player then
+      local slash = Fk:cloneCard("slash")
+      if player.dead or player:prohibitUse(slash) then return false end
+      local targets = table.filter(room:getOtherPlayers(player), function(p) return p.kingdom == to.kingdom and not player:isProhibited(p, slash) end)
+      if #targets == 0 then return false end
+      room:setPlayerMark(player, "ty__shuangren_kingdom", to.kingdom)
+      room:setPlayerMark(player, "ty__shuangren_target", to.id)
+      local success, dat = room:askForUseActiveSkill(player, "#ty__shuangren_active", "#ty__shuangren_slash-ask:" .. to.id, false)
+      local tos = success and table.map(dat.targets, Util.Id2PlayerMapper) or table.random(targets, 1)
+      room:useVirtualCard("slash", nil, player, tos, self.name, true)
+    else
+      room:addPlayerMark(player, "@@ty__shuangren_prohibit-phase")
+    end
+  end,
+}
+local ty__shuangren_active = fk.CreateActiveSkill{
+  name = "#ty__shuangren_active",
+  card_num = 0,
+  card_filter = Util.FalseFunc,
+  min_target_num = 1,
+  max_target_num = 2,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if #selected < 2 then
+      local to = Fk:currentRoom():getPlayerById(to_select)
+      return to.kingdom == Self:getMark("ty__shuangren_kingdom")
+    end
+  end,
+  feasible = function(self, selected, selected_cards)
+    if #selected_cards == 0 and #selected > 0 and #selected <= 2 then
+      return #selected == 1 or table.contains(selected, Self:getMark("ty__shuangren_target"))
+    end
+  end,
+}
+local ty__shuangren_prohibit = fk.CreateProhibitSkill{
+  name = "#ty__shuangren_prohibit",
+  prohibit_use = function(self, player, card)
+    return player:getMark("@@ty__shuangren_prohibit-phase") > 0 and card.trueName == "slash"
+  end,
+}
+ty__shuangren:addRelatedSkill(ty__shuangren_prohibit)
+ty__shuangren:addRelatedSkill(ty__shuangren_active)
+ty__jiling:addSkill(ty__shuangren)
+Fk:loadTranslationTable{
+  ["ty__jiling"] = "纪灵",
+  ["ty__shuangren"] = "双刃",
+  [":ty__shuangren"] = "出牌阶段开始时，你可以与一名角色拼点。若你赢，你选择与其势力相同的一至两名角色（若选择两名，其中一名须为该角色），然后你视为对选择的角色使用一张不计入次数的【杀】；若你没赢，你本阶段不能使用【杀】。",
+  ["#ty__shuangren_active"] = "双刃",
+  ["#ty__shuangren_prohibit"] = "双刃",
+  ["@@ty__shuangren_prohibit-phase"] = "双刃禁杀",
+  
+  ["#ty__shuangren-ask"] = "双刃：你可与一名角色拼点",
+  ["#ty__shuangren_slash-ask"] = "双刃：视为对与 %src 势力相同的一至两名角色使用【杀】(若选两名，其中一名须为%src)",
+
+  ["$ty__shuangren1"] = "这淮阴城下，正是葬汝尸骨的好地界。",
+  ["$ty__shuangren2"] = "吾众下大军已至，匹夫，以何敌我？",
+  ["~ty__jiling"] = "穷寇兵枪势猛，伏义实在不敌啊。",
+}
+
 Fk:loadTranslationTable{
   ["leibo"] = "雷薄",
   ["silve"] = "私掠",
@@ -4158,87 +4240,6 @@ Fk:loadTranslationTable{
   ["$jieling1"] = "来人，送冯氏上路！",
   ["$jieling2"] = "我有一求，请姐姐赴之。",
   ["~dongwan"] = "陛下饶命，妾并无歹意……",
-}
-
-local ty__jiling = General(extension, "ty__jiling", "qun", 4)
-local ty__shuangren = fk.CreateTriggerSkill{
-  name = "ty__shuangren",
-  anim_type = "offensive",
-  events = {fk.EventPhaseStart},
-  can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and player.phase == Player.Play and not player:isKongcheng() and table.find(player.room:getOtherPlayers(player), function(p) return not p:isKongcheng() end)
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    local targets = table.filter(room:getOtherPlayers(player), function(p) return not p:isKongcheng() end)
-    if #targets == 0 then return false end
-    local tos = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#ty__shuangren-ask", self.name, true)
-    if #tos > 0 then
-      self.cost_data = tos[1]
-      return true
-    end
-    return false
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local to = room:getPlayerById(self.cost_data)
-    local pindian = player:pindian({to}, self.name)
-    if pindian.results[to.id].winner == player then
-      local slash = Fk:cloneCard("slash")
-      if player.dead or player:prohibitUse(slash) then return false end
-      local targets = table.filter(room:getOtherPlayers(player), function(p) return p.kingdom == to.kingdom and not player:isProhibited(p, slash) end)
-      if #targets == 0 then return false end
-      room:setPlayerMark(player, "ty__shuangren_kingdom", to.kingdom)
-      room:setPlayerMark(player, "ty__shuangren_target", to.id)
-      local success, dat = room:askForUseActiveSkill(player, "#ty__shuangren_active", "#ty__shuangren_slash-ask:" .. to.id, false)
-      local tos = success and table.map(dat.targets, Util.Id2PlayerMapper) or table.random(targets, 1)
-      room:useVirtualCard("slash", nil, player, tos, self.name, true)
-    else
-      room:addPlayerMark(player, "@@ty__shuangren_prohibit-phase")
-    end
-  end,
-}
-local ty__shuangren_active = fk.CreateActiveSkill{
-  name = "#ty__shuangren_active",
-  card_num = 0,
-  card_filter = Util.FalseFunc,
-  min_target_num = 1,
-  max_target_num = 2,
-  target_filter = function(self, to_select, selected, selected_cards)
-    if #selected < 2 then
-      local to = Fk:currentRoom():getPlayerById(to_select)
-      return to.kingdom == Self:getMark("ty__shuangren_kingdom")
-    end
-  end,
-  feasible = function(self, selected, selected_cards)
-    if #selected_cards == 0 and #selected > 0 and #selected <= 2 then
-      return #selected == 1 or table.contains(selected, Self:getMark("ty__shuangren_target"))
-    end
-  end,
-}
-local ty__shuangren_prohibit = fk.CreateProhibitSkill{
-  name = "#ty__shuangren_prohibit",
-  prohibit_use = function(self, player, card)
-    return player:getMark("@@ty__shuangren_prohibit-phase") > 0 and card.trueName == "slash"
-  end,
-}
-ty__shuangren:addRelatedSkill(ty__shuangren_prohibit)
-ty__shuangren:addRelatedSkill(ty__shuangren_active)
-ty__jiling:addSkill(ty__shuangren)
-Fk:loadTranslationTable{
-  ["ty__jiling"] = "纪灵",
-  ["ty__shuangren"] = "双刃",
-  [":ty__shuangren"] = "出牌阶段开始时，你可以与一名角色拼点。若你赢，你选择与其势力相同的一至两名角色（若选择两名，其中一名须为该角色），然后你视为对选择的角色使用一张不计入次数的【杀】；若你没赢，你本阶段不能使用【杀】。",
-  ["#ty__shuangren_active"] = "双刃",
-  ["#ty__shuangren_prohibit"] = "双刃",
-  ["@@ty__shuangren_prohibit-phase"] = "双刃禁杀",
-  
-  ["#ty__shuangren-ask"] = "双刃：你可与一名角色拼点",
-  ["#ty__shuangren_slash-ask"] = "双刃：视为对与 %src 势力相同的一至两名角色使用【杀】(若选两名，其中一名须为%src)",
-
-  ["$ty__shuangren1"] = "这淮阴城下，正是葬汝尸骨的好地界。",
-  ["$ty__shuangren2"] = "吾众下大军已至，匹夫，以何敌我？",
-  ["~ty__jiling"] = "穷寇兵枪势猛，伏义实在不敌啊。",
 }
 
 return extension

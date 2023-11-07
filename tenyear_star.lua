@@ -58,7 +58,8 @@ local canxi_trigger = fk.CreateTriggerSkill{
   events = {fk.DamageCaused, fk.HpRecover, fk.PreCardEffect},
   can_trigger = function (self, event, target, player, data)
     if event == fk.DamageCaused then
-      return player:getMark("@canxi1-round") ~= 0 and player:getMark("@canxi1-round") == target.kingdom and target:getMark("canxi1-turn") == 0
+      return player:getMark("@canxi1-round") ~= 0 and target and
+        player:getMark("@canxi1-round") == target.kingdom and target:getMark("canxi1-turn") == 0
     elseif event == fk.HpRecover then
       return player:getMark("@canxi2-round") ~= 0 and player:getMark("@canxi2-round") == target.kingdom and not target.dead and
         target:getMark("canxi21-turn") == 0

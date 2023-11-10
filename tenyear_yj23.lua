@@ -124,6 +124,10 @@ Fk:loadTranslationTable{
   [":qingbei"] = "每轮开始时，你可以选择任意种花色令你本轮无法使用，然后本轮你使用一张手牌后，摸本轮〖擎北〗选择过的花色数的牌。",
   ["#qingbei-choice"] = "擎北：选择你本轮不能使用的花色",
   ["@qingbei-round"] = "擎北",
+
+  ["$qingbei1"] = "待追上那司马懿，定教他没好果子吃！",
+  ["$qingbei2"] = "身若不周，吾一人可作擎北之柱。",
+  ["~chenshi"] = "丞相、丞相！是魏延指使我的！",
 }
 
 return extension

@@ -1734,7 +1734,7 @@ Fk:loadTranslationTable{
   ["~mushun"] = "这，何来的大风？",
 }
 
---兵临城下：牛金 李采薇 赵俨 王威 李异谢旌 孟达 是仪 孙狼
+--兵临城下：牛金 李采薇 赵俨 王威 李异谢旌 孙桓 孟达 是仪 孙狼
 local niujin = General(extension, "ty__niujin", "wei", 4)
 local cuirui = fk.CreateActiveSkill{
   name = "cuirui",
@@ -2101,6 +2101,74 @@ Fk:loadTranslationTable{
   ["$douzhen1"] = "擂鼓击柝，庆我兄弟凯旋。",
   ["$douzhen2"] = "匹夫欺我江东无人乎。",
   ["~liyixiejing"] = "蜀军凶猛，虽力战犹不敌……",
+}
+
+local sunhuan = General(extension, "sunhuan", "wu", 4)
+local niji = fk.CreateTriggerSkill{
+  name = "niji",
+  anim_type = "drawcard",
+  events = {fk.TargetConfirmed, fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if event == fk.TargetConfirmed then
+      return target == player and player:hasSkill(self) and data.card.type ~= Card.TypeEquip
+    elseif event == fk.EventPhaseStart then
+      return target.phase == Player.Finish and not player:isKongcheng() and
+        table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji-inhand") > 0 end)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.TargetConfirmed then
+      return player.room:askForSkillInvoke(player, self.name, nil, "#niji-invoke")
+    else
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.TargetConfirmed then
+      local id = player:drawCards(1, self.name)[1]
+      if room:getCardOwner(id) == player and room:getCardArea(id) == Card.PlayerHand then
+        room:setCardMark(Fk:getCardById(id), "@@niji-inhand", 1)
+      end
+    else
+      local cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji-inhand") > 0 end)
+      if player:hasSkill(self) then
+        local pattern = "^(jink,nullification)|.|.|.|.|.|"..table.concat(cards, ",")
+        local use = room:askForUseCard(player, "", pattern, "#niji-use", true)
+        if use then
+          room:useCard(use)
+        end
+      end
+      if not player.dead then
+        room:delay(1200)
+        cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji-inhand") > 0 end)
+        room:throwCard(cards, self.name, player, player)
+      end
+    end
+  end,
+
+  refresh_events = {fk.TurnEnd},
+  can_refresh = function(self, event, target, player, data)
+    return not player:isKongcheng()
+  end,
+  on_refresh = function(self, event, target, player, data)
+    for _, id in ipairs(player.player_cards[Player.Hand]) do
+      player.room:setCardMark(Fk:getCardById(id), "@@niji-inhand", 0)
+    end
+  end,
+}
+sunhuan:addSkill(niji)
+Fk:loadTranslationTable{
+  ["sunhuan"] = "孙桓",
+  ["niji"] = "逆击",
+  [":niji"] = "当你成为非装备牌的目标后，你可以摸一张牌，本回合结束阶段弃置这些牌，弃置前你可以先使用其中一张牌。",
+  ["@@niji-inhand"] = "逆击",
+  ["#niji-invoke"] = "逆击：你可以摸一张牌，本回合结束阶段弃置之",
+  ["#niji-use"] = "逆击：即将弃置所有“逆击”牌，你可以先使用其中一张牌",
+  
+  ["$niji1"] = "善战者后动，一击而毙敌。",
+  ["$niji2"] = "我所善者，后发制人尔。",
+  ["~sunhuan"] = "此建功立业之时，奈何……",
 }
 
 local mengda = General(extension, "ty__mengda", "wei", 4)

@@ -36,7 +36,7 @@ local niji = fk.CreateTriggerSkill{
       end
     else
       local cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji-inhand") > 0 end)
-      if player:hasSkill(self) and #cards >= player.hp then
+      if player:hasSkill(self) then
         local pattern = "^(jink,nullification)|.|.|.|.|.|"..table.concat(cards, ",")
         local use = room:askForUseCard(player, "", pattern, "#niji-use", true)
         if use then
@@ -44,6 +44,7 @@ local niji = fk.CreateTriggerSkill{
         end
       end
       if not player.dead then
+        room:delay(1200)
         cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji-inhand") > 0 end)
         room:throwCard(cards, self.name, player, player)
       end
@@ -64,15 +65,14 @@ sunhuan:addSkill(niji)
 Fk:loadTranslationTable{
   ["sunhuan"] = "孙桓",
   ["niji"] = "逆击",
-  [":niji"] = "当你成为非装备牌的目标后，你可以摸一张牌，本回合结束阶段弃置这些牌。若将要弃置的牌数不小于你的体力值，你可以先使用其中一张牌。",
+  [":niji"] = "当你成为非装备牌的目标后，你可以摸一张牌，本回合结束阶段弃置这些牌，弃置前你可以先使用其中一张牌。",
   ["@@niji-inhand"] = "逆击",
   ["#niji-invoke"] = "逆击：你可以摸一张牌，本回合结束阶段弃置之",
   ["#niji-use"] = "逆击：即将弃置所有“逆击”牌，你可以先使用其中一张牌",
 }
 
---袁胤 高翔
+--袁胤
 
---孙綝 孙瑜 郤正 乐綝
 Fk:loadTranslationTable{
   ["sunchen"] = "孙綝",
   ["zigu"] = "自固",
@@ -81,18 +81,6 @@ Fk:loadTranslationTable{
   [":zuowei"] = "当你于回合内使用牌时，若你当前手牌数：大于X，你可以令此牌不可响应；等于X，你可以对一名其他角色造成1点伤害；小于X，"..
   "你可以摸两张牌并令本回合此技能失效。（X为你装备区内的牌数且至少为1）",
 }
-
-Fk:loadTranslationTable{
-  ["sunyu"] = "孙瑜",
-  ["quanshou"] = "劝守",
-  [":quanshou"] = "一名角色回合开始时，若其手牌数小于其体力上限，你可以令其选择一项：1.将手牌摸至体力上限（至多摸五张），然后"..
-  "本回合出牌阶段使用【杀】次数上限-1；2.本回合使用的牌被抵消后你摸一张牌。",
-  ["shexue"] = "设学",
-  [":shexue"] = "出牌阶段开始时，你可以将一张牌当上回合的角色出牌阶段使用的最后一张基本牌或普通锦囊牌使用；"..
-  "出牌阶段结束时，你可以令下回合的角色于其出牌阶段开始时可以将一张牌当你本阶段使用的最后一张基本牌或普通锦囊牌使用。",
-}
-
--- 城孙权
 
 local wuban = General(extension, "ty__wuban", "shu", 4)
 local youzhan = fk.CreateTriggerSkill{
@@ -196,6 +184,6 @@ Fk:loadTranslationTable{
   "伤害，然后你可以对同一方向的下一名角色重复此流程，直到有角色死亡或此角色为你。",
 }
 
---马铁 车胄 韩嵩 诸葛梦雪 诸葛若雪 孙翎鸾
+--马铁 车胄 韩嵩 诸葛梦雪 诸葛若雪
 
 return extension

@@ -3609,7 +3609,7 @@ Fk:loadTranslationTable{
   ["~ty__tangzi"] = "水载船，亦可覆……",
 }
 
---绕庭之鸦：黄皓 孙资刘放 岑昏
+--绕庭之鸦：黄皓 孙资刘放 岑昏 贾充
 Fk:loadTranslationTable{
   ["ty__huanghao"] = "黄皓",
   ["ty__qinqing"] = "寝情",
@@ -3769,6 +3769,15 @@ cenhun:addSkill("jishe")
 cenhun:addSkill("lianhuo")
 Fk:loadTranslationTable{
   ["ty__cenhun"] = "岑昏",
+}
+
+Fk:loadTranslationTable{
+  ["ty__jiachong"] = "贾充",
+  ["ty__beini"] = "悖逆",
+  [":ty__beini"] = "出牌阶段限一次，你可以将手牌调整至体力上限张，然后令一名角色视为对另一名角色使用一张【杀】；这两名角色的非锁定技本回合失效。",
+  ["shizong"] = "恃纵",
+  [":shizong"] = "当你需要使用一张基本牌时，你可交给一名其他角色X张牌（X为此技能本回合发动次数），然后其可将一张牌置于牌堆底，视为你使用之。"..
+  "若其不为当前回合角色，此技能本回合失效。",
 }
 
 --代汉涂高：马日磾 张勋 雷薄 桥蕤 纪灵

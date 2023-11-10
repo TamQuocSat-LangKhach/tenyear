@@ -716,7 +716,7 @@ Fk:loadTranslationTable{
   ["~ruanji"] = "诸君，欲与我同醉否？",
 }
 
---豆蔻梢头：辛宪英 花鬘 薛灵芸 芮姬 段巧笑
+--豆蔻梢头：辛宪英 花鬘 薛灵芸 芮姬 段巧笑 马伶俐
 local xinxianying = General(extension, "ty__xinxianying", "wei", 3, 3, General.Female)
 local ty__zhongjian = fk.CreateActiveSkill{
   name = "ty__zhongjian",
@@ -1557,6 +1557,267 @@ Fk:loadTranslationTable{
   ["$huayi1"] = "皓腕凝霜雪，罗襦绣鹧鸪。",
   ["$huayi2"] = "绝色戴珠玉，佳人配华衣。",
   ["~duanqiaoxiao"] = "佳人时光少，君王总薄情……",
+}
+
+local malingli = General(extension, "malingli", "shu", 3, 3, General.Female)
+local lima = fk.CreateDistanceSkill{
+  name = "lima",
+  correct_func = function(self, from, to)
+    if from:hasSkill(self) then
+      local n = 0
+      for _, p in ipairs(Fk:currentRoom().alive_players) do
+        for _, id in ipairs(p:getCardIds("e")) do
+          if Fk:getCardById(id).sub_type == Card.SubtypeOffensiveRide or Fk:getCardById(id).sub_type == Card.SubtypeDefensiveRide then
+            n = n + 1
+          end
+        end
+      end
+      return -n
+    end
+    return 0
+  end,
+}
+local xiaoyin = fk.CreateTriggerSkill{
+  name = "xiaoyin",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Start
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local n = #table.filter(room.alive_players, function(p) return player:distanceTo(p) <= 1 end)
+    local ids = room:getNCards(n)
+    room:moveCards{
+      ids = ids,
+      toArea = Card.Processing,
+      moveReason = fk.ReasonJustMove,
+      skillName = self.name,
+    }
+    room:delay(2000)
+    local dummy = Fk:cloneCard("dilu")
+    for i = #ids, 1, -1 do
+      if Fk:getCardById(ids[i]).color == Card.Red then
+        dummy:addSubcard(ids[i])
+        table.removeOne(ids, ids[i])
+      end
+    end
+    if #dummy.subcards > 0 then
+      room:obtainCard(player.id, dummy, true, fk.ReasonJustMove)
+    end
+    if #ids > 0 then
+      if player.dead then
+        room:moveCards{
+          ids = ids,
+          toArea = Card.DiscardPile,
+          moveReason = fk.ReasonJustMove,
+          skillName = self.name,
+        }
+      else
+        local fakemove = {
+          toArea = Card.PlayerHand,
+          to = player.id,
+          moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.Processing} end),
+          moveReason = fk.ReasonJustMove,
+        }
+        room:notifyMoveCards({player}, {fakemove})
+        for _, id in ipairs(ids) do
+          room:setCardMark(Fk:getCardById(id), "xiaoyin", 1)
+        end
+        room:setPlayerMark(player, "xiaoyin-tmp", {})
+        while table.find(ids, function(id) return Fk:getCardById(id):getMark("xiaoyin") > 0 end) do
+          if not room:askForUseActiveSkill(player, "xiaoyin_active", "#xiaoyin-give", true) then
+            for _, id in ipairs(ids) do
+              room:setCardMark(Fk:getCardById(id), "xiaoyin", 0)
+            end
+            ids = table.filter(ids, function(id) return room:getCardArea(id) ~= Card.PlayerHand end)
+            fakemove = {
+              from = player.id,
+              toArea = Card.Processing,
+              moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
+              moveReason = fk.ReasonJustMove,
+            }
+            room:notifyMoveCards({player}, {fakemove})
+            room:moveCards({
+              ids = ids,
+              fromArea = Card.Processing,
+              toArea = Card.DiscardPile,
+              moveReason = fk.ReasonJustMove,
+              skillName = self.name,
+            })
+          end
+        end
+        room:setPlayerMark(player, "xiaoyin-tmp", 0)
+      end
+    end
+  end,
+}
+local xiaoyin_active = fk.CreateActiveSkill{
+  name = "xiaoyin_active",
+  mute = true,
+  card_num = 1,
+  target_num = 1,
+  card_filter = function(self, to_select, selected, targets)
+    return #selected == 0 and Fk:getCardById(to_select):getMark("xiaoyin") > 0
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if to_select ~= Self.id and #selected == 0 then
+      local mark = Self:getMark("xiaoyin-tmp")
+      local target = Fk:currentRoom():getPlayerById(to_select)
+      if #mark == 0 then
+        return true
+      else
+        if table.contains(mark, to_select) then
+          return false
+        end
+        if target:getNextAlive() == Self then
+          if table.contains(mark, Self:getNextAlive().id) then
+            return true
+          end
+        end
+        if Self:getNextAlive() == target then
+          if table.find(mark, function(id) return Fk:currentRoom():getPlayerById(id):getNextAlive() == Self end) then
+            return true
+          end
+        end
+        return table.find(mark, function(id)
+          return Fk:currentRoom():getPlayerById(id):getNextAlive() == target or target:getNextAlive().id == id end)
+      end
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    room:doIndicate(player.id, {target.id})
+    local mark = player:getMark("xiaoyin-tmp")
+    table.insert(mark, target.id)
+    room:setPlayerMark(player, "xiaoyin-tmp", mark)
+    room:setCardMark(Fk:getCardById(effect.cards[1]), "xiaoyin", 0)
+    local fakemove = {
+      from = player.id,
+      toArea = Card.Void,
+      moveInfo = table.map(effect.cards, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
+      moveReason = fk.ReasonJustMove,
+    }
+    room:notifyMoveCards({player}, {fakemove})
+    target:addToPile("xiaoyin", effect.cards[1], true, "xiaoyin")
+  end,
+}
+local xiaoyin_trigger = fk.CreateTriggerSkill{
+  name = "#xiaoyin_trigger",
+  mute = true,
+  events = {fk.DamageInflicted},
+  can_trigger = function (self, event, target, player, data)
+    if target == player and #player:getPile("xiaoyin") > 0 and data.from and not data.from.dead then
+      if data.damageType == fk.FireDamage then
+        return not data.from:isNude()
+      else
+        return true
+      end
+    end
+  end,
+  on_cost = function (self, event, target, player, data)
+    if data.damageType == fk.FireDamage then
+      local types = {}
+      for _, id in ipairs(target:getPile("xiaoyin")) do
+        table.insertIfNeed(types, Fk:getCardById(id):getTypeString())
+      end
+      local card = player.room:askForDiscard(data.from, 1, 1, true, self.name, true, ".|.|.|.|.|"..table.concat(types, ","),
+        "#xiaoyin-damage::"..target.id, true)
+      if #card > 0 then
+        self.cost_data = card
+        return true
+      end
+    else
+      return player.room:askForSkillInvoke(data.from, "xiaoyin", nil, "#xiaoyin-fire::"..target.id)
+    end
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    data.from:broadcastSkillInvoke("xiaoyin")
+    room:notifySkillInvoked(data.from, "xiaoyin", "offensive")
+    room:doIndicate(data.from.id, {target.id})
+    if data.damageType == fk.FireDamage then
+      room:throwCard(self.cost_data, "xiaoyin", data.from, data.from)
+      local ids = table.filter(target:getPile("xiaoyin"), function(id)
+        return Fk:getCardById(id).type == Fk:getCardById(self.cost_data[1]).type end)
+      if #ids > 0 then
+        room:throwCard({table.random(ids)}, "xiaoyin", target, target)
+      end
+    else
+      local id = 0
+      if #target:getPile("xiaoyin") == 1 then
+        id = target:getPile("xiaoyin")[1]
+      else
+        room:fillAG(data.from, target:getPile("xiaoyin"))
+        id = room:askForAG(data.from, target:getPile("xiaoyin"), false, "xiaoyin")
+        room:closeAG(player)
+      end
+      if id ~= 0 then
+        room:obtainCard(data.from.id, id, true, fk.ReasonJustMove)
+      end
+      data.damageType = fk.FireDamage
+    end
+  end,
+}
+local huahuo = fk.CreateViewAsSkill{
+  name = "huahuo",
+  anim_type = "offensive",
+  pattern = "fire__slash",
+  prompt = "#huahuo",
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:getCardById(to_select).color == Card.Red and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 then return end
+    local card = Fk:cloneCard("fire__slash")
+    card.skillName = self.name
+    card:addSubcard(cards[1])
+    return card
+  end,
+  before_use = function(self, player, use)
+    use.extraUse = true
+    local room = player.room
+    local tos = TargetGroup:getRealTargets(use.tos)
+    if table.find(tos, function(id) return #room:getPlayerById(id):getPile("xiaoyin") > 0 end) and
+      table.find(room:getOtherPlayers(player), function(p) return not table.contains(tos, p.id) and #p:getPile("xiaoyin") > 0 end) then
+      if room:askForSkillInvoke(player, self.name, nil, "#huahuo-invoke") then
+        for _, p in ipairs(room:getOtherPlayers(player)) do
+          if not table.contains(tos, p.id) and #p:getPile("xiaoyin") > 0 and not player:isProhibited(p, use.card) then
+            TargetGroup:pushTargets(use.tos, p.id)
+          end
+        end
+      end
+    end
+  end,
+  enabled_at_play = function (self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  enabled_at_response = function(self, player, response)
+    return false
+  end,
+}
+Fk:addSkill(xiaoyin_active)
+xiaoyin:addRelatedSkill(xiaoyin_trigger)
+malingli:addSkill(lima)
+malingli:addSkill(xiaoyin)
+malingli:addSkill(huahuo)
+Fk:loadTranslationTable{
+  ["malingli"] = "马伶俐",
+  ["lima"] = "骊马",
+  [":lima"] = "锁定技，场上每有一张坐骑牌，你计算与其他角色的距离-1。",
+  ["xiaoyin"] = "硝引",
+  [":xiaoyin"] = "准备阶段，你可以亮出牌堆顶X张牌（X为你距离1以内的角色数），获得其中红色牌，将任意张黑色牌作为“硝引”放置在等量名连续其他角色的"..
+  "武将牌上。有“硝引”牌的角色受到伤害时：若为火焰伤害，伤害来源可以弃置一张与“硝引”同类别的牌并随机移去此类别的“硝引”牌令此伤害+1；"..
+  "不为火焰伤害，伤害来源可以获得其一张“硝引”牌并将此伤害改为火焰伤害。",
+  ["huahuo"] = "花火",
+  [":huahuo"] = "出牌阶段限一次，你可以将一张红色手牌当做不计次数的火【杀】使用。若目标有“硝引”牌，此【杀】可改为指定所有有“硝引”牌的角色为目标。",
+  ["xiaoyin_active"] = "硝引",
+  ["#xiaoyin-give"] = "硝引：将黑色牌作为“硝引”放置在连续的其他角色武将牌上",
+  ["#xiaoyin-damage"] = "硝引：你可以弃置一张与 %dest “硝引”同类别的牌，令其受到伤害+1",
+  ["#xiaoyin-fire"] = "硝引：你可以获得 %dest 的一张“硝引”，令此伤害改为火焰伤害",
+  ["#huahuo"] = "花火：你可以将一张红色手牌当不计次的火【杀】使用，目标可以改为所有有“硝引”的角色",
+  ["#huahuo-invoke"] = "花火：是否将目标改为所有有“硝引”的角色？",
 }
 
 --皇家贵胄：孙皓 曹髦 刘辩 刘虞 士燮 全惠解 丁尚涴 袁姬 谢灵毓 孙瑜 甘夫人糜夫人

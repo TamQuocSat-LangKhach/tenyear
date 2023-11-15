@@ -1956,7 +1956,7 @@ local ty_ex__danshou = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 then
       if event == fk.TargetConfirmed then
-        if target == player and data.card.type ~= Card.TypeEquip and data.firstTarget then
+        if target == player and data.card.type ~= Card.TypeEquip then
           local n = 0
           local events = player.room.logic:getEventsOfScope(GameEvent.UseCard, 999, function(e)
             local use = e.data[1]

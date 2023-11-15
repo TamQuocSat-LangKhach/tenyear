@@ -2508,7 +2508,7 @@ local ty__neifa_trigger = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local targets = AskForAddTarget(player, room:getAlivePlayers(), 1, true,
+    local targets = room:askForAddTarget(player, room:getAlivePlayers(), 1, true, false,
       "#ty__neifa_trigger-choose:::"..data.card:toLogString(), self.name, data)
     if #targets > 0 then
       self.cost_data = targets[1]

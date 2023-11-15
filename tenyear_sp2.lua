@@ -126,7 +126,7 @@ local renzheng = fk.CreateTriggerSkill{
       data.extra_data.renzheng = data.damage
       player.room:setPlayerMark(data.to, "renzheng-phase", 1)--FIXME
     elseif event == fk.AfterSkillEffect then
-      local e = player.room.logic:getCurrentEvent():findParent(GameEvent.Damage)
+      local e = player.room.logic:getCurrentEvent():findParent(GameEvent.Damage, true)
       if e then
         local dat = e.data[1]
         if dat.extra_data and dat.extra_data.renzheng and dat.damage < dat.extra_data.renzheng then

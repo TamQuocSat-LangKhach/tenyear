@@ -5322,27 +5322,17 @@ local fozong = fk.CreateTriggerSkill{
     for _, p in ipairs(room:getOtherPlayers(player)) do
       if player.dead then break end
       if not p.dead then
-        local result = room:askForCustomDialog(p, self.name,
-        "packages/utility/qml/ChooseCardsAndChoiceBox.qml", {
-          player:getPile(self.name),
-          {"fozong_get"},
-          "#fozong-choice:"..player.id,
-          {"fozong_lose"}
-        })
-        if result ~= "" then
-          local reply = json.decode(result)
-          if #reply.cards > 0 then
-            room:obtainCard(p, reply.cards[1], true, fk.ReasonPrey)
-            if player.dead then break end
-            room:recover({
-              who = player,
-              num = 1,
-              recoverBy = p,
-              skillName = self.name
-            })
-          else
-            room:loseHp(player, 1, self.name)
-          end
+        local to_return = U.askforChooseCardsAndChoice(p, player:getPile(self.name), {"fozong_get"}, self.name,
+        "#fozong-choice:"..player.id, {"fozong_lose"})
+        if #to_return > 0 then
+          room:obtainCard(p, to_return[1], true, fk.ReasonPrey)
+          if player.dead then break end
+          room:recover({
+            who = player,
+            num = 1,
+            recoverBy = p,
+            skillName = self.name
+          })
         else
           room:loseHp(player, 1, self.name)
         end

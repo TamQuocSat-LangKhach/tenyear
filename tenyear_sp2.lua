@@ -1114,42 +1114,39 @@ local xialei = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local ids = room:getNCards(3 - player:getMark("xialei-turn"))
-    local to_return = table.random(ids, 1)
-    local choice = "xialei_top"
-    if #ids > 1 then
-      local result = room:askForCustomDialog(player, self.name,
-        "packages/utility/qml/ChooseCardsAndChoiceBox.qml", {
-          ids,
-          {"xialei_top", "xialei_bottom"},
-          "#xialei-chooose"
-        })
-      if result ~= "" then
-        local reply = json.decode(result)
-        to_return = reply.cards
-        choice = reply.choice
-      end
-    end
-    local moveInfos = {
-      ids = to_return,
-      to = player.id,
-      toArea = Card.PlayerHand,
-      moveReason = fk.ReasonJustMove,
-      proposer = player.id,
-      skillName = self.name,
-    }
-    table.removeOne(ids, to_return[1])
-    if #ids > 0 then
-      if choice == "xialei_top" then
-        for i = #ids, 1, -1 do
-          table.insert(room.draw_pile, 1, ids[i])
-        end
-      else
-        for _, id in ipairs(ids) do
-          table.insert(room.draw_pile, id)
+    if #ids == 1 then
+      room:moveCards({
+        ids = ids,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonJustMove,
+        proposer = player.id,
+        skillName = self.name,
+      })
+    else
+      local to_return, choice = U.askforChooseCardsAndChoice(player, ids, {"xialei_top", "xialei_bottom"}, self.name, "#xialei-chooose")
+      local moveInfos = {
+        ids = to_return,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonJustMove,
+        proposer = player.id,
+        skillName = self.name,
+      }
+      table.removeOne(ids, to_return[1])
+      if #ids > 0 then
+        if choice == "xialei_top" then
+          for i = #ids, 1, -1 do
+            table.insert(room.draw_pile, 1, ids[i])
+          end
+        else
+          for _, id in ipairs(ids) do
+            table.insert(room.draw_pile, id)
+          end
         end
       end
+      room:moveCards(moveInfos)
     end
-    room:moveCards(moveInfos)
     room:addPlayerMark(player, "xialei-turn", 1)
   end,
 }

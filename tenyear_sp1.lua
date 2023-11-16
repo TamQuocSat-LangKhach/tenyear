@@ -5554,45 +5554,41 @@ local poyuan = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.GameStart, fk.TurnStart},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and (event == fk.GameStart or (event == fk.TurnStart and target == player))
+    if player:hasSkill(self) and (event == fk.GameStart or (event == fk.TurnStart and target == player)) then
+      if table.find(player:getEquipments(Card.SubtypeTreasure), function(id) return Fk:getCardById(id).name == "ty__catapult" end) then
+        return table.find(player.room:getOtherPlayers(player), function(p) return not p:isNude() end)
+      else
+        local car = table.find(player.room.void, function(id) return Fk:getCardById(id).name == "ty__catapult" end)
+        return car and U.canMoveCardIntoEquip(player, car)
+      end
+    end
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    if not player:getEquipment(Card.SubtypeTreasure) or Fk:getCardById(player:getEquipment(Card.SubtypeTreasure)).name ~= "ty__catapult" then
-      return room:askForSkillInvoke(player, self.name, nil, "#poyuan-invoke")
-    else
-      local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
-        return not p:isNude() end), Util.IdMapper)
+    if table.find(player:getEquipments(Card.SubtypeTreasure), function(id) return Fk:getCardById(id).name == "ty__catapult" end) then
+      local targets = table.filter(room:getOtherPlayers(player), function(p) return not p:isNude() end)
       if #targets == 0 then return end
-      local to = room:askForChoosePlayers(player, targets, 1, 1, "#poyuan-choose", self.name, true)
-      if #to > 0 then
-        self.cost_data = to[1]
+      local tos = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#poyuan-choose", self.name, true)
+      if #tos > 0 then
+        self.cost_data = tos[1]
         return true
       end
+    else
+      return room:askForSkillInvoke(player, self.name, nil, "#poyuan-invoke")
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if player:getEquipment(Card.SubtypeTreasure) then
-      if Fk:getCardById(player:getEquipment(Card.SubtypeTreasure)).name == "ty__catapult" then
-        local to = room:getPlayerById(self.cost_data)
-        local cards = room:askForCardsChosen(player, to, 1, 2, "he", self.name)
-        room:throwCard(cards, self.name, to, player)
-        return
-      end
-    end
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      if Fk:getCardById(id, true).name == "ty__catapult" and room:getCardArea(id) == Card.Void then
-        room:moveCards({
-          ids = {id},
-          fromArea = Card.Void,
-          to = player.id,
-          toArea = Card.PlayerEquip,
-          moveReason = fk.ReasonJustMove,
-          proposer = player.id,
-          skillName = self.name,
-        })
-        break
+    if table.find(player:getEquipments(Card.SubtypeTreasure), function(id) return Fk:getCardById(id).name == "ty__catapult" end) then
+      local to = room:getPlayerById(self.cost_data)
+      local cards = room:askForCardsChosen(player, to, 1, 2, "he", self.name)
+      room:throwCard(cards, self.name, to, player)
+    else
+      for _, id in ipairs(room.void) do
+        if Fk:getCardById(id).name == "ty__catapult" then
+          U.moveCardIntoEquip (room, player, id, self.name, true, player)
+          break
+        end
       end
     end
   end,
@@ -5600,28 +5596,35 @@ local poyuan = fk.CreateTriggerSkill{
   refresh_events = {fk.BeforeCardsMove},
   can_refresh = Util.TrueFunc,
   on_refresh = function(self, event, target, player, data)
-    local id = 0
-    for i = #data, 1, -1 do
-      local move = data[i]
-      if move.toArea ~= Card.Void then
-        for j = #move.moveInfo, 1, -1 do
-          local info = move.moveInfo[j]
-          if info.fromArea == Card.PlayerEquip and Fk:getCardById(info.cardId, true).name == "ty__catapult" then
-            id = info.cardId
-            table.removeOne(move.moveInfo, info)
-            break
+    local mirror_moves = {}
+    local ids = {}
+    for _, move in ipairs(data) do
+      if move.from == player.id and move.toArea ~= Card.Void then
+        local move_info = {}
+        local mirror_info = {}
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if Fk:getCardById(id, true).name == "ty__catapult" and info.fromArea == Card.PlayerEquip then
+            table.insert(mirror_info, info)
+            table.insert(ids, id)
+          else
+            table.insert(move_info, info)
           end
+        end
+        if #mirror_info > 0 then
+          move.moveInfo = move_info
+          local mirror_move = table.clone(move)
+          mirror_move.to = nil
+          mirror_move.toArea = Card.Void
+          mirror_move.moveInfo = mirror_info
+          table.insert(mirror_moves, mirror_move)
         end
       end
     end
-    if id ~= 0 then
-      local room = player.room
-      room:sendLog{
-        type = "#destructDerivedCard",
-        arg = Fk:getCardById(id, true):toLogString(),
-      }
-      room:moveCardTo(Fk:getCardById(id, true), Card.Void, nil, fk.ReasonJustMove, "", "", true)
+    if #ids > 0 then
+      player.room:sendLog{ type = "#destructDerivedCards", card = ids, }
     end
+    table.insertTable(data, mirror_moves)
   end,
 }
 local huace = fk.CreateViewAsSkill{
@@ -5640,7 +5643,7 @@ local huace = fk.CreateViewAsSkill{
     return UI.ComboBox {choices = names}
   end,
   enabled_at_play = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isNude()
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
@@ -5681,7 +5684,7 @@ Fk:loadTranslationTable{
   ["poyuan"] = "破垣",
   [":poyuan"] = "游戏开始时或回合开始时，若你的装备区里没有【霹雳车】，你可以将【霹雳车】置于装备区；若有，你可以弃置一名其他角色至多两张牌。<br>"..
   "<font color='grey'>【霹雳车】<br>♦9 装备牌·宝物<br /><b>装备技能</b>：锁定技，你回合内使用基本牌的伤害和回复数值+1且无距离限制，"..
-  "使用的【酒】使【杀】伤害基数值增加的效果+1。你回合外使用或打出基本牌时摸一张牌。离开装备区时销毁。",
+  "使用的【酒】使【杀】伤害基数值增加的效果+1。你回合外使用或打出基本牌时摸一张牌。离开你装备区时销毁。",
   ["huace"] = "画策",
   [":huace"] = "出牌阶段限一次，你可以将一张手牌当上一轮没有角色使用过的普通锦囊牌使用。",
   ["#poyuan-invoke"] = "破垣：你可以装备【霹雳车】",

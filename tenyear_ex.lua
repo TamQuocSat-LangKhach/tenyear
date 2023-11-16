@@ -3041,11 +3041,75 @@ Fk:loadTranslationTable{
   ["~ty_ex__gongsunyuan"] = "大星落，君王死……",
 }
 
+local ty_ex__sundeng = General(extension, "ty_ex__sundeng", "wu", 4)
+local ty_ex__kuangbi = fk.CreateTriggerSkill {
+  name = "ty_ex__kuangbi",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target == player and player.phase == Player.Play
+  end,
+  on_cost = function (self, event, target, player, data)
+    local room = player.room
+    local targets = table.filter(room:getOtherPlayers(player), function(p) return not p:isNude() end)
+    if #targets > 0 then
+      local tos = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#ty_ex__kuangbi-choose", self.name, true)
+      if #tos > 0 then
+        self.cost_data = tos[1]
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local cards = room:askForCard(to, 1, 3, true, self.name, false, ".", "#ty_ex__kuangbi-card:"..player.id)
+    local dummy = Fk:cloneCard("slash")
+    dummy:addSubcards(cards)
+    player:addToPile(self.name, dummy, false, self.name)
+    room:setPlayerMark(player, self.name, to.id)
+  end,
+}
+local ty_ex__kuangbi_trigger = fk.CreateTriggerSkill {
+  name = "#ty_ex__kuangbi_trigger",
+  mute = true,
+  events = {fk.CardUsing, fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and #player:getPile("ty_ex__kuangbi") > 0
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.CardUsing then
+      local cards = player:getPile("ty_ex__kuangbi")
+      local ids = table.filter(cards, function(id) return Fk:getCardById(id).suit == data.card.suit end)
+      local throw = #ids > 0 and table.random(ids) or table.random(cards)
+      room:moveCards({ids = {throw}, from = player.id ,toArea = Card.DiscardPile, moveReason = fk.ReasonPutIntoDiscardPile })
+      if not player.dead then
+        player:drawCards(1, "ty_ex__kuangbi")
+      end
+      if #ids == 0 then return end
+      local to = room:getPlayerById(player:getMark("ty_ex__kuangbi"))
+      if to and not to.dead then
+        room:doIndicate(player.id, {to.id})
+        to:drawCards(1, "ty_ex__kuangbi")
+      end
+    else
+      room:moveCards({ids = player:getPile("ty_ex__kuangbi"),from = player.id, toArea = Card.DiscardPile, moveReason = fk.ReasonPutIntoDiscardPile })
+    end
+  end,
+}
+ty_ex__kuangbi:addRelatedSkill(ty_ex__kuangbi_trigger)
+ty_ex__sundeng:addSkill(ty_ex__kuangbi)
 Fk:loadTranslationTable{
   ["ty_ex__sundeng"] = "界孙登",
   ["ty_ex__kuangbi"] = "匡弼",
-  [":ty_ex__kuangbi"] = "出牌阶段开始时，你可以令一名其他角色将至多三张牌置于你的武将牌上，回合结束移去“匡弼”牌。若如此做，当你本阶段使用牌时，"..
-  "若你：有相同花色的“匡弼”牌，则移去一张，然后你与该角色各摸一张牌；没有相同花色的“匡弼”牌，则随机移去一张，然后你摸一张牌。",
+  [":ty_ex__kuangbi"] = "出牌阶段开始时，你可以令一名其他角色将一至三张牌置于你的武将牌上，本阶段结束时将“匡弼”牌置入弃牌堆。当你于有“匡弼”牌时使用牌时，若你：有与之花色相同的“匡弼”牌，则随机将其中一张置入弃牌堆，然后你与该角色各摸一张牌；没有与之花色相同的“匡弼”牌，则随机将一张置入弃牌堆，然后你摸一张牌。",
+  ["#ty_ex__kuangbi-choose"] = "匡弼：你可以令一名其他角色将一至三张牌置于你的武将牌上",
+  ["#ty_ex__kuangbi-card"] = "匡弼：将一至三张牌置为 %src 的“匡弼”牌",
+
+  ["$ty_ex__kuangbi1"] = "江东多娇，士当弼国以全方圆。",
+  ["$ty_ex__kuangbi2"] = "吴垒锦绣，卿当匡佐使延万年。",
+  ["~ty_ex__sundeng"] = "此别无期，此恨绵绵。",
 }
 
 local huangyueying = General(extension, "ty_ex__huangyueying", "qun", 3, 3, General.Female)

@@ -689,7 +689,7 @@ Fk:loadTranslationTable{
   ["~zhoushan"] = "夫人救我！夫人救我！",
 }
 
---才子佳人：何晏 王桃 王悦 赵嫣 滕胤 张嫙 夏侯令女 孙茹 张媱
+--才子佳人：何晏 王桃 王悦 赵嫣 滕胤 张嫙 夏侯令女 孙茹 庞山民 张媱
 Fk:loadTranslationTable{
   ["heyan"] = "何晏",
   ["yachai"] = "崖柴",
@@ -3260,7 +3260,7 @@ local yingtu = fk.CreateTriggerSkill{
       for _, move in ipairs(data) do
         if move.to ~= nil and move.toArea == Card.PlayerHand then
           local p = player.room:getPlayerById(move.to)
-          if p.phase ~= Player.Draw and (p:getNextAlive() == player or player:getNextAlive() == p) and not p:isKongcheng() then
+          if p.phase ~= Player.Draw and (p:getNextAlive() == player or player:getNextAlive() == p) and not p:isNude() then
             return true
           end
         end
@@ -3273,7 +3273,7 @@ local yingtu = fk.CreateTriggerSkill{
     for _, move in ipairs(data) do
       if move.to ~= nil and move.toArea == Card.PlayerHand then
         local p = player.room:getPlayerById(move.to)
-        if p.phase ~= Player.Draw and (p:getNextAlive() == player or player:getNextAlive() == p) and not p:isKongcheng() then
+        if p.phase ~= Player.Draw and (p:getNextAlive() == player or player:getNextAlive() == p) and not p:isNude() then
           table.insertIfNeed(targets, move.to)
         end
       end
@@ -3308,8 +3308,7 @@ local yingtu = fk.CreateTriggerSkill{
     room:obtainCard(to, id, false, fk.ReasonGive)
     local to_use = Fk:getCardById(id)
     if to_use.type == Card.TypeEquip and not to.dead and room:getCardOwner(id) == to and room:getCardArea(id) == Card.PlayerHand and
-        not to:prohibitUse(to_use) then
-      --FIXME: stupid 赠物 and 废除装备栏
+      U.canUseCardTo(room, to, to, to_use) then
       room:useCard({
         from = to.id,
         tos = {{to.id}},
@@ -3601,7 +3600,7 @@ Fk:loadTranslationTable{
   ["ty__xingzhao"] = "兴棹",
   [":ty__xingzhao"] = "锁定技，场上受伤的角色为1个或以上，你拥有技能〖恂恂〗；2个或以上，你使用装备牌时摸一张牌；"..
   "3个或以上，你跳过判定和弃牌阶段；0个、4个或以上，你使用牌对目标角色造成的伤害+1。",
-  
+
   ["$ty__xingzhao1"] = "野棹出浅滩，借风当显威。",
   ["$ty__xingzhao2"] = "御棹水中行，前路皆助力。",
   ["$xunxun_ty__tangzi1"] = "兵者凶器也，将者儒夫也，文可掌兵。",
@@ -3609,7 +3608,7 @@ Fk:loadTranslationTable{
   ["~ty__tangzi"] = "水载船，亦可覆……",
 }
 
---绕庭之鸦：黄皓 孙资刘放 岑昏 贾充
+--绕庭之鸦：黄皓 孙资刘放 岑昏 孙綝 贾充
 Fk:loadTranslationTable{
   ["ty__huanghao"] = "黄皓",
   ["ty__qinqing"] = "寝情",

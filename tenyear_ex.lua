@@ -866,7 +866,63 @@ Fk:loadTranslationTable{
   ["$zhichi_ty_ex__chengong2"] = "敌势汹汹，不宜与其交锋。",
   ["~ty_ex__chengong"] = "一步迟，步步迟啊！",
 }
+-- yj2012
+local ty_ex__xunyou = General(extension, "ty_ex__xunyou", "wei", 3)
+local ty_ex__zhiyu = fk.CreateTriggerSkill{
+  name = "ty_ex__zhiyu",
+  anim_type = "masochism",
+  events = {fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:drawCards(1, self.name)
+    local cards = player:getCardIds("h")
+    player:showCards(cards)
+    local throw
+    if data.from and not data.from.dead and not data.from:isKongcheng() then
+      throw = room:askForDiscard(data.from, 1, 1, false, self.name, false)[1]
+    end
+    if not player.dead and table.every(cards, function(id) return #cards == 0 or Fk:getCardById(id).color == Fk:getCardById(cards[1]).color end) then
+      if throw and room:getCardArea(throw) == Card.DiscardPile then
+        room:obtainCard(player, throw, true, fk.ReasonPrey)
+      end
+      room:addPlayerMark(player, "ty_ex__zhiyu")
+    end
+  end,
+  refresh_events = {fk.TurnStart, fk.AfterSkillEffect},
+  can_refresh = function (self, event, target, player, data)
+    if event == fk.TurnStart then
+      return player == target and player:getMark("ty_ex__zhiyu") > 0
+    else
+      return player == target and player:getMark("ty_ex__zhiyu-turn") > 0 and data.name == "qice"
+    end
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local room = player.room
+    if event == fk.TurnStart then
+      room:setPlayerMark(player, "ty_ex__zhiyu-turn", player:getMark("ty_ex__zhiyu"))
+      room:setPlayerMark(player, "ty_ex__zhiyu", 0)
+    else
+      room:removePlayerMark(player, "ty_ex__zhiyu-turn")
+      player:addSkillUseHistory("qice", -1)
+    end
+  end,
+}
+ty_ex__xunyou:addSkill("qice")
+ty_ex__xunyou:addSkill(ty_ex__zhiyu)
+Fk:loadTranslationTable{
+  ["ty_ex__xunyou"] = "界荀攸",
+  ["ty_ex__zhiyu"] = "智愚",
+  [":ty_ex__zhiyu"] = "当你受到伤害后，你可以摸一张牌，然后展示所有手牌且伤害来源弃置一张手牌。若你以此法展示的牌颜色均相同，你获得其弃置的牌且下回合奇策发动次数+1。",
 
+  ["$qice_ty_ex__xunyou1"] = "攸已有妙计在胸，此事不足为虑。",
+  ["$qice_ty_ex__xunyou2"] = "主公勿虑，攸有奇策，可解此局。",
+  ["$ty_ex__zhiyu1"] = "经达权变，大智若愚。",
+  ["$ty_ex__zhiyu2"] = "微末伎俩，让阁下见笑了。",
+  ["~ty_ex__xunyou"] = "再不能替主公出谋了。",
+}
 local wangyi = General(extension, "ty_ex__wangyi", "wei", 4, 4, General.Female)
 wangyi:addSkill("zhenlie")
 wangyi:addSkill("miji")

@@ -3305,4 +3305,83 @@ Fk:loadTranslationTable{
   ["$ty__linglong2"] = "心有玲珑罩，不殇春与秋。",
   ["~ty_ex__huangyueying"] = "此心欲留夏，奈何秋风起……",
 }
+local gongsunzan = General(extension, "ty_ex__gongsunzan", "qun", 4)
+local ty_ex__qiaomeng = fk.CreateTriggerSkill{
+  name = "ty_ex__qiaomeng",
+  events = {fk.TargetSpecified},
+  anim_type = "control",
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.card and data.card.color == Card.Black and data.firstTarget
+    and table.find(AimGroup:getAllTargets(data.tos), function(pid)
+      return pid ~= player.id and not player.room:getPlayerById(pid):isNude()
+    end)
+  end,
+  on_cost = function (self, event, target, player, data)
+    local room = player.room
+    local targets = table.filter(AimGroup:getAllTargets(data.tos), function(pid)
+      return pid ~= player.id and not room:getPlayerById(pid):isNude()
+    end)
+    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__qiaomeng-choose", self.name, true)
+    if #tos > 0 then
+      self.cost_data = tos[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local cid = room:askForCardChosen(player, to, "he", self.name)
+    local card = Fk:getCardById(cid, true)
+    if card.type == Card.TypeEquip then
+      room:obtainCard(player, cid, false, fk.ReasonPrey)
+    else
+      room:throwCard({cid}, self.name, to, player)
+      if card.type == Card.TypeTrick then
+        data.disresponsiveList = table.map(room.alive_players, Util.IdMapper)
+      end
+    end
+  end,
+}
+gongsunzan:addSkill(ty_ex__qiaomeng)
+local ty_ex__yicong = fk.CreateDistanceSkill{
+  name = "ty_ex__yicong",
+  frequency = Skill.Compulsory,
+  correct_func = function(self, from, to)
+    if from:hasSkill(self) then
+      return -1
+    end
+    if to:hasSkill(self) and to.hp < 3 then
+      return 1
+    end
+    return 0
+  end,
+}
+local ty_ex__yicong_audio = fk.CreateTriggerSkill{
+  name = "#ty_ex__yicong_audio",
+  refresh_events = {fk.HpChanged},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:hasSkill("ty_ex__yicong") and not player:isFakeSkill("ty_ex__yicong")
+    and player.hp < 3 and data.num < 0 and player.hp - data.num > 2
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:notifySkillInvoked(player, "ty_ex__yicong", "defensive")
+    player:broadcastSkillInvoke("ty_ex__yicong")
+  end,
+}
+ty_ex__yicong:addRelatedSkill(ty_ex__yicong_audio)
+gongsunzan:addSkill(ty_ex__yicong)
+Fk:loadTranslationTable{
+  ["ty_ex__gongsunzan"] = "公孙瓒",
+  ["ty_ex__qiaomeng"] = "趫猛",
+  [":ty_ex__qiaomeng"] = "当你使用黑色牌指定目标后，你可以弃置其中一名其他目标角色的一张牌，若此牌为：锦囊牌，此黑色牌不能被响应；装备牌，你改为获得之。",
+  ["#ty_ex__qiaomeng-choose"] = "趫猛：弃置一名其他目标角色的一张牌",
+  ["ty_ex__yicong"] = "义从",
+  [":ty_ex__yicong"] = "锁定技，①你计算与其他角色的距离-1；②若你已损失的体力值不小于2，其他角色计算与你的距离+1。",
+
+  ["$ty_ex__qiaomeng1"] = "猛士骁锐，可慑百蛮失蹄！",
+  ["$ty_ex__qiaomeng2"] = "锐士志猛，可凭白手夺马！",
+  ["$ty_ex__yicong1"] = "恩义聚骠骑，百战从公孙！",
+  ["$ty_ex__yicong2"] = "义从呼啸至，白马抖精神！",
+  ["~ty_ex__gongsunzan"] = "良弓断，白马亡。",
+}
 return extension

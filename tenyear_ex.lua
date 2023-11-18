@@ -1461,11 +1461,13 @@ local ty_ex__quanji = fk.CreateTriggerSkill{
   anim_type = "masochism",
   events = {fk.AfterCardsMove, fk.Damaged},
   can_trigger = function(self, event, target, player, data)
+    
     if event == fk.AfterCardsMove and player:hasSkill(self) then
       for _, move in ipairs(data) do
         if move.from == player.id and move.to and move.to ~= player.id and move.moveReason == fk.ReasonPrey then
           for _, info in ipairs(move.moveInfo) do
             if info.fromArea == Card.PlayerEquip or info.fromArea == Card.PlayerHand then
+              self.cancel_cost = false
               self:doCost(event, target, player, data)
             end
           end
@@ -1483,10 +1485,10 @@ local ty_ex__quanji = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    self.cancel_cost = true
     if room:askForSkillInvoke(player, self.name, data) then
       return true
     end  
+    self.cancel_cost = true
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

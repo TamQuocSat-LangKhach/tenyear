@@ -2536,8 +2536,8 @@ local ty__neifa_targetmod = fk.CreateTargetModSkill{
     end
   end,
 }
-local neifa_prohibit = fk.CreateProhibitSkill{
-  name = "#neifa_prohibit",
+local ty__neifa_prohibit = fk.CreateProhibitSkill{
+  name = "#ty__neifa_prohibit",
   prohibit_use = function(self, player, card)
     return (player:getMark("@ty__neifa-turn") == "basic" and card.type == Card.TypeTrick) or
       (player:getMark("@ty__neifa-turn") == "trick" and card.type == Card.TypeBasic)
@@ -2554,7 +2554,6 @@ Fk:loadTranslationTable{
   "本阶段使用【杀】次数上限+X，目标上限+1；是锦囊牌，你本回合不能使用基本牌，使用普通锦囊牌的目标+1或-1。"..
   "（X为发动技能时手牌中因本技能不能使用的牌且至多为5）。",
   ["@ty__neifa-turn"] = "内伐",
-  ["non_basic"] = "锦囊牌",
   ["#ty__neifa_trigger-choose"] = "内伐：你可以为%arg增加/减少一个目标",
   ["#neifa_trigger"] = "内伐",
 

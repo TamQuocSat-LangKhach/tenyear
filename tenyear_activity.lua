@@ -701,7 +701,7 @@ local xiaoxi = fk.CreateTriggerSkill{
     end
     local choice = room:askForChoice(player, choices, self.name, "#xiaoxi2-choice::"..to.id..":"..n)
     if choice == "xiaoxi_prey" then
-      local cards = room:askForCardsChosen(player, to, 2, 2, "he", self.name)
+      local cards = room:askForCardsChosen(player, to, n, n, "he", self.name)
       local dummy = Fk:cloneCard("dilu")
       dummy:addSubcards(cards)
       room:obtainCard(player, dummy, false, fk.ReasonPrey)

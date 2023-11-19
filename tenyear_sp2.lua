@@ -7,7 +7,7 @@ Fk:loadTranslationTable{
   ["wm"] = "武",
 }
 
---笔舌如椽：杨修 骆统 王昶 程秉 杨彪 阮籍
+--笔舌如椽：杨修 骆统 陈琳 王昶 程秉 杨彪 阮籍
 local yangxiu = General(extension, "ty__yangxiu", "wei", 3)
 local ty__danlao = fk.CreateTriggerSkill{
   name = "ty__danlao",
@@ -294,6 +294,71 @@ Fk:loadTranslationTable{
   ["$pingxi1"] = "地有常险，守无常势。",
   ["$pingxi2"] = "国有常众，战无常胜。",
   ["~ty__wangchang"] = "志存开济，人亡政息……",
+}
+
+local ty__chenlin = General(extension, "ty__chenlin", "wei", 3)
+local ty__songci = fk.CreateActiveSkill{
+  name = "ty__songci",
+  anim_type = "control",
+  mute = true,
+  card_num = 0,
+  target_num = 1,
+  can_use = function(self, player)
+    local mark = U.getMark(player, self.name)
+    return table.find(Fk:currentRoom().alive_players, function(p) return not table.contains(mark, p.id) end)
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    local mark = U.getMark(Self, self.name)
+    return #selected == 0 and not table.contains(mark, to_select)
+  end,
+  on_use = function(self, room, effect)
+    local target = room:getPlayerById(effect.tos[1])
+    local player = room:getPlayerById(effect.from)
+    local mark = U.getMark(Self, self.name)
+    table.insert(mark, target.id)
+    room:setPlayerMark(player, self.name, mark)
+    if #target.player_cards[Player.Hand] <= target.hp then
+      room:notifySkillInvoked(player, self.name, "support")
+      player:broadcastSkillInvoke(self.name, 1)
+      target:drawCards(2)
+    else
+      room:notifySkillInvoked(player, self.name, "control")
+      player:broadcastSkillInvoke(self.name, 2)
+      room:askForDiscard(target, 2, 2, true, self.name, false)
+    end
+  end,
+}
+local ty__songci_trigger = fk.CreateTriggerSkill{
+  name = "#ty__songci_trigger",
+  mute = true,
+  main_skill = ty__songci,
+  events = {fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    local mark = U.getMark(player, "ty__songci")
+    return target == player and player:hasSkill(self) and player.phase == Player.Discard
+    and table.every(player.room.alive_players, function (p) return table.contains(mark, p.id) end)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    player.room:notifySkillInvoked(player, "ty__songci", "drawcard")
+    player:broadcastSkillInvoke("ty__songci", 3)
+    player:drawCards(1, "ty__songci")
+  end,
+}
+ty__chenlin:addSkill("bifa")
+ty__songci:addRelatedSkill(ty__songci_trigger)
+ty__chenlin:addSkill(ty__songci)
+Fk:loadTranslationTable{
+  ["ty__chenlin"] = "陈琳",
+  ["ty__songci"] = "颂词",
+  [":ty__songci"] = "①出牌阶段，你可以选择一名角色（每名角色每局游戏限一次），若该角色的手牌数：不大于体力值，其摸两张牌；大于体力值，其弃置两张牌。②弃牌阶段结束时，若你对所有存活角色均发动过“颂词”，你摸一张牌。",
+  ["#ty__songci_trigger"] = "颂词",
+
+  ["$ty__songci1"] = "将军德才兼备，大汉之栋梁也！",
+  ["$ty__songci2"] = "汝窃国奸贼，人人得而诛之！",
+  ["$ty__songci3"] = "义军盟主，众望所归！",
+  ["~ty__chenlin"] = "来人……我的笔呢……",
 }
 
 local chengbing = General(extension, "chengbing", "wu", 3)

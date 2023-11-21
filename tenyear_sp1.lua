@@ -3975,6 +3975,371 @@ Fk:loadTranslationTable{
 --奇人异士：张宝 司马徽 蒲元 管辂 葛玄 杜夔 朱建平 吴范 赵直 周宣 笮融
 
 --张宝 司马徽
+local simahui = General(extension, "simahui", "qun", 3)
+local doJianjieMarkChange = function (room, player, mark, acquired, proposer)
+  local skill = (mark == "@@dragon_mark") and "jj__huoji&" or "jj__lianhuan&"
+  room:setPlayerMark(player, mark, acquired and 1 or 0)
+  if not acquired then skill = "-"..skill end
+  room:handleAddLoseSkills(player, skill, nil, false)
+  local double_mark = (player:getMark("@@dragon_mark") > 0 and player:getMark("@@phoenix_mark") > 0)
+  local yy_skill = double_mark and "jj__yeyan&" or "-jj__yeyan&"
+  room:handleAddLoseSkills(player, yy_skill, nil, false)
+  if acquired then
+    proposer:broadcastSkillInvoke("jianjie", double_mark and 3 or math.random(2))
+  end
+end
+local jianjie = fk.CreateActiveSkill{
+  name = "jianjie",
+  anim_type = "control",
+  mute = true,
+  can_use = function(self, player)
+    return player:getMark("jianjie-turn") == 0 and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  interaction = function()
+    return UI.ComboBox {choices = {"dragon_mark_move", "phoenix_mark_move"}}
+  end,
+  card_num = 0,
+  card_filter = Util.FalseFunc,
+  target_num = 2,
+  target_filter = function(self, to_select, selected)
+    if #selected == 2 or not self.interaction.data then return false end
+    local to = Fk:currentRoom():getPlayerById(to_select)
+    local mark = (self.interaction.data == "dragon_mark_move") and "@@dragon_mark" or "@@phoenix_mark"
+    if #selected == 0 then
+      return to:getMark(mark) > 0
+    else
+      return to:getMark(mark) == 0
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:notifySkillInvoked(player, self.name)
+    local from = room:getPlayerById(effect.tos[1])
+    local to = room:getPlayerById(effect.tos[2])
+    local mark = (self.interaction.data == "dragon_mark_move") and "@@dragon_mark" or "@@phoenix_mark"
+    doJianjieMarkChange (room, from, mark, false, player)
+    doJianjieMarkChange (room, to, mark, true, player)
+  end,
+}
+local jianjie_trigger = fk.CreateTriggerSkill{
+  name = "#jianjie_trigger",
+  events = {fk.TurnStart, fk.Death},
+  main_skill = jianjie,
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if event == fk.TurnStart then
+      return player:hasSkill(self) and player:getMark("jianjie-turn") > 0
+    else
+      return player:hasSkill(self) and (target:getMark("@@dragon_mark") > 0 or target:getMark("@@phoenix_mark") > 0)
+    end
+  end,
+  on_cost = function (self, event, target, player, data)
+    if event == fk.TurnStart then return true end
+    local room = player.room
+    local gives = {}
+    if target:getMark("@@dragon_mark") > 0 then
+      local dra_tars = table.filter(room.alive_players, function(p) return p:getMark("@@dragon_mark") == 0 end)
+      if #dra_tars > 0 then
+        local tos = room:askForChoosePlayers(player, table.map(dra_tars, Util.IdMapper), 1, 1, "#dragon_mark-move::"..target.id, self.name, true)
+        if #tos > 0 then
+          table.insert(gives, {"@@dragon_mark", tos[1]})
+        end
+      end
+    end
+    if target:getMark("@@phoenix_mark") > 0 then
+      local dra_tars = table.filter(room.alive_players, function(p) return p:getMark("@@phoenix_mark") == 0 end)
+      if #dra_tars > 0 then
+        local tos = room:askForChoosePlayers(player, table.map(dra_tars, Util.IdMapper), 1, 1, "#phoenix_mark-move::"..target.id, self.name, true)
+        if #tos > 0 then
+          table.insert(gives, {"@@phoenix_mark", tos[1]})
+        end
+      end
+    end
+    if #gives > 0 then
+      self.cost_data = gives
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:notifySkillInvoked(player, "jianjie")
+    if event == fk.TurnStart then
+      local dra_tars = table.filter(room:getOtherPlayers(player), function(p) return p:getMark("@@dragon_mark") == 0 end)
+      local dra
+      if #dra_tars > 0 then
+        local tos = room:askForChoosePlayers(player, table.map(dra_tars, Util.IdMapper), 1, 1, "#dragon_mark-give", self.name, false)
+        if #tos > 0 then
+          dra = room:getPlayerById(tos[1])
+          doJianjieMarkChange (room, dra, "@@dragon_mark", true, player)
+        end
+      end
+      local pho_tars = table.filter(room:getOtherPlayers(player), function(p) return p:getMark("@@phoenix_mark") == 0 end)
+      table.removeOne(pho_tars, dra)
+      if #pho_tars > 0 then
+        local tos = room:askForChoosePlayers(player, table.map(pho_tars, Util.IdMapper), 1, 1, "#phoenix_mark-give", self.name, false)
+        if #tos > 0 then
+          local pho = room:getPlayerById(tos[1])
+          doJianjieMarkChange (room, pho, "@@phoenix_mark", true, player)
+        end
+      end
+    else
+      for _, dat in ipairs(self.cost_data) do
+        local mark = dat[1]
+        local p = room:getPlayerById(dat[2])
+        doJianjieMarkChange (room, p, mark, true, player)
+      end
+    end
+  end,
+
+  refresh_events = {fk.TurnStart, fk.EventAcquireSkill},
+  can_refresh = function (self, event, target, player, data)
+    if event == fk.TurnStart then
+      return player:hasSkill(self,true) and target == player
+    else
+      return target == player and data == self
+    end
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local room = player.room
+    local current_event = room.logic:getCurrentEvent()
+    if not current_event then return end
+    local turn_event = current_event:findParent(GameEvent.Turn, true)
+    if not turn_event then return end
+    local events = room.logic.event_recorder[GameEvent.Turn] or Util.DummyTable
+    for _, e in ipairs(events) do
+      local current_player = e.data[1]
+      if current_player == player then
+        if turn_event.id == e.id then
+          room:setPlayerMark(player, "jianjie-turn", 1)
+        end
+        break
+      end
+    end
+  end,
+}
+jianjie:addRelatedSkill(jianjie_trigger)
+simahui:addSkill(jianjie)
+local chenghao = fk.CreateTriggerSkill{
+  name = "chenghao",
+  anim_type = "drawcard",
+  events = {fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and data.damageType ~= fk.NormalDamage and not data.chain
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local n = 1
+    for _, p in ipairs(room.alive_players) do
+      if p.chained then
+        n = n + 1
+      end
+    end
+    local cards = room:getNCards(n)
+    local fakemove = {
+    toArea = Card.PlayerHand,
+    to = player.id,
+    moveInfo = table.map(cards, function(id) return {cardId = id, fromArea = Card.DrawPile} end),
+    moveReason = fk.ReasonJustMove,
+    }
+    room:notifyMoveCards({player}, {fakemove})
+    local move = U.askForDistribution(player, cards, room.alive_players, self.name, #cards, #cards, nil, nil, true)
+    fakemove = {
+      from = player.id,
+      toArea = Card.Void,
+      moveInfo = table.map(cards, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
+      moveReason = fk.ReasonJustMove,
+    }
+    room:notifyMoveCards({player}, {fakemove})
+    if move then
+      U.doDistribution(room, move, player.id, self.name)
+    end
+  end,
+}
+simahui:addSkill(chenghao)
+local yinshi = fk.CreateTriggerSkill{
+  name = "yinshi",
+  anim_type = "defensive",
+  frequency = Skill.Compulsory,
+  events = {fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target == player and (data.damageType ~= fk.NormalDamage or (data.card and data.card.type == Card.TypeTrick)) and player:getMark("@@dragon_mark") == 0 and player:getMark("@@phoenix_mark") == 0 and #player:getEquipments(Card.SubtypeArmor) == 0
+  end,
+  on_use = Util.TrueFunc,
+}
+simahui:addSkill(yinshi)
+local jj__lianhuan = fk.CreateActiveSkill{
+  name = "jj__lianhuan&",
+  card_num = 1,
+  min_target_num = 0,
+  can_use = function(self, player)
+    return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryTurn) < 3
+  end,
+  card_filter = function(self, to_select, selected, selected_targets)
+    return #selected == 0 and Fk:getCardById(to_select).suit == Card.Club and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if #selected_cards == 1 then
+      local card = Fk:cloneCard("iron_chain")
+      card:addSubcard(selected_cards[1])
+      return card.skill:canUse(Self, card) and card.skill:targetFilter(to_select, selected, selected_cards, card) and
+        not Self:isProhibited(Fk:currentRoom():getPlayerById(to_select), card)
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    if #effect.tos == 0 then
+      room:recastCard(effect.cards, player, self.name)
+    else
+      room:sortPlayersByAction(effect.tos)
+      room:useVirtualCard("iron_chain", effect.cards, player, table.map(effect.tos, Util.Id2PlayerMapper), self.name)
+    end
+  end,
+}
+Fk:addSkill(jj__lianhuan)
+local jj__huoji = fk.CreateViewAsSkill{
+  name = "jj__huoji&",
+  anim_type = "offensive",
+  pattern = "fire_attack",
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:getCardById(to_select).color == Card.Red and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 then return end
+    local card = Fk:cloneCard("fire_attack")
+    card.skillName = self.name
+    card:addSubcard(cards[1])
+    return card
+  end,
+  enabled_at_play = function(self, player)
+    return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryTurn) < 3
+  end,
+}
+Fk:addSkill(jj__huoji)
+local jj__yeyan = fk.CreateActiveSkill{
+  name = "jj__yeyan&",
+  anim_type = "offensive",
+  min_target_num = 1,
+  max_target_num = 3,
+  min_card_num = 0,
+  max_card_num = 4,
+  frequency = Skill.Limited,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    if Fk:currentRoom():getCardArea(to_select) == Player.Equip then return end
+    if #selected == 0 then
+      return true
+    else
+      return table.every(selected, function (id) return Fk:getCardById(to_select).suit ~= Fk:getCardById(id).suit end)
+    end
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if #selected_cards == 4 then
+      return #selected < 2
+    elseif #selected_cards == 0 then
+      return #selected < 3
+    else
+      return false
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    doJianjieMarkChange (room, player, "@@dragon_mark", false, player)
+    doJianjieMarkChange (room, player, "@@phoenix_mark", false, player)
+    if #effect.cards == 0 then
+      for _, id in ipairs(effect.tos) do
+        room:damage{
+          from = player,
+          to = room:getPlayerById(id),
+          damage = 1,
+          damageType = fk.FireDamage,
+          skillName = self.name,
+        }
+      end
+    else
+      room:throwCard(effect.cards, self.name, player, player)
+      if #effect.tos == 1 then
+        local choice = room:askForChoice(player, {"3", "2"}, self.name)
+        room:loseHp(player, 3, self.name)
+        room:damage{
+          from = player,
+          to = room:getPlayerById(effect.tos[1]),
+          damage = tonumber(choice),
+          damageType = fk.FireDamage,
+          skillName = self.name,
+        }
+      else
+        local target1 = room:getPlayerById(effect.tos[1])
+        local target2 = room:getPlayerById(effect.tos[2])
+        local to = room:askForChoosePlayers(player, effect.tos, 1, 1, "#jj__yeyan-choose:::".."1", self.name, false)
+        room:addPlayerMark(room:getPlayerById(to[1]), self.name, 1)
+        to = room:askForChoosePlayers(player, effect.tos, 1, 1, "#jj__yeyan-choose:::".."2", self.name, false)
+        room:addPlayerMark(room:getPlayerById(to[1]), self.name, 1)
+        if target1:getMark(self.name) > 0 and target2:getMark(self.name) > 0 then
+          to = room:askForChoosePlayers(player, effect.tos, 1, 1, "#jj__yeyan-choose:::".."3", self.name, false)
+          room:addPlayerMark(room:getPlayerById(to[1]), self.name, 1)
+        end
+        for _, p in ipairs({target1, target2}) do
+          if p:getMark(self.name) == 0 then
+            room:addPlayerMark(p, self.name, 1)
+          end
+        end
+        room:loseHp(player, 3, self.name)
+        for _, p in ipairs({target1, target2}) do
+          room:damage{
+            from = player,
+            to = p,
+            damage = p:getMark(self.name),
+            damageType = fk.FireDamage,
+            skillName = self.name,
+          }
+          room:setPlayerMark(p, self.name, 0)
+        end
+      end
+    end
+  end,
+}
+Fk:addSkill(jj__yeyan)
+Fk:loadTranslationTable{
+  ["simahui"] = "司马徽",
+  ["jianjie"] = "荐杰",
+  [":jianjie"] = "①你的第一个回合开始时，你令一名其他角色获得“龙印”，然后令另一名其他角色获得“凤印”；②出牌阶段限一次（你的第一个回合除外），或当拥有“龙印”/“凤印”的角色死亡时，你可以转移“龙印”/“凤印”。"..
+  "<br><font color='grey'>•拥有 “龙印”/“凤印” 的角色视为拥有技能“火计”/“连环”（均一回合限三次）；"..
+  "<br>•同时拥有“龙印”和“凤印”的角色视为拥有技能“业炎”，且发动“业炎”时移去“龙印”和“凤印”。",
+  ["#jianjie_trigger"] = "荐杰",
+  ["@@dragon_mark"] = "龙印",
+  ["@@phoenix_mark"] = "凤印",
+  ["#dragon_mark-give"] = "荐杰：令一名其他角色获得“龙印”",
+  ["#phoenix_mark-give"] = "荐杰：令一名其他角色获得“凤印”",
+  ["#dragon_mark-move"] = "荐杰：令一名角色获得 %dest 的“龙印”",
+  ["#phoenix_mark-move"] = "荐杰：令一名角色获得 %dest 的“凤印”",
+  ["dragon_mark_move"] = "转移“龙印”",
+  ["phoenix_mark_move"] = "转移“凤印”",
+
+  ["chenghao"] = "称好",
+  [":chenghao"] = "当一名角色受到属性伤害后，若其处于“连环状态”且是此次伤害传导的起点，你可以观看牌堆顶的X张牌并将这些牌分配给任意角色（X为横置角色数+1）。",
+
+  ["yinshi"] = "隐士",
+  [":yinshi"] = "锁定技，当你受到属性伤害或锦囊牌造成的伤害时，若你没有“龙印”或“凤印”且装备区内没有防具牌，防止此伤害。",
+
+  ["jj__lianhuan&"] = "连环",
+  [":jj__lianhuan&"] = "你可以将一张梅花手牌当【铁索连环】使用或重铸（每回合限三次）。",
+  ["jj__huoji&"] = "火计",
+  [":jj__huoji&"] = "你可以将一张红色手牌当【火攻】使用（每回合限三次）。",
+  ["jj__yeyan&"] = "业炎",
+  [":jj__yeyan&"] = "限定技，出牌阶段，你可以移去“龙印”和“凤印”并指定一至三名角色，你分别对这些角色造成至多共计3点火焰伤害；若你对一名角色分配2点或更多的火焰伤害，你须先弃置四张不同花色的手牌并失去3点体力。",
+  ["#jj__yeyan-choose"] = "业炎：选择第%arg点伤害的目标",
+
+  ["$jianjie1"] = "二者得一，可安天下。",
+  ["$jianjie2"] = "公怀王佐之才，宜择人而仕。",
+  ["$jianjie3"] = "二人齐聚，汉室可兴矣。",
+  ["$chenghao1"] = "好，很好，非常好。",
+  ["$chenghao2"] = "您的话也很好。",
+  ["$yinshi1"] = "山野闲散之人，不堪世用。",
+  ["$yinshi2"] = "我老啦，会有胜我十倍的人来帮助你。",
+  ["~simahui"] = "这似乎……没那么好了……",
+}
 
 local puyuan = General(extension, "ty__puyuan", "shu", 4)
 local puyuan_equips = {"red_spear", "quenched_blade", "poisonous_dagger", "water_sword", "thunder_blade"}

@@ -3552,16 +3552,102 @@ Fk:loadTranslationTable{
   ["$jinghe2"] = "无极之外，复无无极。",
   ["~ty__nanhualaoxian"] = "道亦有穷时……",
 }
-
+local ty__tongyuan = General(extension, "ty__tongyuan", "qun", 4)
+local chaofeng = fk.CreateTriggerSkill{
+  name = "chaofeng",
+  anim_type = "offensive",
+  events = {fk.DamageCaused},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and not player:isKongcheng() and data.card and player.phase == Player.Play and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  on_cost = function (self, event, target, player, data)
+    local card = player.room:askForDiscard(player, 1, 1, false, self.name, true, ".", "#chaofeng-invoke", true)
+    if #card > 0 then
+      self.cost_data = card
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:throwCard(self.cost_data, self.name, player, player)
+    local card = Fk:getCardById(self.cost_data[1])
+    local n = (data.card.color == card.color) and 2 or 1
+    if not player.dead then
+      player:drawCards(n, self.name)
+    end
+    if data.card.type == card.type then
+      data.damage = data.damage + 1
+    end
+  end,
+}
+ty__tongyuan:addSkill(chaofeng)
+local chuanshu = fk.CreateTriggerSkill{
+  name = "chuanshu",
+  anim_type = "support",
+  frequency = Skill.Limited,
+  events = {fk.Death, fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self,false,true) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0 then
+      return event == fk.Death or (player.phase == Player.Start and player:isWounded())
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#chuanshu-choose", self.name, true)
+    if #tos > 0 then
+      self.cost_data = tos[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    room:handleAddLoseSkills(to, "chaofeng")
+    room:handleAddLoseSkills(player, "longdan|congjian|chuanyun")
+  end,
+}
+ty__tongyuan:addSkill(chuanshu)
+local chuanyun = fk.CreateTriggerSkill{
+  name = "chuanyun",
+  anim_type = "control",
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.card.trueName == "slash" 
+    and #player.room:getPlayerById(data.to):getCardIds("e") > 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#chuanyun-invoke::"..data.to)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(data.to)
+    local card = table.random(to:getCardIds("e"))
+    room:throwCard({card}, self.name, to, to)
+  end,
+}
+ty__tongyuan:addRelatedSkill("longdan")
+ty__tongyuan:addRelatedSkill("congjian")
+ty__tongyuan:addRelatedSkill(chuanyun)
 Fk:loadTranslationTable{
   ["ty__tongyuan"] = "童渊",
   ["chaofeng"] = "朝凤",
-  [":chaofeng"] = "出牌阶段限一次，当你使用牌造成伤害时，你可以弃置一张手牌，然后摸一张牌。若弃置的牌与造成伤害的牌：颜色相同，则多摸一张牌；"..
-  "类型相同，则此伤害+1。",
+  [":chaofeng"] = "每阶段限一次，当你于出牌阶段使用牌造成伤害时，你可以弃置一张手牌，然后摸一张牌。若弃置的牌与造成伤害的牌：颜色相同，则多摸一张牌；类型相同，则此伤害+1。",
+  ["#chaofeng-invoke"] = "朝凤：你可以弃置弃置一张手牌，摸一张牌",
   ["chuanshu"] = "传术",
   [":chuanshu"] = "限定技，准备阶段若你已受伤，或当你死亡时，你可令一名其他角色获得〖朝凤〗，然后你获得〖龙胆〗、〖从谏〗、〖穿云〗。",
+  ["#chuanshu-choose"] = "传术：你可令一名其他角色获得〖朝凤〗，你获得〖龙胆〗、〖从谏〗、〖穿云〗",
   ["chuanyun"] = "穿云",
   [":chuanyun"] = "当你使用【杀】指定目标后，你可令该角色随机弃置一张装备区里的牌。",
+  ["#chuanyun-invoke"] = "穿云：你可令 %dest 随机弃置一张装备区里的牌",
+
+  ["$chaofeng1"] = "鸾凤归巢，百鸟齐鸣。",
+  ["$chaofeng2"] = "鸾凤之响，所闻皆朝。",
+  ["$chuanshu1"] = "此术不传子，独传于贤。",
+  ["$chuanshu2"] = "定倾之术，贤者可习之。",
+  ["$longdan_ty__tongyuan"] = "能进能退，方显名将本色。",
+  ["$congjian_ty__tongyuan"] = "察言纳谏，安身立命之道也。",
+  ["$chuanyun"] = "吾枪所至，人马俱亡！",
+  ["~ty__tongyuan"] = "一门三杰，无憾矣！",
 }
 
 local zhangning = General(extension, "ty__zhangning", "qun", 3, 3, General.Female)

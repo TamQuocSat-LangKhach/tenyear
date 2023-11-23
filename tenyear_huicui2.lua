@@ -352,6 +352,100 @@ Fk:loadTranslationTable{
   ["~ty__huangchengyan"] = "卧龙出山天伦逝，悔教吾婿离南阳……",
 }
 
+local huzhao = General(extension, "huzhao", "qun", 3)
+local midu = fk.CreateActiveSkill{
+  name = "midu",
+  anim_type = "special",
+  card_num = 0,
+  target_num = 0,
+  prompt = function (self)
+    return "#"..self.interaction.data
+  end,
+  interaction = function(self)
+    local choices = {}
+    if #Self:getAvailableEquipSlots() > 0 or not table.contains(Self.sealedSlots, Player.JudgeSlot) then
+      table.insert(choices, "midu1")
+    end
+    if #Self.sealedSlots > 0 then
+      table.insert(choices, "midu2")
+    end
+    return UI.ComboBox { choices = choices }
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    if self.interaction.data == "midu1" then
+      local choices = {}
+      if not table.contains(player.sealedSlots, Player.JudgeSlot) then
+        table.insert(choices, "JudgeSlot")
+      end
+      table.insertTable(choices, player:getAvailableEquipSlots())
+      local choice = room:askForCheck(player, choices, 1, #choices, self.name, "#midu-abort", false)
+      room:abortPlayerArea(player, choice)
+      if not player.dead then
+        local to = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper), 1, 1,
+          "#midu-draw:::"..#choice, self.name, false)
+        if #to > 0 then
+          to = to[1]
+        else
+          to = player.id
+        end
+        room:getPlayerById(to):drawCards(#choice, self.name)
+      end
+    else
+      local choices = table.simpleClone(player.sealedSlots)
+      local choice = room:askForChoice(player, choices, self.name, "#midu-resume")
+      room:resumePlayerArea(player, {choice})
+      if not player:hasSkill("huomo", true) then
+        room:handleAddLoseSkills(player, "huomo", nil, true, false)
+        room:setPlayerMark(player, self.name, 1)
+      end
+    end
+  end,
+}
+local midu_trigger = fk.CreateTriggerSkill{
+  name = "#midu_trigger",
+
+  refresh_events = {fk.TurnStart},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark("midu") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "midu", 0)
+    room:handleAddLoseSkills(player, "-huomo", nil, true, false)
+  end,
+}
+local xianwang = fk.CreateDistanceSkill{
+  name = "xianwang",
+  frequency = Skill.Compulsory,
+  correct_func = function(self, from, to)
+    if from:hasSkill(self) then
+      local n = #table.filter(from.sealedSlots, function(slot) return slot ~= "JudgeSlot" end)
+      if n > 3 then
+        return -2
+      elseif n > 0 then
+        return -1
+      end
+    end
+    if to:hasSkill(self) then
+      local n = #table.filter(to.sealedSlots, function(slot) return slot ~= "JudgeSlot" end)
+      if n > 3 then
+        return 2
+      elseif n > 0 then
+        return 1
+      end
+    end
+    return 0
+  end,
+}
+midu:addRelatedSkill(midu_trigger)
+huzhao:addSkill(midu)
+huzhao:addSkill(xianwang)
+huzhao:addRelatedSkill("huomo")
 Fk:loadTranslationTable{
   ["huzhao"] = "胡昭",
   ["midu"] = "弥笃",
@@ -359,6 +453,21 @@ Fk:loadTranslationTable{
   "你获得〖活墨〗直到你下个回合开始。",
   ["xianwang"] = "贤望",
   [":xianwang"] = "锁定技，若你有废除的装备栏，其他角色计算与你的距离+1，你计算与其他角色的距离-1；若你有至少三个废除的装备栏，以上数字改为2。",
+  ["midu1"] = "废除",
+  ["midu2"] = "恢复",
+  ["#midu1"] = "弥笃：废除任意个区域，令一名角色摸等量牌",
+  ["#midu2"] = "弥笃：恢复一个区域，直到下个回合开始获得〖活墨〗",
+  ["#midu-abort"] = "弥笃：选择要废除的区域",
+  ["#midu-draw"] = "弥笃：令一名角色摸%arg张牌",
+  ["#midu-resume"] = "弥笃：选择要恢复的区域",
+
+  ["$midu1"] = "皓首穷经，其心不移。",
+  ["$midu2"] = "竹简册书，百读不厌。",
+  ["$xianwang1"] = "浩气长存，以正压邪。",
+  ["$xianwang2"] = "名彰千里，盗无敢侵。",
+  ["$huomo_huzhao1"] = "行文挥毫，得心应手。",
+  ["$huomo_huzhao2"] = "泼墨走笔，挥洒自如。",
+  ["~huzhao"] = "纵有清名，无益于世也。",
 }
 
 local wanglie = General(extension, "wanglie", "qun", 3)

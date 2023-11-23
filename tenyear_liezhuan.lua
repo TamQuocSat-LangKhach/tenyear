@@ -79,7 +79,6 @@ Fk:loadTranslationTable{
   ["~ty__hansui"] = "马侄儿为何？啊！！",
 }
 
---刘宏
 local ty__liuhong = General(extension, "ty__liuhong", "qun", 4)
 local yujue = fk.CreateActiveSkill{
   name = "yujue",
@@ -1118,13 +1117,85 @@ Fk:loadTranslationTable{
 
 --张邈
 
+local qiuliju = General(extension, "qiuliju", "qun", 4, 6)
+local koulve = fk.CreateTriggerSkill{
+  name = "koulve",
+  anim_type = "drawcard",
+  events = {fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Play and data.to ~= player and
+      not data.to.dead and not data.to:isKongcheng() and data.to:isWounded()
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#koulve-invoke::"..data.to.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {data.to.id})
+    local cards = room:askForCardsChosen(player, data.to, 1, data.to:getLostHp(), "h", self.name)
+    data.to:showCards(cards)
+    if player.dead then return end
+    local get = table.filter(cards, function(id)
+      return Fk:getCardById(id).is_damage_card and room:getCardOwner(id) == data.to and room:getCardArea(id) == Card.PlayerHand end)
+    if #get > 0 then
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(get)
+      room:moveCardTo(dummy, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
+    end
+    if not player.dead and table.find(cards, function(id) return Fk:getCardById(id).color == Card.Red end) then
+      if player:isWounded() then
+        room:changeMaxHp(player, -1)
+      else
+        room:loseHp(player, 1, self.name)
+      end
+      if not player.dead then
+        player:drawCards(2, self.name)
+      end
+    end
+  end,
+}
+local suirenq = fk.CreateTriggerSkill{
+  name = "suirenq",
+  anim_type = "support",
+  events = {fk.Death},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name, false, true) and
+      table.find(player:getCardIds("h"), function(id) return Fk:getCardById(id).is_damage_card end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.map(room.alive_players, Util.IdMapper)
+    local to = room:askForChoosePlayers(player, targets, 1, 1, "#suirenq-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local dummy = Fk:cloneCard("dilu")
+    dummy:addSubcards(table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id).is_damage_card end))
+    room:moveCardTo(dummy, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
+  end,
+}
+qiuliju:addSkill(koulve)
+qiuliju:addSkill(suirenq)
 Fk:loadTranslationTable{
   ["qiuliju"] = "丘力居",
   ["koulve"] = "寇略",
-  [":koulve"] = "出牌阶段，当你对其他角色造成伤害后，你可以展示其X张手牌（X为其已损失体力值），你获得其中的伤害牌。若展示牌中有红色牌，"..
+  [":koulve"] = "出牌阶段内，当你对其他角色造成伤害后，你可以展示其X张手牌（X为其已损失体力值），你获得其中的【杀】和伤害锦囊牌。若展示牌中有红色牌，"..
   "若你已受伤，你减1点体力上限；若你未受伤，则失去1点体力；然后你摸两张牌。",
   ["suirenq"] = "随认",
-  [":suirenq"] = "你死亡时，可以将手牌中伤害牌交给一名其他角色。",
+  [":suirenq"] = "你死亡时，可以将手牌中所有【杀】和伤害锦囊牌交给一名其他角色。",
+  ["#koulve-invoke"]= "寇略：你可以展示 %dest 的手牌，获得其中的伤害牌",
+  ["#suirenq-choose"] = "随认：你可以将手牌中所有【杀】和伤害锦囊牌交给一名角色",
+
+  ["$koulve1"] = "兵强马壮，时出寇略。",
+  ["$koulve2"] = "饥则寇略，饱则弃馀。",
+  ["$suirenq1"] = "就交给你了。",
+  ["$suirenq2"] = "我的财富，收好！",
+  ["~qiuliju"] = "乌丸危矣！",
 }
 
 --中原狼烟：董承 胡车儿 邹氏 曹安民
@@ -1468,7 +1539,88 @@ Fk:loadTranslationTable{
   ["~ty__zoushi"] = "年老色衰了吗……",
 }
 
---曹安民
+local caoanmin = General(extension, "caoanmin", "wei", 4)
+local xianwei = fk.CreateTriggerSkill{
+  name = "xianwei",
+  anim_type = "support",
+  frequency = Skill.Compulsory,
+  events = {fk.EventPhaseStart, fk.AreaAborted},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) then
+      if event == fk.EventPhaseStart then
+        return player.phase == Player.Start and #player:getAvailableEquipSlots() > 0
+      else
+        return #player:getAvailableEquipSlots() == 0
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart then
+      local choices = player:getAvailableEquipSlots()
+      local choice = room:askForChoice(player, choices, self.name, "#xianwei-abort")
+      room:abortPlayerArea(player, choice)
+      if player.dead then return end
+      if #player:getAvailableEquipSlots() > 0 then
+        player:drawCards(#player:getAvailableEquipSlots(), self.name)
+      end
+      if player.dead then return end
+      local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+      local mapper = {
+        [Player.WeaponSlot] = "weapon",
+        [Player.ArmorSlot] = "armor",
+        [Player.OffensiveRideSlot] = "offensive_horse",
+        [Player.DefensiveRideSlot] = "defensive_horse",
+        [Player.TreasureSlot] = "treasure",
+      }
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#xianwei-choose:::"..mapper[choice], self.name, false)
+      if #to > 0 then
+        to = to[1]
+      else
+        to = table.random(targets)
+      end
+      to = room:getPlayerById(to)
+      local subtype = Util.convertSubtypeAndEquipSlot(choice)
+      for _, id in ipairs(room.draw_pile) do
+        local card = Fk:getCardById(id)
+        if card.sub_type == subtype and not to:isProhibited(to, card) then
+          room:useCard({
+            from = to.id,
+            tos = {{to.id}},
+            card = card,
+          })
+          return
+        end
+      end
+      to:drawCards(1, self.name)
+    else
+      room:setPlayerMark(player, "@@xianwei", 1)
+      room:changeMaxHp(player, 2)
+    end
+  end,
+}
+local xianwei_attackrange = fk.CreateAttackRangeSkill{
+  name = "#xianwei_attackrange",
+  frequency = Skill.Compulsory,
+  within_func = function (self, from, to)
+    return from:getMark("@@xianwei") > 0 or to:getMark("@@xianwei") > 0
+  end,
+}
+xianwei:addRelatedSkill(xianwei_attackrange)
+caoanmin:addSkill(xianwei)
+Fk:loadTranslationTable{
+  ["caoanmin"] = "曹安民",
+  ["xianwei"] = "险卫",
+  [":xianwei"] = "锁定技，准备阶段，你废除一个装备栏并摸等同于你未废除装备栏数的牌，然后令一名其他角色使用牌堆中第一张此副类别的装备牌"..
+  "（没有则其摸一张牌）。<br>你的所有装备栏均废除后，你加2点体力上限，然后你和其他角色始终互相视为在对方攻击范围内。",
+  ["#xianwei-abort"] = "险卫：废除一个装备栏",
+  ["#xianwei-choose"] = "险卫：令一名角色使用牌堆中一张%arg",
+  ["@@xianwei"] = "险卫",
+
+  ["$xianwei1"] = "曹家儿郎，何惧一死！",
+  ["$xianwei2"] = "此役当战，有死无生！",
+  ["~caoanmin"] = "伯父快走！",
+}
 
 --虓虎悲歌：郝萌 严夫人 朱灵 阎柔
 local haomeng = General(extension, "ty__haomeng", "qun", 7)

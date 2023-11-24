@@ -1115,7 +1115,17 @@ Fk:loadTranslationTable{
   ["~ty__caosong"] = "孟德，勿忘汝父之仇！",
 }
 
---张邈
+Fk:loadTranslationTable{
+  ["zhangmiao"] = "张邈",
+  ["mouni"] = "谋逆",
+  [":mouni"] = "准备阶段，你可对一名其他角色依次使用你手牌中所有的【杀】直到该角色进入濒死状态。若以此法使用的【杀】中有未造成伤害的【杀】，"..
+  "你本回合跳过出牌阶段和弃牌阶段。",
+  ["zongfan"] = "纵反",
+  [":zongfan"] = "觉醒技，回合结束时，若你本回合发动〖谋逆〗使用过【杀】且未跳过出牌阶段，你交给一名其他角色任意张牌，加X点体力上限并回复X点体力"..
+  "（X为你交给该角色的牌数且最多为5），失去〖谋逆〗，获得〖战孤〗",
+  ["zhangu"] = "战孤",
+  [":zhangu"] = "锁定技，回合开始时，若你体力上限大于1且没有手牌或装备区没有牌，你减1点体力上限，然后从牌堆中随机获得三张不同类别的牌。",
+}
 
 local qiuliju = General(extension, "qiuliju", "qun", 4, 6)
 local koulve = fk.CreateTriggerSkill{
@@ -1777,13 +1787,112 @@ Fk:loadTranslationTable{
   ["~yanfuren"] = "妾身绝不会害将军呀！",
 }
 
+local zhuling = General(extension, "ty__zhuling", "wei", 4)
+local ty__zhanyi = fk.CreateTriggerSkill{
+  name = "ty__zhanyi",
+  anim_type = "special",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Play and not player:isNude()
+  end,
+  on_cost = function(self, event, target, player, data)
+    local all_choices = {"basic", "trick", "equip", "Cancel"}
+    local choices = {"Cancel"}
+    for _, id in ipairs(player:getCardIds("he")) do
+      local card = Fk:getCardById(id)
+      if not player:prohibitDiscard(card) then
+        table.insertIfNeed(choices, card:getTypeString())
+      end
+    end
+    if #choices == 1 then return end
+    local choice = player.room:askForChoice(player, choices, self.name, "#ty__zhanyi-choice", false, all_choices)
+    if choice ~= "Cancel" then
+      self.cost_data = choice
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local types = {"basic", "trick", "equip"}
+    table.removeOne(types, self.cost_data)
+    room:setPlayerMark(player, "ty__zhanyi_"..types[1].."-turn", 1)
+    room:setPlayerMark(player, "ty__zhanyi_"..types[2].."-turn", 1)
+    room:setPlayerMark(player, "@ty__zhanyi-turn", Fk:translate(types[1].."_char").." "..Fk:translate(types[2].."_char"))
+    local cards = table.filter(player:getCardIds("he"), function(id) return Fk:getCardById(id):getTypeString() == self.cost_data end)
+    room:throwCard(cards, self.name, player, player)
+  end,
+}
+local ty__zhanyi_trigger = fk.CreateTriggerSkill{
+  name = "#ty__zhanyi_trigger",
+  mute = true,
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:getMark("ty__zhanyi_"..data.card:getTypeString().."-turn") > 0
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if data.card.type == Card.TypeBasic then
+      if data.card.is_damage_card then
+        player:broadcastSkillInvoke("ty__zhanyi")
+        room:notifySkillInvoked(player, "ty__zhanyi", "offensive")
+        data.additionalDamage = (data.additionalDamage or 0) + 1
+      elseif data.card.name == "peach" or (data.card.name == "analeptic" and data.extra_data and data.extra_data.analepticRecover) then
+        player:broadcastSkillInvoke("ty__zhanyi")
+        room:notifySkillInvoked(player, "ty__zhanyi", "support")
+        data.additionalRecover = (data.additionalRecover or 0) + 1
+      end
+      if data.card.trueName == "slash" and data.extra_data and data.extra_data.drankBuff then
+        data.additionalDamage = (data.additionalDamage or 0) + data.extra_data.drankBuff
+      end
+    elseif data.card.type == Card.TypeTrick then
+      player:broadcastSkillInvoke("ty__zhanyi")
+      room:notifySkillInvoked(player, "ty__zhanyi", "drawcard")
+      player:drawCards(1, "ty__zhanyi")
+    elseif data.card.type == Card.TypeEquip then
+      local targets = table.map(table.filter(room:getOtherPlayers(player), function(p) return not p:isNude() end), Util.IdMapper)
+      if #targets == 0 then return end
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#ty__zhanyi-discard", "ty__zhanyi", true)
+      if #to > 0 then
+        player:broadcastSkillInvoke("ty__zhanyi")
+        room:notifySkillInvoked(player, "ty__zhanyi", "control")
+        to = room:getPlayerById(to[1])
+        local id = room:askForCardChosen(player, to, "he", "ty__zhanyi")
+        room:throwCard({id}, "ty__zhanyi", to, player)
+      end
+    end
+  end,
+}
+local ty__zhanyi_targetmod = fk.CreateTargetModSkill{
+  name = "#ty__zhanyi_targetmod",
+  bypass_distances = function(self, player, skill, card)
+    return player:getMark("ty__zhanyi_basic-turn") > 0 and card and card.type == Card.TypeBasic
+  end,
+}
+local ty__zhanyi_maxcards = fk.CreateMaxCardsSkill{
+  name = "#ty__zhanyi_maxcards",
+  exclude_from = function(self, player, card)
+    return player:getMark("ty__zhanyi_trick-turn") > 0 and card.type == Card.TypeTrick
+  end,
+}
+ty__zhanyi:addRelatedSkill(ty__zhanyi_trigger)
+ty__zhanyi:addRelatedSkill(ty__zhanyi_targetmod)
+ty__zhanyi:addRelatedSkill(ty__zhanyi_maxcards)
+zhuling:addSkill(ty__zhanyi)
 Fk:loadTranslationTable{
   ["ty__zhuling"] = "朱灵",
   ["ty__zhanyi"] = "战意",
   [":ty__zhanyi"] = "出牌阶段开始时，你可以弃置一种类别的所有牌，另外两种类别的牌本回合获得以下效果：<br>"..
-  "基本牌：你使用基本牌无距离限制且造成的伤害和回复值+1；<br>"..
-  "锦囊牌：你使用锦囊牌时摸一张牌且锦囊牌不计入手牌上限；<br>"..
-  "装备牌：你使用装备牌时可以弃置一名其他角色的一张牌。",
+  "基本牌：你使用基本牌无距离限制且造成的伤害和回复值+1，使用【酒】使【杀】伤害基数值增加的效果+1；<br>"..
+  "锦囊牌：你使用锦囊牌时摸一张牌，你的锦囊牌不计入手牌上限；<br>"..
+  "装备牌：你使用装备牌时，可以弃置一名其他角色的一张牌。",
+  ["#ty__zhanyi-choice"] = "战意：弃置一种类别所有的牌，本回合另两张类别的牌获得额外效果",
+  ["@ty__zhanyi-turn"] = "战意",
+  ["#ty__zhanyi-discard"] = "战意：你可以弃置一名角色一张牌",
+
+  ["$ty__zhanyi1"] = "以役兴国，战意磅礴！",
+  ["$ty__zhanyi2"] = "此命不已，此战不休！",
+  ["~ty__zhuling"] = "吾，错付曹公……",
 }
 
 local yanrou = General(extension, "yanrou", "wei", 4)

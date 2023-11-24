@@ -980,6 +980,30 @@ Fk:loadTranslationTable{
 }
 
 --逐鹿天下：张恭 吕凯 卫温诸葛直
+Fk:loadTranslationTable{
+  ["zhanggong"] = "张恭",
+  ["qianxinz"] = "遣信",
+  [":qianxinz"] = "出牌阶段限一次，若牌堆中没有“信”，你可以选择一名角色并将任意张手牌置于牌堆中X倍数的位置（X为存活人数），称为“信”。"..
+  "该角色弃牌阶段开始时，若其手中有本回合获得的“信”，其选择一项：1.你将手牌摸至四张；2.其本回合手牌上限-2。",
+  ["zhenxing"] = "镇行",
+  [":zhenxing"] = "结束阶段开始时或当你受到伤害后，你可以观看牌堆顶至多三张牌，然后你获得其中与其余牌花色均不同的一张牌。",
+}
+
+Fk:loadTranslationTable{
+  ["lvkai"] = "吕凯",
+  ["tunan"] = "图南",
+  [":tunan"] = "出牌阶段限一次，你可令一名其他角色观看牌堆顶一张牌，然后该角色选择一项：1.使用此牌（无距离限制）；2.将此牌当【杀】使用。",
+  ["bijing"] = "闭境",
+  [":bijing"] = "结束阶段，你可以选择至多两张手牌标记为“闭境”。若你于回合外失去“闭境”牌，当前回合角色的弃牌阶段开始时，其需弃置两张牌。"..
+  "准备阶段，你重铸手牌中的“闭境”牌。",
+}
+
+Fk:loadTranslationTable{
+  ["weiwenzhugezhi"] = "卫温诸葛直",
+  ["fuhai"] = "浮海",
+  [":fuhai"] = "出牌阶段对每名角色限一次，你可以展示一张手牌并选择上家或下家，该角色展示一张手牌。若你的牌点数：不小于其，你弃置你展示的牌，"..
+  "然后对其上家或下家重复此流程；小于其，其弃置其展示的牌，然后你与其各摸X张牌（X为你本阶段发动此技能选择过的角色数），本阶段你不能再发动〖浮海〗。",
+}
 
 --自走棋：沙摩柯 忙牙长 许贡 张昌蒲
 local shamoke = General(extension, "shamoke", "shu", 4)
@@ -1518,7 +1542,15 @@ Fk:loadTranslationTable{
   ["~ty__zhangwen"] = "暨艳过错，强牵吾罪。",
 }
 
---李肃
+Fk:loadTranslationTable{
+  ["ty__lisu"] = "李肃",
+  ["lixun"] = "利熏",
+  [":lixun"] = "锁定技，当你受到伤害时，你防止此伤害，然后获得等同于伤害值的“珠”标记。出牌阶段开始时，你进行一次判定，若结果点数小于“珠”数，"..
+  "你弃置等同于“珠”数的手牌，若弃数不足，则失去不足数量的体力值。",
+  ["kuizhul"] = "馈珠",
+  [":kuizhul"] = "出牌阶段结束时，你可以选择体力值全场最大的一名其他角色，将手牌摸至与该角色相同（最多摸至五张），然后该角色观看你的手牌，"..
+  "弃置任意张手牌并从观看的牌中获得等量的牌，若其获得的牌大于一，则你选择一项：1.移去一个“珠”；2.令其对其攻击范围内的一名角色造成1点伤害。",
+}
 
 --戚宦之争：何进 冯方 赵忠 穆顺 伏完
 local hejin = General(extension, "ty__hejin", "qun", 4)
@@ -1592,7 +1624,140 @@ Fk:loadTranslationTable{
   ["~ty__hejin"] = "诛宦不成，反遭其害，遗笑天下人矣……",
 }
 
---冯方
+local fengfang = General(extension, "fengfang", "qun", 3)
+local diting = fk.CreateTriggerSkill{
+  name = "diting",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target ~= player and target.phase == Player.Play and not target:isKongcheng() and
+      player.hp > 0  --fxxk buqu
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#diting-invoke::"..target.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {target.id})
+    local cards = table.random(target:getCardIds("h"), math.min(target:getHandcardNum(), player.hp))
+    local id = room:askForCardsChosen(player, target, 1, 1, {card_data = {{target.general, cards}}}, self.name)[1]
+    room:setPlayerMark(target, "diting_"..player.id.."-phase", id)
+  end,
+}
+local diting_trigger = fk.CreateTriggerSkill{
+  name = "#diting_trigger",
+  mute = true,
+  events = {fk.TargetSpecified, fk.CardUsing, fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    if player:usedSkillTimes("diting", Player.HistoryPhase) > 0 and target:getMark("diting_"..player.id.."-phase") ~= 0 and not player.dead then
+      if event == fk.TargetSpecified then
+        return data.card:getEffectiveId() == target:getMark("diting_"..player.id.."-phase") and
+          table.contains(AimGroup:getAllTargets(data.tos), player.id)
+      elseif event == fk.CardUsing then
+        return data.card:getEffectiveId() == target:getMark("diting_"..player.id.."-phase") and
+          (not data.tos or not table.contains(TargetGroup:getRealTargets(data.tos), player.id))
+      elseif event == fk.EventPhaseEnd then
+        return target.phase == Player.Play and table.contains(target:getCardIds("h"), target:getMark("diting_"..player.id.."-phase"))
+      end
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke("diting")
+    if event == fk.TargetSpecified then
+      room:notifySkillInvoked(player, "diting", "defensive")
+      table.insertIfNeed(data.nullifiedTargets, player.id)
+    elseif event == fk.CardUsing then
+      room:notifySkillInvoked(player, "diting", "drawcard")
+      player:drawCards(2, "diting")
+    elseif event == fk.EventPhaseEnd then
+      room:notifySkillInvoked(player, "diting", "control")
+      local id = target:getMark("diting_"..player.id.."-phase")
+      room:obtainCard(player.id, id, false, fk.ReasonPrey)
+    end
+  end,
+}
+local bihuo = fk.CreateTriggerSkill{
+  name = "bihuo",
+  mute = true,
+  events = {fk.Damage, fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.from and data.from ~= data.to
+  end,
+  on_cost = function(self, event, target, player, data)
+    local prompt
+    if event == fk.Damage then
+      prompt = "#bihuo1-invoke"
+    else
+      prompt = "#bihuo2-invoke"
+    end
+    local to = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper), 1, 1, prompt, self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke(self.name)
+    local to = room:getPlayerById(self.cost_data)
+    if event == fk.Damage then
+      room:notifySkillInvoked(player, self.name, "support")
+      room:setPlayerMark(to, "@bihuo", to:getMark("@bihuo") + 1)
+    else
+      room:notifySkillInvoked(player, self.name, "control")
+      room:setPlayerMark(to, "@bihuo", to:getMark("@bihuo") - 1)
+    end
+  end,
+}
+local bihuo_trigger = fk.CreateTriggerSkill{
+  name = "#bihuo_trigger",
+  mute = true,
+  events = {fk.TurnStart, fk.DrawNCards},
+  can_trigger = function(self, event, target, player, data)
+    if target == player then
+      if event == fk.TurnStart then
+        return player:getMark("@bihuo") ~= 0
+      else
+        return player:getMark("@bihuo-turn") ~= 0
+      end
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.TurnStart then
+      room:setPlayerMark(player, "@bihuo-turn", player:getMark("@bihuo"))
+      room:setPlayerMark(player, "@bihuo", 0)
+    else
+      data.n = data.n + player:getMark("@bihuo-turn")
+    end
+  end,
+}
+diting:addRelatedSkill(diting_trigger)
+bihuo:addRelatedSkill(bihuo_trigger)
+fengfang:addSkill(diting)
+fengfang:addSkill(bihuo)
+Fk:loadTranslationTable{
+  ["fengfang"] = "冯方",
+  ["diting"] = "谛听",
+  [":diting"] = "其他角色出牌阶段开始时，若你在其攻击范围内，你可以观看其X张手牌（X为你的体力值），然后秘密选择其中一张。若如此做，本阶段"..
+  "该角色使用此牌指定你为目标后，此牌对你无效；若没有指定你为目标，你摸两张牌；若本阶段结束时此牌仍在其手牌中，你获得之。",
+  ["bihuo"] = "避祸",
+  [":bihuo"] = "当你受到其他角色造成的伤害后，你可令一名角色下回合摸牌阶段摸牌数+1；当你对其他角色造成伤害后，你可令一名角色下回合摸牌阶段摸牌数-1。",
+  ["#diting-invoke"] = "谛听：你可以观看 %dest 的手牌并秘密选择一张产生效果",
+  ["#bihuo1-invoke"] = "避祸：你可以令一名角色下回合摸牌阶段摸牌数+1",
+  ["#bihuo2-invoke"] = "避祸：你可以令一名角色下回合摸牌阶段摸牌数-1",
+  ["@bihuo"] = "避祸",
+  ["@bihuo-turn"] = "避祸",
+
+  ["$diting1"] = "奉命查验，还请配合。",
+  ["$diting2"] = "且容我查验一二。",
+  ["$bihuo1"] = "董卓乱政，京师不可久留。",
+  ["$bihuo2"] = "权臣当朝，不如早日脱身。",
+  ["~fengfang"] = "掌控校事，为人所忌。",	
+}
 
 local zhaozhong = General(extension, "zhaozhong", "qun", 6)
 local yangzhong = fk.CreateTriggerSkill{
@@ -2022,14 +2187,147 @@ Fk:loadTranslationTable{
   ["~ty__zhaoyan"] = "背信食言，当有此劫……",
 }
 
+local wangwei = General(extension, "wangwei", "qun", 4)
+local ruizhan = fk.CreateTriggerSkill{
+  name = "ruizhan",
+  anim_type = "offensive",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target ~= player and target.phase == Player.Start and target:getHandcardNum() >= target.hp and
+      not player:isKongcheng() and not target:isKongcheng()
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, data, "#ruizhan-invoke::"..target.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {target.id})
+    local pindian = player:pindian({target}, self.name)
+    if target.dead or player:isProhibited(target, Fk:cloneCard("slash")) then return end
+    if pindian.results[target.id].winner == player or
+      pindian.fromCard.trueName == "slash" or pindian.results[target.id].toCard.trueName == "slash" then
+      local card = Fk:cloneCard("slash")
+      card.skillName = self.name
+      local use = {
+        from = player.id,
+        tos = {{target.id}},
+        card = card,
+      }
+      room:useCard(use)
+      if pindian.results[target.id].winner == player and
+        (pindian.fromCard.trueName == "slash" or pindian.results[target.id].toCard.trueName == "slash")
+        and use.damageDealt and use.damageDealt[target.id] and not player.dead and not target.dead and not target:isNude() then
+        local id = room:askForCardChosen(player, target, "he", self.name, "#ruizhan-prey::"..target.id)
+        room:moveCardTo(Fk:getCardById(id), Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, false, player.id)
+      end
+    end
+  end
+}
+local shilie = fk.CreateActiveSkill{
+  name = "shilie",
+  anim_type = "special",
+  card_num = 0,
+  target_num = 0,
+  prompt = function (self)
+    return "#shilie-"..self.interaction.data
+  end,
+  interaction = function(self)
+    return UI.ComboBox { choices = {"recover", "loseHp"} }
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    if self.interaction.data == "recover" then
+      if player:isWounded() then
+        room:recover{
+          who = player,
+          num = 1,
+          recoverBy = player,
+          skillName = self.name,
+        }
+      end
+      if not player:isNude() then
+        local cards = room:askForCard(player, math.min(#player:getCardIds("he"), 2), 2, true, self.name, false, ".", "#shilie-put")
+        local dummy = Fk:cloneCard("dilu")
+        dummy:addSubcards(cards)
+        player:addToPile(self.name, dummy, false, self.name)
+        local n = #player:getPile(self.name) - #room.players
+        if n > 0 then
+          local dummy2 = Fk:cloneCard("dilu")
+          for i = 1, n, 1 do
+            dummy2:addSubcard(player:getPile(self.name)[i])
+          end
+          room:moveCardTo(dummy2, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
+        end
+      end
+    else
+      room:loseHp(player, 1, self.name)
+      if player.dead then return end
+      local cards = room:askForCard(player, math.min(#player:getPile(self.name), 2), 2, false, self.name, false,
+        ".|.|.|shilie", "#shilie-get", self.name)
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(cards)
+      room:moveCardTo(dummy, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, false, player.id)
+    end
+  end,
+}
+local shilie_trigger = fk.CreateTriggerSkill{
+  name = "#shilie_trigger",
+  mute = true,
+  main_skill = shilie,
+  events = {fk.Death},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self, false, true) and #player:getPile("shilie") > 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.map(room.alive_players, Util.IdMapper)
+    if data.damage and data.damage.from then
+      table.removeOne(targets, data.damage.from.id)
+    end
+    local to = room:askForChoosePlayers(player, targets, 1, 1, "#shilie-choose", "shilie", true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke("shilie")
+    room:notifySkillInvoked(player, "shilie", "support")
+    local to = room:getPlayerById(self.cost_data)
+    local dummy = Fk:cloneCard("dilu")
+    dummy:addSubcards(player:getPile("shilie"))
+    room:moveCardTo(dummy, Card.PlayerHand, to, fk.ReasonJustMove, "shilie", nil, false, player.id)
+  end,
+}
+shilie:addRelatedSkill(shilie_trigger)
+wangwei:addSkill(ruizhan)
+wangwei:addSkill(shilie)
 Fk:loadTranslationTable{
   ["wangwei"] = "王威",
   ["ruizhan"] = "锐战",
-  [":ruizhan"] = "其他的角色准备阶段，若其手牌数大于等于体力值，你可以与其拼点：若你赢或者拼点牌有【杀】，你视为对其使用一张【杀】；"..
-  "若两项均满足，此【杀】造成伤害后你获得其一张牌。",
+  [":ruizhan"] = "其他角色准备阶段，若其手牌数不小于体力值，你可以与其拼点：若你赢或者拼点牌中有【杀】，你视为对其使用一张【杀】；"..
+  "若两项均满足且此【杀】造成伤害，你获得其一张牌。",
   ["shilie"] = "示烈",
-  [":shilie"] = "出牌阶段限一次，你可以选择一项：1.回复1点体力，然后将两张牌置于武将牌上（不足则全放，总数不能大于游戏人数）；"..
-  "2.失去1点体力，然后获得武将牌上的两张牌。<br>你死亡时，你可将武将牌上的牌交给除伤害来源外的一名其他角色。",
+  [":shilie"] = "出牌阶段限一次，你可以选择一项：1.回复1点体力，然后将两张牌置为“示烈”牌（不足则全放，总数不能大于游戏人数）；"..
+  "2.失去1点体力，然后获得两张“示烈”牌。<br>你死亡时，你可将“示烈”牌交给除伤害来源外的一名其他角色。",
+  ["#ruizhan-invoke"] = "锐战：你可与 %dest 拼点，若赢或拼点牌中有【杀】，视为对其使用【杀】",
+  ["#ruizhan-prey"] = "锐战：获得 %dest 一张牌",
+  ["#shilie-recover"] = "示烈：回复1点体力，将两张牌置为“示烈”牌",
+  ["#shilie-loseHp"] = "示烈：失去1点体力，获得两张牌“示烈”牌",
+  ["#shilie-put"] = "示烈：将两张牌置为“示烈”牌",
+  ["#shilie-get"] = "示烈：获得两张“示烈”牌",
+  ["#shilie-choose"] = "示烈：你可以将所有“示烈”牌交给一名角色",
+
+  ["$ruizhan1"] = "敌势汹汹，当急攻以挫其锐。",
+  ["$ruizhan2"] = "威愿领骑兵千人，以破敌前军。",
+  ["$shilie1"] = "荆州七郡，亦有怀义之人！",
+  ["$shilie2"] = "食禄半生，安能弃旧主而去！",
+  ["~wangwei"] = "后有追兵，主公先行！",
 }
 
 local liyixiejing = General(extension, "liyixiejing", "wu", 4)

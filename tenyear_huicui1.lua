@@ -689,7 +689,7 @@ Fk:loadTranslationTable{
   ["~zhoushan"] = "夫人救我！夫人救我！",
 }
 
---才子佳人：何晏 王桃 王悦 赵嫣 滕胤 张嫙 夏侯令女 孙茹 蒯祺 庞山民 张媱
+--才子佳人：董白 何晏 王桃 王悦 赵嫣 滕胤 张嫙 夏侯令女 孙茹 蒯祺 庞山民 张媱
 local heyan = General(extension, "heyan", "wei", 3)
 local yachai = fk.CreateTriggerSkill{
   name = "yachai",
@@ -1791,7 +1791,7 @@ local xunjie = fk.CreateTriggerSkill{
       end
     else
       if n > 0 then
-        room:changeHp(to, -math.min(n, to:getLostHp()), nil, self.name)
+        room:changeHp(to, math.min(n, to:getLostHp()), nil, self.name)
       else
         room:broadcastPlaySound("./audio/system/losehp")
         room:changeHp(to, n, nil, self.name)
@@ -3100,7 +3100,7 @@ Fk:loadTranslationTable{
   ["~yuechen"] = "天下犹魏，公休何故如此？",
 }
 
---天下归心：魏贾诩 陈登 蔡瑁张允 高览 尹夫人 吕旷吕翔 陈珪 陈矫 秦朗 唐咨
+--天下归心：阚泽 魏贾诩 陈登 蔡瑁张允 高览 尹夫人 吕旷吕翔 陈珪 陈矫 秦朗 唐咨
 local jiaxu = General(extension, "ty__jiaxu", "wei", 3)
 local ty__jianshu = fk.CreateActiveSkill{
   name = "ty__jianshu",
@@ -4344,7 +4344,7 @@ Fk:loadTranslationTable{
   ["~ty__jiachong"] = "诸公勿怪，充乃奉命行事……",
 }
 
---代汉涂高：马日磾 张勋 雷薄 桥蕤 纪灵
+--代汉涂高：马日磾 张勋 纪灵 雷薄 桥蕤 董绾
 local ty__mamidi = General(extension, "ty__mamidi", "qun", 4, 6)
 local bingjie = fk.CreateTriggerSkill{
   name = "bingjie",
@@ -4587,7 +4587,7 @@ Fk:loadTranslationTable{
   ["#ty__shuangren_active"] = "双刃",
   ["#ty__shuangren_prohibit"] = "双刃",
   ["@@ty__shuangren_prohibit-phase"] = "双刃禁杀",
-  
+
   ["#ty__shuangren-ask"] = "双刃：你可与一名角色拼点",
   ["#ty__shuangren_slash-ask"] = "双刃：视为对与 %src 势力相同的一至两名角色使用【杀】(若选两名，其中一名须为%src)",
 

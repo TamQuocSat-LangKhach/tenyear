@@ -1626,7 +1626,7 @@ Fk:loadTranslationTable{
   ["$ty_ex__paiyi2"] = "顺我者，封侯拜将!，逆我者，斧钺加身!",
   ["~ty_ex__zhonghui"] = "这就是……自食恶果的下场吗？",
 }
--- yj2013
+
 local caochong = General(extension, "ty_ex__caochong", "wei", 3)
 local ty_ex__chengxiang = fk.CreateTriggerSkill{
   name = "ty_ex__chengxiang",
@@ -2112,7 +2112,7 @@ Fk:loadTranslationTable{
   ["$ty_ex__danshou2"] = "胆守有余，可堪大任！",
   ["~ty_ex__zhuran"] = "义封一生……不负国家！",
 }
---yj2014
+
 local chenqun = General(extension, "ty_ex__chenqun", "wei", 3)
 local ty_ex__pindi = fk.CreateActiveSkill{
   name = "ty_ex__pindi",
@@ -2593,7 +2593,7 @@ Fk:loadTranslationTable{
   ["$ty_ex__shibei2"] = "宁向北而死，不面南而生。",
   ["~ty_ex__jvshou"] = "身处河南，魂归河北……",
 }
---yj2015
+
 local caorui = General(extension, "ty_ex__caorui", "wei", 3)
 local ty_ex__xingshuai = fk.CreateTriggerSkill{
   name = "ty_ex__xingshuai$",
@@ -2869,135 +2869,6 @@ Fk:loadTranslationTable{
   ["$ty_ex__anguo2"] = "天下纷乱，正是吾等用武之时。",
   ["~ty_ex__zhuzhi"] = "刀在人在，刀折人亡……",
 }
-
-local ty_ex__liuchen = General(extension, "ty_ex__liuchen", "shu", 4)
-local ty_ex__zhanjue = fk.CreateViewAsSkill{
-  name = "ty_ex__zhanjue",
-  anim_type = "offensive",
-  card_filter = Util.FalseFunc,
-  view_as = function(self)
-    local card = Fk:cloneCard("duel")
-    local cards = table.filter(Self:getCardIds("h"), function (id) return Fk:getCardById(id):getMark("@@ty_ex__qinwang-inhand") == 0 end)
-    card:addSubcards(cards)
-    card.skillName = self.name
-    return card
-  end,
-  enabled_at_play = function(self, player)
-    if player:getMark("ty_ex__zhanjue-turn") < 3 and not player:isKongcheng() then
-      return table.find(player:getCardIds("h"), function (id) return Fk:getCardById(id):getMark("@@ty_ex__qinwang-inhand") == 0 end)
-    end
-  end,
-}
-local ty_ex__zhanjue_trigger = fk.CreateTriggerSkill{
-  name = "#ty_ex__zhanjue_trigger",
-  mute = true,
-  events = {fk.CardUseFinished},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and table.contains(data.card.skillNames, "ty_ex__zhanjue") and data.damageDealt
-  end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    if not player.dead then
-      player:drawCards(1, "ty_ex__zhanjue")
-      room:addPlayerMark(player, "ty_ex__zhanjue-turn", 1)
-    end
-    for _, p in ipairs(room.alive_players) do
-      if data.damageDealt[p.id] then
-        p:drawCards(1, "ty_ex__zhanjue")
-        if p == player then
-          room:addPlayerMark(player, "ty_ex__zhanjue-turn", 1)
-        end
-      end
-    end
-  end,
-}
-ty_ex__zhanjue:addRelatedSkill(ty_ex__zhanjue_trigger)
-ty_ex__liuchen:addSkill(ty_ex__zhanjue)
-local ty_ex__qinwang = fk.CreateActiveSkill{
-  name = "ty_ex__qinwang$",
-  anim_type = "offensive",
-  can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
-  end,
-  card_num = 0,
-  card_filter = Util.FalseFunc,
-  target_num = 0,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local loyal = {}
-    for _, p in ipairs(room:getOtherPlayers(player)) do
-      if player.dead then break end
-      if not p.dead and p.kingdom == "shu" and not p:isKongcheng() then
-        local cards = room:askForCard(p, 1, 1, false, self.name, true, "slash", "#ty_ex__qinwang-ask:"..player.id)
-        if #cards > 0 then
-          table.insert(loyal, p)
-          room:moveCards({
-            ids = cards,
-            from = p.id,
-            to = player.id,
-            toArea = Card.PlayerHand,
-            moveReason = fk.ReasonGive,
-            proposer = player.id,
-            skillName = self.name,
-            moveVisible = false,
-          })
-        end
-      end
-    end
-    if not player.dead and #loyal > 0 and room:askForSkillInvoke(player, self.name, nil, "#ty_ex__qinwang-draw") then
-      for _, p in ipairs(loyal) do
-        if not p.dead then
-          p:drawCards(1, self.name)
-        end
-      end
-    end
-  end,
-}
-local ty_ex__qinwang_trigger = fk.CreateTriggerSkill{
-  name = "#ty_ex__qinwang_trigger",
-  refresh_events = {fk.AfterCardsMove, fk.TurnEnd},
-  can_refresh = function(self, event, target, player, data)
-    return player:usedSkillTimes(ty_ex__qinwang.name, Player.HistoryTurn) > 0
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.AfterCardsMove then
-      for _, move in ipairs(data) do
-        if move.skillName == ty_ex__qinwang.name and move.moveReason == fk.ReasonGive and move.to == player.id then
-          for _, info in ipairs(move.moveInfo) do
-            if table.contains(player:getCardIds("h"), info.cardId) then
-              room:setCardMark(Fk:getCardById(info.cardId), "@@ty_ex__qinwang-inhand", 1)
-            end
-          end
-        end
-      end
-    else
-      for _, id in ipairs(player:getCardIds("h")) do
-        room:setCardMark(Fk:getCardById(id), "@@ty_ex__qinwang-inhand", 0)
-      end
-    end
-  end,
-}
-ty_ex__qinwang:addRelatedSkill(ty_ex__qinwang_trigger)
-ty_ex__liuchen:addSkill(ty_ex__qinwang)
-Fk:loadTranslationTable{
-  ["ty_ex__liuchen"] = "刘谌",
-  ["ty_ex__zhanjue"] = "战绝",
-  [":ty_ex__zhanjue"] = "出牌阶段，你可以将所有手牌（至少一张）当【决斗】使用，然后此【决斗】结算结束后，你和因此【决斗】受伤的角色各摸一张牌。若你本阶段因此技能而摸过至少三张牌，本阶段你的〖战绝〗失效。",
-  ["ty_ex__qinwang"] = "勤王",
-  [":ty_ex__qinwang"] = "主公技，出牌阶段限一次，你可以令其他蜀势力角色依次选择是否交给你一张【杀】，然后你可以令所有交给你【杀】的角色摸一张牌（以此法获得的【杀】于本回合不会被〖战绝〗使用）。",
-  ["#ty_ex__qinwang-ask"] = "勤王：可以交给 %src 一张【杀】",
-  ["#ty_ex__qinwang-draw"] = "勤王：你可以令所有交给你【杀】的角色摸一张牌",
-  ["@@ty_ex__qinwang-inhand"] = "勤王",
-
-  ["$ty_ex__zhanjue1"] = "千里锦绣江山，岂能拱手相让！",
-  ["$ty_ex__zhanjue2"] = "先帝一生心血，安可坐以待毙！",
-  ["$ty_ex__qinwang1"] = "泰山倾崩，可有坚贞之臣？",
-  ["$ty_ex__qinwang2"] = "大江潮来，怎无忠勇之士？",
-  ["~ty_ex__liuchen"] = "儿欲死战，父亲何故先降……",
-}
-
 local xiahoushi = General(extension, "ty_ex__xiahoushi", "shu", 3, 3, General.Female)
 local ty_ex__qiaoshi = fk.CreateTriggerSkill{
   name = "ty_ex__qiaoshi",
@@ -3227,7 +3098,7 @@ Fk:loadTranslationTable{
   ["$ty_ex__huaiyi2"] = "汉失其鹿，天下豪杰当共逐之。",
   ["~ty_ex__gongsunyuan"] = "大星落，君王死……",
 }
---yj2016
+
 local ty_ex__sundeng = General(extension, "ty_ex__sundeng", "wu", 4)
 local ty_ex__kuangbi = fk.CreateTriggerSkill {
   name = "ty_ex__kuangbi",

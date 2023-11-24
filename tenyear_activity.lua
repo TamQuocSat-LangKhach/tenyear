@@ -956,7 +956,7 @@ dongxie:addSkill(humei)
 Fk:loadTranslationTable{
   ["dongxie"] = "董翓",
   ["jiaoxia"] = "狡黠",
-  [":jiaoxia"] = "出牌阶段开始时，你可以令本阶段你的手牌均视为【杀】。若你以此法使用的【杀】造成了伤害，此【杀】结算后你视为使用原卡牌。"..
+  [":jiaoxia"] = "出牌阶段开始时，你可以令本阶段你的手牌均视为【杀】。若你以此法使用的【杀】造成了伤害，此【杀】结算后你视为使用原牌名的牌。"..
   "出牌阶段，你对每名角色使用第一张【杀】无次数限制。",
   ["humei"] = "狐魅",
   [":humei"] = "出牌阶段每项限一次，你可以选择一项，令一名体力值不大于X的角色执行：1.摸一张牌；2.交给你一张牌；3.回复1点体力"..
@@ -971,7 +971,7 @@ Fk:loadTranslationTable{
   ["humei2-phase"] = "交给你一张牌",
   ["humei3-phase"] = "回复1点体力",
   ["#humei-give"] = "狐魅：请交给 %src 一张牌",
-
+  
   ["$jiaoxia1"] = "暗剑匿踪，现时必捣黄龙！",
   ["$jiaoxia2"] = "袖中藏刃，欲取诸君之头！",
   ["$humei1"] = "尔为靴下之臣，当行顺我之事。",
@@ -1655,7 +1655,7 @@ Fk:loadTranslationTable{
   "弃置任意张手牌并从观看的牌中获得等量的牌，若其获得的牌大于一，则你选择一项：1.移去一个“珠”；2.令其对其攻击范围内的一名角色造成1点伤害。",
 }
 
---戚宦之争：何进 冯方 赵忠 穆顺
+--戚宦之争：何进 冯方 赵忠 穆顺 伏完
 local hejin = General(extension, "ty__hejin", "qun", 4)
 local ty__mouzhu = fk.CreateActiveSkill{
   name = "ty__mouzhu",

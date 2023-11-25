@@ -415,7 +415,7 @@ local ty__pingjian_trigger = fk.CreateTriggerSkill{
       skills = table.filter({
         "guixin", "benyu", "ex__fankui", "ganglie", "yiji", "ex__jianxiong", "os_ex__enyuan", "chouce", "ol_ex__jieming",
         "fangzhu", "chengxiang", "huituo", "ty__wangxi", "yuce", "zhiyu", "wanggui", "qianlong", "ty__jilei",
-        "xianchou", "rangjie", "liejie", "os__fupan"
+        "xianchou", "rangjie", "liejie", "os__fupan", "zhichi"
       }, function (skill_name)
         return not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
       end)

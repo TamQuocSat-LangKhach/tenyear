@@ -4025,7 +4025,7 @@ local zhuihuan_delay = fk.CreateTriggerSkill{
 
   refresh_events = {fk.Damaged},
   can_refresh = function(self, event, target, player, data)
-    return player:getMark("zhuihuan") ~= 0 and data.from
+    return player == target and player:getMark("zhuihuan") ~= 0 and data.from
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -4193,7 +4193,7 @@ local yuqi = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local n1, n2, n3 = player:getMark("yuqi2"), player:getMark("yuqi3"), player:getMark("yuqi4")
+    local n1, n2, n3 = player:getMark("yuqi2") + 3, player:getMark("yuqi3") + 1, player:getMark("yuqi4") + 1
     if n1 < 2 and n2 < 1 and n3 < 1 then
       return false
     end
@@ -4254,11 +4254,11 @@ local yuqi = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
+    room:setPlayerMark(player, "yuqi1", 0)
+    room:setPlayerMark(player, "yuqi2", 0)
+    room:setPlayerMark(player, "yuqi3", 0)
+    room:setPlayerMark(player, "yuqi4", 0)
     if event == fk.EventAcquireSkill then
-      room:setPlayerMark(player, "yuqi1", 0)
-      room:setPlayerMark(player, "yuqi2", 3)
-      room:setPlayerMark(player, "yuqi3", 1)
-      room:setPlayerMark(player, "yuqi4", 1)
       room:setPlayerMark(player, "@" .. self.name, string.format("%d-%d-%d-%d", 0, 3, 1, 1))
     else
       room:setPlayerMark(player, "yuqi1", 0)
@@ -4272,25 +4272,22 @@ local yuqi = fk.CreateTriggerSkill{
 local function AddYuqi(player, skillName, num)
   local room = player.room
   local choices = {}
+  local all_choices = {}
+  local yuqi_initial = {0, 3, 1, 1}
   for i = 1, 4, 1 do
-    if player:getMark("yuqi" .. tostring(i)) < 5 then
+    table.insert(all_choices, "yuqi" .. tostring(i))
+    if player:getMark("yuqi" .. tostring(i)) + yuqi_initial[i] < 5 then
       table.insert(choices, "yuqi" .. tostring(i))
     end
   end
   if #choices > 0 then
-    local choice = room:askForChoice(player, choices, skillName)
-    local x = player:getMark(choice)
-    if x + num < 6 then
-      x = x + num
-    else
-      x = 5
-    end
-    room:setPlayerMark(player, choice, x)
+    local choice = room:askForChoice(player, choices, skillName, "#yuqi-upgrade:::" .. tostring(num), false, all_choices)
+    room:setPlayerMark(player, choice, math.min(5-yuqi_initial[table.indexOf(all_choices, choice)], player:getMark(choice)+num))
     room:setPlayerMark(player, "@yuqi", string.format("%d-%d-%d-%d",
     player:getMark("yuqi1"),
-    player:getMark("yuqi2"),
-    player:getMark("yuqi3"),
-    player:getMark("yuqi4")))
+    player:getMark("yuqi2")+3,
+    player:getMark("yuqi3")+1,
+    player:getMark("yuqi4")+1))
   end
 end
 local shanshen = fk.CreateTriggerSkill{
@@ -4311,6 +4308,7 @@ local shanshen = fk.CreateTriggerSkill{
       }
     end
   end,
+
   refresh_events = {fk.DamageCaused},
   can_refresh = function(self, event, target, player, data)
     return target == player and target:hasSkill(self) and data.to:getMark(self.name) == 0
@@ -4325,8 +4323,9 @@ local xianjing = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and player.phase == Player.Start then
+      local yuqi_initial = {0, 3, 1, 1}
       for i = 1, 4, 1 do
-        if player:getMark("yuqi" .. tostring(i)) < 5 then
+        if player:getMark("yuqi" .. tostring(i)) + yuqi_initial[i] < 5 then
           return true
         end
       end
@@ -4353,6 +4352,7 @@ Fk:loadTranslationTable{
   ["xianjing"] = "娴静",
   [":xianjing"] = "准备阶段，你可令〖隅泣〗中的一个数字+1（单项不能超过5）。若你满体力值，则再令〖隅泣〗中的一个数字+1。",
   ["@yuqi"] = "隅泣",
+  ["#yuqi-upgrade"] = "选择令〖隅泣〗中的一个数字+%arg",
   ["yuqi1"] = "距离",
   ["yuqi2"] = "观看牌数",
   ["yuqi3"] = "交给受伤角色牌数",
@@ -6190,12 +6190,12 @@ local caixia = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    player:broadcastSkillInvoke(self.name)
     if event == fk.CardUsing then
       room:notifySkillInvoked(player, self.name)
       room:removePlayerMark(player, "@caixia")
     else
       room:notifySkillInvoked(player, self.name, event == fk.Damaged and "masochism" or "drawcard")
+    player:broadcastSkillInvoke(self.name)
       local x = tonumber(string.sub(self.cost_data, 12, 12))
       room:setPlayerMark(player, "@caixia", x)
       room:drawCards(player, x, self.name)
@@ -6606,7 +6606,7 @@ local xiongmu = fk.CreateTriggerSkill{
       data.damage = data.damage - 1
     end
   end,
-  
+
   refresh_events = {fk.AfterCardsMove, fk.RoundEnd},
   can_refresh = Util.TrueFunc,
   on_refresh = function(self, event, target, player, data)

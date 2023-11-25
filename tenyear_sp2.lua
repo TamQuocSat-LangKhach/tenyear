@@ -5011,28 +5011,15 @@ local wanglu = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if player:getEquipment(Card.SubtypeTreasure) then
-      if Fk:getCardById(player:getEquipment(Card.SubtypeTreasure)).name == "siege_engine" then
-        player:gainAnExtraPhase(Player.Play)
-        return
-      end
+    if table.find(player:getEquipments(Card.SubtypeTreasure), function(id) return Fk:getCardById(id).name == "siege_engine" end) then
+      player:gainAnExtraPhase(Player.Play)
     else
-      for i = 1, 3, 1 do
-        room:setPlayerMark(player, "xianzhu"..tostring(i), 0)
-      end
-    end
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      if Fk:getCardById(id).name == "siege_engine" and room:getCardArea(id) == Card.Void then
-        room:moveCards({
-          ids = {id},
-          fromArea = Card.Void,
-          to = player.id,
-          toArea = Card.PlayerEquip,
-          moveReason = fk.ReasonJustMove,
-          proposer = player.id,
-          skillName = self.name,
-        })
-        break
+      local car = table.find(player.room.void, function(id) return Fk:getCardById(id).name == "siege_engine" end)
+      if car and U.canMoveCardIntoEquip(player, car) then
+        for i = 1, 3, 1 do
+          room:setPlayerMark(player, "xianzhu"..tostring(i), 0)
+        end
+        U.moveCardIntoEquip (room, player, car, self.name, true, player)
       end
     end
   end,
@@ -5043,8 +5030,8 @@ local xianzhu = fk.CreateTriggerSkill{
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash" and
-      player:getEquipment(Card.SubtypeTreasure) and Fk:getCardById(player:getEquipment(Card.SubtypeTreasure)).name == "siege_engine" and
-      (player:getMark("xianzhu1") + player:getMark("xianzhu2") + player:getMark("xianzhu3")) < 5
+    table.find(player:getEquipments(Card.SubtypeTreasure), function(id) return Fk:getCardById(id).name == "siege_engine" end)
+    and (player:getMark("xianzhu1") + player:getMark("xianzhu2") + player:getMark("xianzhu3")) < 5
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -5087,27 +5074,42 @@ local chaixie = fk.CreateTriggerSkill{
   refresh_events = {fk.BeforeCardsMove},
   can_refresh = Util.TrueFunc,
   on_refresh = function(self, event, target, player, data)
-    local id = 0
-    for i = #data, 1, -1 do
-      local move = data[i]
-      if move.toArea ~= Card.Void then
-        for j = #move.moveInfo, 1, -1 do
-          local info = move.moveInfo[j]
-          if info.fromArea == Card.PlayerEquip and Fk:getCardById(info.cardId, true).name == "siege_engine" then
-            id = info.cardId
-            table.removeOne(move.moveInfo, info)
-            break
+    local mirror_moves = {}
+    local to_void, cancel_move = {},{}
+    local no_updata = (player:getMark("xianzhu1") + player:getMark("xianzhu2") + player:getMark("xianzhu3")) == 0
+    for _, move in ipairs(data) do
+      if move.from == player.id and move.toArea ~= Card.Void then
+        local move_info = {}
+        local mirror_info = {}
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if Fk:getCardById(id, true).name == "siege_engine" and info.fromArea == Card.PlayerEquip then
+            if no_updata and move.moveReason == fk.ReasonDiscard then
+              table.insert(cancel_move, id)
+            else
+              table.insert(mirror_info, info)
+              table.insert(to_void, id)
+            end
+          else
+            table.insert(move_info, info)
           end
+        end
+        move.moveInfo = move_info
+        if #mirror_info > 0 then
+          local mirror_move = table.clone(move)
+          mirror_move.to = nil
+          mirror_move.toArea = Card.Void
+          mirror_move.moveInfo = mirror_info
+          table.insert(mirror_moves, mirror_move)
         end
       end
     end
-    if id ~= 0 then
-      local room = player.room
-      room:sendLog{
-        type = "#destructDerivedCard",
-        arg = Fk:getCardById(id, true):toLogString(),
-      }
-      room:moveCardTo(Fk:getCardById(id, true), Card.Void, nil, fk.ReasonJustMove, "", "", true)
+    if #cancel_move > 0 then
+      player.room:sendLog{ type = "#cancelDismantle", card = cancel_move, arg = "#siege_engine_skill"  }
+    end
+    if #to_void > 0 then
+      table.insertTable(data, mirror_moves)
+      player.room:sendLog{ type = "#destructDerivedCards", card = to_void, }
     end
   end,
 }
@@ -5119,7 +5121,7 @@ Fk:loadTranslationTable{
   ["wanglu"] = "望橹",
   [":wanglu"] = "锁定技，准备阶段，你将【大攻车】置入你的装备区，若你的装备区内已有【大攻车】，则你执行一个额外的出牌阶段。<br>"..
   "<font color='grey'>【大攻车】<br>♠9 装备牌·宝物<br /><b>装备技能</b>：出牌阶段开始时，你可以视为使用一张【杀】，"..
-  "当此【杀】对目标角色造成伤害后，你弃置其一张牌。若此牌未升级，则不能被弃置。离开装备区时销毁。",
+  "当此【杀】对目标角色造成伤害后，你弃置其一张牌。若此牌未升级，则防止此牌被弃置。此牌离开装备区时销毁。",
   ["xianzhu"] = "陷筑",
   [":xianzhu"] = "当你使用【杀】造成伤害后，你可以升级【大攻车】（每个【大攻车】最多升级5次）。升级选项：<br>"..
   "【大攻车】的【杀】无视距离和防具；<br>【大攻车】的【杀】可指定目标+1；<br>【大攻车】的【杀】造成伤害后弃牌数+1。",

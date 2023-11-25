@@ -2006,6 +2006,96 @@ Fk:loadTranslationTable{
   ["~ty_ex__guanping"] = "黄泉路远，儿愿为父亲牵马执鞭……",
 }
 
+local ty_ex__jianyong = General(extension, "ty_ex__jianyong", "shu", 3)
+local ty_ex__qiaoshui = fk.CreateActiveSkill{
+  name = "ty_ex__qiaoshui",
+  anim_type = "control",
+  can_use = function(self, player)
+    return not player:isKongcheng()
+  end,
+  card_num = 0,
+  card_filter = Util.FalseFunc,
+  target_num = 1,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local to = room:getPlayerById(effect.tos[1])
+    local pindian = player:pindian({to}, self.name)
+    if pindian.results[to.id].winner == player then
+      room:addPlayerMark(player, "@ty_ex__qiaoshui-turn", 1)
+    else
+      room:setPlayerMark(player, "ty_ex__qiaoshui_fail-turn", 1)
+      player:endPlayPhase()
+    end
+  end,
+}
+local ty_ex__qiaoshui_delay = fk.CreateTriggerSkill{
+  name = "#ty_ex__qiaoshui_delay",
+  events = {fk.AfterCardTargetDeclared},
+  mute = true,
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:getMark("@ty_ex__qiaoshui-turn") > 0 and data.card.type ~= Card.TypeEquip and data.card.sub_type ~= Card.SubtypeDelayedTrick
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local num = player:getMark("@ty_ex__qiaoshui-turn")
+    room:setPlayerMark(player, "@ty_ex__qiaoshui-turn", 0)
+    local targets = U.getUseExtraTargets(room, data)
+    table.insertTableIfNeed(targets, TargetGroup:getRealTargets(data.tos))
+    if #targets == 0 then return false end
+    local tos = room:askForChoosePlayers(player, targets, 1, num, "#ty_ex__qiaoshui-choose:::"
+    ..data.card:toLogString()..":"..num, ty_ex__qiaoshui.name, true)
+    local add,remove = {},{}
+    for _, to in ipairs(tos) do
+      if TargetGroup:includeRealTargets(data.tos, to) then
+        table.insert(remove, to)
+      else
+        table.insert(add, to)
+      end
+    end
+    if #add > 0 then
+      for _, to in ipairs(add) do
+        table.insert(data.tos, {to})
+      end
+      room:sendLog{ type = "#AddTargetsBySkill", from = target.id, to = add, arg = ty_ex__qiaoshui.name, arg2 = data.card:toLogString() }
+    end
+    if #remove > 0 then
+      for _, to in ipairs(remove) do
+        TargetGroup:removeTarget(data.tos, to)
+      end
+      room:sendLog{ type = "#RemoveTargetsBySkill", from = target.id, to = remove, arg = ty_ex__qiaoshui.name, arg2 = data.card:toLogString() }
+    end
+  end,
+}
+ty_ex__qiaoshui:addRelatedSkill(ty_ex__qiaoshui_delay)
+local ty_ex__qiaoshui_maxcards = fk.CreateMaxCardsSkill{
+  name = "#ty_ex__qiaoshui_maxcards",
+  exclude_from = function(self, player, card)
+    return player:getMark("ty_ex__qiaoshui_fail-turn") > 0 and card.type == Card.TypeTrick
+  end,
+}
+ty_ex__qiaoshui:addRelatedSkill(ty_ex__qiaoshui_maxcards)
+ty_ex__jianyong:addSkill(ty_ex__qiaoshui)
+ty_ex__jianyong:addSkill("zongshij")
+Fk:loadTranslationTable{
+  ["ty_ex__jianyong"] = "简雍",
+  ["ty_ex__qiaoshui"] = "巧说",
+  [":ty_ex__qiaoshui"] = "出牌阶段，你可以与一名角色拼点。若你赢，本回合你使用下一张基本牌或普通锦囊牌可以多或少选择一个目标；若你没赢，你结束出牌阶段且本回合锦囊牌不计入手牌上限。",
+  ["#ty_ex__qiaoshui-choose"] = "巧说：你可以为%arg增加/减少至多 %arg2 个目标",
+  ["@ty_ex__qiaoshui-turn"] = "巧说",
+  ["#AddTargetsBySkill"] = "用于 %arg 的效果，%from 使用的 %arg2 增加了目标 %to",
+  ["#RemoveTargetsBySkill"] = "用于 %arg 的效果，%from 使用的 %arg2 取消了目标 %to",
+
+  ["$ty_ex__qiaoshui1"] = "慧心妙舌，难题可解。",
+  ["$ty_ex__qiaoshui2"] = "巧言善辩，应对自如。",
+  ["$zongshij_ty_ex__jianyong1"] = "能断大事者，不拘小节。",
+  ["$zongshij_ty_ex__jianyong2"] = "闲暇自得，威仪不肃。",
+  ["~ty_ex__jianyong"] = "此景竟无言以对。",
+}
+
 local zhuran = General(extension, "ty_ex__zhuran", "wu", 4)
 local ty_ex__danshou = fk.CreateTriggerSkill{
   name = "ty_ex__danshou",

@@ -5902,6 +5902,150 @@ Fk:loadTranslationTable{
 
 --计将安出：程昱 王允 蒋干 赵昂 刘晔 杨弘 郤正 桓范
 --程昱 王允
+local ty__chengyu = General(extension, "ty__chengyu", "wei", 3)
+local ty__shefu = fk.CreateTriggerSkill{
+  name = "ty__shefu",
+  anim_type = "control",
+  events ={fk.EventPhaseStart, fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      if event == fk.EventPhaseStart then
+        return target == player and player.phase == Player.Finish and not player:isNude()
+      else
+        return target ~= player and player.phase == Player.NotActive and data.card.type ~= Card.TypeEquip and U.IsUsingHandcard(target, data)
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart then
+      local cards = room:askForCard(player, 1, 1, true, self.name, true, ".", "#ty__shefu-cost")
+      if #cards > 0 then
+        self.cost_data = cards[1]
+        return true
+      end
+    else
+      local index
+      local mark = U.getMark(player, self.name)
+      for i = 1, #mark, 1 do
+        if data.card.trueName == mark[i][2] then
+          index = i
+          break
+        end
+      end
+      if index and room:askForSkillInvoke(player, self.name, nil, "#ty__shefu-invoke::"..target.id..":"..data.card.name) then
+        self.cost_data = index
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart then
+      player:addToPile(self.name, self.cost_data, false, self.name)
+      local names = {}
+      local mark = U.getMark(player, self.name)
+      for _, id in ipairs(Fk:getAllCardIds()) do
+        local card = Fk:getCardById(id)
+        if card.type ~= Card.TypeEquip then
+          table.insertIfNeed(names, card.trueName)
+        end
+      end
+      for _, v in ipairs(mark) do
+        table.removeOne(names, v[2])
+      end
+      if #names > 0 then
+        local name = room:askForChoice(player, names, self.name)
+        table.insert(mark, {self.cost_data, name})
+        room:setPlayerMark(player, self.name, mark)
+      end
+    else
+      local index = self.cost_data
+      local mark = U.getMark(player, self.name)
+      local throw = mark[index][1]
+      table.remove(mark, index)
+      room:setPlayerMark(player, self.name, mark)
+      if target.phase ~= Player.NotActive then
+        room:setPlayerMark(target, "@@ty__shefu-turn", 1)
+      end
+      room:moveCards({
+        from = player.id,
+        ids = {throw},
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonPutIntoDiscardPile,
+        skillName = self.name,
+        specialName = self.name,
+      })
+      data.tos = {}
+      room:sendLog{ type = "#CardNullifiedBySkill", from = target.id, arg = self.name, arg2 = data.card:toLogString() }
+    end
+  end,
+}
+local ty__shefu_invalidity = fk.CreateInvaliditySkill {
+  name = "#ty__shefu_invalidity",
+  invalidity_func = function(self, from, skill)
+    return from:getMark("@@ty__shefu-turn") > 0 and not skill.attached_equip and not skill.name:endsWith("&")
+  end
+}
+ty__shefu:addRelatedSkill(ty__shefu_invalidity)
+ty__chengyu:addSkill(ty__shefu)
+local ty__benyu = fk.CreateTriggerSkill{
+  name = "ty__benyu",
+  anim_type = "masochism",
+  events = {fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.from and not data.from.dead
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if #player:getCardIds("he") > data.from:getHandcardNum() then
+      local num = data.from:getHandcardNum() + 1
+      local discard = room:askForDiscard(player, num, 9999, true, self.name, true, ".", "#ty__benyu-discard::"..data.from.id..":"..num,true)
+      if #discard >= num then
+        self.cost_data = discard
+        return true
+      end
+    else
+      if player:getHandcardNum() < math.min(data.from:getHandcardNum(), 5) then
+        return room:askForSkillInvoke(player, self.name)
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    if self.cost_data and type(self.cost_data) == "table" then
+      player.room:throwCard(self.cost_data, self.name, player, player)
+      player.room:damage{
+        from = player,
+        to = data.from,
+        damage = 1,
+        skillName = self.name,
+      }
+    else
+      player:drawCards(math.min(5, data.from:getHandcardNum()) - player:getHandcardNum())
+    end
+  end,
+}
+ty__chengyu:addSkill(ty__benyu)
+Fk:loadTranslationTable{
+  ["ty__chengyu"] = "程昱",
+  ["ty__shefu"] = "设伏",
+  [":ty__shefu"] = "①结束阶段，你可以记录一个未被记录的基本牌或锦囊牌的牌名并扣置一张牌，称为“伏兵”；<br>"..
+  "②当其他角色于你回合外使用手牌时，你可以移去一张记录牌名相同的“伏兵”，令此牌无效（若此牌有目标角色则改为取消所有目标），然后若此时是该角色的回合内，其本回合所有技能失效。",
+  ["ty__benyu"] = "贲育",
+  [":ty__benyu"] = "当你受到伤害后，你可以选择一项：1.将手牌摸至X张（最多摸至5张）；2.弃置至少X+1张牌，然后对伤害来源造成1点伤害（X为伤害来源的手牌数）。",
+  ["#ty__shefu-cost"] = "设伏：你可以将一张牌扣置为“伏兵”",
+  ["#ty__benyu-discard"] = "贲育：你可以弃置至少%arg牌，对 %dest 造成1点伤害",
+  ["@@ty__shefu-turn"] = "设伏封技",
+  ["#ty__shefu-invoke"] = "设伏：可以令 %dest 使用的 %arg 无效",
+  ["#CardNullifiedBySkill"] = "由于 %arg 的效果，%from 使用的 %arg2 无效",
+
+  ["$ty__shefu1"] = "吾已埋下伏兵，敌兵一来，管教他瓮中捉鳖。",
+  ["$ty__shefu2"] = "我已设下重重圈套，就等敌军入彀矣。",
+  ["$ty__benyu1"] = "助曹公者昌，逆曹公者亡！",
+  ["$ty__benyu2"] = "愚民不可共济大事，必当与智者为伍。",
+  ["~ty__chengyu"] = "吾命休矣，何以仰报圣恩于万一……",
+}
+
 
 local jianggan = General(extension, "jianggan", "wei", 3)
 local weicheng = fk.CreateTriggerSkill{

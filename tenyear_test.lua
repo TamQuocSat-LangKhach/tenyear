@@ -122,6 +122,42 @@ Fk:loadTranslationTable{
   "伤害，然后你可以对同一方向的下一名角色重复此流程，直到有角色死亡或此角色为你。",
 }
 
---马铁 车胄 韩嵩 诸葛梦雪 诸葛若雪
+local tmp_illustrate = fk.CreateActiveSkill{name = "tmp_illustrate"}
 
+local chezhou = General(extension, "chezhou", "wei", 4)
+chezhou:addSkill(tmp_illustrate)
+chezhou.hidden = true
+Fk:loadTranslationTable{
+  ["chezhou"] = "车胄",
+  ["tmp_illustrate"] = "看画",
+  [":tmp_illustrate"] = "这个武将还没上线，你可以看看插画。不会出现在选将框。",
+}
+
+local matie = General(extension, "matie", "qun", 4)
+matie:addSkill("tmp_illustrate")
+matie.hidden = true
+Fk:loadTranslationTable{
+  ["matie"] = "马铁",
+}
+
+local hansong = General(extension, "hansong", "wei", 3)
+hansong:addSkill("tmp_illustrate")
+hansong.hidden = true
+Fk:loadTranslationTable{
+  ["hansong"] = "韩嵩",
+}
+
+local zhugemengxue = General(extension, "zhugemengxue", "wei", 3, 3, General.Female)
+zhugemengxue:addSkill("tmp_illustrate")
+zhugemengxue.hidden = true
+Fk:loadTranslationTable{
+  ["zhugemengxue"] = "诸葛梦雪",
+}
+
+local zhugeruoxue = General(extension, "zhugeruoxue", "wei", 3, 3, General.Female)
+zhugeruoxue:addSkill("tmp_illustrate")
+zhugeruoxue.hidden = true
+Fk:loadTranslationTable{
+  ["zhugeruoxue"] = "诸葛若雪",
+}
 return extension

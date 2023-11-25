@@ -1756,47 +1756,7 @@ Fk:loadTranslationTable{
   ["$ty_ex__jingce2"] = "妙策如神，精兵强将，安有不胜之理？",
   ["~ty_ex__guohuai"] = "岂料姜维……空手接箭！",
 }
-local manchong = General(extension, "ty_ex__manchong", "wei", 3)
-local ty_ex__junxing = fk.CreateActiveSkill{
-  name = "ty_ex__junxing",
-  anim_type = "control",
-  min_card_num = 1,
-  target_num = 1,
-  prompt = "#junxing",
-  can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
-  end,
-  card_filter = function(self, to_select, selected)
-    return Fk:currentRoom():getCardArea(to_select) ~= Player.Equip and not Self:prohibitDiscard(Fk:getCardById(to_select))
-  end,
-  target_filter = function(self, to_select, selected)
-    return #selected == 0 and to_select ~= Self.id
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    room:throwCard(effect.cards, self.name, player)
-    if target.dead then return end 
-    if #room:askForDiscard(target, #effect.cards, #effect.cards, true, self.name, true, ".", "#junxing-discard") > 0 then
-      if not target.dead then
-        room:loseHp(target, 1, self.name)
-      end
-    else
-      target:turnOver()
-      target:drawCards(#effect.cards)
-    end
-  end
-}
 
-manchong:addSkill(ty_ex__junxing)
-manchong:addSkill("yuce")
-Fk:loadTranslationTable{
-  ["ty_ex__manchong"] = "界满宠",
-  ["ty_ex__junxing"] = "峻刑",
-  [":ty_ex__junxing"] = "出牌阶段限一次，你可以弃置至少一张手牌，令一名其他角色选择一项：1.弃置等量张牌并且失去一点体力；2.翻面并摸等同于你弃牌数的牌。",
-  ["#ty_ex__junxing"] = "峻刑：弃置任意张手牌，令一名角色选择弃置等量的牌并失去一点体力或翻面并摸等量牌",
-  ["#ty_ex__junxing-discard"] = "峻刑：你需弃置%arg张牌并失去一点体力，否则翻面并摸弃牌数的牌",
-}
 local liufeng = General(extension, "ty_ex__liufeng", "shu", 4)
 local ty_ex__xiansi = fk.CreateTriggerSkill{
   name = "ty_ex__xiansi",

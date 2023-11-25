@@ -4126,7 +4126,7 @@ local chenghao = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and data.damageType ~= fk.NormalDamage and not data.chain
+    return player:hasSkill(self) and data.damageType ~= fk.NormalDamage and data.beginnerOfTheDamage
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -4320,7 +4320,7 @@ Fk:loadTranslationTable{
   ["phoenix_mark_move"] = "转移“凤印”",
 
   ["chenghao"] = "称好",
-  [":chenghao"] = "当一名角色受到属性伤害后，若其处于“连环状态”且是此次伤害传导的起点，你可以观看牌堆顶的X张牌并将这些牌分配给任意角色（X为横置角色数+1）。",
+  [":chenghao"] = "当一名角色受到属性伤害后，若其受到此伤害前处于“连环状态”且是此伤害传导的起点，你可以观看牌堆顶的X张牌并将这些牌分配给任意角色（X为横置角色数+1）。",
 
   ["yinshi"] = "隐士",
   [":yinshi"] = "锁定技，当你受到属性伤害或锦囊牌造成的伤害时，若你没有“龙印”或“凤印”且装备区内没有防具牌，防止此伤害。",

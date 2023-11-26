@@ -915,7 +915,7 @@ Fk:loadTranslationTable{
   ["#yinlu3-invoke"] = "♠瘴气：你需弃置一张♠牌，否则失去1点体力",
   ["#yinlu4-invoke"] = "♣芸香：你可以弃置一张♣牌，获得一个可以防止1点伤害的“芸香”标记",
   ["#yinlu-yunxiang"] = "♣芸香：你可以消耗所有“芸香”，防止等量的伤害",
-  
+
   ["$yinlu1"] = "南疆苦瘴，非土人不得过。",
   ["$yinlu2"] = "闻丞相南征，某特来引之。",
   ["$youqi1"] = "寒烟锁旧山，坐看云起出。",
@@ -924,7 +924,282 @@ Fk:loadTranslationTable{
 }
 
 --悬壶济世：吉平 孙寒华 郑浑 刘宠骆俊
---吉平
+local jiping = General(extension, "jiping", "qun", 3)
+local xunli = fk.CreateTriggerSkill{
+  name = "xunli",
+  anim_type = "special",
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove, fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      if event == fk.AfterCardsMove and #player:getPile("jiping_li") < 9 then
+        for _, move in ipairs(data) do
+          if move.extra_data and move.extra_data.xunli then
+            local e = player.room.logic:getCurrentEvent():findParent(GameEvent.SkillEffect)
+            if e and e.data[3] == "lieyi" then  --发动烈医过程中不会触发询疠，新杀智慧
+              return false
+            end
+            for _, id in ipairs(move.extra_data.xunli) do
+              if player.room:getCardArea(id) == Card.DiscardPile then
+                return true
+              end
+            end
+          end
+        end
+      else
+        return target == player and player.phase == Player.Play and not player:isKongcheng() and #player:getPile("jiping_li") > 0
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.AfterCardsMove then
+      local ids = {}
+      for _, move in ipairs(data) do
+        if move.extra_data and move.extra_data.xunli then
+          for _, id in ipairs(move.extra_data.xunli) do
+            if room:getCardArea(id) == Card.DiscardPile then
+              table.insertIfNeed(ids, id)
+            end
+          end
+        end
+      end
+      local n = math.min(#ids, 9 - #player:getPile("jiping_li"))
+      local dummy = Fk:cloneCard("dilu")
+      for i = 1, n, 1 do
+        dummy:addSubcard(ids[i])
+      end
+      player:addToPile("jiping_li", dummy, false, self.name)
+    else
+      local cards = table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id).color == Card.Black end)
+      local results = U.askForExchange(player, "jiping_li", "$Hand", player:getPile("jiping_li"), cards, self.name, 9)
+      local cards1, cards2 = {}, {}
+      for _, id in ipairs(results) do
+        if room:getCardArea(id) == Player.Hand then
+          table.insert(cards1, id)
+        else
+          table.insert(cards2, id)
+        end
+      end
+      local move1 = {
+        ids = cards2,
+        from = player.id,
+        to = player.id,
+        fromArea = Card.PlayerSpecial,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonExchange,
+        proposer = player.id,
+        skillName = self.name,
+      }
+      local move2 = {
+        ids = cards1,
+        from = player.id,
+        to = player.id,
+        fromArea = Card.PlayerHand,
+        toArea = Card.PlayerSpecial,
+        moveReason = fk.ReasonExchange,
+        proposer = player.id,
+        specialName = "jiping_li",
+        skillName = self.name,
+      }
+      room:moveCards(move1, move2)
+    end
+  end,
+
+  refresh_events = {fk.BeforeCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    if player:hasSkill(self) and #player:getPile("jiping_li") < 9 then
+      for _, move in ipairs(data) do
+        if move.moveReason == fk.ReasonDiscard and move.toArea == Card.DiscardPile then
+          return true
+        end
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    for _, move in ipairs(data) do
+      if move.moveReason == fk.ReasonDiscard and move.toArea == Card.DiscardPile then
+        local ids = {}
+        for _, info in ipairs(move.moveInfo) do
+          if Fk:getCardById(info.cardId).color == Card.Black then
+            table.insertIfNeed(ids, info.cardId)
+          end
+        end
+        if #ids > 0 then
+          move.extra_data = move.extra_data or {}
+          move.extra_data.xunli = ids
+        end
+      end
+    end
+  end,
+}
+local zhishi = fk.CreateTriggerSkill{
+  name = "zhishi",
+  anim_type = "support",
+  expand_pile = "jiping_li",
+  events = {fk.EventPhaseStart, fk.TargetConfirmed, fk.EnterDying},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      if event == fk.EventPhaseStart then
+        return target == player and player.phase == Player.Finish
+      else
+        return player:getMark(self.name) == target.id and not target.dead and
+          ((event == fk.TargetConfirmed and data.card.trueName == "slash") or event == fk.EnterDying) and
+          #player:getPile("jiping_li") > 0
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.EventPhaseStart then
+      local to = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper),
+        1, 1, "#zhishi-choose", self.name, true)
+      if #to > 0 then
+        self.cost_data = to[1]
+        return true
+      end
+    else
+      local cards = player.room:askForCard(player, 1, 999, false, self.name, true,
+        ".|.|.|jiping_li", "#zhishi-invoke::"..target.id, "jiping_li")
+      if #cards > 0 then
+        self.cost_data = cards
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart then
+      local to = room:getPlayerById(self.cost_data)
+      room:setPlayerMark(to, "@@zhishi", 1)
+      room:setPlayerMark(player, self.name, to.id)
+    else
+      room:doIndicate(player.id, {target.id})
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(self.cost_data)
+      room:moveCardTo(dummy, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
+      if not target.dead then
+        target:drawCards(#dummy.subcards, self.name)
+      end
+    end
+  end,
+
+  refresh_events = {fk.TurnStart},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark(self.name) ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(player:getMark(self.name))
+    if not to.dead then
+      room:setPlayerMark(to, "@@zhishi", 0)
+    end
+    room:setPlayerMark(player, self.name, 0)
+  end,
+}
+local lieyi = fk.CreateActiveSkill{
+  name = "lieyi",
+  anim_type = "offensive",
+  card_num = 0,
+  target_num = 1,
+  prompt = "#lieyi",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and #player:getPile("jiping_li") > 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    player:showCards(player:getPile("jiping_li"))
+    local yes = true
+    while #player:getPile("jiping_li") > 0 and not player.dead do
+      if target.dead then break end
+      local id = room:askForCard(player, 1, 1, false, self.name, false, ".|.|.|jiping_li", "#lieyi-use::"..target.id, "jiping_li")
+      if #id > 0 then
+        id = id[1]
+      else
+        id = table.random(player:getPile("jiping_li"))
+      end
+      local card = Fk:getCardById(id)
+      if U.canUseCardTo(room, player, target, card, false, false) then
+        local use = {
+          from = player.id,
+          tos = {{target.id}},
+          card = card,
+          extraUse = true,
+        }
+        use.extra_data = use.extra_data or {}
+        use.extra_data.lieyi_use = player.id
+        room:useCard(use)
+        if use.extra_data.lieyi_dying then
+          yes = false
+        end
+      else
+        room:moveCardTo(card, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
+      end
+    end
+    if #player:getPile("jiping_li") > 0 then
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(player:getPile("jiping_li"))
+      room:moveCardTo(dummy, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
+    end
+    if yes and not player.dead then
+      room:loseHp(player, 1, self.name)
+    end
+  end,
+}
+local lieyi_trigger = fk.CreateTriggerSkill{
+  name = "#lieyi_trigger",
+
+  refresh_events = {fk.EnterDying},
+  can_refresh = function (self, event, target, player, data)
+    if data.damage and data.damage.card then
+      local e = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+      if e then
+        local use = e.data[1]
+        return use.extra_data and use.extra_data.lieyi_use and use.extra_data.lieyi_use == player.id
+      end
+    end
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local e = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+    if e then
+      local use = e.data[1]
+      use.extra_data = use.extra_data or {}
+      use.extra_data.lieyi_dying = true
+    end
+  end,
+}
+lieyi:addRelatedSkill(lieyi_trigger)
+jiping:addSkill(xunli)
+jiping:addSkill(zhishi)
+jiping:addSkill(lieyi)
+Fk:loadTranslationTable{
+  ["jiping"] = "吉平",
+  ["xunli"] = "询疠",
+  [":xunli"] = "锁定技，当黑色牌因弃置进入弃牌堆后，将之置于你的武将牌上，称为“疠”（至多9张）。出牌阶段开始时，你可以用任意张黑色手牌交换等量的“疠”。",
+  ["zhishi"] = "指誓",
+  [":zhishi"] = "结束阶段，你可以选择一名角色，直到你下回合开始，该角色成为【杀】的目标后或进入濒死状态时，你可以移去任意张“疠”，令其摸等量的牌。",
+  ["lieyi"] = "烈医",
+  [":lieyi"] = "出牌阶段限一次，你可以展示所有“疠”并选择一名其他角色，依次对其使用所有“疠”（无距离次数限制），不可使用的置入弃牌堆。然后若该角色未"..
+  "因此进入濒死状态，你失去1点体力。",
+  ["jiping_li"] = "疠",
+  ["#zhishi-choose"] = "指誓：选择一名角色，当其成为【杀】的目标后或进入濒死状态时，你可以移去“疠”令其牌",
+  ["@@zhishi"] = "指誓",
+  ["#zhishi-invoke"] = "指誓：你可以移去任意张“疠”，令 %dest 摸等量的牌",
+  ["#lieyi"] = "烈医：你可以对一名角色使用所有“疠”！",
+  ["#lieyi-use"] = "烈医：选择一张“疠”对 %dest 使用（若无法使用则置入弃牌堆）",
+
+  ["$xunli1"] = "病情扑朔，容某思量。",
+  ["$xunli2"] = "此疾难辨，容某细察。",
+  ["$zhishi1"] = "嚼指为誓，誓杀国贼！",
+  ["$zhishi2"] = "心怀汉恩，断指相随。",
+  ["$lieyi1"] = "君有疾在身，不治将恐深。",
+  ["$lieyi2"] = "汝身患重疾，当以虎狼之药去之。",
+  ["~jiping"] = "今事不成，惟死而已！",
+}
 
 local sunhanhua = General(extension, "ty__sunhanhua", "wu", 3, 3, General.Female)
 local huiling = fk.CreateTriggerSkill{

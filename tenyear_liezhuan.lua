@@ -1115,6 +1115,151 @@ Fk:loadTranslationTable{
   ["~ty__caosong"] = "孟德，勿忘汝父之仇！",
 }
 
+local zhangmiao = General(extension, "zhangmiao", "qun", 4)
+local mouni = fk.CreateTriggerSkill{
+  name = "mouni",
+  anim_type = "offensive",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Start and not player:isKongcheng()
+  end,
+  on_cost = function(self, event, target, player, data)
+    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper),
+      1, 1, "#mouni-invoke", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local ids = table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id).trueName == "slash" end)
+    if #ids == 0 then return end
+    ids = table.reverse(ids)  --十周年是手牌从右往左使用
+    local yes = true
+    for _, id in ipairs(ids) do
+      if player.dead or to.dead then return end
+      if room:getCardOwner(id) == player and room:getCardArea(id) == Card.PlayerHand then
+        local card = Fk:getCardById(id)
+        if U.canUseCardTo(room, player, to, card, false, false) then
+          local use = {
+            from = player.id,
+            tos = {{to.id}},
+            card = card,
+            extraUse = true,
+          }
+          use.extra_data = use.extra_data or {}
+          use.extra_data.mouni_use = player.id
+          room:useCard(use)
+          if not use.damageDealt then
+            yes = false
+            player:skip(Player.Play)
+            player:skip(Player.Discard)
+          end
+          if use.extra_data.mouni_dying then
+            break
+          end
+        end
+      end
+    end
+    if yes and not player.dead then
+      room:setPlayerMark(player, "mouni-turn", 1)
+    end
+  end,
+
+  refresh_events = {fk.EnterDying},
+  can_refresh = function (self, event, target, player, data)
+    if data.damage and data.damage.card then
+      local e = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+      if e then
+        local use = e.data[1]
+        return use.extra_data and use.extra_data.mouni_use and use.extra_data.mouni_use == player.id
+      end
+    end
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local e = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+    if e then
+      local use = e.data[1]
+      use.extra_data = use.extra_data or {}
+      use.extra_data.mouni_dying = true
+    end
+  end,
+}
+local zongfan = fk.CreateTriggerSkill{
+  name = "zongfan",
+  frequency = Skill.Wake,
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and
+      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  can_wake = function(self, event, target, player, data)
+    return player:getMark("mouni-turn") > 0 and not player.skipped_phases[Player.Play]
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if not player:isNude() then
+      local success, dat = room:askForUseActiveSkill(player, "zongfan_active", "#zongfan-give", false)
+      if success then
+        local dummy = Fk:cloneCard("dilu")
+        dummy:addSubcards(dat.cards)
+        room:moveCardTo(dummy, Card.PlayerHand, room:getPlayerById(dat.targets[1]), fk.ReasonGive, self.name, nil, false, player.id)
+        local n = math.min(#dat.cards, 5)
+        if not player.dead then
+          room:changeMaxHp(player, n)
+        end
+        if not player.dead and player:isWounded() then
+          room:recover({
+            who = player,
+            num = math.min(n, player:getLostHp()),
+            recoverBy = player,
+            skillName = self.name
+          })
+        end
+      end
+    end
+    room:handleAddLoseSkills(player, "-mouni|zhangu", nil, true, false)
+  end,
+}
+local zongfan_active = fk.CreateActiveSkill{
+  name = "zongfan_active",
+  min_card_num = 1,
+  target_num = 1,
+  card_filter = Util.TrueFunc,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+}
+local zhangu = fk.CreateTriggerSkill{
+  name = "zhangu",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.TurnStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.maxHp > 1 and (player:isKongcheng() or #player:getCardIds("e") == 0)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:changeMaxHp(player, -1)
+    if player.dead then return end
+    local dummy = Fk:cloneCard("dilu")
+    local types = {"basic", "trick", "equip"}
+    while #types > 0 do
+      local pattern = table.random(types)
+      table.removeOne(types, pattern)
+      dummy:addSubcards(room:getCardsFromPileByRule(".|.|.|.|.|"..pattern))
+    end
+    if #dummy.subcards > 0 then
+      room:obtainCard(player.id, dummy, false, fk.ReasonJustMove)
+    end
+  end,
+}
+Fk:addSkill(zongfan_active)
+zhangmiao:addSkill(mouni)
+zhangmiao:addSkill(zongfan)
+zhangmiao:addRelatedSkill(zhangu)
 Fk:loadTranslationTable{
   ["zhangmiao"] = "张邈",
   ["mouni"] = "谋逆",
@@ -1125,6 +1270,17 @@ Fk:loadTranslationTable{
   "（X为你交给该角色的牌数且最多为5），失去〖谋逆〗，获得〖战孤〗",
   ["zhangu"] = "战孤",
   [":zhangu"] = "锁定技，回合开始时，若你体力上限大于1且没有手牌或装备区没有牌，你减1点体力上限，然后从牌堆中随机获得三张不同类别的牌。",
+  ["#mouni-invoke"] = "谋逆：你可以对一名角色使用你手牌中所有【杀】！",
+  ["zongfan_active"] = "纵反",
+  ["#zongfan-give"] = "纵反：交给一名其他角色任意张牌，你加等量体力上限并回复等量体力",
+
+  ["$mouni1"] = "反制于人，不以鄙乎！",
+  ["$mouni2"] = "与诸君终为敌，吾欲先手。",
+  ["$zongfan1"] = "今天下未定，有能者皆可谋之！",
+  ["$zongfan2"] = "吾以千里之众，当四战之地，可反也！",
+  ["$zhangu1"] = "孤军奋战，独破众将。",
+  ["$zhangu2"] = "雄狮搏兔，何须援乎？",
+  ["~zhangmiao"] = "独木终难支矣。",
 }
 
 local qiuliju = General(extension, "qiuliju", "qun", 4, 6)

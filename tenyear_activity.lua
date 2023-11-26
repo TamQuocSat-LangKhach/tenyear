@@ -1,6 +1,8 @@
 local extension = Package("tenyear_activity")
 extension.extensionName = "tenyear"
 
+local U = require "packages/utility/utility"
+
 Fk:loadTranslationTable{
   ["tenyear_activity"] = "十周年-活动限定",
 }
@@ -3262,7 +3264,115 @@ Fk:loadTranslationTable{
   ["~dufuren"] = "往事云烟，去日苦多。",
 }
 
---秦宜禄
+local qinyilu = General(extension, "qinyilu", "qun", 3)
+local piaoping = fk.CreateTriggerSkill{
+  name = "piaoping",
+  anim_type = "switch",
+  switch_skill_name = "piaoping",
+  frequency = Skill.Compulsory,
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player:getMark("piaoping_invalid-turn") == 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local n = math.min(player:usedSkillTimes(self.name, Player.HistoryTurn), player.hp)
+    if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
+      player:drawCards(n, self.name)
+    else
+      local cards = room:askForDiscard(player, n, n, true, self.name, false, ".", "#piaoping-discard:::"..n, true)
+      if not room.logic:trigger("fk.TuoxianInvoke", player, {cards = cards}) then  --睿智技能
+        room:throwCard(cards, self.name, player, player)
+      end
+    end
+  end,
+}
+local tuoxian = fk.CreateTriggerSkill{
+  name = "tuoxian",
+  anim_type = "spcial",
+  events = {"fk.TuoxianInvoke"},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryGame) < player:getMark(self.name)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper),
+      1, 1, "#tuoxian-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local dummy = Fk:cloneCard("dilu")
+    dummy:addSubcards(data.cards)
+    room:moveCardTo(dummy, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
+    local choices = {}
+    local n = #data.cards
+    if not to.dead and #to:getCardIds("hej") >= n then
+      table.insert(choices, "tuoxian1:::"..n)
+    end
+    if not player.dead then
+      table.insert(choices, "tuoxian2:"..player.id)
+    end
+    local choice = room:askForChoice(to, choices, self.name, "#tuoxian-choice:"..player.id)
+    if choice[8] == "1" then
+      local cards = room:askForCardsChosen(to, to, n, n, "hej", self.name, "#tuoxian-discard:::"..n)
+      room:throwCard(cards, self.name, to, to)
+    else
+      room:setPlayerMark(player, "piaoping_invalid-turn", 1)
+    end
+    return true
+  end,
+}
+local zhuili = fk.CreateTriggerSkill{
+  name = "zhuili",
+  anim_type = "spcial",
+  frequency = Skill.Compulsory,
+  events = {fk.TargetConfirming},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.card.color == Card.Black and data.from ~= player.id and
+      player:hasSkill("piaoping", true) and player:getMark("zhuili_invalid-turn") == 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if player:getSwitchSkillState("piaoping", false) == fk.SwitchYang then
+      room:addPlayerMark(player, "tuoxian", 1)
+      room:setPlayerMark(player, "zhuili_invalid-turn", 1)
+    else
+      room:setPlayerMark(player, MarkEnum.SwithSkillPreName.."piaoping", fk.SwitchYang)
+    end
+  end,
+}
+qinyilu:addSkill(piaoping)
+qinyilu:addSkill(tuoxian)
+qinyilu:addSkill(zhuili)
+Fk:loadTranslationTable{
+  ["qinyilu"] = "秦宜禄",
+  ["piaoping"] = "漂萍",
+  [":piaoping"] = "锁定技，转换技，当你使用一张牌时，阳：你摸X张牌；阴：你弃置X张牌（X为本回合〖漂萍〗发动次数且至多为你当前体力值）。",
+  ["tuoxian"] = "托献",
+  [":tuoxian"] = "每局游戏限零次，当你因〖漂萍〗弃置牌时，你可以改为将这些牌交给一名其他角色，然后其选择一项：1.其弃置其区域内等量的牌；"..
+  "2.令〖漂萍〗本回合失效。",
+  ["zhuili"] = "惴栗",
+  [":zhuili"] = "锁定技，当你成为其他角色使用黑色牌的目标时，若此时〖漂萍〗状态为：阳，令〖托献〗可使用次数+1，然后此技能本回合失效；"..
+  "阴，令〖漂萍〗状态转换为阳。",
+  ["#piaoping-discard"] = "漂萍：请弃置%arg张牌",
+  ["#tuoxian-choose"] = "托献：你可以将这些牌交给一名其他角色，其选择弃置等量牌或令你的〖漂萍〗失效",
+  ["tuoxian1"] = "弃置你区域内%arg张牌",
+  ["tuoxian2"] = "令 %src 本回合〖漂萍〗失效",
+  ["#tuoxian-choice"] = "托献：%src 令你选择一项",
+  ["#tuoxian-discard"] = "托献：弃置你区域内%arg张牌",
+
+  ["$piaoping1"] = "奔波四处，前途未明。",
+  ["$piaoping2"] = "辗转各地，功业难寻。",
+  ["$tuoxian1"] = "一贵一贱，其情乃见。",
+  ["$tuoxian2"] = "一死一生，乃知交情。",
+  ["$zhuili1"] = "近况艰难，何不忧愁？",
+  ["$zhuili2"] = "形势如此，惴惕难当。",
+  ["~qinyilu"] = "我竟落得如此下场……",
+}
 
 local bianxi = General(extension, "bianxi", "wei", 4)
 local dunxi = fk.CreateTriggerSkill{

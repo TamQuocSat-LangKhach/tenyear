@@ -928,7 +928,7 @@ local ty__songci = fk.CreateActiveSkill{
     if #target.player_cards[Player.Hand] <= target.hp then
       room:notifySkillInvoked(player, self.name, "support")
       player:broadcastSkillInvoke(self.name, 1)
-      target:drawCards(2)
+      target:drawCards(2, self.name)
     else
       room:notifySkillInvoked(player, self.name, "control")
       player:broadcastSkillInvoke(self.name, 2)

@@ -1,6 +1,8 @@
 local extension = Package("tenyear_xinghuo")
 extension.extensionName = "tenyear"
 
+local U = require "packages/utility/utility"
+
 Fk:loadTranslationTable{
   ["tenyear_xinghuo"] = "十周年-星火燎原",
   ["ty"] = "新服",
@@ -329,8 +331,7 @@ Fk:loadTranslationTable{
   ["$gongqing2"] = "豪将在外，增兵必成祸患啊！",
   ["~panjun"] = "耻失荆州，耻失荆州啊！",
 }
--- FIXME:登楼牌有时会不出现
---[[
+
 local ty__wangcan = General(extension, "ty__wangcan", "qun", 3)
 local sanwen = fk.CreateTriggerSkill{
   name = "sanwen",
@@ -524,7 +525,6 @@ local denglou_viewas = fk.CreateViewAsSkill{
   end,
 }
 Fk:addSkill(denglou_viewas)
---]]
 Fk:loadTranslationTable{
   ["ty__wangcan"] = "王粲",
   ["sanwen"] = "散文",

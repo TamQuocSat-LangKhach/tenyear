@@ -3229,14 +3229,144 @@ Fk:loadTranslationTable{
   ["~ty__jiaxu"] = "算无遗策，然终有疏漏……",
 }
 
+local chendeng = General(extension, "ty__chendeng", "qun", 3)
+local wangzu = fk.CreateTriggerSkill{
+  name = "wangzu",
+  anim_type = "defensive",
+  events = {fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.from and data.from ~= player and not player:isKongcheng() and
+      player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local nums = {0, 0, 0}
+    for _, p in ipairs(room.alive_players) do
+      if p.role == "lord" or p.role == "loyalist" then
+        nums[1] = nums[1] + 1
+      elseif p.role == "rebel" then
+        nums[2] = nums[2] + 1
+      else
+        nums[3] = nums[3] + 1
+      end
+    end
+    local n = math.max(table.unpack(nums))
+    if ((player.role == "lord" or player.role == "loyalist") and n == nums[1]) or
+      (player.role == "rebel" and n == nums[2]) or (player.role == "renegade" and n == nums[3]) then
+      local card = player.room:askForDiscard(player, 1, 1, false, self.name, true, ".", "#wangzu1-invoke", true)
+      if #card > 0 then
+        self.cost_data = card
+        return true
+      end
+    else
+      local cards = table.filter(player:getCardIds("h"), function(id) return not player:prohibitDiscard(Fk:getCardById(id)) end)
+      if #cards == 0 then return end
+      if room:askForSkillInvoke(player, self.name, nil, "#wangzu2-invoke") then
+        self.cost_data = {table.random(cards)}
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:throwCard(self.cost_data, self.name, player, player)
+    data.damage = data.damage - 1
+  end,
+}
+local yingshui = fk.CreateActiveSkill{
+  name = "yingshui",
+  anim_type = "offensive",
+  card_num = 1,
+  target_num = 1,
+  prompt = "#yingshui",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0 and Self:inMyAttackRange(Fk:currentRoom():getPlayerById(to_select))  --飞刀
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    room:moveCardTo(Fk:getCardById(effect.cards[1]), Card.PlayerHand, target, fk.ReasonGive, self.name, nil, false, player.id)
+    if target.dead then return end
+    if player.dead or #target:getCardIds("he") < 2 then
+      room:damage{
+        from = player,
+        to = target,
+        damage = 1,
+        skillName = self.name,
+      }
+    else
+      local cards = room:askForCard(target, 2, 999, true, self.name, true, ".|.|.|.|.|equip", "#yingshui-give:"..player.id)
+      if #cards > 1 then
+        local dummy = Fk:cloneCard("dilu")
+        dummy:addSubcards(cards)
+        room:moveCardTo(dummy, Card.PlayerHand, player, fk.ReasonGive, self.name, nil, true, target.id)
+      else
+        room:damage{
+          from = player,
+          to = target,
+          damage = 1,
+          skillName = self.name,
+        }
+      end
+    end
+  end,
+}
+local fuyuan = fk.CreateTriggerSkill{
+  name = "fuyuan",
+  anim_type = "support",
+  events = {fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and data.card.trueName == "slash" and not target.dead then
+      local room = player.room
+      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
+      if turn_event == nil then return false end
+      return #U.getEventsByRule(room, GameEvent.UseCard, 1, function(e)
+        if e.id <= room.logic:getCurrentEvent().id then
+          local use = e.data[1]
+          if use.card.color == Card.Red and use.tos and table.contains(TargetGroup:getRealTargets(use.tos), target.id) then
+            return true
+          end
+        end
+      end, turn_event.id) == 0
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#fuyuan-invoke::"..target.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:doIndicate(player.id, {target.id})
+    target:drawCards(1, self.name)
+  end,
+}
+chendeng:addSkill(wangzu)
+chendeng:addSkill(yingshui)
+chendeng:addSkill(fuyuan)
 Fk:loadTranslationTable{
   ["ty__chendeng"] = "陈登",
   ["wangzu"] = "望族",
   [":wangzu"] = "每回合限一次，当你受到其他角色造成的伤害时，你可以随机弃置一张手牌令此伤害-1，若你所在的阵营存活人数全场最多，则改为选择一张手牌弃置。",
   ["yingshui"] = "营说",
-  [":yingshui"] = "出牌阶段限一次，你可以交给你攻击范围内的一名其他角色一张牌，然后令其选择一项：1.你对其造成的1点伤害；2.交给你至少两张装备牌。",
+  [":yingshui"] = "出牌阶段限一次，你可以交给你攻击范围内的一名其他角色一张牌，然后令其选择一项：1.你对其造成1点伤害；2.交给你至少两张装备牌。",
   ["fuyuan"] = "扶援",
   [":fuyuan"] = "当一名角色成为【杀】的目标后，若其本回合没有成为过红色牌的目标，你可令其摸一张牌。",
+  ["#wangzu1-invoke"] = "望族：你可以弃置一张手牌，令此伤害-1",
+  ["#wangzu2-invoke"] = "望族：你可以随机弃置一张手牌，令此伤害-1",
+  ["#yingshui"] = "营说：交给一名角色一张牌，其选择交给你两张装备牌或你对其造成伤害",
+  ["#yingshui-give"] = "营说：你需交给 %src 至少两张装备牌，否则其对你造成1点伤害",
+  ["#fuyuan-invoke"] = "扶援：你可以令 %dest 摸一张牌",
+
+  ["$wangzu1"] = "名门望族，显贵荣达。",
+  ["$wangzu2"] = "能人辈出，仕宦显达。",
+  ["$yingshui1"] = "道之以德，齐之以礼。",
+  ["$yingshui2"] = "施恩行惠，赡之以义。",
+  ["$fuyuan1"] = "今君困顿，扶援相助。",
+  ["$fuyuan2"] = "恤君之患，以相扶援。",
+  ["~ty__chendeng"] = "吾疾无人可治。",	
 }
 
 local caimaozhangyun = General(extension, "caimaozhangyun", "wei", 4)

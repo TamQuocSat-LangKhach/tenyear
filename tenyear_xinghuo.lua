@@ -329,15 +329,214 @@ Fk:loadTranslationTable{
   ["$gongqing2"] = "豪将在外，增兵必成祸患啊！",
   ["~panjun"] = "耻失荆州，耻失荆州啊！",
 }
-
+-- FIXME:登楼牌有时会不出现
+--[[
+local ty__wangcan = General(extension, "ty__wangcan", "qun", 3)
+local sanwen = fk.CreateTriggerSkill{
+  name = "sanwen",
+  events = {fk.AfterCardsMove},
+  anim_type = "drawcard",
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) < 1 then
+      local get = {}
+      local handcards = player:getCardIds("h")
+      for _, move in ipairs(data) do
+        if move.toArea == Card.PlayerHand and move.to == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if table.contains(handcards, info.cardId) then
+              table.insertIfNeed(get, info.cardId)
+            end
+          end
+        end
+      end
+      local throw, show = {},{}
+      for _, id in ipairs(get) do
+        for _, _id in ipairs(handcards) do
+          if not table.contains(get, _id) then
+            local name = Fk:getCardById(_id).trueName
+            if Fk:getCardById(id).trueName == name then
+              table.insertIfNeed(throw, id)
+              table.insertIfNeed(show, _id)
+            end
+          end
+        end
+      end
+      if #throw > 0 then
+        self.cost_data = {throw, show}
+        return true
+      end
+    end
+  end,
+  on_cost = function (self, event, target, player, data)
+    local num = #self.cost_data[1]
+    return player.room:askForSkillInvoke(player, self.name, nil, "#sanwen-invoke:::"..num)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local throw = self.cost_data[1]
+    local show = self.cost_data[2]
+    table.insertTable(show, throw)
+    player:showCards(show)
+    throw = table.filter(throw, function (id)
+      return not player:prohibitDiscard(Fk:getCardById(id))
+    end)
+    if #throw > 0 then
+      room:throwCard(throw, self.name, player, player)
+      if not player.dead then
+        player:drawCards(2 * #throw, self.name)
+      end
+    end
+  end,
+}
+ty__wangcan:addSkill(sanwen)
+local qiai = fk.CreateTriggerSkill{
+  name = "qiai",
+  frequency = Skill.Limited,
+  events = {fk.EnterDying},
+  anim_type = "defensive",
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target == player and player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and
+    table.find(player.room:getOtherPlayers(player), function(p) return not p:isNude() end)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local players = table.filter(player.room:getOtherPlayers(player), function(p) return not p:isNude() end)
+    local extra_data = {
+      num = 1,
+      min_num = 1,
+      include_equip = true,
+      skillName = self.name,
+      pattern = ".",
+      reason = self.name,
+    }
+    for _, p in ipairs(players) do
+      p.request_data = json.encode({ "choose_cards_skill", "#qiai-give::"..player.id, false, json.encode(extra_data) })
+    end
+    room:notifyMoveFocus(players, self.name)
+    room:doBroadcastRequest("AskForUseActiveSkill", players)
+    local moveInfos = {}
+    for _, p in ipairs(players) do
+      local cards
+      if p.reply_ready then
+        local replyCard = json.decode(p.client_reply).card
+        cards = json.decode(replyCard).subcards
+      else
+        cards = table.random(p:getCardIds("he"), 1)
+      end
+      table.insert(moveInfos, {
+        ids = cards,
+        from = p.id,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonGive,
+        proposer = player.id,
+        skillName = self.name,
+      })
+    end
+    room:moveCards(table.unpack(moveInfos))
+  end,
+}
+ty__wangcan:addSkill(qiai)
+local denglou = fk.CreateTriggerSkill{
+  name = "denglou",
+  frequency = Skill.Limited,
+  events = {fk.EventPhaseStart},
+  anim_type = "drawcard",
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target == player and player.phase == Player.Finish and player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = room:getNCards(4)
+    room:moveCards({
+      ids = cards,
+      toArea = Card.Processing,
+      moveReason = fk.ReasonPut,
+    })
+    U.viewCards(player, cards, self.name)
+    local get = {}
+    for i = 4, 1, -1 do
+      if Fk:getCardById(cards[i]).type ~= Card.TypeBasic then
+        table.insert(get, table.remove(cards, i))
+      end
+    end
+    if #get > 0 then
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(get)
+      room:obtainCard(player, dummy, true, fk.ReasonPrey)
+    end
+    if #cards == 0 then return end
+    while not player.dead and #cards > 0 do
+      player.special_cards["denglou"] = table.simpleClone(cards)
+      player:doNotify("ChangeSelf", json.encode {
+        id = player.id,
+        handcards = player:getCardIds("h"),
+        special_cards = player.special_cards,
+      })
+      room:setPlayerMark(player, MarkEnum.BypassTimesLimit .. "-tmp", 1)
+      local to_use = table.filter(cards, function(id)
+        local card = Fk:getCardById(id)
+        return player:canUse(card) and not player:prohibitUse(card)
+      end)
+      room:setPlayerMark(player, "denglou_cards", to_use)
+      local success, dat = room:askForUseActiveSkill(player, "denglou_viewas", "#denglou-use", true)
+      room:setPlayerMark(player, MarkEnum.BypassTimesLimit .. "-tmp", 0)
+      player.special_cards["denglou"] = {}
+      player:doNotify("ChangeSelf", json.encode {
+        id = player.id,
+        handcards = player:getCardIds("h"),
+        special_cards = player.special_cards,
+      })
+      if success and dat then
+        table.removeOne(cards, dat.cards[1])
+        local card = Fk.skills["denglou_viewas"]:viewAs(dat.cards)
+        room:useCard{
+          from = player.id,
+          tos = table.map(dat.targets, function(id) return {id} end),
+          card = card,
+          extraUse = true,
+        }
+      else
+        break
+      end
+    end
+    if #cards > 0 then
+      room:moveCards({
+        ids = cards,
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonPutIntoDiscardPile,
+      })
+    end
+  end,
+}
+ty__wangcan:addSkill(denglou)
+local denglou_viewas = fk.CreateViewAsSkill{
+  name = "denglou_viewas",
+  expand_pile = "denglou",
+  card_filter = function(self, to_select, selected)
+    local ids = U.getMark(Self, "denglou_cards")
+    return #selected == 0 and table.contains(ids, to_select)
+  end,
+  view_as = function(self, cards)
+    if #cards == 1 then
+      return Fk:getCardById(cards[1])
+    end
+  end,
+}
+Fk:addSkill(denglou_viewas)
+--]]
 Fk:loadTranslationTable{
   ["ty__wangcan"] = "王粲",
   ["sanwen"] = "散文",
   [":sanwen"] = "每回合限一次，当你获得牌时，若你手中有与这些牌牌名相同的牌，你可以展示之，并弃置获得的同名牌，然后摸弃牌数两倍数量的牌。",
   ["qiai"] = "七哀",
-  [":qiai"] = "限定技，当你进入濒死状态时，你可令其他每名角色交给你一张牌。",
+  [":qiai"] = "限定技，当你进入濒死状态时，你可令每名其他角色同时交给你一张牌。",
   ["denglou"] = "登楼",
-  [":denglou"] = "限定技，结束阶段开始时，若你没有手牌，你可以观看牌堆顶的四张牌，然后获得其中的非基本牌，并使用其中的基本牌（不能使用则弃置）。",
+  [":denglou"] = "限定技，结束阶段开始时，若你没有手牌，你可以亮出牌堆顶四张牌，然后获得其中的非基本牌，并使用其中的基本牌（不使用则置入弃牌堆）。",
+  ["#sanwen-invoke"] = "散文：你可以弃置获得的同名牌(%arg张)，然后摸两倍的牌",
+  ["#qiai-give"] = "七哀：交给 %dest 一张牌",
+  ["#denglou-use"] = "登楼：你可以使用这些基本牌",
+  ["denglou_viewas"] = "登楼",
 
   ["$sanwen1"] = "文若春华，思若泉涌。",
   ["$sanwen2"] = "独步汉南，散文天下。",
@@ -347,6 +546,7 @@ Fk:loadTranslationTable{
   ["$denglou2"] = "惟日月之逾迈兮，俟河清其未极。",
   ["~ty__wangcan"] = "一作驴鸣悲，万古送葬别。",
 }
+
 
 local pangtong = General(extension, "sp__pangtong", "wu", 3)
 local guolun = fk.CreateActiveSkill{

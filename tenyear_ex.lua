@@ -274,24 +274,21 @@ local ty_ex__xuanhuo = fk.CreateTriggerSkill{
     local slash = Fk:cloneCard("slash")
     local duel = Fk:cloneCard("duel")
     local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
-      return p ~= to and not (to:isProhibited(p, slash) and to:isProhibited(p, duel)) and
-        (slash.skill:canUse(to, slash) or duel.skill:canUse(to, duel)) end), Util.IdMapper)
-    if #targets == 0 and not to:isKongcheng() then
-      local dummy2 = Fk:cloneCard("dilu")
-      dummy2:addSubcards(target:getCardIds("h"))
-      room:obtainCard(player, dummy2, false, fk.ReasonGive)
-    else
-      local victim = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__xuanhuo-choose::"..to.id, self.name, false)
-      if #victim > 0 then
-        victim = victim[1]
-      else
-        victim = table.random(targets)
+      return p ~= to and (U.canUseCardTo(room, to, p, slash, true, false) or U.canUseCardTo(room, to, p, duel, true, false))
+     end), Util.IdMapper)
+    if #targets == 0 then
+      if not to:isKongcheng() then
+        local dummy2 = Fk:cloneCard("dilu")
+        dummy2:addSubcards(to:getCardIds("h"))
+        room:obtainCard(player, dummy2, false, fk.ReasonGive)
       end
+    else
+      local victim = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__xuanhuo-choose::"..to.id, self.name, false)[1]
       room:doIndicate(to.id, {victim})
       room:setPlayerMark(to, "ty_ex__xuanhuo-phase", victim)
       local command = "AskForUseActiveSkill"
       room:notifyMoveFocus(to, "ty_ex__xuanhuo_viewas")
-      local dat = {"ty_ex__xuanhuo_viewas", "#ty_ex__xuanhuo-slash:"..player.id..":"..victim, false, json.encode({})}
+      local dat = {"ty_ex__xuanhuo_viewas", "#ty_ex__xuanhuo-slash:"..player.id..":"..victim, true, json.encode({})}
       local result = room:doRequest(to, command, json.encode(dat))
       room:setPlayerMark(to, "ty_ex__xuanhuo-phase", 0)
       if result ~= "" then
@@ -300,7 +297,7 @@ local ty_ex__xuanhuo = fk.CreateTriggerSkill{
       else
         if not to:isKongcheng() then
           local dummy2 = Fk:cloneCard("dilu")
-          dummy2:addSubcards(target:getCardIds("h"))
+          dummy2:addSubcards(to:getCardIds("h"))
           room:obtainCard(player, dummy2, false, fk.ReasonGive)
         end
       end

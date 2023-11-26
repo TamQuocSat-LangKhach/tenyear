@@ -922,7 +922,7 @@ local ty__songci = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local target = room:getPlayerById(effect.tos[1])
     local player = room:getPlayerById(effect.from)
-    local mark = U.getMark(Self, self.name)
+    local mark = U.getMark(player, self.name)
     table.insert(mark, target.id)
     room:setPlayerMark(player, self.name, mark)
     if #target.player_cards[Player.Hand] <= target.hp then

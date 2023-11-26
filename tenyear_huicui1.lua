@@ -3936,11 +3936,10 @@ local dingji = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Start and
-      table.find(player.room.alive_players, function(p) return p:getHandcardNum() ~= 5 end)
+    return target == player and player:hasSkill(self) and player.phase == Player.Start
   end,
   on_cost = function(self, event, target, player, data)
-    local targets = table.map(table.filter(player.room.alive_players, function(p) return p:getHandcardNum() ~= 5 end), Util.IdMapper)
+    local targets = table.map(player.room.alive_players, Util.IdMapper)
     local to = player.room:askForChoosePlayers(player, targets, 1, 1, "#dingji-choose", self.name, true)
     if #to > 0 then
       self.cost_data = to[1]
@@ -3951,7 +3950,7 @@ local dingji = fk.CreateTriggerSkill{
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
     local n = to:getHandcardNum() - 5
-    if n < 0 then
+    if n <= 0 then
       to:drawCards(-n, self.name)
     else
       room:askForDiscard(to, n, n, false, self.name, false, ".", "#dingji-discard:::"..n)

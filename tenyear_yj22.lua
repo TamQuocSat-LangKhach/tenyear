@@ -818,6 +818,10 @@ Fk:loadTranslationTable{
   ["shuojian2"] = "你视为使用%arg张【过河拆桥】，本回合此技能失效",
   ["shuojian_viewas"] = "数荐",
   ["#shuojian-use"] = "数荐：视为使用【过河拆桥】（第%arg张，共%arg2张）",
+
+  ["$shuojian1"] = "我数荐卿而祖不用，其之失也。",
+  ["$shuojian2"] = "兴霸乃当世豪杰，何患无爵。",
+  ["~ty__sufei"] = "兴霸何在？吾命休矣……",
 }
 
 local kebineng = General(extension, "kebineng", "qun", 4)

@@ -4148,6 +4148,12 @@ Fk:loadTranslationTable{
   ["#dingji-discard"] = "定基：请弃置%arg张手牌，若剩余牌牌名均不同，你可视为使用其中一张",
   ["dingji_viewas"] = "定基",
   ["#dingji-use"] = "定基：你可以视为使用手牌中一张基本牌或普通锦囊牌",
+
+  ["$yijia1"] = "曹侯忠心可鉴，可暂居其檐下。",
+  ["$yijia2"] = "今东都糜败，陛下当移驾许昌。",
+  ["$dingji1"] = "丞相宜进爵国公，以彰殊勋。",
+  ["$dingji2"] = "今公与诸将并侯，岂天下所望哉！",
+  ["~ty__dongzhao"] = "凡有天下者，无虚伪不真之人……",
 }
 
 local tangzi = General(extension, "ty__tangzi", "wei", 4)

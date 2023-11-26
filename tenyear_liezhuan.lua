@@ -318,10 +318,10 @@ local addTYPingjianSkill = function(player, skill_name)
   local skill = Fk.skills[skill_name]
   if skill == nil or player:hasSkill(skill_name, true) then return false end
   room:handleAddLoseSkills(player, skill_name, nil)
-  local pingjian_skills = type(player:getMark("ty__pingjian_skills")) == "table" and player:getMark("ty__pingjian_skills") or {}
+  local pingjian_skills = U.getMark(player, "ty__pingjian_skills")
   table.insertIfNeed(pingjian_skills, skill_name)
   room:setPlayerMark(player, "ty__pingjian_skills", pingjian_skills)
-  local pingjian_skill_times = type(player:getMark("ty__pingjian_skill_times")) == "table" and player:getMark("ty__pingjian_skill_times") or {}
+  local pingjian_skill_times = U.getMark(player, "ty__pingjian_skill_times")
   table.insert(pingjian_skill_times, {skill_name, player:usedSkillTimes(skill_name)})
   for _, s in ipairs(skill.related_skills) do
     table.insert(pingjian_skill_times, {s.name, player:usedSkillTimes(s.name)})
@@ -335,11 +335,11 @@ local removeTYPingjianSkill = function(player, skill_name)
   local skill = Fk.skills[skill_name]
   if skill == nil then return false end
   room:handleAddLoseSkills(player, "-" .. skill_name, nil)
-  local pingjian_skills = type(player:getMark("ty__pingjian_skills")) == "table" and player:getMark("ty__pingjian_skills") or {}
+  local pingjian_skills = U.getMark(player, "ty__pingjian_skills")
   table.removeOne(pingjian_skills, skill_name)
   room:setPlayerMark(player, "ty__pingjian_skills", pingjian_skills)
   local invoked = false
-  local pingjian_skill_times = type(player:getMark("ty__pingjian_skill_times")) == "table" and player:getMark("ty__pingjian_skill_times") or {}
+  local pingjian_skill_times = U.getMark(player, "ty__pingjian_skill_times")
   local record_copy = {}
   for _, pingjian_record in ipairs(pingjian_skill_times) do
     if #pingjian_record == 2 then
@@ -357,7 +357,7 @@ local removeTYPingjianSkill = function(player, skill_name)
   room:setPlayerMark(player, "ty__pingjian_skill_times", record_copy)
 
   if invoked then
-    local used_skills = type(player:getMark("ty__pingjian_used_skills")) == "table" and player:getMark("ty__pingjian_used_skills") or {}
+    local used_skills = U.getMark(player, "ty__pingjian_used_skills")
     table.insertIfNeed(used_skills, skill_name)
     room:setPlayerMark(player, "ty__pingjian_used_skills", used_skills)
   end
@@ -374,16 +374,16 @@ local ty__pingjian = fk.CreateActiveSkill{
   card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local used_skills = type(player:getMark("ty__pingjian_used_skills")) == "table" and player:getMark("ty__pingjian_used_skills") or {}
+    local used_skills = U.getMark(player, "ty__pingjian_used_skills")
     local skills = table.filter({
-      "qiangwu", "ol_ex__qiangxi", "ol_ex__luanji", "sanyao", "xueji", "ex__yijue", "daoshu", "m_ex__xianzhen",
-      "tianyi", "zhanjue", "lianji", "wurong", "fenxun", "ol_ex__jiuchi", "m_ex__zenhui", "xuezhao", "kurou", "m_ex__mieji",
-      "ex__zhiheng", "ex__guose", "os_ex__shenxing", "songci", "guolun", "os__gongxin", "lveming", "busuan", "lianzhu",
-      "ex__fanjian", "tanbei", "ty__qingcheng", "chengshang", "ty__songshu", "poxi", "m_ex__ganlu", "qixi", "kuangfu", "qice",
-      "os_ex__gongqi", "huaiyi", "shanxi", "ol_ex__tiaoxin", "qingnang", "quji", "anguo", "limu", "ex__jieyin", "m_ex__anxu",
-      "ty_ex__mingce", "ziyuan", "lijian", "mingjian", "rende", "mizhao", "mobile__yanjiao", "ol_ex__dimeng", "zhijian",
+      "qiangwu", "ol_ex__qiangxi", "ol_ex__luanji", "sanyao", "ol__xuehen", "ex__yijue", "daoshu", "m_ex__xianzhen",
+      "tianyi", "ty_ex__zhanjue", "lianji", "wurong", "fenxun", "ol_ex__jiuchi", "m_ex__zenhui", "xuezhao", "kurou", "m_ex__mieji",
+      "ex__zhiheng", "ex__guose", "os_ex__shenxing", "ty__songci", "guolun", "os__gongxin", "lveming", "busuan", "lianzhu",
+      "ex__fanjian", "tanbei", "ty__qingcheng", "chengshang", "ty__songshu", "poxi", "m_ex__ganlu", "qixi", "ty__kuangfu", "qice",
+      "os_ex__gongqi", "ty_ex__huaiyi", "shanxi", "ol_ex__tiaoxin", "qingnang", "quji", "ty_ex__anguo", "limu", "ex__jieyin",
+      "m_ex__anxu", "ty_ex__mingce", "ziyuan", "mou__lijian", "mingjian", "ex__rende", "mizhao", "yanjiao", "ol_ex__dimeng", "ol_ex__zhijian",
       "quhu", "nuchen", "kanji", "ol_ex__duanliang", "yangjie", "hongyi", "m_ex__junxing", "m_ex__yanzhu", "ol_ex__changbiao",
-      "fengzi", "yanxi", "jiwu", "xuanbei", "yushen", "jinhui"
+      "fengzi", "yanxi", "jiwu", "xuanbei", "yushen", "jinhui", "shuojian", "qingshi", "jieling", "guanxu"
     }, function (skill_name)
       return not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
     end)
@@ -391,11 +391,19 @@ local ty__pingjian = fk.CreateActiveSkill{
     local choices = table.random(skills, 3)
     local skill_name = room:askForChoice(player, choices, self.name, "#ty__pingjian-choice", true)
     addTYPingjianSkill(player, skill_name)
+    local phase_event = room.logic:getCurrentEvent():findParent(GameEvent.Phase)
+    if phase_event ~= nil then
+      addTYPingjianSkill(player, skill_name)
+      phase_event:addCleaner(function()
+        removeTYPingjianSkill(player, skill_name)
+      end)
+    end
   end,
 }
 local ty__pingjian_trigger = fk.CreateTriggerSkill{
   name = "#ty__pingjian_trigger",
   events = {fk.Damaged, fk.EventPhaseStart},
+  main_skill = ty__pingjian,
   mute = true,
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(ty__pingjian.name) or player ~= target then return false end
@@ -409,13 +417,13 @@ local ty__pingjian_trigger = fk.CreateTriggerSkill{
     local room = player.room
     room:notifySkillInvoked(player, ty__pingjian.name)
     player:broadcastSkillInvoke(ty__pingjian.name)
-    local used_skills = type(player:getMark("ty__pingjian_used_skills")) == "table" and player:getMark("ty__pingjian_used_skills") or {}
+    local used_skills = U.getMark(player, "ty__pingjian_used_skills")
     local skills = {}
     if event == fk.Damaged then
       skills = table.filter({
         "guixin", "benyu", "ex__fankui", "ganglie", "yiji", "ex__jianxiong", "os_ex__enyuan", "chouce", "ol_ex__jieming",
         "fangzhu", "chengxiang", "huituo", "ty__wangxi", "yuce", "zhiyu", "wanggui", "qianlong", "ty__jilei",
-        "xianchou", "rangjie", "liejie", "os__fupan", "zhichi"
+        "xianchou", "rangjie", "liejie", "os__fupan", "zhichi", "silun", "yashi"
       }, function (skill_name)
         return not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
       end)
@@ -440,22 +448,11 @@ local ty__pingjian_trigger = fk.CreateTriggerSkill{
     end
     removeTYPingjianSkill(player, skill_name)
   end,
-
-  refresh_events = {fk.EventPhaseChanging},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and type(player:getMark("ty__pingjian_skills")) == "table"
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local pingjian_skills = player:getMark("ty__pingjian_skills")
-    for _, skill_name in ipairs(pingjian_skills) do
-      removeTYPingjianSkill(player, skill_name)
-    end
-  end,
 }
 local ty__pingjian_invalidity = fk.CreateInvaliditySkill {
   name = "#ty__pingjian_invalidity",
   invalidity_func = function(self, player, skill)
-    local pingjian_skill_times = type(player:getMark("ty__pingjian_skill_times")) == "table" and player:getMark("ty__pingjian_skill_times") or {}
+    local pingjian_skill_times = U.getMark(player, "ty__pingjian_skill_times")
     return table.find(pingjian_skill_times, function (pingjian_record)
       if #pingjian_record == 2 then
         local skill_name = pingjian_record[1]
@@ -478,7 +475,7 @@ Fk:loadTranslationTable{
   ["#ty__pingjian_trigger"] = "评荐",
   [":ty__pingjian"] = "出牌阶段，或结束阶段，或当你受到伤害后，你可以从对应时机的技能池中随机抽取三个技能，"..
     "然后你选择并视为拥有其中一个技能直到时机结束（每个技能限发动一次）。",
-  ["#ty__pingjian-active"] = "发动评荐，从三个出牌阶段的技能中选择一个学习",
+  ["#ty__pingjian-active"] = "发动 评荐，从三个出牌阶段的技能中选择一个学习",
   ["#ty__pingjian-choice"] = "评荐：选择要学习的技能",
 
   ["$ty__pingjian1"] = "识人读心，评荐推达。",

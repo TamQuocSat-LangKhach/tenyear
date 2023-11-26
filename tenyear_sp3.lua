@@ -2022,7 +2022,7 @@ local caixia = fk.CreateTriggerSkill{
       room:removePlayerMark(player, "@caixia")
     else
       room:notifySkillInvoked(player, self.name, event == fk.Damaged and "masochism" or "drawcard")
-    player:broadcastSkillInvoke(self.name)
+      player:broadcastSkillInvoke(self.name)
       local x = tonumber(string.sub(self.cost_data, 12, 12))
       room:setPlayerMark(player, "@caixia", x)
       room:drawCards(player, x, self.name)

@@ -2524,6 +2524,115 @@ Fk:loadTranslationTable{
   ["~ty_ex__guyong"] = "君不可不慎呐……",
 }
 
+local sunluban = General(extension, "ty_ex__sunluban", "wu", 3, 3, General.Female)
+local ty_ex__zenhui = fk.CreateTriggerSkill{
+  name = "ty_ex__zenhui",
+  anim_type = "control",
+  events = {fk.TargetSpecifying},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player:getMark("@@ty_ex__zenhui-turn") == 0 and
+      (data.card.trueName == "slash" or data.card:isCommonTrick()) and data.firstTarget and
+      U.isOnlyTarget(player.room:getPlayerById(data.to), data, event) and #U.getUseExtraTargets(player.room, data, true, true) > 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:askForChoosePlayers(player, U.getUseExtraTargets(room, data, true, true), 1, 1,
+    "#ty_ex__zenhui-choose:::"..data.card:toLogString(), self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    if not to:isNude() then
+      local cards = room:askForCard(to, 1, 1, true, self.name, true, ".",
+      "#ty_ex__zenhui-give::"..player.id..":"..data.card:toLogString())
+      if #cards > 0 then
+        room:obtainCard(player, cards[1], false, fk.ReasonPrey)
+        data.from = to.id
+        room:sendLog{
+          type = "#ChangeUserBySkill",
+          from = player.id,
+          to = {to.id},
+          arg = self.name,
+          arg2 = data.card:toLogString(),
+        }
+        return
+      end
+    end
+    AimGroup:addTargets(room, data, to.id)
+    room:setPlayerMark(player, "@@ty_ex__zenhui-turn", 1)
+    room:sendLog{ type = "#AddTargetsBySkill", from = player.id, to = {to.id}, arg = self.name, arg2 = data.card:toLogString() }
+  end,
+}
+sunluban:addSkill(ty_ex__zenhui)
+local ty_ex__jiaojin = fk.CreateTriggerSkill{
+  name = "ty_ex__jiaojin",
+  anim_type = "defensive",
+  events = {fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.from ~= player.id and (data.card.trueName == "slash" or data.card:isCommonTrick()) and not player:isNude() and player:getMark("@@ty_ex__jiaojin-turn") == 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    local cards = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".|.|.|.|.|equip", "#ty_ex__jiaojin-discard::"..data.from..":"..data.card:toLogString(), true)
+    if #cards > 0 then
+      self.cost_data = cards
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:throwCard(self.cost_data, self.name, player)
+    table.insertIfNeed(data.nullifiedTargets, player.id)
+    data.extra_data = data.extra_data or {}
+    local list = data.extra_data.ty_ex__jiaojin or {}
+    table.insertIfNeed(list, player.id)
+    data.extra_data.ty_ex__jiaojin = list
+    if U.isFemale(room:getPlayerById(data.from)) then
+      room:setPlayerMark(player, "@@ty_ex__jiaojin-turn", 1)
+    end
+  end,
+}
+local ty_ex__jiaojin_delay = fk.CreateTriggerSkill{
+  name = "#ty_ex__jiaojin_delay",
+  mute = true,
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return not player.dead and data.extra_data and data.extra_data.ty_ex__jiaojin and table.contains(data.extra_data.ty_ex__jiaojin, player.id) and #player.room:getSubcardsByRule(data.card, {Card.Processing}) > 0
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local ids = room:getSubcardsByRule(data.card, {Card.Processing})
+    local dummy = Fk:cloneCard("dilu")
+    dummy:addSubcards(ids)
+    room:obtainCard(player, dummy, true, fk.ReasonJustMove)
+  end,
+}
+ty_ex__jiaojin:addRelatedSkill(ty_ex__jiaojin_delay)
+sunluban:addSkill(ty_ex__jiaojin)
+Fk:loadTranslationTable{
+  ["ty_ex__sunluban"] = "界孙鲁班",
+  ["ty_ex__zenhui"] = "谮毁",
+  [":ty_ex__zenhui"] = "当你使用【杀】或普通锦囊牌指定一名角色为唯一目标时，你可以令能成为此牌目标的另一名其他角色选择一项：1.交给你一张牌，然后代替你成为此牌的使用者；2.也成为此牌的目标，然后你的〖谮毁〗本回合失效。",
+  ["#ty_ex__zenhui-choose"] = "谮毁：选择一名能成为%arg的目标的角色",
+  ["#ty_ex__zenhui-give"] = "谮毁：交给 %dest 一张牌，成为%arg的使用者；或成为%arg的目标",
+  ["@@ty_ex__zenhui-turn"] = "谮毁失效",
+  ["#ChangeUserBySkill"] = "由于 %arg 的效果，%arg2的使用者由 %from 改为 %to",
+  ["ty_ex__jiaojin"] = "骄矜",
+  [":ty_ex__jiaojin"] = "当你成为其他角色使用【杀】或普通锦囊牌的目标后，你可以弃置一张装备牌，令此牌对你无效，然后此牌结算结束后你获得此牌。若该角色为女性，你的〖骄矜〗本回合无效。",
+  ["#ty_ex__jiaojin-discard"] = "骄矜：可弃置一张装备牌，令 %dest 使用的%arg对你无效，且结算后你获得之",
+  ["@@ty_ex__jiaojin-turn"] = "骄矜失效",
+
+  ["$ty_ex__zenhui1"] = "稍稍谮毁，万劫不复！",
+  ["$ty_ex__zenhui2"] = "萋兮斐兮，谋欲谮人！",
+  ["$ty_ex__jiaojin1"] = "凭汝之力，何不自鉴？",
+  ["$ty_ex__jiaojin2"] = "万金之躯，岂容狎侮！",
+  ["~ty_ex__sunluban"] = "谁敢动哀家一根寒毛！",
+}
+
 local jvshou = General(extension, "ty_ex__jvshou", "qun", 3)
 local ty_ex__jianying = fk.CreateTriggerSkill{
   name = "ty_ex__jianying",

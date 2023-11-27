@@ -4492,6 +4492,7 @@ local zhuren = fk.CreateActiveSkill{
     else
       for _, id in ipairs(Fk:getAllCardIds()) do
         if Fk:getCardById(id).name == name then
+          room:setCardMark(Fk:getCardById(id), MarkEnum.DestructIntoDiscard, 1)
           room:moveCards({
             ids = {id},
             fromArea = Card.Void,
@@ -4507,42 +4508,7 @@ local zhuren = fk.CreateActiveSkill{
     end
   end,
 }
-local zhuren_destruct = fk.CreateTriggerSkill{
-  name = "#zhuren_destruct",
-
-  refresh_events = {fk.AfterCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    if player:hasSkill(self, true, true) then
-      for _, move in ipairs(data) do
-        return move.toArea == Card.DiscardPile
-      end
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    for _, move in ipairs(data) do
-      local ids = {}
-      if move.toArea == Card.DiscardPile then
-        for _, info in ipairs(move.moveInfo) do
-          if table.contains(puyuan_equips, Fk:getCardById(info.cardId).name) then
-            table.insert(ids, info.cardId)
-          end
-        end
-      end
-      if #ids > 0 then
-        for _, id in ipairs(ids) do
-          player.room:sendLog{
-            type = "#destructDerivedCard",
-            arg = Fk:getCardById(id, true):toLogString(),
-          }
-          table.insert(player.room.void, id)
-          player.room:setCardArea(id, Card.Void, nil)
-        end
-      end
-    end
-  end,
-}
 tianjiang:addRelatedSkill(tianjiang_trigger)
-zhuren:addRelatedSkill(zhuren_destruct)
 puyuan:addSkill(tianjiang)
 puyuan:addSkill(zhuren)
 Fk:loadTranslationTable{

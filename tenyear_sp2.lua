@@ -371,45 +371,12 @@ local poyuan = fk.CreateTriggerSkill{
     else
       for _, id in ipairs(room.void) do
         if Fk:getCardById(id).name == "ty__catapult" then
+          room:setCardMark(Fk:getCardById(id), MarkEnum.DestructOutMyEquip, 1)
           U.moveCardIntoEquip (room, player, id, self.name, true, player)
           break
         end
       end
     end
-  end,
-
-  refresh_events = {fk.BeforeCardsMove},
-  can_refresh = Util.TrueFunc,
-  on_refresh = function(self, event, target, player, data)
-    local mirror_moves = {}
-    local ids = {}
-    for _, move in ipairs(data) do
-      if move.from == player.id and move.toArea ~= Card.Void then
-        local move_info = {}
-        local mirror_info = {}
-        for _, info in ipairs(move.moveInfo) do
-          local id = info.cardId
-          if Fk:getCardById(id, true).name == "ty__catapult" and info.fromArea == Card.PlayerEquip then
-            table.insert(mirror_info, info)
-            table.insert(ids, id)
-          else
-            table.insert(move_info, info)
-          end
-        end
-        if #mirror_info > 0 then
-          move.moveInfo = move_info
-          local mirror_move = table.clone(move)
-          mirror_move.to = nil
-          mirror_move.toArea = Card.Void
-          mirror_move.moveInfo = mirror_info
-          table.insert(mirror_moves, mirror_move)
-        end
-      end
-    end
-    if #ids > 0 then
-      player.room:sendLog{ type = "#destructDerivedCards", card = ids, }
-    end
-    table.insertTable(data, mirror_moves)
   end,
 }
 local huace = fk.CreateViewAsSkill{
@@ -474,7 +441,6 @@ Fk:loadTranslationTable{
   [":huace"] = "出牌阶段限一次，你可以将一张手牌当上一轮没有角色使用过的普通锦囊牌使用。",
   ["#poyuan-invoke"] = "破垣：你可以装备【霹雳车】",
   ["#poyuan-choose"] = "破垣：你可以弃置一名其他角色至多两张牌",
-  ["#destructDerivedCard"] = "%arg 被销毁",
 
   ["$poyuan1"] = "砲石飞空，坚垣难存。",
   ["$poyuan2"] = "声若霹雳，人马俱摧。",

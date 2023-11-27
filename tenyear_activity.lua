@@ -3280,19 +3280,26 @@ local piaoping = fk.CreateTriggerSkill{
     if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
       player:drawCards(n, self.name)
     else
-      local cards = room:askForDiscard(player, n, n, true, self.name, false, ".", "#piaoping-discard:::"..n, true)
-      if not room.logic:trigger("fk.TuoxianInvoke", player, {cards = cards}) then  --睿智技能
-        room:throwCard(cards, self.name, player, player)
-      end
+      room:askForDiscard(player, n, n, true, self.name, false, ".", "#piaoping-discard:::"..n, false)
     end
   end,
 }
 local tuoxian = fk.CreateTriggerSkill{
   name = "tuoxian",
   anim_type = "spcial",
-  events = {"fk.TuoxianInvoke"},
+  events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryGame) < player:getMark(self.name)
+    if player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryGame) < player:getMark(self.name) then
+      for _, move in ipairs(data) do
+        if move.skillName == "piaoping" and move.moveReason == fk.ReasonDiscard and move.from == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if player.room:getCardArea(info.cardId) == Card.DiscardPile then
+              return true
+            end
+          end
+        end
+      end
+    end
   end,
   on_cost = function(self, event, target, player, data)
     local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper),
@@ -3306,10 +3313,18 @@ local tuoxian = fk.CreateTriggerSkill{
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
     local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(data.cards)
+    for _, move in ipairs(data) do
+      if move.skillName == "piaoping" and move.moveReason == fk.ReasonDiscard and move.from == player.id then
+        for _, info in ipairs(move.moveInfo) do
+          if room:getCardArea(info.cardId) == Card.DiscardPile then
+            dummy:addSubcard(info.cardId)
+          end
+        end
+      end
+    end
     room:moveCardTo(dummy, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
     local choices = {}
-    local n = #data.cards
+    local n = #dummy.subcards
     if not to.dead and #to:getCardIds("hej") >= n then
       table.insert(choices, "tuoxian1:::"..n)
     end
@@ -3353,7 +3368,7 @@ Fk:loadTranslationTable{
   ["piaoping"] = "漂萍",
   [":piaoping"] = "锁定技，转换技，当你使用一张牌时，阳：你摸X张牌；阴：你弃置X张牌（X为本回合〖漂萍〗发动次数且至多为你当前体力值）。",
   ["tuoxian"] = "托献",
-  [":tuoxian"] = "每局游戏限零次，当你因〖漂萍〗弃置牌时，你可以改为将这些牌交给一名其他角色，然后其选择一项：1.其弃置其区域内等量的牌；"..
+  [":tuoxian"] = "每局游戏限零次，当你因〖漂萍〗弃置的牌进入弃牌堆后，你可以改为将这些牌交给一名其他角色，然后其选择一项：1.其弃置其区域内等量的牌；"..
   "2.令〖漂萍〗本回合失效。",
   ["zhuili"] = "惴栗",
   [":zhuili"] = "锁定技，当你成为其他角色使用黑色牌的目标时，若此时〖漂萍〗状态为：阳，令〖托献〗可使用次数+1，然后此技能本回合失效；"..

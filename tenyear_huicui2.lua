@@ -931,14 +931,10 @@ local xunli = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.AfterCardsMove, fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) then
+    if player:hasSkill(self) and player:getMark("lieyi_using") == 0 then  --发动烈医过程中不会触发询疠，新杀智慧
       if event == fk.AfterCardsMove and #player:getPile("jiping_li") < 9 then
         for _, move in ipairs(data) do
           if move.extra_data and move.extra_data.xunli then
-            local e = player.room.logic:getCurrentEvent():findParent(GameEvent.SkillEffect)
-            if e and e.data[3] == "lieyi" then  --发动烈医过程中不会触发询疠，新杀智慧
-              return false
-            end
             for _, id in ipairs(move.extra_data.xunli) do
               if player.room:getCardArea(id) == Card.DiscardPile then
                 return true
@@ -1112,6 +1108,7 @@ local lieyi = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
+    room:setPlayerMark(player, "lieyi_using", 1)
     player:showCards(player:getPile("jiping_li"))
     local yes = true
     while #player:getPile("jiping_li") > 0 and not player.dead do
@@ -1145,6 +1142,7 @@ local lieyi = fk.CreateActiveSkill{
       dummy:addSubcards(player:getPile("jiping_li"))
       room:moveCardTo(dummy, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
     end
+    room:setPlayerMark(player, "lieyi_using", 0)
     if yes and not player.dead then
       room:loseHp(player, 1, self.name)
     end

@@ -103,7 +103,6 @@ Fk:loadTranslationTable{
 }
 
 local lidian = General(extension, "ty__lidian", "wei", 3)
-
 local ty__wangxi = fk.CreateTriggerSkill{
   name = "ty__wangxi",
   events = {fk.Damage, fk.Damaged},
@@ -142,7 +141,6 @@ local ty__wangxi = fk.CreateTriggerSkill{
 }
 lidian:addSkill("xunxun")
 lidian:addSkill(ty__wangxi)
-
 Fk:loadTranslationTable{
   ["ty__lidian"] = "李典",
   ["ty__wangxi"] = "忘隙",
@@ -158,14 +156,115 @@ Fk:loadTranslationTable{
   ["~ty__lidian"] = "恩遇极此，惶恐之至……",
 }
 
+local duji = General(extension, "duji", "wei", 3)
+local andong = fk.CreateTriggerSkill{
+  name = "andong",
+  events = {fk.DamageInflicted},
+  anim_type = "defensive",
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.from and data.from ~= player and not data.from.dead
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#andong-invoke::"..data.from.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {data.from.id})
+    local choices = {"andong1", "andong2"}
+    local choice = room:askForChoice(data.from, choices, self.name, "#andong-choice:"..player.id)
+    if choice == "andong1" then
+      room:setPlayerMark(data.from, "andong-turn", 1)
+      return true
+    else
+      if data.from:isKongcheng() then return end
+      U.viewCards(player, data.from:getCardIds("h"), self.name)
+      local cards = table.filter(data.from:getCardIds("h"), function(id) return Fk:getCardById(id).suit == Card.Heart end)
+      if #cards > 0 then
+        local dummy = Fk:cloneCard("dilu")
+        dummy:addSubcards(cards)
+        room:moveCardTo(dummy, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
+      end
+    end
+  end,
+}
+local andong_maxcards = fk.CreateMaxCardsSkill{
+  name = "#andong_maxcards",
+  exclude_from = function(self, player, card)
+    return player:getMark("andong-turn") > 0 and card.suit == Card.Heart
+  end,
+}
+local yingshi = fk.CreateTriggerSkill{
+  name = "yingshi",
+  anim_type = "control",
+  events = {fk.EventPhaseStart, fk.Death},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      if event == fk.EventPhaseStart then
+        return target == player and player.phase == Player.Play and
+          not table.find(player.room.alive_players, function(p) return #p:getPile("duji_chou") > 0 end) and
+          table.find(player:getCardIds("he"), function(id) return Fk:getCardById(id).suit == Card.Heart end)
+      else
+        return #target:getPile("duji_chou") > 0
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper),
+      1, 1, "#yingshi-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart then
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(table.filter(player:getCardIds("he"), function(id) return Fk:getCardById(id).suit == Card.Heart end))
+      room:getPlayerById(self.cost_data):addToPile("duji_chou", dummy, true, self.name)
+    else
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(target:getPile("duji_chou"))
+      room:moveCardTo(dummy, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
+    end
+  end,
+}
+local yingshi_trigger = fk.CreateTriggerSkill{
+  name = "#yingshi_trigger",
+  mute = true,
+  events = {fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and data.card and data.card.trueName == "slash" and #data.to:getPile("duji_chou") > 0
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards, choice = U.askforChooseCardsAndChoice(player, data.to:getPile("duji_chou"), {"OK"}, "yingshi",
+      "#yingshi-get", {"Cancel"}, 1, 1)
+    if #cards > 0 then
+      room:moveCardTo(Fk:getCardById(cards[1]), Card.PlayerHand, player, fk.ReasonJustMove, "yingshi", nil, true, player.id)
+    end
+  end
+}
+andong:addRelatedSkill(andong_maxcards)
+yingshi:addRelatedSkill(yingshi_trigger)
+duji:addSkill(andong)
+duji:addSkill(yingshi)
 Fk:loadTranslationTable{
   ["duji"] = "杜畿",
   ["andong"] = "安东",
-  [":andong"] = "当你受到其他角色造成的伤害时，你可令伤害来源选择一项：1.防止此伤害，本回合弃牌阶段红桃牌不计入手牌上限；"..
-  "2.观看其手牌，若其中有红桃牌则你获得这些红桃牌。",
+  [":andong"] = "当你受到其他角色造成的伤害时，你可令伤害来源选择一项：1.防止此伤害，本回合弃牌阶段<font color='red'>♥</font>牌不计入手牌上限；"..
+  "2.观看其手牌，若其中有<font color='red'>♥</font>牌则你获得这些牌。",
   ["yingshi"] = "应势",
-  [":yingshi"] = "出牌阶段开始时，若没有武将牌旁有“酬”的角色，你可将所有红桃牌置于一名其他角色的武将牌旁，称为“酬”。"..
+  [":yingshi"] = "出牌阶段开始时，若没有武将牌旁有“酬”的角色，你可将所有<font color='red'>♥</font>牌置于一名其他角色的武将牌旁，称为“酬”。"..
   "若如此做，当一名角色使用【杀】对武将牌旁有“酬”的角色造成伤害后，其可以获得一张“酬”。当武将牌旁有“酬”的角色死亡时，你获得所有“酬”。",
+  ["#andong-invoke"] = "安东：你可以对 %dest 发动“安东”，令选择一项",
+  ["andong1"] = "防止此伤害，本回合你的<font color='red'>♥</font>牌不计入手牌上限",
+  ["andong2"] = "其观看你的手牌并获得其中的<font color='red'>♥</font>牌",
+  ["#andong-choice"] = "安东：选择 %src 令你执行的一项",
+  ["duji_chou"] = "酬",
+  ["#yingshi-choose"] = "应势：你可以将所有<font color='red'>♥</font>牌置为一名角色的“酬”",
+  ["#yingshi-get"] = "应势：你可以获得一张“酬”",
 
   ["$andong1"] = "勇足以当大难，智涌以安万变。",
   ["$andong2"] = "宽猛克济，方安河东之民。",

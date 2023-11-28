@@ -4909,7 +4909,7 @@ local fanyin = fk.CreateTriggerSkill{
       })
       room:setPlayerMark(player, "fanyin_to_use", cards[1])
       room:setPlayerMark(player, MarkEnum.BypassDistancesLimit .. "-tmp", 1)
-      local success, dat = room:askForUseViewAsSkill(player, "fanyin_view_as", "#fanyin-ask", true)
+      local success, dat = room:askForUseActiveSkill(player, "fanyin_view_as", "#fanyin-ask", true)
       room:setPlayerMark(player, MarkEnum.BypassDistancesLimit .. "-tmp", 0)
 
       room:setPlayerMark(player, "fanyin_to_use", 0)

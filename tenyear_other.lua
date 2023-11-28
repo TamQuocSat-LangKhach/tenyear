@@ -722,7 +722,7 @@ local tycl__rende = fk.CreateActiveSkill{
     dummy:addSubcards(cards)
     room:obtainCard(player.id, dummy, false, fk.ReasonPrey)
     if player.dead then return end
-    local success, dat = room:askForUseViewAsSkill(player, "#ex__rende_vs", "#ex__rende-ask", true)
+    local success, dat = room:askForUseActiveSkill(player, "#ex__rende_vs", "#ex__rende-ask", true)
     if success then
       local card = Fk.skills["#ex__rende_vs"]:viewAs(dat.cards)
       local use = {

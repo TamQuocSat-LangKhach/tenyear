@@ -1718,7 +1718,7 @@ local shijiz = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "@$shijiz-round", mark)
     room:doIndicate(player.id, {target.id})
     room:setPlayerMark(target, "shijiz-tmp", self.cost_data)
-    local success, dat = room:askForUseViewAsSkill(target, "shijiz_viewas", "#shijiz-use:::"..self.cost_data, true)
+    local success, dat = room:askForUseActiveSkill(target, "shijiz_viewas", "#shijiz-use:::"..self.cost_data, true)
     room:setPlayerMark(target, "shijiz-tmp", 0)
     if success then
       local card = Fk:cloneCard(self.cost_data)

@@ -948,7 +948,7 @@ local qinguo = fk.CreateTriggerSkill{
       if event == fk.CardUseFinished then
         return target == player and data.card.type == Card.TypeEquip
       else
-        local equipnum = #player.player_cards[Player.Equip]
+        local equipnum = #player:getCardIds("e")
         for _, move in ipairs(data) do
           for _, info in ipairs(move.moveInfo) do
             if move.from == player.id and info.fromArea == Card.PlayerEquip then
@@ -958,14 +958,14 @@ local qinguo = fk.CreateTriggerSkill{
             end
           end
         end
-        return #player.player_cards[Player.Equip] ~= equipnum and #player.player_cards[Player.Equip] == player.hp and player:isWounded()
+        return #player:getCardIds("e") ~= equipnum and #player:getCardIds("e") == player.hp and player:isWounded()
       end
     end
   end,
   on_cost = function(self, event, target, player, data)
     if event == fk.CardUseFinished then
       local room = player.room
-      local success, dat = room:askForUseViewAsSkill(player, "qinguo_viewas", "#qinguo-ask", true)
+      local success, dat = room:askForUseActiveSkill(player, "qinguo_viewas", "#qinguo-ask", true)
       if success then
         self.cost_data = dat
         return true
@@ -1142,7 +1142,7 @@ local zengdao = fk.CreateActiveSkill{
   min_card_num = 1,
   target_num = 1,
   can_use = function(self, player)
-    return #player.player_cards[Player.Equip] > 0 and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+    return #player:getCardIds("e") > 0 and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   card_filter = function(self, to_select, selected)
     return Fk:currentRoom():getCardArea(to_select) == Player.Equip

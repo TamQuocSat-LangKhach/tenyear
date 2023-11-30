@@ -109,18 +109,19 @@ local ty__benyu = fk.CreateTriggerSkill{
       local num = data.from:getHandcardNum() + 1
       local discard = room:askForDiscard(player, num, 9999, true, self.name, true, ".", "#ty__benyu-discard::"..data.from.id..":"..num,true)
       if #discard >= num then
-        self.cost_data = discard
+        self.cost_data = {"discard", discard}
         return true
       end
-    else
-      if player:getHandcardNum() < math.min(data.from:getHandcardNum(), 5) then
-        return room:askForSkillInvoke(player, self.name)
-      end
+    end
+    local x = math.min(data.from:getHandcardNum(), 5)
+    if player:getHandcardNum() < x and room:askForSkillInvoke(player, self.name, nil, "#ty__benyu-draw:::"..x) then
+      self.cost_data = {"draw"}
+      return true
     end
   end,
   on_use = function(self, event, target, player, data)
-    if self.cost_data and type(self.cost_data) == "table" then
-      player.room:throwCard(self.cost_data, self.name, player, player)
+    if self.cost_data[1] == "discard" then
+      player.room:throwCard(self.cost_data[2], self.name, player, player)
       player.room:damage{
         from = player,
         to = data.from,
@@ -142,6 +143,7 @@ Fk:loadTranslationTable{
   [":ty__benyu"] = "当你受到伤害后，你可以选择一项：1.将手牌摸至X张（最多摸至5张）；2.弃置至少X+1张牌，然后对伤害来源造成1点伤害（X为伤害来源的手牌数）。",
   ["#ty__shefu-cost"] = "设伏：你可以将一张牌扣置为“伏兵”",
   ["#ty__benyu-discard"] = "贲育：你可以弃置至少%arg牌，对 %dest 造成1点伤害",
+  ["#ty__benyu-draw"] = "贲育：你可以摸至 %arg 张牌",
   ["@@ty__shefu-turn"] = "设伏封技",
   ["#ty__shefu-invoke"] = "设伏：可以令 %dest 使用的 %arg 无效",
   ["#CardNullifiedBySkill"] = "由于 %arg 的效果，%from 使用的 %arg2 无效",

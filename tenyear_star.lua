@@ -171,6 +171,11 @@ Fk:loadTranslationTable{
   ["~tystar__yuanshu"] = "英雄不死则已，死则举大名尔……",
 }
 
+--local dongzhuo = General(extension, "tystar__dongzhuo", "qun", 8)
+Fk:loadTranslationTable{
+  ["tystar__dongzhuo"] = "星董卓",
+}
+
 --玉衡：曹仁
 local caoren = General(extension, "tystar__caoren", "wei", 4)
 local sujun = fk.CreateTriggerSkill{

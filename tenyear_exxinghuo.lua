@@ -741,40 +741,9 @@ local ty_ex__zhenwei = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    room:throwCard(self.cost_data, self.name, player, player)
-    local choice = room:askForChoice(player, {"ty_ex__zhenwei_transfer", "ty_ex__zhenwei_recycle"}, self.name)
-    if choice == "ty_ex__zhenwei_transfer" then
-      room:drawCards(player, 1, self.name)
-      if target:isProhibited(player, data.card) or
-        not data.card.skill:modTargetFilter(player.id, {}, data.from, data.card, false) then return false end
-      local passed_target = {player.id}
-      --target_filter cheak, for collateral,diversion...
-      local c_pid
-      --FIXME：借刀需要补modTargetFilter，不给targetFilter传使用者真是离大谱，目前只能通过强制修改Self来实现
-      local Notify_from = room:getPlayerById(data.from)
-      Self = Notify_from
-      local ho_spair_target = data.targetGroup[1]
-      if #ho_spair_target > 1 then
-        for i = 2, #ho_spair_target, 1 do
-          c_pid = ho_spair_target[i]
-          if not data.card.skill:targetFilter(c_pid, passed_target, {}, data.card) then return false end
-          table.insert(passed_target, c_pid)
-        end
-      end
-      data.targetGroup = { passed_target }
-    else
-      TargetGroup:removeTarget(data.targetGroup, data.to)
-      local use_from = room:getPlayerById(data.from)
-      if not use_from.dead then
-        local cardlist = data.card:isVirtual() and data.card.subcards or {data.card.id}
-        if #cardlist > 0 and table.every(cardlist, function (id)
-          return room:getCardArea(id) == Card.Processing
-        end) then
-          use_from:addToPile(self.name, data.card, true, self.name)
-        end
-      end
-    end
+    local skill = Fk.skills["zhenwei"]
+    skill.cost_data = self.cost_data
+    skill:use(event, target, player, data)
   end,
 }
 local ty_ex__zhenwei_delay = fk.CreateTriggerSkill{
@@ -782,13 +751,13 @@ local ty_ex__zhenwei_delay = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return #player:getPile("ty_ex__zhenwei") > 0
+    return #player:getPile("zhenwei") > 0
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     player.room:moveCards({
       from = player.id,
-      ids = player:getPile("ty_ex__zhenwei"),
+      ids = player:getPile("zhenwei"),
       to = player.id,
       toArea = Card.PlayerHand,
       moveReason = fk.ReasonPrey,
@@ -805,8 +774,6 @@ Fk:loadTranslationTable{
   [":ty_ex__zhenwei"] = "当其他角色成为【杀】或黑色锦囊牌的唯一目标时，若该角色的体力值不大于你，你可以弃置一张牌并选择一项：1.摸一张牌，"..
   "然后将此牌转移给你；2.令此牌无效，然后当前回合结束后，使用者获得此牌。",
   ["#ty_ex__zhenwei-invoke"] = "镇卫：%src对%dest使用%arg，是否弃置一张牌发动“镇卫”？",
-  ["ty_ex__zhenwei_transfer"] = "摸一张牌并将此牌转移给你",
-  ["ty_ex__zhenwei_recycle"] = "取消此牌，回合结束时使用者将之收回",
 
   ["$ty_ex__zhenwei1"] = "想攻城，问过我没有？",
   ["$ty_ex__zhenwei2"] = "有我坐镇，我军焉能有失？",

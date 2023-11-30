@@ -993,7 +993,8 @@ local qianxinz = fk.CreateActiveSkill{
     return player:getMark("qianxinz_canuse") > 0
   end,
   card_filter = function(self, to_select, selected)
-    return Fk:currentRoom():getCardArea(to_select) == Player.Hand
+    return Fk:currentRoom():getCardArea(to_select) == Player.Hand and
+      #selected < Self:getMark("qianxinz_canuse") // #Fk:currentRoom().alive_players
   end,
   target_filter = function(self, to_select, selected)
     return #selected == 0
@@ -1003,6 +1004,8 @@ local qianxinz = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     local moveInfos = {}
     local n = #room.draw_pile // #room.alive_players
+    local position = math.random(1, n - #effect.cards + 1)
+    table.shuffle(effect.cards)
     for _, id in ipairs(effect.cards) do
       table.insert(moveInfos, {
         ids = {id},
@@ -1012,8 +1015,9 @@ local qianxinz = fk.CreateActiveSkill{
         moveReason = fk.ReasonJustMove,
         proposer = player.id,
         skillName = self.name,
-        drawPilePosition = math.random(1, n) * #room.alive_players
+        drawPilePosition = position * #room.alive_players
       })
+      position = position + 1
     end
     room:moveCards(table.unpack(moveInfos))
     room:setPlayerMark(player, "qianxinz_using", 1)
@@ -1081,7 +1085,7 @@ local qianxinz_trigger = fk.CreateTriggerSkill{
       if table.find(room.draw_pile, function(id) return Fk:getCardById(id):getMark("@@zhanggong_mail") > 0 end) then
         room:setPlayerMark(player, "qianxinz_canuse", 0)
       else
-        room:setPlayerMark(player, "qianxinz_canuse", 1)
+        room:setPlayerMark(player, "qianxinz_canuse", #room.draw_pile)
       end
     elseif event == fk.AfterCardsMove then
       local to = table.filter(room.alive_players, function(p) return p:getMark("@@zhanggong_mail") > 0 end)

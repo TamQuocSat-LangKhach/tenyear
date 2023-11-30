@@ -986,17 +986,9 @@ local zhanggong = General(extension, "zhanggong", "wei", 3)
 local qianxinz = fk.CreateActiveSkill{
   name = "qianxinz",
   anim_type = "control",
-  prompt = function ()
-    return "#qianxinz:::"..#Fk:currentRoom().alive_players
-  end,
+  prompt = "#qianxinz",
   min_card_num = 1,
   target_num = 1,
-  interaction = function()
-    return UI.Spin {
-      from = 1,
-      to = Self:getMark("qianxinz_canuse") / #Fk:currentRoom().alive_players,
-    }
-  end,
   can_use = function(self, player)
     return player:getMark("qianxinz_canuse") > 0
   end,
@@ -1009,15 +1001,21 @@ local qianxinz = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    room:moveCards({
-      ids = effect.cards,
-      from = player.id,
-      fromArea = Card.PlayerHand,
-      toArea = Card.DrawPile,
-      moveReason = fk.ReasonJustMove,
-      skillName = self.name,
-      drawPilePosition = tonumber(self.interaction.data) * #room.alive_players
-    })
+    local moveInfos = {}
+    local n = #room.draw_pile // #room.alive_players
+    for _, id in ipairs(effect.cards) do
+      table.insert(moveInfos, {
+        ids = {id},
+        from = player.id,
+        fromArea = Card.PlayerHand,
+        toArea = Card.DrawPile,
+        moveReason = fk.ReasonJustMove,
+        proposer = player.id,
+        skillName = self.name,
+        drawPilePosition = math.random(1, n) * #room.alive_players
+      })
+    end
+    room:moveCards(table.unpack(moveInfos))
     room:setPlayerMark(player, "qianxinz_using", 1)
     room:setPlayerMark(target, "@@zhanggong_mail", 1)
     for _, id in ipairs(effect.cards) do
@@ -1083,7 +1081,7 @@ local qianxinz_trigger = fk.CreateTriggerSkill{
       if table.find(room.draw_pile, function(id) return Fk:getCardById(id):getMark("@@zhanggong_mail") > 0 end) then
         room:setPlayerMark(player, "qianxinz_canuse", 0)
       else
-        room:setPlayerMark(player, "qianxinz_canuse", #room.draw_pile)
+        room:setPlayerMark(player, "qianxinz_canuse", 1)
       end
     elseif event == fk.AfterCardsMove then
       local to = table.filter(room.alive_players, function(p) return p:getMark("@@zhanggong_mail") > 0 end)
@@ -1157,7 +1155,7 @@ Fk:loadTranslationTable{
   "该角色弃牌阶段开始时，若其手牌中有本回合获得的“信”，其选择一项：1.你将手牌摸至四张；2.其本回合手牌上限-2。",
   ["zhenxing"] = "镇行",
   [":zhenxing"] = "结束阶段开始时或当你受到伤害后，你可以观看牌堆顶三张牌，然后获得其中与其余牌花色均不同的一张牌。",
-  ["#qianxinz"] = "遣信：选择“遣信”目标，将任意张手牌作为“信”置于牌堆第%argX的位置（点击左侧加号调节X）",
+  ["#qianxinz"] = "遣信：选择“遣信”目标，将任意张手牌作为“信”置入牌堆",
   ["@@zhanggong_mail"] = "信",
   ["#zhenxing-get"] = "镇行：你可以获得其中一张牌",
   ["qianxinz1"] = "%src将手牌摸至四张",

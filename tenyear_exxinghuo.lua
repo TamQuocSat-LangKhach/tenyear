@@ -220,7 +220,249 @@ Fk:loadTranslationTable{
   ["~ty_ex__duji"] = "公无渡河，公竟渡河。",
 }
 
---郭皇后
+local guohuanghou = General(extension, "ty_ex__guohuanghou", "wei", 3, 3, General.Female)
+local ty_ex__jiaozhaoSkills = {"ty_ex__jiaozhao", "ty_ex__jiaozhaoEx1", "ty_ex__jiaozhaoEx2"}
+local ty_ex__jiaozhao = fk.CreateActiveSkill{
+  name = "ty_ex__jiaozhao",
+  anim_type = "special",
+  card_num = 1,
+  target_num = 1,
+  prompt = "#ty_ex__jiaozhao",
+  can_use = function(self, player)
+    return not player:isKongcheng() and
+      table.every(ty_ex__jiaozhaoSkills, function(s) return player:usedSkillTimes(s, Player.HistoryPhase) == 0 end)
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+  end,
+  target_filter = function(self, to_select, selected)
+    if #selected == 0 then
+      local n = 999
+      for _, p in ipairs(Fk:currentRoom().alive_players) do
+        if p ~= Self and Self:distanceTo(p) < n then
+          n = Self:distanceTo(p)
+        end
+      end
+      return Self:distanceTo(Fk:currentRoom():getPlayerById(to_select)) == n
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    player:showCards(effect.cards)
+    if player.dead then return end
+    local c = Fk:getCardById(effect.cards[1])
+    local names = {}
+    for _, id in ipairs(Fk:getAllCardIds()) do
+      local card = Fk:getCardById(id)
+      if (card.type == Card.TypeBasic or card:isCommonTrick()) and not card.is_derived then
+        table.insertIfNeed(names, card.name)
+      end
+    end
+    local choice = room:askForChoice(target, names, self.name, "#ty_ex__jiaozhao-choice:"..player.id.."::"..c:toLogString())
+    room:doBroadcastNotify("ShowToast", Fk:translate("ty_ex__jiaozhao_choice")..Fk:translate(choice))
+    if room:getCardOwner(c) == player and room:getCardArea(c) == Card.PlayerHand then
+      room:setCardMark(c, "ty_ex__jiaozhao-inhand", choice)
+      room:setCardMark(c, "@ty_ex__jiaozhao-inhand", Fk:translate(choice))
+      room:handleAddLoseSkills(player, "-ty_ex__jiaozhao|ty_ex__jiaozhaoVS", nil, false, true)
+    end
+  end,
+}
+local ty_ex__jiaozhaoVS = fk.CreateViewAsSkill{
+  name = "ty_ex__jiaozhaoVS",
+  pattern = ".",
+  mute = true,
+  prompt = "#ty_ex__jiaozhaoVS",
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:getCardById(to_select):getMark("ty_ex__jiaozhao-inhand") ~= 0
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 then return end
+    local card = Fk:cloneCard(Fk:getCardById(cards[1]):getMark("ty_ex__jiaozhao-inhand"))
+    card.skillName = "ty_ex__jiaozhao"
+    card:addSubcard(cards[1])
+    return card
+  end,
+  before_use = function(self, player, use)
+    local room = player.room
+    player:broadcastSkillInvoke("ty_ex__jiaozhao")
+    room:notifySkillInvoked(player, "ty_ex__jiaozhao", "special")
+    room:handleAddLoseSkills(player, ty_ex__jiaozhaoSkills[player:getMark("ty_ex__jiaozhao_status")].."|-ty_ex__jiaozhaoVS", nil, false, true)
+  end,
+  enabled_at_play = function(self, player)
+    return table.find(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("ty_ex__jiaozhao-inhand") ~= 0 end)
+  end,
+  enabled_at_response = function(self, player, response)
+    return not response and player.phase ~= Player.NotActive and
+      table.find(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("ty_ex__jiaozhao-inhand") ~= 0 end)
+  end,
+}
+local ty_ex__jiaozhao_prohibit = fk.CreateProhibitSkill{
+  name = "#ty_ex__jiaozhao_prohibit",
+  is_prohibited = function(self, from, to, card)
+    return card and from == to and table.contains(card.skillNames, "ty_ex__jiaozhao") and from:getMark("ty_ex__jiaozhao_status") < 3
+  end,
+}
+local ty_ex__jiaozhao_change = fk.CreateTriggerSkill{
+  name = "#ty_ex__jiaozhao_change",
+
+  refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.TurnStart, fk.TurnEnd},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.GameStart then
+      return player:hasSkill("ty_ex__jiaozhao")
+    elseif target == player then
+      if event == fk.EventAcquireSkill then
+        return data.name == "ty_ex__jiaozhao"
+      elseif event == fk.TurnStart or event == fk.TurnEnd then
+        return player:hasSkill("ty_ex__jiaozhaoVS", true)
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.GameStart then
+      room:setPlayerMark(player, "ty_ex__jiaozhao_status", 1)
+    else
+      if player:getMark("ty_ex__jiaozhao_status") == 0 then
+        room:setPlayerMark(player, "ty_ex__jiaozhao_status", 1)
+      end
+      if event == fk.TurnStart or event == fk.TurnEnd then
+        for _, id in ipairs(player:getCardIds("h")) do
+          room:setCardMark(Fk:getCardById(id), "ty_ex__jiaozhao-inhand", 0)
+          room:setCardMark(Fk:getCardById(id), "@ty_ex__jiaozhao-inhand", 0)
+        end
+      end
+      room:handleAddLoseSkills(player, ty_ex__jiaozhaoSkills[player:getMark("ty_ex__jiaozhao_status")].."|-ty_ex__jiaozhaoVS", nil, false, true)
+    end
+  end,
+}
+local ty_ex__jiaozhaoEx1 = fk.CreateActiveSkill{
+  name = "ty_ex__jiaozhaoEx1",
+  mute = true,
+  card_num = 1,
+  target_num = 0,
+  prompt = "#ty_ex__jiaozhaoEx1",
+  can_use = function(self, player)
+    return not player:isKongcheng() and
+      table.every(ty_ex__jiaozhaoSkills, function(s) return player:usedSkillTimes(s, Player.HistoryPhase) == 0 end)
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+  end,
+  target_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    player:broadcastSkillInvoke("ty_ex__jiaozhao")
+    room:notifySkillInvoked(player, "ty_ex__jiaozhao", "special")
+    player:showCards(effect.cards)
+    if player.dead then return end
+    local c = Fk:getCardById(effect.cards[1])
+    local names = {}
+    for _, id in ipairs(Fk:getAllCardIds()) do
+      local card = Fk:getCardById(id)
+      if (card.type == Card.TypeBasic or card:isCommonTrick()) and not card.is_derived then
+        table.insertIfNeed(names, card.name)
+      end
+    end
+    local choice = room:askForChoice(player, names, "ty_ex__jiaozhao", "#ty_ex__jiaozhao-choice:"..player.id.."::"..c:toLogString())
+    room:doBroadcastNotify("ShowToast", Fk:translate("ty_ex__jiaozhao_choice")..Fk:translate(choice))
+    if room:getCardOwner(c) == player and room:getCardArea(c) == Card.PlayerHand then
+      room:setCardMark(c, "ty_ex__jiaozhao-inhand", choice)
+      room:setCardMark(c, "@ty_ex__jiaozhao-inhand", Fk:translate(choice))
+      room:handleAddLoseSkills(player, "-ty_ex__jiaozhaoEx1|ty_ex__jiaozhaoVS", nil, false, true)
+    end
+  end,
+}
+local ty_ex__jiaozhaoEx2 = fk.CreateActiveSkill{
+  name = "ty_ex__jiaozhaoEx2",
+  mute = true,
+  card_num = 1,
+  target_num = 0,
+  prompt = "#ty_ex__jiaozhaoEx2",
+  can_use = function(self, player)
+    return not player:isKongcheng() and
+      table.find({"basic", "trick"}, function(type) return player:getMark("ty_ex__jiaozhao_"..type.."-phase") == 0 end)
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+  end,
+  target_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    player:broadcastSkillInvoke("ty_ex__jiaozhao")
+    room:notifySkillInvoked(player, "ty_ex__jiaozhao", "special")
+    player:showCards(effect.cards)
+    if player.dead then return end
+    local c = Fk:getCardById(effect.cards[1])
+    local names = {}
+    for _, id in ipairs(Fk:getAllCardIds()) do
+      local card = Fk:getCardById(id)
+      if ((card.type == Card.TypeBasic and player:getMark("ty_ex__jiaozhao_basic-phase") == 0) or
+        (card:isCommonTrick() and player:getMark("ty_ex__jiaozhao_trick-phase") == 0)) and not card.is_derived then
+        table.insertIfNeed(names, card.name)
+      end
+    end
+    local choice = room:askForChoice(player, names, "ty_ex__jiaozhao", "#ty_ex__jiaozhao-choice:"..player.id.."::"..c:toLogString())
+    room:doBroadcastNotify("ShowToast", Fk:translate("ty_ex__jiaozhao_choice")..Fk:translate(choice))
+    room:setPlayerMark(player, "ty_ex__jiaozhao_"..Fk:cloneCard(choice):getTypeString().."-phase", 1)
+    if room:getCardOwner(c) == player and room:getCardArea(c) == Card.PlayerHand then
+      room:setCardMark(c, "ty_ex__jiaozhao-inhand", choice)
+      room:setCardMark(c, "@ty_ex__jiaozhao-inhand", Fk:translate(choice))
+      room:handleAddLoseSkills(player, "-ty_ex__jiaozhaoEx2|ty_ex__jiaozhaoVS", nil, false, true)
+    end
+  end,
+}
+local ty_ex__danxin = fk.CreateTriggerSkill{
+  name = "ty_ex__danxin",
+  anim_type = "masochism",
+  events = {fk.Damaged},
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:drawCards(1, self.name)
+    local n = player:getMark("ty_ex__jiaozhao_status")
+    if n < 3 then
+      room:addPlayerMark(player, "ty_ex__jiaozhao_status", 1)
+      if not player:hasSkill("ty_ex__jiaozhaoVS", true) then
+        room:handleAddLoseSkills(player, ty_ex__jiaozhaoSkills[n + 1].."|-"..ty_ex__jiaozhaoSkills[n], nil, false, true)
+      end
+    end
+  end,
+}
+ty_ex__jiaozhaoVS:addRelatedSkill(ty_ex__jiaozhao_prohibit)
+Fk:addSkill(ty_ex__jiaozhaoVS)
+Fk:addSkill(ty_ex__jiaozhaoEx1)
+Fk:addSkill(ty_ex__jiaozhaoEx2)
+ty_ex__jiaozhao:addRelatedSkill(ty_ex__jiaozhao_change)
+guohuanghou:addSkill(ty_ex__danxin)
+guohuanghou:addSkill(ty_ex__jiaozhao)
+Fk:loadTranslationTable{
+  ["ty_ex__guohuanghou"] = "郭皇后",
+  ["ty_ex__jiaozhao"] = "矫诏",
+  [":ty_ex__jiaozhao"] = "出牌阶段限一次，你可以展示一张手牌并选择一名距离最近的其他角色，该角色声明一种或普通锦囊牌的牌名，"..
+  "本回合你可以将此牌当声明的牌使用（不能指定自己为目标）。",
+  ["ty_ex__danxin"] = "殚心",
+  [":ty_ex__danxin"] = "当你受到伤害后，你可以摸一张牌并修改〖矫诏〗。",
+  ["ty_ex__jiaozhaoEx1"] = "矫诏",
+  [":ty_ex__jiaozhaoEx1"] = "出牌阶段限一次，你可以展示一张手牌，然后声明一种基本牌或普通锦囊牌的牌名，本回合你可以将此牌当声明的牌使用"..
+  "（不能指定自己为目标）。",
+  ["ty_ex__jiaozhaoEx2"] = "矫诏",
+  [":ty_ex__jiaozhaoEx2"] = "出牌阶段每种类别限一次，你可以展示一张手牌，然后声明一种基本牌或普通锦囊牌的牌名，本回合你可以将此牌当声明的牌使用。",
+  ["ty_ex__jiaozhaoVS"] = "矫诏",
+  [":ty_ex__jiaozhaoVS"] = "你可以将“矫诏”牌当本回合被声明的牌使用。",
+  ["#ty_ex__jiaozhao"] = "矫诏：展示一张手牌令一名角色声明一种基本牌或普通锦囊牌，你本回合可以将此牌当声明的牌使用",
+  ["#ty_ex__jiaozhaoEx1"] = "矫诏：展示一张手牌并声明一种基本牌或普通锦囊牌，你本回合可以将此牌当声明的牌使用",
+  ["#ty_ex__jiaozhaoEx2"] = "矫诏：展示一张手牌并声明一种基本牌或普通锦囊牌，你本回合可以将此牌当声明的牌使用",
+  ["#ty_ex__jiaozhaoVS"] = "矫诏：你可以将“矫诏”牌当本回合被声明的牌使用",
+  ["#ty_ex__jiaozhao-choice"] = "矫诏：声明一种牌名，%src 本回合可以将%arg当此牌使用",
+  ["ty_ex__jiaozhao_choice"] = "矫诏声明牌名：",
+  ["@ty_ex__jiaozhao-inhand"] = "矫诏",
+
+  ["$ty_ex__jiaozhao1"] = "事关社稷，万望阁下谨慎行事。",
+  ["$ty_ex__jiaozhao2"] = "为续江山，还请爱卿仔细观之。",
+  ["$ty_ex__danxin1"] = "殚精出谋，以保社稷。",
+  ["$ty_ex__danxin2"] = "竭心筹划，求续魏统。",
+  ["~ty_ex__guohuanghou"] = "哀家愧对先帝。",
+}
 
 local huangyueying = General(extension, "ty_ex__huangyueying", "qun", 3, 3, General.Female)
 local ty__jiqiao = fk.CreateTriggerSkill{
@@ -358,7 +600,127 @@ Fk:loadTranslationTable{
   ["~ty_ex__huangyueying"] = "此心欲留夏，奈何秋风起……",
 }
 
---SP太史慈
+local taishici = General(extension, "ty_ex__taishici", "qun", 4)
+local ty_ex__jixu = fk.CreateActiveSkill{
+  name = "ty_ex__jixu",
+  anim_type = "control",
+  card_num = 0,
+  min_target_num = 1,
+  max_target_num = function()
+    return Self.hp
+  end,
+  prompt = function()
+    return "#ty_ex__jixu:::"..Self.hp
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    return #selected < Self.hp and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:sortPlayersByAction(effect.tos)
+    local targets = table.map(effect.tos, function(id) return room:getPlayerById(id) end)
+    for _, p in ipairs(targets) do
+      local choices = {"yes", "no"}
+      p.request_data = json.encode({choices, choices, self.name, "#ty_ex__jixu-choice:"..player.id})
+    end
+    room:notifyMoveFocus(room.alive_players, self.name)
+    room:doBroadcastRequest("AskForChoice", targets)
+
+    for _, p in ipairs(targets) do
+      local choice
+      if p.reply_ready then
+        choice = p.client_reply
+      else
+        p.client_reply = "yes"
+        choice = "yes"
+      end
+      room:sendLog{
+        type = "#ty_ex__jixu-quest",
+        from = p.id,
+        arg = choice,
+      }
+    end
+    local right = table.find(player:getCardIds("h"), function(id)
+      return Fk:getCardById(id).trueName == "slash" end) and "yes" or "no"
+    local n = 0
+    for _, p in ipairs(targets) do
+      if player.dead then return end
+      local choice = p.client_reply
+      if choice ~= right then
+        n = n + 1
+        if not p.dead then
+          room:doIndicate(player.id, {p.id})
+          if right == "yes" then
+            room:setPlayerMark(p, "@@ty_ex__jixu-turn", 1)
+          else
+            if not p:isNude() then
+              local id = room:askForCardChosen(player, p, "he", self.name)
+              room:throwCard({id}, self.name, p, player)
+            end
+          end
+        end
+      end
+    end
+    if n > 0 and not player.dead then
+      if right == "yes" then
+        room:setPlayerMark(player, "ty_ex__jixu-turn", n)
+      end
+      player:drawCards(n, self.name)
+    end
+  end,
+}
+local ty_ex__jixu_trigger = fk.CreateTriggerSkill{
+  name = "#ty_ex__jixu_trigger",
+  mute = true,
+  events = {fk.AfterCardTargetDeclared},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:usedSkillTimes("ty_ex__jixu", Player.HistoryTurn) > 0 and data.card.trueName == "slash" and
+      table.find(player.room:getOtherPlayers(player), function(p)
+        return p:getMark("@@ty_ex__jixu-turn") > 0 and table.contains(U.getUseExtraTargets(player.room, data, true), p.id) end)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if room:askForSkillInvoke(player, "ty_ex__jixu", nil, "#ty_ex__jixu-invoke") then
+      for _, p in ipairs(room:getOtherPlayers(player)) do
+        if p:getMark("@@ty_ex__jixu-turn") > 0 and table.contains(U.getUseExtraTargets(room, data, true), p.id) then
+          room:doIndicate(player.id, {p.id})
+          table.insertTable(data.tos, {{p.id}})
+        end
+      end
+    end
+  end,
+}
+local ty_ex__jixu_targetmod = fk.CreateTargetModSkill{
+  name = "#ty_ex__jixu_targetmod",
+  residue_func = function(self, player, skill, scope)
+    if skill.trueName == "slash_skill" and player:getMark("ty_ex__jixu-turn") > 0 and scope == Player.HistoryPhase then
+      return player:getMark("ty_ex__jixu-turn")
+    end
+  end,
+}
+ty_ex__jixu:addRelatedSkill(ty_ex__jixu_trigger)
+ty_ex__jixu:addRelatedSkill(ty_ex__jixu_targetmod)
+taishici:addSkill(ty_ex__jixu)
+Fk:loadTranslationTable{
+  ["ty_ex__taishici"] = "界太史慈",
+  ["ty_ex__jixu"] = "击虚",
+  [":ty_ex__jixu"] = "出牌阶段限一次，你可以令至多你体力值数量的其他角色各猜测你的手牌中是否有【杀】。若你的手牌中：有【杀】，此阶段你使用【杀】"..
+  "次数上限+X且可以额外指定所有猜错的角色为目标；没有【杀】，你弃置所有猜错的角色各一张牌。然后你摸X张牌（X为猜错的角色数）。",
+  ["#ty_ex__jixu"] = "击虚：令至多%arg名角色猜测你手牌中是否有【杀】",
+  ["#ty_ex__jixu-choice"] = "击虚：猜测 %src 的手牌中是否有【杀】",
+  ["#ty_ex__jixu-quest"] = "%from 猜测 %arg",
+  ["@@ty_ex__jixu-turn"] = "击虚",
+  ["#ty_ex__jixu-invoke"] = "击虚：是否额外指定所有“击虚”猜错的角色为目标？",
+
+  ["$ty_ex__jixu1"] = "辨坚识钝，可解充栋之牛！",
+  ["$ty_ex__jixu2"] = "以锐欺虚，可击泰山之踵！",
+  ["~ty_ex__taishici"] = "危而不救为怯，救而不得为庸。",
+}
 
 local wenpin = General(extension, "ty_ex__wenpin", "wei", 5)
 local ty_ex__zhenwei = fk.CreateTriggerSkill{
@@ -366,7 +728,7 @@ local ty_ex__zhenwei = fk.CreateTriggerSkill{
   anim_type = "defensive",
   events = {fk.TargetConfirming},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and not player:isNude() and data.from ~= player.id and
+    return player:hasSkill(self) and not player:isNude() and data.from ~= player.id and data.to ~= player.id and
       (data.card.trueName == "slash" or (data.card.type == Card.TypeTrick and data.card.color == Card.Black)) and
       #AimGroup:getAllTargets(data.tos) == 1 and player.room:getPlayerById(data.to).hp <= player.hp
   end,
@@ -384,8 +746,8 @@ local ty_ex__zhenwei = fk.CreateTriggerSkill{
     local choice = room:askForChoice(player, {"ty_ex__zhenwei_transfer", "ty_ex__zhenwei_recycle"}, self.name)
     if choice == "ty_ex__zhenwei_transfer" then
       room:drawCards(player, 1, self.name)
-      if target:isProhibited(player, data.card) then return false end
-      if not data.card.skill:modTargetFilter(player.id, {}, data.from, data.card, false) then return false end
+      if target:isProhibited(player, data.card) or
+        not data.card.skill:modTargetFilter(player.id, {}, data.from, data.card, false) then return false end
       local passed_target = {player.id}
       --target_filter cheak, for collateral,diversion...
       local c_pid
@@ -530,4 +892,5 @@ Fk:loadTranslationTable{
   ["$ty_ex__yicong2"] = "义从呼啸至，白马抖精神！",
   ["~ty_ex__gongsunzan"] = "良弓断，白马亡。",
 }
+
 return extension

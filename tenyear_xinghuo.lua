@@ -774,9 +774,7 @@ local jixu = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
+  card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     if to_select ~= Self.id then
       if #selected == 0 then
@@ -788,6 +786,7 @@ local jixu = fk.CreateActiveSkill{
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
+    room:sortPlayersByAction(effect.tos)
     local targets = table.map(effect.tos, function(id) return room:getPlayerById(id) end)
     for _, p in ipairs(targets) do
       local choices = {"yes", "no"}
@@ -838,17 +837,17 @@ local jixu = fk.CreateActiveSkill{
 local jixu_trigger = fk.CreateTriggerSkill{
   name = "#jixu_trigger",
   mute = true,
-  events = {fk.TargetSpecified},
+  events = {fk.AfterCardTargetDeclared},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:usedSkillTimes("jixu", Player.HistoryTurn) > 0 and data.card.trueName == "slash" and
       table.find(player.room:getOtherPlayers(player), function(p)
-        return p:getMark("@@jixu-turn") > 0 and not table.contains(AimGroup:getAllTargets(data.tos), p.id) end)
+        return p:getMark("@@jixu-turn") > 0 and table.contains(U.getUseExtraTargets(player.room, data, true)) end)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     for _, p in ipairs(room:getOtherPlayers(player)) do
-      if p:getMark("@@jixu-turn") > 0 and not table.contains(AimGroup:getAllTargets(data.tos), p.id) then
+      if p:getMark("@@jixu-turn") > 0 and table.contains(U.getUseExtraTargets(room, data, true)) then
         room:doIndicate(player.id, {p.id})
         TargetGroup:pushTargets(data.targetGroup, p.id)
       end

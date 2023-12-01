@@ -1441,73 +1441,75 @@ local miyi = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if target == player then
-      if player.phase == Player.Start then
-        return player:hasSkill(self)
-      elseif player.phase == Player.Finish then
-        return player:usedSkillTimes(self.name, Player.HistoryTurn) > 0
-      end
-    end
+    return target == player and player.phase == Player.Start and player:hasSkill(self)
   end,
   on_cost = function(self, event, target, player, data)
-    if player.phase == Player.Start then
-      local command = "AskForUseActiveSkill"
-      player.room:notifyMoveFocus(player, "miyi_active")
-      local dat = {"miyi_active", "#miyi-invoke", false, json.encode({})}
-      local result = player.room:doRequest(player, command, json.encode(dat))
-      if result ~= "" then
-        self.cost_data = json.decode(result)
-        return true
-      end
-    else
+    local command = "AskForUseActiveSkill"
+    player.room:notifyMoveFocus(player, "miyi_active")
+    local dat = {"miyi_active", "#miyi-invoke", true, json.encode({})}
+    local result = player.room:doRequest(player, command, json.encode(dat))
+    if result ~= "" then
+      self.cost_data = json.decode(result)
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if player.phase == Player.Start then
-      room:sortPlayersByAction(self.cost_data.targets)
-      room:doIndicate(player.id, self.cost_data.targets)
-      local choice = self.cost_data.interaction_data
-      for _, id in ipairs(self.cost_data.targets) do
-        local p = room:getPlayerById(id)
-        if not p.dead then
-          room:setPlayerMark(p, choice.."-turn", 1)
-          if choice == "miyi1" and p:isWounded() then
-            room:recover({
-              who = p,
-              num = 1,
-              recoverBy = player,
-              skillName = self.name
-            })
-          elseif choice == "miyi2" then
-            room:damage{
-              from = player,
-              to = p,
-              damage = 1,
-              skillName = self.name,
-            }
-          end
+    room:sendLog{ type = "#SkillDelayInvoked", from = player.id, arg = self.name, }
+    local targets = self.cost_data.targets
+    room:sortPlayersByAction(targets)
+    room:doIndicate(player.id, targets)
+    local choice = self.cost_data.interaction_data
+    for _, id in ipairs(targets) do
+      local p = room:getPlayerById(id)
+      if not p.dead then
+        room:setPlayerMark(p, choice.."-turn", 1)
+        if choice == "miyi1" and p:isWounded() then
+          room:recover({
+            who = p,
+            num = 1,
+            recoverBy = player,
+            skillName = self.name
+          })
+        elseif choice == "miyi2" then
+          room:damage{
+            from = player,
+            to = p,
+            damage = 1,
+            skillName = self.name,
+          }
         end
       end
-    else
-      for _, p in ipairs(room.alive_players) do
-        if not p.dead then
-          if p:getMark("miyi2-turn") > 0 and p:isWounded() then
-            room:recover({
-              who = p,
-              num = 1,
-              recoverBy = player,
-              skillName = self.name
-            })
-          elseif p:getMark("miyi1-turn") > 0 then
-            room:damage{
-              from = player,
-              to = p,
-              damage = 1,
-              skillName = self.name,
-            }
-          end
+    end
+  end,
+}
+local miyi_delay = fk.CreateTriggerSkill{
+  name = "#miyi_delay",
+  mute = true,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and not player.dead and player.phase == Player.Finish
+    and player:usedSkillTimes("miyi", Player.HistoryTurn) > 0
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, p in ipairs(room.alive_players) do
+      if not p.dead then
+        if p:getMark("miyi2-turn") > 0 and p:isWounded() then
+          room:recover({
+            who = p,
+            num = 1,
+            recoverBy = player,
+            skillName = "miyi",
+          })
+        elseif p:getMark("miyi1-turn") > 0 then
+          room:damage{
+            from = player,
+            to = p,
+            damage = 1,
+            skillName = "miyi",
+          }
         end
       end
     end
@@ -1587,6 +1589,7 @@ local yinjun = fk.CreateTriggerSkill{
 }
 Fk:addSkill(miyi_active)
 caoyi:addSkill(miyi)
+miyi:addRelatedSkill(miyi_delay)
 caoyi:addSkill(yinjun)
 Fk:loadTranslationTable{
   ["caoyi"] = "曹轶",
@@ -4184,7 +4187,7 @@ local jj__lianhuan = fk.CreateActiveSkill{
       local card = Fk:cloneCard("iron_chain")
       card:addSubcard(selected_cards[1])
       return card.skill:canUse(Self, card) and card.skill:targetFilter(to_select, selected, selected_cards, card) and
-        not Self:isProhibited(Fk:currentRoom():getPlayerById(to_select), card)
+      not Self:prohibitUse(card) and not Self:isProhibited(Fk:currentRoom():getPlayerById(to_select), card)
     end
   end,
   on_use = function(self, room, effect)
@@ -4229,7 +4232,7 @@ local jj__yeyan = fk.CreateActiveSkill{
     return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   card_filter = function(self, to_select, selected)
-    if Fk:currentRoom():getCardArea(to_select) == Player.Equip then return end
+    if Fk:currentRoom():getCardArea(to_select) == Player.Equip or Self:prohibitDiscard(Fk:getCardById(to_select)) then return end
     if #selected == 0 then
       return true
     else

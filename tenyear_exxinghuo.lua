@@ -563,10 +563,10 @@ local ty__linglong = fk.CreateTriggerSkill{
     elseif player:getEquipment(Card.SubtypeArmor) ~= nil and player:hasSkill("#eight_diagram_skill", true) then
       player.room:handleAddLoseSkills(player, "-#eight_diagram_skill", nil, false, true)
     end
-    if player:getEquipment(Card.SubtypeTreasure) == nil and not player:hasSkill("qicai", true) then
-      player.room:handleAddLoseSkills(player, "qicai", self, false, true)
-    elseif player:getEquipment(Card.SubtypeTreasure) ~= nil and player:hasSkill("qicai", true) then
-      player.room:handleAddLoseSkills(player, "-qicai", nil, false, true)
+    if player:getEquipment(Card.SubtypeTreasure) == nil and not player:hasSkill("ex__qicai", true) then
+      player.room:handleAddLoseSkills(player, "ex__qicai", self, false, true)
+    elseif player:getEquipment(Card.SubtypeTreasure) ~= nil and player:hasSkill("ex__qicai", true) then
+      player.room:handleAddLoseSkills(player, "-ex__qicai", nil, false, true)
     end
   end,
 }
@@ -583,7 +583,7 @@ local ty__linglong_maxcards = fk.CreateMaxCardsSkill{
 ty__linglong:addRelatedSkill(ty__linglong_maxcards)
 huangyueying:addSkill(ty__jiqiao)
 huangyueying:addSkill(ty__linglong)
-huangyueying:addRelatedSkill("qicai")
+huangyueying:addRelatedSkill("ex__qicai")
 Fk:loadTranslationTable{
   ["ty_ex__huangyueying"] = "界黄月英",
   ["ty__jiqiao"] = "机巧",

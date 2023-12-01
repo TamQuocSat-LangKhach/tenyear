@@ -2658,7 +2658,7 @@ Fk:loadTranslationTable{
   ["~ty__yanghu"] = "臣死之后，杜元凯可继之……",
 }
 
---匡鼎炎汉：刘巴 黄权 霍峻 傅肜傅佥 向朗 高翔
+--匡鼎炎汉：刘巴 黄权 吴班 霍峻 傅肜傅佥 向朗 高翔
 local liuba = General(extension, "ty__liuba", "shu", 3)
 local ty__zhubi = fk.CreateTriggerSkill{
   name = "ty__zhubi",
@@ -2996,6 +2996,116 @@ Fk:loadTranslationTable{
   ["$tujue1"] = "归蜀无路，孤臣泪尽江北。",
   ["$tujue2"] = "受吾主殊遇，安能降吴！",
   ["~ty__huangquan"] = "败军之将，何言忠乎？",
+}
+
+local wuban = General(extension, "ty__wuban", "shu", 4)
+local youzhan = fk.CreateTriggerSkill{
+  name = "youzhan",
+  mute = true,
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and player.phase ~= Player.NotActive then
+      for _, move in ipairs(data) do
+        if move.from and move.from ~= player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, move in ipairs(data) do
+      if move.from and move.from ~= player.id then
+        local yes = false
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+            yes = true
+          end
+        end
+        if yes then
+          player:broadcastSkillInvoke(self.name)
+          room:notifySkillInvoked(player, self.name, "drawcard")
+          local card = player:drawCards(1, self.name)
+          if table.contains(player:getCardIds("h"), card[1]) then
+            room:setCardMark(Fk:getCardById(card[1]), "@@youzhan-inhand", 1)
+          end
+          local to = room:getPlayerById(move.from)
+          if not to.dead then
+            room:addPlayerMark(to, "@youzhan-turn", 1)
+            room:addPlayerMark(to, "youzhan-turn", 1)
+          end
+        end
+      end
+    end
+  end,
+
+  refresh_events = {fk.TurnEnd},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and not player:isKongcheng()
+  end,
+  on_refresh = function(self, event, target, player, data)
+    for _, id in ipairs(player:getCardIds("h")) do
+      player.room:setCardMark(Fk:getCardById(id), "@@youzhan-inhand", 0)
+    end
+  end,
+}
+local youzhan_trigger = fk.CreateTriggerSkill{
+  name = "#youzhan_trigger",
+  mute = true,
+  frequency = Skill.Compulsory,
+  events = {fk.DamageInflicted, fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if player:getMark("youzhan-turn") > 0 then
+      if event == fk.DamageInflicted then
+        return target == player and player:getMark("@youzhan-turn") > 0
+      else
+        return target.phase == Player.Finish and table.find(player.room.alive_players, function(p) return p:getMark("@youzhan-turn") > 0 end)
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.DamageInflicted then
+      if room.current then
+        room.current:broadcastSkillInvoke("youzhan")
+        room:notifySkillInvoked(room.current, "youzhan", "offensive")
+        room:doIndicate(room.current.id, {player.id})
+      end
+      data.damage = data.damage + player:getMark("@youzhan-turn")
+      room:setPlayerMark(player, "@youzhan-turn", 0)
+    else
+      target:broadcastSkillInvoke("youzhan")
+      room:notifySkillInvoked(target, "youzhan", "drawcard")
+      room:doIndicate(target.id, {player.id})
+      player:drawCards(math.min(player:getMark("youzhan-turn"), 3), "youzhan")
+    end
+  end,
+}
+local youzhan_maxcards = fk.CreateMaxCardsSkill{
+  name = "#youzhan_maxcards",
+  exclude_from = function(self, player, card)
+    return card:getMark("@@youzhan-inhand") > 0
+  end,
+}
+youzhan:addRelatedSkill(youzhan_trigger)
+youzhan:addRelatedSkill(youzhan_maxcards)
+wuban:addSkill(youzhan)
+Fk:loadTranslationTable{
+  ["ty__wuban"] = "吴班",
+  ["youzhan"] = "诱战",
+  [":youzhan"] = "锁定技，其他角色在你的回合失去牌后，你摸一张牌且此牌本回合不计入手牌上限，其本回合下次受到的伤害+1。结束阶段，若这些角色本回合"..
+  "未受到过伤害，其摸X张牌（X为其本回合失去牌的次数，至多为3）。",
+  ["@youzhan-turn"] = "诱战",
+  ["@@youzhan-inhand"] = "诱战",
+
+  ["$youzhan1"] = "本将军在此！贼仲达何在？",
+  ["$youzhan2"] = "以身为饵，诱老贼出营。",
+  ["~ty__wuban"] = "班……有负丞相重望……",
 }
 
 local huojun = General(extension, "ty__huojun", "shu", 4)

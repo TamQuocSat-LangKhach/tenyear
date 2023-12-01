@@ -421,9 +421,9 @@ local ty__pingjian_trigger = fk.CreateTriggerSkill{
     local skills = {}
     if event == fk.Damaged then
       skills = table.filter({
-        "guixin", "benyu", "ex__fankui", "ganglie", "yiji", "ex__jianxiong", "os_ex__enyuan", "chouce", "ol_ex__jieming",
+        "guixin", "ty__benyu", "ex__fankui", "ex__ganglie", "ex__yiji", "ex__jianxiong", "os_ex__enyuan", "chouce", "ol_ex__jieming",
         "fangzhu", "chengxiang", "huituo", "ty__wangxi", "yuce", "zhiyu", "wanggui", "qianlong", "ty__jilei",
-        "xianchou", "rangjie", "liejie", "os__fupan", "zhichi", "silun", "yashi"
+        "xianchou", "rangjie", "liejie", "os__fupan", "zhichi", "yuqi", "silun", "yashi", "qingxian"
       }, function (skill_name)
         return not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
       end)
@@ -431,7 +431,7 @@ local ty__pingjian_trigger = fk.CreateTriggerSkill{
       skills = table.filter({
         "zhiyan", "ex__biyue", "fujian", "kunfen", "ol_ex__jushou", "os_ex__bingyi", "miji", "zhengu",
         "juece", "sp__youdi", "kuanshi", "ty__jieying", "suizheng", "m_ex__jieyue", "shenfu", "meihun",
-        "pijing", "zhuihuan", "os__juchen", "os__xingbu", "zuilun", "mozhi", "ty_ex__jingce"
+        "pijing", "zhuihuan", "os__juchen", "os__xingbu", "zuilun", "mozhi", "ty_ex__jingce", "nuanhui"
       }, function (skill_name)
         return not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
       end)
@@ -1862,10 +1862,11 @@ local channi_viewas = fk.CreateViewAsSkill{
 local channi = fk.CreateActiveSkill{
   name = "channi",
   anim_type = "support",
+  prompt = "#channi-active",
   min_card_num = 1,
   target_num = 1,
   can_use = function(self, player)
-    return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   card_filter = function(self, to_select, selected)
     return Fk:currentRoom():getCardArea(to_select) ~= Card.PlayerEquip
@@ -1877,9 +1878,7 @@ local channi = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     local n = #effect.cards
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(effect.cards)
-    room:obtainCard(target.id, dummy, false, fk.ReasonGive)
+    room:moveCardTo(effect.cards, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
     room:setPlayerMark(target, self.name, n)
     local success, data = room:askForUseActiveSkill(target, "channi_viewas", "#channi-invoke:"..player.id.."::"..n, true, {}, false)
     room:setPlayerMark(target, self.name, 0)
@@ -1891,18 +1890,47 @@ local channi = fk.CreateActiveSkill{
         from = target.id,
         tos = table.map(data.targets, function(id) return {id} end),
         card = card,
+        extra_data = {channi_data = {player.id, target.id, #data.cards}}
       }
       room:useCard(use)
-      if use.damageDealt then
-        if not use.damageDealt[target.id] and not target.dead then
-          target:drawCards(#card.subcards, self.name)
-        elseif use.damageDealt[target.id] and not player.dead and not player:isKongcheng() then
-          player:throwAllCards("h")
+    end
+  end,
+}
+local channi_delay = fk.CreateTriggerSkill{
+  name = "#channi_delay",
+  events = {fk.Damage, fk.Damaged},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if not player.dead and target and not target.dead and data.card and not data.chain and
+    table.contains(data.card.skillNames, channi.name) then
+      local room = player.room
+      local card_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+      if not card_event then return false end
+      local use = card_event.data[1]
+      if use.extra_data then
+        local channi_data = use.extra_data.channi_data
+        if channi_data and channi_data[1] == player.id and channi_data[2] == target.id then
+          self.cost_data = channi_data[3]
+          return true
         end
       end
     end
   end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.Damage then
+      room:notifySkillInvoked(player, channi.name, "drawcard")
+      room:doIndicate(player.id, {target.id})
+      room:drawCards(target, self.cost_data, channi.name)
+    else
+      room:notifySkillInvoked(player, channi.name, "negative")
+      local n = player:getHandcardNum()
+      room:askForDiscard(player, n, n, false, channi.name, false)
+    end
+  end
 }
+
 local nifu = fk.CreateTriggerSkill{
   name = "nifu",
   anim_type = "drawcard",
@@ -1921,6 +1949,7 @@ local nifu = fk.CreateTriggerSkill{
   end,
 }
 Fk:addSkill(channi_viewas)
+channi:addRelatedSkill(channi_delay)
 yanfuren:addSkill(channi)
 yanfuren:addSkill(nifu)
 Fk:loadTranslationTable{
@@ -1931,6 +1960,8 @@ Fk:loadTranslationTable{
   ["nifu"] = "匿伏",
   [":nifu"] = "锁定技，一名角色的结束阶段，你将手牌摸至或弃置至三张。",
   ["channi_viewas"] = "谗逆",
+  ["#channi_delay"] = "谗逆",
+  ["#channi-active"] = "发动 谗逆，将任意数量的手牌交给一名角色",
   ["#channi-invoke"] = "谗逆：你可以将至多%arg张手牌当一张【决斗】使用<br>若对目标造成伤害你摸等量牌，若你受到伤害则 %src 弃置所有手牌",
 
   ["$channi1"] = "此人心怀叵测，将军当拔剑诛之！",

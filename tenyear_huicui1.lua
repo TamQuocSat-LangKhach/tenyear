@@ -2125,7 +2125,7 @@ Fk:loadTranslationTable{
   ["$liangxiu2"] = "蒯门多隽秀，吾居其末。",
   ["$xunjie1"] = "君子有节，可杀而不可辱。",
   ["$xunjie2"] = "吾受国命，城破则身死。",
-  ["~kuaiqi"] = "泉下万事休，人间雪满头。",
+  ["~kuaiqi"] = "泉下万事休，人间雪满头……",
 }
 
 local pangshanmin = General(extension, "pangshanmin", "wei", 3)

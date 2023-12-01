@@ -3038,7 +3038,44 @@ Fk:loadTranslationTable{
   ["~wenyang"] = "痛贯心膂，天灭大魏啊！",
 }
 
---夏侯霸
+local xiahouba = General(extension, "ty__xiahouba", "shu", 4)
+local ty__baobian = fk.CreateTriggerSkill{
+  name = "ty__baobian",
+  anim_type = "masochism",
+  frequency = Skill.Compulsory,
+  events = {fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and
+      table.find({"tiaoxin", "os_ex__paoxiao", "ol_ex__shensu"}, function(s) return not player:hasSkill(s, true) end)
+  end,
+  on_use = function(self, event, target, player, data)
+    for _, s in ipairs({"tiaoxin", "os_ex__paoxiao", "ol_ex__shensu"}) do
+      if not player:hasSkill(s, true) then
+        player.room:handleAddLoseSkills(player, s, nil, true, false)
+        return
+      end
+    end
+  end,
+}
+xiahouba:addSkill(ty__baobian)
+xiahouba:addRelatedSkill("tiaoxin")
+xiahouba:addRelatedSkill("os_ex__paoxiao")
+xiahouba:addRelatedSkill("ol_ex__shensu")
+Fk:loadTranslationTable{
+  ["ty__xiahouba"] = "夏侯霸",
+  ["ty__baobian"] = "豹变",
+  [":ty__baobian"] = "锁定技，当你受到伤害后，你依次获得以下一个技能：〖挑衅〗、〖咆哮〗、〖神速〗。",
+
+  ["$ty__baobian1"] = "穷通须豹变，撄搏笑狼狞！",
+  ["$ty__baobian2"] = "豹变分奇略，虎视肃戎威！",
+  ["$tiaoxin_ty__xiahouba1"] = "本将军不与无名之辈相战！",
+  ["$tiaoxin_ty__xiahouba2"] = "尔等无名小辈，怎入本将军法眼？",
+  ["$os_ex__paoxiao_ty__xiahouba1"] = "吾岂容尔等小觑？",
+  ["$os_ex__paoxiao_ty__xiahouba2"] = "杀，杀他个片甲不留！",
+  ["$ol_ex__shensu_ty__xiahouba1"] = "兵贵神速，机不可失！",
+  ["$ol_ex__shensu_ty__xiahouba2"] = "兵之情主速！",
+  ["~ty__xiahouba"] = "明敌易防，暗箭难躲……",
+}
 
 local huangfusong = General(extension, "ty__huangfusong", "qun", 4)
 local ty__fenyue = fk.CreateActiveSkill{

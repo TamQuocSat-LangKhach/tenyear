@@ -690,6 +690,145 @@ Fk:loadTranslationTable{
 }
 
 --才子佳人：董白 何晏 王桃 王悦 赵嫣 滕胤 张嫙 夏侯令女 孙茹 蒯祺 庞山民 张媱
+local dongbai = General(extension, "ty__dongbai", "qun", 3, 3, General.Female)
+local ty__lianzhu = fk.CreateActiveSkill{
+  name = "ty__lianzhu",
+  anim_type = "control",
+  card_num = 1,
+  target_num = 1,
+  prompt = "#ty__lianzhu",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isNude()
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    player:showCards(effect.cards)
+    if player.dead or not table.contains(player:getCardIds("h"), effect.cards[1]) then return end
+    local card = Fk:getCardById(effect.cards[1])
+    room:moveCardTo(card, Card.PlayerHand, target, fk.ReasonGive, self.name, nil, true, target.id)
+    if player.dead then return end
+    if card.color == Card.Red then
+      player:drawCards(1, self.name)
+    elseif card.color == Card.Black then
+      if #target:getCardIds("he") < 2 or
+        #room:askForDiscard(target, 2, 2, true, self.name, true, ".", "#ty__lianzhu-discard:"..player.id) ~= 2 then
+        player:drawCards(2, self.name)
+      end
+    end
+  end,
+}
+local ty__xiahui = fk.CreateMaxCardsSkill{
+  name = "ty__xiahui",
+  frequency = Skill.Compulsory,
+  exclude_from = function(self, player, card)
+    return player:hasSkill(self) and card.color == Card.Black
+  end,
+}
+local ty__xiahui_trigger = fk.CreateTriggerSkill{
+  name = "#ty__xiahui_trigger",
+  mute = true,
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove, fk.HpChanged, fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    if event == fk.AfterCardsMove and player:hasSkill(self) then
+      for _, move in ipairs(data) do
+        if move.from == player.id and move.to and move.to ~= player.id and move.toArea == Card.PlayerHand then
+          for _, info in ipairs(move.moveInfo) do
+            if Fk:getCardById(info.cardId).color == Card.Black then
+              return true
+            end
+          end
+        end
+      end
+    elseif event == fk.HpChanged then
+      return target == player and data.num < 0 and
+        table.find(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@ty__xiahui-inhand") > 0 end)
+    elseif event == fk.TurnEnd then
+      return target == player and target:getMark("ty__xiahui-turn") > 0 and
+        not table.find(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@ty__xiahui-inhand") > 0 end)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.AfterCardsMove then
+      for _, move in ipairs(data) do
+        if move.from == player.id and move.to and move.to ~= player.id and move.toArea == Card.PlayerHand then
+          local to = room:getPlayerById(move.to)
+          for _, info in ipairs(move.moveInfo) do
+            if Fk:getCardById(info.cardId).color == Card.Black and table.contains(to:getCardIds("h"), info.cardId) then
+              room:setCardMark(Fk:getCardById(info.cardId), "@@ty__xiahui-inhand", 1)
+            end
+          end
+        end
+      end
+    elseif event == fk.HpChanged then
+      for _, id in ipairs(player:getCardIds("h")) do
+        room:setCardMark(Fk:getCardById(id), "@@ty__xiahui-inhand", 0)
+      end
+    elseif event == fk.TurnEnd then
+      room:loseHp(player, 1, "ty__xiahui")
+    end
+  end,
+
+  refresh_events = {fk.BeforeCardsMove},
+  can_refresh = function (self, event, target, player, data)
+    if player.phase ~= Player.NotActive and player:getMark("ty__xiahui-turn") == 0 then
+      for _, move in ipairs(data) do
+        if move.from == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if Fk:getCardById(info.cardId):getMark("@@ty__xiahui-inhand") > 0 then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_refresh = function (self, event, target, player, data)
+    player.room:setPlayerMark(player, "ty__xiahui-turn", 1)
+  end,
+}
+local ty__xiahui_prohibit = fk.CreateProhibitSkill{
+  name = "#ty__xiahui_prohibit",
+  prohibit_use = function(self, player, card)
+    local cards = card:isVirtual() and card.subcards or {card.id}
+    return table.find(cards, function(id) return Fk:getCardById(id):getMark("@@ty__xiahui-inhand") > 0 end)
+  end,
+  prohibit_response = function(self, player, card)
+    local cards = card:isVirtual() and card.subcards or {card.id}
+    return table.find(cards, function(id) return Fk:getCardById(id):getMark("@@ty__xiahui-inhand") > 0 end)
+  end,
+  prohibit_discard = function(self, player, card)
+    return card:getMark("@@ty__xiahui-inhand") > 0
+  end,
+}
+ty__xiahui:addRelatedSkill(ty__xiahui_trigger)
+ty__xiahui:addRelatedSkill(ty__xiahui_prohibit)
+dongbai:addSkill(ty__lianzhu)
+dongbai:addSkill(ty__xiahui)
+Fk:loadTranslationTable{
+  ["ty__dongbai"] = "董白",
+  ["ty__lianzhu"] = "连诛",
+  [":ty__lianzhu"] = "出牌阶段限一次，你可以展示并交给一名其他角色一张牌，若此牌为：红色，你摸一张牌；黑色，其选择一项：1.你摸两张牌；2.弃置两张牌。",
+  ["ty__xiahui"] = "黠慧",
+  [":ty__xiahui"] = "锁定技，你的黑色牌不占用手牌上限；其他角色获得你的黑色牌时，这些牌标记为“黠慧”，其不能使用、打出、弃置“黠慧”牌直到其体力值减少。"..
+  "其他角色回合结束时，若其本回合失去过“黠慧”牌且手牌中没有“黠慧”牌，其失去1点体力。",
+  ["#ty__lianzhu"] = "连诛：展示并交给一名其他角色一张牌，根据颜色执行效果",
+  ["#ty__lianzhu-discard"] = "连诛：你需弃置两张牌，否则 %src 摸两张牌",
+  ["@@ty__xiahui-inhand"] = "黠慧",
+
+  ["$ty__lianzhu1"] = "坐上这华盖车，可真威风啊。",
+  ["$ty__lianzhu2"] = "跟着我爷爷，还有什么好怕的？",
+  ["~ty__dongbai"] = "这次……轮到我们家了吗……",
+}
+
 local heyan = General(extension, "heyan", "wei", 3)
 local yachai = fk.CreateTriggerSkill{
   name = "yachai",
@@ -845,6 +984,161 @@ Fk:loadTranslationTable{
   ["$qingtan1"] = "事而为事，由无以成。",
   ["$qingtan2"] = "转蓬去其根，流飘从风移。",
   ["~heyan"] = "恃无以生。",
+}
+
+local sunluyu = General(extension, "ty__sunluyu", "wu", 3, 3, General.Female)
+local ty__meibu = fk.CreateTriggerSkill{
+  name = "ty__meibu",
+  anim_type = "control",
+  events = {fk.EventPhaseStart, fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      if event == fk.EventPhaseStart then
+        return target.phase == Player.Play and target ~= player and target:inMyAttackRange(player) and not player:isNude()
+      elseif event == fk.AfterCardsMove and player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then
+        for _, move in ipairs(data) do
+          if move.skillName == "ty__zhixi" then
+            for _, info in ipairs(move.moveInfo) do
+              if Fk:getCardById(info.cardId).suit == player:getMark("ty__meibu-turn") and
+                player.room:getCardArea(info.cardId) == Card.DiscardPile then
+                return true
+              end
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.EventPhaseStart then
+      local room = player.room
+      local card = room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#ty__meibu-invoke::"..target.id, true)
+      if #card > 0 then
+        self.cost_data = card[1]
+        return true
+      end
+    else
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart then
+      room:doIndicate(player.id, {target.id})
+      room:setPlayerMark(player, "ty__meibu-turn", Fk:getCardById(self.cost_data).suit)
+      room:throwCard({self.cost_data}, self.name, player, player)
+      if target.dead then return end
+      room:setPlayerMark(target, "@ty__meibu-turn", Fk:getCardById(self.cost_data):getSuitString(true))
+      local turn = room.logic:getCurrentEvent():findParent(GameEvent.Turn)
+      if turn ~= nil and not target:hasSkill("ty__zhixi", true) then
+        room:handleAddLoseSkills(target, "ty__zhixi", nil, true, false)
+        turn:addCleaner(function()
+          room:handleAddLoseSkills(target, "-ty__zhixi", nil, true, false)
+        end)
+      end
+    else
+      local ids = {}
+      for _, move in ipairs(data) do
+        if move.skillName == "ty__zhixi" then
+          for _, info in ipairs(move.moveInfo) do
+            if Fk:getCardById(info.cardId).suit == player:getMark("ty__meibu-turn") and
+              room:getCardArea(info.cardId) == Card.DiscardPile then
+              table.insertIfNeed(ids, info.cardId)
+            end
+          end
+        end
+      end
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(ids)
+      room:moveCardTo(dummy, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
+    end
+  end,
+}
+local ty__mumu = fk.CreateTriggerSkill{
+  name = "ty__mumu",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Play and
+      table.find(player.room:getOtherPlayers(player), function(p) return #p:getCardIds("e") > 0 end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local choices = {"Cancel", "ty__mumu1", "ty__mumu2"}
+    local choice = room:askForChoice(player, choices, self.name)
+    if choice ~= "Cancel" then
+      local targets = table.map(table.filter(room:getOtherPlayers(player), function(p) return #p:getCardIds("e") > 0 end), Util.IdMapper)
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#"..choice.."-choose", self.name, true)
+      if #to > 0 then
+        self.cost_data = {choice, to[1]}
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data[2])
+    local id = room:askForCardChosen(player, to, "e", self.name)
+    room:setPlayerMark(player, self.cost_data[1].."-turn", 1)
+    if self.cost_data[1] == "ty__mumu1" then
+      room:throwCard({id}, self.name, to, player)
+    else
+      room:moveCardTo(Fk:getCardById(id), Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
+    end
+  end,
+}
+local ty__mumu_targetmod = fk.CreateTargetModSkill{
+  name = "#ty__mumu_targetmod",
+  residue_func = function(self, player, skill, scope)
+    if skill.trueName == "slash_skill" and scope == Player.HistoryPhase then
+      if player:getMark("ty__mumu1-turn") > 0 then
+        return 1
+      end
+      if player:getMark("ty__mumu2-turn") > 0 then
+        return -1
+      end
+    end
+  end,
+}
+local ty__zhixi = fk.CreateTriggerSkill{
+  name = "ty__zhixi",
+  anim_type = "negative",
+  frequency = Skill.Compulsory,
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Play and not player:isKongcheng() and
+      (data.card.trueName == "slash" or data.card.type == Card.TypeTrick)
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:askForDiscard(player, 1, 1, false, self.name, false)
+  end,
+}
+ty__mumu:addRelatedSkill(ty__mumu_targetmod)
+sunluyu:addSkill(ty__meibu)
+sunluyu:addSkill(ty__mumu)
+sunluyu:addRelatedSkill(ty__zhixi)
+Fk:loadTranslationTable{
+  ["ty__sunluyu"] = "孙鲁育",
+  ["ty__meibu"] = "魅步",
+  [":ty__meibu"] = "其他角色的出牌阶段开始时，若你在其攻击范围内，你可以弃置一张牌，令该角色于本回合内拥有〖止息〗。若其本回合因〖止息〗"..
+  "弃置牌的花色与你本次发动〖魅步〗弃置牌的花色相同，你获得之。",
+  ["ty__mumu"] = "穆穆",
+  [":ty__mumu"] = "出牌阶段开始时，你可以选择一项：1.弃置一名其他角色装备区里的一张牌，你本回合出牌阶段使用【杀】次数上限+1；2.获得一名其他角色装备区"..
+  "里的一张牌，你本回合出牌阶段使用【杀】次数上限-1。",
+  ["ty__zhixi"] = "止息",
+  [":ty__zhixi"] = "锁定技，出牌阶段，当你使用【杀】或锦囊牌时，需弃置一张手牌。",
+  ["#ty__meibu-invoke"] = "魅步：你可以弃置一张牌，令 %dest 本回合获得〖止息〗",
+  ["@ty__meibu-turn"] = "魅步",
+  ["ty__mumu1"] = "弃置一名角色一张装备，你出牌阶段使用【杀】次数+1",
+  ["ty__mumu2"] = "获得一名角色一张装备，你出牌阶段使用【杀】次数-1",
+  ["#ty__mumu1-choose"] = "穆穆：弃置一名其他角色装备区里的一张牌",
+  ["#ty__mumu2-choose"] = "穆穆：获得一名其他角色装备区里的一张牌",
+
+  ["$ty__meibu1"] = "姐妹之情，当真今日了断？",
+  ["$ty__meibu2"] = "上下和睦，姐妹同心。",
+  ["$ty__mumu1"] = "素性贞淑，穆穆春山。",
+  ["$ty__mumu2"] = "雍穆融治，吾之所愿。",
+  ["~ty__sunluyu"] = "姐姐，我们回不到从前了。",
 }
 
 local wangtao = General(extension, "wangtao", "shu", 3, 3, General.Female)

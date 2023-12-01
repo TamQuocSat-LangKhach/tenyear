@@ -8,7 +8,6 @@ Fk:loadTranslationTable{
 }
 
 --计将安出：程昱 王允 蒋干 赵昂 刘晔 杨弘 郤正 桓范
---程昱 王允
 local ty__chengyu = General(extension, "ty__chengyu", "wei", 3)
 local ty__shefu = fk.CreateTriggerSkill{
   name = "ty__shefu",
@@ -155,6 +154,117 @@ Fk:loadTranslationTable{
   ["~ty__chengyu"] = "吾命休矣，何以仰报圣恩于万一……",
 }
 
+local wangyun = General(extension, "ty__wangyun", "qun", 4)
+local ty__lianji = fk.CreateActiveSkill{
+  name = "ty__lianji",
+  anim_type = "control",
+  card_num = 1,
+  target_num = 1,
+  prompt= "#ty__lianji",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    room:throwCard(effect.cards, self.name, player, player)
+    local cards = {}
+    for i = 1, #room.draw_pile, 1 do
+      local card = Fk:getCardById(room.draw_pile[i])
+      if card.sub_type == Card.SubtypeWeapon then
+        table.insertIfNeed(cards, room.draw_pile[i])
+      end
+    end
+    if #cards > 0 then
+      local card = Fk:getCardById(table.random(cards))
+      if card.name == "qinggang_sword" then
+        for _, id in ipairs(Fk:getAllCardIds()) do
+          if Fk:getCardById(id).name == "seven_stars_sword" then
+            card = Fk:getCardById(id)
+            room:setCardMark(card, MarkEnum.DestructIntoDiscard, 1)
+            break
+          end
+        end
+      end
+      if not target:isProhibited(target, card) then
+        room:useCard({
+          from = target.id,
+          tos = {{target.id}},
+          card = card,
+        })
+      end
+    end
+    if target.dead then return end
+    local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+    local use = room:askForUseCard(target, "slash", "slash", "#ty__lianji-slash:"..player.id, true, {exclusive_targets = targets})
+    if use then
+      room:setPlayerMark(player, "ty__lianji1", 1)
+      use.extraUse = true
+      room:useCard(use)
+      if not target.dead and target:getEquipment(Card.SubtypeWeapon) then
+        local to = table.filter(TargetGroup:getRealTargets(use.tos), function(id) return not room:getPlayerById(id).dead end)
+        if #to == 0 then return end
+        if #to > 1 then
+          to = room:askForChoosePlayers(target, to, 1, 1, "#ty__lianji-give", self.name, false)
+        end
+        to = room:getPlayerById(to[1])
+        room:moveCardTo(Fk:getCardById(target:getEquipment(Card.SubtypeWeapon)),
+          Card.PlayerHand, to, fk.ReasonGive, self.name, nil, true, target.id)
+      end
+    else
+      room:setPlayerMark(player, "ty__lianji2", 1)
+      room:useVirtualCard("slash", nil, player, target, self.name, true)
+      if not player.dead and not target.dead and target:getEquipment(Card.SubtypeWeapon) then
+        room:moveCardTo(Fk:getCardById(target:getEquipment(Card.SubtypeWeapon)),
+          Card.PlayerHand, player, fk.ReasonGive, self.name, nil, true, target.id)
+      end
+    end
+  end,
+}
+local ty__moucheng = fk.CreateTriggerSkill{
+  name = "ty__moucheng",
+  frequency = Skill.Wake,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and
+      player.phase == Player.Start and
+      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  can_wake = function(self, event, target, player, data)
+    return player:getMark("ty__lianji1") > 0 and player:getMark("ty__lianji2") > 0
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:handleAddLoseSkills(player, "-ty__lianji|jingong", nil, true, false)
+  end,
+}
+wangyun:addSkill(ty__lianji)
+wangyun:addSkill(ty__moucheng)
+wangyun:addRelatedSkill("jingong")
+Fk:loadTranslationTable{
+  ["ty__wangyun"] = "王允",
+  ["ty__lianji"] = "连计",
+  [":ty__lianji"] = "出牌阶段限一次，你可以弃置一张手牌并选择一名其他角色，令其使用牌堆中的一张武器牌。然后该角色选择一项：1.对除你以外的一名角色"..
+  "使用一张【杀】，并将武器牌交给其中一名目标角色；2.视为你对其使用一张【杀】，并将武器牌交给你。",
+  ["ty__moucheng"] = "谋逞",
+  [":ty__moucheng"] = "觉醒技，准备阶段，若你发动〖连计〗的两个选项都被选择过，则你失去〖连计〗，获得〖矜功〗。",
+  ["#ty__lianji"] = "连计：弃置一张手牌，令一名角色使用牌堆中的一张武器牌并使用【杀】",
+  ["#ty__lianji-slash"] = "连计：你需使用一张【杀】，否则 %src 视为对你使用【杀】",
+  ["#ty__lianji-give"] = "连计：你需将武器交给其中一名目标角色",
+
+  ["$ty__lianji1"] = "连环相扣，周密不失。",
+  ["$ty__lianji2"] = "切记，此计连不可断。",
+  ["$ty__moucheng1"] = "除贼安国，利于天下。",
+  ["$ty__moucheng2"] = "董贼已擒，长安可兴。",
+  ["$jingong_ty__wangyun1"] = "得民称赞，此功当邀。",
+  ["$jingong_ty__wangyun2"] = "吾能擒董贼，又何惧怕？",
+  ["~ty__wangyun"] = "奉先，你居然弃我而逃！",
+}
 
 local jianggan = General(extension, "jianggan", "wei", 3)
 local weicheng = fk.CreateTriggerSkill{

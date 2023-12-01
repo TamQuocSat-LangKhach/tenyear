@@ -568,7 +568,83 @@ Fk:loadTranslationTable{
   ["~tangji"] = "皇天崩兮后土颓……",
 }
 
---段煨
+local duanwei = General(extension, "duanwei", "qun", 4)
+local ty__langmie = fk.CreateTriggerSkill{
+  name = "ty__langmie",
+  mute = true,
+  events = {fk.EventPhaseEnd, fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and target ~= player then
+      if event == fk.EventPhaseEnd and target.phase == Player.Play then
+        local count = {0, 0, 0}
+        player.room.logic:getEventsOfScope(GameEvent.UseCard, 999, function(e)
+          local use = e.data[1]
+          if use.from == target.id then
+            if use.card.type == Card.TypeBasic then
+              count[1] = count[1] + 1
+            elseif use.card.type == Card.TypeTrick then
+              count[2] = count[2] + 1
+            elseif use.card.type == Card.TypeEquip then
+              count[3] = count[3] + 1
+            end
+          end
+        end, Player.HistoryPhase)
+        return table.find(count, function(i) return i > 1 end)
+      elseif event == fk.EventPhaseStart and target.phase == Player.Finish and not player:isNude() then
+        local n = 0
+        player.room.logic:getEventsOfScope(GameEvent.ChangeHp, 999, function(e)
+          local damage = e.data[5]
+          if damage and target == damage.from then
+            n = n + damage.damage
+          end
+        end, Player.HistoryTurn)
+        return n > 1
+      end
+    end
+  end,
+  on_cost = function (self, event, target, player, data)
+    if event == fk.EventPhaseEnd then
+      return player.room:askForSkillInvoke(player, self.name, nil, "#ty__langmie-draw")
+    elseif event == fk.EventPhaseStart then
+      local card = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#ty__langmie-damage::"..target.id, true)
+      if #card > 0 then
+        self.cost_data = card
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke(self.name)
+    if event == fk.EventPhaseEnd then
+      room:notifySkillInvoked(player, self.name, "drawcard")
+      player:drawCards(1, self.name)
+    elseif event == fk.EventPhaseStart then
+      room:notifySkillInvoked(player, self.name, "offensive")
+      room:doIndicate(player.id, {target.id})
+      room:throwCard(self.cost_data, self.name, player, player)
+      room:damage{
+        from = player,
+        to = target,
+        damage = 1,
+        skillName = self.name,
+      }
+    end
+  end,
+}
+duanwei:addSkill(ty__langmie)
+Fk:loadTranslationTable{
+  ["duanwei"] = "段煨",
+  ["ty__langmie"] = "狼灭",
+  [":ty__langmie"] = "其他角色出牌阶段结束时，若其本阶段使用过至少两张相同类别的牌，你可以摸一张牌；其他角色的结束阶段，若其本回合造成过至少2点伤害，"..
+  "你可以弃置一张牌，对其造成1点伤害。",
+  ["#ty__langmie-draw"] = "狼灭：你可以摸一张牌",
+  ["#ty__langmie-damage"] = "狼灭：你可以弃置一张牌，对 %dest 造成1点伤害",
+
+  ["$ty__langmie1"] = "狼性凶残，不得不灭！",
+  ["$ty__langmie2"] = "贪狼环伺，眈眈相向，灭之方可除虑。",
+  ["~duanwei"] = "禀赡天子，终无二意。",
+}
 
 local zhangheng = General(extension, "zhangheng", "qun", 8)
 local liangjue = fk.CreateTriggerSkill{
@@ -3571,7 +3647,7 @@ Fk:loadTranslationTable{
   ["~sunlang"] = "为关将军死，无憾……",
 }
 
---千里单骑：关羽 杜夫人 秦宜禄 卞喜 胡班 关宁
+--千里单骑：关羽 杜夫人 秦宜禄 卞喜 胡班 胡金定 关宁
 local guanyu = General(extension, "ty__guanyu", "wei", 4)
 local ty__danji = fk.CreateTriggerSkill{
   name = "ty__danji",
@@ -4120,6 +4196,98 @@ Fk:loadTranslationTable{
   ["$chongyi1"] = "班虽卑微，亦知何为大义。",
   ["$chongyi2"] = "大义当头，且助君一臂之力。",
   ["~ty__huban"] = "行义而亡，虽死无憾。",
+}
+
+local hujinding = General(extension, "ty__hujinding", "shu", 3, 6, General.Female)
+local deshi = fk.CreateTriggerSkill{
+  name = "deshi",
+  anim_type = "defensive",
+  frequency = Skill.Compulsory,
+  events = {fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash" and player:isWounded()
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local card = room:getCardsFromPileByRule("slash", 1, "allPiles")
+    if #card > 0 then
+      room:moveCards({
+        ids = card,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonJustMove,
+        proposer = player.id,
+        skillName = self.name,
+      })
+    end
+    if not player.dead then
+      room:changeMaxHp(player, -1)
+    end
+    return true
+  end,
+}
+local ty__wuyuan = fk.CreateActiveSkill{
+  name = "ty__wuyuan",
+  anim_type = "support",
+  card_num = 1,
+  target_num = 1,
+  prompt = "#ty__wuyuan",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:getCardById(to_select).trueName == "slash"
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local card = Fk:getCardById(effect.cards[1])
+    room:moveCardTo(card, Card.PlayerHand, target, fk.ReasonGive, self.name, nil, true, player.id)
+    if not player.dead and player:isWounded() then
+      room:recover({
+        who = player,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      })
+    end
+    if not player.dead then
+      player:drawCards(1, self.name)
+    end
+    if not target.dead then
+      if card.color == Card.Red and target:isWounded() then
+        room:recover({
+          who = target,
+          num = 1,
+          recoverBy = player,
+          skillName = self.name
+        })
+      end
+      local n = card.name ~= "slash" and 2 or 1
+      target:drawCards(n, self.name)
+    end
+  end,
+}
+hujinding:addSkill(deshi)
+hujinding:addSkill(ty__wuyuan)
+hujinding:addSkill("huaizi")
+Fk:loadTranslationTable{
+  ["ty__hujinding"] = "胡金定",
+  ["deshi"] = "德释",  --为了不被管宁拿到改了技能名，不愧是狗ch
+  [":deshi"] = "锁定技，当你受到【杀】造成的伤害时，若你已受伤，你防止此伤害并获得一张【杀】，然后减1点体力上限。",
+  ["ty__wuyuan"] = "武缘",
+  [":ty__wuyuan"] = "出牌阶段限一次，你可以将一张【杀】交给一名其他角色，然后你回复1点体力并与其各摸一张牌；若此【杀】为：红色，其回复1点体力；"..
+  "属性【杀】，其多摸一张牌。",
+  ["#ty__wuyuan"] = "武缘：将一张【杀】交给一名角色，你回复1点体力并与其各摸一张牌",
+
+  ["$deshi1"] = "你我素无仇怨，何故欺之太急。",
+  ["$deshi2"] = "恃强凌弱，非大丈夫之所为。",
+  ["$ty__wuyuan1"] = "生为关氏之妇，虽死亦不悔。",
+  ["$ty__wuyuan2"] = "我夫关长生，乃盖世之英雄。",
+  ["~ty__hujinding"] = "妾不畏死，唯畏君断情。",
 }
 
 local guannings = General(extension, "guannings", "shu", 3)

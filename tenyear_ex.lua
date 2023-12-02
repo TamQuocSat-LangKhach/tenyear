@@ -2827,6 +2827,120 @@ Fk:loadTranslationTable{
   ["$ty_ex__danshou2"] = "胆守有余，可堪大任！",
   ["~ty_ex__zhuran"] = "义封一生……不负国家！",
 }
+
+local ty_ex__liru = General(extension, "ty_ex__liru", "qun", 3)
+local ty_ex__mieji = fk.CreateActiveSkill{
+  name = "ty_ex__mieji",
+  anim_type = "offensive",
+  card_num = 1,
+  target_num = 1,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isNude()
+  end,
+  card_filter = function(self, to_select, selected, targets)
+    local card = Fk:getCardById(to_select)
+    return #selected == 0 and ((card.type == Card.TypeTrick and card.color == Card.Black) or card.sub_type == Card.SubtypeWeapon)
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0 and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    room:moveCards({
+      ids = effect.cards,
+      from = player.id,
+      fromArea = Card.PlayerHand,
+      toArea = Card.DrawPile,
+      moveReason = fk.ReasonPut,
+      skillName = self.name,
+    })
+    local ids = room:askForDiscard(target, 1, 1, true, self.name, false, ".", "#ty_ex__mieji-discard1")
+    if #ids > 0 and Fk:getCardById(ids[1]).type ~= Card.TypeTrick then
+      room:askForDiscard(target, 1, 1, true, self.name, false, ".|.|.|.|.|basic,equip", "#ty_ex__mieji-discard2")
+    end
+  end,
+}
+local ty_ex__fencheng = fk.CreateActiveSkill{
+  name = "ty_ex__fencheng",
+  anim_type = "offensive",
+  card_num = 0,
+  target_num = 1,
+  prompt = function() return "#ty_ex__mieji-prompt" end,
+  card_filter = Util.FalseFunc,
+  frequency = Skill.Limited,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local first = room:getPlayerById(effect.tos[1])
+    local targets = {first}
+    local temp = first.next
+    while temp ~= first do
+      if not temp.dead then
+        table.insert(targets, temp)
+      end
+      temp = temp.next
+    end
+    table.removeOne(targets, player)
+    local n = 0
+    for _, target in ipairs(targets) do
+      local total = #target:getCardIds{Player.Hand, Player.Equip}
+      if total < n + 1 then
+        room:damage{
+          from = player,
+          to = target,
+          damage = 2,
+          damageType = fk.FireDamage,
+          skillName = self.name,
+        }
+        n = 0
+      else
+        local cards = room:askForDiscard(target, n + 1, 999, true, self.name, true, ".", "#ty_ex__fencheng-discard:::"..tostring(n + 1))
+        if #cards == 0 then
+          room:damage{
+            from = player,
+            to = target,
+            damage = 2,
+            damageType = fk.FireDamage,
+            skillName = self.name,
+          }
+          n = 0
+        else
+          n = #cards
+        end
+      end
+    end
+  end
+}
+ty_ex__liru:addSkill("juece")
+ty_ex__liru:addSkill(ty_ex__mieji)
+ty_ex__liru:addSkill(ty_ex__fencheng)
+Fk:loadTranslationTable{
+  ["ty_ex__liru"] = "界李儒",
+  ["ty_ex__mieji"] = "灭计",
+  [":ty_ex__mieji"] = "出牌阶段限一次，你可以将一张武器牌或黑色锦囊牌置于牌堆顶，令一名有手牌的其他角色弃置一张牌。若其弃置的牌不为锦囊牌，其弃置一张非锦囊牌（没有则不弃）。",
+  ["ty_ex__fencheng"] = "焚城",
+  [":ty_ex__fencheng"] = "限定技，出牌阶段，你可以选择一名角色，从该角色开始，所有其他角色依次选择一项：1.弃置至少X张牌（X为上一名此技能的目标因此弃置的牌数+1）；2.受到2点火焰伤害。",
+  ["#ty_ex__juece-choose"] = "绝策：你可以对一名没有手牌的其他角色造成1点伤害",
+  ["#ty_ex__mieji-discard1"] = "灭计：弃置一张锦囊牌或依次弃置两张非锦囊牌",
+  ["#ty_ex__mieji-discard2"] = "灭计：再弃置一张非锦囊牌",
+  ["#ty_ex__mieji-prompt"] = "焚城：选择一名角色，从该角色开始按座位顺序结算“焚城”",
+  ["#ty_ex__fencheng-discard"] = "焚城：弃置至少%arg张牌，否则受到2点火焰伤害",
+
+  ["$juece_ty_ex__liru1"] = "所谓智斗，便是以兑子入局取势，而后成杀。",
+  ["$juece_ty_ex__liru2"] = "欲成大事，当弃则弃，怎可优柔寡断？",
+  ["$ty_ex__mieji1"] = "乏谋少计，别做无谓挣扎了！",
+  ["$ty_ex__mieji2"] = "缺兵少粮，看你还能如何应对？",
+  ["$ty_ex__fencheng1"] = "堆薪聚垛，以燃焚天之焰！",
+  ["$ty_ex__fencheng2"] = "就让这熊熊烈焰，为尔等送葬！",
+  ["~ty_ex__liru"] = "多行不义，必自毙。",
+}
+
 --yj2014
 local chenqun = General(extension, "ty_ex__chenqun", "wei", 3)
 local ty_ex__pindi = fk.CreateActiveSkill{

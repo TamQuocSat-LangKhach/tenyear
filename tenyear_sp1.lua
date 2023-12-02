@@ -4397,42 +4397,15 @@ local tianjiang = fk.CreateActiveSkill{
     return #selected == 0 and Fk:currentRoom():getCardArea(to_select) == Card.PlayerEquip
   end,
   target_filter = function(self, to_select, selected, cards)
-    return #selected == 0 and #cards == 1 and to_select ~= Self.id
+    if #selected == 0 and #cards == 1 and to_select ~= Self.id then
+      return #Fk:currentRoom():getPlayerById(to_select):getAvailableEquipSlots(Fk:getCardById(cards[1]).sub_type) > 0
+    end
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     local card = Fk:getCardById(effect.cards[1])
-    local type = card.sub_type
-    local ids = table.clone(effect.cards)
-    room:moveCards({
-      from = effect.from,
-      ids = ids,
-      toArea = Card.Processing,
-      moveReason = fk.ReasonJustMove,
-      proposer = effect.from,
-      skillName = self.name,
-    })
-    local move3 = {
-      ids = ids,
-      fromArea = Card.Processing,
-      to = target.id,
-      toArea = Card.PlayerEquip,
-      moveReason = fk.ReasonJustMove,
-      proposer = effect.from,
-      skillName = self.name,
-    }
-    if target:getEquipment(type) ~= nil then
-      local move2 = {
-        ids = {target:getEquipment(type)},
-        from = target.id,
-        toArea = Card.DiscardPile,
-        moveReason = fk.ReasonJustMove,
-      }
-      room:moveCards(move2, move3)
-    else
-      room:moveCards(move3)
-    end
+    U.moveCardIntoEquip(room, target, card.id, self.name, true, player)
     if table.contains(puyuan_equips, card.name) then
       player:drawCards(2, self.name)
     end
@@ -4441,32 +4414,34 @@ local tianjiang = fk.CreateActiveSkill{
 local tianjiang_trigger = fk.CreateTriggerSkill{
   name = "#tianjiang_trigger",
   events = {fk.GameStart},
+  main_skill = tianjiang,
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local cards = {}
-    repeat
-      local id = table.random(room.draw_pile)
-      if Fk:getCardById(id).type == Card.TypeEquip then
-        if #cards == 0 then
-          table.insertIfNeed(cards, id)
-        elseif Fk:getCardById(id).sub_type ~= Fk:getCardById(cards[1]).sub_type then
-          table.insertIfNeed(cards, id)
-        end
+    player:broadcastSkillInvoke("tianjiang")
+    local equipMap = {}
+    for _, id in ipairs(room.draw_pile) do
+      local sub_type = Fk:getCardById(id).sub_type
+      if Fk:getCardById(id).type == Card.TypeEquip and player:hasEmptyEquipSlot(sub_type) then
+        local list = equipMap[tostring(sub_type)] or {}
+        table.insert(list, id)
+        equipMap[tostring(sub_type)] = list
       end
-    until #cards == 2
-    room:moveCards({
-      fromArea = Card.DrawPile,
-      ids = table.random(cards, 2),
-      to = player.id,
-      toArea = Card.PlayerEquip,
-      moveReason = fk.ReasonJustMove,
-      proposer = player.id,
-      skillName = self.name,
-    })
+    end
+    local types = {}
+    for k, _ in pairs(equipMap) do
+      table.insert(types, k)
+    end
+    if #types == 0 then return end
+    types = table.random(types, 2)
+    local put = {}
+    for _, t in ipairs(types) do
+      table.insert(put, table.random(equipMap[t]))
+    end
+    U.moveCardIntoEquip(room, player, put, self.name, false, player)
   end,
 }
 local zhuren = fk.CreateActiveSkill{
@@ -4554,7 +4529,7 @@ puyuan:addSkill(zhuren)
 Fk:loadTranslationTable{
   ["ty__puyuan"] = "蒲元",
   ["tianjiang"] = "天匠",
-  [":tianjiang"] = "游戏开始时，你随机获得两张不同副类别的装备牌，并置入你的装备区。出牌阶段，你可以将装备区里的一张牌移动至其他角色的装备区"..
+  [":tianjiang"] = "游戏开始时，将牌堆中随机两张不同副类别的装备牌置入你的装备区。出牌阶段，你可以将装备区里的一张牌移动至其他角色的装备区"..
   "（可替换原装备），若你移动的是〖铸刃〗打造的装备，你摸两张牌。",
   ["zhuren"] = "铸刃",
   [":zhuren"] = "出牌阶段限一次，你可以弃置一张手牌。根据此牌的花色点数，你有一定概率打造成功并获得一张武器牌（若打造失败或武器已有则改为摸一张【杀】，"..

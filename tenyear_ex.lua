@@ -2395,9 +2395,8 @@ local ty_ex__jingce = fk.CreateTriggerSkill{
       end
     end, Player.HistoryTurn)
     if #suits >= player.hp then
-      --因为额外阶段是逆序进行的，因此需要反着获得额外阶段才行
-      player:gainAnExtraPhase(Player.Play)
       player:gainAnExtraPhase(Player.Draw)
+      player:gainAnExtraPhase(Player.Play)
     else
       local choice = room:askForChoice(player, {"jingce_draw" ,"jingce_play"}, self.name,"#ty_ex__jingce-active")
       if choice == "jingce_draw" then

@@ -1070,7 +1070,7 @@ local qianxinz = fk.CreateActiveSkill{
   end,
   card_filter = function(self, to_select, selected)
     return Fk:currentRoom():getCardArea(to_select) == Player.Hand and
-      #selected < Self:getMark("qianxinz_canuse") // #Fk:currentRoom().alive_players
+      #selected < Self:getMark("qianxinz_canuse") // (#Fk:currentRoom().alive_players - 1)
   end,
   target_filter = function(self, to_select, selected)
     return #selected == 0
@@ -1080,7 +1080,7 @@ local qianxinz = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     local moveInfos = {}
     local n = #room.draw_pile // #room.alive_players
-    local position = math.random(1, n - #effect.cards + 1)
+    local position = 1
     table.shuffle(effect.cards)
     for _, id in ipairs(effect.cards) do
       table.insert(moveInfos, {

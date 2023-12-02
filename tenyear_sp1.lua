@@ -4431,17 +4431,11 @@ local tianjiang_trigger = fk.CreateTriggerSkill{
         equipMap[tostring(sub_type)] = list
       end
     end
-    local types = {}
-    for k, _ in pairs(equipMap) do
-      table.insert(types, k)
+
+    local put = U.getRandomCards(equipMap, 2)
+    if #put > 0 then
+      U.moveCardIntoEquip(room, player, put, self.name, false, player)
     end
-    if #types == 0 then return end
-    types = table.random(types, 2)
-    local put = {}
-    for _, t in ipairs(types) do
-      table.insert(put, table.random(equipMap[t]))
-    end
-    U.moveCardIntoEquip(room, player, put, self.name, false, player)
   end,
 }
 local zhuren = fk.CreateActiveSkill{

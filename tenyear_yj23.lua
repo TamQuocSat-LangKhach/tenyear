@@ -162,23 +162,7 @@ local qingbei = fk.CreateTriggerSkill{
         return true
       elseif event == fk.CardUseFinished then
         if target == player and player:getMark("@qingbei-round") ~= 0 then
-          local cardlist = data.card:isVirtual() and data.card.subcards or {data.card.id}
-          if #cardlist == 0 then return end
-          local yes = false
-          local use_event = player.room.logic:getCurrentEvent()
-          use_event:searchEvents(GameEvent.MoveCards, 1, function(e)
-            if e.parent and e.parent.id == use_event.id then
-              for _, move in ipairs(e.data) do
-                if move.moveReason == fk.ReasonUse then
-                  if move.from and move.from == player.id and
-                    table.every(move.moveInfo, function(info) return info.fromArea == Card.PlayerHand end) then
-                    yes = true
-                  end
-                end
-              end
-            end
-          end)
-          return yes
+          return U.IsUsingHandcard(player, data)
         end
       end
     end
@@ -187,21 +171,9 @@ local qingbei = fk.CreateTriggerSkill{
     if event == fk.RoundStart then
       local room = player.room
       local suits = {"log_spade", "log_heart", "log_club", "log_diamond"}  --妖梦佬救救QwQ
-      local choices = {"Cancel"}
-      table.insertTable(choices, table.map(suits, function(s) return Fk:translate(s) end))
-      local all_choices = table.simpleClone(choices)
-      local result = {}
-      while true do
-        local choice = room:askForChoice(player, choices, self.name, "#qingbei-choice", false, all_choices)
-        if choice == "Cancel" then
-          break
-        else
-          table.removeOne(choices, choice)
-          table.insert(result, suits[table.indexOf(all_choices, choice) - 1])
-        end
-      end
-      if #result > 0 then
-        self.cost_data = result
+      local choices = room:askForCheck(player, suits, 1, 4, self.name, "#qingbei-choice", true)
+      if #choices > 0 then
+        self.cost_data = choices
         return true
       end
     else

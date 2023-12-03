@@ -390,7 +390,6 @@ local ty__pingjian = fk.CreateActiveSkill{
     if #skills == 0 then return false end
     local choices = table.random(skills, 3)
     local skill_name = room:askForChoice(player, choices, self.name, "#ty__pingjian-choice", true)
-    addTYPingjianSkill(player, skill_name)
     local phase_event = room.logic:getCurrentEvent():findParent(GameEvent.Phase)
     if phase_event ~= nil then
       addTYPingjianSkill(player, skill_name)

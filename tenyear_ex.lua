@@ -3053,17 +3053,12 @@ Fk:loadTranslationTable{
   ["#ty_ex__qiuyuan-choose"] = "求援：令另一名其他角色交给你一张不为【杀】的基本牌，否则其成为此【杀】额外目标",
   ["#ty_ex__qiuyuan-give"] = "求援：交给 %dest 一张不为【杀】的基本牌，否则成为此【杀】额外目标且不能响应此【杀】",
 
-  [""] = "",
-  [""] = "",
-  [""] = "",
   ["$ty_ex__zhuikong1"] = "曹贼你怎可如此不尊汉室。",
   ["$ty_ex__zhuikong2"] = "密信之事，不可被曹贼知晓。",
   ["$ty_ex__qiuyuan1"] = "陛下，我不想离开。",
   ["$ty_ex__qiuyuan2"] = "将军此事，可有希望。",
   ["~ty_ex__fuhuanghou"] = "这幽禁之地，好冷……",
 }
-
-
 
 local ty_ex__panzhangmazhong = General(extension, "ty_ex__panzhangmazhong", "wu", 4)
 local ty_ex__anjian = fk.CreateTriggerSkill{
@@ -3935,6 +3930,88 @@ Fk:loadTranslationTable{
   ["ty_ex__xingshuai"] = "兴衰",
   [":ty_ex__xingshuai"] = "主公技，限定技，当你进入濒死状态时，你可令其他魏势力角色依次选择是否令你回复1点体力。选择是的角色在此次濒死结算结束后受到1点"..
   "无来源的伤害。有“明鉴”标记的角色于其回合内杀死一名角色后，此技能视为未发动过。",
+}
+
+local caoxiu = General(extension, "ty_ex__caoxiu", "wei", 4)
+local ty_ex__qingxi = fk.CreateTriggerSkill{
+  name = "ty_ex__qingxi",
+  events = {fk.TargetSpecified},
+  anim_type = "offensive",
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and (data.card.trueName == "slash" or data.card.trueName == "duel")
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local n = 0
+    for _, p in ipairs(room.alive_players) do
+      if player:inMyAttackRange(p) then
+        n = n + 1
+      end
+    end
+    local max_num = #player:getEquipments(Card.SubtypeWeapon) > 0 and 4 or 2
+    n = math.min(n, max_num)
+    if player.room:askForSkillInvoke(player, self.name, data, "#ty_ex__qingxi::" .. data.to..":"..n) then
+      self.cost_data = n
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(data.to)
+    local num = self.cost_data
+    if #room:askForDiscard(to, num, num, false, self.name, true, ".", "#ty_ex__qingxi-discard:::"..num) == num then
+      local weapon = player:getEquipments(Card.SubtypeWeapon)
+      if #weapon > 0 then
+        room:throwCard(weapon, self.name, player, to)
+      end
+    else
+      data.extra_data = data.extra_data or {}
+      data.extra_data.ty_ex__qingxi = data.to
+      local judge = {
+        who = player,
+        reason = self.name,
+        pattern = ".|.|heart,diamond",
+      }
+      room:judge(judge)
+      if judge.card.color == Card.Red then
+        data.disresponsive = true
+      end
+    end
+  end,
+}
+local ty_ex__qingxi_delay = fk.CreateTriggerSkill{
+  name = "#ty_ex__qingxi_delay",
+  events = {fk.DamageCaused},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if target == player then
+      local e = player.room.logic:getCurrentEvent():findParent(GameEvent.CardEffect)
+      if e then
+        local use = e.data[1]
+        if use.extra_data and use.extra_data.ty_ex__qingxi == data.to.id then
+          return true
+        end
+      end
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    data.damage = data.damage + 1
+  end,
+}
+ty_ex__qingxi:addRelatedSkill(ty_ex__qingxi_delay)
+caoxiu:addSkill("qianju")
+caoxiu:addSkill(ty_ex__qingxi)
+Fk:loadTranslationTable{
+  ["ty_ex__caoxiu"] = "界曹休",
+  ["ty_ex__qingxi"] = "倾袭",
+  [":ty_ex__qingxi"] = "当你使用【杀】或【决斗】指定一名角色为目标后，你可以令其选择一项：1.弃置等同于你攻击范围内的角色数张手牌（至多为2，若你武器区里有武器牌则改为至多为4），然后弃置你装备区里的武器牌；2.令此牌对其造成的基础伤害值+1且你进行一次判定，若结果为红色，该角色不能响应此牌。",
+  ["#ty_ex__qingxi"] = "倾袭：可令 %dest 选一项：1.弃 %arg 张手牌并弃置你的武器；2.伤害+1且你判定，为红不能响应",
+  ["#ty_ex__qingxi-discard"] = "倾袭：你需弃置 %arg 张手牌，否则伤害+1且其判定，结果为红你不能响应",
+
+  ["$ty_ex__qingxi1"] = "虎豹骑倾巢而动，安有不胜之理？",
+  ["$ty_ex__qingxi2"] = "任尔等固若金汤，虎豹骑可破之！",
+  ["~ty_ex__caoxiu"] = "奈何痈发背薨！",
 }
 
 local sunxiu = General(extension, "ty_ex__sunxiu", "wu", 3)

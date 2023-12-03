@@ -701,6 +701,8 @@ Fk:loadTranslationTable{
   ["tycl__caocao"] = "曹操",
   ["tycl__jianxiong"] = "奸雄",
   [":tycl__jianxiong"] = "当你受到伤害后，你可以摸一张牌，并获得造成伤害的牌。当你发动此技能后，摸牌数+1（至多为5）。",
+  ["$tycl__jianxiong"] = "宁教我负天下人休教天下人负我！",
+  ["~tycl__caocao"] = "霸业未成未成啊！",
 }
 
 local cl__liubei = General(extension, "tycl__liubei", "shu", 4)
@@ -742,6 +744,9 @@ Fk:loadTranslationTable{
   ["tycl__rende"] = "章武",
   [":tycl__rende"] = "出牌阶段每名其他角色限一次，你可以获得一名其他角色两张手牌，然后视为使用一张基本牌。",
   ["#tycl__rende"] = "章武：获得一名其他角色两张手牌，然后视为使用一张基本牌",
+  ["$tycl__rende1"] = "惟贤惟德能服于人。",
+  ["$tycl__rende2"] = "以德服人。",
+  ["~tycl__liubei"] = "这就是桃园吗？",
 }
 
 local cl__sunquan = General(extension, "tycl__sunquan", "wu", 4)
@@ -797,6 +802,8 @@ Fk:loadTranslationTable{
   [":tycl__zhiheng"] = "出牌阶段限一次，你可以弃置任意张牌，然后摸等量的牌。若你以此法弃置了所有的手牌，额外摸1张牌。出牌阶段对每名角色限一次，"..
   "当你对其他角色造成伤害后，此技能本阶段可发动次数+1。",
   ["@tycl__zhiheng-phase"] = "制衡",
+  ["$tycl__zhiheng"] = "容我三思",
+  ["~tycl__sunquan"] = "父亲大哥仲谋愧矣。",
 }
 
 local nezha = General(extension, "nezha", "god", 3)

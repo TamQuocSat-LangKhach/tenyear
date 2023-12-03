@@ -4296,15 +4296,13 @@ local xiuwen = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and
-      (player:getMark("@$xiuwen") == 0 or not table.contains(player:getMark("@$xiuwen"), data.card.trueName))
+    return target == player and player:hasSkill(self) and not table.contains(U.getMark(player, self.name), data.card.trueName)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    local mark = player:getMark("@$xiuwen")
-    if mark == 0 then mark = {} end
+    local mark = U.getMark(player, self.name)
     table.insert(mark, data.card.trueName)
-    player.room:setPlayerMark(player, "@$xiuwen", mark)
+    player.room:setPlayerMark(player, self.name, mark)
     player:drawCards(1, self.name)
   end,
 }
@@ -4319,12 +4317,27 @@ local longsong_active = fk.CreateActiveSkill{
   target_filter = function(self, to_select, selected, cards)
     return #selected == 0 and to_select ~= Self.id
   end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    room:obtainCard(target.id, effect.cards[1], false, fk.ReasonGive)
+}
+local longsong = fk.CreateTriggerSkill{
+  name = "longsong",
+  anim_type = "special",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Play and not player:isNude()
+  end,
+  on_cost = function(self, event, target, player, data)
+    local success, dat = player.room:askForUseActiveSkill(player, "longsong_active", "#longsong-invoke", true)
+    if success then
+      self.cost_data = dat
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data.targets[1])
+    room:moveCardTo(Fk:getCardById(self.cost_data.cards[1]), Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
     local skills = {}
-    for _, s in ipairs(target.player_skills) do  --实际是许劭技能池。这不加强没法玩
+    for _, s in ipairs(to.player_skills) do  --实际是许劭技能池。这不加强没法玩
       if not (s.attached_equip or s.name[#s.name] == "&") and not player:hasSkill(s, true) then
         if s:isInstanceOf(ActiveSkill) or s:isInstanceOf(ViewAsSkill) then
           if s.frequency ~= Skill.Limited then
@@ -4342,17 +4355,6 @@ local longsong_active = fk.CreateActiveSkill{
       room:setPlayerMark(player, "longsong-phase", skills)
       room:handleAddLoseSkills(player, table.concat(skills, "|"), nil, true, false)
     end
-  end,
-}
-local longsong = fk.CreateTriggerSkill{
-  name = "longsong",
-  anim_type = "special",
-  events = {fk.EventPhaseStart},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Play and not player:isNude()
-  end,
-  on_cost = function(self, event, target, player, data)
-    return player.room:askForUseActiveSkill(player, "longsong_active", "#longsong-invoke", true)
   end,
 
   refresh_events = {fk.EventPhaseEnd},
@@ -4384,7 +4386,6 @@ Fk:loadTranslationTable{
   ["longsong"] = "龙诵",
   [":longsong"] = "出牌阶段开始时，你可以交给一名其他角色一张红色牌，然后你此阶段获得其拥有的“出牌阶段”的技能（每回合限发动一次）。<br>"..
   "<font color='grey'>可以获得的技能包括：<br>非限定技的转化技和主动技，技能描述前四个字为“出牌阶段”且五~六字不为“开始”和“结束”的触发技<br/>",
-  ["@$xiuwen"] = "修文",
   ["#longsong-invoke"] = "龙诵：你可以交给一名其他角色一张红色牌，本阶段获得其拥有的“出牌阶段”技能",
   ["longsong_active"] = "龙诵",
 

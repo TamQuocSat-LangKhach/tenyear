@@ -2,6 +2,8 @@ local extension = Package("tenyear_other")
 extension.extensionName = "tenyear"
 extension.game_modes_whitelist = { "m_1v2_mode" }
 
+local U = require "packages/utility/utility"
+
 Fk:loadTranslationTable{
   ["tenyear_other"] = "十周年-斗地主模式",
   ["tycl"] = "典",
@@ -795,6 +797,104 @@ Fk:loadTranslationTable{
   [":tycl__zhiheng"] = "出牌阶段限一次，你可以弃置任意张牌，然后摸等量的牌。若你以此法弃置了所有的手牌，额外摸1张牌。出牌阶段对每名角色限一次，"..
   "当你对其他角色造成伤害后，此技能本阶段可发动次数+1。",
   ["@tycl__zhiheng-phase"] = "制衡",
+}
+
+local nezha = General(extension, "nezha", "god", 3)
+local santou = fk.CreateTriggerSkill{
+  name = "santou",
+  anim_type = "defensive",
+  frequency = Skill.Compulsory,
+  events = {fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if (player.hp >= 3 and data.from and player:getMark("santou_"..data.from.id.."-turn") > 0) or
+      (player.hp == 2 and data.damageType ~= fk.NormalDamage) or
+      (player.hp == 1 and data.card and data.card.color == Card.Red) then
+      room:loseHp(player, 1, self.name)
+    end
+    if not player.dead and data.from then
+      room:setPlayerMark(player, "santou_"..data.from.id.."-turn", 1)
+    end
+    return true
+  end,
+
+  refresh_events = {fk.GameStart},
+  can_refresh = function (self, event, target, player, data)
+    return player:hasSkill(self, true) and player.maxHp > 3
+  end,
+  on_refresh = function (self, event, target, player, data)
+    player.maxHp = 3
+    player.hp = math.min(player.hp, 3)
+    player.room:broadcastProperty(player, "maxHp")
+    player.room:broadcastProperty(player, "hp")
+  end,
+}
+local faqi = fk.CreateTriggerSkill{
+  name = "faqi",
+  anim_type = "offensive",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Play and data.card.type == Card.TypeEquip
+  end,
+  on_cost = function(self, event, target, player, data)
+    local success, dat = player.room:askForUseActiveSkill(player, "faqi_viewas", "#faqi-invoke", true)
+    if success then
+      self.cost_data = dat
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local card = Fk.skills["faqi_viewas"]:viewAs(self.cost_data.cards)
+    local mark = U.getMark(player, "faqi-turn")
+    table.insert(mark, card.name)
+    room:setPlayerMark(player, "faqi-turn", mark)
+    room:useCard{
+      from = player.id,
+      tos = table.map(self.cost_data.targets, function(id) return {id} end),
+      card = card,
+    }
+  end,
+}
+local faqi_viewas = fk.CreateViewAsSkill{
+  name = "faqi_viewas",
+  interaction = function()
+    local names, all_names = {}, {}
+    for _, id in ipairs(Fk:getAllCardIds()) do
+      local card = Fk:getCardById(id)
+      if card:isCommonTrick() and not card.is_derived then
+        table.insertIfNeed(all_names, card.name)
+        if not table.contains(U.getMark(Self, "faqi-turn"), card.name) then
+          table.insertIfNeed(names, card.name)
+        end
+      end
+    end
+    if #names == 0 then return end
+    return UI.ComboBox {choices = names, all_choices = all_names,}
+  end,
+  card_filter = Util.FalseFunc,
+  view_as = function(self, cards)
+    if not self.interaction.data then return end
+    local card = Fk:cloneCard(self.interaction.data)
+    card.skillName = "faqi"
+    return card
+  end,
+}
+Fk:addSkill(faqi_viewas)
+nezha:addSkill(santou)
+nezha:addSkill(faqi)
+Fk:loadTranslationTable{
+  ["nezha"] = "哪吒",
+  ["santou"] = "三头",
+  [":santou"] = "锁定技，防止你受到的所有伤害。<br>若你体力值不小于3且你本回合已因此技能防止过该伤害来源的伤害，你失去1体力；<br>若你体力值为2且"..
+  "防止的伤害为属性伤害，你失去1体力；<br>若你体力值为1且防止的伤害为红色牌造成的伤害，你失去1体力。",
+  ["faqi"] = "法器",
+  [":faqi"] = "出牌阶段，当你使用装备牌后，你可以视为使用一张普通锦囊牌（每回合每种牌名限一次）。",
+  ["faqi_viewas"] = "法器",
+  ["#faqi-invoke"] = "法器：你可以视为使用一张普通锦囊牌",
 }
 
 return extension

@@ -1564,7 +1564,7 @@ local zhaowen = fk.CreateViewAsSkill{
   prompt = "#zhaowen",
   interaction = function()
     local names = {}
-    local mark = Self:getMark("@$zhaowen-turn")
+    local mark = Self:getMark("zhaowen-turn")
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
       if card:isCommonTrick() and not card.is_derived then
@@ -1592,25 +1592,26 @@ local zhaowen = fk.CreateViewAsSkill{
     return card
   end,
   before_use = function(self, player, use)
-    local mark = player:getMark("@$zhaowen-turn")
+    local mark = player:getMark("zhaowen-turn")
     if mark == 0 then mark = {} end
     table.insert(mark, use.card.trueName)
-    player.room:setPlayerMark(player, "@$zhaowen-turn", mark)
+    player.room:setPlayerMark(player, "zhaowen-turn", mark)
   end,
   enabled_at_play = function(self, player)
     return not player:isKongcheng() and player:usedSkillTimes("#zhaowen_trigger", Player.HistoryTurn) > 0 and
-      table.find(player.player_cards[Player.Hand], function(id)
+      table.find(player:getCardIds("h"), function(id)
         return Fk:getCardById(id).color == Card.Black and Fk:getCardById(id):getMark("@@zhaowen-turn") > 0 end)
   end,
   enabled_at_response = function(self, player, response)
     return not response and Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):matchExp(self.pattern) and
       not player:isKongcheng() and player:usedSkillTimes("#zhaowen_trigger", Player.HistoryTurn) > 0 and
-      table.find(player.player_cards[Player.Hand], function(id)
+      table.find(player:getCardIds("h"), function(id)
         return Fk:getCardById(id).color == Card.Black and Fk:getCardById(id):getMark("@@zhaowen-turn") > 0 end)
   end,
 }
 local zhaowen_trigger = fk.CreateTriggerSkill{
   name = "#zhaowen_trigger",
+  main_skill = zhaowen,
   mute = true,
   events = {fk.EventPhaseStart, fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
@@ -1634,7 +1635,7 @@ local zhaowen_trigger = fk.CreateTriggerSkill{
     player:broadcastSkillInvoke("zhaowen")
     if event == fk.EventPhaseStart then
       room:notifySkillInvoked(player, "zhaowen", "special")
-      local cards = table.simpleClone(player.player_cards[Player.Hand])
+      local cards = table.simpleClone(player:getCardIds("h"))
       player:showCards(cards)
       if not player.dead and not player:isKongcheng() then
         room:setPlayerMark(player, "zhaowen-turn", cards)
@@ -1740,7 +1741,6 @@ Fk:loadTranslationTable{
   [":jiudun"] = "你的【酒】效果不会因回合结束而消失。当你成为其他角色使用黑色牌的目标后，若你未处于【酒】状态，你可以摸一张牌并视为使用一张【酒】；"..
   "若你处于【酒】状态，你可以弃置一张手牌令此牌对你无效。",
   ["#zhaowen"] = "昭文：将一张黑色“昭文”牌当任意普通锦囊牌使用（每回合每种牌名限一次）",
-  ["@$zhaowen-turn"] = "昭文",
   ["#zhaowen_trigger"] = "昭文",
   ["#zhaowen-invoke"] = "昭文：你可以展示手牌，本回合其中黑色牌可以当任意锦囊牌使用，红色牌使用时摸一张牌",
   ["@@zhaowen-turn"] = "昭文",
@@ -2508,7 +2508,7 @@ local caizhuang = fk.CreateActiveSkill{
     while true do
       player:drawCards(1, self.name)
       local suits = {}
-      for _, id in ipairs(player.player_cards[Player.Hand]) do
+      for _, id in ipairs(player:getCardIds("h")) do
         local suit = Fk:getCardById(id).suit
         if suit ~= Card.NoSuit then
           table.insertIfNeed(suits, suit)
@@ -4606,7 +4606,7 @@ local zunwei = fk.CreateActiveSkill{
     if #selected == 0 then
       local target = Fk:currentRoom():getPlayerById(to_select)
       local player = Fk:currentRoom():getPlayerById(Self.id)
-      return (player:getMark("zunwei1") == 0 and #player.player_cards[Player.Hand] < #target.player_cards[Player.Hand]) or
+      return (player:getMark("zunwei1") == 0 and #player:getCardIds("h") < #target.player_cards[Player.Hand]) or
         (player:getMark("zunwei2") == 0 and #player.player_cards[Player.Equip] < #target.player_cards[Player.Equip]) or
         (player:getMark("zunwei3") == 0 and player:isWounded() and player.hp < target.hp)
     end
@@ -4616,7 +4616,7 @@ local zunwei = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     local choices = {}
-    if player:getMark("zunwei1") == 0 and #player.player_cards[Player.Hand] < #target.player_cards[Player.Hand] then
+    if player:getMark("zunwei1") == 0 and #player:getCardIds("h") < #target.player_cards[Player.Hand] then
       table.insert(choices, "zunwei1")
     end
     if player:getMark("zunwei2") == 0 and #player.player_cards[Player.Equip] < #target.player_cards[Player.Equip] then
@@ -4627,7 +4627,7 @@ local zunwei = fk.CreateActiveSkill{
     end
     local choice = room:askForChoice(player, choices, self.name)
     if choice == "zunwei1" then
-      player:drawCards(math.min(#target.player_cards[Player.Hand] - #player.player_cards[Player.Hand], 5), self.name)
+      player:drawCards(math.min(#target.player_cards[Player.Hand] - #player:getCardIds("h"), 5), self.name)
     elseif choice == "zunwei2" then
       local n = #target.player_cards[Player.Equip] - #player.player_cards[Player.Equip]
       for i = 1, n, 1 do
@@ -5029,12 +5029,12 @@ local miaoxian = fk.CreateViewAsSkill{
   enabled_at_play = function(self, player)
     return not player:isKongcheng() and
       player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and
-      #table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id).color == Card.Black end) == 1
+      #table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id).color == Card.Black end) == 1
   end,
   enabled_at_response = function(self, player, response)
     return not response and Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):matchExp(self.pattern) and
       not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and
-      #table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id).color == Card.Black end) == 1
+      #table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id).color == Card.Black end) == 1
   end,
 }
 local miaoxian_trigger = fk.CreateTriggerSkill{
@@ -5043,7 +5043,7 @@ local miaoxian_trigger = fk.CreateTriggerSkill{
   events = {fk.CardUsing},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and table.every(player.player_cards[Player.Hand], function(id)
+    return target == player and player:hasSkill(self) and table.every(player:getCardIds("h"), function(id)
       return Fk:getCardById(id).color ~= Card.Red end) and data.card.color == Card.Red and
       not (data.card:isVirtual() and #data.card.subcards ~= 1)
   end,

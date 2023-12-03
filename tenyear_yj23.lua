@@ -93,7 +93,10 @@ local cuguo_trigger = fk.CreateTriggerSkill{
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    player.room:loseHp(player, 1, "cuguo")
+    local room = player.room
+    player:broadcastSkillInvoke("cuguo")
+    room:notifySkillInvoked(player, "cuguo", "negative")
+    room:loseHp(player, 1, "cuguo")
   end,
 }
 tongwei:addRelatedSkill(tongwei_trigger)
@@ -170,7 +173,7 @@ local qingbei = fk.CreateTriggerSkill{
   on_cost = function (self, event, target, player, data)
     if event == fk.RoundStart then
       local room = player.room
-      local suits = {"log_spade", "log_heart", "log_club", "log_diamond"}  --妖梦佬救救QwQ
+      local suits = {"log_spade", "log_heart", "log_club", "log_diamond"}
       local choices = room:askForCheck(player, suits, 1, 4, self.name, "#qingbei-choice", true)
       if #choices > 0 then
         self.cost_data = choices

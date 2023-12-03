@@ -1482,16 +1482,16 @@ local jiufa = fk.CreateTriggerSkill{
   events = {fk.CardUsing, fk.CardResponding},
   anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and not table.contains(U.getMark(player, self.name), data.card.trueName)
+    return target == player and player:hasSkill(self) and not table.contains(U.getMark(player, "@$jiufa"), data.card.trueName)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local mark = U.getMark(player, self.name)
+    local mark = U.getMark(player, "@$jiufa")
     table.insertIfNeed(mark, data.card.trueName)
-    room:setPlayerMark(player, self.name, mark)
+    room:setPlayerMark(player, "@$jiufa", mark)
     if #mark < 9 or not room:askForSkillInvoke(player, self.name, nil, "#jiufa-invoke") then return false end
-    room:setPlayerMark(player, self.name, 0)
+    room:setPlayerMark(player, "@$jiufa", 0)
     local card_ids = room:getNCards(9)
     local get, throw = {}, {}
     room:moveCards({
@@ -1618,6 +1618,7 @@ Fk:loadTranslationTable{
   [":pingxiang"] = "限定技，出牌阶段，若你的体力上限大于9，你可以减9点体力上限，然后你视为使用至多九张火【杀】。"..
   "若如此做，你失去技能〖九伐〗且本局游戏内你的手牌上限等于体力上限。",
   ["@tianren"] = "天任",
+  ["@$jiufa"] = "九伐",
   ["#jiufa-invoke"] = "九伐：是否亮出牌堆顶九张牌，获得重复点数的牌各一张！",
   ["#pingxiang"] = "平襄：你可以减9点体力上限，视为使用至多九张火【杀】！",
   ["pingxiang_viewas"] = "平襄",

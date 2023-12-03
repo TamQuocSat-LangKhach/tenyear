@@ -2666,7 +2666,7 @@ local xiaoyin = fk.CreateTriggerSkill{
             for _, id in ipairs(ids) do
               room:setCardMark(Fk:getCardById(id), "xiaoyin", 0)
             end
-            ids = table.filter(ids, function(id) return room:getCardArea(id) ~= Card.PlayerHand end)
+            ids = table.filter(ids, function(id) return room:getCardArea(id) ~= Card.PlayerSpecial end)
             fakemove = {
               from = player.id,
               toArea = Card.Processing,
@@ -2785,12 +2785,14 @@ local xiaoyin_trigger = fk.CreateTriggerSkill{
       if #target:getPile("xiaoyin") == 1 then
         id = target:getPile("xiaoyin")[1]
       else
-        room:fillAG(data.from, target:getPile("xiaoyin"))
-        id = room:askForAG(data.from, target:getPile("xiaoyin"), false, "xiaoyin")
-        room:closeAG(player)
+        local cards, choice = U.askforChooseCardsAndChoice(data.from, target:getPile("xiaoyin"), {"OK"}, self.name,
+          "#xiaoyin-get", {"Cancel"}, 1, 1)
+        if #cards > 0 then
+          id = cards[1]
+        end
       end
       if id ~= 0 then
-        room:obtainCard(data.from.id, id, true, fk.ReasonJustMove)
+        room:moveCardTo(Fk:getCardById(id), Card.PlayerHand, data.from, fk.ReasonJustMove, self.name, nil, true, data.from.id)
       end
       data.damageType = fk.FireDamage
     end
@@ -2844,7 +2846,7 @@ Fk:loadTranslationTable{
   [":lima"] = "锁定技，场上每有一张坐骑牌，你计算与其他角色的距离-1（至少为1）。",
   ["xiaoyin"] = "硝引",
   [":xiaoyin"] = "准备阶段，你可以亮出牌堆顶X张牌（X为你距离1以内的角色数），获得其中红色牌，将任意张黑色牌作为“硝引”放置在等量名连续其他角色的"..
-  "武将牌上。有“硝引”牌的角色受到伤害时：若为火焰伤害，伤害来源可以弃置一张与“硝引”同类别的牌并随机移去此类别的“硝引”牌令此伤害+1；"..
+  "武将牌上。有“硝引”牌的角色受到伤害时：若为火焰伤害，伤害来源可以弃置一张与“硝引”同类别的牌并随机移去一张此类别的“硝引”牌令此伤害+1；"..
   "不为火焰伤害，伤害来源可以获得其一张“硝引”牌并将此伤害改为火焰伤害。",
   ["huahuo"] = "花火",
   [":huahuo"] = "出牌阶段限一次，你可以将一张红色手牌当做不计次数的火【杀】使用。若目标有“硝引”牌，此【杀】可改为指定所有有“硝引”牌的角色为目标。",

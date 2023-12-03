@@ -682,23 +682,13 @@ local dangzai = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self) and player.phase == Player.Play then
-      self.dangzai_tos = {}
-      for _, p in ipairs(player.room:getOtherPlayers(player)) do
-        if #p.player_cards[Player.Judge] > 0 then
-          for _, j in ipairs(p.player_cards[Player.Judge]) do
-            if not player:hasDelayedTrick(Fk:getCardById(j).name) then
-              table.insertIfNeed(self.dangzai_tos, p.id)
-              break
-            end
-          end
-        end
-      end
-      return #self.dangzai_tos > 0
-    end
+    return target == player and player:hasSkill(self) and player.phase == Player.Play and
+      table.find(player.room:getOtherPlayers(player), function(p) return p:canMoveCardsInBoardTo(player, "j") end)
   end,
   on_cost = function(self, event, target, player, data)
-    local to = player.room:askForChoosePlayers(player, self.dangzai_tos, 1, 1, "#dangzai-choose", self.name, true)
+    local targets = table.map(table.filter(player.room:getOtherPlayers(player), function(p)
+      return p:canMoveCardsInBoardTo(player, "j") end), Util.IdMapper)
+    local to = player.room:askForChoosePlayers(player, targets, 1, 1, "#dangzai-choose", self.name, true)
     if #to > 0 then
       self.cost_data = to[1]
       return true
@@ -706,25 +696,8 @@ local dangzai = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(self.cost_data)
-    local ids = {}
-    for _, j in ipairs(to.player_cards[Player.Judge]) do
-      if not player:hasDelayedTrick(Fk:getCardById(j).name) then
-        table.insert(ids, j)
-      end
-    end
-    room:fillAG(player, ids)
-    local id = room:askForAG(player, ids, true, self.name)
-    room:closeAG(player)
-    room:moveCards({
-      from = to.id,
-      ids = {id},
-      to = player.id,
-      toArea = Card.PlayerJudge,
-      moveReason = fk.ReasonJustMove,
-      proposer = player.id,
-      skillName = self.name,
-    })
+    local src = room:getPlayerById(self.cost_data)
+    room:askForMoveCardInBoard(player, src, player, self.name, "j", src)
   end,
 }
 zhangheng:addSkill(liangjue)
@@ -735,7 +708,7 @@ Fk:loadTranslationTable{
   [":liangjue"] = "锁定技，当有黑色牌进入或者离开你的判定区或装备区时，若你的体力值大于1，你失去1点体力，然后摸两张牌。",
   ["dangzai"] = "挡灾",
   [":dangzai"] = "出牌阶段开始时，你可以将一名其他角色判定区里的一张牌移至你的判定区。",
-  ["#dangzai-choose"] = "挡灾：你可以将一名其他角色判定区里的一张牌移至你的判定区",
+  ["#dangzai-choose"] = "挡灾：你可以将其他角色判定区里的一张牌移至你的判定区",
 
   ["$liangjue1"] = "行军者，切不可无粮！",
   ["$liangjue2"] = "粮尽援绝，须另谋出路。",

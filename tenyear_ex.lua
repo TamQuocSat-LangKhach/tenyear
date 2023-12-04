@@ -3756,6 +3756,115 @@ Fk:loadTranslationTable{
   ["~ty_ex__sunluban"] = "谁敢动哀家一根寒毛！",
 }
 
+local ty_ex__caifuren = General(extension, "ty_ex__caifuren", "qun", 3, 3, General.Female)
+local ty_ex__qieting = fk.CreateTriggerSkill{
+  name = "ty_ex__qieting",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target ~= player and target.phase == Player.Finish
+  end,
+  on_cost = function (self, event, target, player, data)
+    local room = player.room
+    local choices = {}
+    if #player.room.logic:getEventsOfScope(GameEvent.Damage, 1, function(e)
+      local damage = e.data[1]
+      return damage.from and damage.from == target
+    end, Player.HistoryTurn) == 0 then
+      if target:canMoveCardsInBoardTo(player, "e") and room:askForSkillInvoke(player, self.name, nil, "#ty_ex__qieting-move:"..target.id) then
+        table.insert(choices, "move")
+      end
+    end
+    if #player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e)
+      local use = e.data[1]
+      if use.from == target.id and use.tos then
+        if table.find(TargetGroup:getRealTargets(use.tos), function(pid) return pid ~= target.id end) then
+          return true
+        end
+      end
+      return false
+    end, Player.HistoryTurn) == 0 then
+      table.insert(choices, "draw")
+    end
+    if #choices > 0 then
+      self.cost_data = choices
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if table.contains(self.cost_data, "move") then
+      room:askForMoveCardInBoard(player, target, player, self.name, "e", target)
+    end
+    if not player.dead and table.contains(self.cost_data, "draw") then
+      player:drawCards(1, self.name)
+    end
+  end,
+}
+local ty_ex__xianzhou = fk.CreateActiveSkill{
+  name = "ty_ex__xianzhou",
+  anim_type = "control",
+  card_num = 0,
+  target_num = 1,
+  frequency = Skill.Limited,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and #player.player_cards[Player.Equip] > 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local n = #player:getCardIds("e")
+    local dummy = Fk:cloneCard("dilu")
+    dummy:addSubcards(player.player_cards[Player.Equip])
+    room:obtainCard(target, dummy, false, fk.ReasonGive)
+    if not player.dead and player:isWounded() then
+      room:recover({
+        who = player,
+        num = math.min(n, player:getLostHp()),
+        recoverBy = player,
+        skillName = self.name
+      })
+    end
+    if player.dead or target.dead then return end
+    local targets = table.filter(room:getOtherPlayers(target), function(p) return target:inMyAttackRange(p) end)
+    if #targets > 0 then
+      local tos = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, n, "#ty_ex__xianzhou-choose::"..target.id..":"..n, self.name, true)
+      if #tos > 0 then
+        for _, p in ipairs(tos) do
+          room:damage{
+            from = player,
+            to = room:getPlayerById(p),
+            damage = 1,
+            skillName = self.name,
+          }
+        end
+      end
+    end
+  end,
+}
+ty_ex__caifuren:addSkill(ty_ex__qieting)
+ty_ex__caifuren:addSkill(ty_ex__xianzhou)
+Fk:loadTranslationTable{
+  ["ty_ex__caifuren"] = "蔡夫人",
+  ["ty_ex__qieting"] = "窃听",
+  [":ty_ex__qieting"] = "其他角色的回合结束时，若其本回合：没有造成过伤害，你可以将其装备区里的一张牌置入你的装备区；没有对其他角色使用过牌，你摸一张牌。",
+  ["ty_ex__xianzhou"] = "献州",
+  [":ty_ex__xianzhou"] = "限定技，出牌阶段，你可以将装备区里的所有牌交给一名其他角色，然后你回复X点体力，并对其攻击范围内的至多X名角色各造成1点伤害（X为你交给其的牌数）。",
+  ["#ty_ex__qieting-move"] = "窃听：你可以将 %src 装备区里的一张牌置入你的装备区",
+  ["ty_ex__qieting_move"] = "窃听：将其一张装备移动给你",
+  ["#ty_ex__xianzhou-choose"] = "献州：对 %dest 攻击范围内至多 %arg 名角色各造成1点伤害",
+
+  ["$ty_ex__qieting1"] = "谋略未定，窃听以察先机。",
+  ["$ty_ex__qieting2"] = "所见相同，何必谓我？",
+  ["$ty_ex__xianzhou1"] = "举州请降，高枕无忧。",
+  ["$ty_ex__xianzhou2"] = "州固可贵，然不及我儿安危。",
+  ["~ty_ex__caifuren"] = "枉费妾身机关算尽……",
+}
+
 local jvshou = General(extension, "ty_ex__jvshou", "qun", 3)
 local ty_ex__jianying = fk.CreateTriggerSkill{
   name = "ty_ex__jianying",

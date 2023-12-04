@@ -1495,9 +1495,9 @@ local jinjie = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventPhaseChanging},
+  refresh_events = {fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.from == Player.RoundStart
+    return target == player and player:hasSkill(self)
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:addPlayerMark(player, "jinjie-round", 1)
@@ -1598,13 +1598,13 @@ local zhaowen = fk.CreateViewAsSkill{
     player.room:setPlayerMark(player, "zhaowen-turn", mark)
   end,
   enabled_at_play = function(self, player)
-    return not player:isKongcheng() and player:usedSkillTimes("#zhaowen_trigger", Player.HistoryTurn) > 0 and
+    return not player:isKongcheng() and player:usedSkillTimes("zhaowen", Player.HistoryTurn) > 0 and
       table.find(player:getCardIds("h"), function(id)
         return Fk:getCardById(id).color == Card.Black and Fk:getCardById(id):getMark("@@zhaowen-turn") > 0 end)
   end,
   enabled_at_response = function(self, player, response)
     return not response and Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):matchExp(self.pattern) and
-      not player:isKongcheng() and player:usedSkillTimes("#zhaowen_trigger", Player.HistoryTurn) > 0 and
+      not player:isKongcheng() and player:usedSkillTimes("zhaowen", Player.HistoryTurn) > 0 and
       table.find(player:getCardIds("h"), function(id)
         return Fk:getCardById(id).color == Card.Black and Fk:getCardById(id):getMark("@@zhaowen-turn") > 0 end)
   end,
@@ -2541,9 +2541,9 @@ local huayi = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventPhaseChanging},
+  refresh_events = {fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:getMark("@huayi") ~= 0 and data.from == Player.RoundStart
+    return target == player and player:getMark("@huayi") ~= 0
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@huayi", 0)
@@ -5341,9 +5341,9 @@ local yaner = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventPhaseChanging},
+  refresh_events = {fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:getMark("@@yaner") > 0 and data.from == Player.RoundStart
+    return target == player and player:getMark("@@yaner") > 0
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@@yaner", 0)

@@ -428,9 +428,9 @@ local ty__pingjian_trigger = fk.CreateTriggerSkill{
       end)
     elseif event == fk.EventPhaseStart then
       skills = table.filter({
-        "zhiyan", "ex__biyue", "fujian", "kunfen", "ol_ex__jushou", "os_ex__bingyi", "miji", "zhengu",
+        "ty_ex__zhiyan", "ex__biyue", "fujian", "kunfen", "ol_ex__jushou", "os_ex__bingyi", "miji", "zhengu",
         "juece", "sp__youdi", "kuanshi", "ty__jieying", "suizheng", "m_ex__jieyue", "shenfu", "meihun",
-        "pijing", "zhuihuan", "os__juchen", "os__xingbu", "zuilun", "mozhi", "ty_ex__jingce", "nuanhui"
+        "pijing", "zhuihuan", "os__juchen", "os__xingbu", "zuilun", "mozhi", "ty_ex__jingce", "nuanhui", "sangu"
       }, function (skill_name)
         return not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
       end)
@@ -975,34 +975,21 @@ local lilu = fk.CreateTriggerSkill{
     local n = math.min(player.maxHp, 5) - player:getHandcardNum()
     if n > 0 then
       player:drawCards(n, self.name)
+      if player.dead or player:isKongcheng() then return true end
     end
-    player.room:askForUseActiveSkill(player, "lilu_active", "#lilu-card:::"..player:getMark(self.name), false)
-    return true
-  end,
-}
-local lilu_active = fk.CreateActiveSkill{
-  name = "lilu_active",
-  mute = true,
-  max_card_num = function ()
-    return #Self.player_cards[Player.Hand]
-  end,
-  min_card_num = 1,
-  target_num = 1,
-  card_filter = function(self, to_select, selected, targets)
-    return Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
-  end,
-  target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0 and to_select ~= Self.id
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(effect.cards)
-    room:obtainCard(target, dummy, false, fk.ReasonGive)
-    if #effect.cards > player:getMark("lilu") then
+    local room = player.room
+    local targets = room:getOtherPlayers(player, false)
+    if #targets == 0 then return true end
+    local x = player:getMark("@lilu")
+    local tos, cards = room:askForChooseBoth(player, 1, 999, table.map(targets, Util.IdMapper), 1, 1, ".|.|.|hand",
+    "#lilu-card:::"..tostring(x), self.name, false, true)
+    local to = room:getPlayerById(tos[1])
+    room:moveCardTo(cards, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
+    if player.dead then return true end
+    room:setPlayerMark(player, "@lilu", #cards)
+    if #cards > x then
       room:changeMaxHp(player, 1)
-      if player:isWounded() then
+      if player:isAlive() and player:isWounded() then
         room:recover({
           who = player,
           num = 1,
@@ -1011,7 +998,7 @@ local lilu_active = fk.CreateActiveSkill{
         })
       end
     end
-    room:setPlayerMark(player, "lilu", #effect.cards)
+    return true
   end,
 }
 local yizhengc = fk.CreateTriggerSkill{
@@ -1036,7 +1023,8 @@ local yizhengc = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     if event == fk.EventPhaseStart then
-      local to = player.room:askForChoosePlayers(player, table.map(player.room:getAlivePlayers(), Util.IdMapper), 1, 1, "#yizhengc-choose", self.name, true)
+      local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player, false), Util.IdMapper),
+      1, 1, "#yizhengc-choose", self.name, true)
       if #to > 0 then
         self.cost_data = to[1]
         return true
@@ -1071,9 +1059,9 @@ local yizhengc = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventPhaseChanging},
+  refresh_events = {fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:getMark(self.name) ~= 0 and data.from == Player.RoundStart
+    return target == player and player:getMark(self.name) ~= 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -1087,7 +1075,6 @@ local yizhengc = fk.CreateTriggerSkill{
     end
   end,
 }
-Fk:addSkill(lilu_active)
 caosong:addSkill(lilu)
 caosong:addSkill(yizhengc)
 Fk:loadTranslationTable{
@@ -1101,6 +1088,7 @@ Fk:loadTranslationTable{
   ["#lilu-invoke"] = "礼赂：你可以放弃摸牌，改为将手牌摸至体力上限，然后将至少一张手牌交给一名其他角色",
   ["#lilu-card"] = "礼赂：将至少一张手牌交给一名其他角色，若大于%arg，你加1点体力上限并回复1点体力",
   ["lilu_active"] = "礼赂",
+  ["@lilu"] = "礼赂",
   ["#yizhengc-choose"] = "翊正：你可以指定一名角色，直到你下回合开始，其造成伤害/回复体力时数值+1，你减1点体力上限",
   ["@@yizhengc"] = "翊正",
 

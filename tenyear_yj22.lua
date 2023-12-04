@@ -1,6 +1,8 @@
 local extension = Package("tenyear_yj22")
 extension.extensionName = "tenyear"
 
+local U = require "packages/utility/utility"
+
 Fk:loadTranslationTable{
   ["tenyear_yj22"] = "十周年-一将2022",
 }
@@ -325,7 +327,162 @@ Fk:loadTranslationTable{
 }
 
 local zhugeshang = General(extension, "zhugeshang", "shu", 3)
-zhugeshang.total_hidden = true
+local sangu = fk.CreateTriggerSkill{
+  name = "sangu",
+  anim_type = "support",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player == target and player:hasSkill(self) and player.phase == Player.Finish
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper),
+      1, 1, "#sangu-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local ban_cards = {"nullification", "collateral"}
+    local cards = table.filter(U.prepareUniversalCards(room), function (id)
+      local card = Fk:getCardById(id)
+      return card.trueName == "slash" or (card:isCommonTrick() and not table.contains(ban_cards, card.trueName))
+    end)
+    local cards_copy = table.simpleClone(cards)
+    local names = {}
+    for i = 1, 3, 1 do
+      if #cards_copy == 0 then break end
+      local result = U.askforChooseCardsAndChoice(player, cards_copy, {"OK"}, self.name,
+      "#sangu-declare::" .. to.id .. ":" .. tostring(i), nil, 1, 1, cards)
+      table.removeOne(cards_copy, result[1])
+      table.insert(names, Fk:getCardById(result[1]).trueName)
+    end
+    local mark = U.getMark(to, "@$sangu")
+    table.insertTable(mark, names)
+    room:setPlayerMark(to, "@$sangu", mark)
+
+    local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
+    if turn_event == nil then return false end
+    local end_id = turn_event.id
+    U.getEventsByRule(room, GameEvent.UseCard, 1, function (e)
+      local use = e.data[1]
+      if use.from == player.id then
+        table.removeOne(names, use.card.trueName)
+      end
+      return false
+    end, end_id)
+    if #names == 0 then
+      mark = U.getMark(player, "sangu_avoid")
+      table.insert(mark, to.id)
+      room:setPlayerMark(player, "sangu_avoid", mark)
+    end
+  end,
+}
+
+local sangu_delay = fk.CreateTriggerSkill{
+  name = "#sangu_delay",
+  events = {fk.EventPhaseStart, fk.CardUsing, fk.CardResponding, fk.DamageInflicted},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if event == fk.DamageInflicted then
+      if player == target and data.card and table.contains(data.card.skillNames, "sangu") then
+        local card_event = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+        if not card_event then return false end
+        return table.contains(U.getMark(player, "sangu_avoid"), card_event.data[1].from)
+      end
+      return false
+    end
+    if player:getMark("sangu_effect-phase") == 0 and event ~= fk.EventPhaseStart then return false end
+    return player:isAlive() and player == target and player.phase == Player.Play and #U.getMark(player, "@$sangu") > 0
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.DamageInflicted then
+      return true
+    elseif event == fk.EventPhaseStart then
+      local phase_event = room.logic:getCurrentEvent():findParent(GameEvent.Phase)
+      if phase_event ~= nil then
+        room:setPlayerMark(player, "sangu_effect-phase", 1)
+        room:handleAddLoseSkills(player, "sangu&", nil, false, true)
+        phase_event:addCleaner(function()
+          room:setPlayerMark(player, "@$sangu", 0)
+          room:handleAddLoseSkills(player, "-sangu&", nil, false, true)
+          for _, p in ipairs(room.alive_players) do
+            local mark = U.getMark(p, "sangu_avoid")
+            table.removeOne(mark, player.id)
+            room:setPlayerMark(p, "sangu_avoid", #mark > 0 and mark or 0)
+          end
+        end)
+      end
+    else
+      local mark = U.getMark(player, "@$sangu")
+      table.remove(mark, 1)
+      room:setPlayerMark(player, "@$sangu", #mark > 0 and mark or 0)
+      if #mark == 0 then
+        room:setPlayerMark(player, "sangu_effect-phase", 0)
+        room:handleAddLoseSkills(player, "-sangu&", nil, false, true)
+      end
+    end
+  end,
+}
+
+local sangu_active = fk.CreateViewAsSkill{
+  name = "sangu&",
+  pattern = "^nullification",
+  prompt = function()
+    return "#sangu:::" .. Self:getMark("@$sangu")[1]
+  end,
+  interaction = function()
+    return UI.ComboBox {choices = table.slice(Self:getMark("@$sangu"), 1, 2)}
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) == Player.Hand
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 or not self.interaction.data then return end
+    local card = Fk:cloneCard(self.interaction.data)
+    card:addSubcard(cards[1])
+    card.skillName = "sangu"
+    return card
+  end,
+  enabled_at_play = function(self, player)
+    local mark = U.getMark(player, "@$sangu")
+    if #mark == 0 then return false end
+    local to_use = Fk:cloneCard(mark[1])
+    return player:canUse(to_use) and not player:prohibitUse(to_use)
+  end,
+  enabled_at_response = function(self, player, response)
+    local mark = U.getMark(player, "@$sangu")
+    if #mark == 0 then return false end
+    local to_use = Fk:cloneCard(mark[1])
+    return Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use)
+  end,
+}
+local sangu_prohibit = fk.CreateProhibitSkill{
+  name = "#sangu_prohibit",
+  prohibit_use = function(self, player, card)
+    if player:getMark("sangu_effect-phase") == 0 or U.getMark(player, "@$sangu") == 0 or
+    not card or #card.skillNames > 0 then return false end
+
+    local subcards = Card:getIdList(card)
+    return #subcards > 0 and table.every(subcards, function(id)
+      return table.contains(player:getCardIds(Player.Hand), id)
+    end)
+  end,
+  prohibit_response = function(self, player, card)
+    if player:getMark("sangu_effect-phase") == 0 or U.getMark(player, "@$sangu") == 0 or
+    not card or #card.skillNames > 0 then return false end
+
+    local subcards = Card:getIdList(card)
+    return #subcards > 0 and table.every(subcards, function(id)
+      return table.contains(player:getCardIds(Player.Hand), id)
+    end)
+  end,
+}
 local yizu = fk.CreateTriggerSkill{
   name = "yizu",
   anim_type = "defensive",
@@ -344,14 +501,27 @@ local yizu = fk.CreateTriggerSkill{
     })
   end,
 }
+Fk:addSkill(sangu_active)
+sangu:addRelatedSkill(sangu_delay)
+sangu:addRelatedSkill(sangu_prohibit)
+zhugeshang:addSkill(sangu)
 zhugeshang:addSkill(yizu)
 Fk:loadTranslationTable{
   ["zhugeshang"] = "诸葛尚",
   ["sangu"] = "三顾",
-  [":sangu"] = ""..
-  "",
+  [":sangu"] = "结束阶段，你可以依次在【杀】或不为【借刀杀人】和【无懈可击】的普通锦囊牌中选择三个牌名，并选择一名其他角色。"..
+  "若选择的牌均为你本回合使用过的牌，防止其以此法使用的牌对你造成的伤害。"..
+  "其下个出牌阶段内，若其使用、打出牌的次数小于你选择的牌数，其手牌均仅能当做你选择的第X张牌使用（X为其本阶段使用或打出过的牌数+1）。",
   ["yizu"] = "轶祖",
   [":yizu"] = "锁定技，每回合限一次，当你成为【杀】或【决斗】的目标后，若你的体力值不大于使用者的体力值，你回复1点体力。",
+  ["#sangu-choose"] = "你可以发动 三顾，选择一名其他角色，指定其下个出牌阶段使用前三张牌的牌名",
+  ["#sangu-show"] = "三顾：你可以亮出其中的基本牌或普通锦囊牌，%dest 本阶段可以将手牌当亮出的牌使用",
+  ["#sangu-declare"] = "三顾：宣言 %dest 在下个出牌阶段使用或打出的第 %arg 张牌的牌名",
+  ["@$sangu"] = "三顾",
+
+  ["sangu&"] = "三顾",
+  [":sangu&"] = "你可以将一张手牌当第一张“三顾”牌使用或打出。",
+  ["#sangu"] = "三顾：将一张手牌当【%arg】使用",
 
   ["$sangu1"] = "思报君恩，尽父子之忠。",
   ["$sangu2"] = "欲酬三顾，竭三代之力。",

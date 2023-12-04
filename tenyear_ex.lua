@@ -950,9 +950,9 @@ local ty_ex__pojun = fk.CreateTriggerSkill{
 local ty_ex__pojun_delay = fk.CreateTriggerSkill{
   name = "#ty_ex__pojun_delay",
   mute = true,
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return data.to == Player.NotActive and #player:getPile("ty_ex__pojun") > 0
+    return not player.dead and #player:getPile("ty_ex__pojun") > 0
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)

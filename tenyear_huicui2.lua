@@ -3845,10 +3845,10 @@ local guangshi = fk.CreateTriggerSkill{
   name = "guangshi",
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
-  events = {fk.EventPhaseChanging},
+  events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.to == Player.Start and
-      table.every(player.room:getOtherPlayers(player), function (p)
+    return target == player and player:hasSkill(self) and player.phase == Player.Start and
+      table.every(player.room:getOtherPlayers(player, false), function (p)
         return p:getMark("@@xinzhong") > 0
       end)
   end,

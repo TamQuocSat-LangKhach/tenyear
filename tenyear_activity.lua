@@ -932,7 +932,14 @@ local jiaoxia_prohibit = fk.CreateProhibitSkill{
     return #subcards > 0 and table.every(subcards, function(id)
       return table.contains(player:getCardIds(Player.Hand), id)
     end)
-  end
+  end,
+  prohibit_response = function(self, player, card)
+    if not player:hasSkill(jiaoxia) or player:getMark("@@jiaoxia-phase") == 0 or not card or #card.skillNames > 0 then return false end
+    local subcards = Card:getIdList(card)
+    return #subcards > 0 and table.every(subcards, function(id)
+      return table.contains(player:getCardIds(Player.Hand), id)
+    end)
+  end,
 }
 local jiaoxia_targetmod = fk.CreateTargetModSkill{
   name = "#jiaoxia_targetmod",
@@ -1022,7 +1029,7 @@ dongxie:addSkill(humei)
 Fk:loadTranslationTable{
   ["dongxie"] = "董翓",
   ["jiaoxia"] = "狡黠",
-  [":jiaoxia"] = "出牌阶段开始时，你可以令本阶段你的手牌均视为【杀】。若你以此法使用的【杀】造成了伤害，"..
+  [":jiaoxia"] = "出牌阶段开始时，你可以令本阶段你的手牌均只能当【杀】使用或打出。若你以此法使用的【杀】造成了伤害，"..
   "此【杀】结算后你可以视为使用原卡牌（有次数限制）。出牌阶段，你对每名角色使用第一张【杀】无次数限制。",
   ["humei"] = "狐魅",
   [":humei"] = "出牌阶段每项限一次，你可以选择一项，令一名体力值不大于X的角色执行：1.摸一张牌；2.交给你一张牌；3.回复1点体力"..
@@ -1743,9 +1750,9 @@ local yechou = fk.CreateTriggerSkill{
     room:addPlayerMark(to, "@@yechou", 1)
   end,
 
-  refresh_events = {fk.EventPhaseChanging},
+  refresh_events = {fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:getMark("@@yechou") > 0 and data.from == Player.NotActive
+    return target == player and player:getMark("@@yechou") > 0
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@@yechou", 0)
@@ -3817,21 +3824,21 @@ local yise = fk.CreateTriggerSkill{
         skillName = self.name
       })
     elseif self.yise_color == Card.Black then
-      room:addPlayerMark(to, "yise_damage", 1)
+      room:addPlayerMark(to, "@yise", 1)
     end
   end,
 }
-local yise_record = fk.CreateTriggerSkill{
-  name = "#yise_record",
+local yise_delay = fk.CreateTriggerSkill{
+  name = "#yise_delay",
   mute = true,
   events = {fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:getMark("yise_damage") > 0 and data.card and data.card.trueName == "slash"
+    return target == player and player:getMark("@yise") > 0 and data.card and data.card.trueName == "slash"
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    data.damage = data.damage + player:getMark("yise_damage")
-    player.room:setPlayerMark(player, "yise_damage", 0)
+    data.damage = data.damage + player:getMark("@yise")
+    player.room:setPlayerMark(player, "@yise", 0)
   end,
 }
 local shunshi = fk.CreateTriggerSkill{
@@ -3864,42 +3871,45 @@ local shunshi = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:obtainCard(self.cost_data[1], self.cost_data[2], false, fk.ReasonGive)
-    room:addPlayerMark(player, self.name, 1)
+    room:addPlayerMark(player, "@shunshi", 1)
   end,
 
-  refresh_events = {fk.DrawNCards, fk.EventPhaseChanging},
+  refresh_events = {fk.AfterTurnEnd},
   can_refresh = function(self, event, target, player, data)
-    if player:getMark(self.name) > 0 then
-      if event == fk.DrawNCards then
-        return true
-      else
-        return data.to == Player.NotActive
-      end
-    end
+    return player == target and player:getMark("@shunshi") > 0
   end,
   on_refresh = function(self, event, target, player, data)
-    if event == fk.DrawNCards then
-      data.n = data.n + player:getMark("shunshi")
-    else
-      player.room:setPlayerMark(player, self.name, 0)
-    end
+    player.room:setPlayerMark(player, "@shunshi", 0)
+  end,
+}
+local shunshi_delay = fk.CreateTriggerSkill{
+  name = "#shunshi_delay",
+  mute = true,
+  events = {fk.DrawNCards},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:getMark("@shunshi") > 0
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    data.n = data.n + player:getMark("@shunshi")
   end,
 }
 local shunshi_targetmod = fk.CreateTargetModSkill{
   name = "#shunshi_targetmod",
   residue_func = function(self, player, skill, scope)
-    if player:hasSkill("shunshi") and skill.trueName == "slash_skill" and scope == Player.HistoryPhase then
-      return player:getMark("shunshi")
+    if skill.trueName == "slash_skill" and scope == Player.HistoryPhase then
+      return player:getMark("@shunshi")
     end
   end,
 }
 local shunshi_maxcards = fk.CreateMaxCardsSkill{
   name = "#shunshi_maxcards",
   correct_func = function(self, player)
-    return player:getMark("shunshi")
+    return player:getMark("@shunshi")
   end,
 }
-yise:addRelatedSkill(yise_record)
+yise:addRelatedSkill(yise_delay)
+shunshi:addRelatedSkill(shunshi_delay)
 shunshi:addRelatedSkill(shunshi_targetmod)
 shunshi:addRelatedSkill(shunshi_maxcards)
 dufuren:addSkill(yise)
@@ -3913,6 +3923,10 @@ Fk:loadTranslationTable{
   "出牌阶段使用的【杀】次数上限+1、手牌上限+1。",
   ["#yise-invoke"] = "异色：你可以令 %dest 回复1点体力",
   ["#shunshi-cost"] = "顺世：你可以交给一名其他角色一张牌，然后直到你的回合结束获得效果",
+  ["#yise_delay"] = "异色",
+  ["#shunshi_delay"] = "顺世",
+  ["@yise"] = "异色",
+  ["@shunshi"] = "顺世",
 
   ["$yise1"] = "明丽端庄，双瞳剪水。",
   ["$yise2"] = "姿色天然，貌若桃李。",

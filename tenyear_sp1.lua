@@ -3527,13 +3527,13 @@ wangjun.subkingdom = "jin"
 local mianyao = fk.CreateTriggerSkill{
   name = "mianyao",
   anim_type = "drawcard",
-  events = {fk.EventPhaseEnd, fk.EventPhaseChanging},
+  events = {fk.EventPhaseEnd, fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
     if target == player then
       if event == fk.EventPhaseEnd then
         return player:hasSkill(self) and player.phase == player.Draw and not player:isKongcheng()
       else
-        return player:getMark("mianyao-turn") > 0 and data.to == Player.NotActive
+        return player:getMark("mianyao-turn") > 0
       end
     end
   end,
@@ -5152,9 +5152,9 @@ local tongguan = fk.CreateTriggerSkill{
   name = "tongguan",
   anim_type = "special",
   frequency = Skill.Compulsory,
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnStart},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self, true) and data.from == Player.RoundStart and
+    return player:hasSkill(self, true) and
       table.every({1, 2, 3, 4, 5}, function(i) return target:getMark("@@tongguan"..i) == 0 end)
   end,
   on_cost = Util.TrueFunc,
@@ -5245,10 +5245,10 @@ local mengjiez = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventPhaseChanging, fk.Damage, fk.HpRecover, fk.AfterCardsMove},
+  refresh_events = {fk.TurnStart, fk.Damage, fk.HpRecover, fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.EventPhaseChanging then
-      return target == player and data.from == Player.RoundStart
+    if event == fk.TurnStart then
+      return target == player
     elseif player.phase ~= Player.NotActive then
       if event == fk.Damage then
         return target == player and player:getMark("@@tongguan1") > 0
@@ -5274,7 +5274,7 @@ local mengjiez = fk.CreateTriggerSkill{
     end
   end,
   on_refresh = function(self, event, target, player, data)
-    if event == fk.EventPhaseChanging then
+    if event == fk.TurnStart then
       player.room:setPlayerMark(player, self.name, 0)
     else
       player.room:addPlayerMark(player, self.name, 1)

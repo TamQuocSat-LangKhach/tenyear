@@ -2668,6 +2668,56 @@ Fk:loadTranslationTable{
   ["~ty__niujin"] = "这酒有毒！",
 }
 
+local ty__mifangfushiren = General(extension, "ty__mifangfushiren", "shu", 4)
+local ty__fengshih = fk.CreateTriggerSkill{
+  name = "ty__fengshih",
+  anim_type = "offensive",
+  events = {fk.TargetSpecified, fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) and data.tos and #AimGroup:getAllTargets(data.tos) == 1 then
+      if event == fk.TargetSpecified then
+        return player:getHandcardNum() > player.room:getPlayerById(data.to):getHandcardNum()
+      else
+        return player:getHandcardNum() < player.room:getPlayerById(data.from):getHandcardNum() and not player:isNude()
+      end
+    end
+  end,
+  on_cost = function (self, event, target, player, data)
+    local room = player.room
+    local to = (event == fk.TargetSpecified) and data.to or data.from
+    local cards = room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#ty__fengshih-discard::"..to..":"..data.card.name, true)
+    if #cards > 0 then
+      self.cost_data = cards
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = (event == fk.TargetSpecified) and data.to or data.from
+    room:throwCard(self.cost_data, self.name, player, player)
+    to = room:getPlayerById(to)
+    if not to:isNude() then
+      local cid = room:askForCardChosen(player, to, "he", self.name)
+      room:throwCard({cid}, self.name, to, player)
+    end
+    data.additionalDamage = (data.additionalDamage or 0) + 1
+  end,
+}
+
+ty__mifangfushiren:addSkill(ty__fengshih)
+
+Fk:loadTranslationTable{
+  ["ty__mifangfushiren"] = "糜芳傅士仁",
+  ["ty__fengshih"] = "锋势",
+  [":ty__fengshih"] = "①当你使用牌指定一名其他角色为唯一目标后，若其手牌数小于你，你可以弃置一张牌，然后弃置其一张牌，且此牌伤害+1；"..
+  "<br>②当你成为其他角色使用牌的唯一目标后，若你的手牌数小于其，你可以弃置一张牌，然后弃置其一张牌，且此牌伤害+1。",
+  ["#ty__fengshih-discard"] = "锋势：可以弃置一张牌，并弃置 %dest 一张牌，然后 %arg 的伤害基数+1",
+
+  ["$ty__fengshih1"] = "锋芒之锐，势不可挡！",
+  ["$ty__fengshih2"] = "势须砥砺，就其锋芒。",
+  ["~ty__mifangfushiren"] = "愧对将军。",
+}
+
 local licaiwei = General(extension, "licaiwei", "qun", 3, 3, General.Female)
 local yijiao = fk.CreateActiveSkill{
   name = "yijiao",

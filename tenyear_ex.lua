@@ -2706,7 +2706,7 @@ local ty_ex__qiaoshui_maxcards = fk.CreateMaxCardsSkill{
 }
 ty_ex__qiaoshui:addRelatedSkill(ty_ex__qiaoshui_maxcards)
 ty_ex__jianyong:addSkill(ty_ex__qiaoshui)
-ty_ex__jianyong:addSkill("ty_ex__zongshij")
+ty_ex__jianyong:addSkill("zongshij")
 Fk:loadTranslationTable{
   ["ty_ex__jianyong"] = "界简雍",
   ["ty_ex__qiaoshui"] = "巧说",
@@ -2718,8 +2718,8 @@ Fk:loadTranslationTable{
 
   ["$ty_ex__qiaoshui1"] = "慧心妙舌，难题可解。",
   ["$ty_ex__qiaoshui2"] = "巧言善辩，应对自如。",
-  ["$ty_ex__zongshij_ty_ex__jianyong1"] = "能断大事者，不拘小节。",
-  ["$ty_ex__zongshij_ty_ex__jianyong2"] = "闲暇自得，威仪不肃。",
+  ["$zongshij_ty_ex__jianyong1"] = "能断大事者，不拘小节。",
+  ["$zongshij_ty_ex__jianyong2"] = "闲暇自得，威仪不肃。",
   ["~ty_ex__jianyong"] = "此景竟无言以对。",
 }
 

@@ -3067,7 +3067,11 @@ local ty_ex__anjian = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and data.card.trueName == "slash" and not player.room:getPlayerById(data.to):inMyAttackRange(player)
+    return target == player and player:hasSkill(self) and data.card.trueName == "slash"
+    and not player.room:getPlayerById(data.to):inMyAttackRange(player)
+  end,
+  on_cost = function (self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#ty_ex__anjian-invoke::"..data.to)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -3134,6 +3138,7 @@ Fk:loadTranslationTable{
   ["ty_ex__panzhangmazhong"] = "界潘璋马忠",
   ["ty_ex__anjian"] = "暗箭",
   [":ty_ex__anjian"] = "锁定技，当你使用【杀】指定一名角色为目标后，若你不在其攻击范围内，此【杀】对其造成的基础伤害值+1且无视其防具，然后若该角色因此进入濒死状态，其不能使用【桃】直到此次濒死结算结束。",
+  ["#ty_ex__anjian-invoke"] = "暗箭：是否令此【杀】对 %dest 造成的伤害+1且无视防具",
 
   ["$duodao_ty_ex__panzhangmazhong1"] = "宝刀配英雄，此刀志在必得！",
   ["$duodao_ty_ex__panzhangmazhong2"] = "你根本不会用刀！",

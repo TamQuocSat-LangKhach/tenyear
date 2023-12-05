@@ -3048,6 +3048,101 @@ Fk:loadTranslationTable{
   ["~panghui"] = "大仇虽报，奈何心有余创。",
 }
 
+local ty__zhaotongzhaoguang = General(extension, "ty__zhaotongzhaoguang", "shu", 4)
+local ty__yizan = fk.CreateViewAsSkill{
+  name = "ty__yizan",
+  pattern = ".|.|.|.|.|basic",
+  prompt = function (self, selected, selected_cards)
+    return (Self:usedSkillTimes("ty__longyuan", Player.HistoryGame) > 0) and "#ty__yizan2" or "#ty__yizan1"
+  end,
+  interaction = function()
+    local names = {}
+    for _, id in ipairs(Fk:getAllCardIds()) do
+      local card = Fk:getCardById(id)
+      if card.type == Card.TypeBasic and not card.is_derived and
+        ((Fk.currentResponsePattern == nil and card.skill:canUse(Self, card)) or
+        (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
+        table.insertIfNeed(names, card.name)
+      end
+    end
+    if #names == 0 then return end
+    return UI.ComboBox {choices = names}
+  end,
+  card_filter = function(self, to_select, selected)
+    if #selected == 0 then
+      return Fk:getCardById(to_select).type == Card.TypeBasic
+    elseif Self:usedSkillTimes("ty__longyuan", Player.HistoryGame) == 0 then
+      return #selected == 1
+    end
+    return false
+  end,
+  view_as = function(self, cards)
+    if not self.interaction.data then return end
+    if Self:usedSkillTimes("ty__longyuan", Player.HistoryGame) > 0 then
+      if #cards ~= 1 then return end
+    else
+      if #cards ~= 2 then return end
+    end
+    if not table.find(cards, function(id) return Fk:getCardById(id).type == Card.TypeBasic end) then return end
+    local card = Fk:cloneCard(self.interaction.data)
+    card:addSubcards(cards)
+    card.skillName = self.name
+    return card
+  end,
+}
+local qingren = fk.CreateTriggerSkill{
+  name = "qingren",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target == player and
+      player.phase == Player.Finish and player:usedSkillTimes("ty__yizan", Player.HistoryTurn) > 0
+  end,
+  on_use = function (self, event, target, player, data)
+    player:drawCards(player:usedSkillTimes("ty__yizan", Player.HistoryTurn), self.name)
+  end,
+}
+ty__zhaotongzhaoguang:addSkill(qingren)
+local ty__longyuan = fk.CreateTriggerSkill{
+  name = "ty__longyuan",
+  frequency = Skill.Wake,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and
+      target.phase == Player.Finish and
+      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  can_wake = function(self, event, target, player, data)
+    return player:usedSkillTimes("ty__yizan", Player.HistoryGame) > 2
+  end,
+  on_use = function (self, event, target, player, data)
+    player:drawCards(2, self.name)
+    if not player.dead and player:isWounded() then
+      player.room:recover { num = 1, skillName = self.name, who = player, recoverBy = player}
+    end
+  end,
+}
+ty__zhaotongzhaoguang:addSkill(ty__yizan)
+ty__zhaotongzhaoguang:addSkill(ty__longyuan)
+Fk:loadTranslationTable{
+  ["ty__zhaotongzhaoguang"] = "赵统赵广",
+  ["ty__yizan"] = "翊赞",
+  [":ty__yizan"] = "你可以将两张牌（其中至少一张是基本牌）当任意基本牌使用或打出。",
+  ["qingren"] = "青刃",
+  [":qingren"] = "结束阶段，你可以摸X张牌（X为你本回合发动“翊赞”的次数）。",
+  ["ty__longyuan"] = "龙渊",
+  [":ty__longyuan"] = "觉醒技，一名角色的结束阶段，若你本局游戏内发动过至少三次“翊赞”，你摸两张牌并回复1点体力，将“翊赞”中的“两张牌”修改为“一张牌”。",
+  ["#ty__yizan1"] = "翊赞：你可以将两张牌（其中至少一张是基本牌）当任意基本牌使用或打出",
+  ["#ty__yizan2"] = "翊赞：你可以将一张基本牌当任意基本牌使用或打出",
+
+  ["$ty__yizan1"] = "承吾父之勇，翊军立阵。",
+  ["$ty__yizan2"] = "继先帝之志，季兴大汉。",
+  ["$qingren1"] = "此身忠义，可鉴天涯明月。",
+  ["$qingren2"] = "青釭并龙胆，试刃三千里。",
+  ["$ty__longyuan1"] = "金鳞岂是池中物，一遇风云便化龙。",
+  ["$ty__longyuan2"] = "忍时待机，今日终于可以建功立业。",
+  ["~ty__zhaotongzhaoguang"] = "守业死战，不愧初心。",
+}
+
 local yuantanyuanshangyuanxi = General(extension, "yuantanyuanshangyuanxi", "qun", 4)
 local ty__neifa = fk.CreateTriggerSkill{
   name = "ty__neifa",

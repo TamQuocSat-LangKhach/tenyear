@@ -3772,6 +3772,7 @@ local zhangchu = General(extension, "zhangchu", "qun", 3, 3, General.Female)
 local jizhong = fk.CreateActiveSkill{
   name = "jizhong",
   anim_type = "control",
+  prompt = "#jizhong-active",
   card_num = 0,
   target_num = 1,
   can_use = function(self, player)
@@ -3782,22 +3783,25 @@ local jizhong = fk.CreateActiveSkill{
     return #selected == 0 and to_select ~= Self.id
   end,
   on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     target:drawCards(2, self.name)
+    if target.dead or player.dead then return end
+
     if target:getMark("@@xinzhong") > 0 then
-      if #target.player_cards[Player.Hand] <= 3 then
-        target:throwAllCards("h")
-      else
-        room:askForDiscard(target, 3, 3, false, self.name, false, ".", "#jizhong-discard2")
+      local cards = target:getCardIds(Player.Hand)
+      if #cards > 3 then
+        cards = room:askForCard(target, 3, 3, false, self.name, false, ".", "#jizhong-give:" .. player.id)
+      end
+      if #cards > 0 then
+        room:moveCardTo(cards, Player.Hand, player, fk.ReasonGive, self.name, nil, false, target.id)
       end
     else
-      if #target.player_cards[Player.Hand] < 3 then
+      local cards = room:askForCard(target, 3, 3, false, self.name, true, ".", "#jizhong-choice:" .. player.id)
+      if #cards == 0 then
         room:setPlayerMark(target, "@@xinzhong", 1)
       else
-        local cards = room:askForDiscard(target, 3, 3, false, self.name, true, ".", "#jizhong-discard1")
-        if #cards == 0 then
-          room:setPlayerMark(target, "@@xinzhong", 1)
-        end
+        room:moveCardTo(cards, Player.Hand, player, fk.ReasonGive, self.name, nil, false, target.id)
       end
     end
   end,
@@ -3853,8 +3857,10 @@ local guangshi = fk.CreateTriggerSkill{
       end)
   end,
   on_use = function(self, event, target, player, data)
-    player.room:loseHp(player, 1, self.name)
     player:drawCards(2, self.name)
+    if player:isAlive() then
+      player.room:loseHp(player, 1, self.name)
+    end
   end,
 }
 zhangchu:addSkill(jizhong)
@@ -3863,16 +3869,17 @@ zhangchu:addSkill(guangshi)
 Fk:loadTranslationTable{
   ["zhangchu"] = "张楚",
   ["jizhong"] = "集众",
-  [":jizhong"] = "出牌阶段限一次，你可以令一名其他角色摸两张牌，然后若其不是“信众”，则其选择一项：1.成为“信众”；"..
-  "2.弃置三张手牌；若其是“信众”，则其弃置三张手牌（不足则全弃）。",
+  [":jizhong"] = "出牌阶段限一次，你可以令一名其他角色摸两张牌，然后若其：不是“信众”，则其选择一项：1.成为“信众”；"..
+  "2.将三张手牌交给你；是“信众”，其将三张手牌交给你（不足则全部交给）。",
   ["rihui"] = "日慧",
   [":rihui"] = "每回合限一次，当你使用指定唯一其他角色为目标的普通锦囊牌或黑色基本牌后，若其：不是“信众”，所有“信众”均视为对其使用此牌；"..
   "是“信众”，你可以获得其区域内的一张牌。",
   ["guangshi"] = "光噬",
-  [":guangshi"] = "锁定技，准备阶段，若所有其他角色均是“信众”，你失去1点体力并摸两张牌。",
+  [":guangshi"] = "锁定技，准备阶段，若所有其他角色均是“信众”，你摸两张牌并失去1点体力。",
+  ["#jizhong-active"] = "发动 集众，令一名其他角色摸两张牌，然后其选择交给你三张牌或成为“信众”",
   ["@@xinzhong"] = "信众",
-  ["#jizhong-discard1"] = "集众：你需弃置三张手牌，否则成为“信众”",
-  ["#jizhong-discard2"] = "集众：你需弃置三张手牌",
+  ["#jizhong-choice"] = "集众：选择将三张手牌交给 %src，否则成为“信众”",
+  ["#jizhong-give"] = "集众：选择将三张手牌交给 %src",
   ["#rihui-use"] = "日慧：你可以令所有“信众”视为对 %dest 使用一张【%arg】",
   ["#rihui-get"] = "日慧：你可以获得 %dest 区域内一张牌",
 
@@ -4352,7 +4359,8 @@ local lingkong = fk.CreateTriggerSkill{
     if event == fk.GameStart then
       return #handcards > 0
     elseif event == fk.AfterCardsMove then
-      if player.phase ~= Player.NotActive then return false end
+      local room = player.room
+      if room.current == nil or room.current.phase == Player.Draw or player:getMark("lingkongused-turn") > 0 then return false end
       local cards = {}
       for _, move in ipairs(data) do
         if move.to == player.id and move.toArea == Player.Hand then
@@ -4364,6 +4372,7 @@ local lingkong = fk.CreateTriggerSkill{
           end
         end
       end
+      cards = U.moveCardsHoldingAreaCheck(player.room, cards)
       if #cards > 0 then
         self.cost_data = cards
         return true
@@ -4377,8 +4386,10 @@ local lingkong = fk.CreateTriggerSkill{
         room:setCardMark(Fk:getCardById(id), "@@konghou-inhand", 1)
       end
     elseif event == fk.AfterCardsMove then
-      local id = table.random(self.cost_data)
-      room:setCardMark(Fk:getCardById(id), "@@konghou-inhand", 1)
+      room:setPlayerMark(player, "lingkongused-turn", 1)
+      for _, id in ipairs(self.cost_data) do
+        room:setCardMark(Fk:getCardById(id), "@@konghou-inhand", 1)
+      end
     end
   end,
 }
@@ -4404,10 +4415,13 @@ local xianshu = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local color = Fk:getCardById(effect.cards[1]).color
     local player = room:getPlayerById(effect.from)
-    player:showCards(effect.cards)
-    room:delay(2000)
     local target = room:getPlayerById(effect.tos[1])
     room:obtainCard(target.id, effect.cards[1], true, fk.ReasonGive)
+    if player.dead or target.dead then return end
+    local x = math.abs(player.hp - target.hp)
+    if x > 0 then
+      room:drawCards(player, math.min(x, 5), self.name)
+    end
     if player.dead or target.dead then return end
     if color == Card.Red and target.hp <= player.hp and target:isWounded() then
       room:recover{
@@ -4420,11 +4434,6 @@ local xianshu = fk.CreateActiveSkill{
     if color == Card.Black and target.hp >= player.hp then
       room:loseHp(target, 1, self.name)
     end
-    if player.dead or target.dead then return end
-    local x = math.abs(player.hp - target.hp)
-    if x > 0 then
-      room:drawCards(player, math.min(x, 5), self.name)
-    end
   end,
 }
 lingkong:addRelatedSkill(lingkong_maxcards)
@@ -4433,10 +4442,10 @@ zhoufei:addSkill(xianshu)
 Fk:loadTranslationTable{
   ["mu__zhoufei"] = "乐周妃",
   ["lingkong"] = "灵箜",
-  [":lingkong"] = "锁定技，游戏开始时，你的初始手牌增加“箜篌”标记且不计入手牌上限。你于回合外得到牌后，随机将其中一张标记为“箜篌”牌。",
+  [":lingkong"] = "锁定技，游戏开始时，你的初始手牌增加“箜篌”标记且不计入手牌上限。每回合你于摸牌阶段外首次获得牌后，将这些牌标记为“箜篌”。",
   ["xianshu"] = "贤淑",
-  [":xianshu"] = "出牌阶段，你可以展示一张“箜篌”牌并交给一名其他角色。若此牌为红色，且该角色体力值小于等于你，该角色回复1点体力；"..
-  "若此牌为黑色，且该角色体力值大于等于你，该角色失去1点体力。然后，你摸X张牌（X为你与该角色体力值之差且至多为5）。",
+  [":xianshu"] = "出牌阶段，你可以将一张“箜篌”牌交给一名其他角色并摸X张牌（X为你与该角色体力值之差且至多为5），"..
+  "若此牌为：红色，且该角色体力值不大于你，该角色回复1点体力；黑色，且该角色体力值不小于你，该角色失去1点体力。",
 
   ["@@konghou-inhand"] = "箜篌",
   ["#xianshu-active"] = "发动 贤淑，选择一张带有“箜篌”标记的牌交给其他角色",

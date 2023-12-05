@@ -3988,7 +3988,7 @@ Fk:loadTranslationTable{
   ["~ty_ex__jvshou"] = "身处河南，魂归河北……",
 }
 --yj2015
---local caorui = General(extension, "ty_ex__caorui", "wei", 3)  这个神秘东西先注释掉
+local caorui = General(extension, "ty_ex__caorui", "wei", 3)
 local ty_ex__xingshuai = fk.CreateTriggerSkill{
   name = "ty_ex__xingshuai$",
   anim_type = "defensive",
@@ -4036,14 +4036,106 @@ local ty_ex__xingshuai = fk.CreateTriggerSkill{
     player:setSkillUseHistory(self.name, 0, Player.HistoryGame)
   end,
 }
---caorui:addSkill("huituo")
+
+local ty_ex__mingjian = fk.CreateActiveSkill{
+  name = "ty_ex__mingjian",
+  anim_type = "support",
+  card_num = 0,
+  target_num = 1,
+  prompt = "#ty_ex__mingjian-active",
+  can_use = function(self, player)
+    return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    room:moveCardTo(player:getCardIds(Player.Hand), Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
+    room:addPlayerMark(target, "@@" .. self.name, 1)
+    local mark = U.getMark(target, "ty_ex__mingjian_source")
+    table.insert(mark, effect.from)
+    room:setPlayerMark(target, "ty_ex__mingjian_source", mark)
+  end,
+}
+
+local ty_ex__mingjian_delay = fk.CreateTriggerSkill{
+  name = "#ty_ex__mingjian_delay",
+  events = {fk.Damage},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return not player.dead and player:getMark("ty_ex__mingjian_to_huituo-turn") > 0 and target
+      and target.phase ~= Player.NotActive
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "ty_ex__mingjian_to_huituo-turn", 0)
+    local judge = {
+      who = player,
+      reason = "huituo",
+      pattern = ".",
+    }
+    room:judge(judge)
+    if player.dead then return false end
+    if judge.card.color == Card.Red then
+      if player:isWounded() then
+        room:recover({
+          who = player,
+          num = 1,
+          recoverBy = player,
+          skillName = "huituo"
+        })
+      end
+    elseif judge.card.color == Card.Black then
+      player:drawCards(data.damage, "huituo")
+    end
+  end,
+
+  refresh_events = {fk.TurnStart},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and player:getMark("@@ty_ex__mingjian") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local x = player:getMark("@@ty_ex__mingjian")
+    room:addPlayerMark(player, MarkEnum.AddMaxCardsInTurn, x)
+    room:addPlayerMark(player, MarkEnum.SlashResidue .. "-turn", x)
+    local mark = U.getMark(player, "ty_ex__mingjian_source")
+    room:setPlayerMark(player, "ty_ex__mingjian_source", 0)
+    for _, p in ipairs(room.alive_players) do
+      if table.contains(mark, p.id) then
+        room:setPlayerMark(p, "ty_ex__mingjian_to_huituo-turn", 1)
+      end
+    end
+    local turn_event = room.logic:getCurrentEvent()
+    turn_event:addCleaner(function()
+      room:removePlayerMark(player, "@@ty_ex__mingjian", x)
+    end)
+  end,
+}
+
+ty_ex__mingjian:addRelatedSkill(ty_ex__mingjian_delay)
+caorui:addSkill("huituo")
 --caorui:addSkill("mingjian")
+caorui:addSkill(ty_ex__mingjian)
+caorui:addSkill("xingshuai")
 --caorui:addSkill(ty_ex__xingshuai)
+
 Fk:loadTranslationTable{
   ["ty_ex__caorui"] = "界曹叡",
+  ["ty_ex__mingjian"] = "明鉴",
+  [":ty_ex__mingjian"] = "出牌阶段限一次，你可以将所有手牌交给一名其他角色，然后该角色下回合：使用【杀】的次数上限和手牌上限+1；"..
+  "首次造成伤害后，你对自己发动一次〖恢拓〗。",
   ["ty_ex__xingshuai"] = "兴衰",
-  [":ty_ex__xingshuai"] = "主公技，限定技，当你进入濒死状态时，你可令其他魏势力角色依次选择是否令你回复1点体力。选择是的角色在此次濒死结算结束后受到1点"..
-  "无来源的伤害。有“明鉴”标记的角色于其回合内杀死一名角色后，此技能视为未发动过。",
+  [":ty_ex__xingshuai"] = "主公技，限定技，当你进入濒死状态时，你可令其他魏势力角色依次选择是否令你回复1点体力。"..
+  "选择是的角色在此次濒死结算结束后受到1点无来源的伤害。有“明鉴”标记的角色于其回合内杀死一名角色后，此技能视为未发动过。",
+
+  ["#ty_ex__mingjian-active"] = "发动 明鉴，将所有手牌交给一名角色，令其下个回合获得增益",
+  ["#ty_ex__mingjian_delay"] = "明鉴",
+  ["@@ty_ex__mingjian"] = "明鉴",
 }
 
 local caoxiu = General(extension, "ty_ex__caoxiu", "wei", 4)

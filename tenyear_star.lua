@@ -6,7 +6,7 @@ Fk:loadTranslationTable{
   ["tystar"] = "新服星",
 }
 
---天枢：袁术
+--天枢：袁术 董卓
 local yuanshu = General(extension, "tystar__yuanshu", "qun", 4)
 local canxi = fk.CreateTriggerSkill{
   name = "canxi",
@@ -171,9 +171,162 @@ Fk:loadTranslationTable{
   ["~tystar__yuanshu"] = "英雄不死则已，死则举大名尔……",
 }
 
---local dongzhuo = General(extension, "tystar__dongzhuo", "qun", 8)
+local dongzhuo = General(extension, "tystar__dongzhuo", "qun", 5)
+local weilin = fk.CreateTriggerSkill{
+  name = "weilin",
+  anim_type = "offensive",
+  frequency = Skill.Compulsory,
+  events = {fk.DamageCaused},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) and player.phase ~= Player.NotActive then
+      local room = player.room
+      if #room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function(e)
+        local damage = e.data[5]
+        if damage and damage.to == data.to and e.id < room.logic:getCurrentEvent().id then
+          return true
+        end
+      end, Player.HistoryTurn) == 0 then
+        local n = 0
+        room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e)
+          local use = e.data[1]
+          if use and use.from == player.id then
+            n = n + 1
+          end
+        end, Player.HistoryTurn)
+        return n >= data.to.hp
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    data.damage = data.damage + 1
+  end,
+}
+local zhangrong = fk.CreateTriggerSkill{
+  name = "zhangrong",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player.phase == Player.Start and player:hasSkill(self)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local command = "AskForUseActiveSkill"
+    player.room:notifyMoveFocus(player, "zhangrong_active")
+    local dat = {"zhangrong_active", "#zhangrong-invoke", true, json.encode({})}
+    local result = player.room:doRequest(player, command, json.encode(dat))
+    if result ~= "" then
+      self.cost_data = json.decode(result)
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local targets = self.cost_data.targets
+    room:sortPlayersByAction(targets)
+    room:setPlayerMark(player, "zhangrong-turn", targets)
+    room:doIndicate(player.id, targets)
+    local choice = self.cost_data.interaction_data
+    for _, id in ipairs(targets) do
+      local p = room:getPlayerById(id)
+      if not p.dead then
+        if choice == "zhangrong1" then
+          room:loseHp(p, 1, self.name)
+        elseif choice == "zhangrong2" then
+          room:askForDiscard(p, 1, 1, false, self.name, false)
+        end
+      end
+    end
+    if not player.dead then
+      player:drawCards(#targets, self.name)
+    end
+  end,
+}
+local zhangrong_delay = fk.CreateTriggerSkill{
+  name = "#zhangrong_delay",
+  mute = true,
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and not player.dead and player:usedSkillTimes("zhangrong", Player.HistoryTurn) > 0 then
+      local room = player.room
+      local playerIds = {}
+      room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function(e)
+        local damage = e.data[5]
+        if damage then
+          table.insertIfNeed(playerIds, damage.to.id)
+        end
+      end, Player.HistoryTurn)
+      return table.find(player:getMark("zhangrong-turn"), function(id) return not table.contains(playerIds, id) end)
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke("zhangrong")
+    room:notifySkillInvoked(player, "zhangrong", "negative")
+    room:loseHp(player, 1, "zhangrong")
+  end,
+}
+local zhangrong_active = fk.CreateActiveSkill{
+  name = "zhangrong_active",
+  card_num = 0,
+  min_target_num = 1,
+  max_target_num = function()
+    return Self.hp
+  end,
+  interaction = function()
+    return UI.ComboBox {choices = {"zhangrong1", "zhangrong2"}}
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter  = function (self, to_select, selected, selected_cards, card)
+    if #selected < Self.hp then
+      local target = Fk:currentRoom():getPlayerById(to_select)
+      if self.interaction.data == "zhangrong1" then
+        return target.hp >= Self.hp
+      elseif self.interaction.data == "zhangrong2" then
+        return target:getHandcardNum() >= Self:getHandcardNum() and not target:isKongcheng()
+      end
+    end
+  end,
+}
+local haoshou = fk.CreateTriggerSkill{
+  name = "haoshou$",
+  anim_type = "support",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and data.card.trueName == "analeptic" and target ~= player and target.kingdom == "qun" and player:isWounded()
+  end,
+  on_cost = function (self, event, target, player, data)
+    return player.room:askForSkillInvoke(target, self.name, nil, "#haoshou-invoke:"..player.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(target.id, {player.id})
+    room:recover({
+      who = player,
+      num = 1,
+      recoverBy = target,
+      skillName = self.name
+    })
+  end,
+}
+Fk:addSkill(zhangrong_active)
+zhangrong:addRelatedSkill(zhangrong_delay)
+dongzhuo:addSkill(weilin)
+dongzhuo:addSkill(zhangrong)
+dongzhuo:addSkill(haoshou)
 Fk:loadTranslationTable{
   ["tystar__dongzhuo"] = "星董卓",
+  ["weilin"] = "威临",
+  [":weilin"] = "锁定技，你于回合内对一名角色造成伤害时，若其本回合没有受到过伤害且你本回合已使用牌数不小于其体力值，则此伤害+1。",
+  ["zhangrong"] = "掌戎",
+  [":zhangrong"] = "准备阶段，你可以选择一项：1.令至多X名体力值不小于你的角色各失去1点体力；2.令至多X名手牌数不小于你的角色各弃置一张手牌"..
+  "（X为你的体力值）。选择完成后，你摸选择角色数量的牌。回合结束时，若这些角色中有角色本回合未受到伤害，你失去1点体力",
+  ["haoshou"] = "豪首",
+  [":haoshou"] = "主公技，其他群雄势力角色使用【酒】后，可令你回复1点体力。",
+  ["#zhangrong-invoke"] = "掌戎：选择角色各失去1点体力或各弃置一张手牌",
+  ["zhangrong_active"] = "掌戎",
+  ["zhangrong1"] = "失去体力",
+  ["zhangrong2"] = "弃置手牌",
+  ["#haoshou-invoke"] = "豪首：是否令 %src 回复1点体力？",
 }
 
 --玉衡：曹仁

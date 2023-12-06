@@ -129,7 +129,6 @@ local miyi = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:sendLog{ type = "#SkillDelayInvoked", from = player.id, arg = self.name, }
     local targets = self.cost_data.targets
     room:sortPlayersByAction(targets)
     room:doIndicate(player.id, targets)

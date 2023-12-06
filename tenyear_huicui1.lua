@@ -247,15 +247,126 @@ Fk:loadTranslationTable{
   ["~caoxing"] = "夏侯将军，有话好说……",
 }
 
+local chunyuqiong = General(extension, "chunyuqiong", "qun", 4)
+local cangchu = fk.CreateTriggerSkill{
+  name = "cangchu",
+  events = {fk.GameStart , fk.AfterCardsMove},
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    if event == fk.GameStart then
+      return player:hasSkill(self)
+    elseif player:usedSkillTimes(self.name, Player.HistoryTurn) < 1 and player:getMark("@cangchu") < #player.room.alive_players then
+      if player:hasSkill(self) and player.phase == Player.NotActive then
+        for _, move in ipairs(data) do
+          if move.toArea == Card.PlayerHand and move.to == player.id then
+            return true
+          end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.GameStart then
+      room:setPlayerMark(player, "@cangchu", math.min(#room.alive_players, player:getMark("@cangchu") + 3))
+    else
+      room:addPlayerMark(player, "@cangchu")
+    end
+    room:broadcastProperty(player, "MaxCards")
+  end,
+
+  refresh_events = {fk.Death},
+  can_refresh = function (self, event, target, player, data)
+    return player:hasSkill(self,true) and player:getMark("@cangchu") >#player.room.alive_players
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "@cangchu", #room.alive_players)
+    room:broadcastProperty(player, "MaxCards")
+  end,
+}
+local cangchu_maxcards = fk.CreateMaxCardsSkill{
+  name = "#cangchu_maxcards",
+  correct_func = function(self, player)
+    return player:getMark("@cangchu")
+  end,
+}
+cangchu:addRelatedSkill(cangchu_maxcards)
+chunyuqiong:addSkill(cangchu)
+local liangying = fk.CreateTriggerSkill{
+  name = "liangying",
+  events = {fk.EventPhaseStart},
+  anim_type = "support",
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target == player and player.phase == Player.Discard and player:getMark("@cangchu") > 0
+  end,
+  on_cost = function (self, event, target, player, data)
+    local room = player.room
+    local n = player:getMark("@cangchu")
+    local tos = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper), 1, n,"#liangying-choose:::"..n, self.name, true)
+    if #tos > 0 then
+      self.cost_data = tos
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local tos = self.cost_data
+    room:sortPlayersByAction(tos)
+    player:drawCards(#tos, self.name)
+    for _, pid in ipairs(tos) do
+      if player:isKongcheng() then break end
+      local p = room:getPlayerById(pid)
+      if not p.dead and p ~= player then
+        local card = room:askForCard(player, 1, 1, false, self.name, false, ".", "#liangying-give::"..pid)
+        if #card > 0 then
+          room:obtainCard(p, card[1], false, fk.ReasonGive)
+        end
+      end
+    end
+  end,
+}
+chunyuqiong:addSkill(liangying)
+local shishou = fk.CreateTriggerSkill{
+  name = "shishou",
+  events = {fk.EventPhaseStart, fk.CardUseFinished, fk.Damaged},
+  anim_type = "negative",
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and target == player then
+      if event == fk.EventPhaseStart then
+        return player.phase == Player.Start and player:getMark("@cangchu") == 0
+      elseif event == fk.CardUseFinished then
+        return player:getMark("@cangchu") > 0 and data.card.name == "analeptic"
+      else
+        return player:getMark("@cangchu") > 0 and data.damageType == fk.FireDamage
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart then
+      room:loseHp(player, 1, self.name)
+    else
+      room:removePlayerMark(player, "@cangchu")
+      room:broadcastProperty(player, "MaxCards")
+    end
+  end,
+}
+chunyuqiong:addSkill(shishou)
 Fk:loadTranslationTable{
   ["chunyuqiong"] = "淳于琼",
   ["cangchu"] = "仓储",
-  [":cangchu"] = "锁定技，游戏开始时，你获得3枚“粮”标记；每拥有1枚“粮”手牌上限+1；当你于回合外获得牌时，获得1枚“粮”。"..
-  "（每回合限一枚，且“粮”的总数不能大于存活角色数）",
+  [":cangchu"] = "锁定技，游戏开始时，你获得3枚“粮”标记；每拥有1枚“粮”手牌上限+1；当你于回合外获得牌时，获得1枚“粮”"..
+  "（每回合限一枚，且“粮”的总数不能大于存活角色数）。",
   ["liangying"] = "粮营",
-  [":liangying"] = "弃牌阶段开始时，你可以摸至多X张牌，然后交给等量的角色各一张手牌（X为“粮”的数量）。",
+  [":liangying"] = "弃牌阶段开始时，你可以摸选择至多X名角色并摸等量张牌，然后交给其中每名其他角色各一张手牌（X为“粮”的数量）。",
   ["shishou"] = "失守",
   [":shishou"] = "锁定技，当你使用【酒】或受到火焰伤害后，你失去1枚“粮”。准备阶段，若你没有“粮”，你失去1点体力。",
+  ["@cangchu"] = "粮",
+  ["#liangying-choose"] = "粮营：选择至多 %arg 名角色并摸等量张牌，然后交给这些角色各一张手牌",
+  ["#liangying-give"] = "粮营：交给 %dest 一张手牌",
   
   ["$cangchu1"] = "广积粮草，有备无患。",
   ["$cangchu2"] = "吾奉命于此、建仓储粮。",
@@ -263,7 +374,7 @@ Fk:loadTranslationTable{
   ["$liangying2"] = "仲简在此，谁敢来犯？",
   ["$shishou1"] = "腹痛骤发，痛不可当。",
   ["$shishou2"] = "火光冲天，悔不当初。",
-  ["~caoxing"] = "这酒，饮不得啊……",
+  ["~chunyuqiong"] = "这酒，饮不得啊……",
 }
 
 local xiahoujie = General(extension, "xiahoujie", "wei", 5)

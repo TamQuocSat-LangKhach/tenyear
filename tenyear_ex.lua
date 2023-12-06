@@ -3305,7 +3305,7 @@ local ty_ex__pindi = fk.CreateActiveSkill{
     return not player:isNude()
   end,
   card_filter = function(self, to_select, selected)
-    if #selected == 0 then
+    if #selected == 0 and not Self:prohibitDiscard(Fk:getCardById(to_select)) then
       local mark = Self:getMark("ty_ex__pindi-phase")
       if mark == 0 then
         return true
@@ -3377,6 +3377,151 @@ Fk:loadTranslationTable{
   ["$ty_ex__faen1"] = "国法虽严，然不外乎于情。",
   ["$ty_ex__faen2"] = "律令如铁，亦有可商榷之处。",
   ["~ty_ex__chenqun"] = "吾身虽亡，然吾志当遗百年……",
+}
+
+local ty_ex__hanhaoshihuan = General(extension, "ty_ex__hanhaoshihuan", "wei", 4)
+local ty_ex__shenduan = fk.CreateTriggerSkill{
+  name = "ty_ex__shenduan",
+  anim_type = "control",
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      for _, move in ipairs(data) do
+        if move.from == player.id and move.moveReason == fk.ReasonDiscard then
+          for _, info in ipairs(move.moveInfo) do
+            if (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip)
+            and player.room:getCardArea(info.cardId) == Card.DiscardPile then
+              local card = Fk:getCardById(info.cardId)
+              if card.type ~= Card.TypeTrick and card.color == Card.Black then
+                return true
+              end
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_trigger = function(self, event, target, player, data)
+    local ids = {}
+    for _, move in ipairs(data) do
+      if move.from == player.id and move.moveReason == fk.ReasonDiscard then
+        for _, info in ipairs(move.moveInfo) do
+          if (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip)
+            and player.room:getCardArea(info.cardId) == Card.DiscardPile then
+            local card = Fk:getCardById(info.cardId)
+            if card.type ~= Card.TypeTrick and card.color == Card.Black then
+              table.insertIfNeed(ids, info.cardId)
+            end
+          end
+        end
+      end
+    end
+    for i = 1, #ids, 1 do
+      if player.dead then break end
+      local cards = table.filter(ids, function(id) return player.room:getCardArea(id) == Card.DiscardPile end)
+      if #cards == 0 then break end
+      self.cancel_cost = false
+      self:doCost(event, nil, player, cards)
+      if self.cancel_cost then
+        self.cancel_cost = false
+        break
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    room:delay(500)
+    player.special_cards["ty_ex__shenduan"] = table.simpleClone(data)
+    player:doNotify("ChangeSelf", json.encode {
+      id = player.id,
+      handcards = player:getCardIds("h"),
+      special_cards = player.special_cards,
+    })
+    room:setPlayerMark(player, "ty_ex__shenduan_cards", data)
+    local success, dat = room:askForUseActiveSkill(player, "ty_ex__shenduan_active", "#ty_ex__shenduan-use", true)
+    room:setPlayerMark(player, "ty_ex__shenduan-tmp", 0)
+    player.special_cards["ty_ex__shenduan"] = {}
+    player:doNotify("ChangeSelf", json.encode {
+      id = player.id,
+      handcards = player:getCardIds("h"),
+      special_cards = player.special_cards,
+    })
+    if success then
+      self.cost_data = dat
+      return true
+    else
+      self.cancel_cost = true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local dat = self.cost_data
+    local to = room:getPlayerById(dat.targets[1])
+    room:useVirtualCard("supply_shortage", dat.cards, player, to, self.name, true)
+  end,
+}
+local ty_ex__shenduan_active = fk.CreateActiveSkill{
+  name = "ty_ex__shenduan_active",
+  card_num = 1,
+  target_num = 1,
+  expand_pile = "ty_ex__shenduan",
+  card_filter = function(self, to_select, selected)
+    if #selected == 0 then
+      local ids = U.getMark(Self, "ty_ex__shenduan_cards")
+      return table.contains(ids, to_select)
+    end
+  end,
+  target_filter = function (self, to_select, selected, selected_cards)
+    if #selected == 0 and to_select ~= Self.id then
+      local card = Fk:cloneCard("supply_shortage")
+      card:addSubcards(selected_cards)
+      local target = Fk:currentRoom():getPlayerById(to_select)
+      return not target:isProhibited(target, card) and not Self:prohibitUse(card)
+    end
+  end,
+}
+local ty_ex__yonglve = fk.CreateTriggerSkill{
+  name = "ty_ex__yonglve",
+  anim_type = "offensive",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target ~= player and target.phase == Player.Judge and #target:getCardIds("j") > 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#ty_ex__yonglve-invoke::"..target.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {target.id})
+    local card = #target:getCardIds("j") == 1 and target:getCardIds("j")[1] or
+    room:askForCardChosen(player, target, "j", self.name)
+    room:throwCard({card}, self.name, target, player)
+    if player.dead or target.dead then return end
+    if player:inMyAttackRange(target) then
+      player:drawCards(1, self.name)
+    else
+      room:useVirtualCard("slash", nil, player, target, self.name, true)
+    end
+  end,
+}
+Fk:addSkill(ty_ex__shenduan_active)
+ty_ex__hanhaoshihuan:addSkill(ty_ex__shenduan)
+ty_ex__hanhaoshihuan:addSkill(ty_ex__yonglve)
+Fk:loadTranslationTable{
+  ["ty_ex__hanhaoshihuan"] = "韩浩史涣",
+  ["ty_ex__shenduan"] = "慎断",
+  [":ty_ex__shenduan"] = "当你的黑色非锦囊牌因弃置而置入弃牌堆时，你可以将此牌当【兵粮寸断】使用（无距离限制）。",
+  ["ty_ex__yonglve"] = "勇略",
+  [":ty_ex__yonglve"] = "其他角色的判定阶段开始时，你可以弃置其判定区里的一张牌，然后若该角色：在你的攻击范围内，你摸一张牌；在你的攻击范围外，视为你对其使用一张【杀】。",
+  ["#ty_ex__shenduan-use"] = "慎断：你可以将这些牌当【兵粮寸断】使用",
+  ["ty_ex__shenduan_active"] = "慎断",
+  ["#ty_ex__yonglve-invoke"] = "勇略：你可以弃置 %dest 判定区一张牌",
+
+  ["$ty_ex__shenduan1"] = "行军断策需慎之又慎！",
+  ["$ty_ex__shenduan2"] = "为将者务当慎行谨断！",
+  ["$ty_ex__yonglve1"] = "兵势勇健，战胜攻取，无不如志！",
+  ["$ty_ex__yonglve2"] = "雄才大略，举无遗策，威震四海！",
+  ["~ty_ex__hanhaoshihuan"] = "末将愧对主公知遇之恩！",
 }
 
 local wuyi = General(extension, "ty_ex__wuyi", "shu", 4)

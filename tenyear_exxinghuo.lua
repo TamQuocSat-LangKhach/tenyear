@@ -860,4 +860,96 @@ Fk:loadTranslationTable{
   ["~ty_ex__gongsunzan"] = "良弓断，白马亡。",
 }
 
+local ty_ex__zhugedan = General(extension, "ty_ex__zhugedan", "wei", 4)
+local ty_ex__gongao = fk.CreateTriggerSkill{
+  name = "ty_ex__gongao",
+  anim_type = "support",
+  frequency = Skill.Compulsory,
+  events = {fk.EnterDying},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and target ~= player then
+      local dying_id = target:getMark(self.name)
+      local cur_event = player.room.logic:getCurrentEvent()
+      if dying_id ~= 0 then
+        return cur_event.id == dying_id
+      else
+        local events = player.room.logic.event_recorder[GameEvent.Dying] or Util.DummyTable
+        local canInvoke = true
+        for i = #events, 1, -1 do
+          local e = events[i]
+          if e.data[1].who == target.id and e.id ~= cur_event.id then
+            canInvoke = false
+            break
+          end
+        end
+        if canInvoke then
+          player.room:setPlayerMark(target, self.name, cur_event.id)
+          return true
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:changeMaxHp(player, 1)
+    if not player.dead and player:isWounded() then
+      room:recover { num = 1, skillName = self.name, who = player, recoverBy = player}
+    end
+  end,
+}
+local ty_ex__juyi = fk.CreateTriggerSkill{
+  name = "ty_ex__juyi",
+  frequency = Skill.Wake,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and
+     player.phase == Player.Start and
+     player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  can_wake = function(self, event, target, player, data)
+    return player:isWounded() and player.maxHp > #player.room.alive_players
+  end,
+  on_use = function(self, event, target, player, data)
+    local n = player.maxHp - #player.player_cards[Player.Hand]
+    if n > 0 then
+      player:drawCards(n, self.name)
+    end
+    player.room:handleAddLoseSkills(player, "benghuai|ty_ex__weizhong", nil)
+  end,
+}
+local ty_ex__weizhong = fk.CreateTriggerSkill{
+  name = "ty_ex__weizhong",
+  frequency = Skill.Compulsory,
+  anim_type = "drawcard",
+  events = {fk.MaxHpChanged},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self)
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(2, self.name)
+  end,
+}
+ty_ex__zhugedan:addSkill(ty_ex__gongao)
+ty_ex__zhugedan:addSkill(ty_ex__juyi)
+ty_ex__zhugedan:addRelatedSkill("benghuai")
+ty_ex__zhugedan:addRelatedSkill(ty_ex__weizhong)
+Fk:loadTranslationTable{
+  ["ty_ex__zhugedan"] = "界诸葛诞",
+  ["ty_ex__gongao"] = "功獒",
+  [":ty_ex__gongao"] = "锁定技，一名其他角色第一次进入濒死状态时，你加1点体力上限，然后回复1点体力。",
+  ["ty_ex__juyi"] = "举义",
+  [":ty_ex__juyi"] = "觉醒技，准备阶段开始时，若你已受伤且体力上限大于存活角色数，你将手牌摸至体力上限，然后获得技能〖崩坏〗和〖威重〗。",
+  ["ty_ex__weizhong"] = "威重",
+  [":ty_ex__weizhong"] = "锁定技，当你的体力上限变化时，你摸两张牌。",
+
+  ["$ty_ex__gongao1"] = "待补充",
+  ["$ty_ex__gongao2"] = "待补充",
+  ["$ty_ex__juyi1"] = "待补充",
+  ["$ty_ex__juyi2"] = "待补充",
+  ["$ty_ex__weizhong"] = "待补充",
+  ["$benghuai_ty_ex__zhugedan"] = "待补充",
+  ["~ty_ex__zhugedan"] = "待补充",
+}
+
+
 return extension

@@ -4779,6 +4779,95 @@ Fk:loadTranslationTable{
   ["~ty_ex__liuchen"] = "儿欲死战，父亲何故先降……",
 }
 
+local ty_ex__zhangyi = General(extension, "ty_ex__zhangyi", "shu", 4)
+local ty_ex__wurong = fk.CreateActiveSkill{
+  name = "ty_ex__wurong",
+  anim_type = "offensive",
+  card_num = 0,
+  target_num = 1,
+  can_use = function(self, player)
+    return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local fromCard = room:askForCard(player, 1, 1, false, self.name, false, ".", "#ty_ex__wurong-show")[1]
+    local toCard = room:askForCard(target, 1, 1, false, self.name, false, ".", "#ty_ex__wurong-show")[1]
+    player:showCards(fromCard)
+    target:showCards(toCard)
+    if Fk:getCardById(fromCard).trueName == "slash" and Fk:getCardById(toCard).name ~= "jink" then
+      room:damage{
+        from = player,
+        to = target,
+        damage = 1,
+        skillName = self.name,
+      }
+    end
+    if Fk:getCardById(fromCard).trueName ~= "slash" and Fk:getCardById(toCard).name == "jink" then
+      if not target:isNude() then
+        local id = room:askForCardChosen(player, target, "he", self.name)
+        room:obtainCard(player, id, false)
+      end
+    end
+  end,
+}
+ty_ex__zhangyi:addSkill(ty_ex__wurong)
+local ty_ex__shizhi = fk.CreateFilterSkill{
+  name = "ty_ex__shizhi",
+  card_filter = function(self, to_select, player)
+    --FIXME: filter skill isn't status skill, can't filter card which exists before hp change
+    return player:hasSkill(self) and player.hp == 1 and to_select.name == "jink"
+  end,
+  view_as = function(self, to_select)
+    return Fk:cloneCard("slash", to_select.suit, to_select.number)
+  end,
+}
+local ty_ex__shizhi_trigger = fk.CreateTriggerSkill{
+  name = "#ty_ex__shizhi_trigger",
+  events = {fk.Damage},
+  mute = true,
+  frequency = Skill.Compulsory,
+  can_trigger = function (self, event, target, player, data)
+    return player == target and player:hasSkill("ty_ex__shizhi") and data.card and player:isWounded()
+    and table.contains(data.card.skillNames, "ty_ex__shizhi")
+  end,
+  on_use = function (self, event, target, player, data)
+    player:broadcastSkillInvoke("ty_ex__shizhi")
+    player.room:notifySkillInvoked(player, "ty_ex__shizhi", "defensive")
+    player.room:recover { num = 1, skillName = "ty_ex__shizhi", who = player, recoverBy = player}
+  end,
+
+  refresh_events = {fk.HpChanged},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and player:hasSkill(self)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    for _, id in ipairs(player:getCardIds("h")) do
+      Fk:filterCard(id, player)
+    end
+  end,
+}
+ty_ex__shizhi:addRelatedSkill(ty_ex__shizhi_trigger)
+ty_ex__zhangyi:addSkill(ty_ex__shizhi)
+
+Fk:loadTranslationTable{
+  ["ty_ex__zhangyi"] = "界张嶷",
+  ["ty_ex__wurong"] = "怃戎",
+  [":ty_ex__wurong"] = "出牌阶段限一次，你可以令一名其他角色与你同时展示一张手牌，若：你展示的是【杀】且该角色不是【闪】，你对其造成1点伤害；你展示的不是【杀】且该角色是【闪】，你获得其一张牌。",
+  ["#ty_ex__wurong-show"] = "怃戎：选择一张展示的手牌",
+  ["ty_ex__shizhi"] = "矢志",
+  [":ty_ex__shizhi"] = "锁定技，当你的体力值为1时，你的【闪】视为【杀】；当你使用这些【杀】造成伤害后，你回复1点体力。",
+
+  ["$ty_ex__wurong1"] = "策略以入算，果烈以立威！",
+  ["$ty_ex__wurong2"] = "诈与和亲，不攻可得！",
+  ["~ty_ex__zhangyi"] = "挥师未捷，杀身以报！",
+}
+
 local xiahoushi = General(extension, "ty_ex__xiahoushi", "shu", 3, 3, General.Female)
 local ty_ex__qiaoshi = fk.CreateTriggerSkill{
   name = "ty_ex__qiaoshi",

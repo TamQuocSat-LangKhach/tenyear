@@ -2886,21 +2886,26 @@ local ty__sunhao = General(extension, "ty__sunhao", "wu", 5)
 local ty__canshi = fk.CreateTriggerSkill{
   name = "ty__canshi",
   anim_type = "drawcard",
-  events ={fk.DrawNCards},
+  events = {fk.DrawNCards},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and not table.every(player.room:getAlivePlayers(false), function (p)
-      return not p:isWounded() and not (player:hasSkill("guiming") and p.kingdom == "wu" and p ~= player)
+    return target == player and player:hasSkill(self) and table.find(player.room.alive_players, function (p)
+      return p:isWounded() or (player:hasSkill("guiming") and p.kingdom == "wu" and p ~= player)
     end)
   end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
+  on_cost = function (self, event, target, player, data)
     local n = 0
-    for _, p in ipairs(room:getAlivePlayers()) do
+    for _, p in ipairs(player.room.alive_players) do
       if p:isWounded() or (player:hasSkill("guiming") and p.kingdom == "wu" and p ~= player) then
         n = n + 1
       end
     end
-    data.n = data.n + n
+    if player.room:askForSkillInvoke(player, self.name, nil, "#ty__canshi-invoke:::"..n) then
+      self.cost_data = n
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    data.n = data.n + self.cost_data
   end,
 }
 local ty__canshi_delay = fk.CreateTriggerSkill{
@@ -2939,6 +2944,7 @@ Fk:loadTranslationTable{
   ["#ty__canshi_delay"] = "残蚀",
   ["ty__chouhai"] = "仇海",
   [":ty__chouhai"] = "锁定技，当你受到【杀】造成的伤害时，若你没有手牌，此伤害+1。",
+  ["#ty__canshi-invoke"] = "残蚀：你可以多摸 %arg 张牌",
 
   ["$ty__canshi1"] = "天地不仁，当视苍生为刍狗！",
   ["$ty__canshi2"] = "真龙天子，焉能不择人而噬！",
@@ -4542,40 +4548,42 @@ local pianchong = fk.CreateTriggerSkill{
         skillName = self.name,
       })
     end
-    local choice = room:askForChoice(player, {"red", "black"}, self.name)
+    local choice = room:askForChoice(player, {"red", "black"}, self.name, "#pianchong-choice")
     room:setPlayerMark(player, "@pianchong", choice)
     return true
   end,
-
-  refresh_events = {fk.EventPhaseStart, fk.AfterCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    if player:hasSkill(self) and not player.dead and player:getMark("@pianchong") ~= 0 then
-      if event == fk.EventPhaseStart then
-        return target == player and player.phase == Player.Start
-      else
-        local times = 0
-        for _, move in ipairs(data) do
-          if move.from == player.id then
-            for _, info in ipairs(move.moveInfo) do
-              if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
-                local color = player:getMark("@pianchong")
-                if Fk:getCardById(info.cardId):getColorString() == color then
-                  times = times + 1
-                end
+}
+local pianchong_delay = fk.CreateTriggerSkill{
+  name = "#pianchong_delay",
+  mute = true,
+  events = {fk.TurnStart, fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    local color = player:getMark("@pianchong")
+    if event == fk.TurnStart then
+      return target == player and color ~= 0
+    elseif not player.dead and color ~= 0 then
+      local times = 0
+      for _, move in ipairs(data) do
+        if move.from == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+              if Fk:getCardById(info.cardId):getColorString() == color then
+                times = times + 1
               end
             end
           end
         end
-        if times > 0 then
-          player.room:setPlayerMark(player, self.name, times)
-          return true
-        end
+      end
+      if times > 0 then
+        self.cost_data = times
+        return true
       end
     end
   end,
-  on_refresh = function(self, event, target, player, data)
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.EventPhaseStart then
+    if event == fk.TurnStart then
       room:setPlayerMark(player, "@pianchong", 0)
     else
       local pattern
@@ -4585,15 +4593,14 @@ local pianchong = fk.CreateTriggerSkill{
       else
         pattern = ".|.|heart,diamond"
       end
-      local n = player:getMark(self.name)
-      room:setPlayerMark(player, self.name, 0)
+      local n = self.cost_data
       local cards = room:getCardsFromPileByRule(pattern, n)
       if #cards > 0 then
         room:moveCards({
           ids = cards,
           to = player.id,
           toArea = Card.PlayerHand,
-          moveReason = fk.ReasonJustMove,
+          moveReason = fk.ReasonPrey,
           proposer = player.id,
           skillName = self.name,
         })
@@ -4601,6 +4608,7 @@ local pianchong = fk.CreateTriggerSkill{
     end
   end,
 }
+pianchong:addRelatedSkill(pianchong_delay)
 local zunwei = fk.CreateActiveSkill{
   name = "zunwei",
   anim_type = "drawcard",
@@ -4685,6 +4693,7 @@ Fk:loadTranslationTable{
   [":zunwei"] = "出牌阶段限一次，你可以选择一名其他角色，并选择执行以下一项，然后移除该选项：1.将手牌数摸至与该角色相同（最多摸五张）；"..
   "2.随机使用牌堆中的装备牌至与该角色相同；3.将体力回复至与该角色相同。",
   ["@pianchong"] = "偏宠",
+  ["#pianchong-choice"] = "偏宠：选择一种颜色，失去此颜色的牌时，摸另一种颜色的牌",
   ["zunwei1"] = "将手牌摸至与其相同（最多摸五张）",
   ["zunwei2"] = "使用装备至与其相同",
   ["zunwei3"] = "回复体力至与其相同",

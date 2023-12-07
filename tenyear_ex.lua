@@ -4779,7 +4779,7 @@ Fk:loadTranslationTable{
   ["~ty_ex__liuchen"] = "儿欲死战，父亲何故先降……",
 }
 
-local ty_ex__zhangyi = General(extension, "ty_ex__zhangyi", "shu", 4)
+local ty_ex__zhangyi = General(extension, "ty_ex__zhangyi", "shu", 5)
 local ty_ex__wurong = fk.CreateActiveSkill{
   name = "ty_ex__wurong",
   anim_type = "offensive",

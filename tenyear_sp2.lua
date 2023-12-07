@@ -446,6 +446,7 @@ Fk:loadTranslationTable{
 }
 
 local liuye = General(extension, "ty__liuye", "wei", 3)
+local poyuan_catapult = {{"ty__catapult", Card.Diamond, 9}}
 local poyuan = fk.CreateTriggerSkill{
   name = "poyuan",
   anim_type = "control",
@@ -455,8 +456,10 @@ local poyuan = fk.CreateTriggerSkill{
       if table.find(player:getEquipments(Card.SubtypeTreasure), function(id) return Fk:getCardById(id).name == "ty__catapult" end) then
         return table.find(player.room:getOtherPlayers(player), function(p) return not p:isNude() end)
       else
-        local car = table.find(player.room.void, function(id) return Fk:getCardById(id).name == "ty__catapult" end)
-        return car and U.canMoveCardIntoEquip(player, car)
+        local catapult = table.find(U.prepareDeriveCards(player.room, poyuan_catapult, "poyuan_catapult"), function (id)
+          return player.room:getCardArea(id) == Card.Void
+        end)
+        return catapult and U.canMoveCardIntoEquip(player, catapult)
       end
     end
   end,
@@ -481,12 +484,12 @@ local poyuan = fk.CreateTriggerSkill{
       local cards = room:askForCardsChosen(player, to, 1, 2, "he", self.name)
       room:throwCard(cards, self.name, to, player)
     else
-      for _, id in ipairs(room.void) do
-        if Fk:getCardById(id).name == "ty__catapult" then
-          room:setCardMark(Fk:getCardById(id), MarkEnum.DestructOutMyEquip, 1)
-          U.moveCardIntoEquip (room, player, id, self.name, true, player)
-          break
-        end
+      local catapult = table.find(U.prepareDeriveCards(room, poyuan_catapult, "poyuan_catapult"), function (id)
+        return player.room:getCardArea(id) == Card.Void
+      end)
+      if catapult then
+        room:setCardMark(Fk:getCardById(catapult), MarkEnum.DestructOutMyEquip, 1)
+        U.moveCardIntoEquip (room, player, catapult, self.name, true, player)
       end
     end
   end,

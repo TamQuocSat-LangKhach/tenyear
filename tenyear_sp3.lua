@@ -829,6 +829,7 @@ Fk:loadTranslationTable{
 }
 
 local zhangfen = General(extension, "zhangfen", "wu", 4)
+local wanglu_engine = {{"siege_engine", Card.Spade, 9}}
 local wanglu = fk.CreateTriggerSkill{
   name = "wanglu",
   frequency = Skill.Compulsory,
@@ -841,12 +842,14 @@ local wanglu = fk.CreateTriggerSkill{
     if table.find(player:getEquipments(Card.SubtypeTreasure), function(id) return Fk:getCardById(id).name == "siege_engine" end) then
       player:gainAnExtraPhase(Player.Play)
     else
-      local car = table.find(player.room.void, function(id) return Fk:getCardById(id).name == "siege_engine" end)
-      if car and U.canMoveCardIntoEquip(player, car) then
+      local engine = table.find(U.prepareDeriveCards(room, wanglu_engine, "wanglu_engine"), function (id)
+        return room:getCardArea(id) == Card.Void
+      end)
+      if engine and U.canMoveCardIntoEquip(player, engine) then
         for i = 1, 3, 1 do
           room:setPlayerMark(player, "xianzhu"..tostring(i), 0)
         end
-        U.moveCardIntoEquip (room, player, car, self.name, true, player)
+        U.moveCardIntoEquip (room, player, engine, self.name, true, player)
       end
     end
   end,

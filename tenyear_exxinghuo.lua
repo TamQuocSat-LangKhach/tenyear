@@ -951,5 +951,95 @@ Fk:loadTranslationTable{
   ["~ty_ex__zhugedan"] = "待补充",
 }
 
+local ty_ex__simalang = General(extension, "ty_ex__simalang", "wei", 3)
+local ty_ex__junbing = fk.CreateTriggerSkill{
+  name = "ty_ex__junbing",
+  anim_type = "support",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target.phase == Player.Finish and target:getHandcardNum() < target.hp
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(target, self.name, nil, "#ty_ex__junbing-invoke::"..player.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:drawCards(target, 1, self.name)
+    if target == player or target.dead or player.dead or target:isKongcheng() then return false end
+    local dummy1 = Fk:cloneCard("dilu")
+    dummy1:addSubcards(target.player_cards[Player.Hand])
+    room:obtainCard(player.id, dummy1, false, fk.ReasonGive)
+    local n = #dummy1.subcards
+    if target.dead or player.dead or #player:getCardIds("he") < n then return end
+    local cards = room:askForCard(player, n, n, true, self.name, true, ".",
+    "#ty_ex__junbing-give::"..target.id..":"..n)
+    if #cards == n then
+      local dummy2 = Fk:cloneCard("dilu")
+      dummy2:addSubcards(cards)
+      room:obtainCard(target.id, dummy2, false, fk.ReasonGive)
+    end
+  end,
+}
+ty_ex__simalang:addSkill(ty_ex__junbing)
+local ty_ex__quji = fk.CreateActiveSkill{
+  name = "ty_ex__quji",
+  anim_type = "support",
+  card_num = function ()
+    return Self:getLostHp()
+  end,
+  min_target_num = 1,
+  can_use = function(self, player)
+    return player:isWounded() and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected < Self:getLostHp() and not Self:prohibitDiscard(Fk:getCardById(to_select))
+  end,
+  target_filter = function(self, to_select, selected, cards)
+    return #selected < Self:getLostHp() and Fk:currentRoom():getPlayerById(to_select):isWounded()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local loseHp = table.find(effect.cards, function(id) return Fk:getCardById(id).color == Card.Black end)
+    room:throwCard(effect.cards, self.name, player, player)
+    local tos = effect.tos
+    room:sortPlayersByAction(tos)
+    for _, pid in ipairs(tos) do
+      local to = room:getPlayerById(pid)
+      if not to.dead and to:isWounded() then
+        room:recover({
+          who = to,
+          num = 1,
+          recoverBy = player,
+          skillName = self.name
+        })
+      end
+    end
+    for _, pid in ipairs(tos) do
+      local to = room:getPlayerById(pid)
+      if not to.dead and to:isWounded() then
+        to:drawCards(1, self.name)
+      end
+    end
+    if loseHp and not player.dead then
+      room:loseHp(player, 1, self.name)
+    end
+  end,
+}
+ty_ex__simalang:addSkill(ty_ex__quji)
+Fk:loadTranslationTable{
+  ["ty_ex__simalang"] = "司马朗",
+  ["ty_ex__junbing"] = "郡兵",
+  [":ty_ex__junbing"] = "一名角色的结束阶段，若其手牌数小于体力值，该角色可以摸一张牌并将所有手牌交给你，然后你可以将等量的牌交给该角色。",
+  ["ty_ex__quji"] = "去疾",
+  [":ty_ex__quji"] = "出牌阶段限一次，若你已受伤，你可以弃置X张牌，令至多X名已受伤的角色各回复1点体力（X为你已损失的体力值），然后其中仍受伤的角色各摸一张牌。若弃置的牌中包含黑色牌，你失去1点体力。",
+  ["#ty_ex__junbing-give"] = "郡兵：可以将 %arg 张牌交给 %dest",
+  ["#ty_ex__junbing-invoke"] = "郡兵：可以摸一张牌并将所有手牌交给 %dest",
+
+  ["$ty_ex__junbing1"] = "待补充",
+  ["$ty_ex__junbing2"] = "待补充",
+  ["$ty_ex__quji1"] = "待补充",
+  ["$ty_ex__quji2"] = "待补充",
+  ["~ty_ex__simalang"] = "待补充",
+}
 
 return extension

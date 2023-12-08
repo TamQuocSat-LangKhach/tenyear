@@ -7,7 +7,7 @@ Fk:loadTranslationTable{
   ["tenyear_sp2"] = "十周年-限定专属2",
 }
 
---计将安出：程昱 王允 蒋干 赵昂 刘晔 杨弘 郤正 桓范
+--计将安出：程昱 王允 蒋干 赵昂 刘晔 杨弘 郤正 桓范 刘琦
 local ty__chengyu = General(extension, "ty__chengyu", "wei", 3)
 local ty__shefu = fk.CreateTriggerSkill{
   name = "ty__shefu",
@@ -981,6 +981,116 @@ Fk:loadTranslationTable{
   ["$fumou1"] = "某有良谋，可为将军所用。",
   ["$fumou2"] = "吾负十斗之囊，其盈一石之智。",
   ["~huanfan"] = "有良言而不用，君何愚哉……",
+}
+
+local ty__liuqi = General(extension, "ty__liuqi", "qun", 3)
+ty__liuqi.subkingdom = "shu"
+local ty__wenji = fk.CreateTriggerSkill{
+  name = "ty__wenji",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Play and
+    table.find(player.room:getOtherPlayers(player), function(p) return not p:isNude() end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:askForChoosePlayers(player, table.map(table.filter(room:getOtherPlayers(player), function(p)
+      return not p:isNude() end), Util.IdMapper), 1, 1, "#ty__wenji-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local card = room:askForCard(to, 1, 1, true, self.name, false, ".", "#ty__wenji-give::"..player.id)
+    local mark = U.getMark(player, "@ty__wenji-turn")
+    table.insertIfNeed(mark, Fk:getCardById(card[1]):getTypeString().."_char")
+    room:setPlayerMark(player, "@ty__wenji-turn", mark)
+    room:obtainCard(player, card[1], false, fk.ReasonGive)
+  end,
+}
+local ty__wenji_record = fk.CreateTriggerSkill{
+  name = "#ty__wenji_record",
+  mute = true,
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    if target == player then
+      local mark = U.getMark(player, "@ty__wenji-turn")
+      return table.contains(mark, data.card:getTypeString().."_char")
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    data.disresponsiveList = data.disresponsiveList or {}
+    for _, p in ipairs(player.room:getOtherPlayers(player)) do
+      table.insertIfNeed(data.disresponsiveList, p.id)
+    end
+  end,
+}
+local ty__tunjiang = fk.CreateTriggerSkill{
+  name = "ty__tunjiang",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) and player.phase == Player.Finish then
+      local play_ids = {}
+      player.room.logic:getEventsOfScope(GameEvent.Phase, 1, function (e)
+        if e.data[2] == Player.Play and e.end_id then
+          table.insert(play_ids, {e.id, e.end_id})
+        end
+        return false
+      end, Player.HistoryTurn)
+      if #play_ids == 0 then return true end
+      local used = player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+        local in_play = false
+        for _, ids in ipairs(play_ids) do
+          if e.id > ids[1] and e.id < ids[2] then
+            in_play = true
+            break
+          end
+        end
+        if in_play then
+          local use = e.data[1]
+          if use.from == target.id and use.tos then
+            if table.find(TargetGroup:getRealTargets(use.tos), function(pid) return pid ~= target.id end) then
+              return true
+            end
+          end
+        end
+        return false
+      end, Player.HistoryTurn)
+      return #used == 0
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local kingdoms = {}
+    for _, p in ipairs(player.room.alive_players) do
+      table.insertIfNeed(kingdoms, p.kingdom)
+    end
+    player:drawCards(#kingdoms)
+  end,
+}
+ty__wenji:addRelatedSkill(ty__wenji_record)
+ty__liuqi:addSkill(ty__wenji)
+ty__liuqi:addSkill(ty__tunjiang)
+Fk:loadTranslationTable{
+  ["ty__liuqi"] = "刘琦",
+  ["ty__wenji"] = "问计",
+  [":ty__wenji"] = "出牌阶段开始时，你可以令一名其他角色交给你一张牌，你于本回合内使用与该牌类别相同的牌不能被其他角色响应。",
+  ["ty__tunjiang"] = "屯江",
+  [":ty__tunjiang"] = "结束阶段，若你于本回合出牌阶段内未使用牌指定过其他角色为目标，则你可以摸X张牌（X为全场势力数）。",
+  ["#ty__wenji-choose"] = "问计：你可以令一名其他角色交给你一张牌",
+  ["#ty__wenji-give"] = "问计：你需交给 %dest 一张牌",
+  ["@ty__wenji-turn"] = "问计",
+
+  ["$ty__wenji1"] = "琦，愿听先生教诲。",
+  ["$ty__wenji2"] = "先生，此计可有破解之法？",
+  ["$ty__tunjiang1"] = "这浑水，不蹚也罢。",
+  ["$ty__tunjiang2"] = "荆州风云波澜动，唯守江夏避险峻。",
+  ["~ty__liuqi"] = "这荆州，终究容不下我。",
 }
 
 --笔舌如椽：陈琳 杨修 骆统 王昶 程秉 杨彪 阮籍

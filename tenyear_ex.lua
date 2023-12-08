@@ -3053,7 +3053,7 @@ Fk:loadTranslationTable{
   ["#ty_ex__qiuyuan-choose"] = "求援：令另一名其他角色交给你一张不为【杀】的基本牌，否则其成为此【杀】额外目标",
   ["#ty_ex__qiuyuan-give"] = "求援：交给 %dest 一张不为【杀】的基本牌，否则成为此【杀】额外目标且不能响应此【杀】",
 
-  ["$ty_ex__zhuikong1"] = "曹贼你怎可如此不尊汉室。",
+  ["$ty_ex__zhuikong1"] = "曹贼！你怎可如此不尊汉室！",
   ["$ty_ex__zhuikong2"] = "密信之事，不可被曹贼知晓。",
   ["$ty_ex__qiuyuan1"] = "陛下，我不想离开。",
   ["$ty_ex__qiuyuan2"] = "将军此事，可有希望。",
@@ -4263,44 +4263,11 @@ local ty_ex__mingjian = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     room:moveCardTo(player:getCardIds(Player.Hand), Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
     room:addPlayerMark(target, "@@" .. self.name, 1)
-    local mark = U.getMark(target, "ty_ex__mingjian_source")
-    table.insert(mark, effect.from)
-    room:setPlayerMark(target, "ty_ex__mingjian_source", mark)
   end,
 }
 
-local ty_ex__mingjian_delay = fk.CreateTriggerSkill{
-  name = "#ty_ex__mingjian_delay",
-  events = {fk.Damage},
-  mute = true,
-  can_trigger = function(self, event, target, player, data)
-    return not player.dead and player:getMark("ty_ex__mingjian_to_huituo-turn") > 0 and target
-      and target.phase ~= Player.NotActive
-  end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    room:setPlayerMark(player, "ty_ex__mingjian_to_huituo-turn", 0)
-    local judge = {
-      who = player,
-      reason = "huituo",
-      pattern = ".",
-    }
-    room:judge(judge)
-    if player.dead then return false end
-    if judge.card.color == Card.Red then
-      if player:isWounded() then
-        room:recover({
-          who = player,
-          num = 1,
-          recoverBy = player,
-          skillName = "huituo"
-        })
-      end
-    elseif judge.card.color == Card.Black then
-      player:drawCards(data.damage, "huituo")
-    end
-  end,
+local ty_ex__mingjian_record = fk.CreateTriggerSkill{
+  name = "#ty_ex__mingjian_record",
 
   refresh_events = {fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
@@ -4311,13 +4278,7 @@ local ty_ex__mingjian_delay = fk.CreateTriggerSkill{
     local x = player:getMark("@@ty_ex__mingjian")
     room:addPlayerMark(player, MarkEnum.AddMaxCardsInTurn, x)
     room:addPlayerMark(player, MarkEnum.SlashResidue .. "-turn", x)
-    local mark = U.getMark(player, "ty_ex__mingjian_source")
-    room:setPlayerMark(player, "ty_ex__mingjian_source", 0)
-    for _, p in ipairs(room.alive_players) do
-      if table.contains(mark, p.id) then
-        room:setPlayerMark(p, "ty_ex__mingjian_to_huituo-turn", 1)
-      end
-    end
+
     local turn_event = room.logic:getCurrentEvent()
     turn_event:addCleaner(function()
       room:removePlayerMark(player, "@@ty_ex__mingjian", x)
@@ -4325,25 +4286,97 @@ local ty_ex__mingjian_delay = fk.CreateTriggerSkill{
   end,
 }
 
-ty_ex__mingjian:addRelatedSkill(ty_ex__mingjian_delay)
-caorui:addSkill("huituo")
---caorui:addSkill("mingjian")
+local ty_ex__huituo = fk.CreateTriggerSkill{
+  name = "ty_ex__huituo",
+  anim_type = "masochism",
+  events = {fk.Damaged, fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) then return false end
+    if event == fk.Damaged then
+      return target == player
+    elseif event == fk.Damage then
+      if target and target:getMark("@@ty_ex__mingjian") > 0 and target.phase ~= Player.NotActive then
+        local room = player.room
+        local damage_event = room.logic:getCurrentEvent()
+        if not damage_event then return false end
+        local x = target:getMark("ty_ex__huituo_record-trun")
+        if x == 0 then
+          room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
+            local reason = e.data[3]
+            if reason == "damage" then
+              local first_damage_event = e:findParent(GameEvent.Damage)
+              if first_damage_event and first_damage_event.data[1].from == target then
+                x = first_damage_event.id
+                room:setPlayerMark(target, "ty_ex__huituo_record-trun", x)
+                return true
+              end
+            end
+          end, Player.HistoryTurn)
+        end
+        return damage_event.id == x
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper),
+      1, 1, "#ty_ex__huituo-choose:::" .. tostring(data.damage), self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local judge = {
+      who = to,
+      reason = self.name,
+      pattern = ".",
+    }
+    room:judge(judge)
+    if to.dead then return false end
+    if judge.card.color == Card.Red then
+      if to:isWounded() then
+        room:recover({
+          who = to,
+          num = 1,
+          recoverBy = player,
+          skillName = self.name
+        })
+      end
+    elseif judge.card.color == Card.Black then
+      to:drawCards(data.damage, self.name)
+    end
+  end,
+}
+
+ty_ex__mingjian:addRelatedSkill(ty_ex__mingjian_record)
+caorui:addSkill(ty_ex__huituo)
 caorui:addSkill(ty_ex__mingjian)
 caorui:addSkill("xingshuai")
 --caorui:addSkill(ty_ex__xingshuai)
 
 Fk:loadTranslationTable{
   ["ty_ex__caorui"] = "界曹叡",
+  ["ty_ex__huituo"] = "恢拓",
+  [":ty_ex__huituo"] = "当你受到伤害后，你可以令一名角色判定，若结果为：红色，其回复1点体力；黑色，其摸X张牌（X为伤害值）。",
   ["ty_ex__mingjian"] = "明鉴",
   [":ty_ex__mingjian"] = "出牌阶段限一次，你可以将所有手牌交给一名其他角色，然后该角色下回合：使用【杀】的次数上限和手牌上限+1；"..
-  "首次造成伤害后，你对自己发动一次〖恢拓〗。",
-  ["ty_ex__xingshuai"] = "兴衰",
-  [":ty_ex__xingshuai"] = "主公技，限定技，当你进入濒死状态时，你可令其他魏势力角色依次选择是否令你回复1点体力。"..
-  "选择是的角色在此次濒死结算结束后受到1点无来源的伤害。有“明鉴”标记的角色于其回合内杀死一名角色后，此技能视为未发动过。",
+  "首次造成伤害后，你可以发动〖恢拓〗。",
+
+  ["#ty_ex__huituo-choose"] = "你可以发动 恢拓，令一名角色判定，若为红色，其回复1点体力；黑色，其摸%arg张牌",
 
   ["#ty_ex__mingjian-active"] = "发动 明鉴，将所有手牌交给一名角色，令其下个回合获得增益",
-  ["#ty_ex__mingjian_delay"] = "明鉴",
   ["@@ty_ex__mingjian"] = "明鉴",
+
+  ["$ty_ex__huituo1"] = "拓土复疆，扬大魏鸿威！",
+  ["$ty_ex__huituo2"] = "制律弘法，固天下社稷！",
+  ["$ty_ex__mingjian1"] = "敌将寇边，还请将军领兵御之。",
+  ["$ty_ex__mingjian2"] = "逆贼滔乱，须得阁下出手相助。",
+  ["$xingshuai_ty_ex__caorui1"] = "家国兴衰，与君共担！",
+  ["$xingshuai_ty_ex__caorui2"] = "携君并进，共克此难！",
+  ["~ty_ex__caorui"] = "胸有宏图待展，奈何命数已尽……",
 }
 
 local caoxiu = General(extension, "ty_ex__caoxiu", "wei", 4)

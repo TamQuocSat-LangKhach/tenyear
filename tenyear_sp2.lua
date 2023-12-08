@@ -4040,7 +4040,7 @@ local xinyou = fk.CreateActiveSkill{
     local n = player.maxHp - player:getHandcardNum()
     if n > 0 then
       player:drawCards(n, self.name)
-      if n > 1 then
+      if n > 2 then
         room:addPlayerMark(player, "xinyou_draw-turn", 1)
       end
     end
@@ -4073,7 +4073,7 @@ Fk:loadTranslationTable{
   ["yuandi"] = "元嫡",
   [":yuandi"] = "其他角色于其出牌阶段使用第一张牌时，若此牌没有指定除其以外的角色为目标，你可以选择一项：1.弃置其一张手牌；2.你与其各摸一张牌。",
   ["xinyou"] = "心幽",
-  [":xinyou"] = "出牌阶段限一次，你可以回复体力至体力上限并将手牌摸至体力上限。若你因此摸超过一张牌，结束阶段你失去1点体力；"..
+  [":xinyou"] = "出牌阶段限一次，你可以回复体力至体力上限并将手牌摸至体力上限。若你因此摸超过两张牌，结束阶段你失去1点体力；"..
   "若你因此回复体力，结束阶段你弃置一张牌。",
   ["#yuandi-invoke"] = "元嫡：你可以弃置 %dest 的一张手牌或与其各摸一张牌",
   ["yuandi_discard"] = "弃置其一张手牌",

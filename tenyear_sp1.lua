@@ -589,16 +589,42 @@ local falu = fk.CreateTriggerSkill{
     end
   end,
 }
-local zhenyi = fk.CreateTriggerSkill {
+
+local zhenyi = fk.CreateViewAsSkill{
   name = "zhenyi",
-  anim_type = "control",
-  events = {fk.AskForRetrial, fk.AskForPeaches, fk.DamageCaused, fk.Damaged},
+  anim_type = "support",
+  pattern = "peach",
+  prompt = "#zhenyi2",
+  card_num = 1,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0
+  end,
+  before_use = function(self, player)
+    player.room:removePlayerMark(player, "@@faluclub", 1)
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 then
+      return nil
+    end
+    local c = Fk:cloneCard("peach")
+    c.skillName = self.name
+    c:addSubcard(cards[1])
+    return c
+  end,
+  enabled_at_play = Util.FalseFunc,
+  enabled_at_response = function(self, player)
+    return player.phase == Player.NotActive and player:getMark("@@faluclub") > 0
+  end,
+}
+local zhenyi_trigger = fk.CreateTriggerSkill {
+  name = "#zhenyi_trigger",
+  main_skill = zhenyi,
+  events = {fk.AskForRetrial, fk.DamageCaused, fk.Damaged},
+  mute = true,
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) then
+    if player:hasSkill(zhenyi.name) then
       if event == fk.AskForRetrial then
         return player:getMark("@@faluspade") > 0
-      elseif event == fk.AskForPeaches then
-        return target == player and player:getMark("@@faluclub") > 0 and player.dying and not player:isKongcheng()
       elseif event == fk.DamageCaused then
         return target == player and player:getMark("@@faluheart") > 0
       elseif event == fk.Damaged then
@@ -608,53 +634,31 @@ local zhenyi = fk.CreateTriggerSkill {
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.AskForPeaches then
-      local card = room:askForCard(player, 1, 1, false, self.name, true, ".", "#zhenyi2")
-      if #card > 0 then
-        self.cost_data = card
-        return true
-      end
-    else
-      local prompt
-      if event == fk.AskForRetrial then
-        prompt = "#zhenyi1::"..target.id
-      elseif event == fk.DamageCaused then
-        prompt = "#zhenyi3::"..data.to.id
-      elseif event == fk.Damaged then
-        prompt = "#zhenyi4"
-      end
-      return room:askForSkillInvoke(player, self.name, nil, prompt)
+    local prompt
+    if event == fk.AskForRetrial then
+      prompt = "#zhenyi1::"..target.id
+    elseif event == fk.DamageCaused then
+      prompt = "#zhenyi3::"..data.to.id
+    elseif event == fk.Damaged then
+      prompt = "#zhenyi4"
     end
+    return room:askForSkillInvoke(player, zhenyi.name, nil, prompt)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    player:broadcastSkillInvoke(zhenyi.name)
     if event == fk.AskForRetrial then
+      room:notifySkillInvoked(player, zhenyi.name, "control")
       room:removePlayerMark(player, "@@faluspade", 1)
-      local choice = room:askForChoice(player, {"spade", "heart"}, self.name, self.name)
-      room:setPlayerMark(target, self.name, {data.card.id, choice})
-    elseif event == fk.AskForPeaches then
-      room:removePlayerMark(player, "@@faluclub", 1)
-      local peach = Fk:cloneCard("peach")
-      peach:addSubcards(self.cost_data)
-      peach.skillName = self.name
-      room:useCard({
-        card = peach,
-        from = player.id,
-        tos = {{target.id}},
-      })
+      local choice = room:askForChoice(player, {"spade", "heart"}, zhenyi.name)
+      data.extra_data = data.extra_data or {}
+      data.extra_data.result_change = {data.card.name, choice == "spade" and Card.Spade or Card.Heart, 5}
     elseif event == fk.DamageCaused then
+      room:notifySkillInvoked(player, zhenyi.name, "offensive")
       room:removePlayerMark(player, "@@faluheart", 1)
-      self.zhenyi_damage = false
-      local judge = {
-        who = data.to,
-        reason = self.name,
-        pattern = ".|.|spade,club",
-      }
-      room:judge(judge)
-      if judge.card.color == Card.Black then
-        data.damage = data.damage + 1
-      end
+      data.damage = data.damage + 1
     elseif event == fk.Damaged then
+      room:notifySkillInvoked(player, zhenyi.name, "masochism")
       room:removePlayerMark(player, "@@faludiamond", 1)
       local cards = {}
       table.insertTable(cards, room:getCardsFromPileByRule(".|.|.|.|.|basic"))
@@ -667,7 +671,7 @@ local zhenyi = fk.CreateTriggerSkill {
           toArea = Card.PlayerHand,
           moveReason = fk.ReasonJustMove,
           proposer = player.id,
-          skillName = self.name,
+          skillName = zhenyi.name,
         })
       end
     end
@@ -675,36 +679,31 @@ local zhenyi = fk.CreateTriggerSkill {
 
   refresh_events = {fk.FinishJudge},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:getMark(self.name) ~= 0
+    return target == player and data.extra_data and data.extra_data.result_change
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:setPlayerMark(player, self.name, 0)
+    local result = data.extra_data.result_change
+    local new_card = Fk:cloneCard(result[1], result[2], result[3])
+    result = nil
+    new_card.id = data.card.id
+    data.card = new_card
+    player.room:sendLog{
+      type = "#JudgeResultConfirm",
+      from = data.who.id,
+      arg = data.card:toLogString(),
+    }
   end,
 }
-local zhenyi_filter1 = fk.CreateFilterSkill{
-  name = "#zhenyi_filter1",
-  card_filter = function(self, to_select, player)
-    return player:getMark("zhenyi") ~= 0 and to_select.id == player:getMark("zhenyi")[1] and player:getMark("zhenyi")[2] == "heart"
-  end,
-  view_as = function(self, to_select)
-    return Fk:cloneCard(to_select.name, Card.Heart, 5)
-  end,
-}
-local zhenyi_filter2 = fk.CreateFilterSkill{
-  name = "#zhenyi_filter2",
-  card_filter = function(self, to_select, player)
-    return player:getMark("zhenyi") ~= 0 and to_select.id == player:getMark("zhenyi")[1]
-  end,
-  view_as = function(self, to_select)
-    return Fk:cloneCard(to_select.name, Card.Spade, 5)
-  end,
-}
+
 local dianhua = fk.CreateTriggerSkill{
   name = "dianhua",
   anim_type = "control",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and (player.phase == Player.Start or player.phase == Player.Finish)
+    return target == player and player:hasSkill(self) and (player.phase == Player.Start or player.phase == Player.Finish) and
+    not table.every({"spade", "club", "heart", "diamond"}, function (suit)
+      return player:getMark("@@falu"..suit) == 0
+    end)
   end,
   on_cost = function(self, event, target, player, data)
     local n = 0
@@ -723,8 +722,7 @@ local dianhua = fk.CreateTriggerSkill{
     room:askForGuanxing(player, room:getNCards(self.cost_data), nil, {0, 0}, self.name)
   end,
 }
-zhenyi:addRelatedSkill(zhenyi_filter1)
-zhenyi:addRelatedSkill(zhenyi_filter2)
+zhenyi:addRelatedSkill(zhenyi_trigger)
 zhangqiying:addSkill(falu)
 zhangqiying:addSkill(zhenyi)
 zhangqiying:addSkill(dianhua)
@@ -740,8 +738,8 @@ Fk:loadTranslationTable{
   ["zhenyi"] = "真仪",
   [":zhenyi"] = "你可以在以下时机弃置相应的标记来发动以下效果：<br>"..
   "当一张判定牌生效前，你可以弃置“紫微”，然后将判定结果改为♠5或<font color='red'>♥5</font>；<br>"..
-  "当你处于濒死状态时，你可以弃置“后土”，然后将你的一张手牌当【桃】使用；<br>"..
-  "当你造成伤害时，你可以弃置“玉清”，然后你进行一次判定，若结果为黑色，此伤害+1；<br>"..
+  "当你于回合外需要使用【桃】时，你可以弃置“后土”，然后将你的一张手牌当【桃】使用；<br>"..
+  "当你造成伤害时，你可以弃置“玉清”，此伤害+1；<br>"..
   "当你受到属性伤害后，你可以弃置“勾陈”，然后你从牌堆中随机获得三种类型的牌各一张。",
   ["dianhua"] = "点化",
   [":dianhua"] = "准备阶段或结束阶段，你可以观看牌堆顶的X张牌（X为你的标记数）。若如此做，你将这些牌以任意顺序放回牌堆顶。",
@@ -753,8 +751,8 @@ Fk:loadTranslationTable{
   ["#zhenyi2"] = "真仪：你可以弃置♣后土，将一张手牌当【桃】使用",
   ["#zhenyi3"] = "真仪：你可以弃置<font color='red'>♥</font>玉清，你进行判定，若结果为黑色，你对 %dest 造成的伤害+1",
   ["#zhenyi4"] = "真仪：你可以弃置<font color='red'>♦</font>勾陈，从牌堆中随机获得三种类型的牌各一张",
-  ["#zhenyi_filter1"] = "真仪",
-  ["#zhenyi_filter2"] = "真仪",
+  ["#zhenyi_trigger"] = "真仪",
+  ["#JudgeResultConfirm"] = "%from 的判定结果被修正为 %arg",
 
   ["$falu1"] = "求法之道，以司箓籍。",
   ["$falu2"] = "取舍有法，方得其法。",
@@ -762,7 +760,7 @@ Fk:loadTranslationTable{
   ["$zhenyi2"] = "紫薇星辰，斗数之仪。",
   ["$dianhua1"] = "大道无形，点化无为。",
   ["$dianhua2"] = "得此点化，必得大道。",
-  ["~zhangqiying"] = "米碎面散，我心欲绝。",
+  ["~zhangqiying"] = "米碎面散，我心欲绝……",
 }
 
 --隐山之玉：周夷 卢弈 孙翎鸾 曹轶

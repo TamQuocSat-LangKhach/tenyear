@@ -327,6 +327,14 @@ Fk:loadTranslationTable{
   ["zhangrong1"] = "失去体力",
   ["zhangrong2"] = "弃置手牌",
   ["#haoshou-invoke"] = "豪首：是否令 %src 回复1点体力？",
+
+  ["$weilin1"] = "今吾入京城，欲寻人而食。",
+  ["$weilin2"] = "天下事在我，我今为之，谁敢不从？",
+  ["$zhangrong1"] = "尔欲行大事，问过吾掌中兵刃否？",
+  --["$zhangrong2"] = "西凉铁骑，天下高楼可摧！",
+  ["$haoshou1"] = "满朝主公，试吾剑不利否？",
+  ["$haoshou2"] = "顺我者生，逆我者十死无生！",
+  --["~tystar__dongzhuo"] = "美人迷人眼，",
 }
 
 --玉衡：曹仁

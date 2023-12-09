@@ -3306,12 +3306,8 @@ local ty_ex__pindi = fk.CreateActiveSkill{
   end,
   card_filter = function(self, to_select, selected)
     if #selected == 0 and not Self:prohibitDiscard(Fk:getCardById(to_select)) then
-      local mark = Self:getMark("ty_ex__pindi-phase")
-      if mark == 0 then
-        return true
-      else
-        return not table.contains(mark, Fk:getCardById(to_select):getTypeString())
-      end
+      local mark = U.getMark(Self, "ty_ex__pindi-phase")
+      return not table.contains(mark, Fk:getCardById(to_select):getTypeString())
     end
   end,
   target_filter = function(self, to_select, selected)
@@ -3323,21 +3319,21 @@ local ty_ex__pindi = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local mark = player:getMark("ty_ex__pindi-phase")
-    if mark == 0 then mark = {} end
+    local mark = U.getMark(player, "ty_ex__pindi-phase")
     table.insert(mark, Fk:getCardById(effect.cards[1]):getTypeString())
     room:setPlayerMark(player, "ty_ex__pindi-phase", mark)
     room:setPlayerMark(target, "ty_ex__pindi_target-phase", 1)
     room:throwCard(effect.cards, self.name, player)
-    local n = player:usedSkillTimes(self.name, Player.HistoryTurn)
-    if self.interaction.data == "ty_ex__pindi_draw" then
-      target:drawCards(n, self.name)
-    else
-      if #target:getCardIds("he") <= n then
-        target:throwAllCards("he")
+    if not target.dead then
+      local n = player:usedSkillTimes(self.name, Player.HistoryTurn)
+      if self.interaction.data == "ty_ex__pindi_draw" then
+        target:drawCards(n, self.name)
       else
         room:askForDiscard(target, n, n, true, self.name, false)
       end
+    end
+    if target:isWounded() and not player.dead then
+      player:setChainState(not player.chained)
     end
   end,
 }

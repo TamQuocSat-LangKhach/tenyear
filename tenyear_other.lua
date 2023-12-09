@@ -1,11 +1,11 @@
 local extension = Package("tenyear_other")
 extension.extensionName = "tenyear"
-extension.game_modes_whitelist = { "m_1v2_mode" }
+--extension.game_modes_whitelist = { "m_1v2_mode" }
 
 local U = require "packages/utility/utility"
 
 Fk:loadTranslationTable{
-  ["tenyear_other"] = "十周年-斗地主模式",
+  ["tenyear_other"] = "十周年-其他",
   ["tycl"] = "典",
 }
 

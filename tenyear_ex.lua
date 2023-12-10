@@ -1081,8 +1081,9 @@ ty_ex__xianzhen:addRelatedSkill(ty_ex__xianzhen_maxcards)
 ty_ex__gaoshun:addSkill(ty_ex__xianzhen)
 local ty_ex__jinjiu = fk.CreateFilterSkill{
   name = "ty_ex__jinjiu",
-  card_filter = function(self, card, player)
-    return player:hasSkill(self) and card.name == "analeptic"
+  card_filter = function(self, card, player, isJudgeEvent)
+    return player:hasSkill(self) and card.name == "analeptic" and
+    (table.contains(player.player_cards[Player.Hand], card.id) or isJudgeEvent)
   end,
   view_as = function(self, card)
     return Fk:cloneCard("slash", card.suit, 13)
@@ -4847,9 +4848,10 @@ local ty_ex__wurong = fk.CreateActiveSkill{
 ty_ex__zhangyi:addSkill(ty_ex__wurong)
 local ty_ex__shizhi = fk.CreateFilterSkill{
   name = "ty_ex__shizhi",
-  card_filter = function(self, to_select, player)
+  card_filter = function(self, to_select, player, isJudgeEvent)
     --FIXME: filter skill isn't status skill, can't filter card which exists before hp change
-    return player:hasSkill(self) and player.hp == 1 and to_select.name == "jink"
+    return player:hasSkill(self) and player.hp == 1 and to_select.name == "jink" and
+    (table.contains(player.player_cards[Player.Hand], card.id) or isJudgeEvent)
   end,
   view_as = function(self, to_select)
     return Fk:cloneCard("slash", to_select.suit, to_select.number)

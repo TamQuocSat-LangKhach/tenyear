@@ -841,29 +841,11 @@ local jiaoxia_viewas = fk.CreateViewAsSkill{
 }
 Fk:addSkill(jiaoxia_viewas)
 
-local jiaoxia = fk.CreateViewAsSkill{
+local jiaoxia = fk.CreateTriggerSkill{
   name = "jiaoxia",
-  prompt = "#jiaoxia-slash",
-  pattern = "slash",
-  anim_type = "offensive",
-  card_filter = function(self, to_select, selected)
-    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
-  end,
-  view_as = function(self, cards)
-    if #cards ~= 1 then return end
-    local card = Fk:cloneCard("slash")
-    card.skillName = "jiaoxia"
-    card:addSubcard(cards[1])
-    return card
-  end,
-}
-local jiaoxia_trigger = fk.CreateTriggerSkill{
-  name = "#jiaoxia_trigger",
   events = {fk.EventPhaseStart, fk.CardUseFinished, fk.TargetSpecified},
-  mute = true,
-  main_skill = jiaoxia,
   can_trigger = function(self, event, target, player, data)
-    if target ~= player or not player:hasSkill(jiaoxia) then return false end
+    if target ~= player or not player:hasSkill(self) then return false end
     if event == fk.TargetSpecified then
       return data.card.trueName == "slash" and player.phase == player.Play and
       not table.contains(U.getMark(player, "jiaoxia_target-phase"), data.to)
@@ -885,8 +867,6 @@ local jiaoxia_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:notifySkillInvoked(player, jiaoxia.name)
-    player:broadcastSkillInvoke(jiaoxia.name)
     if event == fk.TargetSpecified then
       local mark = U.getMark(player, "jiaoxia_target-phase")
       table.insert(mark, data.to)
@@ -904,7 +884,7 @@ local jiaoxia_trigger = fk.CreateTriggerSkill{
       local success, dat = room:askForUseActiveSkill(player, "jiaoxia_viewas", "#jiaoxia-use:::" .. card:toLogString(),
       true, Util.DummyTable, true)
       room:setPlayerMark(player, "jiaoxia_cards", 0)
-  
+
       player.special_cards["jiaoxia"] = {}
       player:doNotify("ChangeSelf", json.encode {
         id = player.id,
@@ -921,24 +901,20 @@ local jiaoxia_trigger = fk.CreateTriggerSkill{
       end
     elseif event == fk.EventPhaseStart then
       room:setPlayerMark(player, "@@jiaoxia-phase", 1)
+      player:filterHandcards()
     end
   end,
 }
-local jiaoxia_prohibit = fk.CreateProhibitSkill{
-  name = "#jiaoxia_prohibit",
-  prohibit_use = function(self, player, card)
-    if not player:hasSkill(jiaoxia) or player:getMark("@@jiaoxia-phase") == 0 or not card or #card.skillNames > 0 then return false end
-    local subcards = Card:getIdList(card)
-    return #subcards > 0 and table.every(subcards, function(id)
-      return table.contains(player:getCardIds(Player.Hand), id)
-    end)
+local jiaoxia_filter = fk.CreateFilterSkill{
+  name = "#jiaoxia_filter",
+  card_filter = function(self, to_select, player)
+    return player:hasSkill(jiaoxia) and player:getMark("@@jiaoxia-phase") > 0 and
+    table.contains(player.player_cards[Player.Hand], to_select.id)
   end,
-  prohibit_response = function(self, player, card)
-    if not player:hasSkill(jiaoxia) or player:getMark("@@jiaoxia-phase") == 0 or not card or #card.skillNames > 0 then return false end
-    local subcards = Card:getIdList(card)
-    return #subcards > 0 and table.every(subcards, function(id)
-      return table.contains(player:getCardIds(Player.Hand), id)
-    end)
+  view_as = function(self, to_select)
+    local card = Fk:cloneCard("slash", to_select.suit, to_select.number)
+    card.skillName = jiaoxia.name
+    return card
   end,
 }
 local jiaoxia_targetmod = fk.CreateTargetModSkill{
@@ -1020,9 +996,8 @@ local humei_trigger = fk.CreateTriggerSkill{
     room:addPlayerMark(player, "@humei-phase", 1)
   end,
 }
-jiaoxia:addRelatedSkill(jiaoxia_prohibit)
 jiaoxia:addRelatedSkill(jiaoxia_targetmod)
-jiaoxia:addRelatedSkill(jiaoxia_trigger)
+jiaoxia:addRelatedSkill(jiaoxia_filter)
 humei:addRelatedSkill(humei_trigger)
 dongxie:addSkill(jiaoxia)
 dongxie:addSkill(humei)
@@ -1034,9 +1009,9 @@ Fk:loadTranslationTable{
   ["humei"] = "狐魅",
   [":humei"] = "出牌阶段每项限一次，你可以选择一项，令一名体力值不大于X的角色执行：1.摸一张牌；2.交给你一张牌；3.回复1点体力"..
   "（X为你本阶段造成伤害次数）。",
+
   ["#jiaoxia-invoke"] = "狡黠：你可以令本阶段你的手牌均视为【杀】，且结算后你可以使用原卡牌！",
-  ["#jiaoxia-slash"] = "发动 狡黠，将一张手牌当【杀】使用或打出",
-  ["#jiaoxia_trigger"] = "狡黠",
+  ["#jiaoxia_filter"] = "狡黠",
   ["@@jiaoxia-phase"] = "狡黠",
   ["jiaoxia_viewas"] = "狡黠",
   ["#jiaoxia-use"] = "狡黠：你可以使用【%arg】",
@@ -3105,7 +3080,8 @@ local douzhen = fk.CreateFilterSkill{
   anim_type = "switch",
   switch_skill_name = "douzhen",
   card_filter = function(self, card, player)
-    if player:hasSkill(self) and player.phase ~= Player.NotActive and card.type == Card.TypeBasic then
+    if player:hasSkill(self) and player.phase ~= Player.NotActive and card.type == Card.TypeBasic and
+    table.contains(player.player_cards[Player.Hand], card.id) then
       if player:getSwitchSkillState(self.name, false) == fk.SwitchYang then
         return card.color == Card.Black
       else

@@ -381,10 +381,9 @@ local sangu = fk.CreateTriggerSkill{
     end
   end,
 }
-
 local sangu_delay = fk.CreateTriggerSkill{
   name = "#sangu_delay",
-  events = {fk.EventPhaseStart, fk.CardUsing, fk.CardResponding, fk.DamageInflicted},
+  events = {fk.EventPhaseStart, fk.CardUsing, fk.CardResponding, fk.AfterCardsMove, fk.DamageInflicted},
   mute = true,
   can_trigger = function(self, event, target, player, data)
     if event == fk.DamageInflicted then
@@ -395,8 +394,23 @@ local sangu_delay = fk.CreateTriggerSkill{
       end
       return false
     end
-    if player:getMark("sangu_effect-phase") == 0 and event ~= fk.EventPhaseStart then return false end
-    return player:isAlive() and player == target and player.phase == Player.Play and #U.getMark(player, "@$sangu") > 0
+    if player:isAlive() and player.phase == Player.Play and #U.getMark(player, "@$sangu") > 0 then
+      if event == fk.EventPhaseStart then return player == target end
+      if player:getMark("sangu_effect-phase") == 0 then return false end
+      if event == fk.AfterCardsMove then
+        for _, move in ipairs(data) do
+          if move.from == player.id and move.moveReason == fk.ReasonRecast then
+            for _, info in ipairs(move.moveInfo) do
+              if info.fromArea == Card.PlayerHand then
+                return true
+              end
+            end
+          end
+        end
+        return false
+      end
+      return player == target
+    end
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
@@ -407,10 +421,10 @@ local sangu_delay = fk.CreateTriggerSkill{
       local phase_event = room.logic:getCurrentEvent():findParent(GameEvent.Phase)
       if phase_event ~= nil then
         room:setPlayerMark(player, "sangu_effect-phase", 1)
-        room:handleAddLoseSkills(player, "sangu&", nil, false, true)
+        player:filterHandcards()
         phase_event:addCleaner(function()
           room:setPlayerMark(player, "@$sangu", 0)
-          room:handleAddLoseSkills(player, "-sangu&", nil, false, true)
+          player:filterHandcards()
           for _, p in ipairs(room.alive_players) do
             local mark = U.getMark(p, "sangu_avoid")
             table.removeOne(mark, player.id)
@@ -424,63 +438,24 @@ local sangu_delay = fk.CreateTriggerSkill{
       room:setPlayerMark(player, "@$sangu", #mark > 0 and mark or 0)
       if #mark == 0 then
         room:setPlayerMark(player, "sangu_effect-phase", 0)
-        room:handleAddLoseSkills(player, "-sangu&", nil, false, true)
       end
+      player:filterHandcards()
     end
   end,
 }
-
-local sangu_active = fk.CreateViewAsSkill{
-  name = "sangu&",
-  pattern = "^nullification",
-  prompt = function()
-    return "#sangu:::" .. Self:getMark("@$sangu")[1]
+local sangu_filter = fk.CreateFilterSkill{
+  name = "#sangu_filter",
+  card_filter = function(self, to_select, player)
+    return player:getMark("sangu_effect-phase") ~= 0 and #U.getMark(player, "@$sangu") > 0 and
+    table.contains(player.player_cards[Player.Hand], to_select.id)
   end,
-  interaction = function()
-    return UI.ComboBox {choices = table.slice(Self:getMark("@$sangu"), 1, 2)}
-  end,
-  card_filter = function(self, to_select, selected)
-    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) == Player.Hand
-  end,
-  view_as = function(self, cards)
-    if #cards ~= 1 or not self.interaction.data then return end
-    local card = Fk:cloneCard(self.interaction.data)
-    card:addSubcard(cards[1])
-    card.skillName = "sangu"
-    return card
-  end,
-  enabled_at_play = function(self, player)
+  view_as = function(self, to_select, player)
     local mark = U.getMark(player, "@$sangu")
-    if #mark == 0 then return false end
-    local to_use = Fk:cloneCard(mark[1])
-    return player:canUse(to_use) and not player:prohibitUse(to_use)
-  end,
-  enabled_at_response = function(self, player, response)
-    local mark = U.getMark(player, "@$sangu")
-    if #mark == 0 then return false end
-    local to_use = Fk:cloneCard(mark[1])
-    return Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use)
-  end,
-}
-local sangu_prohibit = fk.CreateProhibitSkill{
-  name = "#sangu_prohibit",
-  prohibit_use = function(self, player, card)
-    if player:getMark("sangu_effect-phase") == 0 or U.getMark(player, "@$sangu") == 0 or
-    not card or #card.skillNames > 0 then return false end
-
-    local subcards = Card:getIdList(card)
-    return #subcards > 0 and table.every(subcards, function(id)
-      return table.contains(player:getCardIds(Player.Hand), id)
-    end)
-  end,
-  prohibit_response = function(self, player, card)
-    if player:getMark("sangu_effect-phase") == 0 or U.getMark(player, "@$sangu") == 0 or
-    not card or #card.skillNames > 0 then return false end
-
-    local subcards = Card:getIdList(card)
-    return #subcards > 0 and table.every(subcards, function(id)
-      return table.contains(player:getCardIds(Player.Hand), id)
-    end)
+    if #mark > 0 then
+      local card = Fk:cloneCard(mark[1], to_select.suit, to_select.number)
+      card.skillName = sangu.name
+      return card
+    end
   end,
 }
 local yizu = fk.CreateTriggerSkill{
@@ -501,9 +476,8 @@ local yizu = fk.CreateTriggerSkill{
     })
   end,
 }
-Fk:addSkill(sangu_active)
 sangu:addRelatedSkill(sangu_delay)
-sangu:addRelatedSkill(sangu_prohibit)
+sangu:addRelatedSkill(sangu_filter)
 zhugeshang:addSkill(sangu)
 zhugeshang:addSkill(yizu)
 Fk:loadTranslationTable{
@@ -514,14 +488,13 @@ Fk:loadTranslationTable{
   "其下个出牌阶段内，若其使用、打出牌的次数小于你选择的牌数，其手牌均仅能当做你选择的第X张牌使用（X为其本阶段使用或打出过的牌数+1）。",
   ["yizu"] = "轶祖",
   [":yizu"] = "锁定技，每回合限一次，当你成为【杀】或【决斗】的目标后，若你的体力值不大于使用者的体力值，你回复1点体力。",
+
   ["#sangu-choose"] = "你可以发动 三顾，选择一名其他角色，指定其下个出牌阶段使用前三张牌的牌名",
   ["#sangu-show"] = "三顾：你可以亮出其中的基本牌或普通锦囊牌，%dest 本阶段可以将手牌当亮出的牌使用",
   ["#sangu-declare"] = "三顾：宣言 %dest 在下个出牌阶段使用或打出的第 %arg 张牌的牌名",
   ["@$sangu"] = "三顾",
-
-  ["sangu&"] = "三顾",
-  [":sangu&"] = "你可以将一张手牌当第一张“三顾”牌使用或打出。",
-  ["#sangu"] = "三顾：将一张手牌当【%arg】使用",
+  ["#sangu_filter"] = "三顾",
+  ["#sangu_delay"] = "三顾",
 
   ["$sangu1"] = "思报君恩，尽父子之忠。",
   ["$sangu2"] = "欲酬三顾，竭三代之力。",
@@ -910,7 +883,7 @@ local koujing_filter = fk.CreateFilterSkill{
   name = "#koujing_filter",
   anim_type = "offensive",
   card_filter = function(self, card, player)
-    return card:getMark("@@koujing-turn") > 0
+    return card:getMark("@@koujing-turn") > 0 and table.contains(player.player_cards[Player.Hand], card.id)
   end,
   view_as = function(self, card)
     local c = Fk:cloneCard("slash", card.suit, card.number)

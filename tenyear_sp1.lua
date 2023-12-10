@@ -650,9 +650,11 @@ local zhenyi_trigger = fk.CreateTriggerSkill {
     if event == fk.AskForRetrial then
       room:notifySkillInvoked(player, zhenyi.name, "control")
       room:removePlayerMark(player, "@@faluspade", 1)
-      local choice = room:askForChoice(player, {"spade", "heart"}, zhenyi.name)
-      data.extra_data = data.extra_data or {}
-      data.extra_data.result_change = {data.card.name, choice == "spade" and Card.Spade or Card.Heart, 5}
+      local choice = room:askForChoice(player, {"zhenyi_spade", "zhenyi_heart"}, zhenyi.name)
+      local new_card = Fk:cloneCard(data.card.name, choice == "zhenyi_spade" and Card.Spade or Card.Heart, 5)
+      new_card.skillName = zhenyi.name
+      new_card.id = data.card.id
+      data.card = new_card
     elseif event == fk.DamageCaused then
       room:notifySkillInvoked(player, zhenyi.name, "offensive")
       room:removePlayerMark(player, "@@faluheart", 1)
@@ -675,23 +677,6 @@ local zhenyi_trigger = fk.CreateTriggerSkill {
         })
       end
     end
-  end,
-
-  refresh_events = {fk.FinishJudge},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and data.extra_data and data.extra_data.result_change
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local result = data.extra_data.result_change
-    local new_card = Fk:cloneCard(result[1], result[2], result[3])
-    result = nil
-    new_card.id = data.card.id
-    data.card = new_card
-    player.room:sendLog{
-      type = "#JudgeResultConfirm",
-      from = data.who.id,
-      arg = data.card:toLogString(),
-    }
   end,
 }
 
@@ -752,7 +737,8 @@ Fk:loadTranslationTable{
   ["#zhenyi3"] = "真仪：你可以弃置<font color='red'>♥</font>玉清，你进行判定，若结果为黑色，你对 %dest 造成的伤害+1",
   ["#zhenyi4"] = "真仪：你可以弃置<font color='red'>♦</font>勾陈，从牌堆中随机获得三种类型的牌各一张",
   ["#zhenyi_trigger"] = "真仪",
-  ["#JudgeResultConfirm"] = "%from 的判定结果被修正为 %arg",
+  ["zhenyi_spade"] = "将判定结果改为♠5",
+  ["zhenyi_heart"] = "将判定结果改为<font color='red'>♥</font>5",
 
   ["$falu1"] = "求法之道，以司箓籍。",
   ["$falu2"] = "取舍有法，方得其法。",
@@ -1948,9 +1934,7 @@ local xunshi = fk.CreateFilterSkill{
   mute = true,
   frequency = Skill.Compulsory,
   card_filter = function(self, card, player)
-    local names = {"savage_assault", "archery_attack", "amazing_grace", "god_salvation", "iron_chain", "redistribute"}
-    return player:hasSkill(self) and table.contains(names, card.name) and
-      not table.contains(player.player_cards[Player.Judge], card.id)
+    return player:hasSkill(self) and card.multiple_targets and table.contains(player.player_cards[Player.Hand], card.id)
   end,
   view_as = function(self, card)
     local card = Fk:cloneCard("slash", Card.NoSuit, card.number)
@@ -1966,7 +1950,7 @@ local xunshi_trigger = fk.CreateTriggerSkill{
   events = {fk.CardUsing},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(xunshi.name) and data.card.color == Card.NoColor
+    return target == player and player:hasSkill(xunshi) and data.card.color == Card.NoColor
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

@@ -1678,6 +1678,7 @@ local shouli = fk.CreateViewAsSkill{
         end
       end
     end
+    return ""
   end,
   enabled_at_play = function(self, player)
     return table.find(Fk:currentRoom().alive_players, function(p)
@@ -1747,20 +1748,8 @@ local shouli_delay = fk.CreateTriggerSkill{
     data.damageType = fk.ThunderDamage
   end,
 }
-local shouli_negated = fk.CreateTriggerSkill{
-  name = "#shouli_negated",
-  events = {fk.PreCardUse, fk.PreCardRespond},
-  mute = true,
-  priority = 10,
-  can_trigger = function(self, event, target, player, data)
-    return target == player and table.contains(data.card.skillNames, shouli.name) and #data.card.subcards == 0
-  end,
-  on_cost = function() return true end,
-  on_use = function() return true end,
-}
 shouli:addRelatedSkill(shouli_trigger)
 shouli:addRelatedSkill(shouli_delay)
-shouli:addRelatedSkill(shouli_negated)
 local hengwu = fk.CreateTriggerSkill{
   name = "hengwu",
   anim_type = "drawcard",

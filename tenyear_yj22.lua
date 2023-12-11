@@ -401,7 +401,7 @@ local sangu_delay = fk.CreateTriggerSkill{
         for _, move in ipairs(data) do
           if move.from == player.id and move.moveReason == fk.ReasonRecast then
             for _, info in ipairs(move.moveInfo) do
-              if info.fromArea == Card.PlayerHand then
+              if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
                 return true
               end
             end
@@ -485,7 +485,7 @@ Fk:loadTranslationTable{
   ["sangu"] = "三顾",
   [":sangu"] = "结束阶段，你可以依次在【杀】或不为【借刀杀人】和【无懈可击】的普通锦囊牌中选择三个牌名，并选择一名其他角色。"..
   "若选择的牌均为你本回合使用过的牌，防止其以此法使用的牌对你造成的伤害。"..
-  "其下个出牌阶段内，若其使用、打出牌的次数小于你选择的牌数，其手牌均仅能当做你选择的第X张牌使用（X为其本阶段使用或打出过的牌数+1）。",
+  "其下个出牌阶段内，若其使用、打出、因重铸而失去牌的次数小于你选择的牌数，其手牌均视为你选择的第X张牌（X为其本阶段内使用过、打出过、因重铸而失去过牌的次数过的牌数+1）。",
   ["yizu"] = "轶祖",
   [":yizu"] = "锁定技，每回合限一次，当你成为【杀】或【决斗】的目标后，若你的体力值不大于使用者的体力值，你回复1点体力。",
 

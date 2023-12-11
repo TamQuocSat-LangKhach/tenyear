@@ -1,8 +1,9 @@
-
 local extension = Package:new("tenyear_token", Package.CardPack)
 Fk:loadTranslationTable{
   ["tenyear_token"] = "十周年衍生牌",
 }
+
+local U = require "packages/utility/utility"
 
 local redSpearSkill = fk.CreateTriggerSkill{
   name = "#red_spear_skill",
@@ -21,7 +22,7 @@ local redSpearSkill = fk.CreateTriggerSkill{
     }
     room:judge(judge)
     if judge.card.color == Card.Red then
-      if player:isWounded() then
+      if not player.dead and player:isWounded() then
         room:recover({
           who = player,
           num = 1,
@@ -30,7 +31,9 @@ local redSpearSkill = fk.CreateTriggerSkill{
         })
       end
     elseif judge.card.color == Card.Black then
-      player:drawCards(2, self.name)
+      if not player.dead then
+        player:drawCards(2, self.name)
+      end
     end
   end,
 }
@@ -59,9 +62,15 @@ local quenchedBladeSkill = fk.CreateTriggerSkill{
       player:usedSkillTimes(self.name, Player.HistoryTurn) < 2
   end,
   on_cost = function(self, event, target, player, data)
-    return #player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#quenched_blade-invoke::"..data.to.id) > 0
+    local cards = player.room:askForDiscard(player, 1, 1, true, self.name, true,
+      ".|.|.|.|.|.|^"..tostring(player:getEquipment(Card.SubtypeWeapon)), "#quenched_blade-invoke::"..data.to.id, true)
+    if #cards > 0 then
+      self.cost_data = cards
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
+    player.room:throwCard(self.cost_data, "quenched_blade", player, player)
     data.damage = data.damage + 1
   end,
 }
@@ -87,7 +96,7 @@ extension:addCard(quenchedBlade)
 Fk:loadTranslationTable{
   ["quenched_blade"] = "烈淬刀",
   ["#quenched_blade_skill"] = "烈淬刀",
-  [":quenched_blade"] = "装备牌·武器<br /><b>攻击范围</b>：2<br /><b>武器技能</b>：每回合限两次，你使用【杀】对目标角色造成伤害时，"..
+  [":quenched_blade"] = "装备牌·武器<br /><b>攻击范围</b>：2<br/><b>武器技能</b>：每回合限两次，你使用【杀】对目标角色造成伤害时，"..
   "你可以弃置一张牌，令此伤害+1；出牌阶段你可以多使用一张【杀】。",
   ["#quenched_blade-invoke"] = "烈淬刀：你可以弃置一张牌，令你对 %dest 造成的伤害+1",
 }
@@ -128,32 +137,21 @@ local waterSwordSkill = fk.CreateTriggerSkill{
   name = "#water_sword_skill",
   attached_equip = "water_sword",
   anim_type = "offensive",
-  events = {fk.TargetSpecifying},
+  events = {fk.AfterCardTargetDeclared},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2 and
-      (data.card.trueName == "slash" or data.card:isCommonTrick()) and data.targetGroup and #data.targetGroup == 1
+      (data.card.trueName == "slash" or data.card:isCommonTrick()) and #U.getUseExtraTargets(player.room, data, false) > 0
   end,
   on_cost = function(self, event, target, player, data)
-    local room = player.room
-    local targets = {}
-    for _, p in ipairs(room:getOtherPlayers(player)) do
-      if not table.contains(AimGroup:getAllTargets(data.tos), p.id) and not player:isProhibited(p, data.card) then
-        table.insertIfNeed(targets, p.id)
-      end
-    end
-    if #targets == 0 then return end
-    local to = room:askForChoosePlayers(player, targets, 1, 1, "#water_sword-invoke:::"..data.card:toLogString(), self.name, true)
+    local targets = U.getUseExtraTargets(player.room, data, false)
+    local to = player.room:askForChoosePlayers(player, targets, 1, 1, "#water_sword-invoke:::"..data.card:toLogString(), self.name, true)
     if #to > 0 then
-      self.cost_data = to[1]
+      self.cost_data = to
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
-    if data.card.name == "collateral" then  --TODO:
-
-    else
-      TargetGroup:pushTargets(data.targetGroup, self.cost_data)  --TODO: sort by action order
-    end
+    table.insert(data.tos, self.cost_data)
   end,
 }
 Fk:addSkill(waterSwordSkill)
@@ -165,7 +163,7 @@ local waterSword = fk.CreateWeapon{
   equip_skill = waterSwordSkill,
   on_uninstall = function(self, room, player)
     Weapon.onUninstall(self, room, player)
-    if player:isAlive() and player:isWounded() and self.equip_skill:isEffectable(player) then
+    if not player.dead and player:isWounded() and self.equip_skill:isEffectable(player) then
       --room:broadcastPlaySound("./packages/tenyear/audio/card/&water_sword")
       --room:setEmotion(player, "./packages/tenyear/image/anim/&water_sword")
       room:recover{
@@ -205,20 +203,24 @@ local thunderBladeSkill = fk.CreateTriggerSkill{
     }
     room:judge(judge)
     if judge.card.suit == Card.Spade then
-      room:damage{
-        to = to,
-        damage = 3,
-        damageType = fk.ThunderDamage,
-        skillName = self.name,
-      }
+      if not to.dead then
+        room:damage{
+          to = to,
+          damage = 3,
+          damageType = fk.ThunderDamage,
+          skillName = self.name,
+        }
+      end
     elseif judge.card.suit == Card.Club then
-      room:damage{
-        to = to,
-        damage = 1,
-        damageType = fk.ThunderDamage,
-        skillName = self.name,
-      }
-      if player:isWounded() then
+      if not to.dead then
+        room:damage{
+          to = to,
+          damage = 1,
+          damageType = fk.ThunderDamage,
+          skillName = self.name,
+        }
+      end
+      if not player.dead and player:isWounded() then
         room:recover({
           who = player,
           num = 1,
@@ -226,7 +228,9 @@ local thunderBladeSkill = fk.CreateTriggerSkill{
           skillName = self.name
         })
       end
-      player:drawCards(1, self.name)
+      if not player.dead then
+        player:drawCards(1, self.name)
+      end
     end
   end,
 }

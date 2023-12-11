@@ -2325,7 +2325,7 @@ local diting = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self) and target ~= player and target.phase == Player.Play and not target:isKongcheng() and
-      player.hp > 0  --fxxk buqu
+      target:inMyAttackRange(player) and player.hp > 0  --fxxk buqu
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#diting-invoke::"..target.id)

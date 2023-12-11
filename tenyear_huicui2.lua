@@ -3060,11 +3060,11 @@ local youzhan_trigger = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.DamageInflicted, fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if player:getMark("youzhan-turn") > 0 then
+    if target == player then
       if event == fk.DamageInflicted then
-        return target == player and player:getMark("@youzhan-turn") > 0
+        return player:getMark("youzhan-turn") > 0 and player:getMark("@youzhan-turn") > 0
       else
-        return target.phase == Player.Finish and table.find(player.room.alive_players, function(p) return p:getMark("@youzhan-turn") > 0 end)
+        return player.phase == Player.Finish and table.find(player.room.alive_players, function(p) return p:getMark("@youzhan-turn") > 0 end)
       end
     end
   end,
@@ -3079,10 +3079,19 @@ local youzhan_trigger = fk.CreateTriggerSkill{
       data.damage = data.damage + player:getMark("@youzhan-turn")
       room:setPlayerMark(player, "@youzhan-turn", 0)
     else
-      target:broadcastSkillInvoke("youzhan")
-      room:notifySkillInvoked(target, "youzhan", "drawcard")
-      room:doIndicate(target.id, {player.id})
-      player:drawCards(math.min(player:getMark("youzhan-turn"), 3), "youzhan")
+      player:broadcastSkillInvoke("youzhan")
+      room:notifySkillInvoked(player, "youzhan", "drawcard")
+      for _, p in ipairs(room.alive_players) do
+        if #room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function(e)
+          local damage = e.data[5]
+          if damage and damage.to == p then
+            return true
+          end
+        end, Player.HistoryTurn) == 0 then
+          room:doIndicate(player.id, {p.id})
+          p:drawCards(math.min(p:getMark("youzhan-turn"), 3), "youzhan")
+        end
+      end
     end
   end,
 }

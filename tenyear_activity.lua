@@ -202,10 +202,12 @@ local xingluan = fk.CreateTriggerSkill{
         ids = card,
         to = player.id,
         toArea = Card.PlayerHand,
-        moveReason = fk.ReasonJustMove,
+        moveReason = fk.ReasonPrey,
         proposer = player.id,
         skillName = self.name,
       })
+    else
+      player:drawCards(6, self.name)
     end
   end,
 }
@@ -213,7 +215,7 @@ fanchou:addSkill(xingluan)
 Fk:loadTranslationTable{
   ["fanchou"] = "樊稠",
   ["xingluan"] = "兴乱",
-  [":xingluan"] = "出牌阶段限一次，当你使用的仅指定一个目标的牌结算完成后，你可以从牌堆里获得一张点数为6的牌。",
+  [":xingluan"] = "每阶段限一次，当你于你出牌阶段使用一张仅指定一名目标角色的牌结算结束后，你可以从牌堆中获得一张点数为6的牌（若牌堆中没有点数为6的牌，改为摸六张牌）。",
 
   ["$xingluan1"] = "大兴兵争，长安当乱。",
   ["$xingluan2"] = "勇猛兴军，乱世当立。",

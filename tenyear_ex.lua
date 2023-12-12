@@ -3376,6 +3376,120 @@ Fk:loadTranslationTable{
   ["~ty_ex__chenqun"] = "吾身虽亡，然吾志当遗百年……",
 }
 
+local ty_ex__caozhen = General(extension, "ty_ex__caozhen", "wei", 4)
+local ty_ex__sidi = fk.CreateTriggerSkill{
+  name = "ty_ex__sidi",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      if target == player then
+        return player.phase == Player.Finish and not player:isNude()
+      else
+        return target.phase == Player.Play and #player:getPile(self.name) > 0
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if target == player then
+      local card = room:askForCard(player, 1, 1, true, self.name, true, ".|.|.|.|.|trick,equip", "#ty_ex__sidi-put")
+      if #card > 0 then
+        self.cost_data = card
+        return true
+      end
+    else
+      local card = room:askForCard(player, 1, 1, false, self.name, true, ".|.|.|ty_ex__sidi|.|.", "#ty_ex__sidi-invoke::"..target.id, "ty_ex__sidi")
+      if #card > 0 then
+        self.cost_data = card
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if target == player then
+      player:addToPile(self.name, self.cost_data[1], true, self.name)
+    else
+      room:doIndicate(player.id, {target.id})
+      local color = Fk:getCardById(self.cost_data[1]):getColorString()
+      room:moveCards({
+        from = player.id,
+        ids = self.cost_data,
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonPutIntoDiscardPile,
+        skillName = self.name,
+        specialName = self.name,
+      })
+      local mark = U.getMark(target, "@ty_ex__sidi-phase")
+      table.insertIfNeed(mark, color)
+      room:setPlayerMark(target, "@ty_ex__sidi-phase", mark)
+      room:setPlayerMark(player, "ty_ex__sidi_victim-phase", target.id)
+    end
+  end,
+}
+local ty_ex__sidi_prohibit = fk.CreateProhibitSkill{
+  name = "#ty_ex__sidi_prohibit",
+  prohibit_response = function(self, player, card)
+    local mark = U.getMark(player, "@ty_ex__sidi-phase")
+    return table.contains(mark, card:getColorString())
+  end,
+  prohibit_use = function(self, player, card)
+    local mark = U.getMark(player, "@ty_ex__sidi-phase")
+    return table.contains(mark, card:getColorString())
+  end,
+}
+ty_ex__sidi:addRelatedSkill(ty_ex__sidi_prohibit)
+local ty_ex__sidi_delay = fk.CreateTriggerSkill{
+  name = "#ty_ex__sidi_delay",
+  mute = true,
+  events = {fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    if not player.dead and player:getMark("ty_ex__sidi_victim-phase") == target.id and target.phase == Player.Play then
+      local trick,slash = true,true
+      player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e)
+        local use = e.data[1]
+        if use.from == target.id then
+          if use.card.type == Card.TypeTrick then
+            trick = false
+          elseif use.card.trueName == "slash" then
+            slash = false
+          end
+        end
+        return false
+      end, Player.HistoryPhase)
+      if trick or slash then
+        self.cost_data = {trick = trick, slash = slash}
+        return true
+      end
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if self.cost_data.slash and not target.dead then
+      room:useVirtualCard("slash", nil, player, target, "ty_ex__sidi", true)
+    end
+    if self.cost_data.trick and not player.dead then
+      player:drawCards(2, "ty_ex__sidi")
+    end
+  end,
+}
+ty_ex__sidi:addRelatedSkill(ty_ex__sidi_delay)
+ty_ex__caozhen:addSkill(ty_ex__sidi)
+Fk:loadTranslationTable{
+  ["ty_ex__caozhen"] = "界曹真",
+  ["ty_ex__sidi"] = "司敌",
+  [":ty_ex__sidi"] = "结束阶段，你可以将一张非基本牌置于武将牌上，称为“司”。其他角色的出牌阶段开始时，你可以移去一张“司”，令其于此阶段不能使用或打出与此“司”颜色相同的牌，此阶段结束时，若其没有使用过：【杀】，你视为对其使用一张【杀】；锦囊牌，你摸两张牌。",
+  ["#ty_ex__sidi-put"] = "司敌：可以将一张非基本牌置于武将牌上，称为“司”",
+  ["#ty_ex__sidi-invoke"] = "司敌：可以移去一张“司”，令 %dest 此阶段不能使用或打出与此“司”颜色相同的牌",
+  ["@ty_ex__sidi-phase"] = "司敌",
+
+  ["$ty_ex__sidi1"] = "总算困住你了！",
+  ["$ty_ex__sidi2"] = "你出得了手吗？",
+  ["~ty_ex__caozhen"] = "未竟之业，请你们务必继续！",
+}
+
 local ty_ex__hanhaoshihuan = General(extension, "ty_ex__hanhaoshihuan", "wei", 4)
 local ty_ex__shenduan = fk.CreateTriggerSkill{
   name = "ty_ex__shenduan",

@@ -383,7 +383,7 @@ local midu = fk.CreateActiveSkill{
         table.insert(choices, "JudgeSlot")
       end
       table.insertTable(choices, player:getAvailableEquipSlots())
-      local choice = room:askForCheck(player, choices, 1, #choices, self.name, "#midu-abort", false)
+      local choice = room:askForChoices(player, choices, 1, #choices, self.name, "#midu-abort", false)
       room:abortPlayerArea(player, choice)
       if not player.dead then
         local to = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper), 1, 1,

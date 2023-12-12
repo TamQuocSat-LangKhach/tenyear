@@ -174,7 +174,7 @@ local qingbei = fk.CreateTriggerSkill{
     if event == fk.RoundStart then
       local room = player.room
       local suits = {"log_spade", "log_heart", "log_club", "log_diamond"}
-      local choices = room:askForCheck(player, suits, 1, 4, self.name, "#qingbei-choice", true)
+      local choices = room:askForChoices(player, suits, 1, 4, self.name, "#qingbei-choice", true)
       if #choices > 0 then
         self.cost_data = choices
         return true

@@ -510,7 +510,7 @@ local qiai = fk.CreateTriggerSkill{
       reason = self.name,
     }
     for _, p in ipairs(players) do
-      p.request_data = json.encode({ "choose_cards_skill", "#qiai-give::"..player.id, false, json.encode(extra_data) })
+      p.request_data = json.encode({ "choose_cards_skill", "#qiai-give::"..player.id, false, extra_data })
     end
     room:notifyMoveFocus(players, self.name)
     room:doBroadcastRequest("AskForUseActiveSkill", players)

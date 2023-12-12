@@ -582,7 +582,7 @@ local huagui = fk.CreateTriggerSkill{
       reason = self.name,
     }
     for _, p in ipairs(tos) do
-      p.request_data = json.encode({ "choose_cards_skill", "#huagui-card:"..player.id, true, json.encode(extraData) })
+      p.request_data = json.encode({ "choose_cards_skill", "#huagui-card:"..player.id, true, extraData })
     end
     room:notifyMoveFocus(room.alive_players, self.name)
     room:doBroadcastRequest("AskForUseActiveSkill", tos)

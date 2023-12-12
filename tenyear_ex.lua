@@ -334,7 +334,7 @@ local ty_ex__xuanhuo = fk.CreateTriggerSkill{
       room:setPlayerMark(to, "ty_ex__xuanhuo-phase", victim)
       local command = "AskForUseActiveSkill"
       room:notifyMoveFocus(to, "ty_ex__xuanhuo_viewas")
-      local dat = {"ty_ex__xuanhuo_viewas", "#ty_ex__xuanhuo-slash:"..player.id..":"..victim, true, json.encode({})}
+      local dat = {"ty_ex__xuanhuo_viewas", "#ty_ex__xuanhuo-slash:"..player.id..":"..victim, true, {}}
       local result = room:doRequest(to, command, json.encode(dat))
       room:setPlayerMark(to, "ty_ex__xuanhuo-phase", 0)
       if result ~= "" then

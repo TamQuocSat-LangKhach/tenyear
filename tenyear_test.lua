@@ -121,7 +121,7 @@ local miyi = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local command = "AskForUseActiveSkill"
     player.room:notifyMoveFocus(player, "miyi_active")
-    local dat = {"miyi_active", "#miyi-invoke", true, json.encode({})}
+    local dat = {"miyi_active", "#miyi-invoke", true, {}}
     local result = player.room:doRequest(player, command, json.encode(dat))
     if result ~= "" then
       self.cost_data = json.decode(result)

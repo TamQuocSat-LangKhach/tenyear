@@ -632,7 +632,7 @@ local function doCaiyi(player, target, choice, n)
   if i == 4 then
     local num = {}
     for i = 1, 3, 1 do
-      if player:getMark("caiyi"..state..tostring(i)) == 0 then
+      if player:getMark("caiyi"..state..tostring(i)) ~= 0 then
         table.insert(num, i)
       end
     end
@@ -651,12 +651,7 @@ local function doCaiyi(player, target, choice, n)
       elseif i == 2 then
         target:drawCards(n, "caiyi")
       else
-        if not target.faceup then
-          target:turnOver()
-        end
-        if target.chained then
-          target:setChainState(false)
-        end
+        target:reset()
       end
     else
       if i == 1 then
@@ -666,11 +661,7 @@ local function doCaiyi(player, target, choice, n)
           skillName = "caiyi",
         }
       elseif i == 2 then
-        if #target:getCardIds{Player.Hand, Player.Equip} <= n then
-          target:throwAllCards("he")
-        else
-          room:askForDiscard(target, n, n, true, "caiyi", false)
-        end
+        room:askForDiscard(target, n, n, true, "caiyi", false)
       else
         target:turnOver()
         if not target.chained then
@@ -712,7 +703,7 @@ local caiyi = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local choices = {}
+    local choices, all_choices = {}, {}
     local state = "yang"
     if player:getSwitchSkillState(self.name, true) == fk.SwitchYin then
       state = "yinn"
@@ -722,13 +713,14 @@ local caiyi = fk.CreateTriggerSkill{
       if player:getMark(mark) == 0 then
         table.insert(choices, mark)
       end
+      table.insert(all_choices, mark)
     end
     local num = #choices
     if num == 4 then
       table.remove(choices, 4)
     end
     local to = room:getPlayerById(self.cost_data)
-    local choice = room:askForChoice(to, choices, self.name, "#caiyi-choice:::"..tostring(num))
+    local choice = room:askForChoice(to, choices, self.name, "#caiyi-choice:::"..tostring(num), nil, all_choices)
     room:setPlayerMark(player, choice, 1)
     doCaiyi(player, to, choice, num)
   end,

@@ -464,8 +464,9 @@ local yizu = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.firstTarget and table.contains({"slash", "duel"}, data.card.trueName) and
-      player.room:getPlayerById(data.from).hp >= player.hp and player:isWounded() and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
+    return target == player and player:hasSkill(self) and table.contains({"slash", "duel"}, data.card.trueName) and
+      player.room:getPlayerById(data.from).hp >= player.hp and player:isWounded() and
+      player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
   end,
   on_use = function(self, event, target, player, data)
     player.room:recover({
@@ -483,14 +484,12 @@ zhugeshang:addSkill(yizu)
 Fk:loadTranslationTable{
   ["zhugeshang"] = "诸葛尚",
   ["sangu"] = "三顾",
-  [":sangu"] = "结束阶段，你可以依次在【杀】或不为【借刀杀人】和【无懈可击】的普通锦囊牌中选择三个牌名，并选择一名其他角色。"..
-  "若选择的牌均为你本回合使用过的牌，防止其以此法使用的牌对你造成的伤害。"..
-  "其下个出牌阶段内，若其使用、打出、因重铸而失去牌的次数小于你选择的牌数，其手牌均视为你选择的第X张牌（X为其本阶段内使用过、打出过、因重铸而失去过牌的次数过的牌数+1）。",
+  [":sangu"] = "结束阶段，你可依次选择至多三张【杀】或普通锦囊牌（【借刀杀人】、【无懈可击】除外）并指定一名其他角色，"..
+  "其下个出牌阶段使用的前X张牌视为你选择的牌（X为你选择的牌数）。若你选择的牌均为本回合你使用过的牌，防止“三顾”牌对你造成的伤害。",
   ["yizu"] = "轶祖",
   [":yizu"] = "锁定技，每回合限一次，当你成为【杀】或【决斗】的目标后，若你的体力值不大于使用者的体力值，你回复1点体力。",
 
   ["#sangu-choose"] = "你可以发动 三顾，选择一名其他角色，指定其下个出牌阶段使用前三张牌的牌名",
-  ["#sangu-show"] = "三顾：你可以亮出其中的基本牌或普通锦囊牌，%dest 本阶段可以将手牌当亮出的牌使用",
   ["#sangu-declare"] = "三顾：宣言 %dest 在下个出牌阶段使用或打出的第 %arg 张牌的牌名",
   ["@$sangu"] = "三顾",
   ["#sangu_filter"] = "三顾",

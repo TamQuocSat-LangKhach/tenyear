@@ -5057,14 +5057,7 @@ local ty_ex__yanyu = fk.CreateActiveSkill{
     return #selected == 0 and Fk:getCardById(to_select).trueName == "slash"
   end,
   on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    room:moveCards({
-      ids = effect.cards,
-      from = effect.from,
-      toArea = Card.DiscardPile,
-      moveReason = fk.ReasonPutIntoDiscardPile,  --TODO: reason recast
-    })
-    player:drawCards(1, self.name)
+    room:recastCard(effect.cards, room:getPlayerById(effect.from), self.name)
   end,
 }
 local ty_ex__yanyu_record = fk.CreateTriggerSkill{

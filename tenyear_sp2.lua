@@ -4432,6 +4432,7 @@ Fk:loadTranslationTable{
   ["@$chanjuan"] = "婵娟",
   ["#chanjuan-invoke"] = "婵娟：你可以视为使用【%arg】，若目标为 %dest ，你摸一张牌",
   ["chanjuan_viewas"] = "婵娟",
+  ["#xunbie_trigger"] = "殉别",
   ["@@xunbie-turn"] = "殉别",
 
   ["$chanjuan1"] = "姐妹一心，共侍玄德无忧。",

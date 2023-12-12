@@ -3700,7 +3700,7 @@ local juying = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventPhaseEnd},
+  refresh_events = {fk.AfterPhaseEnd},
   can_refresh = function(self, event, target, player, data)
     return target == player and player.phase == Player.Play and player:getMark(self.name) > 0
   end,

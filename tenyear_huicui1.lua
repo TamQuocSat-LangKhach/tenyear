@@ -4385,25 +4385,30 @@ local haochong = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local n = player:getHandcardNum() - player:getMaxCards()
     if n > 0 then
-      if #player.room:askForDiscard(player, n, n, false, self.name, true, ".", "#haochong-discard:::"..n) then
-        self.cost_data = n
+      local cards = player.room:askForDiscard(player, n, n, false, self.name, true, ".", "#haochong-discard:::"..tostring(n), true)
+      if #cards > 0 then
+        self.cost_data = cards
         return true
       end
     else
       if player.room:askForSkillInvoke(player, self.name, nil, "#haochong-draw:::"..player:getMaxCards()) then
-        self.cost_data = n
+        self.cost_data = {}
         return true
       end
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if self.cost_data > 0 then
+    if #self.cost_data > 0 then
+      room:throwCard(self.cost_data, self.name, player, player)
       room:addPlayerMark(player, MarkEnum.AddMaxCards, 1)
+      room:broadcastProperty(player, "MaxCards")
     else
-      player:drawCards(math.min(-self.cost_data, 5), self.name)
+      local n = player:getMaxCards() - player:getHandcardNum()
+      player:drawCards(math.min(n, 5), self.name)
       if player:getMaxCards() > 0 then  --不允许减为负数
         room:addPlayerMark(player, MarkEnum.MinusMaxCards, 1)
+        room:broadcastProperty(player, "MaxCards")
       end
     end
   end,
@@ -4426,6 +4431,7 @@ local jinjin = fk.CreateTriggerSkill{
     room:setPlayerMark(player, MarkEnum.AddMaxCardsInTurn, 0)
     room:setPlayerMark(player, MarkEnum.MinusMaxCards, 0)
     room:setPlayerMark(player, MarkEnum.MinusMaxCardsInTurn, 0)
+    room:broadcastProperty(player, "MaxCards")
     if data.from and not data.from.dead then
       local x = #room:askForDiscard(data.from, 1, n, true, self.name, false, ".", "#jinjin-discard:"..player.id.."::"..n)
       if x < n then

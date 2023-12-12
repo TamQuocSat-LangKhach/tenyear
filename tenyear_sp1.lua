@@ -114,7 +114,7 @@ local ty__fanghun = fk.CreateViewAsSkill{
 }
 local ty__fanghun_trigger = fk.CreateTriggerSkill{
   name = "#ty__fanghun_trigger",
-  events ={fk.TargetSpecified, fk.TargetConfirmed},
+  events = {fk.TargetSpecified, fk.TargetConfirmed},
   mute = true,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.card.trueName == "slash"
@@ -145,28 +145,44 @@ local ty__fuhan = fk.CreateTriggerSkill{
     local n = player:getMark("@meiying")
     room:setPlayerMark(player, "@meiying", 0)
     player:drawCards(n, self.name)
-    local existingGenerals = {}
-    table.forEach(room.players, function(p)
-      table.insertTable(existingGenerals, {p.general, p.deputyGeneral})
-    end)
-    local generals = table.map(Fk:getGeneralsRandomly(math.max(#room.alive_players, 4), Fk:getAllGenerals(), existingGenerals,
-      (function(p) return (p.kingdom ~= "shu") end)), function(g) return g.name end)
-    local names = {}
-    while #names < 2 do
-      local general = Fk.generals[room:askForGeneral(player, generals, 1, true)]
-      local choices = {}
-      for _, s in ipairs(general:getSkillNameList()) do
-        local skill = Fk.skills[s]
-        if not player:hasSkill(skill, true, true) and skill.frequency ~= Skill.Limited and skill.frequency ~= Skill.Wake then
-          table.insertIfNeed(choices, skill.name)
+    if player.dead then return end
+    local skillMap = {}
+    local generals = {}
+    for _, general_name in ipairs(room.general_pile) do
+      local general = Fk.generals[general_name]
+      if general.kingdom == "shu" then
+        local list = {}
+        for _, skill_name in ipairs(general:getSkillNameList()) do
+          local skill = Fk.skills[skill_name]
+          if not player:hasSkill(skill, true) and skill.frequency ~= Skill.Limited and skill.frequency ~= Skill.Wake
+          and not skill.lordSkill then
+            table.insert(list, skill_name)
+          end
+        end
+        if #list > 0 then
+          skillMap[general_name] = list
+          table.insert(generals, general_name)
         end
       end
-      if #choices > 0 then
-        local choice = room:askForChoice(player, choices, self.name, "#ty__fuhan-choice", true)
-        table.insert(names, choice)
-      end
     end
-    room:handleAddLoseSkills(player, table.concat(names, "|"), nil, true, false)
+    if #generals == 0 then return end
+    local num = math.min(4, #room.alive_players)
+    generals = table.random(generals, num)
+    local get = {}
+    for i = 1, 2 do
+      if #generals == 0 then break end
+      local general = room:askForGeneral(player, generals, 1, true)
+      local skills = table.simpleClone(skillMap[general])
+      table.insert(skills, "Cancel")
+      local choice = room:askForChoice(player, skills, self.name, "#ty__fuhan-choice", true)
+      if choice == "Cancel" then break end
+      table.insert(get, choice)
+      table.removeOne(skillMap[general], choice)
+      if #skillMap[general] == 0 then table.removeOne(generals, general) end
+    end
+    if #get > 0 then
+      room:handleAddLoseSkills(player, table.concat(get, "|"), nil)
+    end
     if player:isWounded() and table.every(room.alive_players, function(p) return p.hp >= player.hp end) then
       room:recover({
         who = player,

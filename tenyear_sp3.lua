@@ -1237,6 +1237,276 @@ Fk:loadTranslationTable{
   ["~ty__wanglang"] = "我本东海弄墨客，如何枉做沙场魂……",
 }
 
+local liuhui = General(extension, "liuhui", "qun", 4)
+
+local function startCircle(player, points)
+  local room = player.room
+  table.shuffle(points)
+  room:setPlayerMark(player, "@[geyuan]", {
+    all = points, ok = {}
+  })
+end
+
+--- 返回下一个能点亮圆环的点数
+---@return integer[]
+local function getCircleProceed(value)
+  local all_points = value.all
+  local ok_points = value.ok
+  local all_len = #all_points
+  -- 若没有点亮的就全部都满足
+  if #ok_points == 0 then return all_points end
+  -- 若全部点亮了返回空表
+  if #ok_points == all_len then return Util.DummyTable end
+
+  local function c(idx)
+    if idx == 0 then idx = all_len end
+    if idx == all_len + 1 then idx = 1 end
+    return idx
+  end
+
+  -- 否则，显示相邻的，逻辑上要构成循环
+  local ok_map = {}
+  for _, v in ipairs(ok_points) do ok_map[v] = true end
+  local start_idx, end_idx
+  for i, v in ipairs(all_points) do
+    -- 前一个不亮，这个是左端
+    if ok_map[v] and not ok_map[all_points[c(i-1)]] then
+      start_idx = i
+    end
+    -- 后一个不亮，这个是右端
+    if ok_map[v] and not ok_map[all_points[c(i+1)]] then
+      end_idx = i
+    end
+  end
+
+  start_idx = c(start_idx - 1)
+  end_idx = c(end_idx + 1)
+
+  if start_idx == end_idx then
+    return { all_points[start_idx] }
+  else
+    return { all_points[start_idx], all_points[end_idx] }
+  end
+end
+
+Fk:addQmlMark{
+  name = "geyuan",
+  how_to_show = function(name, value)
+    -- FIXME: 神秘bug导致value可能为空串有待排查
+    if type(value) ~= "table" then return " " end
+    local nums = getCircleProceed(value)
+    if #nums == 1 then
+      return Card:getNumberStr(nums[1])
+    elseif #nums == 2 then
+      return Card:getNumberStr(nums[1]) .. Card:getNumberStr(nums[2])
+    else
+      return " "
+    end
+  end,
+  qml_path = "packages/tenyear/qml/GeyuanBox"
+}
+
+local geyuan = fk.CreateTriggerSkill{
+  name = "geyuan",
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) then return false end
+    local circle_data = player:getMark("@[geyuan]")
+    if circle_data == 0 then return end
+    local proceed = getCircleProceed(circle_data)
+    for _, move in ipairs(data) do
+      if move.toArea == Card.DiscardPile then
+        for _, info in ipairs(move.moveInfo) do
+          local number = Fk:getCardById(info.cardId).number
+          if table.contains(proceed, number) then return true end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local circle_data = player:getMark("@[geyuan]")
+    local proceed = getCircleProceed(circle_data)
+    local completed = false
+    for _, move in ipairs(data) do
+      if move.toArea == Card.DiscardPile then
+        for _, info in ipairs(move.moveInfo) do
+          local number = Fk:getCardById(info.cardId).number
+          if table.contains(proceed, number) then
+            table.insert(circle_data.ok, number)
+            proceed = getCircleProceed(circle_data)
+            if proceed == Util.DummyTable then -- 已完成？
+              -- FAQ: 成功了后还需结算剩下的？摸了，我不结算
+              completed = true
+              goto BREAK
+            end
+          end
+        end
+      end
+    end
+    ::BREAK::
+
+    if completed then
+      local start, end_ = circle_data.ok[1], circle_data.ok[#circle_data.ok]
+      local waked = player:usedSkillTimes("gusuan", Player.HistoryGame) > 0
+      if waked then
+        local players = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper),
+          0, 3, "#gusuan-choose", self.name, true)
+
+        if players[1] then
+          room:getPlayerById(players[1]):drawCards(3, self.name)
+        end
+        if players[2] then
+          local p = room:getPlayerById(players[2])
+          room:askForDiscard(p, 4, 4, true, self.name, false)
+        end
+        if players[3] then
+          local p = room:getPlayerById(players[3])
+          local cards = p:getCardIds(Player.Hand)
+          room:moveCards({
+            from = p.id,
+            ids = cards,
+            toArea = Card.Processing,
+            moveReason = fk.ReasonExchange,
+            proposer = player.id,
+            skillName = self.name,
+            moveVisible = false,
+          })
+          if not p.dead then
+            room:moveCardTo(room:getNCards(5, "bottom"), Card.PlayerHand, p, fk.ReasonExchange, self.name, nil, false, player.id)
+          end
+          if #cards > 0 then
+            table.shuffle(cards)
+            room:moveCards({
+              ids = cards,
+              fromArea = Card.Processing,
+              toArea = Card.DrawPile,
+              moveReason = fk.ReasonExchange,
+              skillName = self.name,
+              moveVisible = false,
+              drawPilePosition = -1,
+            })
+          end
+        end
+      else
+        local toget = {}
+        for _, p in ipairs(room.alive_players) do
+          for _, id in ipairs(p:getCardIds("ej")) do
+            local c = Fk:getCardById(id, true)
+            if c.number == start or c.number == end_ then
+              table.insert(toget, c.id)
+            end
+          end
+        end
+        for _, id in ipairs(room.draw_pile) do
+          local c = Fk:getCardById(id, true)
+          if c.number == start or c.number == end_ then
+            table.insert(toget, c.id)
+          end
+        end
+        room:moveCards {
+          ids = toget,
+          to = player.id,
+          toArea = Card.PlayerHand,
+          moveReason = fk.ReasonJustMove,
+          proposer = player.id,
+          moveVisible = true,
+          skillName = self.name,
+        }
+      end
+
+      local all = circle_data.all
+      if not waked then
+        if #all > 3 then table.removeOne(all, start) end
+        if #all > 3 then table.removeOne(all, end_) end
+      end
+      startCircle(player, all)
+    else
+      room:setPlayerMark(player, "@[geyuan]", circle_data)
+    end
+  end,
+}
+local geyuan_start = fk.CreateTriggerSkill{
+  name = "#geyuan_start",
+  main_skill = geyuan,
+  events = {fk.GameStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(geyuan) and player:getMark("@[geyuan]") == 0
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local points = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}
+    startCircle(player, points)
+  end
+}
+geyuan:addRelatedSkill(geyuan_start)
+local jieshu = fk.CreateTriggerSkill{
+  name = "jieshu",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.CardUsing, fk.CardResponding},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) and player:getMark("@[geyuan]") ~= 0 then
+      local proceed = getCircleProceed(player:getMark("@[geyuan]"))
+      return table.contains(proceed, data.card.number)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(1, self.name)
+  end,
+}
+local jieshu_max = fk.CreateMaxCardsSkill{
+  name = "#jieshu_maxcard",
+  exclude_from = function(self, player, card)
+    local mark = player:getMark("@[geyuan]")
+    local all = Util.DummyTable
+    if type(mark) == "table" and mark.all then all = mark.all end
+    return not table.contains(all, card.number)
+  end,
+}
+jieshu:addRelatedSkill(jieshu_max)
+local gusuan = fk.CreateTriggerSkill{
+  name = "gusuan",
+  frequency = Skill.Wake,
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  can_wake = function(self, event, target, player, data)
+    local mark = player:getMark("@[geyuan]")
+    return type(mark) == "table" and #mark.all == 3
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:changeMaxHp(player, -1)
+  end,
+}
+liuhui:addSkill(geyuan)
+liuhui:addSkill(jieshu)
+liuhui:addSkill(gusuan)
+Fk:loadTranslationTable{
+  ["liuhui"] = "刘徽",
+  ["geyuan"] = "割圆",
+  [":geyuan"] = '锁定技，游戏开始时，将A~K的所有点数随机排列成一个圆环。有牌进入弃牌堆时，将满足圆环进度的点数记录在圆环内。当圆环完成后，你获得牌堆和场上所有完成此圆环最初和最后点数的牌，然后从圆环中移除这两个点数（不会被移除到三个以下），重新开始圆环。<br><font color="grey">进度点数：圆环中即将被点亮的点数，直接显示在脸上。</font><br><font color="red">注：标记显示目前可能有bug，但不影响游玩。</font>',
+  ["jieshu"] = "解术",
+  [":jieshu"] = "锁定技，非圆环内点数的牌不计入你的手牌上限。你使用或打出牌时，若满足圆环进度点数，你摸一张牌。",
+  ["gusuan"] = "股算",
+  [":gusuan"] = '觉醒技，每个回合结束时，若圆环剩余点数为3个，你减1点体力上限，并修改“割圆”。<br><font color="grey">☆割圆·改：锁定技，有牌进入弃牌堆时，将满足圆环进度的点数记录在圆环内。当圆环完成后，你至多依次选择三名角色（按照点击他们的顺序）并依次执行其中一项：1.摸三张牌；2.弃四张牌；3.将其手牌与牌堆底五张牌交换。结算完成后，重新开始圆环。</font>',
+
+  ["@[geyuan]"] = "割圆", -- 仅用到了前缀，因为我感觉够了，实际上右括号后能加更多后缀
+  ["#geyuan_start"] = "割圆",
+  ["#gusuan-choose"] = "割圆：依次点选至多三名角色，第一个摸3，第二个弃4，第三个换牌",
+
+  ["$geyuan1"] = "绘同径之距，置内圆而割之。",
+  ["$geyuan2"] = "矩割弥细，圆失弥少，以至不可割。",
+  ["$jieshu1"] = "累乘除以成九数者，可以加减解之。",
+  ["$jieshu2"] = "数有其理，见筹一可知沙数。",
+  ["$gusuan1"] = "勾中容横，股中容直，可知其玄五。",
+  ["$gusuan2"] = "累矩连索，类推衍化，开立而得法。",
+  ["~liuhui"] = "算学如海，穷我一生，只得杯水。",
+}
+
 --钟灵毓秀：董贵人 滕芳兰 张瑾云 周不疑
 local dongguiren = General(extension, "dongguiren", "qun", 3, 3, General.Female)
 local lianzhi = fk.CreateTriggerSkill{

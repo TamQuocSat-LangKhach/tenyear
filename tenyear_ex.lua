@@ -4572,6 +4572,81 @@ Fk:loadTranslationTable{
   ["~ty_ex__caoxiu"] = "奈何痈发背薨！",
 }
 
+local quancong = General(extension, "ty_ex__quancong", "wu", 4)
+local ty_ex__yaoming = fk.CreateTriggerSkill{
+  name = "ty_ex__yaoming",
+  anim_type = "control",
+  events = {fk.Damage, fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player:getMark("ty_ex__yaoming_"..event.."-turn") == 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local _, dat = room:askForUseActiveSkill(player, "ty_ex__yaoming_active", "#ty_ex__yaoming-invoke", true)
+    if dat then
+      self.cost_data = {player:getMark(self.name), dat.targets[1]}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "ty_ex__yaoming_"..event.."-turn", 1)
+    local choice = self.cost_data[1]
+    local to = room:getPlayerById(self.cost_data[2])
+    if choice == "ty_ex__yaoming_throw" then
+      local cid = room:askForCardChosen(player, to, "h", self.name)
+      room:throwCard({cid}, self.name, to, player)
+    elseif choice == "ty_ex__yaoming_draw" then
+      to:drawCards(1, self.name)
+    else
+      local n = #room:askForDiscard(to, 0, 2, true, self.name, true, ".", "#ty_ex__yaoming-recast")
+      if n > 0 and not to.dead then
+        to:drawCards(n, self.name)
+      end
+    end
+  end,
+}
+local ty_ex__yaoming_active = fk.CreateActiveSkill{
+  name = "ty_ex__yaoming_active",
+  card_num = 0,
+  target_num = 1,
+  interaction = function()
+    return UI.ComboBox {choices = {"ty_ex__yaoming_throw", "ty_ex__yaoming_draw", "ty_ex__yaoming_recast" } }
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if #selected ~= 0 then return false end
+    local to = Fk:currentRoom():getPlayerById(to_select)
+    if self.interaction.data == "ty_ex__yaoming_throw" then
+      return Self.id ~= to_select and not to:isKongcheng()
+    elseif self.interaction.data == "ty_ex__yaoming_draw" then
+      return Self.id ~= to_select
+    else
+      return true
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:setPlayerMark(player, "ty_ex__yaoming", self.interaction.data)
+  end,
+}
+Fk:addSkill(ty_ex__yaoming_active)
+quancong:addSkill(ty_ex__yaoming)
+Fk:loadTranslationTable{
+  ["ty_ex__quancong"] = "界全琮",
+  ["ty_ex__yaoming"] = "邀名",
+  [":ty_ex__yaoming"] = "每回合每项限一次，当你造成或受到伤害后，你可以选择一项：1.弃置一名其他角色的一张手牌；2.令一名其他角色摸一张牌；3.令一名角色弃置至多两张牌再摸等量的牌。",
+  ["#ty_ex__yaoming-invoke"] = "可以发动“邀名”",
+  ["ty_ex__yaoming_throw"] = "弃置一名其他角色的一张手牌",
+  ["ty_ex__yaoming_draw"] = "令一名其他角色摸一张牌",
+  ["ty_ex__yaoming_recast"] = "令一名角色弃置至多两张牌再摸等量的牌",
+  ["ty_ex__yaoming_active"] = "邀名",
+  ["#ty_ex__yaoming-recast"] = "邀名：可以弃置至多两张牌再摸等量的牌",
+  ["$ty_ex__yaoming1"] = "养威持重，不营小利。",
+  ["$ty_ex__yaoming2"] = "则天而行，作功邀名。",
+  ["~ty_ex__quancong"] = "邀名射利，内伤骨体，外乏筋肉。",
+}
+
 local sunxiu = General(extension, "ty_ex__sunxiu", "wu", 3)
 local ty_ex__yanzhu = fk.CreateActiveSkill{
   name = "ty_ex__yanzhu",

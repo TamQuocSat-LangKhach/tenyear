@@ -4253,6 +4253,8 @@ local tianjiang_trigger = fk.CreateTriggerSkill{
     end
   end,
 }
+local zhuren_weapons = { {"red_spear", Card.Heart, 1}, {"quenched_blade", Card.Diamond, 1}, {"poisonous_dagger", Card.Spade, 1},
+{"water_sword", Card.Club, 1}, {"thunder_blade", Card.Spade, 1} }
 local zhuren = fk.CreateActiveSkill{
   name = "zhuren",
   anim_type = "special",
@@ -4268,6 +4270,7 @@ local zhuren = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     room:throwCard(effect.cards, self.name, player, player)
     local card = Fk:getCardById(effect.cards[1])
+    local get
     local name = "slash"
     if card.name == "lightning" then
       name = "thunder_blade"
@@ -4280,18 +4283,18 @@ local zhuren = fk.CreateActiveSkill{
     elseif card.suit == Card.Club then
       name = "water_sword"
     end
-    if name ~= "slash" then
-      for _, id in ipairs(Fk:getAllCardIds()) do
-        if Fk:getCardById(id).name == name and Fk:currentRoom():getCardArea(id) ~= Card.Void then
-          name = "slash"
-          break
-        end
-      end
-    end
-    if name ~= "slash" and name ~= "lightning" then
+    if name ~= "slash" and name ~= "thunder_blade" then
       if (0 < card.number and card.number < 5 and math.random() > 0.85) or
         (4 < card.number and card.number < 9 and math.random() > 0.9) or
         (8 < card.number and card.number < 13 and math.random() > 0.95) then
+        name = "slash"
+      end
+    end
+    if name ~= "slash" then
+      get = table.find(U.prepareDeriveCards(room, zhuren_weapons, "zhuren_derivecards"), function (id)
+        return room:getCardArea(id) == Card.Void and Fk:getCardById(id).name == name
+      end)
+      if not get then
         name = "slash"
       end
     end
@@ -4308,27 +4311,22 @@ local zhuren = fk.CreateActiveSkill{
           ids = ids,
           to = player.id,
           toArea = Card.PlayerHand,
-          moveReason = fk.ReasonJustMove,
+          moveReason = fk.ReasonPrey,
           proposer = player.id,
           skillName = self.name,
         })
       end
-    else
-      for _, id in ipairs(Fk:getAllCardIds()) do
-        if Fk:getCardById(id).name == name then
-          room:setCardMark(Fk:getCardById(id), MarkEnum.DestructIntoDiscard, 1)
-          room:moveCards({
-            ids = {id},
-            fromArea = Card.Void,
-            to = player.id,
-            toArea = Card.PlayerHand,
-            moveReason = fk.ReasonJustMove,
-            proposer = player.id,
-            skillName = self.name,
-          })
-          break
-        end
-      end
+    elseif get then
+      room:setCardMark(Fk:getCardById(get), MarkEnum.DestructIntoDiscard, 1)
+      room:moveCards({
+        ids = {get},
+        fromArea = Card.Void,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonPrey,
+        proposer = player.id,
+        skillName = self.name,
+      })
     end
   end,
 }

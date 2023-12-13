@@ -2382,12 +2382,7 @@ local bihuo = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and data.from and data.from ~= data.to
   end,
   on_cost = function(self, event, target, player, data)
-    local prompt
-    if event == fk.Damage then
-      prompt = "#bihuo1-invoke"
-    else
-      prompt = "#bihuo2-invoke"
-    end
+    local prompt = (event == fk.Damaged) and "#bihuo-plus" or "#bihuo-minus"
     local to = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper), 1, 1, prompt, self.name, true)
     if #to > 0 then
       self.cost_data = to[1]
@@ -2398,7 +2393,7 @@ local bihuo = fk.CreateTriggerSkill{
     local room = player.room
     player:broadcastSkillInvoke(self.name)
     local to = room:getPlayerById(self.cost_data)
-    if event == fk.Damage then
+    if event == fk.Damaged then
       room:notifySkillInvoked(player, self.name, "support")
       room:setPlayerMark(to, "@bihuo", to:getMark("@bihuo") + 1)
     else
@@ -2443,8 +2438,8 @@ Fk:loadTranslationTable{
   ["bihuo"] = "避祸",
   [":bihuo"] = "当你受到其他角色造成的伤害后，你可令一名角色下回合摸牌阶段摸牌数+1；当你对其他角色造成伤害后，你可令一名角色下回合摸牌阶段摸牌数-1。",
   ["#diting-invoke"] = "谛听：你可以观看 %dest 的手牌并秘密选择一张产生效果",
-  ["#bihuo1-invoke"] = "避祸：你可以令一名角色下回合摸牌阶段摸牌数+1",
-  ["#bihuo2-invoke"] = "避祸：你可以令一名角色下回合摸牌阶段摸牌数-1",
+  ["#bihuo-plus"] = "避祸：你可以令一名角色下回合摸牌阶段摸牌数+1",
+  ["#bihuo-minus"] = "避祸：你可以令一名角色下回合摸牌阶段摸牌数-1",
   ["@bihuo"] = "避祸",
   ["@bihuo-turn"] = "避祸",
 

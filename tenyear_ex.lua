@@ -3901,6 +3901,113 @@ Fk:loadTranslationTable{
   ["~ty_ex__zhangsong"] = "恨未见使君，入主益州……",
 }
 
+local zhuhuan = General(extension, "ty_ex__zhuhuan", "wu", 4)
+local ty_ex__fenli = fk.CreateTriggerSkill{
+  name = "ty_ex__fenli",
+  events = {fk.EventPhaseChanging},
+  can_trigger = function(self, event, target, player, data)
+    if target ~= player or not player:hasSkill(self) then return false end
+    if data.to == Player.Draw or data.to == Player.Judge then
+      return table.every(player.room:getOtherPlayers(player), function (p)
+        return p:getHandcardNum() <= player:getHandcardNum() end)
+    elseif data.to == Player.Play then
+      return table.every(player.room:getOtherPlayers(player), function (p) return p.hp <= player.hp end)
+    elseif data.to == Player.Discard and #player.player_cards[Player.Equip] > 0 then
+      return table.every(player.room:getOtherPlayers(player), function (p)
+        return #p.player_cards[Player.Equip] <= #player.player_cards[Player.Equip] end)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local phase = "phase_discard"
+    if data.to == Player.Draw or data.to == Player.Judge then
+      phase = "phase_judge_and_draw"
+    elseif data.to == Player.Play then
+      phase = "phase_play"
+    end
+    return player.room:askForSkillInvoke(player, self.name, data, "#ty_ex__fenli-invoke:::"..phase)
+  end,
+  on_use = function(self, event, target, player, data)
+    player:skip(data.to)
+    if data.to == Player.Draw then
+      player:skip(Player.Judge)
+    elseif data.to == Player.Judge then
+      player:skip(Player.Draw)
+    end
+    return true
+  end,
+}
+zhuhuan:addSkill(ty_ex__fenli)
+local sixPhases = {Player.Start, Player.Judge, Player.Draw, Player.Play, Player.Discard, Player.Finish}
+local ty_ex__pingkou = fk.CreateTriggerSkill{
+  name = "ty_ex__pingkou",
+  anim_type = "offensive",
+  events = {fk.EventPhaseChanging},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and data.to == Player.NotActive and player:hasSkill(self)
+    and table.find(sixPhases, function(phase) return player.skipped_phases[phase] end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local n = 0
+    for _, phase in ipairs(sixPhases) do
+      if player.skipped_phases[phase] then
+        n = n + 1
+      end
+    end
+    if n == 0 then return false end
+    local targets = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, n, "#ty_ex__pingkou-choose:::"..n, self.name, true)
+    if #targets > 0 then
+      self.cost_data = {targets, n}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local tos = self.cost_data[1]
+    room:sortPlayersByAction(tos)
+    local n = self.cost_data[2]
+    for _, pid in ipairs(tos) do
+      local p = room:getPlayerById(pid)
+      if not p.dead then
+        room:damage{
+          from = player,
+          to = p,
+          damage = 1,
+          skillName = self.name,
+        }
+      end
+    end
+    if #tos < n and not player.dead then
+      local targets = table.filter(tos, function(pid)
+        return #room:getPlayerById(pid):getCardIds("e") > 0
+      end)
+      if #targets > 0 then
+        local to = room:getPlayerById(room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__pingkou-throw", self.name, false)[1])
+        local card = table.random(to:getCardIds("e"), 1)
+        room:throwCard(card, self.name, to, to)
+      end
+    end
+  end,
+}
+zhuhuan:addSkill(ty_ex__pingkou)
+Fk:loadTranslationTable{
+  ["ty_ex__zhuhuan"] = "界朱桓",
+  ["ty_ex__fenli"] = "奋励",
+  [":ty_ex__fenli"] = "若你的手牌数为全场最多，你可以跳过判定和摸牌阶段；若你的体力值为全场最多，你可以跳过出牌阶段；若你的装备区里有牌且数量为全场最多，你可以跳过弃牌阶段。",
+  ["ty_ex__pingkou"] = "平寇",
+  [":ty_ex__pingkou"] = "回合结束时，你可以对至多X名其他角色各造成1点伤害（X为你本回合跳过的阶段数），然后若你选择的角色数小于X，你再选择其中一名角色，令其随机弃置装备区里的一张牌。",
+  ["#ty_ex__fenli-invoke"] = "平寇：你可以跳过 %arg",
+  ["#ty_ex__pingkou-choose"] = "平寇：你可以对至多%arg名角色各造成1点伤害",
+  ["#ty_ex__pingkou-throw"] = "平寇：令一名角色随机弃置装备区里的一张牌",
+  ["phase_judge_and_draw"] = "判定和摸牌阶段",
+  
+  ["$ty_ex__fenli1"] = "兵威已振，怎能踟蹰不前？",
+  ["$ty_ex__fenli2"] = "敌势汹汹，自当奋勇以对。",
+  ["$ty_ex__pingkou1"] = "群寇蜂起，以军平之。",
+  ["$ty_ex__pingkou2"] = "所到之处，寇患皆平。",
+  ["~ty_ex__zhuhuan"] = "憾老死病榻，恨未马革裹尸。",
+}
+
 local ty_ex__guyong = General(extension, "ty_ex__guyong", "wu", 3)
 local ty_ex__shenxing = fk.CreateActiveSkill{
   name = "ty_ex__shenxing",
@@ -4570,6 +4677,77 @@ Fk:loadTranslationTable{
   ["$ty_ex__qingxi1"] = "虎豹骑倾巢而动，安有不胜之理？",
   ["$ty_ex__qingxi2"] = "任尔等固若金汤，虎豹骑可破之！",
   ["~ty_ex__caoxiu"] = "奈何痈发背薨！",
+}
+
+local ty_ex__zhongyao = General(extension, "ty_ex__zhongyao", "wei", 3)
+local ty_ex__huomo = fk.CreateViewAsSkill{
+  name = "ty_ex__huomo",
+  pattern = ".|.|.|.|.|basic",
+  prompt = function ()
+    return "#ty_ex__huomo-card"
+  end,
+  interaction = function()
+    local names = {}
+    local mark = U.getMark(Self, "ty_ex__huomo-turn")
+    for _, id in ipairs(Fk:getAllCardIds()) do
+      local card = Fk:getCardById(id)
+      if card.type == Card.TypeBasic and not table.contains(mark, card.trueName) then
+        table.insertIfNeed(names, card.name)
+      end
+    end
+    if #names == 0 then return false end
+    return UI.ComboBox {choices = names}
+  end,
+  card_filter = function (self, to_select, selected)
+    local card = Fk:getCardById(to_select)
+    return #selected == 0 and card.type ~= Card.TypeBasic and card.color == Card.Black
+  end,
+  before_use = function (self, player, use)
+    local room = player.room
+    local mark = U.getMark(player, "ty_ex__huomo-turn")
+    table.insert(mark, use.card.trueName)
+    room:setPlayerMark(player, "ty_ex__huomo-turn", mark)
+    local card = use.card.subcards
+    room:moveCards({
+      ids = card,
+      from = player.id,
+      toArea = Card.DrawPile,
+      moveReason = fk.ReasonPut,
+      skillName = self.name,
+      proposer = player.id,
+    })
+    use.card:clearSubcards()
+  end,
+  view_as = function(self, cards)
+    if not self.interaction.data or #cards ~= 1 then return end
+    local card = Fk:cloneCard(self.interaction.data)
+    card.skillName = self.name
+    card:addSubcard(cards[1])
+    card.number = 0
+    card.color = Card.NoColor
+    card.suit = Card.NoSuit
+    return card
+  end,
+  enabled_at_play = function(self, player)
+    return not player:isNude()
+  end,
+  enabled_at_response = function(self, player, response)
+    return not response and not player:isNude()
+  end,
+}
+ty_ex__zhongyao:addSkill(ty_ex__huomo)
+ty_ex__zhongyao:addSkill("zuoding")
+Fk:loadTranslationTable{
+  ["ty_ex__zhongyao"] = "界钟繇",
+  ["ty_ex__huomo"] = "活墨",
+  [":ty_ex__huomo"] = "当你需要使用基本牌时（每种牌名每回合限一次），你可以将一张黑色非基本牌置于牌堆顶，视为使用此基本牌。",
+  ["#ty_ex__huomo-card"] = "活墨：将一张黑色非基本牌置于牌堆顶",
+
+  ["$ty_ex__huomo1"] = "笔墨抒胸臆，妙手成汗青。",
+  ["$ty_ex__huomo2"] = "胸蕴大家之行，则下笔如有神助。",
+  ["$zuoding_ty_ex__zhongyao1"] = "腹有大才，可助阁下成事。",
+  ["$zuoding_ty_ex__zhongyao2"] = "胸有良策，可济将军之危。",
+  ["~ty_ex__zhongyao"] = "人有寿终日，笔有墨尽时。",
 }
 
 local quancong = General(extension, "ty_ex__quancong", "wu", 4)

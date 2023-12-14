@@ -1191,12 +1191,16 @@ local zhenxing = fk.CreateTriggerSkill{
       end)
     end)
     local card, choice = U.askforChooseCardsAndChoice(player, can_get,  {"OK"}, self.name, "#zhenxing-get", {"Cancel"}, 0, 1, cards)
-    if #card > 0 then
-      room:obtainCard(player.id, card[1], false, fk.ReasonJustMove)
-      table.removeOne(cards, card[1])
+    local get = card[1]
+    if get then
+      table.removeOne(cards, get)
     end
     for i = #cards, 1, -1 do
       table.insert(room.draw_pile, 1, cards[i])
+    end
+    room:doBroadcastNotify("UpdateDrawPile", #room.draw_pile)
+    if get then
+      room:obtainCard(player.id, card[1], false, fk.ReasonJustMove)
     end
   end,
 }

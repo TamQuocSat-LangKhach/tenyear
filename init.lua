@@ -7,6 +7,7 @@ local tenyear_liezhuan = require "packages/tenyear/tenyear_liezhuan"
 local tenyear_huicui1 = require "packages/tenyear/tenyear_huicui1"
 local tenyear_huicui2 = require "packages/tenyear/tenyear_huicui2"
 local tenyear_star = require "packages/tenyear/tenyear_star"
+local tenyear_mou = require "packages/tenyear/tenyear_mou"
 local tenyear_yj22 = require "packages/tenyear/tenyear_yj22"
 local tenyear_yj23 = require "packages/tenyear/tenyear_yj23"
 local tenyear_other = require "packages/tenyear/tenyear_other"
@@ -25,6 +26,7 @@ return {
   tenyear_huicui1,
   tenyear_huicui2,
   tenyear_star,
+  tenyear_mou,
   tenyear_yj22,
   tenyear_yj23,
   tenyear_other,

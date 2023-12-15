@@ -4691,8 +4691,11 @@ local ty_ex__huomo = fk.CreateViewAsSkill{
     local mark = U.getMark(Self, "ty_ex__huomo-turn")
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
-      if card.type == Card.TypeBasic and not table.contains(mark, card.trueName) then
-        table.insertIfNeed(names, card.name)
+      if ((Fk.currentResponsePattern == nil and Self:canUse(card)) or
+      (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
+        if card.type == Card.TypeBasic and not table.contains(mark, card.trueName) then
+          table.insertIfNeed(names, card.name)
+        end
       end
     end
     if #names == 0 then return false end
@@ -4707,25 +4710,23 @@ local ty_ex__huomo = fk.CreateViewAsSkill{
     local mark = U.getMark(player, "ty_ex__huomo-turn")
     table.insert(mark, use.card.trueName)
     room:setPlayerMark(player, "ty_ex__huomo-turn", mark)
-    local card = use.card.subcards
-    room:moveCards({
-      ids = card,
-      from = player.id,
-      toArea = Card.DrawPile,
-      moveReason = fk.ReasonPut,
-      skillName = self.name,
-      proposer = player.id,
-    })
-    use.card:clearSubcards()
+    local put = use.card:getMark(self.name)
+    if put ~= 0 and table.contains(player:getCardIds("he"), put) then
+      room:moveCards({
+        ids = {put},
+        from = player.id,
+        toArea = Card.DrawPile,
+        moveReason = fk.ReasonPut,
+        skillName = self.name,
+        proposer = player.id,
+      })
+    end
   end,
   view_as = function(self, cards)
     if not self.interaction.data or #cards ~= 1 then return end
     local card = Fk:cloneCard(self.interaction.data)
+    card:setMark(self.name, cards[1])
     card.skillName = self.name
-    card:addSubcard(cards[1])
-    card.number = 0
-    card.color = Card.NoColor
-    card.suit = Card.NoSuit
     return card
   end,
   enabled_at_play = function(self, player)

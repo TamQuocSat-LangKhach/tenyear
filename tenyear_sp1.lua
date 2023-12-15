@@ -3981,7 +3981,7 @@ local chenghao = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and data.damageType ~= fk.NormalDamage and data.beginnerOfTheDamage
+    return player:hasSkill(self) and data.damageType ~= fk.NormalDamage and data.beginnerOfTheDamage and not data.chain
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -3992,21 +3992,19 @@ local chenghao = fk.CreateTriggerSkill{
       end
     end
     local cards = room:getNCards(n)
-    local fakemove = {
-    toArea = Card.PlayerHand,
-    to = player.id,
-    moveInfo = table.map(cards, function(id) return {cardId = id, fromArea = Card.DrawPile} end),
-    moveReason = fk.ReasonJustMove,
-    }
-    room:notifyMoveCards({player}, {fakemove})
-    local move = U.askForDistribution(player, cards, room.alive_players, self.name, #cards, #cards, nil, nil, true)
-    fakemove = {
-      from = player.id,
-      toArea = Card.Void,
-      moveInfo = table.map(cards, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
-      moveReason = fk.ReasonJustMove,
-    }
-    room:notifyMoveCards({player}, {fakemove})
+    player.special_cards["chenghao"] = table.simpleClone(cards)
+    player:doNotify("ChangeSelf", json.encode {
+      id = player.id,
+      handcards = player:getCardIds("h"),
+      special_cards = player.special_cards,
+    })
+    local move = U.askForDistribution(player, cards, room.alive_players, self.name, #cards, #cards, nil, "chenghao", true)
+    player.special_cards["chenghao"] = {}
+    player:doNotify("ChangeSelf", json.encode {
+      id = player.id,
+      handcards = player:getCardIds("h"),
+      special_cards = player.special_cards,
+    })
     if move then
       U.doDistribution(room, move, player.id, self.name)
     end

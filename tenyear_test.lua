@@ -516,13 +516,6 @@ Fk:loadTranslationTable{
   ["zhugemengxue"] = "诸葛梦雪",
 }
 
-local tycl__sunce = General(extension, "tycl__sunce", "wu", 4)
-tycl__sunce:addSkill("tmp_illustrate")
-tycl__sunce.hidden = true
-Fk:loadTranslationTable{
-  ["tycl__sunce"] = "孙策",
-}
-
 local mu__daqiao = General(extension, "mu__daqiao", "wu", 3, 3, General.Female)
 mu__daqiao:addSkill("tmp_illustrate")
 mu__daqiao.hidden = true

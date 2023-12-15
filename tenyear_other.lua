@@ -910,4 +910,125 @@ Fk:loadTranslationTable{
   ["~nezha"] = "莲藕花开，始知三清……",
 }
 
+local tycl__sunce = General(extension, "tycl__sunce", "wu", 4)
+local shuangbi = fk.CreateActiveSkill{
+  name = "shuangbi",
+  anim_type = "offensive",
+  min_card_num = 0,
+  target_num = 0,
+  prompt = function (self)
+    local n = math.min(#Fk:currentRoom().alive_players, Self.maxHp)
+    if self.interaction.data == "ex__zhouyu" then
+      return "#shuangbi1:::"..n
+    elseif self.interaction.data == "godzhouyu" then
+      return "#shuangbi2:::"..n
+    elseif self.interaction.data == "tymou__zhouyu" then
+      return "#shuangbi3:::"..n
+    end
+  end,
+  interaction = function()
+    return UI.ComboBox {choices = {"ex__zhouyu", "godzhouyu", "tymou__zhouyu"}}
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function (self, to_select, selected, selected_targets)
+    if self.interaction.data == "godzhouyu" then
+      return #selected < math.min(#Fk:currentRoom().alive_players, Self.maxHp) and
+        not Self:prohibitDiscard(Fk:getCardById(to_select))
+    else
+      return false
+    end
+  end,
+  feasible = function (self, selected, selected_cards)
+    if self.interaction.data == "godzhouyu" then
+      return #selected_cards > 0 and #selected_cards <= math.min(#Fk:currentRoom().alive_players, Self.maxHp)
+    else
+      return #selected_cards == 0
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local orig_info = {"deputy", player.deputyGeneral}
+    if player.deputyGeneral ~= nil and player.deputyGeneral == "tycl__sunce" then
+      orig_info = {"general", player.general}
+      player.general = self.interaction.data
+      room:broadcastProperty(player, "general")
+    else
+      player.deputyGeneral = self.interaction.data
+      room:broadcastProperty(player, "deputyGeneral")
+    end
+    local n = math.min(#room.alive_players, player.maxHp)
+    if self.interaction.data == "ex__zhouyu" then
+      room:delay(2000)
+      player:drawCards(n, self.name)
+      room:addPlayerMark(player, MarkEnum.AddMaxCardsInTurn, n)
+    elseif self.interaction.data == "godzhouyu" then
+      n = #effect.cards
+      room:throwCard(effect.cards, self.name, player, player)
+      room:delay(2000)
+      for i = 1, n, 1 do
+        local to = table.random(room.alive_players)
+        room:doIndicate(player.id, {to.id})
+        room:damage{
+          from = player,
+          to = to,
+          damage = 1,
+          damageType = fk.FireDamage,
+          skillName = self.name,
+        }
+      end
+    elseif self.interaction.data == "tymou__zhouyu" then
+      for i = 1, n, 1 do
+        if player.dead then return end
+        local command = "AskForUseActiveSkill"
+        room:notifyMoveFocus(player, "shuangbi_viewas")
+        local data = {"shuangbi_viewas", "#shuangbi-use:::"..i..":"..n, true, {}}
+        room:setPlayerMark(player, MarkEnum.BypassTimesLimit.."-tmp", 1)
+        local result = room:doRequest(player, command, json.encode(data))
+        room:setPlayerMark(player, MarkEnum.BypassTimesLimit.."-tmp", 0)
+        if result ~= "" then
+          data = json.decode(result)
+          room:useVirtualCard(data.interaction_data, nil, player,
+            table.map(data.targets, function(id) return room:getPlayerById(id) end), self.name, true)
+        end
+      end
+    end
+    if player.dead then return end
+    if orig_info[1] == "deputy" then
+      player.deputyGeneral = orig_info[2]
+      room:broadcastProperty(player, "deputyGeneral")
+    else
+      player.general = orig_info[2]
+      room:broadcastProperty(player, "general")
+    end
+  end,
+}
+local shuangbi_viewas = fk.CreateViewAsSkill{
+  name = "shuangbi_viewas",
+  interaction = function()
+    return UI.ComboBox {choices = {"fire__slash", "fire_attack"}}
+  end,
+  card_filter = Util.FalseFunc,
+  view_as = function(self, cards)
+    if not self.interaction.data then return end
+    local card = Fk:cloneCard(self.interaction.data)
+    card.skillName = "shuangbi"
+    return card
+  end,
+}
+Fk:addSkill(shuangbi_viewas)
+tycl__sunce:addSkill(shuangbi)
+Fk:loadTranslationTable{
+  ["tycl__sunce"] = "孙策",
+  ["shuangbi"] = "双璧",
+  [":shuangbi"] = "出牌阶段限一次，你可以选择一名<font color='red'>周瑜助战</font>：<br>界周瑜：摸X张牌，本回合手牌上限+X；<br>神周瑜：弃置至多X张牌，"..
+  "随机造成等量的火焰伤害；<br>谋周瑜：视为使用X张火【杀】或【火攻】。<br>（X为存活角色数，至多为你的体力上限）",
+  ["#shuangbi1"] = "双璧：摸%arg张牌且本回合手牌上限增加",
+  ["#shuangbi2"] = "双璧：弃置至多%arg张牌，随机造成等量火焰伤害",
+  ["#shuangbi3"] = "双璧：视为使用%arg张火【杀】或【火攻】",
+  ["#shuangbi-use"] = "双璧：你可以视为使用火【杀】或【火攻】（第%arg张，共%arg2张）！",
+  ["shuangbi_viewas"] = "双璧",
+}
+
 return extension

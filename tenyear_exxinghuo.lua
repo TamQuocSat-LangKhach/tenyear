@@ -436,7 +436,7 @@ ty_ex__jiaozhao:addRelatedSkill(ty_ex__jiaozhao_change)
 guohuanghou:addSkill(ty_ex__danxin)
 guohuanghou:addSkill(ty_ex__jiaozhao)
 Fk:loadTranslationTable{
-  ["ty_ex__guohuanghou"] = "郭皇后",
+  ["ty_ex__guohuanghou"] = "界郭皇后",
   ["ty_ex__jiaozhao"] = "矫诏",
   [":ty_ex__jiaozhao"] = "出牌阶段限一次，你可以展示一张手牌并选择一名距离最近的其他角色，该角色声明一种或普通锦囊牌的牌名，"..
   "本回合你可以将此牌当声明的牌使用（不能指定自己为目标）。",
@@ -846,7 +846,7 @@ local ty_ex__yicong_audio = fk.CreateTriggerSkill{
 ty_ex__yicong:addRelatedSkill(ty_ex__yicong_audio)
 gongsunzan:addSkill(ty_ex__yicong)
 Fk:loadTranslationTable{
-  ["ty_ex__gongsunzan"] = "公孙瓒",
+  ["ty_ex__gongsunzan"] = "界公孙瓒",
   ["ty_ex__qiaomeng"] = "趫猛",
   [":ty_ex__qiaomeng"] = "当你使用黑色牌指定目标后，你可以弃置其中一名其他目标角色的一张牌，若此牌为：锦囊牌，此黑色牌不能被响应；装备牌，你改为获得之。",
   ["#ty_ex__qiaomeng-choose"] = "趫猛：弃置一名其他目标角色的一张牌",
@@ -1027,7 +1027,7 @@ local ty_ex__quji = fk.CreateActiveSkill{
 }
 ty_ex__simalang:addSkill(ty_ex__quji)
 Fk:loadTranslationTable{
-  ["ty_ex__simalang"] = "司马朗",
+  ["ty_ex__simalang"] = "界司马朗",
   ["ty_ex__junbing"] = "郡兵",
   [":ty_ex__junbing"] = "一名角色的结束阶段，若其手牌数小于体力值，该角色可以摸一张牌并将所有手牌交给你，然后你可以将等量的牌交给该角色。",
   ["ty_ex__quji"] = "去疾",

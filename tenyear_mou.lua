@@ -55,7 +55,7 @@ local yingmou = fk.CreateTriggerSkill{
     local to = room:getPlayerById(self.cost_data)
     if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
       if player:getHandcardNum() < to:getHandcardNum() then
-        player:drawCards(to:getHandcardNum() - player:getHandcardNum(), self.name)
+        player:drawCards(math.min(to:getHandcardNum() - player:getHandcardNum(), 5), self.name)
       end
       if not player.dead and not to.dead and not to:isKongcheng() then
         room:useVirtualCard("fire_attack", nil, player, to, self.name)
@@ -75,24 +75,25 @@ local yingmou = fk.CreateTriggerSkill{
       end
       src = room:getPlayerById(src)
       local cards = table.filter(src:getCardIds("h"), function(id) return Fk:getCardById(id).is_damage_card end)
-      cards = table.reverse(cards)
-      for i = #cards, 1, -1 do
-        if src.dead or to.dead or to:isKongcheng() then
-          break
-        end
-        if table.contains(src:getCardIds("h"), cards[i]) then
-          local card = Fk:getCardById(cards[i])
-          if not src:isProhibited(to, card) then
-            room:useCard({
-              from = src.id,
-              tos = {{to.id}},
-              card = card,
-              extraUse = true,
-            })
+      if #cards > 0 then
+        cards = table.reverse(cards)
+        for i = #cards, 1, -1 do
+          if src.dead or to.dead or to:isKongcheng() then
+            break
+          end
+          if table.contains(src:getCardIds("h"), cards[i]) then
+            local card = Fk:getCardById(cards[i])
+            if not src:isProhibited(to, card) then
+              room:useCard({
+                from = src.id,
+                tos = {{to.id}},
+                card = card,
+                extraUse = true,
+              })
+            end
           end
         end
-      end
-      if not src.dead then
+      else
         local n = src:getHandcardNum() - player:getHandcardNum()
         if n > 0 then
           room:askForDiscard(src, n, n, false, self.name, false)
@@ -108,11 +109,11 @@ Fk:loadTranslationTable{
   ["ronghuo"] = "熔火",
   [":ronghuo"] = "锁定技，你的【火攻】和火【杀】伤害基数值改为场上势力数。",
   ["yingmou"] = "英谋",
-  [":yingmou"] = "转换技，每回合限一次，当你对其他角色使用牌结算后，你可以选择其中一名其他目标角色，阳：你将手牌摸至与其相同，然后视为对其使用"..
-  "一张【火攻】；阴：令一名手牌最多的角色对其使用手牌中所有【杀】和伤害类锦囊，然后该角色（指选择的手牌最多的角色）将手牌弃至与你相同。",
+  [":yingmou"] = "转换技，每回合限一次，当你对其他角色使用牌结算后，你可以选择其中一个目标角色，阳：你将手牌摸至与其相同（至多摸五张），然后视为对其使用"..
+  "一张【火攻】；阴：令一名手牌最多的角色对其使用手牌中所有【杀】和伤害锦囊牌，若没有则将手牌弃至与你相同。",
   ["#yingmou_yang-invoke"] = "英谋：选择一名角色，你将手牌补至与其相同，然后视为对其使用【火攻】",
-  ["#yingmou_yin-invoke"] = "英谋：选择一名角色，然后令手牌最多的角色对其使用手牌中所有【杀】和伤害类锦囊",
-  ["#yingmou-choose"] = "英谋：选择手牌数最多的一名角色，其对 %dest 使用手牌中所有【杀】和伤害类锦囊",
+  ["#yingmou_yin-invoke"] = "英谋：选择一名角色，然后令手牌最多的角色对其使用手牌中所有【杀】和伤害锦囊牌",
+  ["#yingmou-choose"] = "英谋：选择手牌数最多的一名角色，其对 %dest 使用手牌中所有【杀】和伤害锦囊牌",
 }
 
 local tymou__lusu = General(extension, "tymou__lusu", "wu", 3)

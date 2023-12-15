@@ -3673,50 +3673,48 @@ local juying = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and player.phase == Player.Play then
       local card = Fk:cloneCard("slash")
-      local n = card.skill:getMaxUseTime(player, Player.HistoryPhase, card, nil)
-      return player:usedCardTimes("slash", Player.HistoryPhase) < n
+      local slash_skill = card.skill
+      local status_skills = Fk:currentRoom().status_skills[TargetModSkill] or Util.DummyTable
+      for _, skill in ipairs(status_skills) do
+        if skill:bypassTimesCheck(player, slash_skill, Player.HistoryPhase, card, nil) then return true end
+      end
+      return player:usedCardTimes("slash", Player.HistoryPhase) < slash_skill:getMaxUseTime(player, Player.HistoryPhase, card, nil)
     end
   end,
-  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local n = 0
-    local choices = {"Cancel", "juying1", "juying2", "juying3"}
-    for i = 1, 3, 1 do
-      local choice = room:askForChoice(player, choices, self.name, "#juying-choice")
-      if choice == "Cancel" then break end
-      if choice == "juying1" then
-        room:addPlayerMark(player, self.name, 1)
-      elseif choice == "juying2" then
-        room:addPlayerMark(player, MarkEnum.AddMaxCardsInTurn, 2)
-      else
-        player:drawCards(3, self.name)
-      end
-      table.removeOne(choices, choice)
-      n = n + 1
+
+    local all_choices = {"juying1", "juying2", "juying3"}
+    local choices = room:askForChoices(player, all_choices, 1, 3, self.name, "#juying-choice", true)
+
+    if #choices == 0 then return false end
+
+    if table.contains(choices, "juying1") then
+      room:addPlayerMark(player, self.name)
     end
-    if n > 0 and n > player.hp then
+    if table.contains(choices, "juying2") then
+      room:addPlayerMark(player, MarkEnum.AddMaxCardsInTurn, 2)
+    end
+    if table.contains(choices, "juying3") then
+      player:drawCards(3, self.name)
+    end
+
+    if not player.dead and #choices > player.hp then
       room:askForDiscard(player, 1, 1, true, self.name, false)
     end
   end,
 
-  refresh_events = {fk.AfterPhaseEnd},
+  refresh_events = {fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player.phase == Player.Play and player:getMark(self.name) > 0
+    return target == player and player:getMark(self.name) > 0
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:setPlayerMark(player, self.name, 0)
+    local room = player.room
+    room:addPlayerMark(player, MarkEnum.SlashResidue .. "-turn", player:getMark(self.name))
+    room:setPlayerMark(player, self.name, 0)
   end,
 }
-local juying_targetmod = fk.CreateTargetModSkill{
-  name = "#juying_targetmod",
-  residue_func = function(self, player, skill, scope)
-    if skill.trueName == "slash_skill" and player:getMark("juying") > 0 and scope == Player.HistoryPhase then
-      return player:getMark("juying")
-    end
-  end,
-}
-juying:addRelatedSkill(juying_targetmod)
+
 liupi:addSkill(juying)
 Fk:loadTranslationTable{
   ["liupi"] = "刘辟",

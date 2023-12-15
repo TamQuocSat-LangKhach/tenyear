@@ -1459,10 +1459,12 @@ local jieshu = fk.CreateTriggerSkill{
 local jieshu_max = fk.CreateMaxCardsSkill{
   name = "#jieshu_maxcard",
   exclude_from = function(self, player, card)
-    local mark = player:getMark("@[geyuan]")
-    local all = Util.DummyTable
-    if type(mark) == "table" and mark.all then all = mark.all end
-    return not table.contains(all, card.number)
+    if player:hasSkill("jieshu") then
+      local mark = player:getMark("@[geyuan]")
+      local all = Util.DummyTable
+      if type(mark) == "table" and mark.all then all = mark.all end
+      return not table.contains(all, card.number)
+    end
   end,
 }
 jieshu:addRelatedSkill(jieshu_max)

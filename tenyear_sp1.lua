@@ -1435,6 +1435,181 @@ Fk:loadTranslationTable{
   ["~sunlingluan"] = "良人当归，苦酒何妨……",
 }
 
+local caoyi = General(extension, "caoyi", "wei", 4, 4, General.Female)
+local miyi = fk.CreateTriggerSkill{
+  name = "miyi",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player.phase == Player.Start and player:hasSkill(self)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local command = "AskForUseActiveSkill"
+    player.room:notifyMoveFocus(player, "miyi_active")
+    local dat = {"miyi_active", "#miyi-invoke", true, {}}
+    local result = player.room:doRequest(player, command, json.encode(dat))
+    if result ~= "" then
+      self.cost_data = json.decode(result)
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local targets = self.cost_data.targets
+    room:sortPlayersByAction(targets)
+    room:doIndicate(player.id, targets)
+    local choice = self.cost_data.interaction_data
+    for _, id in ipairs(targets) do
+      local p = room:getPlayerById(id)
+      if not p.dead then
+        room:setPlayerMark(p, choice.."-turn", 1)
+        if choice == "miyi1" and p:isWounded() then
+          room:recover({
+            who = p,
+            num = 1,
+            recoverBy = player,
+            skillName = self.name
+          })
+        elseif choice == "miyi2" then
+          room:damage{
+            from = player,
+            to = p,
+            damage = 1,
+            skillName = self.name,
+          }
+        end
+      end
+    end
+  end,
+}
+local miyi_delay = fk.CreateTriggerSkill{
+  name = "#miyi_delay",
+  mute = true,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and not player.dead and player.phase == Player.Finish
+    and player:usedSkillTimes("miyi", Player.HistoryTurn) > 0
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, p in ipairs(room.alive_players) do
+      if not p.dead then
+        if p:getMark("miyi2-turn") > 0 and p:isWounded() then
+          room:recover({
+            who = p,
+            num = 1,
+            recoverBy = player,
+            skillName = "miyi",
+          })
+        elseif p:getMark("miyi1-turn") > 0 then
+          room:damage{
+            from = player,
+            to = p,
+            damage = 1,
+            skillName = "miyi",
+          }
+        end
+      end
+    end
+  end,
+}
+local miyi_active = fk.CreateActiveSkill{
+  name = "miyi_active",
+  card_num = 0,
+  min_target_num = 1,
+  interaction = function()
+    return UI.ComboBox {choices = {"miyi1", "miyi2"}}
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = Util.TrueFunc,
+}
+local yinjun = fk.CreateTriggerSkill{
+  name = "yinjun",
+  anim_type = "offensive",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) and data.tos and
+      (data.card.trueName == "slash" or data.card.type == Card.TypeTrick) and
+      #TargetGroup:getRealTargets(data.tos) == 1 and TargetGroup:getRealTargets(data.tos)[1] ~= player.id and
+      player:usedSkillTimes(self.name, Player.HistoryTurn) <= player.hp then
+      local cards = data.card:isVirtual() and data.card.subcards or {data.card.id}
+      if #cards == 0 then return end
+      local yes = false
+      local use = player.room.logic:getCurrentEvent()
+      use:searchEvents(GameEvent.MoveCards, 1, function(e)
+        if e.parent and e.parent.id == use.id then
+          local subcheck = table.simpleClone(cards)
+          for _, move in ipairs(e.data) do
+            if move.from == player.id and move.moveReason == fk.ReasonUse then
+              for _, info in ipairs(move.moveInfo) do
+                if table.removeOne(subcheck, info.cardId) and info.fromArea == Card.PlayerHand then
+                  --continue
+                else
+                  break
+                end
+              end
+            end
+          end
+          if #subcheck == 0 then
+            yes = true
+          end
+        end
+      end)
+      if yes then
+        local to = player.room:getPlayerById(TargetGroup:getRealTargets(data.tos)[1])
+        local card = Fk:cloneCard("slash")
+        card.skillName = self.name
+        return not to.dead and not player:prohibitUse(card) and not player:isProhibited(to, card)
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#yinjun-invoke::"..TargetGroup:getRealTargets(data.tos)[1])
+  end,
+  on_use = function(self, event, target, player, data)
+    local use = {
+      from = player.id,
+      tos = {TargetGroup:getRealTargets(data.tos)},
+      card = Fk:cloneCard("slash"),
+      extraUse = true,
+    }
+    use.card.skillName = self.name
+    player.room:useCard(use)
+  end,
+
+  refresh_events = {fk.PreDamage},
+  can_refresh = function(self, event, target, player, data)
+    return data.card and table.contains(data.card.skillNames, self.name)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.from = nil
+  end,
+}
+Fk:addSkill(miyi_active)
+caoyi:addSkill(miyi)
+miyi:addRelatedSkill(miyi_delay)
+caoyi:addSkill(yinjun)
+Fk:loadTranslationTable{
+  ["caoyi"] = "曹轶",
+  ["miyi"] = "蜜饴",
+  [":miyi"] = "准备阶段，你可以选择一项令任意名角色执行：1.回复1点体力；2.你对其造成1点伤害。若如此做，结束阶段，这些角色执行另一项。",
+  ["yinjun"] = "寅君",
+  [":yinjun"] = "当你对其他角色从手牌使用指定唯一目标的【杀】或锦囊牌结算后，你可以视为对其使用一张【杀】（此【杀】伤害无来源）。若本回合发动次数"..
+  "大于你当前体力值，此技能本回合无效。",
+  ["miyi_active"] = "蜜饴",
+  ["#miyi-invoke"] = "蜜饴：你可以令任意名角色执行你选择的效果，本回合结束阶段执行另一项",
+  ["miyi1"] = "各回复1点体力",
+  ["miyi2"] = "各受到你的1点伤害",
+  ["#yinjun-invoke"] = "寅君：你可以视为对 %dest 使用【杀】",
+
+  ["$miyi1"] = "百战黄沙苦，舒颜红袖甜。",
+  ["$miyi2"] = "撷蜜凝饴糖，入喉润心颜。",
+  ["$yinjun1"] = "既乘虎豹之威，当弘大魏万年。",
+  ["$yinjun2"] = "今日青锋在手，可驯四方虎狼。",
+  ["~caoyi"] = "霜落寒鸦浦，天下无故人……",
+}
+
 --神·武：姜维 马超 张飞 张角 邓艾
 local godjiangwei = General(extension, "godjiangwei", "god", 4)
 local tianren = fk.CreateTriggerSkill {

@@ -743,7 +743,7 @@ local ty_ex__zhenwei = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local skill = Fk.skills["zhenwei"]
     skill.cost_data = self.cost_data
-    skill:use(event, target, player, data)
+    return skill:use(event, target, player, data)
   end,
 }
 local ty_ex__zhenwei_delay = fk.CreateTriggerSkill{

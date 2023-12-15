@@ -891,7 +891,7 @@ local ty__jieying_prohibit = fk.CreateProhibitSkill{
 }
 local ty__weipo = fk.CreateTriggerSkill{
   name = "ty__weipo",
-  events = {fk.TargetConfirming},
+  events = {fk.TargetConfirmed},
   frequency = Skill.Compulsory,
   anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)

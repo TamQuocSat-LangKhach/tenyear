@@ -3993,7 +3993,7 @@ local zhuili = fk.CreateTriggerSkill{
   name = "zhuili",
   anim_type = "spcial",
   frequency = Skill.Compulsory,
-  events = {fk.TargetConfirming},
+  events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.card.color == Card.Black and data.from ~= player.id and
       player:hasSkill("piaoping", true) and player:getMark("zhuili_invalid-turn") == 0
@@ -4019,7 +4019,7 @@ Fk:loadTranslationTable{
   [":tuoxian"] = "每局游戏限零次，当你因〖漂萍〗弃置的牌进入弃牌堆后，你可以改为将这些牌交给一名其他角色，然后其选择一项：1.其弃置其区域内等量的牌；"..
   "2.令〖漂萍〗本回合失效。",
   ["zhuili"] = "惴栗",
-  [":zhuili"] = "锁定技，当你成为其他角色使用黑色牌的目标时，若此时〖漂萍〗状态为：阳，令〖托献〗可使用次数+1，然后此技能本回合失效；"..
+  [":zhuili"] = "锁定技，当你成为其他角色使用黑色牌的目标后，若此时〖漂萍〗状态为：阳，令〖托献〗可使用次数+1，然后此技能本回合失效；"..
   "阴，令〖漂萍〗状态转换为阳。",
   ["#piaoping-discard"] = "漂萍：请弃置%arg张牌",
   ["#tuoxian-choose"] = "托献：你可以将这些牌交给一名其他角色，其选择弃置等量牌或令你的〖漂萍〗失效",

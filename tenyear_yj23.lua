@@ -113,6 +113,12 @@ Fk:loadTranslationTable{
   ["#tongwei"] = "统围：你可以重铸两张牌并指定一名其他角色",
   ["@tongwei"] = "统围",
   ["#tongwei-choice"] = "统围：选择视为对 %dest 使用的牌",
+
+  ["$tongwei1"] = "今统虎贲十万，必困金龙于斯。",
+  ["$tongwei2"] = "昔年将军七出长坂，今尚能饭否？",
+  ["$cuguo1"] = "本欲开疆拓土，奈何丧师辱国。",
+  ["$cuguo2"] = "千里锦绣之地，皆亡逆贼之手。",
+  ["~xiahoumao"] = "志大才疏，以致今日之祸……",
 }
 
 local sunli = General(extension, "sunli", "wei", 4)

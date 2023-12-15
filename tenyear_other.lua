@@ -1022,7 +1022,7 @@ tycl__sunce:addSkill(shuangbi)
 Fk:loadTranslationTable{
   ["tycl__sunce"] = "孙策",
   ["shuangbi"] = "双璧",
-  [":shuangbi"] = "出牌阶段限一次，你可以选择一名<font color='red'>周瑜助战</font>：<br>界周瑜：摸X张牌，本回合手牌上限+X；<br>神周瑜：弃置至多X张牌，"..
+  [":shuangbi"] = "出牌阶段限一次，你可以<font color='red'>选择一名周瑜助战</font>：<br>界周瑜：摸X张牌，本回合手牌上限+X；<br>神周瑜：弃置至多X张牌，"..
   "随机造成等量的火焰伤害；<br>谋周瑜：视为使用X张火【杀】或【火攻】。<br>（X为存活角色数，至多为你的体力上限）",
   ["#shuangbi1"] = "双璧：摸%arg张牌且本回合手牌上限增加",
   ["#shuangbi2"] = "双璧：弃置至多%arg张牌，随机造成等量火焰伤害",

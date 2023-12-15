@@ -757,7 +757,7 @@ local danying = fk.CreateViewAsSkill{
 }
 local danying_delay = fk.CreateTriggerSkill{
   name = "#danying_delay",
-  events = {fk.TargetConfirming},
+  events = {fk.TargetConfirmed},
   anim_type = "negative",
   can_trigger = function(self, event, target, player, data)
     return target == player and player:usedSkillTimes(danying.name) > 0 and player:usedSkillTimes(self.name) == 0
@@ -1686,10 +1686,10 @@ local xixiu = fk.CreateTriggerSkill{
   name = "xixiu",
   anim_type = "defensive",
   frequency = Skill.Compulsory,
-  events = {fk.TargetConfirming, fk.BeforeCardsMove},
+  events = {fk.TargetConfirmed, fk.BeforeCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
-      if event == fk.TargetConfirming then
+      if event == fk.TargetConfirmed then
         return target == player and data.from ~= player.id and
           table.find(player:getCardIds("e"), function(id) return Fk:getCardById(id).suit == data.card.suit end)
       else
@@ -1707,7 +1707,7 @@ local xixiu = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    if event == fk.TargetConfirming then
+    if event == fk.TargetConfirmed then
       player:drawCards(1, self.name)
     else
       for _, move in ipairs(data) do
@@ -1733,7 +1733,7 @@ Fk:loadTranslationTable{
   [":chenjian"] = "准备阶段，你可以亮出牌堆顶的三张牌并可以执行：1.弃置一张牌，令一名角色获得其中此牌花色的牌；2.使用其中一张牌。"..
   "若两项均执行，则本局游戏你发动〖陈见〗亮出牌数+1（最多五张），然后你重铸所有手牌。",
   ["xixiu"] = "皙秀",
-  [":xixiu"] = "锁定技，当你成为其他角色使用牌的目标时，若你装备区内有与此牌花色相同的牌，你摸一张牌；其他角色不能弃置你装备区内的最后一张牌。",
+  [":xixiu"] = "锁定技，当你成为其他角色使用牌的目标后，若你装备区内有与此牌花色相同的牌，你摸一张牌；其他角色不能弃置你装备区内的最后一张牌。",
   ["chenjian1"] = "弃一张牌，令一名角色获得此花色的牌",
   ["chenjian2"] = "使用其中一张牌",
   ["#chenjian-choose"] = "陈见：弃置一张牌并选择一名角色，令其获得与之相同花色的牌",
@@ -4883,6 +4883,114 @@ cenhun:addSkill("jishe")
 cenhun:addSkill("lianhuo")
 Fk:loadTranslationTable{
   ["ty__cenhun"] = "岑昏",
+}
+
+local sunchen = General(extension, "sunchen", "wu", 4)
+local zigu = fk.CreateActiveSkill{
+  name = "zigu",
+  anim_type = "control",
+  card_num = 1,
+  target_num = 0,
+  prompt = "#zigu",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and not Self:prohibitDiscard(Fk:getCardById(to_select))
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:throwCard(effect.cards, self.name, player, player)
+    if player.dead then return end
+    local targets = table.map(table.filter(room.alive_players, function(p)
+      return #p:getCardIds("e") > 0 end), function (p) return p.id end)
+    if #targets > 0 then
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#zigu-choose", self.name, false)
+      to = room:getPlayerById(to[1])
+      local id = room:askForCardChosen(player, to, "e", self.name, "#zigu-prey::"..to.id)
+      room:moveCardTo(Fk:getCardById(id), Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
+      if not player.dead and to == player then
+        player:drawCards(1, self.name)
+      end
+    else
+      player:drawCards(1, self.name)
+    end
+  end,
+}
+local zuowei = fk.CreateTriggerSkill{
+  name = "zuowei",
+  mute = true,
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) and player.phase ~= Player.NotActive then
+      local n = player:getHandcardNum() - math.max(#player:getCardIds("e"), 1)
+      if n > 0 then
+        return data.card.trueName == "slash" or data.card:isCommonTrick()
+      elseif n == 0 then
+        return true
+      elseif n < 0 then
+        return player:getMark("zuowei-turn") == 0
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local n = player:getHandcardNum() - math.max(#player:getCardIds("e"), 1)
+    if n > 0 then
+      return player.room:askForSkillInvoke(player, self.name, nil, "#zuowei-invoke:::"..data.card:toLogString())
+    elseif n == 0 then
+      local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+        "#zuowei-damage", self.name, true)
+      if #to > 0 then
+        self.cost_data = to[1]
+        return true
+      end
+    elseif n < 0 then
+      return player.room:askForSkillInvoke(player, self.name, nil, "#zuowei-draw")
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke(self.name)
+    local n = player:getHandcardNum() - math.max(#player:getCardIds("e"), 1)
+    if n > 0 then
+      room:notifySkillInvoked(player, self.name, "offensive")
+      data.disresponsive = true
+    elseif n == 0 then
+      room:notifySkillInvoked(player, self.name, "offensive")
+      room:damage{
+        from = player,
+        to = room:getPlayerById(self.cost_data),
+        damage = 1,
+        skillName = self.name,
+      }
+    elseif n < 0 then
+      room:notifySkillInvoked(player, self.name, "drawcard")
+      room:setPlayerMark(player, "zuowei-turn", 1)
+      player:drawCards(2, self.name)
+    end
+  end,
+}
+sunchen:addSkill(zigu)
+sunchen:addSkill(zuowei)
+Fk:loadTranslationTable{
+  ["sunchen"] = "孙綝",
+  ["zigu"] = "自固",
+  [":zigu"] = "出牌阶段限一次，你可以弃置一张牌，然后获得场上一张装备牌。若你没有因此获得其他角色的牌，你摸一张牌。",
+  ["zuowei"] = "作威",
+  [":zuowei"] = "当你于回合内使用牌时，若你当前手牌数：大于X，你可以令此牌不可响应；等于X，你可以对一名其他角色造成1点伤害；小于X，"..
+  "你可以摸两张牌并令本回合此选项失效（X为你装备区内的牌数且至少为1）。",
+  ["#zigu"] = "自固：你可以弃置一张牌，然后获得场上一张装备牌",
+  ["#zigu-choose"] = "自固：选择一名角色，获得其场上一张装备牌",
+  ["#zigu-prey"] = "自固：获得 %dest 场上一张装备牌",
+  ["#zuowei-invoke"] = "作威：你可以令此%arg不可响应",
+  ["#zuowei-damage"] = "作威：你可以对一名其他角色造成1点伤害",
+  ["#zuowei-draw"] = "作威：你可以摸两张牌，然后本回合此项无效",
+
+  ["$zigu1"] = "卿有成材良木，可妆吾家江山。",
+  ["$zigu2"] = "吾好锦衣玉食，卿家可愿割爱否？",
+  ["$zuowei1"] = "不顺我意者，当填在野之壑。",
+  ["$zuowei2"] = "吾令不从者，当膏霜锋之锷。",
+  ["~sunchen"] = "臣家火起，请离席救之……",
 }
 
 local jiachong = General(extension, "ty__jiachong", "wei", 3)

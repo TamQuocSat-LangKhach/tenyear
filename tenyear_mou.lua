@@ -114,6 +114,12 @@ Fk:loadTranslationTable{
   ["#yingmou_yang-invoke"] = "英谋：选择一名角色，你将手牌补至与其相同，然后视为对其使用【火攻】",
   ["#yingmou_yin-invoke"] = "英谋：选择一名角色，然后令手牌最多的角色对其使用手牌中所有【杀】和伤害锦囊牌",
   ["#yingmou-choose"] = "英谋：选择手牌数最多的一名角色，其对 %dest 使用手牌中所有【杀】和伤害锦囊牌",
+
+  ["$ronghuo1"] = "火莲绽江矶，炎映三千弱水。",
+  ["$ronghuo2"] = "奇志吞樯橹，潮平百万寇贼。",
+  ["$yingmou1"] = "行计以险，纵略以奇，敌虽百万亦戏之如犬豕。",
+  ["$yingmou2"] = "若生铸剑为犁之心，须有纵钺止戈之力。",
+  ["~tymou__zhouyu"] = "人生之艰难，犹如不息之长河……",
 }
 
 local tymou__lusu = General(extension, "tymou__lusu", "wu", 3)

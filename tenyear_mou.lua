@@ -1,9 +1,11 @@
 local extension = Package("tenyear_mou")
 extension.extensionName = "tenyear"
 
+local U = require "packages/utility/utility"
+
 Fk:loadTranslationTable{
   ["tenyear_mou"] = "十周年-谋定天下",
-  ["tystar"] = "新服星",
+  ["tymou"] = "新服谋",
 }
 
 local tymou__zhouyu = General(extension, "tymou__zhouyu", "wu", 4)

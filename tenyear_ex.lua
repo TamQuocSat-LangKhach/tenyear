@@ -5070,7 +5070,7 @@ local ty_ex__zhanjue_trigger = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-    return target == player and table.contains(data.card.skillNames, "ty_ex__zhanjue") and data.damageDealt
+    return target == player and table.contains(data.card.skillNames, "ty_ex__zhanjue")
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
@@ -5079,11 +5079,13 @@ local ty_ex__zhanjue_trigger = fk.CreateTriggerSkill{
       player:drawCards(1, "ty_ex__zhanjue")
       room:addPlayerMark(player, "ty_ex__zhanjue-turn", 1)
     end
-    for _, p in ipairs(room.alive_players) do
-      if data.damageDealt[p.id] then
-        p:drawCards(1, "ty_ex__zhanjue")
-        if p == player then
-          room:addPlayerMark(player, "ty_ex__zhanjue-turn", 1)
+    if data.damageDealt then
+      for _, p in ipairs(room.alive_players) do
+        if data.damageDealt[p.id] and not p.dead then
+          p:drawCards(1, "ty_ex__zhanjue")
+          if p == player then
+            room:addPlayerMark(player, "ty_ex__zhanjue-turn", 1)
+          end
         end
       end
     end

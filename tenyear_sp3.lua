@@ -1405,15 +1405,9 @@ local geyuan = fk.CreateTriggerSkill{
             table.insert(toget, c.id)
           end
         end
-        room:moveCards {
-          ids = toget,
-          to = player.id,
-          toArea = Card.PlayerHand,
-          moveReason = fk.ReasonJustMove,
-          proposer = player.id,
-          moveVisible = true,
-          skillName = self.name,
-        }
+        local dummy = Fk:cloneCard("dilu")
+        dummy:addSubcards(toget)
+        room:moveCardTo(dummy, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
       end
 
       local all = circle_data.all

@@ -741,9 +741,31 @@ local ty_ex__zhenwei = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    local skill = Fk.skills["zhenwei"]
-    skill.cost_data = self.cost_data
-    return skill:use(event, target, player, data)
+    local room = player.room
+    room:throwCard(self.cost_data, self.name, player, player)
+    if player.dead then return false end
+    local choice = room:askForChoice(player, {"ty_ex__zhenwei_transfer", "ty_ex__zhenwei_recycle"}, self.name)
+    if choice == "ty_ex__zhenwei_transfer" then
+      room:drawCards(player, 1, self.name)
+      if player.dead then return false end
+      if U.canTransferTarget(player, data) then
+        local targets = {player.id}
+        if type(data.subTargets) == "table" then
+          table.insertTable(targets, data.subTargets)
+        end
+        AimGroup:addTargets(room, data, targets)
+        AimGroup:cancelTarget(data, target.id)
+        return true
+      end
+    else
+      data.tos = AimGroup:initAimGroup({})
+      data.targetGroup = {}
+      local use_from = room:getPlayerById(data.from)
+      if not use_from.dead and U.hasFullRealCard(room, data.card) then
+        use_from:addToPile(self.name, data.card, true, self.name)
+      end
+      return true
+    end
   end,
 }
 local ty_ex__zhenwei_delay = fk.CreateTriggerSkill{
@@ -751,13 +773,13 @@ local ty_ex__zhenwei_delay = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return #player:getPile("zhenwei") > 0
+    return #player:getPile(ty_ex__zhenwei.name) > 0
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     player.room:moveCards({
       from = player.id,
-      ids = player:getPile("zhenwei"),
+      ids = player:getPile(ty_ex__zhenwei.name),
       to = player.id,
       toArea = Card.PlayerHand,
       moveReason = fk.ReasonPrey,
@@ -774,6 +796,8 @@ Fk:loadTranslationTable{
   [":ty_ex__zhenwei"] = "当其他角色成为【杀】或黑色锦囊牌的唯一目标时，若该角色的体力值不大于你，你可以弃置一张牌并选择一项：1.摸一张牌，"..
   "然后将此牌转移给你；2.令此牌无效，然后当前回合结束后，使用者获得此牌。",
   ["#ty_ex__zhenwei-invoke"] = "镇卫：%src对%dest使用%arg，是否弃置一张牌发动“镇卫”？",
+  ["ty_ex__zhenwei_transfer"] = "摸一张牌并将此牌转移给你",
+  ["ty_ex__zhenwei_recycle"] = "取消此牌，回合结束时使用者将之收回",
 
   ["$ty_ex__zhenwei1"] = "想攻城，问过我没有？",
   ["$ty_ex__zhenwei2"] = "有我坐镇，我军焉能有失？",

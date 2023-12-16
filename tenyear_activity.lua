@@ -3607,12 +3607,12 @@ local tingxian = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.card.trueName == "slash" and #AimGroup:getAllTargets(data.tos) > 0 and
+    return target == player and player:hasSkill(self) and data.card.trueName == "slash" and data.firstTarget and
       player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
   end,
   on_cost = function(self, event, target, player, data)
     local n = #player.player_cards[Player.Equip] + 1
-    return n > 0 and player.room:askForSkillInvoke(player, self.name, nil, "#tingxian-invoke:::"..n)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#tingxian-invoke:::"..n)
   end,
   on_use = function(self, event, target, player, data)
     local n = #player.player_cards[Player.Equip] + 1
@@ -3627,14 +3627,18 @@ local benshi = fk.CreateTriggerSkill{
   name = "benshi",
   anim_type = "offensive",
   frequency = Skill.Compulsory,
-  events = {fk.TargetSpecifying},
+  events = {fk.AfterCardTargetDeclared},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.card.trueName == "slash"
   end,
   on_use = function(self, event, target, player, data)
-    for _, p in ipairs(player.room:getOtherPlayers(player)) do
-      if not table.contains(AimGroup:getAllTargets(data.tos), p.id) and player:inMyAttackRange(p) and not player:isProhibited(p, data.card) then
-        TargetGroup:pushTargets(data.targetGroup, p.id)
+    local room = player.room
+    local targets = TargetGroup:getRealTargets(data.tos)
+    for _, p in ipairs(room.alive_players) do
+      if player:inMyAttackRange(p) and not table.contains(targets, p.id) and
+      not player:isProhibited(p, data.card) then
+        room:doIndicate(player.id, {p.id})
+        TargetGroup:pushTargets(data.tos, p.id)
       end
     end
   end,

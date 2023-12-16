@@ -3279,24 +3279,35 @@ local ty__neifa = fk.CreateTriggerSkill{
 local ty__neifa_trigger = fk.CreateTriggerSkill{
   name = "#ty__neifa_trigger",
   anim_type = "control",
-  events = {fk.TargetSpecifying},
+  events = {fk.AfterCardTargetDeclared},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:getMark("@ty__neifa-turn") == "trick" and data.card:isCommonTrick() and data.firstTarget
+    if target == player and not player.dead and player:getMark("@ty__neifa-turn") == "trick"
+    and data.card:isCommonTrick() then
+      local room = player.room
+      local targets = U.getUseExtraTargets(room, data)
+      local origin_targets = U.getActualUseTargets(room, data, event)
+      if #origin_targets > 1 then
+        table.insertTable(targets, origin_targets)
+      end
+      if #targets > 0 then
+        self.cost_data = targets
+        return true
+      end
+    end
   end,
   on_cost = function(self, event, target, player, data)
-    local room = player.room
-    local targets = room:askForAddTarget(player, room:getAlivePlayers(), 1, true, false,
-      "#ty__neifa_trigger-choose:::"..data.card:toLogString(), self.name, data)
+    local targets = player.room:askForChoosePlayers(player, self.cost_data, 1, 1,
+    "#ty__neifa_trigger-choose:::"..data.card:toLogString(), self.name, true)
     if #targets > 0 then
       self.cost_data = targets[1]
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
-    if table.contains(AimGroup:getAllTargets(data.tos), self.cost_data) then
-      TargetGroup:removeTarget(data.targetGroup, self.cost_data)
+    if table.contains(TargetGroup:getRealTargets(data.tos), self.cost_data) then
+      TargetGroup:removeTarget(data.tos, self.cost_data)
     else
-      TargetGroup:pushTargets(data.targetGroup, self.cost_data)
+      TargetGroup:pushTargets(data.tos, self.cost_data)
     end
   end,
 }
@@ -3332,7 +3343,7 @@ Fk:loadTranslationTable{
   "（X为发动技能时手牌中因本技能不能使用的牌且至多为5）。",
   ["@ty__neifa-turn"] = "内伐",
   ["#ty__neifa_trigger-choose"] = "内伐：你可以为%arg增加/减少一个目标",
-  ["#neifa_trigger"] = "内伐",
+  ["#ty__neifa_trigger"] = "内伐",
 
   ["$ty__neifa1"] = "同室操戈，胜者王、败者寇。",
   ["$ty__neifa2"] = "兄弟无能，吾当继袁氏大统。",

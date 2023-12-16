@@ -2001,7 +2001,7 @@ local shencai = fk.CreateActiveSkill{
   card_num = 0,
   target_num = 1,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name) < 1 + player:getMark("xunshi")
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 + player:getMark("xunshi")
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)

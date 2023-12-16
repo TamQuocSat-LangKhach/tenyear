@@ -106,7 +106,7 @@ tymou__zhouyu:addSkill(ronghuo)
 tymou__zhouyu:addSkill(yingmou)
 Fk:loadTranslationTable{
   ["tymou__zhouyu"] = "谋周瑜",
-  ["ronghuo"] = "熔火",
+  ["ronghuo"] = "融火",
   [":ronghuo"] = "锁定技，你的【火攻】和火【杀】伤害基数值改为场上势力数。",
   ["yingmou"] = "英谋",
   [":yingmou"] = "转换技，每回合限一次，当你对其他角色使用牌结算后，你可以选择其中一个目标角色，阳：你将手牌摸至与其相同（至多摸五张），然后视为对其使用"..

@@ -1609,29 +1609,44 @@ local chengpu = General(extension, "ty_ex__chengpu", "wu", 4)
 local ty_ex__lihuo = fk.CreateTriggerSkill{
   name = "ty_ex__lihuo",
   anim_type = "offensive",
-  events = {fk.AfterCardUseDeclared, fk.TargetSpecifying, fk.CardUseFinished},
+  events = {fk.AfterCardUseDeclared, fk.AfterCardTargetDeclared, fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) then
       if event == fk.AfterCardUseDeclared then
         return data.card.name == "slash"
-      elseif event == fk.TargetSpecifying then
-        return data.card.name == "fire__slash"
+      elseif event == fk.AfterCardTargetDeclared then
+        return data.card.name == "fire__slash" and #U.getUseExtraTargets(player.room, data) > 0
       else
-        return data.card.trueName == "slash" and data.extra_data and data.extra_data.ty_ex__lihuo == 1 and
-          player.room:getCardArea(data.card) == Card.Processing
+        if data.card.trueName ~= "slash" then return false end
+        local cardlist = data.card:isVirtual() and data.card.subcards or {data.card.id}
+        if #cardlist ~= 1 or Fk:getCardById(cardlist[1], true).trueName ~= "slash" then return false end
+        local room = player.room
+        if room:getCardArea(cardlist[1]) == Card.Processing then
+          local logic = room.logic
+          local use_event = logic:getCurrentEvent()
+          local mark = player:getMark("ty_ex__lihuo_record-turn")
+          if mark == 0 then
+            logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+              local last_use = e.data[1]
+              if last_use.from == player.id then
+                mark = e.id
+                room:setPlayerMark(player, "ty_ex__lihuo_record-turn", mark)
+                return true
+              end
+              return false
+            end, Player.HistoryTurn)
+          end
+          return mark == use_event.id
+        end
       end
     end
   end,
   on_cost = function(self, event, target, player, data)
     if event == fk.AfterCardUseDeclared then
       return player.room:askForSkillInvoke(player, self.name, nil, "#ty_ex__lihuo1-invoke:::"..data.card:toLogString())
-    elseif event == fk.TargetSpecifying then
-      local targets = table.map(table.filter(player.room:getOtherPlayers(player), function(p)
-        return not table.contains(TargetGroup:getRealTargets(data.tos), p.id) and
-        data.card.skill:getDistanceLimit(p, data.card) + player:getAttackRange() >= player:distanceTo(p) and
-        not player:isProhibited(p, data.card) end), Util.IdMapper)
-      if #targets == 0 then return false end
-      local tos = player.room:askForChoosePlayers(player, targets, 1, 1, "#lihuo-choose:::"..data.card:toLogString(), self.name, true)
+    elseif event == fk.AfterCardTargetDeclared then
+      local tos = player.room:askForChoosePlayers(player, U.getUseExtraTargets(player.room, data),
+      1, 1, "#lihuo-choose:::"..data.card:toLogString(), self.name, true)
       if #tos > 0 then
         self.cost_data = tos
         return true
@@ -1642,25 +1657,24 @@ local ty_ex__lihuo = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     if event == fk.AfterCardUseDeclared then
-      local card = Fk:cloneCard("fire__slash")
-      card.skillName = self.name
-      card:addSubcard(data.card)
+      local card = Fk:cloneCard("fire__slash", data.card.suit, data.card.number)
+      if data.card:isVirtual() then
+        card:addSubcard(data.card)
+        card.skillNames = data.card.skillNames
+        card.skillName = self.name
+      else
+        card.id = data.card.id
+        card.skillName = self.name
+      end
       data.card = card
-    elseif event == fk.TargetSpecifying then
+      data.extra_data = data.extra_data or {}
+      data.extra_data.ty_ex__lihuo = data.extra_data.ty_ex__lihuo or {}
+      table.insert(data.extra_data.ty_ex__lihuo, player.id)
+    elseif event == fk.AfterCardTargetDeclared then
       table.insert(data.tos, self.cost_data)
     else
       player:addToPile("ty_ex__chengpu_chun", data.card, true, self.name)
     end
-  end,
-
-  refresh_events = {fk.AfterCardUseDeclared},
-  can_refresh = function(self, event, target, player, data)
-    return target == player
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "ty_ex__lihuo-turn", 1)
-    data.extra_data = data.extra_data or {}
-    data.extra_data.ty_ex__lihuo = player:getMark("ty_ex__lihuo-turn")
   end,
 }
 local ty_ex__lihuo_record = fk.CreateTriggerSkill{
@@ -1668,14 +1682,12 @@ local ty_ex__lihuo_record = fk.CreateTriggerSkill{
   events = {fk.CardUseFinished},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return target == player and table.contains(data.card.skillNames, "ty_ex__lihuo") and data.damageDealt
+    return not player.dead and data.damageDealt and data.extra_data and data.extra_data.ty_ex__lihuo and
+    table.contains(data.extra_data.ty_ex__lihuo, player.id)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    player:broadcastSkillInvoke("ty_ex__lihuo", 1)
-    room:notifySkillInvoked(player, "ty_ex__lihuo", "negative")
-    room:loseHp(player, 1, "ty_ex__lihuo")
+    player.room:loseHp(player, 1, "ty_ex__lihuo")
   end,
 }
 local ty_ex__chunlao = fk.CreateTriggerSkill{

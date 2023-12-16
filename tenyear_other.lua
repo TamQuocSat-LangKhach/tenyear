@@ -182,10 +182,10 @@ local ty__nutao = fk.CreateTriggerSkill{
   name = "ty__nutao",
   anim_type = "offensive",
   frequency = Skill.Compulsory,
-  events = {fk.TargetSpecifying, fk.Damage},
+  events = {fk.TargetSpecified, fk.Damage},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) then
-      if event == fk.TargetSpecifying then
+      if event == fk.TargetSpecified then
         return data.card.type == Card.TypeTrick and data.firstTarget and
           table.find(AimGroup:getAllTargets(data.tos), function(id) return id ~= player.id end)
       else
@@ -195,7 +195,7 @@ local ty__nutao = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.TargetSpecifying then
+    if event == fk.TargetSpecified then
       local targets = table.filter(AimGroup:getAllTargets(data.tos), function(id)
         return id ~= player.id and not room:getPlayerById(id).dead end)
       local to = room:getPlayerById(table.random(targets))
@@ -225,7 +225,7 @@ wuzixu:addSkill(ty__nutao)
 Fk:loadTranslationTable{
   ["wuzixu"] = "涛神",
   ["ty__nutao"] = "怒涛",
-  [":ty__nutao"] = "锁定技，当你使用锦囊牌指定目标时，你随机对一名其他目标角色造成1点雷电伤害；当你于出牌阶段造成雷电伤害后，你本阶段使用【杀】次数上限+1。",
+  [":ty__nutao"] = "锁定技，当你使用锦囊牌指定目标后，你随机对一名其他目标角色造成1点雷电伤害；当你于出牌阶段造成雷电伤害后，你本阶段使用【杀】次数上限+1。",
   ["@ty__nutao-phase"] = "怒涛",
 }
 

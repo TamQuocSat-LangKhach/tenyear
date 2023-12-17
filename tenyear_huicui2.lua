@@ -1323,7 +1323,7 @@ local function doTaji(player, n)
   local room = player.room
   if n == 1 then
     local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
-      return not p:isAllNude() end), Util.IdMapper)
+      return not p:isNude() end), Util.IdMapper)
     if #targets == 0 then return end
     local to = room:askForChoosePlayers(player, targets, 1, 1, "#taji-choose", "taji", false)
     if #to > 0 then

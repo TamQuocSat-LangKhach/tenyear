@@ -356,10 +356,12 @@ local sangu = fk.CreateTriggerSkill{
     for i = 1, 3, 1 do
       if #cards_copy == 0 then break end
       local result = U.askforChooseCardsAndChoice(player, cards_copy, {"OK"}, self.name,
-      "#sangu-declare::" .. to.id .. ":" .. tostring(i), nil, 1, 1, cards)
+      "#sangu-declare::" .. to.id .. ":" .. tostring(i), {"Cancel"}, 1, 1, cards)
+      if #result == 0 then break end
       table.removeOne(cards_copy, result[1])
       table.insert(names, Fk:getCardById(result[1]).trueName)
     end
+    if #names == 0 then return false end
     local mark = U.getMark(to, "@$sangu")
     table.insertTable(mark, names)
     room:setPlayerMark(to, "@$sangu", mark)

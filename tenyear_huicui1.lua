@@ -2888,14 +2888,16 @@ local zhenge = fk.CreateTriggerSkill{
     if to:getMark("@zhenge") < 5 then
       room:addPlayerMark(to, "@zhenge", 1)
     end
+    local slash = Fk:cloneCard("slash")
+    if to:prohibitUse(slash) then return false end
     local targets = {}
-    for _, p in ipairs(room:getOtherPlayers(to)) do
-      if to:inMyAttackRange(p) and not to:isProhibited(p, Fk:cloneCard("slash")) then
-        if p ~= player then
+    for _, p in ipairs(room:getOtherPlayers(to, false)) do
+      if to:inMyAttackRange(p) then
+        if p ~= to and not to:isProhibited(p, slash) then
           table.insert(targets, p.id)
         end
       else
-        return
+        return false
       end
     end
     local tos = room:askForChoosePlayers(player, targets, 1, 1, "#zhenge-slash::"..to.id, self.name, true)
@@ -2916,8 +2918,26 @@ local xinghan = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and target and target:getMark("@zhenge") > 0 and
-      data.card and data.card.trueName == "slash" and data.card.extra_data and table.contains(data.card.extra_data, "xinghan")
+    if player:hasSkill(self) and target and target:getMark("@zhenge") > 0 and
+    data.card and data.card.trueName == "slash" then
+      local room = player.room
+      local logic = room.logic
+      local use_event = logic:getCurrentEvent():findParent(GameEvent.UseCard)
+      if use_event == nil then return false end
+      local mark = player:getMark("xinghan_record-turn")
+      if mark == 0 then
+        logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+          local last_use = e.data[1]
+          if last_use.card.trueName == "slash" then
+            mark = e.id
+            room:setPlayerMark(player, "xinghan_record-turn", mark)
+            return true
+          end
+          return false
+        end, Player.HistoryTurn)
+      end
+      return mark == use_event.id
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -2926,18 +2946,6 @@ local xinghan = fk.CreateTriggerSkill{
         player:drawCards(math.min(target:getAttackRange(), 5), self.name)
     else
       player:drawCards(1, self.name)
-    end
-  end,
-
-  refresh_events = {fk.AfterCardUseDeclared},
-  can_refresh = function(self, event, target, player, data)
-    return player.phase ~= Player.NotActive and data.card.trueName == "slash" and player:getMark("xinghan-turn") == 0
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "xinghan-turn", 1)
-    if target:getMark("@zhenge") > 0 then
-      data.card.extra_data = data.card.extra_data or {}
-      table.insert(data.card.extra_data, "xinghan")
     end
   end,
 }

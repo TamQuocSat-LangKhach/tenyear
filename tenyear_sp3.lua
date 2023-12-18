@@ -1174,7 +1174,7 @@ local ty__jici = fk.CreateTriggerSkill{
       elseif table.contains(data.tos, player) then
         card = data.results[player.id].toCard
       end
-      card.number = card.number + player:getMark("@ty__raoshe")
+      card.number = math.min(13, card.number + player:getMark("@ty__raoshe"))
       if player.dead then return end
       local n = card.number
       if data.fromCard.number > n then

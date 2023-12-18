@@ -368,8 +368,8 @@ local xionghuo = fk.CreateActiveSkill{
 }
 local xionghuo_record = fk.CreateTriggerSkill{
   name = "#xionghuo_record",
+  main_skill = xionghuo,
   anim_type = "offensive",
-  frequency = Skill.Compulsory,
   events = {fk.GameStart, fk.DamageCaused, fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(xionghuo) then
@@ -382,8 +382,10 @@ local xionghuo_record = fk.CreateTriggerSkill{
       end
     end
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    player:broadcastSkillInvoke("xionghuo")
     if event == fk.GameStart then
       room:addPlayerMark(player, "@baoli", 3)
     elseif event == fk.DamageCaused then
@@ -3306,6 +3308,7 @@ local jinggong = fk.CreateViewAsSkill{
   name = "jinggong",
   anim_type = "offensive",
   pattern = "slash",
+  prompt = "#jinggong-viewas",
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:getCardById(to_select).type == Card.TypeEquip
   end,
@@ -3316,39 +3319,55 @@ local jinggong = fk.CreateViewAsSkill{
     card.skillName = self.name
     return card
   end,
-  before_use = function(self, player, use)
-    local to = player.room:getPlayerById(TargetGroup:getRealTargets(use.tos)[1])
-    use.additionalDamage = (use.additionalDamage or 0) + math.min(player:distanceTo(to), 5) - 1
-  end,
   enabled_at_response = function(self, player, response)
     return not response
   end,
 }
+local jinggong_trigger = fk.CreateTriggerSkill{
+  name = "#jinggong_trigger",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    if player == target and not player.dead and not player:isRemoved() and
+    table.contains(data.card.skillNames, "jinggong") then
+      local room = player.room
+      local tos = U.getActualUseTargets(room, data, event)
+      if #tos == 0 then return false end
+      room:sortPlayersByAction(tos)
+      local to = room:getPlayerById(tos[1])
+      if to:isRemoved() then return false end
+      self.cost_data = math.min(player:distanceTo(to), 5) - 1
+      return true
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    data.additionalDamage = self.cost_data
+  end,
+}
 local jinggong_targetmod = fk.CreateTargetModSkill{
   name = "#jinggong_targetmod",
-  distance_limit_func =  function(self, player, skill, card)
-    if card and table.contains(card.skillNames, "jinggong") then
-      return 999
-    end
+  bypass_distances =  function(self, player, skill, card, to)
+    return card and table.contains(card.skillNames, "jinggong")
   end,
 }
 local xiaojun = fk.CreateTriggerSkill{
   name = "xiaojun",
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self) and data.firstTarget and #AimGroup:getAllTargets(data.tos) == 1 then
-      local to = AimGroup:getAllTargets(data.tos)[1]
-      return to ~= player.id and player.room:getPlayerById(to):getHandcardNum() > 1
+    if target == player and player:hasSkill(self) and data.to ~= player.id then
+      local to = player.room:getPlayerById(data.to)
+      return not to.dead and to:getHandcardNum() > 1 and U.isOnlyTarget(to, data, event)
     end
   end,
   on_cost = function(self, event, target, player, data)
-    local to = AimGroup:getAllTargets(data.tos)[1]
+    local room = player.room
+    local to = room:getPlayerById(data.to)
     return player.room:askForSkillInvoke(player, self.name, nil,
-      "#xiaojun-invoke::"..to..":"..tostring(player.room:getPlayerById(to):getHandcardNum() // 2)..":"..data.card:getSuitString())
+      "#xiaojun-invoke::"..data.to..":"..tostring(to:getHandcardNum() // 2)..":"..data.card:getSuitString())
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(AimGroup:getAllTargets(data.tos)[1])
+    local to = room:getPlayerById(data.to)
     local n = to:getHandcardNum() // 2
     local cards = room:askForCardsChosen(player, to, n, n, "h", self.name)
     room:throwCard(cards, self.name, to, player)
@@ -3358,6 +3377,7 @@ local xiaojun = fk.CreateTriggerSkill{
     end
   end,
 }
+jinggong:addRelatedSkill(jinggong_trigger)
 jinggong:addRelatedSkill(jinggong_targetmod)
 huangzu:addSkill(jinggong)
 huangzu:addSkill(xiaojun)
@@ -3368,6 +3388,8 @@ Fk:loadTranslationTable{
   ["xiaojun"] = "骁隽",
   [":xiaojun"] = "你使用牌指定其他角色为唯一目标后，你可以弃置其一半手牌（向下取整）。若其中有与你指定其为目标的牌花色相同的牌，"..
   "你弃置一张手牌。",
+  ["#jinggong-viewas"] = "发动 精弓，将装备牌当【杀】使用，无距离限制且伤害值基数为你至目标的距离",
+  ["#jinggong_trigger"] = "精弓",
   ["#xiaojun-invoke"] = "骁隽：你可以弃置 %dest 一半手牌（%arg张），若其中有%arg2牌，你弃置一张手牌",
 
   ["$jinggong1"] = "屈臂发弓，亲射猛虎。",

@@ -372,7 +372,7 @@ local xionghuo_record = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.GameStart, fk.DamageCaused, fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill("xionghuo", false, true) then
+    if player:hasSkill(xionghuo) then
       if event == fk.GameStart then
         return true
       elseif event == fk.DamageCaused then
@@ -387,22 +387,28 @@ local xionghuo_record = fk.CreateTriggerSkill{
     if event == fk.GameStart then
       room:addPlayerMark(player, "@baoli", 3)
     elseif event == fk.DamageCaused then
+      room:doIndicate(player.id, {data.to.id})
       data.damage = data.damage + 1
     else
+      room:doIndicate(player.id, {target.id})
       room:removePlayerMark(target, "@baoli", 1)
       local n = 3
-      if target:isNude() or player.dead then
+      if target:isNude() then
         n = 2
       end
       local rand = math.random(1, n)
       if rand == 1 then
         room:damage {
+          from = player,
           to = target,
           damage = 1,
           damageType = fk.FireDamage,
           skillName = "xionghuo",
         }
-        room:addPlayerMark(target, "xionghuo-turn", 1)
+        local mark = U.getMark(target, "xionghuo_prohibit-turn")
+        table.insert(mark, player.id)
+        room:setPlayerMark(target, "xionghuo_prohibit-turn", mark)
+
       elseif rand == 2 then
         room:loseHp(target, 1, "xionghuo")
         room:addPlayerMark(target, "MinusMaxCards-turn", 1)
@@ -422,9 +428,7 @@ local xionghuo_record = fk.CreateTriggerSkill{
 local xionghuo_prohibit = fk.CreateProhibitSkill{
   name = "#xionghuo_prohibit",
   is_prohibited = function(self, from, to, card)
-    if to:hasSkill("xionghuo") and from:getMark("xionghuo-turn") > 0 then
-      return card.trueName == "slash"
-    end
+    return card.trueName == "slash" and table.contains(U.getMark(from, "xionghuo_prohibit-turn") ,to.id)
   end,
 }
 local shajue = fk.CreateTriggerSkill{
@@ -433,15 +437,14 @@ local shajue = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.EnterDying},
   can_trigger = function(self, event, target, player, data)
-    if target ~= player and player:hasSkill(self) then
-      return data.damage ~= nil and data.damage.card ~= nil and target.hp < 0 and
-      player.room:getCardArea(data.damage.card) == Card.Processing
-    end
+    return target ~= player and player:hasSkill(self) and target.hp < 0
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:addPlayerMark(player, "@baoli", 1)
-    room:obtainCard(player, data.damage.card, true, fk.ReasonPrey)
+    if data.damage and data.damage.card and U.hasFullRealCard(room, data.damage.card) then
+      room:obtainCard(player, data.damage.card, true, fk.ReasonPrey)
+    end
   end
 }
 xionghuo:addRelatedSkill(xionghuo_record)

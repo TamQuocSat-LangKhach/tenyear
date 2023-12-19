@@ -1174,7 +1174,7 @@ local ty__jici = fk.CreateTriggerSkill{
       elseif table.contains(data.tos, player) then
         card = data.results[player.id].toCard
       end
-      card.number = math.min(13, card.number + player:getMark("@ty__raoshe"))
+      card.number = card.number + player:getMark("@ty__raoshe")
       if player.dead then return end
       local n = card.number
       if data.fromCard.number > n then
@@ -2488,70 +2488,83 @@ local qingshi = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Play and player:getMark("@@qingshi-turn") == 0 and
       table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id).trueName == data.card.trueName end) and
-      (player:getMark("@$qingshi-turn") == 0 or not table.contains(player:getMark("@$qingshi-turn"), data.card.trueName))
+      not table.contains(U.getMark(player, "@$qingshi-turn"), data.card.trueName)
   end,
   on_cost = function(self, event, target, player, data)
-    local choices = {"qingshi2", "qingshi3", "Cancel"}
-    if data.card.is_damage_card and data.tos then
-      table.insert(choices, 1, "qingshi1")
-    end
-    local choice = player.room:askForChoice(player, choices, self.name, "#qingshi-invoke:::"..data.card:toLogString())
-    if choice ~= "Cancel" then
-      self.cost_data = choice
+    local room = player.room
+    local choice = room:askForChoice(player, {"qingshi1", "qingshi2", "qingshi3", "Cancel"},
+    self.name, "#qingshi-invoke:::"..data.card:toLogString())
+    if choice == "qingshi1" then
+      local to = room:askForChoosePlayers(player, TargetGroup:getRealTargets(data.tos), 1, 1,
+        "#qingshi1-choose:::"..data.card:toLogString(), self.name)
+      if #to > 0 then
+        self.cost_data = {choice, to}
+        return true
+      end
+    elseif choice == "qingshi2" then
+      local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1,
+      "#qingshi2-choose:::"..data.card:toLogString(), self.name)
+      if #to > 0 then
+        self.cost_data = {choice, to}
+        return true
+      end
+    elseif choice == "qingshi3" then
+      self.cost_data = {choice}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local mark = player:getMark("@$qingshi-turn")
-    if mark == 0 then mark = {} end
+    local mark = U.getMark(player, "@$qingshi-turn")
     table.insert(mark, data.card.trueName)
     room:setPlayerMark(player, "@$qingshi-turn", mark)
-    if self.cost_data == "qingshi1" then
+    if self.cost_data[1] == "qingshi1" then
       room:notifySkillInvoked(player, self.name, "offensive")
       player:broadcastSkillInvoke(self.name)
-      local to = room:askForChoosePlayers(player, TargetGroup:getRealTargets(data.tos), 1, 1,
-        "#qingshi1-choose:::"..data.card:toLogString(), self.name, false)
-      if #to > 0 then
-        to = to[1]
-      else
-        to = table.random(TargetGroup:getRealTargets(data.tos))
-      end
       data.extra_data = data.extra_data or {}
-      data.extra_data.qingshi = to
-    elseif self.cost_data == "qingshi2" then
+      data.extra_data.qingshi_data = data.extra_data.qingshi_data or {}
+      table.insert(data.extra_data.qingshi_data, {player.id, self.cost_data[2][1]})
+    elseif self.cost_data[1] == "qingshi2" then
       room:notifySkillInvoked(player, self.name, "support")
       player:broadcastSkillInvoke(self.name)
-      local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
-      local tos = room:askForChoosePlayers(player, targets, 1, 10, "#qingshi2-choose", self.name, false)
-      if #tos == 0 then
-        tos = table.random(targets, 1)
-      end
+      local tos = self.cost_data[2]
+      room:sortPlayersByAction(tos)
       for _, id in ipairs(tos) do
         local p = room:getPlayerById(id)
         if not p.dead then
           p:drawCards(1, self.name)
         end
       end
-    elseif self.cost_data == "qingshi3" then
+    elseif self.cost_data[1] == "qingshi3" then
       room:notifySkillInvoked(player, self.name, "drawcard")
       player:broadcastSkillInvoke(self.name)
       player:drawCards(3, self.name)
       room:setPlayerMark(player, "@@qingshi-turn", 1)
     end
   end,
-
-  refresh_events = {fk.DamageCaused},
-  can_refresh = function(self, event, target, player, data)
-    if target == player then
-      local e = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
-      if e then
-        local use = e.data[1]
-        return use.extra_data and use.extra_data.qingshi and data.to.id == use.extra_data.qingshi
+}
+local qingshi_delay = fk.CreateTriggerSkill{
+  name = "#qingshi_delay",
+  events = {fk.DamageCaused},
+  anim_type = "offensive",
+  can_trigger = function(self, event, target, player, data)
+    if player.dead or data.card == nil or data.chain then return false end
+    local room = player.room
+      local card_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+      if not card_event then return false end
+      local use = card_event.data[1]
+      if use.extra_data then
+        local qingshi_data = use.extra_data.qingshi_data
+        if qingshi_data then
+          return table.find(qingshi_data, function (players)
+            return players[1] == player.id and players[2] == data.to.id
+          end)
+        end
       end
-    end
   end,
-  on_refresh = function(self, event, target, player, data)
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    player:broadcastSkillInvoke(qingshi.name)
     data.damage = data.damage + 1
   end,
 }
@@ -2566,7 +2579,8 @@ local zhizhe = fk.CreateActiveSkill{
     return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   card_filter = function(self, to_select, selected)
-    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) == Card.PlayerHand and not Fk:getCardById(to_select).is_derived
+    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) == Card.PlayerHand
+    and not Fk:getCardById(to_select).is_derived and to_select > 0
   end,
   on_use = function(self, room, effect)
     local c = Fk:getCardById(effect.cards[1], true)
@@ -2582,13 +2596,13 @@ local zhizhe = fk.CreateActiveSkill{
     })
   end
 }
-local zhizhe_trigger = fk.CreateTriggerSkill{
-  name = "#zhizhe_trigger",
+local zhizhe_delay = fk.CreateTriggerSkill{
+  name = "#zhizhe_delay",
   mute = true,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    local mark = player:getMark("zhizhe")
-    if type(mark) ~= "table" then return false end
+    local mark = U.getMark(player, "zhizhe")
+    if #mark == 0 then return false end
     local room = player.room
     local move_event = room.logic:getCurrentEvent()
     local parent_event = move_event.parent
@@ -2596,34 +2610,7 @@ local zhizhe_trigger = fk.CreateTriggerSkill{
       local parent_data = parent_event.data[1]
       if parent_data.from == player.id then
         local card_ids = room:getSubcardsByRule(parent_data.card)
-        for _, move in ipairs(data) do
-          if move.toArea == Card.DiscardPile then
-            for _, info in ipairs(move.moveInfo) do
-              local id = info.cardId
-              if info.fromArea == Card.Processing and room:getCardArea(id) == Card.DiscardPile and
-              table.contains(card_ids, id) and table.contains(mark, id) then
-                return true
-              end
-            end
-          end
-        end
-      end
-    end
-  end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    room:notifySkillInvoked(player, self.name)
-    player:broadcastSkillInvoke(zhizhe.name)
-    local mark = player:getMark("zhizhe")
-    local to_get = {}
-    if type(mark) ~= "table" then return false end
-    local move_event = room.logic:getCurrentEvent():findParent(GameEvent.MoveCards, true)
-    local parent_event = move_event.parent
-    if parent_event and (parent_event.event == GameEvent.UseCard or parent_event.event == GameEvent.RespondCard) then
-      local parent_data = parent_event.data[1]
-      if parent_data.from == player.id then
-        local card_ids = room:getSubcardsByRule(parent_data.card)
+        local to_get = {}
         for _, move in ipairs(data) do
           if move.toArea == Card.DiscardPile then
             for _, info in ipairs(move.moveInfo) do
@@ -2635,27 +2622,35 @@ local zhizhe_trigger = fk.CreateTriggerSkill{
             end
           end
         end
+        if #to_get > 0 then
+          self.cost_data = to_get
+          return true
+        end
       end
     end
-    if #to_get > 0 then
-      room:moveCards({
-        ids = to_get,
-        to = player.id,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonPrey,
-        proposer = player.id,
-        skillName = zhizhe.name,
-        moveVisible = false,
-      })
-    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:notifySkillInvoked(player, self.name)
+    player:broadcastSkillInvoke(zhizhe.name)
+    room:moveCards({
+      ids = self.cost_data,
+      to = player.id,
+      toArea = Card.PlayerHand,
+      moveReason = fk.ReasonPrey,
+      proposer = player.id,
+      skillName = zhizhe.name,
+      moveVisible = false,
+    })
   end,
 
   refresh_events = {fk.AfterCardsMove},
   can_refresh = Util.TrueFunc,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    local marked = type(player:getMark("zhizhe")) == "table" and player:getMark("zhizhe") or {}
-    local marked2 = type(player:getMark("zhizhe-turn")) == "table" and player:getMark("zhizhe-turn") or {}
+    local marked = U.getMark(player, "zhizhe")
+    local marked2 = U.getMark(player, "zhizhe-turn")
     marked2 = table.filter(marked2, function (id)
       return room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player
     end)
@@ -2686,19 +2681,20 @@ local zhizhe_trigger = fk.CreateTriggerSkill{
 local zhizhe_prohibit = fk.CreateProhibitSkill{
   name = "#zhizhe_prohibit",
   prohibit_use = function(self, player, card)
-    local mark = player:getMark("zhizhe-turn")
-    if type(mark) ~= "table" then return false end
+    local mark = U.getMark(player, "zhizhe-turn")
+    if #mark == 0 then return false end
     local cardList = card:isVirtual() and card.subcards or {card.id}
     return table.find(cardList, function (id) return table.contains(mark, id) end)
   end,
   prohibit_response = function(self, player, card)
     local mark = player:getMark("zhizhe-turn")
-    if type(mark) ~= "table" then return false end
+    if #mark == 0 then return false end
     local cardList = card:isVirtual() and card.subcards or {card.id}
     return table.find(cardList, function (id) return table.contains(mark, id) end)
   end,
 }
-zhizhe:addRelatedSkill(zhizhe_trigger)
+qingshi:addRelatedSkill(qingshi_delay)
+zhizhe:addRelatedSkill(zhizhe_delay)
 zhizhe:addRelatedSkill(zhizhe_prohibit)
 zhugeliang:addSkill(jincui)
 zhugeliang:addSkill(qingshi)
@@ -2721,7 +2717,8 @@ Fk:loadTranslationTable{
   ["qingshi3"] = "摸三张牌，然后此技能本回合失效",
   ["#qingshi1-choose"] = "情势：令%arg对其中一名目标造成伤害+1",
   ["#qingshi2-choose"] = "情势：令任意名其他角色各摸一张牌",
-  ["#zhizhe_trigger"] = "智哲",
+  ["#qingshi_delay"] = "情势",
+  ["#zhizhe_delay"] = "智哲",
   ["#zhizhe-active"] = "发动 智哲，选择一张手牌（衍生牌除外），获得一张此牌的复制",
   ["@@zhizhe-inhand"] = "智哲",
 

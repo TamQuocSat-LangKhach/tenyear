@@ -3274,12 +3274,12 @@ local ty__neifa = fk.CreateTriggerSkill{
     local room = player.room
     player:drawCards(3, self.name)
     local card = room:askForDiscard(player, 1, 1, true, self.name, false)
+    if #card == 0 then return false end
     if Fk:getCardById(card[1]).type == Card.TypeBasic then
       local cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id).type == Card.TypeTrick end)
       room:setPlayerMark(player, "@ty__neifa-turn", "basic")
       room:setPlayerMark(player, "ty__neifa-turn", math.min(#cards, 5))
-    elseif  Fk:getCardById(card[1]).type == Card.TypeTrick  then
-      
+    elseif Fk:getCardById(card[1]).type == Card.TypeTrick then
       room:setPlayerMark(player, "@ty__neifa-turn", "trick")   
     end
   end,
@@ -4973,7 +4973,7 @@ local zuowei = fk.CreateTriggerSkill{
     local n = player:getHandcardNum() - math.max(#player:getCardIds("e"), 1)
     if n > 0 then
       room:notifySkillInvoked(player, self.name, "offensive")
-      data.disresponsive = true
+      data.disresponsiveList = table.map(room.alive_players, Util.IdMapper)
     elseif n == 0 then
       room:notifySkillInvoked(player, self.name, "offensive")
       room:damage{

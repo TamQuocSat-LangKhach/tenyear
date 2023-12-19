@@ -3237,25 +3237,33 @@ local ty__fenyin = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and player.phase ~= Player.NotActive then
-      local room = player.room
-      self.fenyin_draw = 0
+      local mark = U.getMark(player, "fenyin_suits-turn")
+      if #mark > 3 then return false end
+      local suits = {}
+      local suit = 0
       for _, move in ipairs(data) do
         if move.toArea == Card.DiscardPile then
           for _, info in ipairs(move.moveInfo) do
-            room:addPlayerMark(player, "liji-turn", 1)  --move this to liji would be proper...
-            local mark = "fenyin_"..Fk:getCardById(info.cardId):getSuitString().."-turn"
-            if player:getMark(mark) == 0 then
-              room:addPlayerMark(player, mark, 1)
-              self.fenyin_draw = self.fenyin_draw + 1
+            suit = Fk:getCardById(info.cardId).suit
+            if suit ~= Card.NoSuit and not table.contains(mark, suit) then
+              table.insertIfNeed(suits, suit)
             end
           end
         end
       end
-      return self.fenyin_draw > 0
+      if #suits > 0 then
+        self.cost_data = suits
+        return true
+      end
     end
   end,
   on_use = function(self, event, target, player, data)
-    player:drawCards(self.fenyin_draw, self.name)
+    local mark = U.getMark(player, "fenyin_suits-turn")
+    for _, suit in ipairs(self.cost_data) do
+      table.insert(mark, suit)
+    end
+    player.room:setPlayerMark(player, "fenyin_suits-turn", mark)
+    player:drawCards(#self.cost_data, self.name)
   end,
 }
 local liji = fk.CreateActiveSkill{
@@ -3264,12 +3272,11 @@ local liji = fk.CreateActiveSkill{
   card_num = 1,
   target_num = 1,
   can_use = function(self, player)
-    local n = 8
-    if #Fk:currentRoom().alive_players < 5 then n = 4 end
-    return player:getMark("liji-turn") >= n and player:usedSkillTimes(self.name, Player.HistoryPhase) < player:getMark("liji-turn")/n
+    local mark = U.getMark(player, "@liji-turn")
+    return #mark > 0 and mark[1] > 0
   end,
   card_filter = function(self, to_select, selected)
-    return #selected == 0
+    return #selected == 0 and not Self:prohibitDiscard(Fk:getCardById(to_select))
   end,
   target_filter = function(self, to_select, selected)
     return #selected == 0 and to_select ~= Self.id
@@ -3277,6 +3284,9 @@ local liji = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
+    local mark = U.getMark(player, "@liji-turn")
+    mark[1] = mark[1] - 1
+    room:setPlayerMark(player, "@liji-turn", mark)
     room:throwCard(effect.cards, self.name, player, player)
     room:damage{
       from = player,
@@ -3286,6 +3296,43 @@ local liji = fk.CreateActiveSkill{
     }
   end,
 }
+
+local liji_record = fk.CreateTriggerSkill{
+  name = "#liji_record",
+
+  refresh_events = {fk.TurnStart, fk.EventPhaseStart, fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.TurnStart then
+      return player == target
+    else
+      return player.room.current == player and not player.dead and #U.getMark(player, "@liji-turn") == 5
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    if event == fk.TurnStart then
+      if player:hasSkill(self.name, true) then
+        player.room:setPlayerMark(player, "@liji-turn", {0, "-", 0, "/", #player.room.alive_players < 5 and 4 or 8})
+      end
+    elseif event == fk.EventPhaseStart then
+      local mark = U.getMark(player, "@liji-turn")
+      mark[1] = player:getMark("liji_times-turn")
+      player.room:setPlayerMark(player, "@liji-turn", mark)
+    else
+      local mark = U.getMark(player, "@liji-turn")
+      local x = mark[3]
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile then
+          x = x + #move.moveInfo
+        end
+      end
+      mark[1] = mark[1] + x // mark[5]
+      player.room:addPlayerMark(player, "liji_times-turn", x // mark[5])
+      mark[3] = x % mark[5]
+      player.room:setPlayerMark(player, "@liji-turn", mark)
+    end
+  end,
+}
+liji:addRelatedSkill(liji_record)
 liuzan:addSkill(ty__fenyin)
 liuzan:addSkill(liji)
 Fk:loadTranslationTable{
@@ -3295,6 +3342,7 @@ Fk:loadTranslationTable{
   ["liji"] = "力激",
   [":liji"] = "出牌阶段限0次，你可以弃置一张牌然后对一名其他角色造成1点伤害。你的回合内，本回合进入弃牌堆的牌每次达到8的倍数张时"..
   "（存活人数小于5时改为4的倍数），此技能使用次数+1。",
+  ["@liji-turn"] = "力激",
 
   ["$ty__fenyin1"] = "斗志高歌，士气昂扬！",
   ["$ty__fenyin2"] = "抗音而歌，左右应之！",
@@ -3341,7 +3389,7 @@ local jinggong_trigger = fk.CreateTriggerSkill{
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    data.additionalDamage = self.cost_data
+    data.additionalDamage = (data.additionalDamage or 0) + self.cost_data
   end,
 }
 local jinggong_targetmod = fk.CreateTargetModSkill{
@@ -3384,10 +3432,10 @@ huangzu:addSkill(xiaojun)
 Fk:loadTranslationTable{
   ["ty__huangzu"] = "黄祖",
   ["jinggong"] = "精弓",
-  [":jinggong"] = "你可以将装备牌当无距离限制的【杀】使用，此【杀】的伤害基数值改为X（X为你计算与该角色的距离且至多为5）。",
+  [":jinggong"] = "你可以将装备牌当无距离限制的【杀】使用，此【杀】的伤害基数值改为X（X为你至第一名目标角色的距离且至多为5）。",
   ["xiaojun"] = "骁隽",
-  [":xiaojun"] = "你使用牌指定其他角色为唯一目标后，你可以弃置其一半手牌（向下取整）。若其中有与你指定其为目标的牌花色相同的牌，"..
-  "你弃置一张手牌。",
+  [":xiaojun"] = "你使用牌指定其他角色为唯一目标后，你可以弃置其一半手牌（向下取整）。"..
+  "若其中有与你指定其为目标的牌花色相同的牌，你弃置一张手牌。",
   ["#jinggong-viewas"] = "发动 精弓，将装备牌当【杀】使用，无距离限制且伤害值基数为你至目标的距离",
   ["#jinggong_trigger"] = "精弓",
   ["#xiaojun-invoke"] = "骁隽：你可以弃置 %dest 一半手牌（%arg张），若其中有%arg2牌，你弃置一张手牌",

@@ -2138,26 +2138,30 @@ local ty_ex__quanji = fk.CreateTriggerSkill{
   anim_type = "masochism",
   events = {fk.AfterCardsMove, fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    
-    if event == fk.AfterCardsMove and player:hasSkill(self) then
+    if not player:hasSkill(self) then return false end
+    if event == fk.AfterCardsMove then
       for _, move in ipairs(data) do
         if move.from == player.id and move.to and move.to ~= player.id and move.moveReason == fk.ReasonPrey then
           for _, info in ipairs(move.moveInfo) do
             if info.fromArea == Card.PlayerEquip or info.fromArea == Card.PlayerHand then
-              self.cancel_cost = false
-              self:doCost(event, target, player, data)
+              return true
             end
           end
         end
       end
-    elseif event == fk.Damaged and player:hasSkill(self) and target == player then
-      self.cancel_cost = false
-      for i = 1, data.damage do
-        if self.cancel_cost then break end
-        self:doCost(event, target, player, data)
-      end
-    else
-      return false
+    elseif event == fk.Damaged and target == player then
+      return true
+    end
+  end,
+  on_trigger = function(self, event, target, player, data)
+    local x = 1
+    if event == fk.Damaged then
+      x = data.damage
+    end
+    self.cancel_cost = false
+    for _ = 1, x do
+      if self.cancel_cost or not player:hasSkill(self) then break end
+      self:doCost(event, target, player, data)
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -2179,7 +2183,7 @@ local ty_ex__quanji = fk.CreateTriggerSkill{
 local ex__quanji_maxcards = fk.CreateMaxCardsSkill{
   name = "#ex__quanji_maxcards",
   correct_func = function(self, player)
-    if player:hasSkill(self) then
+    if player:hasSkill(ty_ex__quanji) then
       return #player:getPile("zhonghui_quan")
     else
       return 0
@@ -2240,7 +2244,7 @@ local ty_ex__paiyi = fk.CreateActiveSkill{
     return UI.ComboBox { choices = choiceList }
   end,
   target_filter = function(self, to_select, selected)
-    return self.interaction.data == "ty_ex__paiyi_draw" and #selected == 0 or #selected < #Self:getPile("zhonghui_quan") - 1
+    return  #selected == 0 or (self.interaction.data == "ty_ex__paiyi_damage" and #selected < #Self:getPile("zhonghui_quan") - 1)
   end,
   can_use = function(self, player)
     return #player:getPile("zhonghui_quan") > 0 and

@@ -3551,6 +3551,7 @@ local cuoruiw = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Play
+    and table.find(player.room.alive_players, function(p) return player:distanceTo(p) < 2 and not p:isAllNude() end)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -3568,36 +3569,30 @@ local cuoruiw = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local id = room:askForCardChosen(player, room:getPlayerById(self.cost_data), "hej", self.name)
-    local color = Fk:getCardById(id).color
-    room:throwCard({id}, self.name, room:getPlayerById(self.cost_data), player)
+    local chosen = room:askForCardChosen(player, room:getPlayerById(self.cost_data), "hej", self.name)
+    local color = Fk:getCardById(chosen).color
+    room:throwCard({chosen}, self.name, room:getPlayerById(self.cost_data), player)
+    if player.dead then return end
     local targets = {}
     local targets1 = {}
     local targets2 = {}
     for _, p in ipairs(room:getOtherPlayers(player)) do
-      if not p:isKongcheng() then
-        table.insertIfNeed(targets, p.id)
-        table.insert(targets2, p.id)
-      end
-      if #p.player_cards[Player.Equip] > 0 then
-        for _, id in ipairs(p.player_cards[Player.Equip]) do
-          if Fk:getCardById(id).color == color then
+      if p.id ~= self.cost_data then
+        if not p:isKongcheng() then
+          table.insertIfNeed(targets, p.id)
+          table.insert(targets2, p.id)
+        end
+        if #p.player_cards[Player.Equip] > 0 then
+          if table.find(p:getCardIds("e"), function(id) return Fk:getCardById(id).color == color end) then
             table.insertIfNeed(targets, p.id)
             table.insert(targets1, p.id)
-            break
           end
         end
       end
     end
-    table.removeOne(targets, self.cost_data)
     if #targets == 0 then return end
-    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#cuoruiw-use", self.name, true)
-    local to
-    if #tos > 0 then
-      to = room:getPlayerById(tos[1])
-    else
-      to = room:getPlayerById(table.random(targets))
-    end
+    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#cuoruiw-use:::"..Fk:getCardById(chosen):getColorString(), self.name, false)
+    local to = room:getPlayerById(tos[1])
     local choices = {}
     if table.contains(targets1, to.id) then
       table.insert(choices, "cuoruiw_equip")
@@ -3607,34 +3602,13 @@ local cuoruiw = fk.CreateTriggerSkill{
     end
     local choice = room:askForChoice(player, choices, self.name)
     if choice == "cuoruiw_equip" then
-      local ids = {}
-      for _, id in ipairs(to.player_cards[Player.Equip]) do
-        if Fk:getCardById(id).color == color then
-          table.insert(ids, id)
-        end
-      end
-      if #ids == 1 then
-        room:throwCard(ids, self.name, to, player)
-      else
-        local throw = {}
-        room:fillAG(player, ids)
-        while #ids > 0 and #throw < 2 do
-          local id = room:askForAG(player, ids, true, self.name)
-          if id ~= nil then
-            room:takeAG(player, id, {player})
-            table.insert(throw, id)
-            table.removeOne(ids, id)
-          else
-            break
-          end
-        end
-        room:closeAG(player)
-        room:throwCard(throw, self.name, to, player)
-      end
+      local ids = table.filter(to:getCardIds("e"), function(id) return Fk:getCardById(id).color == color end)
+      local throw = room:askForCardsChosen(player, to, 1, 2, { card_data = { { to.general, ids }  } }, self.name, "#cuoruiw-throw")
+      room:throwCard(throw, self.name, to, player)
     else
       local cards = room:askForCardsChosen(player, to, 1, 2, "h", self.name)
       to:showCards(cards)
-      room:delay(1500)
+      room:delay(1000)
       local dummy = Fk:cloneCard("dilu")
       for _, id in ipairs(cards) do
         if Fk:getCardById(id).color == color then
@@ -3654,9 +3628,10 @@ Fk:loadTranslationTable{
   [":cuoruiw"] = "出牌阶段开始时，你可以弃置一名你计算与其距离不大于1的角色区域里的一张牌。若如此做，你选择一项："..
   "1.弃置另一名其他角色装备区里至多两张与此牌颜色相同的牌；2.展示另一名其他角色的至多两张手牌，然后获得其中与此牌颜色相同的牌。",
   ["#cuoruiw-cost"] = "挫锐：你可以弃置距离不大于1的角色区域里的一张牌",
-  ["#cuoruiw-use"] = "挫锐：选择另一名其他角色，弃置其至多两张颜色相同的装备，或展示其至多两张手牌",
+  ["#cuoruiw-use"] = "挫锐：选择另一名其他角色，弃置其装备区至多两张%arg牌，或展示其至多两张手牌",
   ["cuoruiw_equip"] = "弃置其至多两张颜色相同的装备",
   ["cuoruiw_hand"] = "展示其至多两张手牌并获得其中相同颜色牌",
+  ["#cuoruiw-throw"] = "挫锐：弃置其至多两张装备牌",
 
   ["$cuoruiw1"] = "减辎疾行，挫敌军锐气。",
   ["$cuoruiw2"] = "外物当舍，摄敌为重。",
@@ -4628,9 +4603,7 @@ local tuiyan = fk.CreateTriggerSkill{
     for i = 1, 3, 1 do
       table.insert(ids, room.draw_pile[i])
     end
-    room:fillAG(player, ids)
-    room:delay(5000)
-    room:closeAG(player)
+    U.viewCards(player, ids, self.name)
   end,
 }
 local busuan = fk.CreateActiveSkill {

@@ -346,11 +346,15 @@ local sangu = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
-    local ban_cards = {"nullification", "collateral"}
-    local cards = table.filter(U.prepareUniversalCards(room), function (id)
-      local card = Fk:getCardById(id)
-      return card.trueName == "slash" or (card:isCommonTrick() and not table.contains(ban_cards, card.trueName))
-    end)
+    local cards = player:getMark("sangu_cards")
+    if type(cards) ~= "table" then
+      local ban_cards = {"nullification", "collateral"}
+      cards = table.filter(U.getUniversalCards(room, "bt", true), function (id)
+        local card = Fk:getCardById(id)
+        return card.trueName == "slash" or (card:isCommonTrick() and not table.contains(ban_cards, card.trueName))
+      end)
+      room:setPlayerMark(player, "sangu_cards", cards)
+    end
     local cards_copy = table.simpleClone(cards)
     local names = {}
     for i = 1, 3, 1 do

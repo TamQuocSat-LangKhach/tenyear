@@ -510,7 +510,7 @@ local xunji_trigger = fk.CreateTriggerSkill{
           skillName = "xunji",
         }
         room:useCard(use)
-        if not p.dead and use.damageDealt and use.damageDealt[player.id] then
+        if not player.dead and not p.dead and use.damageDealt and use.damageDealt[player.id] then
           room:damage{
             from = player,
             to = p,
@@ -554,7 +554,7 @@ Fk:loadTranslationTable{
   ["caiyang"] = "蔡阳",
   ["xunji"] = "寻嫉",
   [":xunji"] = "出牌阶段限一次，你可以选择一名其他角色。该角色下个回合结束阶段，若其本回合造成过伤害，则你视为对其使用一张【决斗】；"..
-  "此【决斗】对其造成伤害后，其对你造成等量的伤害。",
+  "此【决斗】对其造成伤害后，若其存活，则其对你造成等量的伤害。",
   ["jiaofeng"] = "交锋",
   [":jiaofeng"] = "锁定技，当你每回合首次造成伤害时，若你已损失体力值：大于0，你摸一张牌；大于1，此伤害+1；大于2，你回复1点体力。",
   ["#xunji"] = "寻嫉：选择一名其他角色，若其下回合内造成过伤害，则你视为对其使用【决斗】",

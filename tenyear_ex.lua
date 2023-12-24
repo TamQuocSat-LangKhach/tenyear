@@ -2752,7 +2752,7 @@ local ty_ex__danshou = fk.CreateTriggerSkill{
           local n = 0
           local events = player.room.logic:getEventsOfScope(GameEvent.UseCard, 999, function(e)
             local use = e.data[1]
-            if table.contains(TargetGroup:getRealTargets(use.tos), player.id) then
+            if use.card.type ~= Card.TypeEquip and table.contains(TargetGroup:getRealTargets(use.tos), player.id) then
               n = n + 1
             end
           end, Player.HistoryTurn)
@@ -2769,7 +2769,7 @@ local ty_ex__danshou = fk.CreateTriggerSkill{
       local n = 0
       local events = player.room.logic:getEventsOfScope(GameEvent.UseCard, 999, function(e)
         local use = e.data[1]
-        if table.contains(TargetGroup:getRealTargets(use.tos), player.id) then
+        if use.card.type ~= Card.TypeEquip and table.contains(TargetGroup:getRealTargets(use.tos), player.id) then
           n = n + 1
         end
       end, Player.HistoryTurn)
@@ -2821,21 +2821,23 @@ local ty_ex__danshou = fk.CreateTriggerSkill{
 
   refresh_events = {fk.TargetConfirmed},
   can_refresh = function(self, event, target, player, data)
-    return target == player
+    return target == player and data.card.type ~= Card.TypeEquip
+    and player:hasSkill(self, true) and player:usedSkillTimes("ty_ex__danshou", Player.HistoryTurn) == 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    room:addPlayerMark(player, "ty_ex__danshou-turn", 1)
-    if player:hasSkill("ty_ex__danshou", true) and player:usedSkillTimes("ty_ex__danshou", Player.HistoryTurn) == 0 then
-      room:setPlayerMark(player, "@ty_ex__danshou-turn", player:getMark("ty_ex__danshou-turn"))
-    end
+    local events = player.room.logic:getEventsOfScope(GameEvent.UseCard, 999, function(e)
+      local use = e.data[1]
+      return use.card.type ~= Card.TypeEquip and table.contains(TargetGroup:getRealTargets(use.tos), player.id)
+    end, Player.HistoryTurn)
+    room:setPlayerMark(player, "@ty_ex__danshou-turn", #events)
   end,
 }
 zhuran:addSkill(ty_ex__danshou)
 Fk:loadTranslationTable{
   ["ty_ex__zhuran"] = "界朱然",
   ["ty_ex__danshou"] = "胆守",
-  [":ty_ex__danshou"] = "每回合限一次，当你成为基本牌或锦囊牌的目标后，你可以摸X张牌（X为你本回合成为牌的目标次数）；"..
+  [":ty_ex__danshou"] = "每回合限一次，当你成为基本牌或锦囊牌的目标后，你可以摸X张牌（X为你本回合成为基本牌或锦囊牌的目标次数）；"..
   "一名角色的结束阶段，若你本回合没有以此法摸牌，你可以弃置其手牌数的牌，对其造成1点伤害。",
   ["#ty_ex__danshou-draw"] = "胆守：你可以摸%arg张牌",
   ["#ty_ex__danshou-trigger"] = "胆守：你可以对 %dest 造成1点伤害",

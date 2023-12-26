@@ -698,7 +698,7 @@ local tycl__jianxiong = fk.CreateTriggerSkill{
 }
 cl__caocao:addSkill(tycl__jianxiong)
 Fk:loadTranslationTable{
-  ["tycl__caocao"] = "曹操",
+  ["tycl__caocao"] = "经典曹操",
   ["tycl__jianxiong"] = "奸雄",
   [":tycl__jianxiong"] = "当你受到伤害后，你可以摸一张牌，并获得造成伤害的牌。当你发动此技能后，摸牌数+1（至多为5）。",
   ["$tycl__jianxiong"] = "宁教我负天下人休教天下人负我！",
@@ -740,7 +740,7 @@ local tycl__rende = fk.CreateActiveSkill{
 }
 cl__liubei:addSkill(tycl__rende)
 Fk:loadTranslationTable{
-  ["tycl__liubei"] = "刘备",
+  ["tycl__liubei"] = "经典刘备",
   ["tycl__rende"] = "章武",
   [":tycl__rende"] = "出牌阶段每名其他角色限一次，你可以获得一名其他角色两张手牌，然后视为使用一张基本牌。",
   ["#tycl__rende"] = "章武：获得一名其他角色两张手牌，然后视为使用一张基本牌",
@@ -797,7 +797,7 @@ local tycl__zhiheng_record = fk.CreateTriggerSkill{
 tycl__zhiheng:addRelatedSkill(tycl__zhiheng_record)
 cl__sunquan:addSkill(tycl__zhiheng)
 Fk:loadTranslationTable{
-  ["tycl__sunquan"] = "孙权",
+  ["tycl__sunquan"] = "经典孙权",
   ["tycl__zhiheng"] = "制衡",
   [":tycl__zhiheng"] = "出牌阶段限一次，你可以弃置任意张牌，然后摸等量的牌。若你以此法弃置了所有的手牌，额外摸1张牌。出牌阶段对每名角色限一次，"..
   "当你对其他角色造成伤害后，此技能本阶段可发动次数+1。",
@@ -1020,7 +1020,7 @@ local shuangbi_viewas = fk.CreateViewAsSkill{
 Fk:addSkill(shuangbi_viewas)
 tycl__sunce:addSkill(shuangbi)
 Fk:loadTranslationTable{
-  ["tycl__sunce"] = "孙策",
+  ["tycl__sunce"] = "双璧孙策",
   ["shuangbi"] = "双璧",
   [":shuangbi"] = "出牌阶段限一次，你可以<font color='red'>选择一名周瑜助战</font>：<br>界周瑜：摸X张牌，本回合手牌上限+X；<br>神周瑜：弃置至多X张牌，"..
   "随机造成等量的火焰伤害；<br>谋周瑜：视为使用X张火【杀】或【火攻】。<br>（X为存活角色数，至多为你的体力上限）",

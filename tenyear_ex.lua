@@ -987,7 +987,7 @@ local ty_ex__xianzhen = fk.CreateActiveSkill{
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+    return #selected == 0 and to_select ~= Self.id and Self:canPindian(Fk:currentRoom():getPlayerById(to_select))
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -2661,7 +2661,7 @@ local ty_ex__qiaoshui = fk.CreateActiveSkill{
   card_filter = Util.FalseFunc,
   target_num = 1,
   target_filter = function(self, to_select, selected)
-    return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+    return #selected == 0 and to_select ~= Self.id and Self:canPindian(Fk:currentRoom():getPlayerById(to_select))
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -2679,10 +2679,10 @@ local ty_ex__qiaoshui_delay = fk.CreateTriggerSkill{
   name = "#ty_ex__qiaoshui_delay",
   events = {fk.AfterCardTargetDeclared},
   mute = true,
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("@ty_ex__qiaoshui-turn") > 0 and data.card.type ~= Card.TypeEquip and data.card.sub_type ~= Card.SubtypeDelayedTrick
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local num = player:getMark("@ty_ex__qiaoshui-turn")
@@ -2969,7 +2969,7 @@ local ty_ex__zhuikong = fk.CreateTriggerSkill{
   events = {fk.TurnStart},
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self) and not target.dead and target ~= player and
-    player:isWounded() and not player:isKongcheng() and not target:isKongcheng()
+    player:isWounded() and player:canPindian(target)
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, data, "#ty_ex__zhuikong-invoke::"..target.id)
@@ -5237,9 +5237,8 @@ ty_ex__zhangyi:addSkill(ty_ex__wurong)
 local ty_ex__shizhi = fk.CreateFilterSkill{
   name = "ty_ex__shizhi",
   card_filter = function(self, to_select, player, isJudgeEvent)
-    --FIXME: filter skill isn't status skill, can't filter card which exists before hp change
     return player:hasSkill(self) and player.hp == 1 and to_select.name == "jink" and
-    (table.contains(player.player_cards[Player.Hand], card.id) or isJudgeEvent)
+    (table.contains(player.player_cards[Player.Hand], to_select.id) or isJudgeEvent)
   end,
   view_as = function(self, to_select)
     return Fk:cloneCard("slash", to_select.suit, to_select.number)

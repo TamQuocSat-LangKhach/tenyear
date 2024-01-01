@@ -8,7 +8,7 @@ Fk:loadTranslationTable{
   ["wm"] = "武",
 }
 
---锦瑟良缘：曹金玉 孙翊 冯妤 来莺儿 曹华 张奋 诸葛若雪
+--锦瑟良缘：曹金玉 孙翊 冯妤 来莺儿 曹华 张奋 诸葛若雪 曹宪
 local caojinyu = General(extension, "caojinyu", "wei", 3, 3, General.Female)
 local yuqi = fk.CreateTriggerSkill{
   name = "yuqi",
@@ -1079,6 +1079,161 @@ Fk:loadTranslationTable{
   ["$nuanhui1"] = "暖阳映雪，可照八九之风光。",
   ["$nuanhui2"] = "晓风和畅，吹融附柳之霜雪。",
   ["~zhugeruoxue"] = "自古佳人叹白头……",
+}
+
+local caoxian = General(extension, "caoxian", "wei", 3, 3, General.Female)
+local lingxi = fk.CreateTriggerSkill{
+  name = "lingxi",
+  mute = true,
+  events = {fk.EventPhaseStart, fk.EventPhaseEnd, fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) then return false end
+    if event == fk.AfterCardsMove then
+      for _, move in ipairs(data) do
+        if move.from == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromSpecialName == "lingxi_wing" then
+              return true
+            end
+          end
+        end
+      end
+    else
+      return target == player and player.phase == Player.Play and not player:isNude()
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.AfterCardsMove then return true end
+    local room = player.room
+    local x = player.maxHp
+    local card = room:askForCard(player, 1, x, true, self.name, true, ".", "#lingxi-put:::"..x)
+    if #card > 0 then
+      self.cost_data = card
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke(self.name)
+    if event == fk.AfterCardsMove then
+      local suits = {}
+      for _, id in ipairs(player:getPile("lingxi_wing")) do
+        local suit = Fk:getCardById(id).suit
+        table.insertIfNeed(suits, suit)
+      end
+      local x = (2 * #suits) - player:getHandcardNum()
+      if x > 0 then
+        room:notifySkillInvoked(player, self.name, "drawcard")
+        player:drawCards(x, self.name)
+      else
+        room:notifySkillInvoked(player, self.name, "negative")
+        room:askForDiscard(player, -x, -x, false, self.name, false)
+      end
+    else
+      room:notifySkillInvoked(player, self.name, "special")
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(self.cost_data)
+      player:addToPile("lingxi_wing", dummy, true, self.name)
+    end
+  end,
+}
+caoxian:addSkill(lingxi)
+local zhifou = fk.CreateTriggerSkill{
+  name = "zhifou",
+  anim_type = "control",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and #U.getMark(player, "zhifou-turn") < 3
+    and #player:getPile("lingxi_wing") > player:usedSkillTimes(self.name, Player.HistoryTurn)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local x = player:usedSkillTimes(self.name, Player.HistoryTurn) + 1
+    local success, dat = room:askForUseActiveSkill(player, "zhifou_active", "#zhifou-invoke:::"..x, true)
+    if success and dat then
+      self.cost_data = {dat.targets[1], dat.cards, dat.interaction}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local choice = self.cost_data[3]
+    local mark = U.getMark(player, "zhifou-turn")
+    table.insert(mark, choice)
+    room:setPlayerMark(player, "zhifou-turn", mark)
+    local to = room:getPlayerById(self.cost_data[1])
+    room:moveCards({
+      from = player.id,
+      ids = self.cost_data[2],
+      fromArea = Card.PlayerSpecial,
+      fromSpecialName = "lingxi_wing",
+      toArea = Card.DiscardPile,
+      moveReason = fk.ReasonPutIntoDiscardPile,
+    })
+    if to.dead then return end
+    if choice == "zhifou_put" then
+      if player.dead or to:isNude() then return end
+      local card = room:askForCard(to, 1, 1, true, self.name, false, ".", "#zhifou-put")
+      player:addToPile("lingxi_wing", card[1], true, self.name)
+    elseif choice == "zhifou_discard" then
+      room:askForDiscard(to, 2, 2, true, self.name, false)
+    else
+      room:loseHp(to, 1, self.name)
+    end
+  end,
+}
+local zhifou_active = fk.CreateActiveSkill{
+  name = "zhifou_active",
+  min_card_num = function ()
+    return (Self:usedSkillTimes("zhifou", Player.HistoryTurn) + 1)
+  end,
+  expand_pile = "lingxi_wing",
+  target_num = 1,
+  interaction = function()
+    local choices = {}
+    local all_choices = {"zhifou_put", "zhifou_discard", "zhifou_losehp"}
+    local used = U.getMark(Self, "zhifou-turn")
+    for _, choice in ipairs(all_choices) do
+      if not table.contains(used, choice) then
+        table.insert(choices, choice)
+      end
+    end
+    return UI.ComboBox {choices = choices, all_choices = all_choices}
+  end,
+  card_filter = function(self, to_select, selected)
+    return Self:getPileNameOfId(to_select) == "lingxi_wing"
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if #selected > 0 or not self.interaction.data then return false end
+    if self.interaction.data == "zhifou_losehp" then
+      return true
+    else
+      return not Fk:currentRoom():getPlayerById(to_select):isNude()
+    end
+  end,
+}
+Fk:addSkill(zhifou_active)
+caoxian:addSkill(zhifou)
+Fk:loadTranslationTable{
+  ["caoxian"] = "曹宪",
+  ["lingxi"] = "灵犀",
+  [":lingxi"] = "出牌阶段开始时或结束时，你可以将至多体力上限张牌置于你的武将牌上，称为“翼”。当你的“翼”被移去后，你将手牌摸至或弃置至“翼”包含的花色数的两倍。",
+  ["#lingxi-put"] = "灵犀：将至多 %arg 张牌置入“翼”",
+  ["lingxi_wing"] = "翼",
+  ["zhifou"] = "知否",
+  [":zhifou"] = "当你使用牌结算结束后，你可以移去至少X张“翼”（X为你本回合发动此技能的次数），选择一名角色并选择一项（每回合每项限一次），令其执行之：1.将一张牌置入“翼”；2.弃置两张牌；3.失去1点体力。",
+  ["zhifou_active"] = "知否",
+  ["#zhifou-invoke"] = "知否：移去至少 %arg 张“翼”，令一名角色执行一个效果",
+  ["zhifou_put"] = "将一张牌置入“翼”",
+  ["zhifou_discard"] = "弃置两张牌",
+  ["zhifou_losehp"] = "失去1点体力",
+  ["#zhifou-put"] = "知否：你须将一张牌置入“翼”中",
+
+  ["$lingxi1"] = "灵犀渡清潭，涟漪扰我心。",
+  ["$lingxi2"] = "心有玲珑曲，万籁皆空灵。",
+  ["$zhifou1"] = "满怀相思意，念君君可知？",
+  ["$zhifou2"] = "世有人万万，相知无二三。",
+  ["~caoxian"] = "恨生枭雄府，恨嫁君王家。",
 }
 
 --高山仰止：王朗 刘徽

@@ -919,31 +919,31 @@ local ty_ex__pojun = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.card.trueName == "slash" and
-      not player.room:getPlayerById(data.to):isNude()
+    if target == player and player:hasSkill(self) and player.phase == Player.Play and data.card.trueName == "slash" then
+      local to = player.room:getPlayerById(data.to)
+      return to.hp > 0 and not to:isNude()
+    end
+  end,
+  on_cost = function (self, event, target, player, data)
+    local x = player.room:getPlayerById(data.to).hp
+    return player.room:askForSkillInvoke(player, self.name, nil, "#ty_ex__pojun-invoke::"..data.to..":"..x)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(data.to)
-    local cards = room:askForCardsChosen(player, to, 0, to.hp, "he", self.name)
-    if #cards > 0 then
-       local equipC = table.filter(cards, function (id)
-        return Fk:getCardById(id).type == Card.TypeEquip
-      end)
-       if #equipC > 0 then
-         room:fillAG(player, equipC)
-         local id = room:askForAG(player, equipC, false, self.name)
-        room:closeAG(player)
-        room:throwCard({id}, self.name, to, player)
-         table.removeOne(cards, id)
-       end
-       to:addToPile(self.name, cards, false, self.name)
-       local drawtrick = table.filter(cards, function (id)
-        return Fk:getCardById(id).type == Card.TypeTrick
-      end)
-       if #drawtrick > 0 then
-         player:drawCards(1, self.name)
-       end   
+    local cards = room:askForCardsChosen(player, to, 1, to.hp, "he", self.name)
+    to:addToPile(self.name, cards, false, self.name)
+    local equipC = table.filter(cards, function (id)
+      return Fk:getCardById(id).type == Card.TypeEquip
+    end)
+    if #equipC > 0 then
+      local card = room:askForCardChosen(player, to, { card_data = { { "$Throw", equipC }  } }, self.name, "#ty_ex__pojun-throw")
+      room:throwCard({card}, self.name, to, player)
+    end
+    if not player.dead and table.find(cards, function (id)
+      return Fk:getCardById(id).type == Card.TypeTrick
+    end) then
+      player:drawCards(1, self.name)
     end
   end,
 }
@@ -970,6 +970,10 @@ Fk:loadTranslationTable{
   ["ty_ex__pojun"] = "破军",
   [":ty_ex__pojun"] = "当你于出牌阶段内使用【杀】指定一个目标后，你可以将其至多X张牌扣置于该角色的武将牌旁（X为其体力值），若其中有："..
   "装备牌，你弃置其中一张牌；锦囊牌，你摸一张牌。若如此做，当前回合结束后，该角色获得其武将牌旁的所有牌。",
+  ["#ty_ex__pojun-invoke"] = "破军：你可以扣置 %dest 至多 %arg 张牌",
+  ["#ty_ex__pojun_delay"] = "破军",
+  ["$Throw"] = "弃置",
+  ["#ty_ex__pojun-throw"] = "破军：弃置其中一张牌",
 
   ["$ty_ex__pojun1"] = "奋身出命，为国建功！",
   ["$ty_ex__pojun2"] = "披甲持戟，先登陷陈！",
@@ -2318,60 +2322,31 @@ local ty_ex__chengxiang = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local card_ids = room:getNCards(4)
-    local get, throw = {}, {}
+    local cards = room:getNCards(4)
     room:moveCards({
-      ids = card_ids,
+      ids = cards,
       toArea = Card.Processing,
       moveReason = fk.ReasonPut,
     })
-    table.forEach(room.players, function(p)
-      room:fillAG(p, card_ids)
-    end)
-    while true do
-      local sum = 0
-      table.forEach(get, function(id)
-        sum = sum + Fk:getCardById(id).number
-      end)
-      for i = #card_ids, 1, -1 do
-        local id = card_ids[i]
-        if sum + Fk:getCardById(id).number > 13 then
-          room:takeAG(player, id, room.players)
-          table.insert(throw, id)
-          table.removeOne(card_ids, id)
-        end
-      end
-      if #card_ids == 0 then break end
-      local card_id = room:askForAG(player, card_ids, false, self.name)
-      --if card_id == nil then break end
-      room:takeAG(player, card_id, room.players)
-      table.insert(get, card_id)
-      table.removeOne(card_ids, card_id)
-      if #card_ids == 0 then break end
-    end
-    table.forEach(room.players, function(p)
-      room:closeAG(p)
-    end)
+    local get = room:askForPoxi(player, "chengxiang_count", {
+      { self.name, cards },
+    }, nil, true)
     if #get > 0 then
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(get)
+      room:obtainCard(player.id, dummy, true, fk.ReasonPrey)
       local n = 0
       for _, id in ipairs(get) do
         n = n + Fk:getCardById(id).number
       end
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(get)
-      room:obtainCard(player.id, dummy, true, fk.ReasonPrey)
-      if n == 13 and not player.dead then
-        if not player.faceup then
-          player:turnOver()
-        end
-        if player.chained then
-          player:setChainState(false)
-        end
+      if n == 13 then
+        player:reset()
       end
     end
-    if #throw > 0 then
+    cards = table.filter(cards, function(id) return room:getCardArea(id) == Card.Processing end)
+    if #cards > 0 then
       room:moveCards({
-        ids = throw,
+        ids = cards,
         toArea = Card.DiscardPile,
         moveReason = fk.ReasonPutIntoDiscardPile,
       })

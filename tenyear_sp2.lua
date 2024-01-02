@@ -848,38 +848,21 @@ local jianzheng = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     local cards = target.player_cards[Player.Hand]
-    local availableCards = {}
-    for _, id in ipairs(cards) do
+    local availableCards = table.filter(cards, function(id)
       local card = Fk:getCardById(id)
-      if not player:prohibitUse(card) and player:canUse(card) then
-        table.insertIfNeed(availableCards, id)
-      end
-    end
-    room:fillAG(player, cards)
+      return not player:prohibitUse(card) and player:canUse(card)
+    end)
+    local get, _ = U.askforChooseCardsAndChoice(player, availableCards, {"OK"}, self.name, "#jianzheng-choose", {"Cancel"}, 1, 1, cards)
     local yes = false
-    for i = #cards, 1, -1 do
-      if not table.contains(availableCards, cards[i]) then
-        room:takeAG(player, cards[i], room.players)
-      end
-    end
-    if #availableCards == 0 then
-      room:delay(3000)
-      room:closeAG(player)
-    else
-      local id = room:askForAG(player, availableCards, true, self.name)
-      room:closeAG(player)
-      if id then
-        room:obtainCard(player.id, id, false, fk.ReasonPrey)
-        if not player.dead and room:getCardOwner(id) == player and room:getCardArea(id) == Card.PlayerHand then
-          local card = Fk:getCardById(id)
-          local use = room:askForUseCard(player, card.name, "^(jink,nullification)|.|.|.|.|.|"..tostring(id),
-            "#jianzheng-use:::"..card:toLogString(), true)
-          if use then
-            use.extraUse = true
-            room:useCard(use)
-            if table.contains(TargetGroup:getRealTargets(use.tos), target.id) then
-              yes = true
-            end
+    if #get > 0 then
+      local id = get[1]
+      room:obtainCard(player.id, id, false, fk.ReasonPrey)
+      if not player.dead and table.contains(player:getCardIds("h"), id) then
+        local card = Fk:getCardById(id)
+        local use = U.askForUseRealCard(room, player, {id}, ".", self.name, "#jianzheng-use:::"..card:toLogString())
+        if use then
+          if table.contains(TargetGroup:getRealTargets(use.tos), target.id) then
+            yes = true
           end
         end
       end
@@ -892,9 +875,7 @@ local jianzheng = fk.CreateActiveSkill{
         target:setChainState(true)
       end
       if not player.dead and not target.dead and not player:isKongcheng() then
-        room:fillAG(target, player:getCardIds("h"))
-        room:delay(3000)
-        room:closeAG(target)
+        U.viewCards(target, player:getCardIds("h"), self.name)
       end
     end
   end,
@@ -969,6 +950,7 @@ Fk:loadTranslationTable{
   ["fumou"] = "腹谋",
   [":fumou"] = "当你受到伤害后，你可以令至多X名角色依次选择一项：1.移动场上一张牌；2.弃置所有手牌并摸两张牌；3.弃置装备区所有牌并回复1点体力。"..
   "（X为你已损失的体力值）",
+  ["#jianzheng-choose"] = "谏诤：选择一张使用",
   ["#jianzheng-use"] = "谏诤：你可以使用%arg",
   ["#fumou-choose"] = "腹谋：你可以令至多%arg名角色依次选择执行一项",
   ["fumou1"] = "移动场上一张牌",

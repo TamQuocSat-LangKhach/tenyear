@@ -5364,34 +5364,36 @@ Fk:loadTranslationTable{
 }
 
 local zhaozhi = General(extension, "zhaozhi", "shu", 3)
+local tg_list = {"tg_wuyong","tg_gangying","tg_duomou","tg_guojue","tg_renzhi"}
 local tongguan = fk.CreateTriggerSkill{
   name = "tongguan",
   anim_type = "special",
   frequency = Skill.Compulsory,
   events = {fk.TurnStart},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self, true) and
-      table.every({1, 2, 3, 4, 5}, function(i) return target:getMark("@@tongguan"..i) == 0 end)
+    if player:hasSkill(self) and target:getMark("@[:]tongguan") == 0 then
+      return #U.getEventsByRule(player.room, GameEvent.Turn, 2, function (e)
+        return e.data[1] == target
+      end, 1) == 1
+    end
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local count = {0, 0, 0, 0, 0}
-    for _, p in ipairs(room:getAlivePlayers()) do
-      for i = 1, 5, 1 do
-        if p:getMark("@@tongguan"..i) > 0 then
-          count[i] = count[i] + 1
+    local choices = table.simpleClone(tg_list)
+    local choiceMap = {}
+    for _, p in ipairs(room.alive_players) do
+      local c = p:getMark("@[:]tongguan")
+      if c ~= 0 then
+        choiceMap[c] = (choiceMap[c] or 0) + 1
+        if choiceMap[c] == 2 then
+          table.removeOne(choices, c)
         end
       end
     end
-    local choices = {}
-    for i = 1, 5, 1 do
-      if count[i] < 2 then
-        table.insert(choices, "@@tongguan"..i)
-      end
-    end
+    if #choices == 0 then return end
     local choice = room:askForChoice(player, choices, self.name, "#tongguan-choice::"..target.id, true)
-    room:setPlayerMark(target, choice, 1)
+    room:setPlayerMark(target, "@[:]tongguan", choice)
   end,
 }
 local mengjiez = fk.CreateTriggerSkill{
@@ -5399,32 +5401,91 @@ local mengjiez = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self, true) and (target:getMark(self.name) > 0 or
-      (target:getMark("@@tongguan2") > 0 and target:getHandcardNum() > target.hp))
+    local mark = target:getMark("@[:]tongguan")
+    local room = player.room
+    if player:hasSkill(self, true) and mark ~= 0 then
+      if mark == "tg_wuyong" then
+        return #U.getActualDamageEvents(room, 1, function(e) return e.data[1].from == target end) > 0
+      elseif mark == "tg_gangying" then
+        if target:getHandcardNum() > target.hp then return true end
+        local _event = room.logic:getEventsOfScope(GameEvent.Recover, 1, function(e)
+          return e.data[1].who == target
+        end, Player.HistoryTurn)
+        return #_event > 0
+      elseif mark == "tg_duomou" then
+        local phase_ids = {}
+        room.logic:getEventsOfScope(GameEvent.Phase, 1, function (e)
+          if e.data[2] == Player.Draw then
+            table.insert(phase_ids, {e.id, e.end_id})
+          end
+          return false
+        end, Player.HistoryTurn)
+        local _event = room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
+          local in_draw = false
+          for _, ids in ipairs(phase_ids) do
+            if #ids == 2 and e.id > ids[1] and e.id < ids[2] then
+              in_draw = true
+              break
+            end
+          end
+          if not in_draw then
+            for _, move in ipairs(e.data) do
+              if move.to == target.id and move.moveReason == fk.ReasonDraw then
+                return true
+              end
+            end
+          end
+          return false
+        end, Player.HistoryTurn)
+        return #_event > 0
+      elseif mark == "tg_guojue" then
+        local _event = room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
+          for _, move in ipairs(e.data) do
+            if move.from ~= target.id and (move.proposer == target or move.proposer == target.id)
+            and (move.moveReason == fk.ReasonDiscard or move.moveReason == fk.ReasonPrey) then
+              return true
+            end
+          end
+          return false
+        end, Player.HistoryTurn)
+        return #_event > 0
+      elseif mark == "tg_renzhi" then
+        local _event = room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
+          for _, move in ipairs(e.data) do
+            if move.from == target.id and move.to ~= move.from and move.moveReason == fk.ReasonGive then
+              return true
+            end
+          end
+          return false
+        end, Player.HistoryTurn)
+        return #_event > 0
+      end
+    end
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    if target:getMark("@@tongguan3") > 0 then
+    local mark = target:getMark("@[:]tongguan")
+    if mark == "tg_duomou" then
       return room:askForSkillInvoke(player, self.name, nil, "#mengjiez3-invoke")
     else
       local targets, prompt
-      if target:getMark("@@tongguan1") > 0 then
+      if mark == "tg_wuyong" then
         targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
         prompt = "#mengjiez1-invoke"
-      elseif target:getMark("@@tongguan2") > 0 then
+      elseif mark == "tg_gangying" then
         targets = table.map(table.filter(room:getAlivePlayers(), function(p)
           return p:isWounded() end), Util.IdMapper)
         prompt = "#mengjiez2-invoke"
-      elseif target:getMark("@@tongguan4") > 0 then
+      elseif mark == "tg_guojue"  then
         targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
           return not p:isAllNude() end), Util.IdMapper)
         prompt = "#mengjiez4-invoke"
-      elseif target:getMark("@@tongguan5") > 0 then
+      elseif mark == "tg_renzhi" then
         targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
           return p:getHandcardNum() < p.maxHp end), Util.IdMapper)
         prompt = "#mengjiez5-invoke"
       end
-      if #targets == 0 then return end
+      if #targets == 0 then return false end
       local to = room:askForChoosePlayers(player, targets, 1, 1, prompt, self.name, true)
       if #to > 0 then
         self.cost_data = to[1]
@@ -5433,67 +5494,32 @@ local mengjiez = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    if target:getMark("@@tongguan3") > 0 then
+    local room = player.room
+    local mark = target:getMark("@[:]tongguan")
+    if mark == "tg_duomou" then
       player:drawCards(2, self.name)
     else
-      local room = player.room
       local to = room:getPlayerById(self.cost_data)
-      if target:getMark("@@tongguan1") > 0 then
+      if mark == "tg_wuyong" then
         room:damage{
           from = player,
           to = to,
           damage = 1,
           skillName = self.name,
         }
-      elseif target:getMark("@@tongguan2") > 0 then
+      elseif mark == "tg_gangying" then
         room:recover({
           who = to,
           num = 1,
           recoverBy = player,
           skillName = self.name
         })
-      elseif target:getMark("@@tongguan4") > 0 then
+      elseif mark == "tg_guojue" then
         local cards = room:askForCardsChosen(player, to, 1, 2, "hej", self.name)
         room:throwCard(cards, self.name, to, player)
-      elseif target:getMark("@@tongguan5") > 0 then
+      elseif mark == "tg_renzhi" then
         to:drawCards(math.min(5, to.maxHp - #to.player_cards[Player.Hand]), self.name)
       end
-    end
-  end,
-
-  refresh_events = {fk.TurnStart, fk.Damage, fk.HpRecover, fk.AfterCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    if event == fk.TurnStart then
-      return target == player
-    elseif player.phase ~= Player.NotActive then
-      if event == fk.Damage then
-        return target == player and player:getMark("@@tongguan1") > 0
-      elseif event == fk.HpRecover then
-        return target == player and player:getMark("@@tongguan2") > 0
-      else
-        for _, move in ipairs(data) do
-          if player:getMark("@@tongguan3") > 0 and
-            move.to == player.id and move.moveReason == fk.ReasonDraw and player.phase ~= Player.Draw then
-            return true
-          end
-          if player:getMark("@@tongguan4") > 0 and
-            move.from ~= player.id and (move.proposer == player or move.proposer == player.id) and
-            (move.moveReason == fk.ReasonDiscard or move.moveReason == fk.ReasonPrey) then
-            return true
-          end
-          if player:getMark("@@tongguan5") > 0 and
-            move.from == player.id and move.moveReason == fk.ReasonGive then
-            return true
-          end
-        end
-      end
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    if event == fk.TurnStart then
-      player.room:setPlayerMark(player, self.name, 0)
-    else
-      player.room:addPlayerMark(player, self.name, 1)
     end
   end,
 }
@@ -5511,16 +5537,17 @@ Fk:loadTranslationTable{
   "果决：弃置或获得其他角色的牌；弃置一名其他角色区域内的至多两张牌<br>"..
   "仁智：交给其他角色牌；令一名其他角色将手牌摸至体力上限（至多摸五张）",
   ["#tongguan-choice"] = "统观：为 %dest 选择一项属性（每种属性至多被选择两次）",
-  ["@@tongguan1"] = "武勇",
-  [":@@tongguan1"] = "回合结束时，若其本回合造成过伤害，你对一名其他角色造成1点伤害",
-  ["@@tongguan2"] = "刚硬",
-  [":@@tongguan2"] = "回合结束时，若其手牌数大于体力值，或其本回合回复过体力，你令一名角色回复1点体力",
-  ["@@tongguan3"] = "多谋",
-  [":@@tongguan3"] = "回合结束时，若其本回合摸牌阶段外摸过牌，你摸两张牌",
-  ["@@tongguan4"] = "果决",
-  [":@@tongguan4"] = "回合结束时，若其本回合弃置或获得过其他角色的牌，你弃置一名其他角色区域内的至多两张牌",
-  ["@@tongguan5"] = "仁智",
-  [":@@tongguan5"] = "回合结束时，若其本回合交给其他角色牌，你令一名其他角色将手牌摸至体力上限（至多摸五张）",
+  ["@[:]tongguan"] = "统观",
+  ["tg_wuyong"] = "武勇",
+  [":tg_wuyong"] = "回合结束时，若其本回合造成过伤害，你对一名其他角色造成1点伤害",
+  ["tg_gangying"] = "刚硬",
+  [":tg_gangying"] = "回合结束时，若其手牌数大于体力值，或其本回合回复过体力，你令一名角色回复1点体力",
+  ["tg_duomou"] = "多谋",
+  [":tg_duomou"] = "回合结束时，若其本回合摸牌阶段外摸过牌，你摸两张牌",
+  ["tg_guojue"] = "果决",
+  [":tg_guojue"] = "回合结束时，若其本回合弃置或获得过其他角色的牌，你弃置一名其他角色区域内的至多两张牌",
+  ["tg_renzhi"] = "仁智",
+  [":tg_renzhi"] = "回合结束时，若其本回合交给其他角色牌，你令一名其他角色将手牌摸至体力上限（至多摸五张）",
   ["#mengjiez1-invoke"] = "梦解：你可以对一名其他角色造成1点伤害",
   ["#mengjiez2-invoke"] = "梦解：你可以令一名角色回复1点体力",
   ["#mengjiez3-invoke"] = "梦解：你可以摸两张牌",

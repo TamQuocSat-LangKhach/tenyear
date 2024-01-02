@@ -1930,20 +1930,28 @@ local kuangcai = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) then
       if player.phase == Player.Discard then
-        local n = 0
-        for _, v in pairs(player.cardUsedHistory) do
-          if v[Player.HistoryTurn] > 0 then
-            n = 1
-            break
-          end
-        end
-        if n == 0 then
+        local used = #player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e)
+          local use = e.data[1]
+          return use.from == player.id
+        end, Player.HistoryTurn) > 0
+        if not used then
+          self.cost_data = "noused"
           return true
-        else
-          return player:getMark("@kuangcai-turn") == 0 and player:getMaxCards() > 0
+        elseif  #U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == player end) == 0 then
+          self.cost_data = "used"
+          return true
         end
       elseif player.phase == Player.Finish then
-        return player:getMark("@kuangcai-turn") > 0
+        local n = 0
+        U.getActualDamageEvents(player.room, 1, function(e)
+          if e.data[1].from == player then
+            n = n + e.data[1].damage
+          end
+        end)
+        if n > 0 then
+          self.cost_data = n
+          return true
+        end
       end
     end
   end,
@@ -1951,42 +1959,24 @@ local kuangcai = fk.CreateTriggerSkill{
     local room = player.room
     player:broadcastSkillInvoke(self.name)
     if player.phase == Player.Discard then
-      local n = 0
-      for _, v in pairs(player.cardUsedHistory) do
-        if v[Player.HistoryTurn] > 0 then
-          n = 1
-          break
-        end
-      end
-      if n == 0 then
+      if self.cost_data == "noused" then
         room:notifySkillInvoked(player, self.name, "support")
         room:addPlayerMark(player, MarkEnum.AddMaxCards, 1)
       else
         room:notifySkillInvoked(player, self.name, "negative")
         room:addPlayerMark(player, MarkEnum.MinusMaxCards, 1)
       end
+      room:broadcastProperty(player, "MaxCards")
     elseif player.phase == Player.Finish then
       room:notifySkillInvoked(player, self.name, "drawcard")
-      player:drawCards(math.min(player:getMark("@kuangcai-turn"), 5))
-    end
-  end,
-
-  refresh_events = {fk.Damage},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player.phase < Player.Finish
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    room:addPlayerMark(player, "kuangcai-turn", data.damage)
-    if player:hasSkill(self.name, true) then
-      room:setPlayerMark(player, "@kuangcai-turn", player:getMark("kuangcai-turn"))
+      player:drawCards(math.min(self.cost_data, 5))
     end
   end,
 }
 local kuangcai_targetmod = fk.CreateTargetModSkill{
   name = "#kuangcai_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return player:hasSkill("kuangcai") and scope == Player.HistoryPhase and player.phase ~= Player.NotActive
+    return player:hasSkill("kuangcai") and player.phase ~= Player.NotActive
   end,
   bypass_distances = function(self, player, skill, card, to)
     return player:hasSkill("kuangcai") and player.phase ~= Player.NotActive
@@ -2043,7 +2033,6 @@ Fk:loadTranslationTable{
   "使用过牌且没有造成伤害，你手牌上限-1。<br>③结束阶段，若你本回合造成过伤害，你摸等于伤害值数量的牌（最多摸五张）。",
   ["shejian"] = "舌剑",
   [":shejian"] = "每回合限两次，当你成为其他角色使用牌的唯一目标后，你可以弃置至少两张手牌，然后弃置其等量的牌或对其造成1点伤害。",
-  ["@kuangcai-turn"] = "狂才",
   ["#shejian-card"] = "舌剑：你可以弃置至少两张手牌，弃置 %dest 等量的牌或对其造成1点伤害",
   ["damage1"] = "造成1点伤害",
   ["#shejian-choice"] = "舌剑：选择对 %dest 执行的一项",

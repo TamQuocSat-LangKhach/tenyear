@@ -154,8 +154,8 @@ local ty__fuhan = fk.CreateTriggerSkill{
         local list = {}
         for _, skill_name in ipairs(general:getSkillNameList()) do
           local skill = Fk.skills[skill_name]
-          if not player:hasSkill(skill, true) and skill.frequency ~= Skill.Limited and skill.frequency ~= Skill.Wake
-          and not skill.lordSkill then
+          if not player:hasSkill(skill, true) and skill.frequency < 4 and not skill.lordSkill
+          and (#skill.attachedKingdom == 0 or table.contains(skill.attachedKingdom, player.kingdom)) then
             table.insert(list, skill_name)
           end
         end
@@ -173,7 +173,7 @@ local ty__fuhan = fk.CreateTriggerSkill{
     for i = 1, 2 do
       if #generals == 0 then break end
       local result = player.room:askForCustomDialog(player, self.name,
-      "packages/ol/qml/OLEXHuanshenBox.qml", {
+      "packages/utility/qml/ChooseGeneralsAndChoiceBox.qml", {
         generals,
         {"OK"},
         "#ty__fuhan-general",
@@ -216,7 +216,7 @@ Fk:loadTranslationTable{
   "武将牌中选择并获得至多两个技能（限定技、觉醒技、主公技除外）。若此时你是体力值最低的角色，你回复1点体力。",
   ["#ty__fuhan-invoke"] = "扶汉：你可以移去“梅影”标记，获得两个蜀势力武将的技能！",
   ["#ty__fuhan-choice"] = "扶汉：选择你要获得的技能",
-  ["#ty__fuhan-general"] = "请选择一张武将牌(右键/长按查看武将技能)",
+  ["#ty__fuhan-general"] = "请选择一张武将牌",
   
   ["$ty__fanghun1"] = "芳年华月，不负期望。",
   ["$ty__fanghun2"] = "志洁行芳，承父高志。",

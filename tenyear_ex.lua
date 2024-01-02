@@ -1566,29 +1566,25 @@ local ty_ex__fuhun = fk.CreateViewAsSkill{
     return c
   end,
 }
-local ty_ex__fuhun_record = fk.CreateTriggerSkill{
-  name = "#ty_ex__fuhun_record",
-
-  refresh_events = {fk.Damage, fk.TurnEnd},
-  can_refresh = function(self, event, target, player, data)
-    if target == player then
-      if event == fk.Damage then
-        return player:hasSkill(self) and data.card and table.contains(data.card.skillNames, "ty_ex__fuhun") and player.phase == Player.Play and
-          not (player:hasSkill("ex__wusheng", true) and player:hasSkill("ex__paoxiao", true))
-      else
-        return player:hasSkill(self.name, true)
-      end
-    end
+local ty_ex__fuhun_delay = fk.CreateTriggerSkill{
+  name = "#ty_ex__fuhun_delay",
+  mute = true,
+  events = {fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and data.card and table.contains(data.card.skillNames, "ty_ex__fuhun") and player.phase == Player.Play
+    and not (player:hasSkill("ex__wusheng", true) and player:hasSkill("ex__paoxiao", true))
   end,
-  on_refresh = function(self, event, target, player, data)
-    if event == fk.Damage then
-      player.room:handleAddLoseSkills(player, "ex__wusheng|ex__paoxiao", nil, true, false)
-    else
-      player.room:handleAddLoseSkills(player, "-ex__wusheng|-ex__paoxiao", nil, true, false)
-    end
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local skills = table.filter({"ex__wusheng","ex__paoxiao"}, function(s) return not player:hasSkill(s,true) end)
+    room:handleAddLoseSkills(player, table.concat(skills, "|"))
+    room.logic:getCurrentEvent():findParent(GameEvent.Turn):addCleaner(function()
+      room:handleAddLoseSkills(player, "-"..table.concat(skills, "|-"))
+    end)
   end,
 }
-ty_ex__fuhun:addRelatedSkill(ty_ex__fuhun_record)
+ty_ex__fuhun:addRelatedSkill(ty_ex__fuhun_delay)
 guanxingzhangbao:addSkill(ty_ex__fuhun)
 guanxingzhangbao:addSkill(ty_ex__tongxin)
 guanxingzhangbao:addRelatedSkill("ex__wusheng")
@@ -1599,6 +1595,7 @@ Fk:loadTranslationTable{
   [":ty_ex__tongxin"] = "锁定技，你的攻击范围+2。",
   ["ty_ex__fuhun"] = "父魂",
   [":ty_ex__fuhun"] = "你可以将两张手牌当【杀】使用或打出；当你于出牌阶段内以此法造成伤害后，本回合获得〖武圣〗和〖咆哮〗。",
+  ["ty_ex__fuhun_delay"] = "父魂",
 
   ["$ty_ex__fuhun1"] = "擎刀执矛，以效先父之法。",
   ["$ty_ex__fuhun2"] = "苍天在上，儿必不堕父亲威名！",

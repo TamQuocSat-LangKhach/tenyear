@@ -1040,7 +1040,7 @@ local kannan = fk.CreateActiveSkill{
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected, selected_cards)
     local target = Fk:currentRoom():getPlayerById(to_select)
-    return #selected == 0 and to_select ~= Self.id and target:getMark("kannan-phase") == 0 and not target:isKongcheng()
+    return #selected == 0 and to_select ~= Self.id and target:getMark("kannan-phase") == 0 and Self:canPindian(target)
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)

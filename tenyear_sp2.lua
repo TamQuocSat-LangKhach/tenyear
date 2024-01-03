@@ -717,33 +717,30 @@ local danyi = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and data.firstTarget then
       local room = player.room
-      local events = room.logic.event_recorder[GameEvent.UseCard]
-      if #events < 2 then return end
-      for i = #events - 1, 1, -1 do
-        local use = events[i].data[1]
-        if use.from == player.id then
-          if use.tos then
-            if #TargetGroup:getRealTargets(use.tos) ~= #AimGroup:getAllTargets(data.tos) then return false end
-            for _, id in ipairs(TargetGroup:getRealTargets(use.tos)) do
-              if not table.contains(AimGroup:getAllTargets(data.tos), id) then
-                return false
-              end
-            end
-            for _, id in ipairs(AimGroup:getAllTargets(data.tos)) do
-              if not table.contains(TargetGroup:getRealTargets(use.tos), id) then
-                return false
-              end
-            end
+      local targets = AimGroup:getAllTargets(data.tos)
+      local use_event = room.logic:getCurrentEvent()
+      local last_tos = {}
+      U.getEventsByRule(room, GameEvent.UseCard, 1, function (e)
+        if e.id < use_event.id then
+          local use = e.data[1]
+          if use.from == player.id then
+            last_tos = TargetGroup:getRealTargets(use.tos)
             return true
-          else
-            return false
           end
         end
+      end, 0)
+      if #last_tos == 0 then return false end
+      local x = #table.filter(room.alive_players, function (p)
+        return table.contains(targets, p.id) and table.contains(last_tos, p.id)
+      end)
+      if x > 0 then
+        self.cost_data = x
+        return true
       end
     end
   end,
   on_use = function(self, event, target, player, data)
-    player:drawCards(#AimGroup:getAllTargets(data.tos), self.name)
+    player:drawCards(self.cost_data, self.name)
   end,
 }
 local wencan = fk.CreateActiveSkill{
@@ -759,21 +756,21 @@ local wencan = fk.CreateActiveSkill{
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     if #selected > 1 or to_select == Self.id then return false end
-    local target = Fk:currentRoom():getPlayerById(to_select)
     if #selected == 0 then
-      return target.hp ~= Self.hp
+      return true
     elseif #selected == 1 then
-      return target.hp ~= Self.hp and target.hp ~= Fk:currentRoom():getPlayerById(selected[1]).hp
+      return Fk:currentRoom():getPlayerById(to_select).hp ~= Fk:currentRoom():getPlayerById(selected[1]).hp
     else
       return false
     end
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
+    room:sortPlayersByAction(effect.tos)
     for _, id in ipairs(effect.tos) do
       local p = room:getPlayerById(id)
       if not p.dead then
-        if #p:getCardIds("he") < 2 or not room:askForUseActiveSkill(p, "wencan_active", "#wencan-discard:"..player.id, true) then
+        if not room:askForUseActiveSkill(p, "wencan_active", "#wencan-discard:"..player.id, true) then
           room:setPlayerMark(p, "@@wencan-turn", 1)
         end
       end
@@ -805,7 +802,11 @@ local wencan_active = fk.CreateActiveSkill{
 local wencan_targetmod = fk.CreateTargetModSkill{
   name = "#wencan_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return player:usedSkillTimes("wencan", Player.HistoryTurn) > 0 and scope == Player.HistoryPhase and to:getMark("@@wencan-turn") > 0
+    return player:usedSkillTimes("wencan", Player.HistoryTurn) > 0 and scope == Player.HistoryPhase and
+    to and to:getMark("@@wencan-turn") > 0
+  end,
+  bypass_distances =  function(self, player, skill, card, to)
+    return player:usedSkillTimes("wencan", Player.HistoryTurn) > 0 and to and to:getMark("@@wencan-turn") > 0
   end,
 }
 Fk:addSkill(wencan_active)
@@ -815,14 +816,14 @@ xizheng:addSkill(wencan)
 Fk:loadTranslationTable{
   ["xizheng"] = "郤正",
   ["danyi"] = "耽意",
-  [":danyi"] = "你使用牌指定目标后，若此牌目标与你使用的上一张牌完全相同，你可以摸X张牌（X为此牌目标数）。",
+  [":danyi"] = "你使用牌指定目标后，若此牌目标与你使用的上一张牌有相同的目标，你可以摸X张牌（X为这些目标的数量）。",
   ["wencan"] = "文灿",
-  [":wencan"] = "出牌阶段限一次，你可以选择至多两名体力值不同且均与你不同的角色，这些角色依次选择一项：1.弃置两张花色不同的牌；"..
-  "2.本回合你对其使用牌无次数限制。",
-  ["#wencan"] = "文灿：选择至多两名体力值不同且均与你不同的角色，其弃牌或你对其使用牌无次数限制",
+  [":wencan"] = "出牌阶段限一次，你可以选择至多两名体力值不同的角色，这些角色依次选择一项：1.弃置两张花色不同的牌；"..
+  "2.本回合你对其使用牌无距离和次数限制。",
+  ["#wencan"] = "文灿：选择至多两名体力值不同的角色，其弃牌或你对其使用牌无限制",
   ["@@wencan-turn"] = "文灿",
   ["wencan_active"] = "文灿",
-  ["#wencan-discard"] = "文灿：弃置两张不同花色的牌，否则 %src 本回合对你使用牌无次数限制",
+  ["#wencan-discard"] = "文灿：弃置两张不同花色的牌，否则 %src 本回合对你使用牌无限制",
 
   ["$danyi1"] = "满城锦绣，何及笔下春秋？",
   ["$danyi2"] = "一心向学，不闻窗外风雨。",
@@ -1433,10 +1434,13 @@ local chengbing = General(extension, "chengbing", "wu", 3)
 local jingzao = fk.CreateActiveSkill{
   name = "jingzao",
   anim_type = "drawcard",
+  prompt = function ()
+    return "#jingzao-active:::" + tostring(3 + Self:getMark("jingzao-turn"))
+  end,
   card_num = 0,
   target_num = 1,
   can_use = function(self, player)
-    return player:getMark("jingzao-turn") == 0
+    return player:getMark("jingzao-turn") > -3
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected, selected_cards)
@@ -1446,7 +1450,8 @@ local jingzao = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     room:setPlayerMark(target, "jingzao-phase", 1)
-    local n = 3 + player:getMark("jingzao_num-turn")
+    local n = 3 + player:getMark("jingzao-turn")
+    if n < 1 then return false end
     local cards = room:getNCards(n)
     room:moveCards({
       ids = cards,
@@ -1454,29 +1459,30 @@ local jingzao = fk.CreateActiveSkill{
       moveReason = fk.ReasonJustMove,
       skillName = self.name,
     })
-    if not target:isNude() then
-      local pattern = table.concat(table.map(cards, function(id) return Fk:getCardById(id, true).trueName end), ",")
-      if #room:askForDiscard(target, 1, 1, true, self.name, true, pattern, "#jingzao-discard:"..player.id) > 0 then
-        room:addPlayerMark(player, "jingzao_num-turn", 1)
-        room:moveCards({
-          ids = cards,
-          toArea = Card.DiscardPile,
-          moveReason = fk.ReasonJustMove,
-          skillName = self.name,
-        })
-        return
-      end
+
+    local pattern = table.concat(table.map(cards, function(id) return Fk:getCardById(id).trueName end), ",")
+    if #room:askForDiscard(target, 1, 1, true, self.name, true, pattern, "#jingzao-discard:"..player.id) > 0 then
+      room:addPlayerMark(player, "jingzao-turn", 1)
+      room:moveCards({
+        ids = cards,
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonJustMove,
+        skillName = self.name,
+      })
+      return
     end
-    local dummy = Fk:cloneCard("dilu")
+
+    local to_get = {}
     while #cards > 0 do
       local id = table.random(cards)
-      if not table.find(dummy.subcards, function(c) return Fk:getCardById(c, true).trueName == Fk:getCardById(id, true).trueName end) then
-        dummy:addSubcard(id)
-      end
-      table.removeOne(cards, id)
+      table.insert(to_get, id)
+      local name = Fk:getCardById(id).trueName
+      cards = table.filter(cards, function (id2)
+        return Fk:getCardById(id2).trueName ~= name
+      end)
     end
-    room:obtainCard(player.id, dummy, true, fk.ReasonJustMove)
-    room:setPlayerMark(player, "jingzao-turn", 1)
+    room:setPlayerMark(player, "jingzao-turn", player:getMark("jingzao-turn") - #to_get)
+    room:moveCardTo(to_get, Player.Hand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
   end,
 }
 local enyu = fk.CreateTriggerSkill{
@@ -1486,7 +1492,7 @@ local enyu = fk.CreateTriggerSkill{
   events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.from ~= player.id and (data.card:isCommonTrick() or
-      data.card.type == Card.TypeBasic) and player:getMark("enyu-turn") ~= 0 and
+      data.card.trueName == "slash") and player:getMark("enyu-turn") ~= 0 and
       #table.filter(player:getMark("enyu-turn"), function(name) return name == data.card.trueName end) > 1
   end,
   on_use = function(self, event, target, player, data)
@@ -1495,12 +1501,12 @@ local enyu = fk.CreateTriggerSkill{
 
   refresh_events = {fk.TargetConfirmed},
   can_refresh = function(self, event, target, player, data)
-    return target == player and data.from ~= player.id and (data.card:isCommonTrick() or data.card.type == Card.TypeBasic)
+    return target == player and player:hasSkill(self, true)
+    and (data.card:isCommonTrick() or data.card.trueName == "slash")
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    local mark = player:getMark("enyu-turn")
-    if mark == 0 then mark = {} end
+    local mark = U.getMark(player, "enyu-turn")
     table.insert(mark, data.card.trueName)
     room:setPlayerMark(player, "enyu-turn", mark)
   end,
@@ -1511,10 +1517,12 @@ Fk:loadTranslationTable{
   ["chengbing"] = "程秉",
   ["jingzao"] = "经造",
   [":jingzao"] = "出牌阶段每名角色限一次，你可以选择一名其他角色并亮出牌堆顶三张牌，然后该角色选择一项："..
-  "1.弃置一张与亮出牌同名的牌，然后此技能本回合亮出的牌数+1；2.令你随机获得这些牌中牌名不同的牌各一张，然后此技能本回合失效。",
+  "1.弃置一张与亮出牌同名的牌，然后此技能本回合亮出的牌数+1；"..
+  "2.令你随机获得这些牌中牌名不同的牌各一张，每获得一张，此技能本回合亮出的牌数-1。",
   ["enyu"] = "恩遇",
-  [":enyu"] = "锁定技，当你成为其他角色使用基本牌或普通锦囊牌的目标后，若你本回合已成为过同名牌的目标，此牌对你无效。",
-  ["#jingzao-discard"] = "经造：弃置一张同名牌使本回合“经造”亮出牌+1，或点“取消”令 %src 获得其中不同牌名各一张",
+  [":enyu"] = "锁定技，当你成为其他角色使用【杀】或普通锦囊牌的目标后，若你本回合已成为过同名牌的目标，此牌对你无效。",
+  ["#jingzao-active"] = "发动 经造，选择一名其他角色，亮出牌堆顶的%arg张卡牌",
+  ["#jingzao-discard"] = "经造：弃置一张同名牌使本回合“经造”亮出牌+1，或点“取消”令%src获得其中不同牌名各一张",
 
   ["$jingzao1"] = "闭门绝韦编，造经教世人。",
   ["$jingzao2"] = "著文成经，可教万世之人。",

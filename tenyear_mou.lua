@@ -293,6 +293,12 @@ Fk:loadTranslationTable{
   ["#mengmou-yin"] = "盟谋：你可以令 %dest 打出%arg张【杀】，每少打出一张其失去1点体力",
   ["#mengmou-slash"] = "盟谋：你可以连续使用【杀】，造成伤害后你回复体力（第%arg张，共%arg2张）",
   ["#mengmou-ask"] = "盟谋：你需连续打出【杀】，每少打出一张你失去1点体力（第%arg张，共%arg2张）",
+
+  ["$mingshil1"] = "联刘以抗曹，此可行之大势。",
+  ["$mingshil2"] = "强敌在北，唯协力可御之。",
+  ["$mengmou1"] = "合左抑右，定两家之盟。",
+  ["$mengmou2"] = "求同存异，邀英雄问鼎。",
+  ["~tymou__lusu"] = "虎可为之用，亦可为之伤……",
 }
 
 return extension

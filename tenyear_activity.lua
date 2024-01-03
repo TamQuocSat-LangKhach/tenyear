@@ -925,6 +925,10 @@ local jiaoxia_targetmod = fk.CreateTargetModSkill{
     return player:hasSkill(jiaoxia) and card and card.trueName == "slash" and to and
     not table.contains(U.getMark(player, "jiaoxia_target-phase"), to.id)
   end,
+  bypass_distances =  function(self, player, skill, card, to)
+    return player:hasSkill(jiaoxia) and card and card.trueName == "slash" and to and
+    not table.contains(U.getMark(player, "jiaoxia_target-phase"), to.id)
+  end,
 }
 local humei = fk.CreateActiveSkill{
   name = "humei",
@@ -995,7 +999,7 @@ local humei_trigger = fk.CreateTriggerSkill{
     local room  = player.room
     room:notifySkillInvoked(player, humei.name, "special")
     player:broadcastSkillInvoke(humei.name)
-    room:addPlayerMark(player, "@humei-phase", 1)
+    room:addPlayerMark(player, "@humei-phase", data.damage)
   end,
 }
 jiaoxia:addRelatedSkill(jiaoxia_targetmod)
@@ -1007,10 +1011,10 @@ Fk:loadTranslationTable{
   ["dongxie"] = "董翓",
   ["jiaoxia"] = "狡黠",
   [":jiaoxia"] = "出牌阶段开始时，你可以令本阶段你的手牌均视为【杀】。若你以此法使用的【杀】造成了伤害，"..
-  "此【杀】结算后你可以视为使用原卡牌（有次数限制）。出牌阶段，你对每名角色使用第一张【杀】无次数限制。",
+  "此【杀】结算后你可以视为使用原卡牌（有次数限制）。出牌阶段，你对每名角色使用第一张【杀】无距离和次数限制。",
   ["humei"] = "狐魅",
-  [":humei"] = "出牌阶段每项限一次，你可以选择一项，令一名体力值不大于X的角色执行：1.摸一张牌；2.交给你一张牌；3.回复1点体力"..
-  "（X为你本阶段造成伤害次数）。",
+  [":humei"] = "出牌阶段每项限一次，你可以选择一项，令一名体力值不大于X的角色执行（X为你本阶段造成伤害点数）："..
+  "1.摸一张牌；2.交给你一张牌；3.回复1点体力。",
 
   ["#jiaoxia-invoke"] = "狡黠：你可以令本阶段你的手牌均视为【杀】，且结算后你可以使用原卡牌！",
   ["#jiaoxia_filter"] = "狡黠",

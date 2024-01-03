@@ -2851,11 +2851,7 @@ local funing = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     player:drawCards(2, self.name)
     local n = player:usedSkillTimes(self.name, Player.HistoryTurn)
-    if #player:getCardIds{Player.Hand, Player.Equip} <= n then
-      player:throwAllCards("he")
-    else
-      player.room:askForDiscard(player, n, n, true, self.name, false, ".")
-    end
+    player.room:askForDiscard(player, n, n, true, self.name, false)
   end,
 }
 local bingji = fk.CreateActiveSkill{
@@ -2866,16 +2862,22 @@ local bingji = fk.CreateActiveSkill{
   interaction = UI.ComboBox {choices = {"slash", "peach"}},
   can_use = function(self, player)
     if not player:isKongcheng() then
-      local suit = Fk:getCardById(player.player_cards[Player.Hand][1]):getSuitString()
-      return table.every(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getSuitString() == suit end) and
-        (player:getMark("bingji-turn") == 0 or not table.contains(player:getMark("bingji-turn"), suit))
+      local suit = Fk:getCardById(player.player_cards[Player.Hand][1]):getSuitString(true)
+      return not table.contains(U.getMark(player, "@bingji-phase"), suit)
+      and table.every(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getSuitString(true) == suit end)
     end
   end,
   card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
+    local mark = U.getMark(player, "@bingji-phase")
+    local suit = Fk:getCardById(player.player_cards[Player.Hand][1]):getSuitString(true)
+    table.insert(mark, suit)
+    room:setPlayerMark(player, "@bingji-phase", mark)
     player:showCards(player.player_cards[Player.Hand])
     local card = Fk:cloneCard(self.interaction.data)
+    card.skillName = self.name
+    if player:prohibitUse(card) then return end
     local targets = {}
     for _, p in ipairs(room:getOtherPlayers(player)) do
       if self.interaction.data == "peach" then
@@ -2889,27 +2891,8 @@ local bingji = fk.CreateActiveSkill{
       end
     end
     if #targets == 0 then return end
-    local mark = player:getMark("bingji-turn")
-    local icon = player:getMark("@bingji-turn")
-    if mark == 0 then mark = {} end
-    if icon == 0 then icon = {} end
-    local suit = Fk:getCardById(player.player_cards[Player.Hand][1]):getSuitString()
-    local suits = {"spade", "heart", "club", "diamond"}
-    local icons = {"♠", "♥", "♣", "♦"}
-    for i = 1, 4, 1 do
-      if suits[i] == suit then
-        table.insert(mark, suit)
-        table.insert(icon, icons[i])
-      end
-    end
-    room:setPlayerMark(player, "bingji-turn", mark)
-    room:setPlayerMark(player, "@bingji-turn", icon)
-    local to = room:askForChoosePlayers(player, targets, 1, 1, "#bingji-choose:::"..self.interaction.data, self.name, false)
-    if #to > 0 then
-      to = room:getPlayerById(to[1])
-    else
-      to = room:getPlayerById(table.random(targets))
-    end
+    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#bingji-choose:::"..self.interaction.data, self.name, false)
+    local to = room:getPlayerById(tos[1])
     room:useVirtualCard(self.interaction.data, nil, player, to, self.name, false)
   end
 }
@@ -2922,8 +2905,8 @@ Fk:loadTranslationTable{
   ["bingji"] = "秉纪",
   [":bingji"] = "出牌阶段每种花色限一次，若你的手牌均为同一花色，则你可以展示所有手牌（至少一张），然后视为对一名其他角色使用一张【杀】或一张【桃】。",
   ["#funing-invoke"] = "抚宁：你可以摸两张牌，然后弃置%arg张牌",
-  ["@bingji-turn"] = "秉纪",
-  ["#bingji-choose"] = "秉纪：选择一名角色视为对其使用【%arg】",
+  ["@bingji-phase"] = "秉纪",
+  ["#bingji-choose"] = "秉纪：选择一名其他角色视为对其使用【%arg】",
 
   ["$funing1"] = "为国效力，不可逞一时之气。",
   ["$funing2"] = "诸将和睦，方为国家之幸。",
@@ -4444,12 +4427,12 @@ local gongxiu = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local choices = {"Cancel"}
-    local all_choices = {"Cancel", "gongxiu_draw", "gongxiu_discard"}
-    if table.find(player.room.alive_players, function(p) return p:getMark("jinghe") ~= 0 end) then
-      table.insert(choices, "gongxiu_draw")
-    end
-    if table.find(player.room.alive_players, function(p) return p:getMark("jinghe") == 0 and not p:isKongcheng() end) then
+    local all_choices = {"gongxiu_draw", "gongxiu_discard", "Cancel"}
+    if table.find(player.room.alive_players, function(p) return p:getMark("jinghe-turn") == 0 and not p:isKongcheng() end) then
       table.insert(choices, "gongxiu_discard")
+    end
+    if table.find(player.room.alive_players, function(p) return p:getMark("jinghe-turn") ~= 0 end) then
+      table.insert(choices, "gongxiu_draw")
     end
     local choice = player.room:askForChoice(player, choices, self.name, "#gongxiu-invoke", false, all_choices)
     if choice ~= "Cancel" then
@@ -4461,14 +4444,14 @@ local gongxiu = fk.CreateTriggerSkill{
     local room = player.room
     if self.cost_data[10] == "r" then
       for _, p in ipairs(room.alive_players) do
-        if p:getMark("jinghe") ~= 0 and not p.dead then
+        if p:getMark("jinghe-turn") ~= 0 and not p.dead then
           room:doIndicate(player.id, {p.id})
           p:drawCards(1, self.name)
         end
       end
     else
       for _, p in ipairs(room.alive_players) do
-        if p:getMark("jinghe") == 0 and not p.dead then
+        if p:getMark("jinghe-turn") == 0 and not p.dead then
           room:doIndicate(player.id, {p.id})
           if not p:isKongcheng() then
             room:askForDiscard(p, 1, 1, false, self.name, false)
@@ -4504,7 +4487,7 @@ local jinghe = fk.CreateActiveSkill{
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    room:setPlayerMark(player, "jinghe_used", 1)
+    local mark = U.getMark(player, "jinghe_data")
     player:showCards(effect.cards)
     local skills = table.random(
       {"ex__leiji", "yinbingn", "huoqi", "guizhu", "xianshou", "lundao", "guanyue", "yanzhengn",
@@ -4517,31 +4500,31 @@ local jinghe = fk.CreateActiveSkill{
         local choices = table.filter(skills, function(s) return not p:hasSkill(s, true) and not table.contains(selected, s) end)
         if #choices > 0 then
           local choice = room:askForChoice(p, choices, self.name, "#jinghe-choice", true, skills)
-          room:setPlayerMark(p, self.name, choice)
           table.insert(selected, choice)
           room:handleAddLoseSkills(p, choice, nil, true, false)
+          table.insert(mark, {p.id, choice})
+          room:setPlayerMark(p, "jinghe-turn", 1)
         end
       end
     end
+    room:setPlayerMark(player, "jinghe_data", mark)
   end,
 }
 local jinghe_trigger = fk.CreateTriggerSkill {
   name = "#jinghe_trigger",
   mute = true,
-  events = {fk.TurnStart},
+  events = {fk.TurnStart, fk.Death},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:getMark("jinghe_used") ~= 0
+    return target == player and player:getMark("jinghe_data") ~= 0
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:setPlayerMark(player, "jinghe_used", 0)
-    for _, p in ipairs(room.alive_players) do
-      if p:getMark("jinghe") ~= 0 then
-        local skill = p:getMark("jinghe")
-        room:setPlayerMark(p, "jinghe", 0)
-        room:handleAddLoseSkills(p, "-"..skill, nil, true, false)
-      end
+    local mark = player:getMark("jinghe_data")
+    room:setPlayerMark(player, "jinghe_data", 0)
+    for _, dat in ipairs(mark) do
+      local p = room:getPlayerById(dat[1])
+      room:handleAddLoseSkills(p, "-"..dat[2], nil, true, false)
     end
   end,
 }
@@ -4794,7 +4777,7 @@ Fk:loadTranslationTable{
   "2.令所有本回合未因〖经合〗获得过技能的其他角色弃置一张手牌。",
   ["jinghe"] = "经合",
   [":jinghe"] = "出牌阶段限一次，你可展示至多四张牌名各不同的手牌，选择等量的角色，从“写满技能的天书”随机展示四个技能，这些角色依次选择并"..
-  "获得其中一个，直到你下回合开始。",
+  "获得其中一个，直到你下回合开始或你死亡。",
   ["#gongxiu-invoke"] = "共修：你可以执行一项",
   ["gongxiu_draw"] = "令“经合”角色各摸一张牌",
   ["gongxiu_discard"] = "令非“经合”角色各弃置一张手牌",

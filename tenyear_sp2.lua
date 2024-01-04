@@ -1602,7 +1602,7 @@ local jinjie = fk.CreateTriggerSkill{
       end
     end
 
-    if room:askForDiscard(player, x, x, false, self.name, true, ".", "#jinjie-discard::"..target.id..":"..x) then
+    if #room:askForDiscard(player, x, x, false, self.name, true, ".", "#jinjie-discard::"..target.id..":"..x) > 0 then
       if not target.dead and target:isWounded() then
         room:recover{
           who = target,

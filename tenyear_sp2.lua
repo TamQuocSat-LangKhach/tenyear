@@ -2723,7 +2723,8 @@ local lima = fk.CreateDistanceSkill{
       local n = 0
       for _, p in ipairs(Fk:currentRoom().alive_players) do
         for _, id in ipairs(p:getCardIds("e")) do
-          if Fk:getCardById(id).sub_type == Card.SubtypeOffensiveRide or Fk:getCardById(id).sub_type == Card.SubtypeDefensiveRide then
+          local card_type = Fk:getCardById(id).sub_type
+          if card_type == Card.SubtypeOffensiveRide or card_type == Card.SubtypeDefensiveRide then
             n = n + 1
           end
         end
@@ -2742,7 +2743,9 @@ local xiaoyin = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local n = #table.filter(room.alive_players, function(p) return player:distanceTo(p) <= 1 end)
+    local n = #table.filter(room.alive_players, function(p)
+      return player == p or player:distanceTo(p) == 1
+    end)
     local ids = room:getNCards(n)
     room:moveCards{
       ids = ids,
@@ -2761,102 +2764,62 @@ local xiaoyin = fk.CreateTriggerSkill{
     if #dummy.subcards > 0 then
       room:obtainCard(player.id, dummy, true, fk.ReasonJustMove)
     end
+    local targets = {}
+    while #ids > 0 and not player.dead do
+      player.special_cards["xiaoyin_active"] = table.simpleClone(ids)
+      player:doNotify("ChangeSelf", json.encode {
+        id = player.id,
+        handcards = player:getCardIds("h"),
+        special_cards = player.special_cards,
+      })
+      room:setPlayerMark(player, "xiaoyin_cards", ids)
+      room:setPlayerMark(player, "xiaoyin_targets", targets)
+      local success, dat = room:askForUseActiveSkill(player, "xiaoyin_active", "#xiaoyin-give", true)
+      room:setPlayerMark(player, "xiaoyin_cards", 0)
+      room:setPlayerMark(player, "xiaoyin_targets", 0)
+      player.special_cards["xiaoyin_active"] = {}
+      player:doNotify("ChangeSelf", json.encode {
+        id = player.id,
+        handcards = player:getCardIds("h"),
+        special_cards = player.special_cards,
+      })
+      if not success then break end
+      table.insert(targets, dat.targets[1])
+      table.removeOne(ids, dat.cards[1])
+      room:getPlayerById(dat.targets[1]):addToPile("xiaoyin", dat.cards[1], true, self.name)
+    end
     if #ids > 0 then
-      if player.dead then
-        room:moveCards{
-          ids = ids,
-          toArea = Card.DiscardPile,
-          moveReason = fk.ReasonJustMove,
-          skillName = self.name,
-        }
-      else
-        local fakemove = {
-          toArea = Card.PlayerHand,
-          to = player.id,
-          moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.Processing} end),
-          moveReason = fk.ReasonJustMove,
-        }
-        room:notifyMoveCards({player}, {fakemove})
-        for _, id in ipairs(ids) do
-          room:setCardMark(Fk:getCardById(id), "xiaoyin", 1)
-        end
-        room:setPlayerMark(player, "xiaoyin-tmp", {})
-        while table.find(ids, function(id) return Fk:getCardById(id):getMark("xiaoyin") > 0 end) do
-          if not room:askForUseActiveSkill(player, "xiaoyin_active", "#xiaoyin-give", true) then
-            for _, id in ipairs(ids) do
-              room:setCardMark(Fk:getCardById(id), "xiaoyin", 0)
-            end
-            ids = table.filter(ids, function(id) return room:getCardArea(id) ~= Card.PlayerSpecial end)
-            fakemove = {
-              from = player.id,
-              toArea = Card.Processing,
-              moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
-              moveReason = fk.ReasonJustMove,
-            }
-            room:notifyMoveCards({player}, {fakemove})
-            room:moveCards({
-              ids = ids,
-              fromArea = Card.Processing,
-              toArea = Card.DiscardPile,
-              moveReason = fk.ReasonJustMove,
-              skillName = self.name,
-            })
-          end
-        end
-        room:setPlayerMark(player, "xiaoyin-tmp", 0)
-      end
+      room:moveCards{
+        ids = ids,
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonJustMove,
+        skillName = self.name,
+      }
     end
   end,
 }
 local xiaoyin_active = fk.CreateActiveSkill{
   name = "xiaoyin_active",
+  expand_pile = "xiaoyin_active",
   mute = true,
   card_num = 1,
   target_num = 1,
   card_filter = function(self, to_select, selected, targets)
-    return #selected == 0 and Fk:getCardById(to_select):getMark("xiaoyin") > 0
+    return #selected == 0 and table.contains(U.getMark(Self, "xiaoyin_cards"), to_select)
   end,
   target_filter = function(self, to_select, selected, selected_cards)
-    if to_select ~= Self.id and #selected == 0 then
-      local mark = Self:getMark("xiaoyin-tmp")
+    if #selected == 0 and to_select ~= Self.id then
+      local targets = U.getMark(Self, "xiaoyin_targets")
+      if #targets == 0 then return true end
+      if table.contains(targets, to_select) then return false end
       local target = Fk:currentRoom():getPlayerById(to_select)
-      if #mark == 0 then
-        return true
-      else
-        if table.contains(mark, to_select) then
-          return false
+      if table.contains(targets, target.next.id) then return true end
+      for _, p in ipairs(Fk:currentRoom().alive_players) do
+        if p.next == target then
+          return table.contains(targets, p.id)
         end
-        if target:getNextAlive() == Self then
-          if table.contains(mark, Self:getNextAlive().id) then
-            return true
-          end
-        end
-        if Self:getNextAlive() == target then
-          if table.find(mark, function(id) return Fk:currentRoom():getPlayerById(id):getNextAlive() == Self end) then
-            return true
-          end
-        end
-        return table.find(mark, function(id)
-          return Fk:currentRoom():getPlayerById(id):getNextAlive() == target or target:getNextAlive().id == id end)
       end
     end
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    room:doIndicate(player.id, {target.id})
-    local mark = player:getMark("xiaoyin-tmp")
-    table.insert(mark, target.id)
-    room:setPlayerMark(player, "xiaoyin-tmp", mark)
-    room:setCardMark(Fk:getCardById(effect.cards[1]), "xiaoyin", 0)
-    local fakemove = {
-      from = player.id,
-      toArea = Card.Void,
-      moveInfo = table.map(effect.cards, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
-      moveReason = fk.ReasonJustMove,
-    }
-    room:notifyMoveCards({player}, {fakemove})
-    target:addToPile("xiaoyin", effect.cards[1], true, "xiaoyin")
   end,
 }
 local xiaoyin_trigger = fk.CreateTriggerSkill{
@@ -2878,8 +2841,8 @@ local xiaoyin_trigger = fk.CreateTriggerSkill{
       for _, id in ipairs(target:getPile("xiaoyin")) do
         table.insertIfNeed(types, Fk:getCardById(id):getTypeString())
       end
-      local card = player.room:askForDiscard(data.from, 1, 1, true, self.name, true, ".|.|.|.|.|"..table.concat(types, ","),
-        "#xiaoyin-damage::"..target.id, true)
+      local card = player.room:askForDiscard(data.from, 1, 1, true, self.name, true,
+      ".|.|.|.|.|"..table.concat(types, ","), "#xiaoyin-damage::"..target.id, true)
       if #card > 0 then
         self.cost_data = card
         return true
@@ -2890,30 +2853,34 @@ local xiaoyin_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function (self, event, target, player, data)
     local room = player.room
-    data.from:broadcastSkillInvoke("xiaoyin")
-    room:notifySkillInvoked(data.from, "xiaoyin", "offensive")
+    if data.from:hasskill(xiaoyin, true) then
+      data.from:broadcastSkillInvoke("xiaoyin")
+      room:notifySkillInvoked(data.from, "xiaoyin", "offensive")
+    end
     room:doIndicate(data.from.id, {target.id})
     if data.damageType == fk.FireDamage then
+      local card_type = Fk:getCardById(self.cost_data[1]).type
       room:throwCard(self.cost_data, "xiaoyin", data.from, data.from)
       local ids = table.filter(target:getPile("xiaoyin"), function(id)
-        return Fk:getCardById(id).type == Fk:getCardById(self.cost_data[1]).type end)
+        return Fk:getCardById(id).type == card_type end)
       if #ids > 0 then
-        room:throwCard({table.random(ids)}, "xiaoyin", target, target)
+        room:moveCards({
+          from = target.id,
+          ids = table.random(ids, 1),
+          toArea = Card.DiscardPile,
+          moveReason = fk.ReasonPutIntoDiscardPile,
+          skillName = "xiaoyin",
+          specialName = "xiaoyin",
+        })
+        data.damage = data.damage + 1
       end
     else
-      local id = 0
-      if #target:getPile("xiaoyin") == 1 then
-        id = target:getPile("xiaoyin")[1]
-      else
-        local cards, choice = U.askforChooseCardsAndChoice(data.from, target:getPile("xiaoyin"), {"OK"}, self.name,
-          "#xiaoyin-get", {"Cancel"}, 1, 1)
-        if #cards > 0 then
-          id = cards[1]
-        end
-      end
-      if id ~= 0 then
-        room:moveCardTo(Fk:getCardById(id), Card.PlayerHand, data.from, fk.ReasonJustMove, self.name, nil, true, data.from.id)
-      end
+      local id = room:askForCardChosen(data.from, target, {
+        card_data = {
+          { "xiaoyin", target:getPile("xiaoyin") }
+        }
+      }, "xiaoyin", "#xiaoyin-fire::" .. target.id)
+      room:moveCardTo(id, Card.PlayerHand, data.from, fk.ReasonJustMove, self.name, nil, true, data.from.id)
       data.damageType = fk.FireDamage
     end
   end,
@@ -2971,6 +2938,7 @@ Fk:loadTranslationTable{
   ["huahuo"] = "花火",
   [":huahuo"] = "出牌阶段限一次，你可以将一张红色手牌当做不计次数的火【杀】使用。若目标有“硝引”牌，此【杀】可改为指定所有有“硝引”牌的角色为目标。",
   ["xiaoyin_active"] = "硝引",
+  ["#xiaoyin_trigger"] = "硝引",
   ["#xiaoyin-give"] = "硝引：将黑色牌作为“硝引”放置在连续的其他角色武将牌上",
   ["#xiaoyin-damage"] = "硝引：你可以弃置一张与 %dest “硝引”同类别的牌，令其受到伤害+1",
   ["#xiaoyin-fire"] = "硝引：你可以获得 %dest 的一张“硝引”，令此伤害改为火焰伤害",

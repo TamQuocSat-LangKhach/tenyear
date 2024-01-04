@@ -525,48 +525,92 @@ local ty__jiqiao = fk.CreateTriggerSkill{
 local ty__linglong = fk.CreateTriggerSkill{
   name = "ty__linglong",
   anim_type = "offensive",
-  events = {fk.CardUsing},
+  events = {fk.CardUsing, fk.AskForCardUse, fk.AskForCardResponse, fk.BeforeCardsMove},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and (data.card.trueName == "slash" or data.card:isCommonTrick()) and
+    if event == fk.CardUsing then
+      return target == player and player:hasSkill(self) and (data.card.trueName == "slash" or data.card:isCommonTrick()) and
       table.every({Card.SubtypeArmor, Card.SubtypeOffensiveRide, Card.SubtypeDefensiveRide, Card.SubtypeTreasure}, function(type)
-        return player:getEquipment(type) == nil end)
-  end,
-  on_use = function(self, event, target, player, data)
-    data.disresponsiveList = table.map(player.room.alive_players, Util.IdMapper)
-  end,
-
-  refresh_events = {fk.GameStart, fk.AfterCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    if player:hasSkill(self) then
-      if event == fk.GameStart then
-        return true
-      else
+        return player:getEquipment(type) == nil
+      end)
+    elseif event == fk.BeforeCardsMove then
+      if player:hasSkill(self) and player:getEquipment(Card.SubtypeArmor) and not player:getEquipment(Card.SubtypeTreasure) then
         for _, move in ipairs(data) do
-          if move.from == player.id then
+          if move.from == player.id and move.moveReason == fk.ReasonDiscard and move.proposer ~= player.id then
             for _, info in ipairs(move.moveInfo) do
-              if info.fromArea == Card.PlayerEquip then
+              if info.fromArea == Card.PlayerEquip and Fk:getCardById(info.cardId).sub_type == Card.SubtypeArmor then
                 return true
               end
             end
           end
-          if move.to == player.id and move.toArea == Player.Equip then
-            return true
+        end
+      end
+    else
+      return target == player and player:hasSkill(self) and not player:isFakeSkill(self) and
+      (data.cardName == "jink" or (data.pattern and Exppattern:Parse(data.pattern):matchExp("jink|0|nosuit|none"))) and
+      not player:getEquipment(Card.SubtypeArmor) and player:getMark(fk.MarkArmorNullified) == 0
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.CardUsing or event == fk.BeforeCardsMove then return true end
+    return player.room:askForSkillInvoke(player, self.name, data)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.CardUsing then
+      data.disresponsiveList = table.map(room.alive_players, Util.IdMapper)
+    elseif event == fk.BeforeCardsMove then
+      local ids = {}
+      for _, move in ipairs(data) do
+        if move.from == player.id and move.moveReason == fk.ReasonDiscard and move.proposer ~= player.id then
+          local move_info = {}
+          for _, info in ipairs(move.moveInfo) do
+            local id = info.cardId
+            if info.fromArea == Card.PlayerEquip and Fk:getCardById(info.cardId).sub_type == Card.SubtypeArmor then
+              table.insert(ids, id)
+            else
+              table.insert(move_info, info)
+            end
+          end
+          if #ids > 0 then
+            move.moveInfo = move_info
           end
         end
       end
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)  --FIXME: 虚拟装备技能应该用statusSkill而非triggerSkill
-    if player:getEquipment(Card.SubtypeArmor) == nil and not player:hasSkill("#eight_diagram_skill", true) then
-      player.room:handleAddLoseSkills(player, "#eight_diagram_skill", self, false, true)
-    elseif player:getEquipment(Card.SubtypeArmor) ~= nil and player:hasSkill("#eight_diagram_skill", true) then
-      player.room:handleAddLoseSkills(player, "-#eight_diagram_skill", nil, false, true)
-    end
-    if player:getEquipment(Card.SubtypeTreasure) == nil and not player:hasSkill("ex__qicai", true) then
-      player.room:handleAddLoseSkills(player, "ex__qicai", self, false, true)
-    elseif player:getEquipment(Card.SubtypeTreasure) ~= nil and player:hasSkill("ex__qicai", true) then
-      player.room:handleAddLoseSkills(player, "-ex__qicai", nil, false, true)
+      if #ids > 0 then
+        player.room:sendLog{
+          type = "#cancelDismantle",
+          card = ids,
+          arg = self.name,
+        }
+      end
+    else
+      local judgeData = {
+        who = player,
+        reason = "eight_diagram",
+        pattern = ".|.|heart,diamond",
+      }
+      room:judge(judgeData)
+      if judgeData.card.color == Card.Red then
+        if event == fk.AskForCardUse then
+          data.result = {
+            from = player.id,
+            card = Fk:cloneCard('jink'),
+          }
+          data.result.card.skillName = "eight_diagram"
+          data.result.card.skillName = "ty__linglong"
+
+          if data.eventData then
+            data.result.toCard = data.eventData.toCard
+            data.result.responseToEvent = data.eventData.responseToEvent
+          end
+        else
+          data.result = Fk:cloneCard('jink')
+          data.result.skillName = "eight_diagram"
+          data.result.skillName = "ty__linglong"
+        end
+        return true
+      end
     end
   end,
 }
@@ -580,7 +624,16 @@ local ty__linglong_maxcards = fk.CreateMaxCardsSkill{
     return 0
   end,
 }
+local ty__linglong_targetmod = fk.CreateTargetModSkill{
+  name = "#ty__linglong_targetmod",
+  frequency = Skill.Compulsory,
+  bypass_distances = function(self, player, skill, card)
+    return player:hasSkill("ty__linglong") and player:getEquipment(Card.SubtypeTreasure) == nil
+    and card and card.type == Card.TypeTrick
+  end,
+}
 ty__linglong:addRelatedSkill(ty__linglong_maxcards)
+ty__linglong:addRelatedSkill(ty__linglong_targetmod)
 huangyueying:addSkill(ty__jiqiao)
 huangyueying:addSkill(ty__linglong)
 huangyueying:addRelatedSkill("ex__qicai")

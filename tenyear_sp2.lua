@@ -3499,45 +3499,57 @@ local quanhuijie = General(extension, "quanhuijie", "wu", 3, 3, General.Female)
 local huishu = fk.CreateTriggerSkill{
   name = "huishu",
   anim_type = "drawcard",
-  events = {fk.EventPhaseEnd},
+  events = {fk.EventPhaseEnd, fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Draw
-  end,
-  on_use = function(self, event, target, player, data)
-    player:drawCards(player:getMark("huishu1"), self.name)
-    player.room:askForDiscard(player, player:getMark("huishu2"), player:getMark("huishu2"), false, self.name, false)
-  end,
-
-  refresh_events = {fk.GameStart, fk.AfterCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    if player:hasSkill(self) then
-      if event == fk.GameStart then
-        return true
-      else
-        if player:usedSkillTimes(self.name) > 0 and player:getMark("huishu-turn") < player:getMark("huishu3") then
-          for _, move in ipairs(data) do
-            if move.from == player.id and move.toArea == Card.DiscardPile and move.moveReason == fk.ReasonDiscard then
-              for _, info in ipairs(move.moveInfo) do
-                if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
-                  player.room:addPlayerMark(player, "huishu-turn", 1)
+    if not player:hasSkill(self) then return false end
+    if event == fk.EventPhaseEnd then
+      return target == player and player.phase == Player.Draw
+    elseif player:usedSkillTimes(self.name) > 0 then
+      local room = player.room
+      for _, move in ipairs(data) do
+        if move.from == player.id and move.moveReason == fk.ReasonDiscard then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+              local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
+              if turn_event == nil then return false end
+              local end_id = turn_event.id
+              local x = 0
+              U.getEventsByRule(room, GameEvent.MoveCards, 1, function (e)
+                for _, move2 in ipairs(e.data) do
+                  if move2.from == player.id and move2.moveReason == fk.ReasonDiscard then
+                    for _, info2 in ipairs(move2.moveInfo) do
+                      if info2.fromArea == Card.PlayerHand or info2.fromArea == Card.PlayerEquip then
+                        x = x + 1
+                      end
+                    end
+                  end
                 end
-              end
+                return false
+              end, end_id)
+              return x > player:getMark("huishu3") + 2 and table.find(room.discard_pile, function (id)
+                return Fk:getCardById(id) ~= Card.TypeBasic
+              end)
             end
           end
-          return player:getMark("huishu-turn") >= player:getMark("huishu3")
         end
       end
     end
   end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.GameStart then
-      room:setPlayerMark(player, "huishu1", 3)
-      room:setPlayerMark(player, "huishu2", 1)
-      room:setPlayerMark(player, "huishu3", 2)
-      room:setPlayerMark(player, "@" .. self.name, string.format("%d-%d-%d", 3, 1, 2))
+  on_cost = function(self, event, target, player, data)
+    if event == fk.EventPhaseEnd then
+      return player.room:askForSkillInvoke(player, self.name)
+    end
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    if event == fk.EventPhaseEnd then
+      player:drawCards(player:getMark("huishu1") + 3, self.name)
+      if player.dead then return false end
+      local x = player:getMark("huishu2") + 1
+      player.room:askForDiscard(player, x, x, false, self.name, false)
     else
-      local cards = room:getCardsFromPileByRule(".|.|.|.|.|^basic", player:getMark("huishu-turn"), "discardPile")
+      local room = player.room
+      local cards = room:getCardsFromPileByRule(".|.|.|.|.|^basic", player:getMark("huishu-turn") + 2, "discardPile")
       if #cards > 0 then
         room:moveCards({
           ids = cards,
@@ -3550,6 +3562,22 @@ local huishu = fk.CreateTriggerSkill{
       end
     end
   end,
+
+  refresh_events = {fk.EventLoseSkill, fk.EventAcquireSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == self
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "huishu1", 0)
+    room:setPlayerMark(player, "huishu2", 0)
+    room:setPlayerMark(player, "huishu3", 0)
+    if event == fk.EventAcquireSkill then
+      room:setPlayerMark(player, "@" .. self.name, {3, 1, 2})
+    else
+      room:setPlayerMark(player, "@" .. self.name, 0)
+    end
+  end,
 }
 local yishu = fk.CreateTriggerSkill{
   name = "yishu",
@@ -3557,7 +3585,7 @@ local yishu = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and player.phase ~= Player.Play then
+    if player:hasSkill(self) and player:hasSkill(huishu, true) and player.phase ~= Player.Play then
       for _, move in ipairs(data) do
         if move.from == player.id then
           for _, info in ipairs(move.moveInfo) do
@@ -3571,25 +3599,44 @@ local yishu = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local max = math.max(player:getMark("huishu1"), player:getMark("huishu2"), player:getMark("huishu3"))
-    local min = math.min(player:getMark("huishu1"), player:getMark("huishu2"), player:getMark("huishu3"))
-    local maxes, mins = {}, {}
-    for _, mark in ipairs({"huishu1", "huishu2", "huishu3"}) do
-      if player:getMark(mark) == max then
-        table.insert(maxes, mark)
-      end
-      if player:getMark(mark) == min then
-        table.insert(mins, mark)
+    local yishu_nums = {
+      player:getMark("huishu1") + 3,
+      player:getMark("huishu2") + 1,
+      player:getMark("huishu3") + 2
+    }
+
+    local max_c = math.max(yishu_nums[1], yishu_nums[2], yishu_nums[3])
+    local min_c = math.min(yishu_nums[1], yishu_nums[2], yishu_nums[3])
+
+    local to_change = {}
+    for i = 1, 3, 1 do
+      if yishu_nums[i] == max_c then
+        table.insert(to_change, "huishu" .. tostring(i))
       end
     end
-    local choice1 = room:askForChoice(player, mins, self.name, "#yishu-add")
-    local choice2 = room:askForChoice(player, maxes, self.name, "#yishu-lose")
-    room:addPlayerMark(player, choice1, 2)
-    room:removePlayerMark(player, choice2, 1)
-    room:setPlayerMark(player, "@huishu", string.format("%d-%d-%d",
-      player:getMark("huishu1"),
-      player:getMark("huishu2"),
-      player:getMark("huishu3")))
+
+    local choice = room:askForChoice(player, to_change, self.name, "#yishu-lose")
+    local index = tonumber(string.sub(choice, 7))
+    yishu_nums[index] = yishu_nums[index] - 1
+
+    room:setPlayerMark(player, "@huishu", yishu_nums)
+
+    to_change = {}
+    for i = 1, 3, 1 do
+      if yishu_nums[i] == min_c and i ~= index then
+        table.insert(to_change, "huishu" .. tostring(i))
+      end
+    end
+
+    choice = room:askForChoice(player, to_change, self.name, "#yishu-add")
+    index = tonumber(string.sub(choice, 7))
+    yishu_nums[index] = yishu_nums[index] + 2
+
+    room:setPlayerMark(player, "@huishu", yishu_nums)
+
+    room:setPlayerMark(player, "huishu1", yishu_nums[1] - 3)
+    room:setPlayerMark(player, "huishu2", yishu_nums[2] - 1)
+    room:setPlayerMark(player, "huishu3", yishu_nums[3] - 2)
   end,
 }
 local ligong = fk.CreateTriggerSkill{
@@ -3602,7 +3649,7 @@ local ligong = fk.CreateTriggerSkill{
       player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   can_wake = function(self, event, target, player, data)
-    return player:getMark("huishu1") > 4 or player:getMark("huishu2") > 4 or player:getMark("huishu3") > 4
+    return player:getMark("huishu1") > 1 or player:getMark("huishu2") > 3 or player:getMark("huishu3") > 2
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -3614,33 +3661,54 @@ local ligong = fk.CreateTriggerSkill{
       skillName = self.name
     })
     room:handleAddLoseSkills(player, "-yishu", nil)
-    local generals = Fk:getGeneralsRandomly(4, Fk:getAllGenerals(),
-      table.map(room:getAllPlayers(), function(p) return p.general end),
-      (function (p) return (p.kingdom ~= "wu" or p.gender ~= General.Female) end))
-    local skills = {"Cancel"}
-    for _, general in ipairs(generals) do
+
+    local generals = {}
+    for _, general_name in ipairs(room.general_pile) do
+      local general = Fk.generals[general_name]
+      if general.kingdom == "wu" and general.gender == General.Female then
+        table.insert(generals, general_name)
+      end
+    end
+    if #generals == 0 then return false end
+    generals = table.random(generals, 4)
+
+    for i = 1, #generals, 1 do
+      local same_g = Fk:getSameGenerals(generals[i])
+      if #same_g > 0 then
+        table.insert(same_g, generals[i])
+        generals[i] = table.random(same_g)
+      end
+    end
+
+    local skills = {}
+    for _, general_name in ipairs(generals) do
+      local general = Fk.generals[general_name]
+      local g_skills = {}
       for _, skill in ipairs(general.skills) do
-        if skill.frequency ~= Skill.Wake and skill.frequency ~= Skill.Limited then
-          table.insertIfNeed(skills, skill.name)
+        if skill.frequency ~= Skill.Wake and skill.frequency ~= Skill.Limited and not skill.lordSkill then
+          table.insertIfNeed(g_skills, skill.name)
         end
       end
-      for _, skill in ipairs(general.other_skills) do
-        if skill.frequency ~= Skill.Wake and skill.frequency ~= Skill.Limited then
-          table.insertIfNeed(skills, skill.name)
+      for _, s_name in ipairs(general.other_skills) do
+        local skill = Fk.skills[s_name]
+        if skill.frequency ~= Skill.Wake and skill.frequency ~= Skill.Limited and not skill.lordSkill then
+          table.insertIfNeed(g_skills, skill.name)
         end
       end
+      table.insertIfNeed(skills, g_skills)
     end
+    local result = player.room:askForCustomDialog(player, self.name,
+    "packages/tenyear/qml/ChooseGeneralSkillsBox.qml", {
+      generals, skills, 1, 2, "#ligong-choice", true
+    })
     local choices = {}
-    for i = 1, 2, 1 do
-      local choice = room:askForChoice(player, skills, self.name, "#ligong-choice", true)
-      table.insert(choices, choice)
-      if choice == "Cancel" then break end
-      table.removeOne(skills, choice)
+    if result ~= "" then
+      choices = json.decode(result)
     end
-    if table.contains(choices, "Cancel") then
+    if #choices == 0 then
       player:drawCards(3, self.name)
     else
-      room:handleAddLoseSkills(player, "-huishu|"..choices[1].."|"..choices[2], nil)
+      room:handleAddLoseSkills(player, "-huishu|"..table.concat(choices, "|"), nil)
     end
   end,
 }
@@ -3658,11 +3726,11 @@ Fk:loadTranslationTable{
   "两个技能获得（如果不获得技能则不失去〖慧淑〗并摸三张牌）。",
   ["@huishu"] = "慧淑",
   ["huishu1"] = "摸牌数",
-  ["huishu2"] = "弃牌数",
+  ["huishu2"] = "摸牌后弃牌数",
   ["huishu3"] = "获得锦囊所需弃牌数",
   ["#yishu-add"] = "易数：请选择增加的一项",
   ["#yishu-lose"] = "易数：请选择减少的一项",
-  ["#ligong-choice"] = "离宫：获得两个技能并失去“易数”和“慧淑”，或点“取消”不失去“慧淑”并摸三张牌",
+  ["#ligong-choice"] = "离宫：选择至多2个武将技能",
 
   ["$huishu1"] = "心有慧镜，善解百般人意。",
   ["$huishu2"] = "袖着静淑，可揾夜阑之泪。",

@@ -1302,6 +1302,7 @@ local huiling = fk.CreateTriggerSkill{
 local chongxu = fk.CreateActiveSkill{
   name = "chongxu",
   anim_type = "special",
+  frequency = Skill.Limited,
   card_num = 0,
   target_num = 0,
   prompt = function(self)

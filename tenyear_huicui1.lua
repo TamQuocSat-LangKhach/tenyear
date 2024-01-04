@@ -2997,6 +2997,7 @@ local xingchong = fk.CreateTriggerSkill{
     end
     if player:isKongcheng() then return end
     n = n - tonumber(choice)
+    if n < 1 then return false end
     local cards = room:askForCard(player, 1, n, false, self.name, true, ".", "#xingchong-card:::"..tostring(n))
     if #cards > 0 then
       player:showCards(cards)

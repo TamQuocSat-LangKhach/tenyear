@@ -88,10 +88,6 @@ local yuqi = fk.CreateTriggerSkill{
     if event == fk.EventAcquireSkill then
       room:setPlayerMark(player, "@" .. self.name, string.format("%d-%d-%d-%d", 0, 3, 1, 1))
     else
-      room:setPlayerMark(player, "yuqi1", 0)
-      room:setPlayerMark(player, "yuqi2", 0)
-      room:setPlayerMark(player, "yuqi3", 0)
-      room:setPlayerMark(player, "yuqi4", 0)
       room:setPlayerMark(player, "@" .. self.name, 0)
     end
   end,

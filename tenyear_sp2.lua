@@ -3504,7 +3504,7 @@ local huishu = fk.CreateTriggerSkill{
     if not player:hasSkill(self) then return false end
     if event == fk.EventPhaseEnd then
       return target == player and player.phase == Player.Draw
-    elseif player:usedSkillTimes(self.name) > 0 then
+    elseif player:usedSkillTimes(self.name) > 0 and player:getMark("_huishu-turn") == 0 then
       local room = player.room
       for _, move in ipairs(data) do
         if move.from == player.id and move.moveReason == fk.ReasonDiscard then
@@ -3551,6 +3551,7 @@ local huishu = fk.CreateTriggerSkill{
       local room = player.room
       local cards = room:getCardsFromPileByRule(".|.|.|.|.|^basic", player:getMark("huishu-turn") + 2, "discardPile")
       if #cards > 0 then
+        room:setPlayerMark(player, "_huishu-turn", 1)
         room:moveCards({
           ids = cards,
           to = player.id,

@@ -2239,6 +2239,89 @@ Fk:loadTranslationTable{
   ["~kuaiqi"] = "泉下万事休，人间雪满头……",
 }
 
+local pangshanmin = General(extension, "pangshanmin", "wei", 3)
+local caisi = fk.CreateTriggerSkill{
+  name = "caisi",
+  anim_type = "drawcard",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.card.type == Card.TypeBasic
+    and player:usedSkillTimes(self.name) < player.maxHp
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local x = player:usedSkillTimes(self.name)
+    local cards = {}
+    if player.phase == Player.NotActive then
+      cards = room:getCardsFromPileByRule(".|.|.|.|.|^basic", x, "discardPile")
+    else
+      cards = room:getCardsFromPileByRule(".|.|.|.|.|^basic", x)
+    end
+    if #cards > 0 then
+      room:moveCardTo(cards, Player.Hand, player, fk.ReasonPrey, self.name, nil, false, player.id)
+    end
+  end,
+}
+local zhuoli = fk.CreateTriggerSkill{
+  name = "zhuoli",
+  anim_type = "defensive",
+  frequency = Skill.Compulsory,
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    local room = player.room
+    if player:hasSkill(self) and (player.maxHp < #room.players or player:isWounded()) then
+      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
+      if turn_event == nil then return false end
+      local end_id = turn_event.id
+      local events = U.getEventsByRule(room, GameEvent.UseCard, player.hp + 1, function (e)
+        return e.data[1].from == player.id
+      end, end_id)
+      if #events > player.hp then return true end
+      local x = 0
+      events = U.getEventsByRule(room, GameEvent.MoveCards, 1, function (e)
+        for _, move in ipairs(e.data) do
+          if move.to == player.id and move.toArea == Player.Hand then
+            x = x + #move.moveInfo
+          end
+        end
+        return x > player.hp
+      end, end_id)
+      return x > player.hp
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if player.maxHp < #room.players then
+      room:changeMaxHp(player, 1)
+    end
+    if not player.dead and player:isWounded() then
+      room:recover({
+        who = player,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      })
+    end
+  end,
+}
+pangshanmin:addSkill(caisi)
+pangshanmin:addSkill(zhuoli)
+Fk:loadTranslationTable{
+  ["pangshanmin"] = "庞山民",
+  ["caisi"] = "才思",
+  [":caisi"] = "当你于回合内/回合外使用基本牌后，你可以从牌堆/弃牌堆随机获得一张非基本牌。每次发动该技能后，若发动次数："..
+  "小于体力上限：本回合下次获得牌张数+1；大于等于体力上限：本回合此技能失效。",
+  ["zhuoli"] = "擢吏",
+  [":zhuoli"] = "锁定技，每个回合结束时，若你本回合使用牌或获得牌的张数大于体力值，你加1点体力上限并回复1点体力"..
+  "（体力上限不能超过角色数）。",
+
+  ["$caisi1"] = "扶耒耜，植桑陌，习诗书，以传家。",
+  ["$caisi2"] = "惟楚有才，于庞门为盛。",
+  ["$zhuoli1"] = "良子千万，当擢才而用。",
+  ["$zhuoli2"] = "任人唯才，不妨寒门入上品。",
+  ["~pangshanmin"] = "九品中正后，庙堂无寒门……",
+}
+
 local zhangyao = General(extension, "zhangyao", "wu", 3, 3, General.Female)
 local yuanyu = fk.CreateActiveSkill{
   name = "yuanyu",

@@ -3549,7 +3549,7 @@ local huishu = fk.CreateTriggerSkill{
       player.room:askForDiscard(player, x, x, false, self.name, false)
     else
       local room = player.room
-      local cards = room:getCardsFromPileByRule(".|.|.|.|.|^basic", player:getMark("huishu-turn") + 2, "discardPile")
+      local cards = room:getCardsFromPileByRule(".|.|.|.|.|^basic", player:getMark("huishu3") + 2, "discardPile")
       if #cards > 0 then
         room:setPlayerMark(player, "_huishu-turn", 1)
         room:moveCards({
@@ -3586,7 +3586,8 @@ local yishu = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and player:hasSkill(huishu, true) and player.phase ~= Player.Play then
+    if player:hasSkill(self) and player:hasSkill(huishu, true) and player.phase ~= Player.Play and
+      not huishu:triggerable(event, target, player, data) then
       for _, move in ipairs(data) do
         if move.from == player.id then
           for _, info in ipairs(move.moveInfo) do
@@ -3650,7 +3651,8 @@ local ligong = fk.CreateTriggerSkill{
       player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   can_wake = function(self, event, target, player, data)
-    return player:getMark("huishu1") > 1 or player:getMark("huishu2") > 3 or player:getMark("huishu3") > 2
+    return player:hasSkill(huishu, true) and
+    (player:getMark("huishu1") > 1 or player:getMark("huishu2") > 3 or player:getMark("huishu3") > 2)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -3663,36 +3665,35 @@ local ligong = fk.CreateTriggerSkill{
     })
     room:handleAddLoseSkills(player, "-yishu", nil)
 
-    local generals = {}
+    local generals, same_g = {}, {}
     for _, general_name in ipairs(room.general_pile) do
-      local general = Fk.generals[general_name]
-      if general.kingdom == "wu" and general.gender == General.Female then
-        table.insert(generals, general_name)
+      same_g = Fk:getSameGenerals(general_name)
+      table.insert(same_g, general_name)
+      same_g = table.filter(same_g, function (g_name)
+        local general = Fk.generals[g_name]
+        return (general.kingdom == "wu" or general.subkingdom == "wu") and general.gender == General.Female
+      end)
+      if #same_g > 0 then
+        table.insert(generals, table.random(same_g))
       end
     end
     if #generals == 0 then return false end
     generals = table.random(generals, 4)
-
-    for i = 1, #generals, 1 do
-      local same_g = Fk:getSameGenerals(generals[i])
-      if #same_g > 0 then
-        table.insert(same_g, generals[i])
-        generals[i] = table.random(same_g)
-      end
-    end
 
     local skills = {}
     for _, general_name in ipairs(generals) do
       local general = Fk.generals[general_name]
       local g_skills = {}
       for _, skill in ipairs(general.skills) do
-        if skill.frequency ~= Skill.Wake and skill.frequency ~= Skill.Limited and not skill.lordSkill then
+        if not (table.contains({Skill.Limited, Skill.Wake, Skill.Quest}, skill.frequency) or skill.lordSkill) and
+        (#skill.attachedKingdom == 0 or (table.contains(skill.attachedKingdom, "wu") and player.kingdom == "wu")) then
           table.insertIfNeed(g_skills, skill.name)
         end
       end
       for _, s_name in ipairs(general.other_skills) do
         local skill = Fk.skills[s_name]
-        if skill.frequency ~= Skill.Wake and skill.frequency ~= Skill.Limited and not skill.lordSkill then
+        if not (table.contains({Skill.Limited, Skill.Wake, Skill.Quest}, skill.frequency) or skill.lordSkill) and
+        (#skill.attachedKingdom == 0 or (table.contains(skill.attachedKingdom, "wu") and player.kingdom == "wu")) then
           table.insertIfNeed(g_skills, skill.name)
         end
       end

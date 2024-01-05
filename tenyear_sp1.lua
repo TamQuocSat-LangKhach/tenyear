@@ -57,7 +57,7 @@ Fk:loadTranslationTable{
   ["ty__zhengnan"] = "征南",
   [":ty__zhengnan"] = "每名角色限一次，当一名角色进入濒死状态时，你可以回复1点体力，然后摸一张牌并选择获得下列技能中的一个："..
   "〖武圣〗，〖当先〗和〖制蛮〗（若技能均已获得，则改为摸三张牌）。",
-  
+
   ["$ty__zhengnan1"] = "南征之役，愿效死力。",
   ["$ty__zhengnan2"] = "南征之险恶，吾已有所准备。",
   ["$ex__wusheng_ty__guansuo"] = "我敬佩你的勇气。",
@@ -69,6 +69,7 @@ Fk:loadTranslationTable{
 local zhaoxiang = General(extension, "ty__zhaoxiang", "shu", 4, 4, General.Female)
 local ty__fanghun = fk.CreateViewAsSkill{
   name = "ty__fanghun",
+  prompt = "#ty__fanghun-viewas",
   pattern = "slash,jink",
   card_filter = function(self, to_select, selected)
     if #selected == 1 then return false end
@@ -146,55 +147,58 @@ local ty__fuhan = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "@meiying", 0)
     player:drawCards(n, self.name)
     if player.dead then return end
-    local skillMap = {}
-    local generals = {}
+
+    local generals, same_g = {}, {}
     for _, general_name in ipairs(room.general_pile) do
-      local general = Fk.generals[general_name]
-      if general.kingdom == "shu" then
-        local list = {}
-        for _, skill_name in ipairs(general:getSkillNameList()) do
-          local skill = Fk.skills[skill_name]
-          if not player:hasSkill(skill, true) and skill.frequency < 4 and not skill.lordSkill
-          and (#skill.attachedKingdom == 0 or table.contains(skill.attachedKingdom, player.kingdom)) then
-            table.insert(list, skill_name)
-          end
-        end
-        if #list > 0 then
-          skillMap[general_name] = list
-          table.insert(generals, general_name)
-        end
+      same_g = Fk:getSameGenerals(general_name)
+      table.insert(same_g, general_name)
+      same_g = table.filter(same_g, function (g_name)
+        local general = Fk.generals[g_name]
+        return general.kingdom == "shu" or general.subkingdom == "shu"
+      end)
+      if #same_g > 0 then
+        table.insert(generals, table.random(same_g))
       end
     end
-    if #generals == 0 then return end
-    local num = math.max(4, #room.alive_players)
-    generals = table.random(generals, num)
-    local disabled_generals = {}
-    local get = {}
-    for i = 1, 2 do
-      if #generals == 0 then break end
+    if #generals == 0 then return false end
+    generals = table.random(generals, math.max(4, #room.alive_players))
+
+    local skills = {}
+    local choices = {}
+    for _, general_name in ipairs(generals) do
+      local general = Fk.generals[general_name]
+      local g_skills = {}
+      for _, skill in ipairs(general.skills) do
+        if not (table.contains({Skill.Limited, Skill.Wake, Skill.Quest}, skill.frequency) or skill.lordSkill) and
+        (#skill.attachedKingdom == 0 or (table.contains(skill.attachedKingdom, "shu") and player.kingdom == "shu")) then
+          table.insertIfNeed(g_skills, skill.name)
+        end
+      end
+      for _, s_name in ipairs(general.other_skills) do
+        local skill = Fk.skills[s_name]
+        if not (table.contains({Skill.Limited, Skill.Wake, Skill.Quest}, skill.frequency) or skill.lordSkill) and
+        (#skill.attachedKingdom == 0 or (table.contains(skill.attachedKingdom, "shu") and player.kingdom == "shu")) then
+          table.insertIfNeed(g_skills, skill.name)
+        end
+      end
+      table.insertIfNeed(skills, g_skills)
+      if #choices == 0 and #g_skills > 0 then
+        choices = {g_skills[1]}
+      end
+    end
+    if #choices > 0 then
       local result = player.room:askForCustomDialog(player, self.name,
-      "packages/utility/qml/ChooseGeneralsAndChoiceBox.qml", {
-        generals,
-        {"OK"},
-        "#ty__fuhan-general",
-        {"Cancel"},
-        1,
-        1,
-        disabled_generals,
+      "packages/tenyear/qml/ChooseGeneralSkillsBox.qml", {
+        generals, skills, 1, 2, "#ty__fuhan-choice"
       })
-      if result == "" then break end
-      local reply = json.decode(result)
-      if reply.choice ~= "OK" then break end
-      local general = reply.cards[1]
-      local choice = room:askForChoice(player, skillMap[general], self.name, "#ty__fuhan-choice", true)
-      table.insert(get, choice)
-      table.removeOne(skillMap[general], choice)
-      if #skillMap[general] == 0 then table.insert(disabled_generals, general) end
+      if result ~= "" then
+        choices = json.decode(result)
+      end
+      room:handleAddLoseSkills(player, table.concat(choices, "|"), nil)
     end
-    if #get > 0 then
-      room:handleAddLoseSkills(player, table.concat(get, "|"), nil)
-    end
-    if player:isWounded() and table.every(room.alive_players, function(p) return p.hp >= player.hp end) then
+
+    if not player.dead and player:isWounded() and
+    table.every(room.alive_players, function(p) return p.hp >= player.hp end) then
       room:recover({
         who = player,
         num = 1,
@@ -214,10 +218,11 @@ Fk:loadTranslationTable{
   ["ty__fuhan"] = "扶汉",
   [":ty__fuhan"] = "限定技，回合开始时，若你有“梅影”标记，你可以移去所有“梅影”标记并摸等量的牌，然后从X张（X为存活人数且至少为4）蜀势力"..
   "武将牌中选择并获得至多两个技能（限定技、觉醒技、主公技除外）。若此时你是体力值最低的角色，你回复1点体力。",
+  ["#ty__fanghun-viewas"] = "发动 芳魂，弃1枚”梅影“，将【杀】当【闪】、【闪】当【杀】使用或打出，并摸一张牌",
+  ["#ty__fanghun_trigger"] = "芳魂",
   ["#ty__fuhan-invoke"] = "扶汉：你可以移去“梅影”标记，获得两个蜀势力武将的技能！",
-  ["#ty__fuhan-choice"] = "扶汉：选择你要获得的技能",
-  ["#ty__fuhan-general"] = "请选择一张武将牌",
-  
+  ["#ty__fuhan-choice"] = "扶汉：选择你要获得的至多2个技能",
+
   ["$ty__fanghun1"] = "芳年华月，不负期望。",
   ["$ty__fanghun2"] = "志洁行芳，承父高志。",
   ["$ty__fuhan1"] = "汉盛刘兴，定可指日成之。",

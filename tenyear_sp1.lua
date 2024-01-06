@@ -2650,25 +2650,22 @@ local qijing = fk.CreateTriggerSkill{
         to = room:getPlayerById(to[1])
         if to:getNextAlive() ~= player then
           local players = table.simpleClone(room.players)
-          local n
+          local n = 1
           for i, v in ipairs(room.players) do
-            if v == to then
-              if i == #room.players then
-                n = 1
-              else
-                n = i + 1
-              end
+            if v == to and i < #room.players then
+              n = i + 1
               break
             end
           end
+
           players[n] = player
-          for i = 1, #room.players do
-            for j = 1, #room.players do
-              if i ~= n and not table.contains(players, room.players[j]) then
-                players[i] = room.players[j]
-              end
-            end
-          end
+          repeat
+            local nextIndex = n + 1 > #room.players and 1 or n + 1
+            players[nextIndex] = room.players[n]
+
+            n = nextIndex
+          until room.players[n] == player
+
           room.players = players
           local player_circle = {}
           for i = 1, #room.players do

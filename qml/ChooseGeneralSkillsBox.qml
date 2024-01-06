@@ -103,9 +103,11 @@ GraphicsBox {
 
               onPressedChanged: {
                 if (pressed) {
-                  root.selected.push(orig);
+                  root.selected.push(this);
+
+                  root.selected.length > max && (root.selected[0].pressed = false);
                 } else {
-                  root.selected.splice(root.selected.indexOf(orig), 1);
+                  root.selected.splice(root.selected.findIndex(item => item.orig === orig), 1);
                 }
 
                 root.updateSelectable();
@@ -135,7 +137,7 @@ GraphicsBox {
       onClicked: {
         close();
         roomScene.state = "notactive";
-        ClientInstance.replyToServer("", JSON.stringify(root.selected));
+        ClientInstance.replyToServer("", JSON.stringify(root.selected.map(item => item.orig)));
       }
     }
 
@@ -148,7 +150,7 @@ GraphicsBox {
       onClicked: {
         root.close();
         roomScene.state = "notactive";
-        ClientInstance.replyToServer("", JSON.stringify(root.selected));
+        ClientInstance.replyToServer("", JSON.stringify([]));
       }
     }
   }

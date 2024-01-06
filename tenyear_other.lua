@@ -468,70 +468,81 @@ local tongliao_delay = fk.CreateTriggerSkill{
     end
   end,
 }
+tongliao:addRelatedSkill(tongliao_delay)
+khan:addSkill(tongliao)
 local wudao = fk.CreateTriggerSkill{
   name = "wudao",
   anim_type = "offensive",
-  events = {fk.CardUseFinished, fk.CardUsing},
+  events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self) then
-      if event == fk.CardUseFinished then
-        return data.extra_data and data.extra_data.wudao and
-          (player:getMark("wudao-turn") == 0 or not table.contains(player:getMark("wudao-turn"), data.extra_data.wudao))
-      else
-        return player:getMark("wudao-turn") ~= 0 and table.contains(player:getMark("wudao-turn"), data.card:getTypeString())
+    if target == player and player:hasSkill(self) and data.card.type ~= Card.TypeEquip
+    and not table.contains(U.getMark(player, "wudao-turn"), data.card.type) then
+      local use_e = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
+      if not use_e then return false end
+      local events = player.room.logic.event_recorder[GameEvent.UseCard] or Util.DummyTable
+      for i = #events, 1, -1 do
+        local e = events[i]
+        local use = e.data[1]
+        if use.from == player.id then
+          if e.id < use_e.id then
+            return use.card.type == data.card.type
+          end
+        end
       end
     end
   end,
   on_cost = function(self, event, target, player, data)
-    if event == fk.CardUseFinished then
-      return player.room:askForSkillInvoke(player, self.name, nil, "#wudao-invoke:::"..data.extra_data.wudao)
-    else
-      return true
-    end
+    return player.room:askForSkillInvoke(player, self.name, nil, "#wudao-invoke:::"..data.card:getTypeString())
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    local mark = U.getMark(player, "wudao-turn")
+    table.insert(mark, data.card.type)
+    room:setPlayerMark(player, "wudao-turn", mark)
+    data.extra_data = data.extra_data or {}
+    data.extra_data.wudao = player.id
+  end,
+}
+local wudao_delay = fk.CreateTriggerSkill{
+  name = "#wudao_delay",
+  mute = true,
+  events = {fk.CardUseFinished, fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
     if event == fk.CardUseFinished then
-      local mark = player:getMark("wudao-turn")
-      if mark == 0 then mark = {} end
-      table.insertIfNeed(mark, data.extra_data.wudao)
-      room:setPlayerMark(player, "@wudao-turn", table.concat(mark, ","))
-      room:setPlayerMark(player, "wudao-turn", mark)
+      return not player.dead and data.extra_data and data.extra_data.wudao == player.id
     else
+      return target == player and table.contains(U.getMark(player, "@wudao-turn"), data.card:getTypeString().."_char")
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.CardUseFinished then
+      local mark = U.getMark(player, "@wudao-turn")
+      table.insert(mark, data.card:getTypeString().."_char")
+      room:setPlayerMark(player, "@wudao-turn", mark)
+    else
+      player:broadcastSkillInvoke("wudao")
       data.disresponsiveList = table.map(room.alive_players, Util.IdMapper)
       if data.card.is_damage_card then
         data.additionalDamage = (data.additionalDamage or 0) + 1
       end
     end
   end,
-
-  refresh_events = {fk.CardUsing},
-  can_refresh = function(self, event, target, player, data)
-    return target == player
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local mark = player:getMark(self.name)
-    if mark ~= 0 and mark == data.card:getTypeString() and data.card.type ~= Card.TypeEquip and
-      (player:getMark("wudao-turn") == 0 or not table.contains(player:getMark("wudao-turn"), data.card:getTypeString())) then
-      data.extra_data = data.extra_data or {}
-      data.extra_data.wudao = data.card:getTypeString()
-    end
-    player.room:setPlayerMark(player, self.name, data.card:getTypeString())
-  end,
 }
-tongliao:addRelatedSkill(tongliao_delay)
-khan:addSkill(tongliao)
+wudao:addRelatedSkill(wudao_delay)
 khan:addSkill(wudao)
 Fk:loadTranslationTable{
   ["khan"] = "小约翰可汗",
   ["tongliao"] = "通辽",
   [":tongliao"] = "摸牌阶段结束时，你可以将手牌中点数最小的一张牌标记为“通辽”。当你失去“通辽”牌后，你摸X张牌（X为“通辽”牌的点数）。",
   ["wudao"] = "悟道",
-  [":wudao"] = "当你连续使用两张相同类型的牌后，你使用此类型的牌伤害+1且不可被响应直到回合结束。",
+  [":wudao"] = "每回合每种类别限一次，当你使用基本牌或锦囊牌时，若此牌与你使用的上一张牌类别相同，你可以令此牌结算结束后，你本回合使用此类型的牌不能被响应且造成的伤害+1。",
+  ["#wudao_delay"] = "悟道",
   ["#tongliao-invoke"] = "通辽：你可以将一张点数最小的手牌标记为“通辽”牌",
   ["@@tongliao-inhand"] = "通辽",
   ["#tongliao_delay"] = "通辽",
-  ["#wudao-invoke"] = "悟道：你可以令你使用%arg伤害+1且不可被响应直到当前回合结束",
+  ["#wudao-invoke"] = "悟道：你可以令当前结算结束后，本回合你使用 %arg 伤害+1且不可被响应",
   ["@wudao-turn"] = "悟道",
 
   ["$tongliao1"] = "发动偷袭。",

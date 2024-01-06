@@ -2601,23 +2601,12 @@ local xianjin = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.Damage, fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
-  on_trigger = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.Damage then
-      room:addPlayerMark(player, "xianjin_damage", 1)
-      if player:getMark("xianjin_damage") < 2 then return end
-      room:setPlayerMark(player, "xianjin_damage", 0)
-    elseif event == fk.Damaged then
-      room:addPlayerMark(player, "xianjin_damaged", 1)
-      if player:getMark("xianjin_damaged") < 2 then return end
-      room:setPlayerMark(player, "xianjin_damaged", 0)
-    end
-    self:doCost(event, target, player, data)
+    return target == player and player:hasSkill(self) and player:getMark("xianjin_damage") > 1
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    room:setPlayerMark(player, "xianjin_damage", 0)
+
     local choices = table.map(table.filter({"1", "2", "3"}, function(n)
       return player:getMark("tuoyu"..n) == 0 end), function(n) return "tuoyu"..n end)
     if #choices > 0 then
@@ -2630,15 +2619,21 @@ local xianjin = fk.CreateTriggerSkill{
       player:drawCards(#table.filter({"1", "2", "3"}, function(n) return player:getMark("tuoyu"..n) > 0 end), self.name)
     end
   end,
+
+  refresh_events = {fk.Damage, fk.Damaged},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self, true)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:addPlayerMark(player, "xianjin_damage")
+  end,
 }
 local qijing = fk.CreateTriggerSkill{
   name = "qijing",
   frequency = Skill.Wake,
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and
-      #player.room.alive_players > 2 and  --傻逼
-      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+    return player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   can_wake = function(self, event, target, player, data)
     return player:getMark("tuoyu1") > 0 and player:getMark("tuoyu2") > 0 and player:getMark("tuoyu3") > 0
@@ -2646,7 +2641,9 @@ local qijing = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeMaxHp(player, -1)
-    if player.dead then return end
+    if not player:isAlive() then return false end
+
+    room:handleAddLoseSkills(player, "cuixin", nil, true, false)
     if #room.alive_players > 2 then
       local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#qijing-choose", self.name, false)
       if #to > 0 then
@@ -2684,10 +2681,10 @@ local qijing = fk.CreateTriggerSkill{
           room.players[#room.players].next = room.players[1]
           room:doBroadcastNotify("ArrangeSeats", json.encode(player_circle))
         end
+
+        player:gainAnExtraTurn(true)
       end
     end
-    room:handleAddLoseSkills(player, "cuixin", nil, true, false)
-    player:gainAnExtraTurn(true)
   end,
 }
 local cuixin = fk.CreateTriggerSkill{
@@ -2780,9 +2777,9 @@ Fk:loadTranslationTable{
   [":tuoyu"] = "锁定技，你的手牌区域添加三个未开发的副区域：<br>丰田：伤害和回复值+1；<br>清渠：无距离和次数限制；<br>峻山：不能被响应。<br>"..
   "出牌阶段开始时和结束时，你将手牌分配至已开发的副区域中，每个区域至多五张。",
   ["xianjin"] = "险进",
-  [":xianjin"] = "锁定技，你每造成或受到两次伤害后开发一个手牌副区域，摸X张牌（X为你已开发的手牌副区域数，若你手牌全场最多则改为1）。",
+  [":xianjin"] = "锁定技，当你造成或受到两次伤害后开发一个手牌副区域，摸X张牌（X为你已开发的手牌副区域数，若你手牌全场最多则改为1）。",
   ["qijing"] = "奇径",
-  [":qijing"] = "觉醒技，每个回合结束时，若你的手牌副区域均已开发，你减1点体力上限，将座次移动至两名其他角色之间，获得〖摧心〗并执行一个额外回合。",
+  [":qijing"] = "觉醒技，每个回合结束时，若你的手牌副区域均已开发，你减1点体力上限，获得技能“摧心”，然后将座次移动至相邻的两名其他角色之间并执行一个额外回合。",
   ["cuixin"] = "摧心",
   [":cuixin"] = "当你不以此法对上家/下家使用的牌结算后，你可以视为对下家/上家使用一张同名牌。",
   ["tuoyu1"] = "丰田",

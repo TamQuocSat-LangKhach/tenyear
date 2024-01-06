@@ -4821,8 +4821,10 @@ local lianhua = fk.CreateTriggerSkill{
         })
       end
       if not player:hasSkill(skill, true) then
-        room:setPlayerMark(player, "lianhua-turn", skill)
-        room:handleAddLoseSkills(player, skill, nil, true, false)
+        room:handleAddLoseSkills(player, skill, nil)
+        room.logic:getCurrentEvent():findParent(GameEvent.Turn):addCleaner(function()
+          room:handleAddLoseSkills(player, "-"..skill)
+        end)
       end
     end
   end,
@@ -4830,26 +4832,16 @@ local lianhua = fk.CreateTriggerSkill{
 local lianhua_trigger = fk.CreateTriggerSkill{
   name = "#lianhua_trigger",
   mute = true,
-  events = {fk.EventPhaseStart, fk.TurnEnd},
+  events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if target == player then
-      if event == fk.EventPhaseStart then
-        return player:getMark("@lianhua") > 0 and player.phase == Player.Play
-      elseif event == fk.TurnEnd then
-        return player:getMark("lianhua-turn") ~= 0
-      end
-    end
+    return target == player and player:getMark("@lianhua") > 0 and player.phase == Player.Play
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.EventPhaseStart then
-      room:setPlayerMark(player, "@lianhua", 0)
-      room:setPlayerMark(player, "lianhua-red", 0)
-      room:setPlayerMark(player, "lianhua-black", 0)
-    elseif event == fk.TurnEnd then
-      room:handleAddLoseSkills(player, "-"..player:getMark("lianhua-turn"), nil, true, false)
-    end
+    room:setPlayerMark(player, "@lianhua", 0)
+    room:setPlayerMark(player, "lianhua-red", 0)
+    room:setPlayerMark(player, "lianhua-black", 0)
   end,
 }
 local zhafu = fk.CreateActiveSkill{
@@ -4857,6 +4849,7 @@ local zhafu = fk.CreateActiveSkill{
   anim_type = "control",
   card_num = 0,
   target_num = 1,
+  frequency = Skill.Limited,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
@@ -4867,14 +4860,11 @@ local zhafu = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local mark = target:getMark("@@zhafu")
-    if mark == 0 then mark = {} end
-    table.insertIfNeed(mark, player.id)
-    room:setPlayerMark(target, "@@zhafu", mark)
+    room:setPlayerMark(target, "@@zhafu", player.id)
   end,
 }
-local zhafu_trigger = fk.CreateTriggerSkill{
-  name = "#zhafu_trigger",
+local zhafu_delay = fk.CreateTriggerSkill{
+  name = "#zhafu_delay",
   mute = true,
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
@@ -4883,25 +4873,20 @@ local zhafu_trigger = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local src = room:getPlayerById(player:getMark("@@zhafu")[1])
+    local src = room:getPlayerById(player:getMark("@@zhafu"))
     room:setPlayerMark(player, "@@zhafu", 0)
     if player:getHandcardNum() < 2 or src.dead then return end
     room:doIndicate(src.id, {player.id})
     src:broadcastSkillInvoke("zhafu")
     room:notifySkillInvoked(src, "zhafu", "control")
-    local card = room:askForCard(player, 1, 1, false, "zhafu", false, ".|.|.|hand", "#zhafu-invoke:"..src.id)
-    if #card > 0 then
-      card = card[1]
-    else
-      card = table.random(player.player_cards[Player.Hand])
-    end
+    local card = room:askForCard(player, 1, 1, false, "zhafu", false, ".|.|.|hand", "#zhafu-invoke:"..src.id)[1]
     local dummy = Fk:cloneCard("dilu")
     dummy:addSubcards(table.filter(player.player_cards[Player.Hand], function(id) return id ~= card end))
     room:obtainCard(src, dummy, false, fk.ReasonGive)
   end,
 }
 lianhua:addRelatedSkill(lianhua_trigger)
-zhafu:addRelatedSkill(zhafu_trigger)
+zhafu:addRelatedSkill(zhafu_delay)
 gexuan:addSkill(lianhua)
 gexuan:addSkill(zhafu)
 gexuan:addRelatedSkill("ex__yingzi")
@@ -4919,6 +4904,7 @@ Fk:loadTranslationTable{
   "超过3枚且红色和黑色一样多：【杀】、【决斗】和〖攻心〗。",
   ["zhafu"] = "札符",
   [":zhafu"] = "限定技，出牌阶段，你可以选择一名其他角色。该角色的下个弃牌阶段开始时，其选择保留一张手牌，将其余手牌交给你。",
+  ["#zhafu_delay"] = "札符",
   ["@lianhua"] = "丹血",
   ["@@zhafu"] = "札符",
   ["#zhafu-invoke"] = "札符：选择一张保留的手牌，其他手牌全部交给 %src ！",

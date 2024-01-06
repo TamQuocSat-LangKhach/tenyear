@@ -537,31 +537,44 @@ Fk:loadTranslationTable{
 }
 
 local zhutiexiong = General(extension, "zhutiexiong", "god", 3)
-local bianzhuang_skills = {
+local bianzhuang_choices = {
   --standard
-  "wushuang", "tieqi", "ex__tieji",
-  "liegong", "kuanggu", "mengjin", "lieren", "wansha",
-  "moukui", "kuangfu", "nuzhan", "zhiman", "re__pojun",
-  "jueqing", "pojun", "nos__qianxi", "anjian", "zenhui", "qingxi",
+  {"lvbu","wushuang"},{"nos__madai","nos__qianxi"},{"lingju","jieyuan"},
   --ol
-  "fengpo", "fuji", "gangzhi", "lingren", "qigong", "saodi", "huanfu", "yimie", "guangao",
-  "ol_ex__kuanggu", "ol_ex__liegong", "ol_ex__jianchu", "qin__shanwu",
+  {"quyi","fuji"}, {"caoying","lingren"}, {"ol__lvkuanglvxiang","qigong"},
+  {"ol__tianyu","saodi"}, {"xiahouxuan","huanfu"}, {"ol__simashi","yimie"},
+  {"ol_ex__huangzhong","ol_ex__liegong"}, {"ol_ex__pangde","ol_ex__jianchu"},
+  {"zhaoji","qin__shanwu"}, {"ol__dingfeng","ol__duanbing"}, {"ol_ex__jiaxu","ol_ex__wansha"},
+  {"ol__fanchou","ol__xingluan"}, {"yingzheng","qin__yitong"}, {"ol__dengzhi","xiuhao"},
+  {"qinghegongzhu","zengou"}, {"ol__wenqin","guangao"}, {"olz__zhonghui","xieshu"},
+  --offline
+  {"es__chendao","jianglie"},
+  --mini
+  {"mini__weiyan","mini__kuanggu"},
   --mobile
-  "shidi", "dengli", "quedi",
+  {"mobile__gaolan", "dengli"}, {"mobile__wenyang","quedi"}, {"m_ex__xusheng","m_ex__pojun"},{"m_ex__sunluban","m_ex__zenhui"},
+  --mougong
+  {"mou__machao", "mou__tieji"},{"mou__zhurong","mou__lieren"},
   --overseas
-  "os__cuijin", "os__zhenxi", "os__moukui", "os__hengjiang", "os__jintao", "os__gongge", "os__fenghan", "os__yulong", "os__zhenhu",
-  "os_ex__qingxi",
+  {"yuejiu","os__cuijin"}, {"os__tianyu","os__zhenxi"}, {"os__fuwan","os__moukui"},{"zhangwei","os__huzhong"},
+  {"os__zangba","os__hengjiang"}, {"os__wuban","os__jintao"}, {"os__haomeng","os__gongge"},
+  {"wangyue","os__yulong"}, {"liyan","os__zhenhu"}, {"os__wujing","os__fenghan"},
+  {"os_ex__caoxiu","os_ex__qingxi"}, {"os__mayunlu","os__fengpo"},
   --tenyear
-  "ty__wuniang", "zhuilie", "xiaojun", "qingshi", "xingluan", "jiedao", "yangzhong", "funing", "benshi", "choutao", "yiyong", "jinglan",
-  "wanggui", "suoliang", "ty_ex__jueqing", "ty_ex__zhiman",
+  {"ty__baosanniang","ty__wuniang"}, {"wangshuang","zhuilie"}, {"ty__huangzu","xiaojun"},
+  {"wm__zhugeliang","qingshi"}, {"mangyachang","jiedao"}, {"caimaozhangyun","jinglan"},
+  {"zhaozhong","yangzhong"}, {"sunlang","benshi"}, {"yanrou","choutao"}, {"panghui","yiyong"},
+  {"ty__huaxin","wanggui"}, {"guanhai","suoliang"}, {"ty_ex__zhangchunhua","ty_ex__jueqing"},
+  {"ty_ex__panzhangmazhong","ty_ex__anjian"}, {"ty_ex__masu","ty_ex__zhiman"},
+  {"ty__xujing","caixia"}, {"wenyang","lvli"}, {"ty__luotong","jinjian"},
   --jsrg
-  "juelie", "fendi", "zhenqiao",
+  {"js__sunjian","juelie"}, {"js__zhujun","fendi"}, {"js__liubei","zhenqiao"}, {"js__lvbu","wuchang"},
   --yjtw
-  "tw__baobian",
+  {"tw__xiahouba","tw__baobian"},
   --wandian
-  "wd__ciqiu", "wd__fenkai",
+  {"wd__hanlong","wd__ciqiu"}, {"wd__furongfuqian","wd__fenkai"},
   --tuguo
-  "tg__fenwei", "tg__danding",
+  {"tg__xuzhi", "tg__fenwei"}, {"tg__zhuyi","tg__danding"},
 }
 local bianzhuang = fk.CreateActiveSkill{
   name = "bianzhuang",
@@ -576,70 +589,46 @@ local bianzhuang = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local n = player:usedSkillTimes(self.name, Player.HistoryGame) > 3 and 3 or 2
-    local skills = table.random(bianzhuang_skills, n)
-    local generals = {}
-    for _, name in ipairs(Fk.package_names) do
-      if Fk.packages[name].type == Package.GeneralPack then
-        for _, general in ipairs(Fk.packages[name].generals) do
-          for _, skill in ipairs(general:getSkillNameList()) do
-            if table.contains(skills, skill) and not player:hasSkill(skill, true) then
-              table.insertIfNeed(generals, general.name)
-            end
-          end
-        end
-      end
+    local choices = table.random(bianzhuang_choices, n)
+    local generals = table.map(choices, function(c) return c[1] end)
+    local skills = table.map(choices, function(c) return {c[2]} end)
+
+    local result = player.room:askForCustomDialog(player, self.name,
+    "packages/tenyear/qml/ChooseGeneralSkillsBox.qml", {
+      generals, skills, 1, 1, "#bianzhuang-choice"
+    })
+    local skill = skills[1][1]
+    if result ~= "" then
+      skill = json.decode(result)[1]
     end
-    generals = table.random(generals, n)
-    local general = room:askForGeneral(player, generals, 1)
+    local general_name = table.find(generals, function (g, i)
+      return skills[i][1] == skill
+    end)
+    local general = Fk.generals[general_name]
+
     local bianzhuang_info = {player.general, player.gender, player.kingdom}
-    player.general = general
+    player.general = general_name
     room:broadcastProperty(player, "general")
-    player.gender = Fk.generals[general].gender
+    player.gender = general.gender
     room:broadcastProperty(player, "gender")
-    player.kingdom = Fk.generals[general].kingdom
+    player.kingdom = general.kingdom
     room:broadcastProperty(player, "kingdom")
-    local skill_name = table.filter(Fk.generals[general]:getSkillNameList(), function(s) return table.contains(skills, s) end)[1]
-    room:handleAddLoseSkills(player, skill_name, nil, false, false)
-
-    local success, data = room:askForUseActiveSkill(player, "bianzhuang_viewas", "#bianzhuang-slash:::"..skill_name, false)
-    if success then
-      local card = Fk:cloneCard("slash")
-      card.skillName = self.name
-      room:useCard{
-        from = player.id,
-        tos = table.map(data.targets, function(id) return {id} end),
-        card = card,
-        extraUse = true,
-      }
+    local acquired = (not player:hasSkill(skill, true))
+    if acquired then
+      room:handleAddLoseSkills(player, skill, nil, false)
     end
 
-    room:handleAddLoseSkills(player, "-"..skill_name, nil, false, false)
+    U.askForUseVirtualCard(room, player, "slash", nil, self.name, "#bianzhuang-slash:::"..skill, false, true, true, true)
+
+    if acquired then
+      room:handleAddLoseSkills(player, "-"..skill, nil, false)
+    end
     player.general = bianzhuang_info[1]
     room:broadcastProperty(player, "general")
     player.gender = bianzhuang_info[2]
     room:broadcastProperty(player, "gender")
     player.kingdom = bianzhuang_info[3]
     room:broadcastProperty(player, "kingdom")
-  end,
-}
-local bianzhuang_viewas = fk.CreateViewAsSkill{
-  name = "bianzhuang_viewas",
-  card_filter = Util.FalseFunc,
-  view_as = function(self, cards)
-    local card = Fk:cloneCard("slash")
-    card.skillName = "bianzhuang"
-    return card
-  end,
-}
-local bianzhuang_targetmod = fk.CreateTargetModSkill{
-  name = "#bianzhuang_targetmod",
-  distance_limit_func =  function(self, player, skill, card)
-    if card and table.contains(card.skillNames, "bianzhuang") then
-      return 999
-    end
-  end,
-  bypass_times = function(self, player, skill, scope, card)
-    return card and table.contains(card.skillNames, "bianzhuang")
   end,
 }
 local bianzhuang_record = fk.CreateTriggerSkill{
@@ -653,8 +642,6 @@ local bianzhuang_record = fk.CreateTriggerSkill{
     player:setSkillUseHistory("bianzhuang", 0, Player.HistoryPhase)
   end,
 }
-Fk:addSkill(bianzhuang_viewas)
-bianzhuang:addRelatedSkill(bianzhuang_targetmod)
 bianzhuang:addRelatedSkill(bianzhuang_record)
 zhutiexiong:addSkill(bianzhuang)
 Fk:loadTranslationTable{
@@ -665,6 +652,7 @@ Fk:loadTranslationTable{
   ["#bianzhuang"] = "变装：你可以进行“变装”！然后视为使用一张【杀】",
   ["bianzhuang_viewas"] = "变装",
   ["#bianzhuang-slash"] = "变装：视为使用一张【杀】，附带“%arg”的技能效果！",
+  ["#bianzhuang-choice"] = "变装：选择你“变装”获得的技能效果",
 
   ["$bianzhuang1"] = "须知少日凌云志，曾许人间第一流。",
   ["$bianzhuang2"] = "愿尽绵薄之力，盼国风盛行。",

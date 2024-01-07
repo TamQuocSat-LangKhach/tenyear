@@ -595,7 +595,7 @@ local bianzhuang = fk.CreateActiveSkill{
 
     local result = player.room:askForCustomDialog(player, self.name,
     "packages/tenyear/qml/ChooseGeneralSkillsBox.qml", {
-      generals, skills, 1, 1, "#bianzhuang-choice"
+      generals, skills, 1, 1, "#bianzhuang-choice", false
     })
     local skill = skills[1][1]
     if result ~= "" then

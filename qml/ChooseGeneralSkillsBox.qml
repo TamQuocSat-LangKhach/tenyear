@@ -129,7 +129,7 @@ GraphicsBox {
     spacing: 32
 
     MetroButton {
-      width: 120
+      width: 100
       Layout.fillWidth: true
       text: processPrompt("OK")
       id: buttonConfirm
@@ -160,14 +160,7 @@ GraphicsBox {
   }
 
   function loadData(data) {
-    const d = data;
-    cards = d[0];
-    skills = d[1];
-    min = d[2];
-    max = d[3];
-    prompt = d[4];
-    cancelable = d[5];
-  
+    [cards, skills, min, max, prompt, cancelable] = data
     updateSelectable()
   }
 }

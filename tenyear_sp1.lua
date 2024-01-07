@@ -189,7 +189,7 @@ local ty__fuhan = fk.CreateTriggerSkill{
     if #choices > 0 then
       local result = player.room:askForCustomDialog(player, self.name,
       "packages/tenyear/qml/ChooseGeneralSkillsBox.qml", {
-        generals, skills, 1, 2, "#ty__fuhan-choice"
+        generals, skills, 1, 2, "#ty__fuhan-choice", false
       })
       if result ~= "" then
         choices = json.decode(result)

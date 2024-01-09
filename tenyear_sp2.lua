@@ -851,7 +851,7 @@ local jianzheng = fk.CreateActiveSkill{
     local cards = target.player_cards[Player.Hand]
     local availableCards = table.filter(cards, function(id)
       local card = Fk:getCardById(id)
-      return not player:prohibitUse(card) and player:canUse(card)
+      return U.getDefaultTargets(player, card, true, false)
     end)
     local get, _ = U.askforChooseCardsAndChoice(player, availableCards, {"OK"}, self.name, "#jianzheng-choose", {"Cancel"}, 1, 1, cards)
     local yes = false
@@ -860,7 +860,7 @@ local jianzheng = fk.CreateActiveSkill{
       room:obtainCard(player.id, id, false, fk.ReasonPrey)
       if not player.dead and table.contains(player:getCardIds("h"), id) then
         local card = Fk:getCardById(id)
-        local use = U.askForUseRealCard(room, player, {id}, ".", self.name, "#jianzheng-use:::"..card:toLogString())
+        local use = U.askForUseRealCard(room, player, {id}, ".", self.name, "#jianzheng-use:::"..card:toLogString(), nil, false, false)
         if use then
           if table.contains(TargetGroup:getRealTargets(use.tos), target.id) then
             yes = true

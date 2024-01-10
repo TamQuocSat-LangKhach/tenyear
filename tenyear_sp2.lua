@@ -858,8 +858,8 @@ local jianzheng = fk.CreateActiveSkill{
     if #get > 0 then
       local id = get[1]
       room:obtainCard(player.id, id, false, fk.ReasonPrey)
-      if not player.dead and table.contains(player:getCardIds("h"), id) then
-        local card = Fk:getCardById(id)
+      local card = Fk:getCardById(id)
+      if not player.dead and table.contains(player:getCardIds("h"), id) and U.getDefaultTargets(player, card, true, false) then
         local use = U.askForUseRealCard(room, player, {id}, ".", self.name, "#jianzheng-use:::"..card:toLogString(), nil, false, false)
         if use then
           if table.contains(TargetGroup:getRealTargets(use.tos), target.id) then
@@ -952,12 +952,12 @@ Fk:loadTranslationTable{
   [":fumou"] = "当你受到伤害后，你可以令至多X名角色依次选择一项：1.移动场上一张牌；2.弃置所有手牌并摸两张牌；3.弃置装备区所有牌并回复1点体力。"..
   "（X为你已损失的体力值）",
   ["#jianzheng-choose"] = "谏诤：选择一张使用",
-  ["#jianzheng-use"] = "谏诤：你可以使用%arg",
+  ["#jianzheng-use"] = "谏诤：请使用%arg",
   ["#fumou-choose"] = "腹谋：你可以令至多%arg名角色依次选择执行一项",
   ["fumou1"] = "移动场上一张牌",
   ["fumou2"] = "弃置所有手牌，摸两张牌",
   ["fumou3"] = "弃置所有装备，回复1点体力",
-  ["#fumou-move"] = "腹谋：请选择要移动装备的角色",
+  ["#fumou-move"] = "腹谋：请移动场上一张牌(选择两名角色)",
 
   ["$jianzheng1"] = "将军今出洛阳，恐难再回。",
   ["$jianzheng2"] = "贼示弱于外，必包藏祸心。",

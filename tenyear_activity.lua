@@ -3537,7 +3537,7 @@ local zuojian = fk.CreateTriggerSkill{
       if event == fk.CardUsing then
         return target == player
       else
-        return data == self
+        return data == self and player.room:getTag("RoundCount")
       end
     end
   end,

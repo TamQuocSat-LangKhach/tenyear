@@ -1377,7 +1377,7 @@ local pandi_refresh = fk.CreateTriggerSkill{
     if event == fk.Damage then
       return player == target and player:getMark("pandi_damaged-turn") == 0
     elseif event == fk.EventAcquireSkill then
-      return player == target and data == self and player.room.current == player
+      return player == target and data == self and player.room.current == player and player.room:getTag("RoundCount")
     elseif event == fk.PreCardUse then
       return player:getMark("pandi_prohibit-phase") > 0
     end
@@ -4159,7 +4159,7 @@ local jianjie_trigger = fk.CreateTriggerSkill{
     if event == fk.TurnStart then
       return player:hasSkill(self,true) and target == player
     else
-      return target == player and data == self
+      return target == player and data == self and player.room:getTag("RoundCount")
     end
   end,
   on_refresh = function (self, event, target, player, data)

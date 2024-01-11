@@ -1758,30 +1758,11 @@ local pingxiang = fk.CreateActiveSkill{
     room:changeMaxHp(player, -9)
     for i = 1, 9, 1 do
       if player.dead then return end
-      local success, data = room:askForUseActiveSkill(player, "pingxiang_viewas", "#pingxiang-slash:::"..tostring(i), true)
-      if success then
-        local card = Fk:cloneCard("fire__slash")
-        card.skillName = self.name
-        room:useCard{
-          from = player.id,
-          tos = table.map(data.targets, function(id) return {id} end),
-          card = card,
-          extraUse = true,
-        }
-      else
+      if not U.askForUseVirtualCard(room, player, "fire__slash", nil, self.name, "#pingxiang-slash:::"..i, true, true, true) then
         break
       end
     end
     room:handleAddLoseSkills(player, "-jiufa", nil, true, false)
-  end,
-}
-local pingxiang_viewas = fk.CreateViewAsSkill{
-  name = "pingxiang_viewas",
-  card_filter = Util.FalseFunc,
-  view_as = function(self, cards)
-    local card = Fk:cloneCard("fire__slash")
-    card.skillName = "pingxiang"
-    return card
   end,
 }
 local pingxiang_maxcards = fk.CreateMaxCardsSkill{
@@ -1792,15 +1773,7 @@ local pingxiang_maxcards = fk.CreateMaxCardsSkill{
     end
   end
 }
-local pingxiang_targetmod = fk.CreateTargetModSkill{
-  name = "#pingxiang_targetmod",
-  bypass_times = function(self, player, skill, scope, card)
-    return card and table.contains(card.skillNames, pingxiang.name)
-  end,
-}
-Fk:addSkill(pingxiang_viewas)
 pingxiang:addRelatedSkill(pingxiang_maxcards)
-pingxiang:addRelatedSkill(pingxiang_targetmod)
 godjiangwei:addSkill(tianren)
 godjiangwei:addSkill(jiufa)
 godjiangwei:addSkill(pingxiang)
@@ -1818,7 +1791,6 @@ Fk:loadTranslationTable{
   ["@$jiufa"] = "九伐",
   ["#jiufa-invoke"] = "九伐：是否亮出牌堆顶九张牌，获得重复点数的牌各一张！",
   ["#pingxiang"] = "平襄：你可以减9点体力上限，视为使用至多九张火【杀】！",
-  ["pingxiang_viewas"] = "平襄",
   ["#pingxiang-slash"] = "平襄：你可以视为使用火【杀】（第%arg张，共9张）！",
 
   ["#jiufa"] = "九伐：从亮出的牌中选择并获得其中每个重复点数的牌各一张",
@@ -3996,7 +3968,7 @@ local jianguo = fk.CreateActiveSkill{
         room:askForDiscard(target, n, n, false, self.name, false)
       end
     else
-      room:askForDiscard(target, 1, 1, false, self.name, false)
+      room:askForDiscard(target, 1, 1, true, self.name, false)
       if not target.dead and target:getHandcardNum() > 1 then
         local n = target:getHandcardNum() // 2
         target:drawCards(n, self.name)

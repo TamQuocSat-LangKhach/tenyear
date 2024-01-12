@@ -3167,21 +3167,17 @@ local niji = fk.CreateTriggerSkill{
     else
       local cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji-inhand") > 0 end)
       if player:hasSkill(self) then
-        local pattern = "^(jink,nullification)|.|.|.|.|.|"..table.concat(cards, ",")
-        local use = room:askForUseCard(player, "", pattern, "#niji-use", true)
-        if use then
-          room:useCard(use)
-        end
+        U.askForUseRealCard(room, player, cards, ".", self.name, "#niji-use")
       end
       if not player.dead then
-        room:delay(1200)
+        room:delay(800)
         cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji-inhand") > 0 end)
         room:throwCard(cards, self.name, player, player)
       end
     end
   end,
 
-  refresh_events = {fk.TurnEnd},
+  refresh_events = {fk.AfterTurnEnd},
   can_refresh = function(self, event, target, player, data)
     return not player:isKongcheng()
   end,

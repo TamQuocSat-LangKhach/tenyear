@@ -1466,12 +1466,9 @@ local miyi = fk.CreateTriggerSkill{
     return target == player and player.phase == Player.Start and player:hasSkill(self)
   end,
   on_cost = function(self, event, target, player, data)
-    local command = "AskForUseActiveSkill"
-    player.room:notifyMoveFocus(player, "miyi_active")
-    local dat = {"miyi_active", "#miyi-invoke", true, {}}
-    local result = player.room:doRequest(player, command, json.encode(dat))
-    if result ~= "" then
-      self.cost_data = json.decode(result)
+    local _, dat = player.room:askForUseActiveSkill(player, "miyi_active", "#miyi-invoke", true)
+    if dat then
+      self.cost_data = dat
       return true
     end
   end,
@@ -1480,7 +1477,7 @@ local miyi = fk.CreateTriggerSkill{
     local targets = self.cost_data.targets
     room:sortPlayersByAction(targets)
     room:doIndicate(player.id, targets)
-    local choice = self.cost_data.interaction_data
+    local choice = self.cost_data.interaction
     for _, id in ipairs(targets) do
       local p = room:getPlayerById(id)
       if not p.dead then
@@ -1515,7 +1512,7 @@ local miyi_delay = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    for _, p in ipairs(room.alive_players) do
+    for _, p in ipairs(room:getAlivePlayers()) do
       if not p.dead then
         if p:getMark("miyi2-turn") > 0 and p:isWounded() then
           room:recover({

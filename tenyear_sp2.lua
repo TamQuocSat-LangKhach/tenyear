@@ -1799,7 +1799,7 @@ local jiudun = fk.CreateTriggerSkill{
   anim_type = "defensive",
   events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.firstTarget and data.card.color == Card.Black and data.from ~= player.id and
+    return target == player and player:hasSkill(self) and data.card.color == Card.Black and data.from ~= player.id and
       (player.drank == 0 or not player:isKongcheng())
   end,
   on_cost = function(self, event, target, player, data)

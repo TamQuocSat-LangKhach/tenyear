@@ -3394,7 +3394,7 @@ local qianzheng = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.TargetConfirming},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.firstTarget and data.from ~= player.id and
+    return target == player and player:hasSkill(self) and data.from ~= player.id and
       (data.card:isCommonTrick() or data.card.trueName == "slash") and #player:getCardIds{Player.Hand, Player.Equip} > 1 and
       player:usedSkillTimes(self.name, Player.HistoryTurn) < 2
   end,

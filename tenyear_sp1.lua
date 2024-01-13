@@ -5406,7 +5406,7 @@ local mengjiez = fk.CreateTriggerSkill{
       elseif mark == "tg_renzhi" then
         local _event = room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
           for _, move in ipairs(e.data) do
-            if move.from == target.id and move.to ~= move.from and move.moveReason == fk.ReasonGive then
+            if (move.from == target.id or move.proposer == target.id) and move.to and move.to ~= move.from and move.moveReason == fk.ReasonGive then
               return true
             end
           end
@@ -5472,7 +5472,7 @@ local mengjiez = fk.CreateTriggerSkill{
         local cards = room:askForCardsChosen(player, to, 1, 2, "hej", self.name)
         room:throwCard(cards, self.name, to, player)
       elseif mark == "tg_renzhi" then
-        to:drawCards(math.min(5, to.maxHp - #to.player_cards[Player.Hand]), self.name)
+        to:drawCards(math.min(5, to.maxHp - to:getHandcardNum()), self.name)
       end
     end
   end,

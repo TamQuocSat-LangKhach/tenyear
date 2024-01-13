@@ -4365,8 +4365,8 @@ local xieshou = fk.CreateTriggerSkill{
   anim_type = "masochism",
   events = {fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and not target.dead and player:distanceTo(target) <= 2 and player:getMaxCards() > 0 and
-      player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
+    return player:hasSkill(self) and not target.dead and player:distanceTo(target) <= 2 and not target:isRemoved()
+    and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#xieshou-invoke::"..target.id)
@@ -4387,13 +4387,10 @@ local xieshou = fk.CreateTriggerSkill{
         skillName = self.name
       })
     else
-      if not target.faceup then
-        target:turnOver()
+      target:reset()
+      if not target.dead then
+        target:drawCards(2, self.name)
       end
-      if target.chained then
-        target:setChainState(false)
-      end
-      target:drawCards(2, self.name)
     end
   end,
 }
@@ -4402,7 +4399,7 @@ local qingyan = fk.CreateTriggerSkill{
   anim_type = "defensive",
   events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.firstTarget and data.card.color == Card.Black and data.from ~= player.id and
+    return target == player and player:hasSkill(self) and data.card.color == Card.Black and data.from ~= player.id and
       player:usedSkillTimes(self.name, Player.HistoryTurn) < 2
   end,
   on_cost = function(self, event, target, player, data)

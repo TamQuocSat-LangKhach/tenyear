@@ -1755,7 +1755,7 @@ local pingxiang = fk.CreateActiveSkill{
     room:changeMaxHp(player, -9)
     for i = 1, 9, 1 do
       if player.dead then return end
-      if not U.askForUseVirtualCard(room, player, "fire__slash", nil, self.name, "#pingxiang-slash:::"..i, true, true, true) then
+      if not U.askForUseVirtualCard(room, player, "fire__slash", nil, self.name, "#pingxiang-slash:::" .. i, true, true) then
         break
       end
     end

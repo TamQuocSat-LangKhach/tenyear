@@ -4185,7 +4185,7 @@ Fk:loadTranslationTable{
   ["~mengyou"] = "大哥，诸葛亮又打来了。",
 }
 
---正音雅乐：蔡文姬 周妃 蔡邕
+--正音雅乐：蔡文姬 周妃 蔡邕 小乔
 local caiwenji = General(extension, "mu__caiwenji", "qun", 3, 3, General.Female)
 local shuangjia = fk.CreateTriggerSkill{
   name = "shuangjia",
@@ -4442,6 +4442,176 @@ Fk:loadTranslationTable{
   ["$xianshu1"] = "居宠而不骄，秉贤淑于内庭。",
   ["$xianshu2"] = "心怀玲珑意，宜家国于春秋。",
   ["~mu__zhoufei"] = "红颜薄命，望君珍重……",
+}
+
+local xiaoqiao = General(extension, "mu__xiaoqiao", "wu", 3, 3, General.Female)
+local qiqin = fk.CreateTriggerSkill{
+  name = "qiqin",
+  anim_type = "special",
+  frequency = Skill.Compulsory,
+  events = {fk.GameStart, fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if event == fk.GameStart then
+      return player:hasSkill(self) and not player:isKongcheng()
+    elseif player:hasSkill(self) and target == player and player.phase == Player.Start then
+      local cards = U.getMark(player, "qiqin_cards")
+      if #cards > 0 then
+        local get = table.filter(player.room.discard_pile, function(id) return table.contains(cards, id) end)
+        if #get > 0 then
+          self.cost_data = get
+          return true
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.GameStart then
+      local cards = player:getCardIds(Player.Hand)
+      for _, id in ipairs(cards) do
+        room:setCardMark(Fk:getCardById(id), "@@qiqin-inhand", 1)
+      end
+      room:setPlayerMark(player, "qiqin_cards", cards)
+    else
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(self.cost_data)
+      room:obtainCard(player, dummy, true, fk.ReasonPrey)
+    end
+  end,
+
+  refresh_events = {fk.AfterDrawPileShuffle, fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.AfterDrawPileShuffle then
+      return player == player.room.players[1]
+    elseif not player.dead then
+      local cards = U.getMark(player, "qiqin_cards")
+      if #cards == 0 then return false end
+      for _, move in ipairs(data) do
+        if move.toArea == Card.PlayerHand and move.to == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if table.contains(cards, info.cardId) then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.AfterDrawPileShuffle then
+      for _, id in ipairs(room.draw_pile) do
+        local card = Fk:getCardById(id)
+        if card:getMark("@@qiqin-inhand") > 0 then
+          room:setCardMark(card, "@@qiqin-inhand", 0)
+        end
+      end
+    else
+      local cards = U.getMark(player, "qiqin_cards")
+      for _, id in ipairs(cards) do
+        if table.contains(player:getCardIds("h"), id) then
+          local card = Fk:getCardById(id)
+          if card:getMark("@@qiqin-inhand") == 0 then
+            room:setCardMark(card, "@@qiqin-inhand", 1)
+          end
+        end
+      end
+    end
+  end,
+}
+local qiqin_maxcards = fk.CreateMaxCardsSkill{
+  name = "#qiqin_maxcards",
+  exclude_from = function(self, player, card)
+    return player:hasSkill("qiqin") and card:getMark("@@qiqin-inhand") > 0
+  end,
+}
+qiqin:addRelatedSkill(qiqin_maxcards)
+xiaoqiao:addSkill(qiqin)
+local weiwan = fk.CreateActiveSkill{
+  name = "weiwan",
+  anim_type = "offensive",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 and not player:isNude()
+  end,
+  card_num = 1,
+  card_filter = function (self, to_select, selected)
+    local card = Fk:getCardById(to_select)
+    if #selected == 0 and not Self:prohibitDiscard(card) then
+      local cards = U.getMark(Self, "qiqin_cards")
+      return table.contains(cards, to_select)
+    end
+  end,
+  target_num = 1,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local to = room:getPlayerById(effect.tos[1])
+    local qin_suit = Fk:getCardById(effect.cards[1]).suit
+    room:throwCard(effect.cards, self.name, player, player)
+    if player.dead then return end
+    local cardsMap = {}
+    for _, id in ipairs(to:getCardIds("hej")) do
+      local suit = Fk:getCardById(id).suit
+      if suit ~= Card.NoSuit and suit ~= qin_suit then
+        cardsMap[suit] = cardsMap[suit] or {}
+        table.insert(cardsMap[suit], id)
+      end
+    end
+    local get = U.getRandomCards(cardsMap, 3)
+    if #get > 0 then
+      local dummy = Fk:cloneCard("dilu")
+      dummy:addSubcards(get)
+      room:obtainCard(player, dummy, true, fk.ReasonPrey)
+      if to.dead then return end
+      if #get == 1 then
+        room:loseHp(to, 1, self.name)
+      elseif #get == 2 then
+        local mark = U.getMark(player, "weiwan_targetmod-turn")
+        table.insert(mark, to.id)
+        room:setPlayerMark(player, "weiwan_targetmod-turn", mark)
+      elseif #get == 3 then
+        local mark = U.getMark(player, "weiwan_prohibit-turn")
+        table.insert(mark, to.id)
+        room:setPlayerMark(player, "weiwan_prohibit-turn", mark)
+      end
+    end
+  end,
+}
+local weiwan_targetmod = fk.CreateTargetModSkill{
+  name = "#weiwan_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    local mark = U.getMark(player, "weiwan_targetmod-turn")
+    return table.contains(mark, to.id)
+  end,
+  bypass_distances = function(self, player, skill, card, to)
+    local mark = U.getMark(player, "weiwan_targetmod-turn")
+    return table.contains(mark, to.id)
+  end,
+}
+weiwan:addRelatedSkill(weiwan_targetmod)
+local weiwan_prohibit = fk.CreateProhibitSkill{
+  name = "#weiwan_prohibit",
+  is_prohibited = function(self, player, to, card)
+    local mark = U.getMark(player, "weiwan_prohibit-turn")
+    return table.contains(mark, to.id)
+  end,
+}
+weiwan:addRelatedSkill(weiwan_prohibit)
+xiaoqiao:addSkill(weiwan)
+Fk:loadTranslationTable{
+  ["mu__xiaoqiao"] = "乐小乔",
+  ["qiqin"] = "绮琴",
+  [":qiqin"] = "锁定技，①游戏开始时，将初始手牌标记为“琴”牌（“琴”牌不计入你的手牌上限）；②准备阶段，你获得弃牌堆中所有的“琴”牌。",
+  ["@@qiqin-inhand"] = "琴",
+  ["weiwan"] = "媦婉",
+  [":weiwan"] = "出牌阶段限一次，你可以弃置一张“琴”并选择一名其他角色，随机获得其区域内与此“琴”不同花色的牌各一张。若你获得的牌数为：1，其失去1点体力；2，你本回合对其使用牌无距离与次数限制；3，你本回合不能对其使用牌。",
+  ["$qiqin1"] = "渔歌唱晚落山月，素琴薄暮声。",
+  ["$qiqin2"] = "指上琴音浅，欲听还需抚瑶琴。",
+  ["$weiwan1"] = "繁花初成，所幸未晚于桑榆。",
+  ["$weiwan2"] = "群胥泛舟，共载佳期若瑶梦。",
+  ["~mu__xiaoqiao"] = "独寄人间白首，曲误周郎难顾。",
 }
 
 return extension

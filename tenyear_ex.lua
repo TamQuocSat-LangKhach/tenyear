@@ -3768,8 +3768,10 @@ local ty_ex__zhongyong = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and target == player and data.card.trueName == "slash" then
       local ids = player.room:getSubcardsByRule(data.card, { Card.Processing })
-      for _, c in ipairs(data.cardsResponded) do
-        table.insertTableIfNeed(ids, player.room:getSubcardsByRule(c, { Card.DiscardPile }))
+      if data.cardsResponded then
+        for _, c in ipairs(data.cardsResponded) do
+          table.insertTableIfNeed(ids, player.room:getSubcardsByRule(c, { Card.DiscardPile }))
+        end
       end
       return #ids > 0
     end

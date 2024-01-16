@@ -3071,7 +3071,7 @@ local ty__fenyue = fk.CreateActiveSkill{
     local pindian = player:pindian({target}, self.name)
     if pindian.results[target.id].winner == player then
       if pindian.fromCard.number < 6 then
-        if not target:isNude() then
+        if not target:isNude() and not player.dead then
           local id = room:askForCardChosen(player, target, "he", self.name)
           room:obtainCard(player, id, false, fk.ReasonPrey)
         end
@@ -3083,7 +3083,7 @@ local ty__fenyue = fk.CreateActiveSkill{
             ids = card,
             to = player.id,
             toArea = Card.PlayerHand,
-            moveReason = fk.ReasonJustMove,
+            moveReason = fk.ReasonPrey,
             proposer = player.id,
             skillName = self.name,
           })
@@ -3098,42 +3098,18 @@ local ty__fenyue = fk.CreateActiveSkill{
 local ty__fenyue_record = fk.CreateTriggerSkill{
   name = "#ty__fenyue_record",
 
-  refresh_events = {fk.GameStart, fk.BeforeGameOverJudge},
+  refresh_events = {fk.GameStart, fk.BeforeGameOverJudge, fk.EventAcquireSkill},
   can_refresh = function(self, event, target, player, data)
+    if event == fk.EventAcquireSkill then
+      return target == player and data == self and player.room:getTag("RoundCount")
+    end
     return player:hasSkill(self)
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.GameStart then
-      local n = 0
-      if room.settings.gameMode == "aaa_role_mode" then
-        local total = #room.alive_players
-        if player.role == "lord" or player.role == "loyalist" then
-          if total == 8 then n = 4
-          elseif total == 7 or total == 6 then n = 3
-          elseif total == 5 then n = 2
-          else n = 1
-          end
-        elseif player.role == "rebel" then
-          if total == 8 or total == 7 then n = 4
-          elseif total == 6 or total == 5 or total == 4 then n = 3
-          elseif total == 3 then n = 2
-          else n = 1
-          end
-        elseif player.role == "renegade" then
-          n = total - 1
-        end
-      elseif room.settings.gameMode == "m_1v2_mode" or room.settings.gameMode == "m_2v2_mode" then
-        n = 2
-      end
-      room:setPlayerMark(player, "ty__fenyue", n)
-    else
-      if player.role == "renegade" or target.role == "renegade" or
-        (player.role == "lord" or player.role == "loyalist" and target.role == "rebel") or
-        (player.role == "rebel" and target.role == "loyalist") then
-        room:removePlayerMark(player, "ty__fenyue", 1)
-      end
-    end
+    local friends = U.GetFriends(room, player, true, false)
+    local nonfriends = table.filter(room.alive_players, function(p) return not table.contains(friends, p) end)
+    room:setPlayerMark(player, "ty__fenyue", #nonfriends)
   end,
 }
 ty__fenyue:addRelatedSkill(ty__fenyue_record)

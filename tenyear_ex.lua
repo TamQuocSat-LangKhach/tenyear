@@ -3644,7 +3644,7 @@ local benxi_choice = fk.CreateTriggerSkill{
   main_skill = benxi,
   events = {fk.AfterCardTargetDeclared},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self) and player.phase ~= Player.NotActive then
+    if target == player and player:hasSkill("ty_ex__benxi") and player.phase ~= Player.NotActive then
       for _, p in ipairs(player.room:getOtherPlayers(player)) do
         if player:distanceTo(p) > 1 then return end
       end

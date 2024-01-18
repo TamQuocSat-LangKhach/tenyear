@@ -1753,8 +1753,8 @@ local tongli = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self) and player.phase == Player.Play and data.firstTarget and
-      (not data.card:isVirtual() or #data.card.subcards > 0) and not table.contains(data.card.skillNames, self.name) and
+    if target == player and player:hasSkill(self) and player.phase == Player.Play and data.firstTarget
+      and not table.contains(data.card.skillNames, self.name) and
       data.card.type ~= Card.TypeEquip and data.card.sub_type ~= Card.SubtypeDelayedTrick and
       not (table.contains({"peach", "analeptic"}, data.card.trueName) and table.find(player.room.alive_players, function(p) return p.dying end)) then
       local suits = {}
@@ -1763,20 +1763,22 @@ local tongli = fk.CreateTriggerSkill{
           table.insertIfNeed(suits, Fk:getCardById(id).suit)
         end
       end
-      return #suits == player:getMark("@tongli-turn")
+      return #suits == player:getMark("@tongli-phase")
     end
   end,
   on_use = function(self, event, target, player, data)
     data.extra_data = data.extra_data or {}
-    data.extra_data.tongli = player:getMark("@tongli-turn")
+    data.extra_data.tongli = player:getMark("@tongli-phase")
     player.room:setPlayerMark(player, "tongli_tos", AimGroup:getAllTargets(data.tos))
   end,
 
-  refresh_events = {fk.AfterCardUseDeclared, fk.CardUseFinished},
+  refresh_events = {fk.AfterCardUseDeclared, fk.EventAcquireSkill, fk.CardUseFinished},
   can_refresh = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) then
       if event == fk.AfterCardUseDeclared then
         return player.phase == Player.Play and not table.contains(data.card.skillNames, self.name)
+      elseif event == fk.EventAcquireSkill then
+        return data == self and target == player and player.phase == Player.Play
       else
         return data.extra_data and data.extra_data.tongli and player:getMark("tongli_tos") ~= 0
       end
@@ -1785,7 +1787,13 @@ local tongli = fk.CreateTriggerSkill{
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     if event == fk.AfterCardUseDeclared then
-      room:addPlayerMark(player, "@tongli-turn", 1)
+      room:addPlayerMark(player, "@tongli-phase", 1)
+    elseif event == fk.EventAcquireSkill then
+      local num = #room.logic:getEventsOfScope(GameEvent.UseCard, 999, function(e)
+        local use = e.data[1]
+        return use.from == player.id
+      end, Player.HistoryPhase)
+      room:addPlayerMark(player, "@tongli-phase", num)
     else
       local n = data.extra_data.tongli
       local targets = player:getMark("tongli_tos")
@@ -1854,7 +1862,7 @@ Fk:loadTranslationTable{
   [":tongli"] = "出牌阶段，当你使用牌指定目标后，若你手牌中的花色数等于你此阶段已使用牌的张数，你可令此牌效果额外执行X次（X为你手牌中的花色数）。",
   ["shezang"] = "奢葬",
   [":shezang"] = "每轮限一次，当你或你回合内有角色进入濒死状态时，你可以从牌堆获得不同花色的牌各一张。",
-  ["@tongli-turn"] = "同礼",
+  ["@tongli-phase"] = "同礼",
 
   ["$tongli1"] = "胞妹殊礼，妾幸同之。",
   ["$tongli2"] = "夫妻之礼，举案齐眉。",

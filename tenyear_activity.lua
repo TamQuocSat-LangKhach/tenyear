@@ -5033,13 +5033,13 @@ local heqia = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Play and (not player:isKongcheng() or
-      table.find(player.room:getOtherPlayers(player), function(p) return not p:isKongcheng() end))
+    return target == player and player:hasSkill(self) and player.phase == Player.Play and (not player:isNude() or
+      table.find(player.room:getOtherPlayers(player), function(p) return not p:isNude() end))
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local success, dat = room:askForUseActiveSkill(player, "heqia_active", "#heqia-invoke", true, nil, false)
-    if success then
+    if success and dat then
       self.cost_data = dat
       return true
     end
@@ -5054,18 +5054,14 @@ local heqia = fk.CreateTriggerSkill{
     else
       local src = room:getPlayerById(self.cost_data.targets[1])
       local cards = room:askForCard(src, 1, 999, true, self.name, false, ".", "#heqia-give:"..player.id)
-      if #cards == 0 then
-        cards = src:getCardIds("h")
-      end
       dummy:addSubcards(cards)
     end
     room:moveCardTo(dummy, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
-    if to.dead then return end
+    if to.dead or to:isKongcheng() then return end
     room:setPlayerMark(to, "heqia-tmp", #dummy.subcards)
     local success, dat = room:askForUseActiveSkill(to, "heqia_viewas", "#heqia-use:::"..#dummy.subcards, true)
-    room:setPlayerMark(to, "heqia-tmp", 0)
-    if success then
-      local card = Fk.skills["heqia_viewas"]:viewAs(dat.cards)
+    if success and dat then
+      local card = Fk:cloneCard(dat.interaction)
       card:addSubcards(dat.cards)
       room:useCard{
         from = to.id,
@@ -5080,26 +5076,34 @@ local heqia_active = fk.CreateActiveSkill{
   name = "heqia_active",
   min_card_num = 0,
   target_num = 1,
+  interaction = function()
+    local choices = {}
+    if not Self:isNude() then table.insert(choices, "heqia_give") end
+    if table.find(Fk:currentRoom().alive_players, function(p) return Self ~= p and not p:isNude() end) then
+      table.insert(choices, "heqia_prey")
+    end
+    return UI.ComboBox {choices = choices}
+  end,
   card_filter = function(self, to_select, selected)
+    if not self.interaction.data or self.interaction.data == "heqia_prey" then return false end
     return true
   end,
   target_filter = function(self, to_select, selected, selected_cards)
-    if #selected == 0 and to_select ~= Self.id then
-      if #selected_cards == 0 then
-        return not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
-      else
-        return true
-      end
+    if not self.interaction.data or #selected > 0 or to_select == Self.id then return false end
+    if self.interaction.data == "heqia_give" then
+      return #selected_cards > 0
+    else
+      return not Fk:currentRoom():getPlayerById(to_select):isNude()
     end
   end,
 }
-local heqia_viewas = fk.CreateViewAsSkill{
+local heqia_viewas = fk.CreateActiveSkill{
   name = "heqia_viewas",
   interaction = function()
     local names = {}
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
-      if card.type == Card.TypeBasic and not card.is_derived then
+      if card.type == Card.TypeBasic and not card.is_derived and Self:canUse(card) and not Self:prohibitUse(card) then
         table.insertIfNeed(names, card.name)
       end
     end
@@ -5109,25 +5113,23 @@ local heqia_viewas = fk.CreateViewAsSkill{
   card_filter = function (self, to_select, selected)
     return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Card.PlayerEquip
   end,
-  view_as = function(self, cards)
-    if #cards ~= 1 or not self.interaction.data then return end
-    local card = Fk:cloneCard(self.interaction.data)
-    card.skillName = "heqia"
-    return card
+  target_filter = function(self, to_select, selected, selected_cards)
+    if not self.interaction.data or #selected_cards ~= 1 then return false end
+    if #selected >= Self:getMark("heqia-tmp") then return false end
+    local to_use = Fk:cloneCard(self.interaction.data)
+    to_use.skillName = "heqia"
+    if Self:isProhibited(Fk:currentRoom():getPlayerById(to_select), to_use) then return false end
+    return to_use.skill:modTargetFilter(to_select, selected, Self.id, to_use, false)
   end,
-}
-local heqia_targetmod = fk.CreateTargetModSkill{
-  name = "#heqia_targetmod",
-  extra_target_func = function(self, player, skill, card)
-    if card and table.contains(card.skillNames, "heqia") then
-      return player:getMark("heqia-tmp") - 1
+  feasible = function(self, selected, selected_cards)
+    if not self.interaction.data or #selected_cards ~= 1 then return false end
+    local to_use = Fk:cloneCard(self.interaction.data)
+    to_use.skillName = "heqia"
+    if to_use.skill:getMinTargetNum() == 0 then
+      return (#selected == 0 or table.contains(selected, Self.id)) and to_use.skill:feasible(selected, selected_cards, Self, to_use)
+    else
+      return #selected > 0
     end
-  end,
-  bypass_distances = function (self, player, skill, card, to)
-    return card and table.contains(card.skillNames, "heqia")
-  end,
-  bypass_times = function(self, player, skill, scope, card)
-    return card and table.contains(card.skillNames, "heqia")
   end,
 }
 local yinyi = fk.CreateTriggerSkill{
@@ -5144,19 +5146,19 @@ local yinyi = fk.CreateTriggerSkill{
 }
 Fk:addSkill(heqia_active)
 Fk:addSkill(heqia_viewas)
-heqia:addRelatedSkill(heqia_targetmod)
 pangdegong:addSkill(heqia)
 pangdegong:addSkill(yinyi)
 Fk:loadTranslationTable{
   ["ty__pangdegong"] = "庞德公",
   ["heqia"] = "和洽",
-  [":heqia"] = "出牌阶段开始时，你可以选择一项：1.你交给一名其他角色任意张牌；2.令一名有手牌的角色交给你任意张牌。然后获得牌的角色可以将"..
-  "一张手牌当任意基本牌使用（无距离次数限制），且可指定目标数为X（X为其本次获得的牌数）。",
+  [":heqia"] = "出牌阶段开始时，你可以选择一项：1.你交给一名其他角色至少一张牌；2.令一名有手牌的其他角色交给你至少一张牌。然后获得牌的角色可以将一张手牌当任意基本牌使用（无距离次数限制），且此牌目标上限改为X（X为其本次获得的牌数）。",
   ["yinyi"] = "隐逸",
   [":yinyi"] = "锁定技，每回合限一次，当你受到非属性伤害时，若伤害来源的手牌数与体力值均与你不同，防止此伤害。",
   ["heqia_active"] = "和洽",
-  ["#heqia-invoke"] = "和洽：交给一名其他角色任意张牌，或选择一名角色将牌交给你",
-  ["#heqia-give"] = "和洽：交给 %src 任意张牌",
+  ["#heqia-invoke"] = "和洽：交给一名其他角色至少一张牌，或选择一名角色将至少一张牌交给你",
+  ["heqia_give"] = "交给一名其他角色至少一张牌",
+  ["heqia_prey"] = "令一名角色将至少一张牌交给你",
+  ["#heqia-give"] = "和洽：交给 %src 至少一张牌",
   ["heqia_viewas"] = "和洽",
   ["#heqia-use"] = "和洽：你可以将一张手牌当任意基本牌使用，可以指定%arg个目标",
 

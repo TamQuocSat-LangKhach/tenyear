@@ -3214,8 +3214,8 @@ local yiyong = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and
-      data.to and data.to ~= player and not player:isNude()
+    return target == player and player:hasSkill(self)
+      and data.to and data.to ~= player and not player:isNude()
   end,
   on_cost = function(self, event, target, player, data)
     local cards = player.room:askForDiscard(player, 1, 999, true, self.name, true, ".", "#yiyong-invoke::"..data.to.id, true)
@@ -3226,18 +3226,30 @@ local yiyong = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:throwCard(self.cost_data, self.name, player, player)
+    local from_cards = self.cost_data
+    local to_cards = player.room:askForDiscard(data.to, 1, 999, true, self.name, false, ".", "#yiyong-discard", true)
     local n1, n2 = 0, 0
-    for _, id in ipairs(self.cost_data) do
+    for _, id in ipairs(from_cards) do
       n1 = n1 + Fk:getCardById(id).number
     end
-    local cards = player.room:askForDiscard(data.to, 1, 999, true, self.name, false, ".",
-      "#yiyong-discard:"..player.id.."::"..tostring(n1))
-    for _, id in ipairs(cards) do
+    for _, id in ipairs(to_cards) do
       n2 = n2 + Fk:getCardById(id).number
     end
-    if n1 <= n2 and #cards > 0 then
-      player:drawCards(#cards, self.name)
+    room:moveCards({
+      from = player.id,
+      ids = from_cards,
+      toArea = Card.DiscardPile,
+      moveReason = fk.ReasonDiscard,
+      proposer = player.id,
+    },{
+      from = data.to.id,
+      ids = to_cards,
+      toArea = Card.DiscardPile,
+      moveReason = fk.ReasonDiscard,
+      proposer = data.to.id,
+    })
+    if n1 <= n2 and #to_cards > 0 and not player.dead then
+      player:drawCards(#to_cards, self.name)
     end
     if n1 >= n2 then
       data.damage = data.damage + 1
@@ -3248,11 +3260,9 @@ panghui:addSkill(yiyong)
 Fk:loadTranslationTable{
   ["panghui"] = "庞会",
   ["yiyong"] = "异勇",
-  [":yiyong"] = "当你对其他角色造成伤害时，你可以弃置任意张牌，令该角色弃置任意张牌。若你弃置的牌的点数之和：不大于其，你摸X张牌"..
-  "（X为该角色弃置的牌数）；不小于其，此伤害+1。",
-  --"当你对其他角色造成伤害时，你可以与其同时弃置任意张牌，若你弃置的牌点数之和：不大于其，你摸X张牌（X为该角色弃置的牌数）；不小于其，此伤害+1。",
+  [":yiyong"] = "每当你对其他角色造成伤害时，你可以和该角色同时弃置至少一张牌（该角色没牌则不弃）。若你弃置的牌的点数之和：不大于其，你摸X张牌（X为该角色弃置的牌数）；不小于其，此伤害+1。",
   ["#yiyong-invoke"] = "异勇：你可以弃置任意张牌，令 %dest 弃置任意张牌，根据双方弃牌点数之和执行效果",
-  ["#yiyong-discard"] = "异勇：弃置任意张牌，若点数之和大于等于%arg则 %src 摸牌，若小于则伤害+1",
+  ["#yiyong-discard"] = "异勇：弃置至少一张牌",
 
   ["$yiyong1"] = "关氏鼠辈，庞令明之子来邪！",
   ["$yiyong2"] = "凭一腔勇力，父仇定可报还。",

@@ -1009,54 +1009,18 @@ local nuanhui = fk.CreateTriggerSkill{
     local to = room:getPlayerById(self.cost_data)
     local n = #to:getCardIds("e")
     local count = 0
-    room:addPlayerMark(to, MarkEnum.BypassTimesLimit.."-tmp", 1)
     for i = 1, n, 1 do
       if to.dead then return end
-      local success, dat = room:askForUseActiveSkill(to, "nuanhui_viewas", "#nuanhui-use:::"..i..":"..n, true)
-      if success then
-        count = i
-        local card = Fk.skills["nuanhui_viewas"]:viewAs(dat.cards)
-        card.skillName = self.name
-        room:useCard{
-          from = player.id,
-          tos = table.map(dat.targets, function(id) return {id} end),
-          card = card,
-          extraUse = true,
-        }
-      else
+      if not U.askForUseVirtualCard(room, to, U.getAllCardNames("b"), nil, self.name, "#nuanhui-use:::"..i..":"..n, true, true, false, true) then
         break
       end
+      count = count + 1
     end
-    if not to.dead then
-      room:removePlayerMark(to, MarkEnum.BypassTimesLimit.."-tmp", 1)
-      if count > 1 then
-        to:throwAllCards("e")
-      end
+    if not to.dead and count > 1 then
+      to:throwAllCards("e")
     end
   end,
 }
-local nuanhui_viewas = fk.CreateViewAsSkill{
-  name = "nuanhui_viewas",
-  interaction = function()
-    local names = {}
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card.type == Card.TypeBasic and not card.is_derived and Self:canUse(card) then
-        table.insertIfNeed(names, card.name)
-      end
-    end
-    if #names == 0 then return end
-    return UI.ComboBox {choices = names}
-  end,
-  card_filter = Util.FalseFunc,
-  view_as = function(self, cards)
-    if not self.interaction.data then return end
-    local card = Fk:cloneCard(self.interaction.data)
-    card.skillName = "nuanhui"
-    return card
-  end,
-}
-Fk:addSkill(nuanhui_viewas)
 zhugeruoxue:addSkill(qiongying)
 zhugeruoxue:addSkill(nuanhui)
 Fk:loadTranslationTable{

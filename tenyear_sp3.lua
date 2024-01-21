@@ -2441,11 +2441,11 @@ local shangyu = fk.CreateTriggerSkill{
         room:moveCardTo(card, Card.PlayerHand, room:getPlayerById(to[1]), fk.ReasonGive, self.name, nil, true, player.id)
       end
     elseif event == fk.Damage then
-      local target = room:getPlayerById(self.cost_data)
+      local tar = room:getPlayerById(self.cost_data)
       room:doIndicate(player.id, {self.cost_data})
       room:drawCards(player, 1, self.name)
-      if not target.dead then
-        room:drawCards(target, 1, self.name)
+      if not tar.dead then
+        room:drawCards(tar, 1, self.name)
       end
     elseif event == fk.GameStart then
       local cards = room:getCardsFromPileByRule("slash", 1)
@@ -2487,7 +2487,7 @@ local caixia = fk.CreateTriggerSkill{
     if event == fk.CardUsing then
       return player == target and player:getMark("@caixia") > 0
     else
-      return player == target and player:getMark("@caixia") == 0 
+      return player == target and player:getMark("@caixia") == 0
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -2510,7 +2510,6 @@ local caixia = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.CardUsing then
-      room:notifySkillInvoked(player, self.name)
       room:removePlayerMark(player, "@caixia")
     else
       room:notifySkillInvoked(player, self.name, event == fk.Damaged and "masochism" or "drawcard")

@@ -444,12 +444,12 @@ local shajue = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.EnterDying},
   can_trigger = function(self, event, target, player, data)
-    return target ~= player and player:hasSkill(self) and target.hp < 0
+    return target ~= player and player:hasSkill(self)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:addPlayerMark(player, "@baoli", 1)
-    if data.damage and data.damage.card and U.hasFullRealCard(room, data.damage.card) then
+    if target.hp < 0 and data.damage and data.damage.card and U.hasFullRealCard(room, data.damage.card) then
       room:obtainCard(player, data.damage.card, true, fk.ReasonPrey)
     end
   end
@@ -465,7 +465,7 @@ Fk:loadTranslationTable{
   "且其出牌阶段开始时，移去“暴戾”并随机执行一项：<br>受到1点火焰伤害且本回合不能对你使用【杀】；<br>流失1点体力且本回合手牌上限-1；<br>"..
   "你随机获得其一张手牌和一张装备区里的牌。",
   ["shajue"] = "杀绝",
-  [":shajue"] = "锁定技，其他角色进入濒死状态时，若其需要超过一张【桃】或【酒】救回，则你获得一个“暴戾”标记，并获得使其进入濒死状态的牌。",
+  [":shajue"] = "锁定技，其他角色进入濒死状态时，你获得一个“暴戾”标记，若其需要超过一张【桃】或【酒】救回，你获得使其进入濒死状态的牌。",
   ["#xionghuo_record"] = "凶镬",
   ["@baoli"] = "暴戾",
 

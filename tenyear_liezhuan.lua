@@ -108,7 +108,7 @@ local yujue = fk.CreateActiveSkill{
     local to = room:getPlayerById(effect.tos[1])
     room:abortPlayerArea(player, self.interaction.data)
     if not player.dead and not to:isKongcheng() then
-      local card = room:askForCard(to, 1, 1, false, self.name, false, ".", "yujue-give:"..player.id)
+      local card = room:askForCard(to, 1, 1, false, self.name, false, ".", "#yujue-give:"..player.id)
       if #card > 0 then
         room:obtainCard(player, card[1], false, fk.ReasonGive)
       end
@@ -123,7 +123,7 @@ local yujue = fk.CreateActiveSkill{
 }
 local yujue_trigger = fk.CreateTriggerSkill{
   name = "#yujue_trigger",
-  refresh_events = {fk.TurnStart},
+  refresh_events = {fk.TurnStart, fk.Death},
   can_refresh = function (self, event, target, player, data)
     return player == target and type(player:getMark("yujue_skill")) == "table"
   end,
@@ -196,7 +196,7 @@ Fk:loadTranslationTable{
   ["ty__liuhong"] = "刘宏",
   ["yujue"] = "鬻爵",
   [":yujue"] = "出牌阶段限一次，你可以废除你的一个装备栏，并选择一名有手牌的其他角色，令其交给你一张手牌，然后其获得技能“执笏”直到你的下个回合开始。",
-  ["yujue-give:"] = "鬻爵：请交给 %src 一张手牌",
+  ["#yujue-give"] = "鬻爵：请交给 %src 一张手牌",
   ["tuxing"] = "图兴",
   [":tuxing"] = "锁定技，①当你废除一个装备栏时，你加1点体力上限并回复1点体力。②当你首次废除所有装备栏后，你减4点体力上限，然后你本局游戏接下来造成的伤害+1。",
   ["@@tuxing_damage"] = "图兴加伤",

@@ -376,14 +376,14 @@ local ty__pingjian = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local used_skills = U.getMark(player, "ty__pingjian_used_skills")
     local skills = table.filter({
-      "qiangwu", "ol_ex__qiangxi", "ol_ex__luanji", "sanyao", "ol__xuehen", "ex__yijue", "daoshu", "m_ex__xianzhen",
-      "tianyi", "ty_ex__zhanjue", "lianji", "wurong", "fenxun", "ol_ex__jiuchi", "m_ex__zenhui", "xuezhao", "kurou", "m_ex__mieji",
-      "ex__zhiheng", "ex__guose", "os_ex__shenxing", "ty__songci", "guolun", "os__gongxin", "lveming", "busuan", "lianzhu",
+      "qiangwu", "ol_ex__qiangxi", "ol_ex__luanji", "ty_ex__sanyao", "ol__xuehen", "ex__yijue", "daoshu", "m_ex__xianzhen",
+      "tianyi", "ty_ex__zhanjue", "ty__lianji", "ty_ex__wurong", "fenxun", "ol_ex__jiuchi", "m_ex__zenhui", "xuezhao", "hs__kurou", "m_ex__mieji",
+      "ex__zhiheng", "ex__guose", "ty_ex__shenxing", "ty__songci", "guolun", "os__gongxin", "lveming", "busuan", "ty__lianzhu",
       "ex__fanjian", "tanbei", "ty__qingcheng", "chengshang", "ty__songshu", "poxi", "m_ex__ganlu", "qixi", "ty__kuangfu", "qice",
       "os_ex__gongqi", "ty_ex__huaiyi", "shanxi", "ol_ex__tiaoxin", "qingnang", "quji", "ty_ex__anguo", "limu", "ex__jieyin",
       "m_ex__anxu", "ty_ex__mingce", "ziyuan", "mou__lijian", "mingjian", "ex__rende", "mizhao", "yanjiao", "ol_ex__dimeng", "ol_ex__zhijian",
       "quhu", "nuchen", "kanji", "ol_ex__duanliang", "yangjie", "hongyi", "m_ex__junxing", "m_ex__yanzhu", "ol_ex__changbiao",
-      "fengzi", "yanxi", "jiwu", "xuanbei", "yushen", "jinhui", "shuojian", "qingshi", "jieling", "guanxu"
+      "fengzi", "yanxi", "jiwu", "xuanbei", "yushen", "jinhui", "shuojian", "qingshi", "guanxu", "zunwei"
     }, function (skill_name)
       return not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
     end)
@@ -430,7 +430,8 @@ local ty__pingjian_trigger = fk.CreateTriggerSkill{
       skills = table.filter({
         "ty_ex__zhiyan", "ex__biyue", "fujian", "kunfen", "ol_ex__jushou", "os_ex__bingyi", "miji", "zhengu",
         "juece", "sp__youdi", "kuanshi", "ty__jieying", "suizheng", "m_ex__jieyue", "shenfu", "meihun",
-        "pijing", "zhuihuan", "os__juchen", "os__xingbu", "zuilun", "mozhi", "ty_ex__jingce", "nuanhui", "sangu"
+        "pijing", "zhuihuan", "os__juchen", "os__xingbu", "zuilun", "mozhi", "ty_ex__jingce", "nuanhui", "sangu",
+        "js__pianchong"
       }, function (skill_name)
         return not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
       end)

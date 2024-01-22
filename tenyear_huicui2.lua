@@ -3092,7 +3092,7 @@ Fk:loadTranslationTable{
 
   ["$youzhan1"] = "本将军在此！贼仲达何在？",
   ["$youzhan2"] = "以身为饵，诱老贼出营。",
-  ["$youzhan3"] = "吠！尔等之胆略尚不如蜀地小。",
+  ["$youzhan3"] = "吠！尔等之胆略尚不如蜀地小儿。",
   ["$youzhan4"] = "我等引兵叫阵，魏狗必衔尾而来。",
   ["~ty__wuban"] = "班……有负丞相重望……",
 }
@@ -4478,19 +4478,16 @@ local qiqin = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.AfterDrawPileShuffle, fk.AfterCardsMove},
+  refresh_events = {fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.AfterDrawPileShuffle then
-      return player == player.room.players[1]
-    elseif not player.dead then
-      local cards = U.getMark(player, "qiqin_cards")
-      if #cards == 0 then return false end
-      for _, move in ipairs(data) do
-        if move.toArea == Card.PlayerHand and move.to == player.id then
-          for _, info in ipairs(move.moveInfo) do
-            if table.contains(cards, info.cardId) then
-              return true
-            end
+    if player.dead then return false end
+    local cards = U.getMark(player, "qiqin_cards")
+    if #cards == 0 then return false end
+    for _, move in ipairs(data) do
+      if move.toArea == Card.PlayerHand and move.to == player.id then
+        for _, info in ipairs(move.moveInfo) do
+          if table.contains(cards, info.cardId) then
+            return true
           end
         end
       end
@@ -4498,21 +4495,12 @@ local qiqin = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.AfterDrawPileShuffle then
-      for _, id in ipairs(room.draw_pile) do
+    local cards = U.getMark(player, "qiqin_cards")
+    for _, id in ipairs(cards) do
+      if table.contains(player:getCardIds("h"), id) then
         local card = Fk:getCardById(id)
-        if card:getMark("@@qiqin-inhand") > 0 then
-          room:setCardMark(card, "@@qiqin-inhand", 0)
-        end
-      end
-    else
-      local cards = U.getMark(player, "qiqin_cards")
-      for _, id in ipairs(cards) do
-        if table.contains(player:getCardIds("h"), id) then
-          local card = Fk:getCardById(id)
-          if card:getMark("@@qiqin-inhand") == 0 then
-            room:setCardMark(card, "@@qiqin-inhand", 1)
-          end
+        if card:getMark("@@qiqin-inhand") == 0 then
+          room:setCardMark(card, "@@qiqin-inhand", 1)
         end
       end
     end
@@ -4521,7 +4509,7 @@ local qiqin = fk.CreateTriggerSkill{
 local qiqin_maxcards = fk.CreateMaxCardsSkill{
   name = "#qiqin_maxcards",
   exclude_from = function(self, player, card)
-    return player:hasSkill("qiqin") and card:getMark("@@qiqin-inhand") > 0
+    return player:hasSkill(qiqin) and card:getMark("@@qiqin-inhand") > 0
   end,
 }
 qiqin:addRelatedSkill(qiqin_maxcards)
@@ -4529,8 +4517,9 @@ xiaoqiao:addSkill(qiqin)
 local weiwan = fk.CreateActiveSkill{
   name = "weiwan",
   anim_type = "offensive",
+  prompt = "#weiwan-active",
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 and not player:isNude()
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
   end,
   card_num = 1,
   card_filter = function (self, to_select, selected)
@@ -4549,7 +4538,7 @@ local weiwan = fk.CreateActiveSkill{
     local to = room:getPlayerById(effect.tos[1])
     local qin_suit = Fk:getCardById(effect.cards[1]).suit
     room:throwCard(effect.cards, self.name, player, player)
-    if player.dead then return end
+    if player.dead or to.dead then return end
     local cardsMap = {}
     for _, id in ipairs(to:getCardIds("hej")) do
       local suit = Fk:getCardById(id).suit
@@ -4558,7 +4547,10 @@ local weiwan = fk.CreateActiveSkill{
         table.insert(cardsMap[suit], id)
       end
     end
-    local get = U.getRandomCards(cardsMap, 3)
+    local get = {}
+    for _, value in pairs(cardsMap) do
+      table.insert(get, table.random(value))
+    end
     if #get > 0 then
       local dummy = Fk:cloneCard("dilu")
       dummy:addSubcards(get)
@@ -4606,6 +4598,8 @@ Fk:loadTranslationTable{
   ["@@qiqin-inhand"] = "琴",
   ["weiwan"] = "媦婉",
   [":weiwan"] = "出牌阶段限一次，你可以弃置一张“琴”并选择一名其他角色，随机获得其区域内与此“琴”不同花色的牌各一张。若你获得的牌数为：1，其失去1点体力；2，你本回合对其使用牌无距离与次数限制；3，你本回合不能对其使用牌。",
+  ["#weiwan-active"] = "发动 媦婉，选择一张“琴”弃置并选择一名其他角色",
+
   ["$qiqin1"] = "渔歌唱晚落山月，素琴薄暮声。",
   ["$qiqin2"] = "指上琴音浅，欲听还需抚瑶琴。",
   ["$weiwan1"] = "繁花初成，所幸未晚于桑榆。",

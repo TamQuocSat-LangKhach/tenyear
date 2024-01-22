@@ -4678,8 +4678,15 @@ local pianchong = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = {}
-    table.insertTable(cards, room:getCardsFromPileByRule(".|.|heart,diamond"))
-    table.insertTable(cards, room:getCardsFromPileByRule(".|.|spade,club"))
+    local color = Card.NoColor
+    for _, id in ipairs(room.draw_pile) do
+      local _color = Fk:getCardById(id).color
+      if _color ~= color and _color ~= Card.NoColor then
+        color = _color
+        table.insert(cards, id)
+        if #cards == 2 then break end
+      end
+    end
     if #cards > 0 then
       room:moveCards({
         ids = cards,
@@ -4688,76 +4695,112 @@ local pianchong = fk.CreateTriggerSkill{
         moveReason = fk.ReasonPrey,
         proposer = player.id,
         skillName = self.name,
+        moveVisible = true,
       })
     end
     local choice = room:askForChoice(player, {"red", "black"}, self.name, "#pianchong-choice")
-    room:setPlayerMark(player, "@pianchong", choice)
+    local mark = U.getMark(player, "@pianchong")
+    table.insertIfNeed(mark, choice)
+    room:setPlayerMark(player, "@pianchong", mark)
     return true
+  end,
+  
+  refresh_events = {fk.TurnStart},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark("@pianchong") ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@pianchong", 0)
   end,
 }
 local pianchong_delay = fk.CreateTriggerSkill{
   name = "#pianchong_delay",
   mute = true,
-  events = {fk.TurnStart, fk.AfterCardsMove},
+  events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    local color = player:getMark("@pianchong")
-    if event == fk.TurnStart then
-      return target == player and color ~= 0
-    elseif not player.dead and color ~= 0 then
-      local times = 0
-      for _, move in ipairs(data) do
-        if move.from == player.id then
-          for _, info in ipairs(move.moveInfo) do
-            if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
-              if Fk:getCardById(info.cardId):getColorString() == color then
-                times = times + 1
-              end
+    if player.dead then return false end
+    local colors = U.getMark(player, "@pianchong")
+    if #colors == 0 then return false end
+    local x, y = 0, 0
+    local color
+    for _, move in ipairs(data) do
+      if move.from == player.id then
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+            color = Fk:getCardById(info.cardId).color
+            if color == Card.Red then
+              x = x + 1
+            elseif color == Card.Black then
+              y = y + 1
             end
           end
         end
       end
-      if times > 0 then
-        self.cost_data = times
-        return true
-      end
+    end
+    if not table.contains(colors, "red") then
+      x = 0
+    end
+    if not table.contains(colors, "black") then
+      y = 0
+    end
+    if x > 0 or y > 0 then
+      self.cost_data = {x, y}
+      return true
     end
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.TurnStart then
-      room:setPlayerMark(player, "@pianchong", 0)
-    else
-      local pattern
-      local color = player:getMark("@pianchong")
-      if color == "red" then
-        pattern = ".|.|spade,club"
-      else
-        pattern = ".|.|heart,diamond"
+    local x, y = table.unpack(self.cost_data)
+    local color
+    local cards = {}
+    for _, id in ipairs(room.draw_pile) do
+      color = Fk:getCardById(id).color
+      if color == Card.Black then
+        if x > 0 then
+          x = x - 1
+          table.insert(cards, id)
+        end
+      elseif color == Card.Red then
+        if y > 0 then
+          y = y - 1
+          table.insert(cards, id)
+        end
       end
-      local n = self.cost_data
-      local cards = room:getCardsFromPileByRule(pattern, n)
-      if #cards > 0 then
-        room:moveCards({
-          ids = cards,
-          to = player.id,
-          toArea = Card.PlayerHand,
-          moveReason = fk.ReasonPrey,
-          proposer = player.id,
-          skillName = self.name,
-        })
-      end
+      if x == 0 and y == 0 then break end
+    end
+    if #cards > 0 then
+      room:moveCards({
+        ids = cards,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonPrey,
+        proposer = player.id,
+        skillName = pianchong.name,
+        moveVisible = true,
+      })
     end
   end,
 }
-pianchong:addRelatedSkill(pianchong_delay)
 local zunwei = fk.CreateActiveSkill{
   name = "zunwei",
-  anim_type = "drawcard",
+  prompt = "#zunwei-active",
+  anim_type = "control",
   card_num = 0,
   target_num = 1,
+  interaction = function()
+    local choices, all_choices = {}, {}
+    for i = 1, 3 do
+      local choice = "zunwei"..tostring(i)
+      table.insert(all_choices, choice)
+      if Self:getMark(choice) == 0 then
+        table.insert(choices, choice)
+      end
+    end
+    return UI.ComboBox {choices = choices, all_choices = all_choices}
+  end,
   can_use = function(self, player)
-    if player:usedSkillTimes(self.name) == 0 then
+    if player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 then
       for i = 1, 3, 1 do
         if player:getMark(self.name .. tostring(i)) == 0 then
           return true
@@ -4768,62 +4811,62 @@ local zunwei = fk.CreateActiveSkill{
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
-    if #selected == 0 then
-      local target = Fk:currentRoom():getPlayerById(to_select)
-      local player = Fk:currentRoom():getPlayerById(Self.id)
-      return (player:getMark("zunwei1") == 0 and #player:getCardIds("h") < #target.player_cards[Player.Hand]) or
-        (player:getMark("zunwei2") == 0 and #player.player_cards[Player.Equip] < #target.player_cards[Player.Equip]) or
-        (player:getMark("zunwei3") == 0 and player:isWounded() and player.hp < target.hp)
-    end
-    return false
+    return self.interaction.data and #selected == 0 and to_select ~= Self.id
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local choices = {}
-    if player:getMark("zunwei1") == 0 and #player:getCardIds("h") < #target.player_cards[Player.Hand] then
-      table.insert(choices, "zunwei1")
-    end
-    if player:getMark("zunwei2") == 0 and #player.player_cards[Player.Equip] < #target.player_cards[Player.Equip] then
-      table.insert(choices, "zunwei2")
-    end
-    if player:getMark("zunwei3") == 0 and player:isWounded() and player.hp < target.hp then
-      table.insert(choices, "zunwei3")
-    end
-    local choice = room:askForChoice(player, choices, self.name)
+    local choice = self.interaction.data
     if choice == "zunwei1" then
-      player:drawCards(math.min(#target.player_cards[Player.Hand] - #player:getCardIds("h"), 5), self.name)
+      local x = math.min(target:getHandcardNum() - player:getHandcardNum(), 5)
+      if x > 0 then
+        room:drawCards(player, x, self.name)
+      end
     elseif choice == "zunwei2" then
-      local n = #target.player_cards[Player.Equip] - #player.player_cards[Player.Equip]
-      for i = 1, n, 1 do
-        local types = {Card.SubtypeWeapon, Card.SubtypeArmor, Card.SubtypeDefensiveRide, Card.SubtypeOffensiveRide, Card.SubtypeTreasure}
-        local cards = {}
-        for i = 1, #room.draw_pile, 1 do
-          local card = Fk:getCardById(room.draw_pile[i])
-          for _, type in ipairs(types) do
-            if card.sub_type == type and player:getEquipment(type) == nil then
-              table.insertIfNeed(cards, room.draw_pile[i])
+      local subtypes = {
+        Card.SubtypeWeapon,
+        Card.SubtypeArmor,
+        Card.SubtypeDefensiveRide,
+        Card.SubtypeOffensiveRide,
+        Card.SubtypeTreasure
+      }
+      local subtype
+      local cards = {}
+      local card
+      while not (player.dead or target.dead) and
+      #player.player_cards[Player.Equip] < #target.player_cards[Player.Equip] do
+        while #subtypes > 0 do
+          subtype = table.remove(subtypes, 1)
+          if player:hasEmptyEquipSlot(subtype) then
+            cards = table.filter(room.draw_pile, function (id)
+              card = Fk:getCardById(id)
+              return card.sub_type == subtype and U.canUseCardTo(room, player, player, card)
+            end)
+            if #cards > 0 then
+              room:useCard{
+                from = player.id,
+                card = Fk:getCardById(cards[math.random(1, #cards)]),
+              }
+              break
             end
           end
         end
-        if #cards > 0 then
-          room:useCard({
-            from = player.id,
-            tos = {{player.id}},
-            card = Fk:getCardById(table.random(cards)),
-          })
-        end
+        if #subtypes == 0 then break end
       end
-    elseif choice == "zunwei3" then
+    elseif choice == "zunwei3" and player:isWounded() then
+      local x = target.hp - player.hp
+      if x > 0 then
       room:recover{
         who = player,
-        num = math.min(player:getLostHp(), target.hp - player.hp),
+        num = math.min(player:getLostHp(), x),
         recoverBy = player,
         skillName = self.name}
+      end
     end
     room:setPlayerMark(player, choice, 1)
   end,
 }
+pianchong:addRelatedSkill(pianchong_delay)
 guozhao:addSkill(pianchong)
 guozhao:addSkill(zunwei)
 Fk:loadTranslationTable{
@@ -4834,8 +4877,10 @@ Fk:loadTranslationTable{
   ["zunwei"] = "尊位",
   [":zunwei"] = "出牌阶段限一次，你可以选择一名其他角色，并选择执行以下一项，然后移除该选项：1.将手牌数摸至与该角色相同（最多摸五张）；"..
   "2.随机使用牌堆中的装备牌至与该角色相同；3.将体力回复至与该角色相同。",
+  ["#pianchong_delay"] = "偏宠",
   ["@pianchong"] = "偏宠",
   ["#pianchong-choice"] = "偏宠：选择一种颜色，失去此颜色的牌时，摸另一种颜色的牌",
+  ["#zunwei-active"] = "发动 尊位，选择一名其他角色并执行一项效果",
   ["zunwei1"] = "将手牌摸至与其相同（最多摸五张）",
   ["zunwei2"] = "使用装备至与其相同",
   ["zunwei3"] = "回复体力至与其相同",
@@ -5412,19 +5457,32 @@ local panshu = General(extension, "ty__panshu", "wu", 3, 3, General.Female)
 local zhiren = fk.CreateTriggerSkill{
   name = "zhiren",
   anim_type = "control",
-  events = {fk.AfterCardUseDeclared},
+  events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and not data.card:isVirtual() and
-      (player.phase ~= Player.NotActive or player:getMark("@@yaner") > 0) then
-      if player:getMark("zhiren-turn") == 0 then
-        player.room:setPlayerMark(player, "zhiren-turn", 1)
-        return true
+    (player.phase ~= Player.NotActive or player:getMark("@@yaner") > 0) then
+      local room = player.room
+      local logic = room.logic
+      local use_event = logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
+      if use_event == nil then return false end
+      local mark = player:getMark("zhiren_record-turn")
+      if mark == 0 then
+        logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+          local last_use = e.data[1]
+          if last_use.from == player.id and not last_use.card:isVirtual() then
+            mark = e.id
+            room:setPlayerMark(player, "zhiren_record-turn", mark)
+            return true
+          end
+          return false
+        end, Player.HistoryTurn)
       end
+      return mark == use_event.id
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local n = #Fk:translate(data.card.trueName) / 3
+    local n = Fk:translate(data.card.trueName):len() -- FIXME: depends on config language, catastrophe!
     room:askForGuanxing(player, room:getNCards(n), nil, nil, "", false)
     if n > 1 then
       local targets = table.map(table.filter(room.alive_players, function(p)
@@ -5435,6 +5493,7 @@ local zhiren = fk.CreateTriggerSkill{
           to = room:getPlayerById(to[1])
           local id = room:askForCardChosen(player, to, "e", self.name)
           room:throwCard({id}, self.name, to, player)
+          if player.dead then return false end
         end
       end
       targets = table.map(table.filter(room.alive_players, function(p)
@@ -5445,6 +5504,7 @@ local zhiren = fk.CreateTriggerSkill{
           to = room:getPlayerById(to[1])
           local id = room:askForCardChosen(player, to, "j", self.name)
           room:throwCard({id}, self.name, to, player)
+          if player.dead then return false end
         end
       end
     end
@@ -5456,10 +5516,11 @@ local zhiren = fk.CreateTriggerSkill{
           recoverBy = player,
           skillName = self.name
         }
+        if player.dead then return false end
       end
     end
     if n > 3 then
-      player:drawCards(3, self.name)
+      room:drawCards(player, 3, self.name)
     end
   end,
 }
@@ -5469,15 +5530,15 @@ local yaner = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 then
+      local current = player.room.current
+      if current == player or current.dead or current.phase ~= Player.Play or not current:isKongcheng() then
+        return false
+      end
       for _, move in ipairs(data) do
-        if move.from then
+        if move.from == current.id then
           for _, info in ipairs(move.moveInfo) do
             if info.fromArea == Card.PlayerHand then
-              local to = player.room:getPlayerById(move.from)
-              if to:isKongcheng() and to.phase == Player.Play and not to.dead then
-                self.cost_data = move.from
-                return true
-              end
+              return true
             end
           end
         end
@@ -5485,17 +5546,20 @@ local yaner = fk.CreateTriggerSkill{
     end
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#yaner-invoke::"..self.cost_data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#yaner-invoke::"..player.room.current.id)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(self.cost_data)
-    local cards1 = player:drawCards(2, self.name)
-    local cards2 = to:drawCards(2, self.name)
-    if Fk:getCardById(cards1[1]).type == Fk:getCardById(cards1[2]).type then
+    local to = room.current
+    room:doIndicate(player.id, {to.id})
+    local cards = player:drawCards(2, self.name)
+    if #cards == 2 and Fk:getCardById(cards[1]).type == Fk:getCardById(cards[2]).type then
       room:setPlayerMark(player, "@@yaner", 1)
     end
-    if to:isWounded() and Fk:getCardById(cards2[1]).type == Fk:getCardById(cards2[2]).type then
+    if to.dead then return false end
+    cards = to:drawCards(2, self.name)
+    if not to.dead and to:isWounded()
+    and #cards == 2 and Fk:getCardById(cards[1]).type == Fk:getCardById(cards[2]).type then
       room:recover{
         who = to,
         num = 1,
@@ -5521,7 +5585,7 @@ Fk:loadTranslationTable{
   [":zhiren"] = "你的回合内，当你使用本回合的第一张非转化牌时，若X：不小于1，你观看牌堆顶X张牌并以任意顺序放回牌堆顶或牌堆底；"..
   "不小于2，你可以弃置场上一张装备牌和一张延时锦囊牌；不小于3，你回复1点体力；不小于4，你摸三张牌（X为此牌名称字数）。",
   ["yaner"] = "燕尔",
-  [":yaner"] = "每回合限一次，当其他角色于其出牌阶段内失去最后的手牌时，你可以与其各摸两张牌，然后若因此摸到相同类型的两张牌的角色为："..
+  [":yaner"] = "每回合限一次，当其他角色于其出牌阶段内失去最后的手牌后，你可以与其各摸两张牌，然后若因此摸到相同类型的两张牌的角色为："..
   "你，〖织纴〗改为回合外也可以发动直到你的下个回合开始；其，其回复1点体力。",
   ["#zhiren1-choose"] = "织纴：你可以弃置场上一张装备牌",
   ["#zhiren2-choose"] = "织纴：你可以弃置场上一张延时锦囊牌",

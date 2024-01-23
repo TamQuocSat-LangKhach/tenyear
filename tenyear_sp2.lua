@@ -3180,8 +3180,8 @@ local juetao = fk.CreateTriggerSkill{
   frequency = Skill.Limited,
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Play and player.hp == 1 and
-      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+    return target == player and player:hasSkill(self) and player.phase == Player.Play
+    and player.hp == 1 and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   on_cost = function(self, event, target, player, data)
     local to = player.room:askForChoosePlayers(player, table.map(player.room:getAlivePlayers(), Util.IdMapper), 1, 1, "#juetao-choose", self.name, true)
@@ -3203,30 +3203,66 @@ local juetao = fk.CreateTriggerSkill{
         skillName = self.name,
       })
       local card = Fk:getCardById(id, true)
+      room:setPlayerMark(player, MarkEnum.BypassTimesLimit.."-tmp", 1)
+      local canUse = player:canUse(card) and not player:prohibitUse(card)
+      room:setPlayerMark(player, MarkEnum.BypassTimesLimit.."-tmp", 0)
       local tos
-      if (card.trueName == "slash") or
-        ((table.contains({"dismantlement", "snatch", "chasing_near"}, card.name)) and not to:isAllNude()) or
-        (table.contains({"fire_attack", "unexpectation"}, card.name) and not to:isKongcheng()) or
-        (table.contains({"duel", "savage_assault", "archery_attack", "iron_chain", "raid_and_frontal_attack", "enemy_at_the_gates"}, card.name)) or
-        (table.contains({"indulgence", "supply_shortage"}, card.name) and not to:hasDelayedTrick(card.name)) then
-        tos = {{to.id}}
-      elseif (table.contains({"amazing_grace", "god_salvation"}, card.name)) then
-        tos = {{player.id}, {to.id}}
-      elseif (card.name == "collateral" and to:getEquipment(Card.SubtypeWeapon)) then
-        tos = {{to.id}, {player.id}}
-      elseif (card.type == Card.TypeEquip) or
-        (card.name == "peach" and player:isWounded()) or
-        (card.name == "analeptic") or
-        (table.contains({"ex_nihilo", "foresight"}, card.name)) or
-        (card.name == "fire_attack" and not player:isKongcheng()) or
-        (card.name == "lightning" and not player:hasDelayedTrick("lightning")) then
-        tos = {{player.id}}
+      if canUse then
+        local targets = {}
+        for _, p in ipairs({player, to}) do
+          if not player:isProhibited(p, card) then
+            if card.skill:modTargetFilter(p.id, {}, player.id, card, false) then
+              table.insert(targets, p.id)
+            end
+          end
+        end
+        if #targets > 0 then
+          if card.skill:getMinTargetNum() == 0 then
+            if not card.multiple_targets then
+              if table.contains(targets, player.id) then
+                tos = {player.id}
+              end
+            else
+              tos = targets
+            end
+            if not room:askForSkillInvoke(player, self.name, data, "#juetao-ask:::"..card:toLogString()) then
+              tos = nil
+            end
+          elseif card.skill:getMinTargetNum() == 2 then
+            if table.contains(targets, to.id) then
+              local seconds = {}
+              Self = player -- for targetFilter check
+              for _, second in ipairs(room:getOtherPlayers(to)) do
+                if card.skill:targetFilter(second.id, {to.id}, {}, card) then
+                  table.insert(seconds, second.id)
+                end
+              end
+              if #seconds > 0 then
+                local temp = room:askForChoosePlayers(player, seconds, 1, 1, "#juetao-second:::"..card:toLogString(), self.name, true)
+                if #temp > 0 then
+                  tos = {to.id, temp[1]}
+                end
+              end
+            end
+          else
+            if #targets == 1 then
+              if room:askForSkillInvoke(player, self.name, data, "#juetao-use::"..targets[1]..":"..card:toLogString()) then
+                tos = targets
+              end
+            else
+              local temp = room:askForChoosePlayers(player, targets, 1, #targets, "#juetao-target:::"..card:toLogString(), self.name, true)
+              if #temp > 0 then
+                tos = temp
+              end
+            end
+          end
+        end
       end
-      if tos and room:askForSkillInvoke(player, self.name, data, "#juetao-use:::"..card:toLogString()) then
+      if tos then
         room:useCard({
           card = card,
           from = player.id,
-          tos = tos,
+          tos = table.map(tos, function(p) return {p} end) ,
           skillName = self.name,
           extraUse = true,
         })
@@ -3236,7 +3272,7 @@ local juetao = fk.CreateTriggerSkill{
           ids = {id},
           fromArea = Card.Processing,
           toArea = Card.DiscardPile,
-          moveReason = fk.ReasonJustMove,
+          moveReason = fk.ReasonPutIntoDiscardPile,
         })
         return
       end
@@ -3277,8 +3313,11 @@ Fk:loadTranslationTable{
   ["qianlong_get"] = "获得",
   ["qianlong_bottom"] = "置于牌堆底",
   ["#fensi-choose"] = "忿肆：你须对一名体力值不小于你的角色造成1点伤害，若不为你，视为其对你使用【杀】",
-  ["#juetao-choose"] = "决讨：你可以指定一名角色，连续对其使用牌堆底牌直到不能使用！",
-  ["#juetao-use"] = "决讨：是否使用%arg！",
+  ["#juetao-choose"] = "决讨：你可以指定一名其他角色，连续对你或其使用牌堆底牌直到不能使用！",
+  ["#juetao-use"] = "决讨：是否对 %dest 使用%arg",
+  ["#juetao-ask"] = "决讨：是否使用%arg",
+  ["#juetao-target"] = "决讨：选择你使用%arg的目标",
+  ["#juetao-second"] = "决讨：选择你使用%arg的副目标",
   ["#zhushi-invoke"] = "助势：你可以令 %src 摸一张牌",
   ["zhushi_draw"] = "其摸一张牌",
   

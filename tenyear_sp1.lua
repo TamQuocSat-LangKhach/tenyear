@@ -379,7 +379,7 @@ local xionghuo_record = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(xionghuo) then
       if event == fk.GameStart then
-        return true
+        return player:getMark("@baoli") < 3
       elseif event == fk.DamageCaused then
         return target == player and data.to ~= player and data.to:getMark("@baoli") > 0
       else
@@ -392,7 +392,7 @@ local xionghuo_record = fk.CreateTriggerSkill{
     local room = player.room
     player:broadcastSkillInvoke("xionghuo")
     if event == fk.GameStart then
-      room:addPlayerMark(player, "@baoli", 3)
+      room:setPlayerMark(player, "@baoli", 3)
     elseif event == fk.DamageCaused then
       room:doIndicate(player.id, {data.to.id})
       data.damage = data.damage + 1
@@ -403,7 +403,7 @@ local xionghuo_record = fk.CreateTriggerSkill{
       if target:isNude() then
         n = 2
       end
-      local rand = math.random(1, n)
+      local rand = math.random(1, 3)
       if rand == 1 then
         room:damage {
           from = player,
@@ -444,11 +444,14 @@ local shajue = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.EnterDying},
   can_trigger = function(self, event, target, player, data)
-    return target ~= player and player:hasSkill(self)
+    return target ~= player and player:hasSkill(self) and (player:getMark("@baoli") < 3 or
+    (target.hp < 0 and data.damage and data.damage.card and U.hasFullRealCard(player.room, data.damage.card)))
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:addPlayerMark(player, "@baoli", 1)
+    if player:getMark("@baoli") < 3 then
+      room:addPlayerMark(player, "@baoli", 1)
+    end
     if target.hp < 0 and data.damage and data.damage.card and U.hasFullRealCard(room, data.damage.card) then
       room:obtainCard(player, data.damage.card, true, fk.ReasonPrey)
     end
@@ -461,7 +464,7 @@ xurong:addSkill(shajue)
 Fk:loadTranslationTable{
   ["xurong"] = "徐荣",
   ["xionghuo"] = "凶镬",
-  [":xionghuo"] = "游戏开始时，你获得3个“暴戾”标记。出牌阶段，你可以交给一名其他角色一个“暴戾”标记，"..
+  [":xionghuo"] = "游戏开始时，你获得3个“暴戾”标记（标记上限为3）。出牌阶段，你可以交给一名其他角色一个“暴戾”标记，"..
   "你对有此标记的其他角色造成的伤害+1，且其出牌阶段开始时，移去“暴戾”并随机执行一项："..
   "1.受到1点火焰伤害且本回合不能对你使用【杀】；"..
   "2.流失1点体力且本回合手牌上限-1；"..

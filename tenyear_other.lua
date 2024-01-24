@@ -712,7 +712,7 @@ local tycl__rende = fk.CreateActiveSkill{
       room:setPlayerMark(player, "tycl__rende", mark)
     end
     if #mark == 0 then return end
-    U.askForUseVirtualCard(room, player, mark, nil, self.name, "#ex__rende-ask", true, false, false, false)
+    U.askForUseVirtualCard(room, player, mark, nil, self.name, "#tycl__rende-ask", true, false, false, false)
   end,
 }
 cl__liubei:addSkill(tycl__rende)
@@ -724,6 +724,8 @@ Fk:loadTranslationTable{
   ["$tycl__rende1"] = "惟贤惟德能服于人。",
   ["$tycl__rende2"] = "以德服人。",
   ["~tycl__liubei"] = "这就是桃园吗？",
+
+  ["#tycl__rende-ask"] = "章武：你可视为使用一张基本牌",
 }
 
 local cl__sunquan = General(extension, "tycl__sunquan", "wu", 4)

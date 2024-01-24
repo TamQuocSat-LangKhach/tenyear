@@ -671,8 +671,7 @@ local tycl__jianxiong = fk.CreateTriggerSkill{
     local room = player.room
     local n = math.min(player:usedSkillTimes(self.name, Player.HistoryGame), 5)
     player:drawCards(n, self.name)
-    if not player.dead and data.card and table.every(data.card and data.card:isVirtual() and data.card.subcards or {data.card.id}, function(id)
-      return room:getCardArea(id) == Card.Processing end) then
+    if not player.dead and data.card and U.hasFullRealCard(room, data.card) then
       room:obtainCard(player.id, data.card, true, fk.ReasonJustMove)
     end
   end,
@@ -707,16 +706,13 @@ local tycl__rende = fk.CreateActiveSkill{
     dummy:addSubcards(cards)
     room:obtainCard(player.id, dummy, false, fk.ReasonPrey)
     if player.dead then return end
-    local success, dat = room:askForUseActiveSkill(player, "#ex__rende_vs", "#ex__rende-ask", true)
-    if success then
-      local card = Fk.skills["#ex__rende_vs"]:viewAs(dat.cards)
-      local use = {
-        from = player.id,
-        tos = table.map(dat.targets, function(e) return {e} end),
-        card = card,
-      }
-      room:useCard(use)
+    local mark = player:getMark("tycl__rende")
+    if mark == 0 then
+      mark = U.getAllCardNames("b")
+      room:setPlayerMark(player, "tycl__rende", mark)
     end
+    if #mark == 0 then return end
+    U.askForUseVirtualCard(room, player, mark, nil, self.name, "#ex__rende-ask", true, false, false, false)
   end,
 }
 cl__liubei:addSkill(tycl__rende)
@@ -825,7 +821,8 @@ local faqi = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Play and data.card.type == Card.TypeEquip
+    return target == player and player:hasSkill(self)
+    and player.phase == Player.Play and data.card.type == Card.TypeEquip
   end,
   on_cost = function(self, event, target, player, data)
     local success, dat = player.room:askForUseActiveSkill(player, "faqi_viewas", "#faqi-invoke", true)
@@ -836,13 +833,16 @@ local faqi = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local card = Fk.skills["faqi_viewas"]:viewAs(self.cost_data.cards)
+    local dat = table.simpleClone(self.cost_data)
+    local card_name = dat.interaction
+    local card = Fk:cloneCard(card_name)
+    card.skillName = self.name
     local mark = U.getMark(player, "faqi-turn")
-    table.insert(mark, card.name)
+    table.insert(mark, card_name)
     room:setPlayerMark(player, "faqi-turn", mark)
     room:useCard{
       from = player.id,
-      tos = table.map(self.cost_data.targets, function(id) return {id} end),
+      tos = table.map(dat.targets, function(id) return {id} end),
       card = card,
     }
   end,
@@ -877,10 +877,11 @@ nezha:addSkill(faqi)
 Fk:loadTranslationTable{
   ["nezha"] = "哪吒",
   ["santou"] = "三头",
-  [":santou"] = "锁定技，防止你受到的所有伤害。<br>若你体力值不小于3且你本回合已因此技能防止过该伤害来源的伤害，你失去1体力；"..
-  "<br>若你体力值为2且"..
-  "防止的伤害为属性伤害，你失去1体力；<br>若你体力值为1且防止的伤害为红色牌造成的伤害，你失去1体力。"..
-  "<br>(村)游戏开始时，若你的体力上限大于3，调整为3。",
+  [":santou"] = "锁定技，防止你受到的所有伤害。"..
+  "<br>若你体力值不小于3且你本回合已因此技能防止过该伤害来源的伤害，你失去1体力；"..
+  "<br>若你体力值为2且防止的伤害为属性伤害，你失去1体力；"..
+  "<br>若你体力值为1且防止的伤害为红色牌造成的伤害，你失去1体力。"..
+  "<br>（村）游戏开始时，若你的体力上限大于3，调整为3。",
   ["faqi"] = "法器",
   [":faqi"] = "出牌阶段，当你使用装备牌后，你可以视为使用一张普通锦囊牌（每回合每种牌名限一次）。",
   ["faqi_viewas"] = "法器",
@@ -950,9 +951,10 @@ local shuangbi = fk.CreateActiveSkill{
       n = #effect.cards
       room:throwCard(effect.cards, self.name, player, player)
       room:delay(2000)
-      for i = 1, n, 1 do
-        local to = table.random(room.alive_players)
-        room:doIndicate(player.id, {to.id})
+      for _ = 1, n, 1 do
+        local targets = room:getOtherPlayers(player)
+        if #targets == 0 then break end
+        local to = table.random(targets)
         room:damage{
           from = player,
           to = to,
@@ -963,18 +965,8 @@ local shuangbi = fk.CreateActiveSkill{
       end
     elseif self.interaction.data == "tymou__zhouyu" then
       for i = 1, n, 1 do
-        if player.dead then return end
-        local command = "AskForUseActiveSkill"
-        room:notifyMoveFocus(player, "shuangbi_viewas")
-        local data = {"shuangbi_viewas", "#shuangbi-use:::"..i..":"..n, true, {}}
-        room:setPlayerMark(player, MarkEnum.BypassTimesLimit.."-tmp", 1)
-        local result = room:doRequest(player, command, json.encode(data))
-        room:setPlayerMark(player, MarkEnum.BypassTimesLimit.."-tmp", 0)
-        if result ~= "" then
-          data = json.decode(result)
-          room:useVirtualCard(data.interaction_data, nil, player,
-            table.map(data.targets, function(id) return room:getPlayerById(id) end), self.name, true)
-        end
+        if player.dead or U.askForUseVirtualCard(room, player, {"fire__slash", "fire_attack"}, nil,
+        self.name, "#shuangbi-use:::"..i..":"..n, true, true, false, true) == nil then break end
       end
     end
     if player.dead then return end
@@ -987,20 +979,7 @@ local shuangbi = fk.CreateActiveSkill{
     end
   end,
 }
-local shuangbi_viewas = fk.CreateViewAsSkill{
-  name = "shuangbi_viewas",
-  interaction = function()
-    return UI.ComboBox {choices = {"fire__slash", "fire_attack"}}
-  end,
-  card_filter = Util.FalseFunc,
-  view_as = function(self, cards)
-    if not self.interaction.data then return end
-    local card = Fk:cloneCard(self.interaction.data)
-    card.skillName = "shuangbi"
-    return card
-  end,
-}
-Fk:addSkill(shuangbi_viewas)
+
 tycl__sunce:addSkill(shuangbi)
 Fk:loadTranslationTable{
   ["tycl__sunce"] = "双璧孙策",

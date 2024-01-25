@@ -20,6 +20,7 @@ local yuqi = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    room:doIndicate(player.id, {target.id})
     local n1, n2, n3 = player:getMark("yuqi2") + 3, player:getMark("yuqi3") + 1, player:getMark("yuqi4") + 1
     if n1 < 2 and n2 < 1 and n3 < 1 then
       return false

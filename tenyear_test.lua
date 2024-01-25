@@ -141,15 +141,6 @@ Fk:loadTranslationTable{
 
 --袁胤
 
-Fk:loadTranslationTable{
-  ["tianshangyi"] = "田尚衣",
-  ["posuo"] = "婆娑",
-  [":posuo"] = "出牌阶段每种花色限一次，若你本阶段未对其他角色造成过伤害，你可以将一张手牌当本局游戏所用牌堆中此花色的伤害牌使用。",
-  ["xiaoren"] = "绡刃",
-  [":xiaoren"] = "每回合限一次，当你造成伤害后，你可以判定，若结果为：红色，你可以令一名角色回复1点体力；黑色，你对受伤角色的上家或下家造成1点"..
-  "伤害，然后你可以对同一方向的下一名角色重复此流程，直到有角色死亡或此角色为你。",
-}
-
 local tmp_illustrate = fk.CreateActiveSkill{name = "tmp_illustrate"}
 
 local chezhou = General(extension, "chezhou", "wei", 4)

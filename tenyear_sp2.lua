@@ -1874,7 +1874,7 @@ Fk:loadTranslationTable{
   ["~ruanji"] = "诸君，欲与我同醉否？",
 }
 
---豆蔻梢头：花鬘 辛宪英 薛灵芸 芮姬 段巧笑 马伶俐
+--豆蔻梢头：花鬘 辛宪英 薛灵芸 芮姬 段巧笑 田尚衣 马伶俐
 local huaman = General(extension, "ty__huaman", "shu", 3, 3, General.Female)
 local manyi = fk.CreateTriggerSkill{
   name = "manyi",
@@ -2713,6 +2713,194 @@ Fk:loadTranslationTable{
   ["$huayi1"] = "皓腕凝霜雪，罗襦绣鹧鸪。",
   ["$huayi2"] = "绝色戴珠玉，佳人配华衣。",
   ["~duanqiaoxiao"] = "佳人时光少，君王总薄情……",
+}
+
+local tianshangyi = General(extension, "tianshangyi", "wei", 3, 3, General.Female)
+local posuo = fk.CreateViewAsSkill{
+  name = "posuo",
+  prompt = "#posuo-viewas",
+  interaction = function()
+    local mark = U.getMark(Self, "@posuo-phase")
+    local names = Self:getMark("posuo_names")
+    if type(names) ~= "table" then
+      names = {}
+      for _, id in ipairs(Fk:getAllCardIds()) do
+        local card = Fk:getCardById(id)
+        if card.is_damage_card and not card.is_derived then
+          names[card.name] = names[card.name] or {}
+          table.insertIfNeed(names[card.name], card:getSuitString(true))
+        end
+      end
+      Self:setMark("posuo_names", names)
+    end
+    local choices, all_choices = {}, {}
+    for name, suits in pairs(names) do
+      local _suits = {}
+      for _, suit in ipairs(suits) do
+        if not table.contains(mark, suit) then
+          table.insert(_suits, U.ConvertSuit(suit, "sym", "icon"))
+        end
+      end
+      local posuo_name = "posuo_name:::" .. name.. ":" .. table.concat(_suits, "")
+      table.insert(all_choices, posuo_name)
+      if #_suits > 0 then
+        local to_use = Fk:cloneCard(name)
+        if Self:canUse(to_use) and not Self:prohibitUse(to_use) then
+          table.insert(choices, posuo_name)
+        end
+      end
+    end
+    if #choices == 0 then return false end
+    return UI.ComboBox { choices = choices, all_choices = all_choices }
+  end,
+  enabled_at_play = function(self, player)
+    local mark = player:getMark("@posuo-phase")
+    return mark ~= "posuo_prohibit" and mark == 0 or (#mark < 4)
+  end,
+  card_filter = function(self, to_select, selected)
+    if self.interaction.data == nil or #selected > 0 or
+    Fk:currentRoom():getCardArea(to_select) == Player.Equip then return false end
+    local card = Fk:getCardById(to_select)
+    local posuo_name = string.split(self.interaction.data, ":")
+    return string.find(posuo_name[#posuo_name], U.ConvertSuit(card.suit, "int", "icon"))
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 or not self.interaction.data then return nil end
+    local posuo_name = string.split(self.interaction.data, ":")
+    local card = Fk:cloneCard(posuo_name[4])
+    card:addSubcard(cards[1])
+    card.skillName = self.name
+    return card
+  end,
+  before_use = function(self, player, use)
+    local mark = U.getMark(Self, "@posuo-phase")
+    table.insert(mark, use.card:getSuitString(true))
+    player.room:setPlayerMark(player, "@posuo-phase", mark)
+  end,
+}
+local posuo_refresh = fk.CreateTriggerSkill{
+  name = "#posuo_refresh",
+
+  refresh_events = {fk.EventAcquireSkill, fk.Damage},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and player.phase == Player.Play and
+    player:getMark("@posuo-phase") ~= "posuo_prohibit" and (event == fk.Damage or data == self)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    if event == fk.Damage then
+      player.room:setPlayerMark(player, "@posuo-phase", "posuo_prohibit")
+    elseif event == fk.EventAcquireSkill then
+      local room = player.room
+      U.getActualDamageEvents(room, 1, function (e)
+        local damage = e.data[1]
+        if damage.from == player then
+          room:setPlayerMark(player, "@posuo-phase", "posuo_prohibit")
+          return true
+        end
+      end, Player.HistoryPhase)
+    end
+  end,
+}
+local xiaoren = fk.CreateTriggerSkill{
+  name = "xiaoren",
+  anim_type = "offensive",
+  events = {fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name) == 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local tar = data.to
+    while true do
+      local judge = {
+        who = player,
+        reason = self.name,
+        pattern = ".|.|^nosuit",
+      }
+      room:judge(judge)
+      if player.dead then break end
+      if judge.card.color == Card.Red then
+        local targets = table.map(table.filter(room.alive_players, function (p)
+          return p:isWounded()
+        end), Util.IdMapper)
+        if #targets > 0 then
+          targets = room:askForChoosePlayers(player, targets, 1, 1, "#xiaoren-recover", self.name, true)
+          if #targets > 0 then
+            tar = room:getPlayerById(targets[1])
+            room:recover({
+              who = tar,
+              num = 1,
+              recoverBy = player,
+              skillName = self.name,
+            })
+            if not (tar.dead or tar:isWounded()) then
+              room:drawCards(tar, 1, self.name)
+            end
+          end
+        end
+        break
+      elseif judge.card.color == Card.Black then
+        if tar.dead then break end
+        local targets = table.map(table.filter(room.alive_players, function (p)
+          return p:getNextAlive() == tar or tar:getNextAlive() == p
+        end), Util.IdMapper)
+        if #targets == 0 then break end
+        targets = room:askForChoosePlayers(player, targets, 1, 1, "#xiaoren-damage::" .. tar.id, self.name, true)
+        if #targets == 0 then break end
+        tar = room:getPlayerById(targets[1])
+        room:damage{
+          from = player,
+          to = tar,
+          damage = 1,
+          skillName = self.name,
+        }
+        if player.dead then break end
+        if player:getMark("xiaoren_break-turn") > 0 then
+          room:setPlayerMark(player, "xiaoren_break-turn", 0)
+          break
+        end
+        if not room:askForSkillInvoke(player, self.name) then break end
+      end
+    end
+  end,
+
+  refresh_events = {fk.EnterDying},
+  can_refresh = function (self, event, target, player, data)
+    if player.dead or player:getMark("xiaoren_break-turn") ~= 0 then return false end
+    local e = player.room.logic:getCurrentEvent():findParent(GameEvent.SkillEffect)
+    if e and e.data[3] == self and e.data[2] == player then
+      return true
+    end
+  end,
+  on_refresh = function (self, event, target, player, data)
+    player.room:setPlayerMark(player, "xiaoren_break-turn", 1)
+  end,
+}
+posuo:addRelatedSkill(posuo_refresh)
+tianshangyi:addSkill(posuo)
+tianshangyi:addSkill(xiaoren)
+
+Fk:loadTranslationTable{
+  ["tianshangyi"] = "田尚衣",
+  ["posuo"] = "婆娑",
+  [":posuo"] = "出牌阶段每种花色限一次，若你本阶段未对其他角色造成过伤害，你可以将一张手牌当此花色有的一张伤害牌使用。",
+  ["xiaoren"] = "绡刃",
+  [":xiaoren"] = "每回合限一次，当你造成伤害后，你可以进行一次判定，"..
+  "若结果为红色，你可令一名角色回复1点体力，然后若其满体力，其摸一张牌；"..
+  "若结果为黑色，对受伤角色的上家或下家造成1点伤害，然后你可以再次进行判定并执行对应结果直到有角色进入濒死状态。",
+
+  ["#posuo-viewas"] = "发动 婆娑，将一张手牌当此花色有的一张伤害牌来使用",
+  ["posuo_name"] = "%arg [%arg2]",
+  ["@posuo-phase"] = "婆娑",
+  ["posuo_prohibit"] = "失效",
+  ["#xiaoren-recover"] = "绡刃：可令一名角色回复1点体力，然后若其满体力，其摸一张牌",
+  ["#xiaoren-damage"] = "绡刃：可对%dest的上家或下家造成1点伤害，未濒死可重复判定",
+
+  ["$posuo1"] = "绯纱婆娑起，佳人笑靥红。",
+  ["$posuo2"] = "红烛映俏影，一舞影斑斓。",
+  ["$xiaoren1"] = "红绡举腕重，明眸最溺人。",
+  ["$xiaoren2"] = "飘然回雪轻，言然游龙惊。",
+  ["~tianshangyi"] = "红梅待百花，魏宫无春风……",
 }
 
 local malingli = General(extension, "malingli", "shu", 3, 3, General.Female)

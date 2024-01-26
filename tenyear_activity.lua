@@ -171,7 +171,7 @@ guosi:addSkill(tanbei)
 guosi:addSkill(sidao)
 Fk:loadTranslationTable{
   ["guosi"] = "郭汜",
-  ["#guosi"] = "背水反天时",
+  ["#guosi"] = "党豺为虐",
   ["illustrator:guosi"] = "秋呆呆",
   ["tanbei"] = "贪狈",
   [":tanbei"] = "出牌阶段限一次，你可以令一名其他角色选择一项：1.令你随机获得其区域内的一张牌，此回合不能再对其使用牌；"..

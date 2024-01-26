@@ -129,9 +129,13 @@ local dunshi_record = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     if event == fk.EventAcquireSkill then
-      player.room:setPlayerMark(player, "@$dunshi", {"slash", "jink", "peach", "analeptic"})
+      local UImark = {"slash", "jink", "peach", "analeptic"}
+      for _, name in ipairs(U.getMark(player, "dunshi")) do
+        table.removeOne(UImark, name)
+      end
+      player:getMark("@$dunshi")
+      player.room:setPlayerMark(player, "@$dunshi", UImark)
     else
-      player.room:setPlayerMark(player, dunshi.name, 0)
       player.room:setPlayerMark(player, "@$dunshi", 0)
     end
   end,
@@ -140,6 +144,8 @@ dunshi:addRelatedSkill(dunshi_record)
 guanning:addSkill(dunshi)
 Fk:loadTranslationTable{
   ["guanning"] = "管宁",
+  ["#guanning"] = "辟境归元",
+  ["illustrator:guanning"] = "游漫美绘",
   ["dunshi"] = "遁世",
   [":dunshi"] = "每回合限一次，你可视为使用或打出一张【杀】，【闪】，【桃】或【酒】。然后当前回合角色本回合下次造成伤害时，你选择两项：<br>"..
   "1.防止此伤害，选择1个包含“仁义礼智信”的技能令其获得；<br>"..
@@ -329,6 +335,8 @@ huangchengyan:addSkill(zecai)
 huangchengyan:addSkill(yinshih)
 Fk:loadTranslationTable{
   ["ty__huangchengyan"] = "黄承彦",
+  ["#ty__huangchengyan"] = "捧月共明",
+  ["illustrator:ty__huangchengyan"] = "凡果",
   ["jiezhen"] = "解阵",
   ["#jiezhen_trigger"] = "解阵",
   [":jiezhen"] = "出牌阶段限一次，你可令一名其他角色的所有技能替换为〖八阵〗（锁定技、限定技、觉醒技、主公技除外），"..
@@ -448,6 +456,8 @@ huzhao:addSkill(xianwang)
 huzhao:addRelatedSkill("huomo")
 Fk:loadTranslationTable{
   ["huzhao"] = "胡昭",
+  ["#huzhao"] = "阖门守静",
+  ["illustrator:huzhao"] = "游漫美绘",
   ["midu"] = "弥笃",
   [":midu"] = "出牌阶段限一次，你可以选择一项：1.废除任意个装备栏或判定区，令一名角色摸等量的牌；2.恢复一个被废除的装备栏或判定区，"..
   "你获得〖活墨〗直到你下个回合开始。",
@@ -477,10 +487,7 @@ local chongwang = fk.CreateTriggerSkill{
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and target ~= player and (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) then
-      local mark = player:getMark(self.name)
-      if mark ~= 0 and #mark > 1 then
-        return mark[2] == player.id
-      end
+      return data.extra_data and data.extra_data.chongwang_user == player.id
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -496,12 +503,12 @@ local chongwang = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     if self.cost_data == "chongwang1" then
-      player.room:obtainCard(target, data.card, true, fk.ReasonJustMove)
+      player.room:obtainCard(target, data.card, true, fk.ReasonPrey)
     else
       if data.toCard ~= nil then
         data.toCard = nil
       else
-        data.nullifiedTargets = TargetGroup:getRealTargets(data.tos)
+        data.nullifiedTargets = table.map(player.room.players, Util.IdMapper)
       end
     end
   end,
@@ -509,35 +516,38 @@ local chongwang = fk.CreateTriggerSkill{
   refresh_events = {fk.CardUsing, fk.EventAcquireSkill},
   can_refresh = function(self, event, target, player, data)
     if event == fk.CardUsing then
-      return player:hasSkill(self.name, true)
+      return player:hasSkill(self, true)
     else
-      return data == self
+      return data == self and target == player and player.room:getTag("RoundCount")
     end
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     if event == fk.CardUsing then
-      if target == player and player:hasSkill(self) then
+      if player:getMark("@@chongwang") > 0 then
+        data.extra_data = data.extra_data or {}
+        data.extra_data.chongwang_user = player.id
+      end
+      if target == player then
         room:setPlayerMark(player, "@@chongwang", 1)
       else
         room:setPlayerMark(player, "@@chongwang", 0)
       end
-      local mark = player:getMark(self.name)
-      if mark == 0 then mark = {} end
-      if #mark == 2 then
-        mark[2] = mark[1]  --mark2上一张牌使用者，mark1这张牌使用者
-        mark[1] = data.from
-      else
-        table.insert(mark, 1, data.from)
-      end
-      room:setPlayerMark(player, self.name, mark)
     else
-      --[[local events = room.logic:getEventsOfScope(GameEvent.UseCard, 999, function(e)
-        local use = e.data[1]
-        return use.from == player.id
-      end, Player.HistoryPhase)
-      room:addPlayerMark(player, "zuojian-phase", #events)
-      room:addPlayerMark(player, "@zuojian-phase", #events)]]  --TODO: 需要一个反向查找记录
+      local cur_event = player.room.logic:getCurrentEvent()
+      local events = player.room.logic.event_recorder[GameEvent.UseCard] or Util.DummyTable
+      local last_find = false
+      for i = #events, 1, -1 do
+        local e = events[i]
+        if e.id < cur_event.id then
+          if e.data[1].from == player.id then
+            room:setPlayerMark(player, "@@chongwang", 1)
+          else
+            room:setPlayerMark(player, "@@chongwang", 0)
+          end
+          break
+        end
+      end
     end
   end,
 }
@@ -641,6 +651,8 @@ wanglie:addSkill(chongwang)
 wanglie:addSkill(huagui)
 Fk:loadTranslationTable{
   ["wanglie"] = "王烈",
+  ["#wanglie"] = "通识达道",
+  ["illustrator:wanglie"] = "青岛君桓",
   ["chongwang"] = "崇望",
   [":chongwang"] = "其他角色使用一张基本牌或普通锦囊牌时，若你为上一张牌的使用者，你可令其获得其使用的牌或令该牌无效。",
   ["huagui"] = "化归",
@@ -760,8 +772,8 @@ local yinlu = fk.CreateTriggerSkill{
 
   refresh_events = {fk.Deathed},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, true, true) and
-      not table.find(player.room.alive_players, function(p) return p:hasSkill(self.name, true) end)
+    return target == player and player:hasSkill(self, true, true) and
+      not table.find(player.room.alive_players, function(p) return p:hasSkill(self, true) end)
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -884,6 +896,8 @@ mengjie:addSkill(yinlu)
 mengjie:addSkill(youqi)
 Fk:loadTranslationTable{
   ["mengjie"] = "孟节",
+  ["#mengjie"] = "万安隐者",
+  ["illustrator:mengjie"] = "君桓文化",
   ["yinlu"] = "引路",
   [":yinlu"] = "游戏开始时，你令三名角色依次获得以下一个标记：“乐泉”、“藿溪”、“瘴气”，然后你获得一个“芸香”。<br>"..
   "准备阶段，你可以移动一个标记；有标记的角色死亡时，你可以移动其标记。拥有标记的角色获得对应的效果：<br>"..
@@ -1163,6 +1177,8 @@ jiping:addSkill(zhishi)
 jiping:addSkill(lieyi)
 Fk:loadTranslationTable{
   ["jiping"] = "吉平",
+  ["#jiping"] = "白虹贯日",
+  ["illustrator:jiping"] = "游漫美绘",
   ["xunli"] = "询疠",
   [":xunli"] = "锁定技，当黑色牌因弃置进入弃牌堆后，将之置于你的武将牌上，称为“疠”（至多9张）。出牌阶段开始时，你可以用任意张黑色手牌交换等量的“疠”。",
   ["zhishi"] = "指誓",
@@ -1241,7 +1257,7 @@ local huiling = fk.CreateTriggerSkill{
   refresh_events = {fk.AfterCardsMove, fk.AfterDrawPileShuffle, fk.EventAcquireSkill, fk.EventLoseSkill},
   can_refresh = function(self, event, target, player, data)
     if event == fk.AfterCardsMove then
-      if not player:hasSkill(self.name, true) then return false end
+      if not player:hasSkill(self, true) then return false end
       for _, move in ipairs(data) do
         if move.toArea == Card.DiscardPile then
           return true
@@ -1253,7 +1269,7 @@ local huiling = fk.CreateTriggerSkill{
         end
       end
     elseif event == fk.AfterDrawPileShuffle then
-      return player:hasSkill(self.name, true)
+      return player:hasSkill(self, true)
     elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
       return player == target and data == self
     end
@@ -1419,6 +1435,8 @@ sunhanhua:addRelatedSkill(taji)
 sunhanhua:addRelatedSkill(qinghuang)
 Fk:loadTranslationTable{
   ["ty__sunhanhua"] = "孙寒华",
+  ["#ty__sunhanhua"] = "青丝慧剑",
+  ["illustrator:ty__sunhanhua"] = "鬼宿一",
   ["huiling"] = "汇灵",
   [":huiling"] = "锁定技，你使用牌时，若弃牌堆中的红色牌数量多于黑色牌，你回复1点体力；"..
   "黑色牌数量多于红色牌，你可以弃置一名其他角色区域内的一张牌；牌数较少的颜色与你使用牌的颜色相同，你获得一个“灵”标记。",
@@ -1574,6 +1592,8 @@ zhenghun:addSkill(qiangzhiz)
 zhenghun:addSkill(pitian)
 Fk:loadTranslationTable{
   ["zhenghun"] = "郑浑",
+  ["#zhenghun"] = "民安寇灭",
+  ["illustrator:zhenghun"] = "青雨",
   ["qiangzhiz"] = "强峙",
   [":qiangzhiz"] = "出牌阶段限一次，你可以弃置你和一名其他角色共计三张牌。若有角色因此弃置三张牌，其对另一名角色造成1点伤害。",
   ["pitian"] = "辟田",
@@ -1704,6 +1724,8 @@ liuchongluojun:addSkill(minze)
 liuchongluojun:addSkill(jini)
 Fk:loadTranslationTable{
   ["liuchongluojun"] = "刘宠骆俊",
+  ["#liuchongluojun"] = "定境安民",
+  ["illustrator:liuchongluojun"] = "匠人绘",
   ["minze"] = "悯泽",
   [":minze"] = "出牌阶段每名角色限一次，你可以将至多两张牌名不同的牌交给一名手牌数小于你的角色，然后若其手牌数大于你，本阶段此技能失效。"..
   "结束阶段，你将手牌补至X张（X为本回合你因此技能失去牌的牌名数，至多为5）。",
@@ -1887,6 +1909,8 @@ luyusheng:addSkill(zhente)
 luyusheng:addSkill(zhiwei)
 Fk:loadTranslationTable{
   ["luyusheng"] = "陆郁生",
+  ["#luyusheng"] = "义姑",
+  ["illustrator:luyusheng"] = "君桓文化",
   ["zhente"] = "贞特",
   [":zhente"] = "每名角色的回合限一次，当你成为其他角色使用基本牌或普通锦囊牌的目标后，你可令其选择一项：1.本回合不能再使用此颜色的牌；2.此牌对你无效。",
   ["zhiwei"] = "至微",
@@ -2017,6 +2041,8 @@ miheng:addSkill(kuangcai)
 miheng:addSkill(shejian)
 Fk:loadTranslationTable{
   ["ty__miheng"] = "祢衡",
+  ["#ty__miheng"] = "狂傲奇人",
+  ["illustrator:ty__miheng"] = "鬼画府",
   ["kuangcai"] = "狂才",
   [":kuangcai"] = "①锁定技，你的回合内，你使用牌无距离和次数限制。<br>②弃牌阶段开始时，若你本回合：没有使用过牌，你的手牌上限+1；"..
   "使用过牌且没有造成伤害，你手牌上限-1。<br>③结束阶段，若你本回合造成过伤害，你摸等于伤害值数量的牌（最多摸五张）。",
@@ -2111,6 +2137,8 @@ huaxin:addSkill(wanggui)
 huaxin:addSkill(xibing)
 Fk:loadTranslationTable{
   ["ty__huaxin"] = "华歆",
+  ["#ty__huaxin"] = "渊清玉洁",
+  ["illustrator:ty__huaxin"] = "秋呆呆",
   ["wanggui"] = "望归",
   [":wanggui"] = "当你造成伤害后，你可以对与你势力不同的一名角色造成1点伤害（每回合限一次）；当你受到伤害后，你可令一名与你势力相同的角色摸一张牌，"..
   "若不为你，你也摸一张牌。",
@@ -2201,6 +2229,8 @@ xunchen:addSkill(ty__fenglve)
 xunchen:addSkill(anyong)
 Fk:loadTranslationTable{
   ["ty__xunchen"] = "荀谌",
+  ["#ty__xunchen"] = "三公谋主",
+  ["illustrator:xxx_general"] = "凝聚永恒",
   ["ty__fenglve"] = "锋略",
   [":ty__fenglve"] = "出牌阶段限一次，你可以和一名其他角色拼点。若你赢，该角色交给你其区域内的两张牌；若点数相同，此技能视为未发动过；"..
   "若你输，该角色获得你拼点的牌。",
@@ -2286,6 +2316,8 @@ fengxi:addSkill(yusui)
 fengxi:addSkill(boyan)
 Fk:loadTranslationTable{
   ["fengxiw"] = "冯熙",
+  ["#fengxiw"] = "东吴苏武",
+  ["illustrator:fengxiw"] = "匠人绘",
   ["yusui"] = "玉碎",
   [":yusui"] = "每回合限一次，当你成为其他角色使用黑色牌的目标后，你可以失去1点体力，然后选择一项：1.令其弃置手牌至与你相同；2.令其失去体力值至与你相同。",
   ["boyan"] = "驳言",
@@ -2387,6 +2419,8 @@ dengzhi:addSkill(jianliang)
 dengzhi:addSkill(weimeng)
 Fk:loadTranslationTable{
   ["ty__dengzhi"] = "邓芝",
+  ["#ty__dengzhi"] = "绝境的外交家",
+  ["illustrator:ty__dengzhi"] = "凝聚永恒",
   ["jianliang"] = "简亮",
   [":jianliang"] = "摸牌阶段开始时，若你的手牌数不为全场最多，你可以令至多两名角色各摸一张牌。",
   ["weimeng"] = "危盟",
@@ -2459,6 +2493,8 @@ zongyu:addSkill(qiao)
 zongyu:addSkill(chengshang)
 Fk:loadTranslationTable{
   ["ty__zongyu"] = "宗预",
+  ["#ty__zongyu"] = "九酝鸿胪",
+  ["illustrator:ty__zongyu"] = "铁杵文化",
   ["qiao"] = "气傲",
   [":qiao"] = "每回合限两次，当你成为其他角色使用牌的目标后，你可以弃置其一张牌，然后你弃置一张牌。",
   ["chengshang"] = "承赏",
@@ -2620,6 +2656,8 @@ yanghu:addSkill(deshao)
 yanghu:addSkill(mingfa)
 Fk:loadTranslationTable{
   ["ty__yanghu"] = "羊祜",
+  ["#ty__yanghu"] = "制纮同轨",
+  ["illustrator:ty__yanghu"] = "匠人绘",
   ["deshao"] = "德劭",
   [":deshao"] = "每回合限两次，当你成为其他角色使用黑色牌的目标后，你可以摸一张牌，然后若其手牌数大于等于你，你弃置其一张牌。",
   ["mingfa"] = "明伐",
@@ -2806,6 +2844,8 @@ liuba:addSkill(ty__zhubi)
 liuba:addSkill(liuzhuan)
 Fk:loadTranslationTable{
   ["ty__liuba"] = "刘巴",
+  ["#ty__liuba"] = "清尚之节",
+  ["illustrator:ty__liuba"] = "匠人绘",
   ["ty__zhubi"] = "铸币",
   [":ty__zhubi"] = "当<font color='red'>♦</font>牌因弃置而进入弃牌堆后，你可从牌堆或弃牌堆将一张【无中生有】置于牌堆顶。",
   ["liuzhuan"] = "流转",
@@ -2956,6 +2996,8 @@ huangquan:addSkill(quanjian)
 huangquan:addSkill(tujue)
 Fk:loadTranslationTable{
   ["ty__huangquan"] = "黄权",
+  ["#ty__huangquan"] = "忠事三朝",
+  ["illustrator:ty__huangquan"] = "匠人绘",
   ["quanjian"] = "劝谏",
   [":quanjian"] = "出牌阶段每项限一次，你选择以下一项令一名其他角色选择是否执行：1.对一名其攻击范围内你指定的角色造成1点伤害。"..
   "2.将手牌调整至手牌上限（最多摸到5张），其不能使用手牌直到回合结束。若其不执行，则其本回合下次受到的伤害+1。",
@@ -3084,6 +3126,8 @@ youzhan:addRelatedSkill(youzhan_maxcards)
 wuban:addSkill(youzhan)
 Fk:loadTranslationTable{
   ["ty__wuban"] = "吴班",
+  ["#ty__wuban"] = "激东奋北",
+  ["illustrator:ty__wuban"] = "君桓文化",
   ["youzhan"] = "诱战",
   [":youzhan"] = "锁定技，其他角色在你的回合失去牌后，你摸一张牌且此牌本回合不计入手牌上限，其本回合下次受到的伤害+1。结束阶段，若这些角色本回合"..
   "未受到过伤害，其摸X张牌（X为其本回合失去牌的次数，至多为3）。",
@@ -3092,7 +3136,7 @@ Fk:loadTranslationTable{
 
   ["$youzhan1"] = "本将军在此！贼仲达何在？",
   ["$youzhan2"] = "以身为饵，诱老贼出营。",
-  ["$youzhan3"] = "吠！尔等之胆略尚不如蜀地小儿。",
+  ["$youzhan3"] = "呔！尔等之胆略尚不如蜀地小儿。",
   ["$youzhan4"] = "我等引兵叫阵，魏狗必衔尾而来。",
   ["~ty__wuban"] = "班……有负丞相重望……",
 }
@@ -3227,6 +3271,8 @@ huojun:addSkill(gue)
 huojun:addSkill(sigong)
 Fk:loadTranslationTable{
   ["ty__huojun"] = "霍峻",
+  ["#ty__huojun"] = "坚磐石锐",
+  ["illustrator:ty__huojun"] = "热图文化",
   ["gue"] = "孤扼",
   [":gue"] = "每名其他角色的回合内限一次，当你需要使用或打出【杀】或【闪】时，你可以展示所有手牌，若其中【杀】和【闪】的总数不大于1，视为你使用或打出之。",
   ["sigong"] = "伺攻",
@@ -3290,7 +3336,7 @@ local ty__xuewei = fk.CreateTriggerSkill{
 
   refresh_events = {fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, true) and
+    return target == player and player:hasSkill(self, true) and
       player.tag[self.name] and #player.tag[self.name] > 0
   end,
   on_refresh = function(self, event, target, player, data)
@@ -3333,6 +3379,8 @@ furongfuqian:addSkill(ty__xuewei)
 furongfuqian:addSkill(yuguan)
 Fk:loadTranslationTable{
   ["furongfuqian"] = "傅肜傅佥",
+  ["#furongfuqian"] = "奕世忠义",
+  ["illustrator:furongfuqian"] = "一意动漫",
   ["ty__xuewei"] = "血卫",
   [":ty__xuewei"] = "结束阶段，你可以选择一名体力值不大于你的角色。直到你的下回合开始前，该角色受到伤害时，防止此伤害，然后你失去1点体力并与其各摸一张牌。",
   ["yuguan"] = "御关",
@@ -3439,6 +3487,8 @@ xianglang:addSkill(kanji)
 xianglang:addSkill(qianzheng)
 Fk:loadTranslationTable{
   ["xianglang"] = "向朗",
+  ["#xianglang"] = "校书翾翻",
+  ["illustrator:xianglang"] = "匠人绘",
   ["kanji"] = "勘集",
   [":kanji"] = "出牌阶段限两次，你可以展示所有手牌，若花色均不同，你摸两张牌，然后若因此使手牌包含四种花色，则你跳过本回合的弃牌阶段。",
   ["qianzheng"] = "愆正",
@@ -3492,6 +3542,8 @@ local chiying = fk.CreateActiveSkill{
 gaoxiang:addSkill(chiying)
 Fk:loadTranslationTable{
   ["gaoxiang"] = "高翔",
+  ["#gaoxiang"] = "玄乡侯",
+  ["illustrator:gaoxiang"] = "黯荧岛工作室",
   ["chiying"] = "驰应",
   [":chiying"] = "出牌阶段限一次，你可以选择一名体力值不大于你的角色，令其攻击范围内的其他角色各弃置一张牌。若选择的角色不为你，其获得其中的基本牌。",
   ["#chiying-invoke"] = "驰应：选择一名角色，其攻击范围内其他角色各弃一张牌",
@@ -3557,6 +3609,8 @@ guanhai:addSkill(suoliang)
 guanhai:addSkill(qinbao)
 Fk:loadTranslationTable{
   ["guanhai"] = "管亥",
+  ["#guanhai"] = "掠地劫州",
+  ["illustrator:guanhai"] = "六道目",
   ["suoliang"] = "索粮",
   [":suoliang"] = "每回合限一次，你对一名其他角色造成伤害后，选择其至多X张牌（X为其体力上限且最多为5），获得其中的<font color='red'>♥</font>和♣牌。"..
   "若你未获得牌，则弃置你选择的牌。",
@@ -3630,6 +3684,8 @@ local xiangshuz = fk.CreateTriggerSkill{
 zhangkai:addSkill(xiangshuz)
 Fk:loadTranslationTable{
   ["zhangkai"] = "张闿",
+  ["#zhangkai"] = "无餍狍鸮",
+  ["illustrator:zhangkai"] = "猎枭",
   ["xiangshuz"] = "相鼠",
   [":xiangshuz"] = "其他角色出牌阶段开始时，若其手牌数不小于体力值，你可以声明一个0~5的数字（若你弃置一张手牌，则数字不公布）。"..
   "此阶段结束时，若其手牌数与你声明的数：相差1以内，你获得其一张牌；相等，你对其造成1点伤害。",
@@ -3696,6 +3752,8 @@ local juying = fk.CreateTriggerSkill{
 liupi:addSkill(juying)
 Fk:loadTranslationTable{
   ["liupi"] = "刘辟",
+  ["#liupi"] = "慕义渠帅",
+  ["illustrator:liupi"] = "君桓文化",
   ["juying"] = "踞营",
   [":juying"] = "出牌阶段结束时，若你本阶段使用【杀】的次数小于次数上限，你可以选择任意项：1.下个回合出牌阶段使用【杀】次数上限+1；"..
   "2.本回合手牌上限+2；3.摸三张牌。若你选择的选项数大于你的体力值，你弃置一张牌。",
@@ -3744,6 +3802,8 @@ local moyu = fk.CreateActiveSkill{
 peiyuanshao:addSkill(moyu)
 Fk:loadTranslationTable{
   ["peiyuanshao"] = "裴元绍",
+  ["#peiyuanshao"] = "买椟还珠",
+  ["illustrator:xxx_general"] = "匠人绘",
   ["moyu"] = "没欲",
   [":moyu"] = "出牌阶段每名角色限一次，你可以获得一名其他角色区域内的一张牌，然后该角色可以对你使用一张无距离限制且伤害值为X的【杀】"..
   "（X为本回合本技能发动次数），若此【杀】对你造成了伤害，本技能于本回合失效。",
@@ -3855,6 +3915,8 @@ zhangchu:addSkill(rihui)
 zhangchu:addSkill(guangshi)
 Fk:loadTranslationTable{
   ["zhangchu"] = "张楚",
+  ["#zhangchu"] = "大贤后裔",
+  ["illustrator:zhangchu"] = "黯荧岛工作室",
   ["jizhong"] = "集众",
   [":jizhong"] = "出牌阶段限一次，你可以令一名其他角色摸两张牌，然后若其：不是“信众”，则其选择一项：1.成为“信众”；"..
   "2.将三张手牌交给你；是“信众”，其将三张手牌交给你（不足则全部交给）。",
@@ -3976,6 +4038,8 @@ zhangmancheng:addSkill(luecheng)
 zhangmancheng:addSkill(zhongji)
 Fk:loadTranslationTable{
   ["ty__zhangmancheng"] = "张曼成",
+  ["#ty__zhangmancheng"] = "蚁萃宛洛",
+  ["illustrator:ty__zhangmancheng"] = "君桓文化",
   ["luecheng"] = "掠城",
   [":luecheng"] = "出牌阶段限一次，你可以选择一名其他角色，你本回合对其使用当前手牌中的【杀】无次数限制。"..
   "若如此做，回合结束时，该角色展示手牌：若其中有【杀】，其可选择对你依次使用手牌中所有的【杀】。",
@@ -4060,6 +4124,8 @@ gongsundu:addSkill(zhenze)
 gongsundu:addSkill(anliao)
 Fk:loadTranslationTable{
   ["gongsundu"] = "公孙度",
+  ["#gongsundu"] = "雄张海东",
+  ["illustrator:gongsundu"] = "匠人绘",
   ["zhenze"] = "震泽",
   [":zhenze"] = "弃牌阶段开始时，你可以选择一项：1.令所有手牌数和体力值的大小关系与你不同的角色失去1点体力；"..
   "2.令所有手牌数和体力值的大小关系与你相同的角色回复1点体力。",
@@ -4165,6 +4231,8 @@ mengyou:addSkill(manzhi)
 
 Fk:loadTranslationTable{
   ["mengyou"] = "孟优",
+  ["#mengyou"] = "蛮杰陷谋",
+  ["illustrator:mengyou"] = "韩少侠&错落宇宙",
   ["manzhi"] = "蛮智",
   [":manzhi"] = "准备阶段，你可以选择一名其他角色，然后选择一项：1.令其交给你两张牌，然后其视为使用一张无距离限制的【杀】；2.获得其区域内的至多两张牌，然后交给其等量牌并摸一张牌。结束阶段，若你的体力值与此回合准备阶段开始时相等，你可以执行此回合未选择过的一项。",
 
@@ -4319,6 +4387,8 @@ caiwenji:addSkill(shuangjia)
 caiwenji:addSkill(beifen)
 Fk:loadTranslationTable{
   ["mu__caiwenji"] = "乐蔡文姬",
+  ["#mu__caiwenji"] = "胡笳十八拍",
+  ["illustrator:mu__caiwenji"] = "匠人绘",
   ["shuangjia"] = "霜笳",
   [":shuangjia"] = "锁定技，游戏开始时，你的初始手牌增加“胡笳”标记且不计入手牌上限。你每拥有一张“胡笳”，其他角色计算与你距离+1（最多+5）。",
   ["beifen"] = "悲愤",
@@ -4427,6 +4497,8 @@ zhoufei:addSkill(lingkong)
 zhoufei:addSkill(xianshu)
 Fk:loadTranslationTable{
   ["mu__zhoufei"] = "乐周妃",
+  ["#mu__zhoufei"] = "芙蓉泣露",
+  ["illustrator:mu__zhoufei"] = "匠人绘",
   ["lingkong"] = "灵箜",
   [":lingkong"] = "锁定技，游戏开始时，你的初始手牌增加“箜篌”标记且不计入手牌上限。每回合你于摸牌阶段外首次获得牌后，将这些牌标记为“箜篌”。",
   ["xianshu"] = "贤淑",
@@ -4593,6 +4665,7 @@ weiwan:addRelatedSkill(weiwan_prohibit)
 xiaoqiao:addSkill(weiwan)
 Fk:loadTranslationTable{
   ["mu__xiaoqiao"] = "乐小乔",
+  ["#mu__xiaoqiao"] = "绿绮嫒媛",
   ["qiqin"] = "绮琴",
   [":qiqin"] = "锁定技，①游戏开始时，将初始手牌标记为“琴”牌（“琴”牌不计入你的手牌上限）；②准备阶段，你获得弃牌堆中所有的“琴”牌。",
   ["@@qiqin-inhand"] = "琴",

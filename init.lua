@@ -16,6 +16,8 @@ local tenyear_ex = require "packages/tenyear/tenyear_ex"
 local tenyear_exxinghuo = require "packages/tenyear/tenyear_exxinghuo"
 local tenyear_token = require "packages/tenyear/tenyear_token"
 
+Fk:loadTranslationTable{ ["tenyear"] = "十周年" }
+
 return {
   tenyear_xinghuo,
   tenyear_sp1,

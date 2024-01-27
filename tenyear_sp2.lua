@@ -2781,13 +2781,18 @@ local posuo = fk.CreateViewAsSkill{
 local posuo_refresh = fk.CreateTriggerSkill{
   name = "#posuo_refresh",
 
-  refresh_events = {fk.EventAcquireSkill, fk.Damage},
+  refresh_events = {fk.EventAcquireSkill, fk.HpChanged},
   can_refresh = function(self, event, target, player, data)
-    return player == target and player.phase == Player.Play and
-    player:getMark("@posuo-phase") ~= "posuo_prohibit" and (event == fk.Damage or data == self)
+    if not player:hasSkill(posuo, true) or player.phase ~= Player.Play or
+    player:getMark("@posuo-phase") == "posuo_prohibit" then return false end
+    if event == fk.HpChanged then
+      return data.damageEvent and data.damageEvent.from == player
+    elseif event == fk.EventAcquireSkill then
+      return data == posuo and player == target
+    end
   end,
   on_refresh = function(self, event, target, player, data)
-    if event == fk.Damage then
+    if event == fk.HpChanged then
       player.room:setPlayerMark(player, "@posuo-phase", "posuo_prohibit")
     elseif event == fk.EventAcquireSkill then
       local room = player.room
@@ -2806,71 +2811,58 @@ local xiaoren = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name) == 0
+    return target == player and player:hasSkill(self) and player:getMark("xiaoren_break-turn") == 0 and
+    (player:usedSkillTimes(self.name) == 0 or data.skillName == self.name)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local tar = data.to
-    while true do
-      local judge = {
-        who = player,
-        reason = self.name,
-        pattern = ".|.|^nosuit",
-      }
-      room:judge(judge)
-      if player.dead then break end
-      if judge.card.color == Card.Red then
-        local targets = table.map(table.filter(room.alive_players, function (p)
-          return p:isWounded()
-        end), Util.IdMapper)
-        if #targets > 0 then
-          targets = room:askForChoosePlayers(player, targets, 1, 1, "#xiaoren-recover", self.name, true)
-          if #targets > 0 then
-            tar = room:getPlayerById(targets[1])
-            room:recover({
-              who = tar,
-              num = 1,
-              recoverBy = player,
-              skillName = self.name,
-            })
-            if not (tar.dead or tar:isWounded()) then
-              room:drawCards(tar, 1, self.name)
-            end
+    local judge = {
+      who = player,
+      reason = self.name,
+      pattern = ".|.|^nosuit",
+    }
+    room:judge(judge)
+    if player.dead then return false end
+    if judge.card.color == Card.Red then
+      local targets = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper)
+      , 1, 1, "#xiaoren-recover", self.name, true)
+      if #targets > 0 then
+        local tar = room:getPlayerById(targets[1])
+        if tar:isWounded() then
+          room:recover({
+            who = tar,
+            num = 1,
+            recoverBy = player,
+            skillName = self.name,
+          })
+          if not (tar.dead or tar:isWounded()) then
+            room:drawCards(tar, 1, self.name)
           end
+        else
+          room:drawCards(tar, 1, self.name)
         end
-        break
-      elseif judge.card.color == Card.Black then
-        if tar.dead then break end
-        local targets = table.map(table.filter(room.alive_players, function (p)
-          return p:getNextAlive() == tar or tar:getNextAlive() == p
-        end), Util.IdMapper)
-        if #targets == 0 then break end
-        targets = room:askForChoosePlayers(player, targets, 1, 1, "#xiaoren-damage::" .. tar.id, self.name, true)
-        if #targets == 0 then break end
-        tar = room:getPlayerById(targets[1])
-        room:damage{
-          from = player,
-          to = tar,
-          damage = 1,
-          skillName = self.name,
-        }
-        if player.dead then break end
-        if player:getMark("xiaoren_break-turn") > 0 then
-          room:setPlayerMark(player, "xiaoren_break-turn", 0)
-          break
-        end
-        if not room:askForSkillInvoke(player, self.name) then break end
       end
+    elseif judge.card.color == Card.Black then
+      local tar = data.to
+      if tar.dead then return false end
+      local targets = table.map(table.filter(room.alive_players, function (p)
+        return p:getNextAlive() == tar or tar:getNextAlive() == p
+      end), Util.IdMapper)
+      if #targets == 0 then return false end
+      targets = room:askForChoosePlayers(player, targets, 1, 1, "#xiaoren-damage::" .. tar.id, self.name, false)
+      tar = room:getPlayerById(targets[1])
+      room:damage{
+        from = player,
+        to = tar,
+        damage = 1,
+        skillName = self.name,
+      }
     end
   end,
 
   refresh_events = {fk.EnterDying},
   can_refresh = function (self, event, target, player, data)
-    if player.dead or player:getMark("xiaoren_break-turn") ~= 0 then return false end
-    local e = player.room.logic:getCurrentEvent():findParent(GameEvent.SkillEffect)
-    if e and e.data[3] == self and e.data[2] == player then
-      return true
-    end
+    return not player.dead and player:getMark("xiaoren_break-turn") == 0 and player:usedSkillTimes(self.name) > 0
   end,
   on_refresh = function (self, event, target, player, data)
     player.room:setPlayerMark(player, "xiaoren_break-turn", 1)
@@ -2894,7 +2886,7 @@ Fk:loadTranslationTable{
   ["@posuo-phase"] = "婆娑",
   ["posuo_prohibit"] = "失效",
   ["#xiaoren-recover"] = "绡刃：可令一名角色回复1点体力，然后若其满体力，其摸一张牌",
-  ["#xiaoren-damage"] = "绡刃：可对%dest的上家或下家造成1点伤害，未濒死可重复判定",
+  ["#xiaoren-damage"] = "绡刃：对%dest的上家或下家造成1点伤害，未濒死可继续发动此技能",
 
   ["$posuo1"] = "绯纱婆娑起，佳人笑靥红。",
   ["$posuo2"] = "红烛映俏影，一舞影斑斓。",

@@ -441,6 +441,9 @@ xiahoujie:addSkill(liedan)
 xiahoujie:addSkill(zhuangdan)
 Fk:loadTranslationTable{
   ["xiahoujie"] = "夏侯杰",
+  ["#xiahoujie"] = "当阳虎胆",
+	["cv:xiahoujie"] = "虞晓旭",
+	["illustrator:xiahoujie"] = "凝聚永恒",
   ["liedan"] = "裂胆",
   [":liedan"] = "锁定技，其他角色的准备阶段，你的手牌数、体力值和装备区里的牌数每有一项大于该角色，便摸一张牌。"..
   "若均大于其，你加1点体力上限（至多加至8）；若均不大于其，你失去1点体力并获得1枚“裂胆”标记。准备阶段，若“裂胆”标记不小于5，你死亡。",
@@ -2746,6 +2749,9 @@ lvlingqi:addRelatedSkill("shenwei")
 lvlingqi:addRelatedSkill("wushuang")
 Fk:loadTranslationTable{
   ["lvlingqi"] = "吕玲绮",
+  ["#lvlingqi"] = "无双虓姬",
+	["cv:lvlingqi"] = "闲踏梧桐",
+	["illustrator:lvlingqi"] = "君桓文化",
   ["guowu"] = "帼武",
   ["#guowu_delay"] = "帼武",
   [":guowu"] = "出牌阶段开始时，你可以展示所有手牌，若包含的类别数：不小于1，你从弃牌堆中获得一张【杀】；不小于2，你本阶段使用牌无距离限制；"..
@@ -3045,6 +3051,9 @@ wanniangongzhu:addSkill(zhenge)
 wanniangongzhu:addSkill(xinghan)
 Fk:loadTranslationTable{
   ["wanniangongzhu"] = "万年公主",
+  ["#wanniangongzhu"] = "还汉明珠",
+	["cv:wanniangongzhu"] = "侯小菲",
+	["illustrator:wanniangongzhu"] = "匠人绘",
   ["zhenge"] = "枕戈",
   [":zhenge"] = "准备阶段，你可以令一名角色的攻击范围+1（加值至多为5），然后若其他角色都在其的攻击范围内，你可以令其视为对另一名你选择的角色使用一张【杀】。",
   ["xinghan"] = "兴汉",
@@ -5350,6 +5359,8 @@ local zhengding = fk.CreateTriggerSkill{
 ty__mamidi:addSkill(zhengding)
 Fk:loadTranslationTable{
   ["ty__mamidi"] = "马日磾",
+  ["#ty__mamidi"] = "南冠楚囚",
+  ["illustrator:ty__mamidi"] = "MUMU",
   ["bingjie"] = "秉节",
   [":bingjie"] = "出牌阶段开始时，你可以减1点体力上限，然后当你本回合使用【杀】或普通锦囊牌指定目标后，除你以外的目标角色各弃置一张牌，"..
   "若弃置的牌与你使用的牌颜色相同，其无法响应此牌。",
@@ -5374,20 +5385,23 @@ local suizheng = fk.CreateTriggerSkill{
       if event == fk.EventPhaseStart then
         return target == player and player.phase == Player.Finish
       else
-        return target:getMark("@@suizheng-turn") > 0 and target.phase == Player.Play and player.tag[self.name] and #player.tag[self.name] > 0
+        return target:getMark("@@suizheng-turn") > 0 and target.phase == Player.Play
       end
     end
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local targets, prompt
+    local targets, prompt = {}, ""
     if player.phase == Player.Finish then
       targets = table.map(room:getAlivePlayers(), Util.IdMapper)
       prompt = "#suizheng-choose"
     else
-      room:setPlayerMark(player, "@@suizheng-turn", 1)
-      targets = table.filter(player.tag[self.name], function(id) return not room:getPlayerById(id).dead end)
-      player.tag[self.name] = {}
+      U.getActualDamageEvents(player.room, 1, function(e)
+        local damage = e.data[1]
+        if damage.from == target and damage.to ~= player then
+          table.insertIfNeed(targets, damage.to.id)
+        end
+      end, Player.HistoryPhase)
       if #targets == 0 then return end
       prompt = "#suizheng-slash"
     end
@@ -5407,34 +5421,25 @@ local suizheng = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventPhaseStart, fk.Damage},
+  refresh_events = {fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.EventPhaseStart then
-      return target == player and player:getMark("@@suizheng") > 0 and player.phase == Player.Play
-    else
-      return player:hasSkill(self.name, true) and data.from and target:getMark("@@suizheng-turn") > 0 and data.to ~= player and not data.to.dead
-    end
+    return player:getMark("@@suizheng") > 0
   end,
   on_refresh = function(self, event, target, player, data)
-    if event == fk.EventPhaseStart then
-      local room = player.room
-      room:setPlayerMark(player, "@@suizheng", 0)
-      room:setPlayerMark(player, "@@suizheng-turn", 1)
-    else
-      player.tag[self.name] = player.tag[self.name] or {}
-      table.insert(player.tag[self.name], data.to.id)
-    end
+    local room = player.room
+    room:setPlayerMark(player, "@@suizheng", 0)
+    room:setPlayerMark(player, "@@suizheng-turn", 1)
   end,
 }
 local suizheng_targetmod = fk.CreateTargetModSkill{
   name = "#suizheng_targetmod",
   residue_func = function(self, player, skill, scope)
-    if skill.trueName == "slash_skill" and player:getMark("@@suizheng-turn") > 0 and scope == Player.HistoryPhase then
+    if skill.trueName == "slash_skill" and player:getMark("@@suizheng-turn") > 0 and scope == Player.HistoryPhase and player.phase == Player.Play then
       return 1
     end
   end,
   distance_limit_func =  function(self, player, skill)
-    if skill.trueName == "slash_skill" and player:getMark("@@suizheng-turn") > 0 then
+    if skill.trueName == "slash_skill" and player:getMark("@@suizheng-turn") > 0 and player.phase == Player.Play then
       return 999
     end
   end,
@@ -5443,6 +5448,8 @@ suizheng:addRelatedSkill(suizheng_targetmod)
 zhangxun:addSkill(suizheng)
 Fk:loadTranslationTable{
   ["zhangxun"] = "张勋",
+  ["#zhangxun"] = "仲家将军",
+  ["illustrator:zhangxun"] = "黑羽",
   ["suizheng"] = "随征",
   [":suizheng"] = "结束阶段，你可以选择一名角色，该角色下个回合的出牌阶段使用【杀】无距离限制且可以多使用一张【杀】。"..
   "然后其出牌阶段结束时，你可以视为对其本阶段造成过伤害的一名其他角色使用一张【杀】。",
@@ -5523,6 +5530,8 @@ ty__shuangren:addRelatedSkill(ty__shuangren_active)
 ty__jiling:addSkill(ty__shuangren)
 Fk:loadTranslationTable{
   ["ty__jiling"] = "纪灵",
+  ["#ty__jiling"] = "仲家的主将",
+  ["illustrator:ty__jiling"] = "匠人绘",
   ["ty__shuangren"] = "双刃",
   [":ty__shuangren"] = "出牌阶段开始时，你可以与一名角色拼点。若你赢，你选择与其势力相同的一至两名角色（若选择两名，其中一名须为该角色），然后你视为对选择的角色使用一张不计入次数的【杀】；若你没赢，你本阶段不能使用【杀】。",
   ["#ty__shuangren_active"] = "双刃",
@@ -5651,6 +5660,8 @@ leibo:addSkill(silve)
 leibo:addSkill(shuaijie)
 Fk:loadTranslationTable{
   ["leibo"] = "雷薄",
+  ["#leibo"] = "背仲豺寇",
+  ["illustrator:leibo"] = "匠人绘",
   ["silve"] = "私掠",
   [":silve"] = "游戏开始时，你选择一名其他角色为“私掠”角色。<br>“私掠”角色造成伤害后，你可以获得受伤角色一张牌（每回合每名角色限一次）。<br>"..
   "“私掠”角色受到伤害后，你需对伤害来源使用一张【杀】（无距离限制），否则你弃置一张手牌。",
@@ -5796,6 +5807,8 @@ qiaorui:addSkill(aishou)
 qiaorui:addSkill(saowei)
 Fk:loadTranslationTable{
   ["ty__qiaorui"] = "桥蕤",
+  ["#ty__qiaorui"] = "跛夫猎虎",
+  ["illustrator:ty__qiaorui"] = "匠人绘",
   ["aishou"] = "隘守",
   [":aishou"] = "结束阶段，你可以摸X张牌（X为你的体力上限），这些牌标记为“隘”。当你于回合外失去最后一张“隘”后，你减1点体力上限。<br>"..
   "准备阶段，弃置你手牌中的所有“隘”，若弃置的“隘”数大于你的体力值，你加1点体力上限。",
@@ -5979,6 +5992,8 @@ dongwan:addSkill(shengdu)
 dongwan:addSkill(jieling)
 Fk:loadTranslationTable{
   ["dongwan"] = "董绾",
+  ["#dongwan"] = "蜜言如鸩",
+  ["illustrator:dongwan"] = "游漫美绘",
   ["shengdu"] = "生妒",
   [":shengdu"] = "回合开始时，你可以选择一名角色，该角色获得“生妒”标记；"..
   "有“生妒”标记的角色摸牌阶段摸牌后，每有一个“生妒”你摸等量的牌，然后移去“生妒”标记。",

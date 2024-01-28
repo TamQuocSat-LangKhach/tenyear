@@ -5137,7 +5137,7 @@ local tianji = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
       for _, move in ipairs(data) do
-        if move.toArea == Card.DiscardPile and move.moveReason == fk.ReasonJudge then
+        if move.toArea == Card.DiscardPile and move.moveReason == fk.ReasonJudge and move.skillName == "" then
           self.cost_data = move
           return true
         end
@@ -5176,6 +5176,7 @@ zhujianping:addSkill(tianji)
 Fk:loadTranslationTable{
   ["zhujianping"] = "朱建平",
   ["#zhujianping"] = "识面知秋",
+  ["designer:zhujianping"] = "星移",
   ["illustrator:zhujianping"] = "游漫美绘",
   ["xiangmian"] = "相面",
   [":xiangmian"] = "出牌阶段限一次，你可以令一名其他角色进行一次判定，当该角色使用判定花色的牌或使用第X张牌后（X为判定点数），其失去所有体力。"..

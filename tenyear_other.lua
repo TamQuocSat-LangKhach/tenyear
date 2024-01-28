@@ -168,6 +168,7 @@ Fk:loadTranslationTable{
   ["sitian5"] = "大雾",
   [":sitian5"] = "所有其他角色使用的下一张基本牌无效",
   ["@@lw_dawu"] = "雾",
+  ["#sitian_trigger"] = "司天",
 
   ["$ty__longgong1"] = "停手，大哥！给东西能换条命不？",
   ["$ty__longgong2"] = "冤家宜解不宜结。",

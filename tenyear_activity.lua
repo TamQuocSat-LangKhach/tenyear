@@ -2358,6 +2358,7 @@ hejin:addSkill(ty__yanhuo)
 Fk:loadTranslationTable{
   ["ty__hejin"] = "何进",
   ["#ty__hejin"] = "色厉内荏",
+  ["cv:ty__hejin"] = "冷泉月夜",
   ["illustrator:ty__hejin"] = "凝聚永恒",
   ["ty__mouzhu"] = "谋诛",
   [":ty__mouzhu"] = "出牌阶段限一次，你可以选择任意名与你距离为1或体力值与你相同的其他角色，依次将一张手牌交给你，然后若其手牌数小于你，"..

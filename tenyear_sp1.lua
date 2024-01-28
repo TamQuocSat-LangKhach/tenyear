@@ -470,6 +470,7 @@ xurong:addSkill(shajue)
 Fk:loadTranslationTable{
   ["xurong"] = "徐荣",
   ["#xurong"] = "玄菟战魔",
+  ["cv:xurong"] = "曹真",
   ["illustrator:xurong"] = "zoo",
   ["xionghuo"] = "凶镬",
   [":xionghuo"] = "游戏开始时，你获得3个“暴戾”标记（标记上限为3）。出牌阶段，你可以交给一名其他角色一个“暴戾”标记，"..

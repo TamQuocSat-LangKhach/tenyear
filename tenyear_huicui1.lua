@@ -4362,6 +4362,10 @@ chengui:addSkill(yingtu)
 chengui:addSkill(congshi)
 Fk:loadTranslationTable{
   ["chengui"] = "陈珪",
+  ["#chengui"] = "弄虎如婴",
+  ["designer:chengui"] = "狗",
+	["cv:chengui"] = "我是CV",
+	["illustrator:chengui"] = "游漫美绘",
   ["yingtu"] = "营图",
   [":yingtu"] = "每回合限一次，当一名角色于其摸牌阶段外获得牌后，若其是你的上家或下家，你可以获得该角色的一张牌，然后交给你的下家或上家一张牌。若以此法给出的牌为装备牌，获得牌的角色使用之。",
   ["congshi"] = "从势",

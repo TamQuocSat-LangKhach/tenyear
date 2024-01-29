@@ -1584,33 +1584,31 @@ local jinjie = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     target:drawCards(1, self.name)
-
-    if player.dead or target.dead or not target:isWounded() or player:getMark("jinjie-round") > 0 then return false end
+    if player.dead or target.dead or not target:isWounded() or
+    player:getMark("jinjie-round") > 0 then return false end
     local x = player:usedSkillTimes(self.name, Player.HistoryRound)
     if x > player:getHandcardNum() then return false end
     local room = player.room
     local round_event = room.logic:getCurrentEvent():findParent(GameEvent.Round)
     if round_event == nil then return false end
     local end_id = round_event.id
-    local events = room.logic.event_recorder[GameEvent.Turn] or Util.DummyTable
-    for _, e in ipairs(events) do
-      if e.id <= end_id then break end
+    local can_invoke = true
+    U.getEventsByRule(room, GameEvent.Turn, 1, function (e)
       local current_player = e.data[1]
       if current_player == player then
+        can_invoke = false
         room:setPlayerMark(player, "jinjie-round", 1)
-        return false
+        return true
       end
-    end
-
-    if #room:askForDiscard(player, x, x, false, self.name, true, ".", "#jinjie-discard::"..target.id..":"..x) > 0 then
-      if not target.dead and target:isWounded() then
-        room:recover{
-          who = target,
-          num = 1,
-          recoverBy = player,
-          skillName = self.name
-        }
-      end
+    end, end_id)
+    if can_invoke and #room:askForDiscard(player, x, x, false, self.name, true, ".",
+    "#jinjie-discard::"..target.id..":"..x) > 0 and not target.dead and target:isWounded() then
+      room:recover{
+        who = target,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      }
     end
   end,
 }

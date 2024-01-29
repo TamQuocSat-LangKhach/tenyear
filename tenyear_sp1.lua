@@ -1693,8 +1693,18 @@ local tianren = fk.CreateTriggerSkill {
     while player:getMark("@tianren") >= player.maxHp do
       room:removePlayerMark(player, "@tianren", player.maxHp)
       room:changeMaxHp(player, 1)
+      if player.dead then return false end
       player:drawCards(2, self.name)
+      if player.dead then return false end
     end
+  end,
+  
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == self and player:getMark("@tianren") ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@tianren", 0)
   end,
 }
 local jiufa = fk.CreateTriggerSkill{
@@ -1702,7 +1712,8 @@ local jiufa = fk.CreateTriggerSkill{
   events = {fk.CardUsing, fk.CardResponding},
   anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and not table.contains(U.getMark(player, "@$jiufa"), data.card.trueName)
+    return target == player and player:hasSkill(self) and
+    not table.contains(U.getMark(player, "@$jiufa"), data.card.trueName)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
@@ -1764,6 +1775,14 @@ local jiufa = fk.CreateTriggerSkill{
       })
     end
   end,
+
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == self and player:getMark("@$jiufa") ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@$jiufa", 0)
+  end,
 }
 local pingxiang = fk.CreateActiveSkill{
   name = "pingxiang",
@@ -1779,13 +1798,13 @@ local pingxiang = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     room:changeMaxHp(player, -9)
+    if player.dead then return end
+    room:handleAddLoseSkills(player, "-jiufa", nil, true, false)
     for i = 1, 9, 1 do
-      if player.dead then return end
-      if not U.askForUseVirtualCard(room, player, "fire__slash", nil, self.name, "#pingxiang-slash:::" .. i, true, true) then
+      if player.dead or not U.askForUseVirtualCard(room, player, "fire__slash", nil, self.name, "#pingxiang-slash:::" .. i, true, true) then
         break
       end
     end
-    room:handleAddLoseSkills(player, "-jiufa", nil, true, false)
   end,
 }
 local pingxiang_maxcards = fk.CreateMaxCardsSkill{
@@ -1805,13 +1824,13 @@ Fk:loadTranslationTable{
   ["#godjiangwei"] = "怒麟布武",
   ["illustrator:godjiangwei"] = "匠人绘",
   ["tianren"] = "天任",
-  [":tianren"] = "锁定技，当一张基本牌或普通锦囊牌不是因使用而置入弃牌堆后，你获得1个“天任”标记，"..
+  [":tianren"] = "锁定技，当一张基本牌或普通锦囊牌不因使用而置入弃牌堆后，你获得1个“天任”标记，"..
   "然后若“天任”标记数不小于X，你移去X个“天任”标记，加1点体力上限并摸两张牌（X为你的体力上限）。",
   ["jiufa"] = "九伐",
   [":jiufa"] = "当你每累计使用或打出九张不同牌名的牌后，你可以亮出牌堆顶的九张牌，然后若其中有点数相同的牌，你选择并获得其中每个重复点数的牌各一张。",
   ["pingxiang"] = "平襄",
-  [":pingxiang"] = "限定技，出牌阶段，若你的体力上限大于9，你可以减9点体力上限，然后你视为使用至多九张火【杀】。"..
-  "若如此做，你失去技能〖九伐〗且本局游戏内你的手牌上限等于体力上限。",
+  [":pingxiang"] = "限定技，出牌阶段，若你的体力上限大于9，你可以减9点体力上限。"..
+  "若如此做，你失去技能〖九伐〗且本局游戏内你的手牌上限等于体力上限，然后你可以视为使用至多九张火【杀】。",
   ["@tianren"] = "天任",
   ["@$jiufa"] = "九伐",
   ["#jiufa-invoke"] = "九伐：是否亮出牌堆顶九张牌，获得重复点数的牌各一张！",
@@ -2250,6 +2269,14 @@ local yizhao = fk.CreateTriggerSkill{
       })
     end
   end,
+
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == self and player:getMark("@zhangjiao_huang") ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@zhangjiao_huang", 0)
+  end,
 }
 local sanshou = fk.CreateTriggerSkill{
   name = "sanshou",
@@ -2489,7 +2516,7 @@ Fk:loadTranslationTable{
   [":tianjie"] = "一名角色的回合结束时，若本回合牌堆进行过洗牌，你可以对至多三名其他角色各造成X点雷电伤害（X为其手牌中【闪】的数量且至少为1）。",
   ["@zhangjiao_huang"] = "黄",
   ["#tianjie-choose"] = "天劫：你可以对至多三名其他角色各造成X点雷电伤害（X为其手牌中【闪】数，至少为1）",
-  
+
   ["$yizhao1"] = "苍天已死，此黄天当立之时。",
   ["$yizhao2"] = "甲子尚水，显炎汉将亡之兆。",
   ["$sanshou1"] = "三公既现，领大道而立黄天。",
@@ -3332,7 +3359,7 @@ Fk:loadTranslationTable{
   ["ty__fenyin"] = "奋音",
   [":ty__fenyin"] = "锁定技，你的回合内，每当有一种花色的牌进入弃牌堆后（每回合每种花色各限一次），你摸一张牌。",
   ["liji"] = "力激",
-  [":liji"] = "出牌阶段限0次，你可以弃置一张牌然后对一名其他角色造成1点伤害。你的回合内，本回合进入弃牌堆的牌每次达到8的倍数张时"..
+  [":liji"] = "出牌阶段限零次，你可以弃置一张牌然后对一名其他角色造成1点伤害。你的回合内，本回合进入弃牌堆的牌每次达到8的倍数张时"..
   "（存活人数小于5时改为4的倍数），此技能使用次数+1。",
   ["@liji-turn"] = "力激",
 

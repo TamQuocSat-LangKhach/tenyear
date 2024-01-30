@@ -3581,15 +3581,15 @@ local ty_ex__shenduan_active = fk.CreateActiveSkill{
     end
   end,
 }
-local ty_ex__yonglve = fk.CreateTriggerSkill{
-  name = "ty_ex__yonglve",
+local ty_ex__yonglue = fk.CreateTriggerSkill{
+  name = "ty_ex__yonglue",
   anim_type = "offensive",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self) and target ~= player and target.phase == Player.Judge and #target:getCardIds("j") > 0
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#ty_ex__yonglve-invoke::"..target.id)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#ty_ex__yonglue-invoke::"..target.id)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -3607,21 +3607,21 @@ local ty_ex__yonglve = fk.CreateTriggerSkill{
 }
 Fk:addSkill(ty_ex__shenduan_active)
 ty_ex__hanhaoshihuan:addSkill(ty_ex__shenduan)
-ty_ex__hanhaoshihuan:addSkill(ty_ex__yonglve)
+ty_ex__hanhaoshihuan:addSkill(ty_ex__yonglue)
 Fk:loadTranslationTable{
   ["ty_ex__hanhaoshihuan"] = "韩浩史涣",
   ["ty_ex__shenduan"] = "慎断",
   [":ty_ex__shenduan"] = "当你的黑色非锦囊牌因弃置而置入弃牌堆时，你可以将此牌当【兵粮寸断】使用（无距离限制）。",
-  ["ty_ex__yonglve"] = "勇略",
-  [":ty_ex__yonglve"] = "其他角色的判定阶段开始时，你可以弃置其判定区里的一张牌，然后若该角色：在你的攻击范围内，你摸一张牌；在你的攻击范围外，视为你对其使用一张【杀】。",
+  ["ty_ex__yonglue"] = "勇略",
+  [":ty_ex__yonglue"] = "其他角色的判定阶段开始时，你可以弃置其判定区里的一张牌，然后若该角色：在你的攻击范围内，你摸一张牌；在你的攻击范围外，视为你对其使用一张【杀】。",
   ["#ty_ex__shenduan-use"] = "慎断：你可以将这些牌当【兵粮寸断】使用",
   ["ty_ex__shenduan_active"] = "慎断",
-  ["#ty_ex__yonglve-invoke"] = "勇略：你可以弃置 %dest 判定区一张牌",
+  ["#ty_ex__yonglue-invoke"] = "勇略：你可以弃置 %dest 判定区一张牌",
 
   ["$ty_ex__shenduan1"] = "行军断策需慎之又慎！",
   ["$ty_ex__shenduan2"] = "为将者务当慎行谨断！",
-  ["$ty_ex__yonglve1"] = "兵势勇健，战胜攻取，无不如志！",
-  ["$ty_ex__yonglve2"] = "雄才大略，举无遗策，威震四海！",
+  ["$ty_ex__yonglue1"] = "兵势勇健，战胜攻取，无不如志！",
+  ["$ty_ex__yonglue2"] = "雄才大略，举无遗策，威震四海！",
   ["~ty_ex__hanhaoshihuan"] = "末将愧对主公知遇之恩！",
 }
 

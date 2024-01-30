@@ -5547,8 +5547,8 @@ Fk:loadTranslationTable{
 }
 
 local leibo = General(extension, "leibo", "qun", 4)
-local silve = fk.CreateTriggerSkill{
-  name = "silve",
+local silue = fk.CreateTriggerSkill{
+  name = "silue",
   mute = true,
   events = {fk.GameStart, fk.Damage, fk.Damaged},
   can_trigger = function(self, event, target, player, data)
@@ -5557,7 +5557,7 @@ local silve = fk.CreateTriggerSkill{
         return true
       elseif target and player:getMark(self.name) == target.id and not player.dead then
         if event == fk.Damage then
-          return not data.to.dead and not data.to:isNude() and player:getMark("silve_preyed"..data.to.id.."-turn") == 0
+          return not data.to.dead and not data.to:isNude() and player:getMark("silue_preyed"..data.to.id.."-turn") == 0
         else
           return true
         end
@@ -5568,13 +5568,13 @@ local silve = fk.CreateTriggerSkill{
     if event == fk.GameStart then
       local room = player.room
       local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
-      local to = room:askForChoosePlayers(player, targets, 1, 1, "#silve-choose", self.name)
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#silue-choose", self.name)
       if #to > 0 then
         self.cost_data = to[1]
         return true
       end
     elseif event == fk.Damage then
-      return player.room:askForSkillInvoke(player, self.name, nil, "#silve-prey::"..data.to.id)
+      return player.room:askForSkillInvoke(player, self.name, nil, "#silue-prey::"..data.to.id)
     elseif event == fk.Damaged then
       return true
     end
@@ -5585,19 +5585,19 @@ local silve = fk.CreateTriggerSkill{
     if event == fk.GameStart then
       room:notifySkillInvoked(player, self.name, "special")
       room:setPlayerMark(player, self.name, self.cost_data)
-      room:setPlayerMark(player, "@silve", room:getPlayerById(self.cost_data).general)
+      room:setPlayerMark(player, "@silue", room:getPlayerById(self.cost_data).general)
     elseif event == fk.Damage then
       room:notifySkillInvoked(player, self.name, "offensive")
       room:doIndicate(player.id, {data.to.id})
-      room:setPlayerMark(player, "silve_preyed"..data.to.id.."-turn", 1)
-      local id = room:askForCardChosen(player, data.to, "he", self.name, "#silve-card::"..data.to.id)
+      room:setPlayerMark(player, "silue_preyed"..data.to.id.."-turn", 1)
+      local id = room:askForCardChosen(player, data.to, "he", self.name, "#silue-card::"..data.to.id)
       room:obtainCard(player.id, id, false, fk.ReasonPrey)
     elseif event == fk.Damaged then
       if (not data.from or data.from.dead) and not player:isKongcheng() then
         room:notifySkillInvoked(player, self.name, "negative")
         room:askForDiscard(player, 1, 1, false, self.name, false)
       else
-        local use = room:askForUseCard(player, self.name, "slash", "#silve-slash::"..data.from.id, true,
+        local use = room:askForUseCard(player, self.name, "slash", "#silue-slash::"..data.from.id, true,
           {must_targets = {data.from.id}, bypass_distances = true, bypass_times = true})
         if use then
           room:notifySkillInvoked(player, self.name, "offensive")
@@ -5618,8 +5618,8 @@ local shuaijie = fk.CreateActiveSkill{
   target_num = 0,
   prompt = "#shuaijie",
   can_use = function(self, player)
-    if player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and player:getMark("silve") ~= 0 then
-      local to = Fk:currentRoom():getPlayerById(player:getMark("silve"))
+    if player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and player:getMark("silue") ~= 0 then
+      local to = Fk:currentRoom():getPlayerById(player:getMark("silue"))
       return to.dead or (player.hp > to.hp and #player:getCardIds("e") > #to:getCardIds("e"))
     end
   end,
@@ -5628,7 +5628,7 @@ local shuaijie = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     room:changeMaxHp(player, -1)
     if player.dead then return end
-    local to = room:getPlayerById(player:getMark("silve"))
+    local to = room:getPlayerById(player:getMark("silue"))
     local choices = {"shuaijie2"}
     if not to.dead and not to:isNude() then
       table.insert(choices, 1, "shuaijie1::"..to.id)
@@ -5651,34 +5651,34 @@ local shuaijie = fk.CreateActiveSkill{
       room:obtainCard(player.id, dummy, false, fk.ReasonPrey)
     end
     if not player.dead then
-      room:setPlayerMark(player, "silve", player.id)
-      room:setPlayerMark(player, "@silve", player.general)
+      room:setPlayerMark(player, "silue", player.id)
+      room:setPlayerMark(player, "@silue", player.general)
     end
   end,
 }
-leibo:addSkill(silve)
+leibo:addSkill(silue)
 leibo:addSkill(shuaijie)
 Fk:loadTranslationTable{
   ["leibo"] = "雷薄",
   ["#leibo"] = "背仲豺寇",
   ["illustrator:leibo"] = "匠人绘",
-  ["silve"] = "私掠",
-  [":silve"] = "游戏开始时，你选择一名其他角色为“私掠”角色。<br>“私掠”角色造成伤害后，你可以获得受伤角色一张牌（每回合每名角色限一次）。<br>"..
+  ["silue"] = "私掠",
+  [":silue"] = "游戏开始时，你选择一名其他角色为“私掠”角色。<br>“私掠”角色造成伤害后，你可以获得受伤角色一张牌（每回合每名角色限一次）。<br>"..
   "“私掠”角色受到伤害后，你需对伤害来源使用一张【杀】（无距离限制），否则你弃置一张手牌。",
   ["shuaijie"] = "衰劫",
   [":shuaijie"] = "限定技，出牌阶段，若你体力值与装备区里的牌均大于“私掠”角色或“私掠”角色已死亡，你可以减1点体力上限，然后选择一项：<br>"..
   "1.获得“私掠”角色至多3张牌；2.从牌堆获得三张类型不同的牌。然后“私掠”角色改为你。",
-  ["#silve-choose"] = "私掠：选择一名其他角色，作为“私掠”角色",
-  ["@silve"] = "私掠",
-  ["#silve-prey"] = "私掠：是否获得 %dest 的一张牌？",
-  ["#silve-card"] = "私掠：获得 %dest 的一张牌",
-  ["#silve-slash"] = "私掠：你需对 %dest 使用一张【杀】，否则弃置一张手牌",
+  ["#silue-choose"] = "私掠：选择一名其他角色，作为“私掠”角色",
+  ["@silue"] = "私掠",
+  ["#silue-prey"] = "私掠：是否获得 %dest 的一张牌？",
+  ["#silue-card"] = "私掠：获得 %dest 的一张牌",
+  ["#silue-slash"] = "私掠：你需对 %dest 使用一张【杀】，否则弃置一张手牌",
   ["#shuaijie"] = "衰劫：你可以减1点体力上限，“私掠”角色改为你！",
   ["shuaijie1"] = "获得%dest至多三张牌",
   ["shuaijie2"] = "从牌堆获得三张类型不同的牌",
 
-  ["$silve1"] = "劫尔之富，济我之贫！",
-  ["$silve2"] = "徇私而动，劫财掠货。",
+  ["$silue1"] = "劫尔之富，济我之贫！",
+  ["$silue2"] = "徇私而动，劫财掠货。",
   ["$shuaijie1"] = "弱肉强食，实乃天地至理。",
   ["$shuaijie2"] = "恃强凌弱，方为我辈本色！",
   ["~leibo"] = "此人不可力敌，速退！",

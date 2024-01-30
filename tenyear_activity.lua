@@ -229,8 +229,8 @@ Fk:loadTranslationTable{
 }
 
 local zhangji = General(extension, "zhangji", "qun", 4)
-local lveming = fk.CreateActiveSkill{
-  name = "lveming",
+local lueming = fk.CreateActiveSkill{
+  name = "lueming",
   anim_type = "offensive",
   card_num = 0,
   target_num = 1,
@@ -275,11 +275,11 @@ local tunjun = fk.CreateActiveSkill{
   target_num = 1,
   card_num = 0,
   prompt = function ()
-    return "#tunjun-prompt:::"..Self:usedSkillTimes("lveming", Player.HistoryGame)
+    return "#tunjun-prompt:::"..Self:usedSkillTimes("lueming", Player.HistoryGame)
   end,
   frequency = Skill.Limited,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and player:usedSkillTimes("lveming", Player.HistoryGame) > 0
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and player:usedSkillTimes("lueming", Player.HistoryGame) > 0
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
@@ -288,7 +288,7 @@ local tunjun = fk.CreateActiveSkill{
   on_use = function(self, room, use)
     local player = room:getPlayerById(use.from)
     local target = room:getPlayerById(use.tos[1])
-    local n = player:usedSkillTimes("lveming", Player.HistoryGame)
+    local n = player:usedSkillTimes("lueming", Player.HistoryGame)
     for _ = 1, n, 1 do
       if player.dead then break end
       local cards = {}
@@ -310,29 +310,29 @@ local tunjun = fk.CreateActiveSkill{
     end
   end,
 }
-zhangji:addSkill(lveming)
+zhangji:addSkill(lueming)
 zhangji:addSkill(tunjun)
 Fk:loadTranslationTable{
   ["zhangji"] = "张济",
   ["#zhangji"] = "武威雄豪",
   ["illustrator:zhangji"] = "YanBai",
-  ["lveming"] = "掠命",
-  [":lveming"] = "出牌阶段限一次，你选择一名装备区装备少于你的其他角色，令其选择一个点数，然后你进行判定：若点数相同，你对其造成2点伤害；"..
+  ["lueming"] = "掠命",
+  [":lueming"] = "出牌阶段限一次，你选择一名装备区装备少于你的其他角色，令其选择一个点数，然后你进行判定：若点数相同，你对其造成2点伤害；"..
   "不同，你随机获得其区域内的一张牌。",
   ["tunjun"] = "屯军",
   [":tunjun"] = "限定技，出牌阶段，你可以选择一名角色，令其随机使用牌堆中的X张不同类型的装备牌（不替换原有装备，X为你发动〖掠命〗的次数）。",
   ["#tunjun-prompt"] = "屯军：选择一名角色，令其随机使用 %arg 张装备牌",
 
-  ["$lveming1"] = "劫命掠财，毫不费力。",
-  ["$lveming2"] = "人财，皆掠之，哈哈！",
+  ["$lueming1"] = "劫命掠财，毫不费力。",
+  ["$lueming2"] = "人财，皆掠之，哈哈！",
   ["$tunjun1"] = "得封侯爵，屯军弘农。",
   ["$tunjun2"] = "屯军弘农，养精蓄锐。",
   ["~zhangji"] = "哪，哪里来的乱箭？",
 }
 
 local liangxing = General(extension, "liangxing", "qun", 4)
-local lulve = fk.CreateTriggerSkill{
-  name = "lulve",
+local lulue = fk.CreateTriggerSkill{
+  name = "lulue",
   anim_type = "offensive",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
@@ -343,7 +343,7 @@ local lulve = fk.CreateTriggerSkill{
     local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
       return (p:getHandcardNum() < #player.player_cards[Player.Hand] and not p:isKongcheng()) end), Util.IdMapper)
     if #targets == 0 then return end
-    local to = room:askForChoosePlayers(player, targets, 1, 1, "#lulve-choose", self.name, true)
+    local to = room:askForChoosePlayers(player, targets, 1, 1, "#lulue-choose", self.name, true)
     if #to > 0 then
       self.cost_data = to[1]
       return true
@@ -353,8 +353,8 @@ local lulve = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
-    local choice = room:askForChoice(to, {"lulve_give", "lulve_slash"}, self.name, "#lulve-choice:"..player.id)
-    if choice == "lulve_give" then
+    local choice = room:askForChoice(to, {"lulue_give", "lulue_slash"}, self.name, "#lulue-choice:"..player.id)
+    if choice == "lulue_give" then
       local dummy = Fk:cloneCard("dilu")
       dummy:addSubcards(to:getCardIds(Player.Hand))
       room:obtainCard(player.id, dummy, false, fk.ReasonGive)
@@ -378,23 +378,23 @@ local zhuixi = fk.CreateTriggerSkill{
     data.damage = data.damage + 1
   end,
 }
-liangxing:addSkill(lulve)
+liangxing:addSkill(lulue)
 liangxing:addSkill(zhuixi)
 Fk:loadTranslationTable{
   ["liangxing"] = "梁兴",
   ["#liangxing"] = "凶豺掠豹",
   ["illustrator:liangxing"] = "匠人绘",
-  ["lulve"] = "掳掠",
-  [":lulve"] = "出牌阶段开始时，你可以令一名有手牌且手牌数小于你的其他角色选择一项：1.将所有手牌交给你，然后你翻面；2.翻面，然后视为对你使用一张【杀】。",
+  ["lulue"] = "掳掠",
+  [":lulue"] = "出牌阶段开始时，你可以令一名有手牌且手牌数小于你的其他角色选择一项：1.将所有手牌交给你，然后你翻面；2.翻面，然后视为对你使用一张【杀】。",
   ["zhuixi"] = "追袭",
   [":zhuixi"] = "锁定技，当你对其他角色造成伤害时，或当你受到其他角色造成的伤害时，若你与其翻面状态不同，此伤害+1。",
-  ["#lulve-choose"] = "掳掠：你可以令一名有手牌且手牌数小于你的其他角色选择一项",
-  ["lulve_give"] = "将所有手牌交给其，其翻面",
-  ["lulve_slash"] = "你翻面，视为对其使用【杀】",
-  ["#lulve-choice"] = "掳掠：选择对 %src 执行的一项",
+  ["#lulue-choose"] = "掳掠：你可以令一名有手牌且手牌数小于你的其他角色选择一项",
+  ["lulue_give"] = "将所有手牌交给其，其翻面",
+  ["lulue_slash"] = "你翻面，视为对其使用【杀】",
+  ["#lulue-choice"] = "掳掠：选择对 %src 执行的一项",
 
-  ["$lulve1"] = "趁火打劫，乘危掳掠。",
-  ["$lulve2"] = "天下大乱，掳掠以自保。",
+  ["$lulue1"] = "趁火打劫，乘危掳掠。",
+  ["$lulue2"] = "天下大乱，掳掠以自保。",
   ["$zhuixi1"] = "得势追击，胜望在握！",
   ["$zhuixi2"] = "诸将得令，追而袭之！",
   ["~liangxing"] = "夏侯渊，你竟敢！",

@@ -378,7 +378,7 @@ local ty__pingjian = fk.CreateActiveSkill{
     local skills = table.filter({
       "qiangwu", "ol_ex__qiangxi", "ol_ex__luanji", "ty_ex__sanyao", "ol__xuehen", "ex__yijue", "daoshu", "m_ex__xianzhen",
       "tianyi", "ty_ex__zhanjue", "ty__lianji", "ty_ex__wurong", "fenxun", "ol_ex__jiuchi", "m_ex__zenhui", "xuezhao", "hs__kurou", "m_ex__mieji",
-      "ex__zhiheng", "ex__guose", "ty_ex__shenxing", "ty__songci", "guolun", "os__gongxin", "lveming", "busuan", "ty__lianzhu",
+      "ex__zhiheng", "ex__guose", "ty_ex__shenxing", "ty__songci", "guolun", "os__gongxin", "lueming", "busuan", "ty__lianzhu",
       "ex__fanjian", "tanbei", "ty__qingcheng", "chengshang", "ty__songshu", "poxi", "m_ex__ganlu", "qixi", "ty__kuangfu", "qice",
       "os_ex__gongqi", "ty_ex__huaiyi", "shanxi", "ol_ex__tiaoxin", "qingnang", "quji", "ty_ex__anguo", "limu", "ex__jieyin",
       "m_ex__anxu", "ty_ex__mingce", "ziyuan", "mou__lijian", "mingjian", "ex__rende", "mizhao", "yanjiao", "ol_ex__dimeng", "ol_ex__zhijian",
@@ -1269,8 +1269,8 @@ Fk:loadTranslationTable{
 }
 
 local qiuliju = General(extension, "qiuliju", "qun", 4, 6)
-local koulve = fk.CreateTriggerSkill{
-  name = "koulve",
+local koulue = fk.CreateTriggerSkill{
+  name = "koulue",
   anim_type = "drawcard",
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
@@ -1278,7 +1278,7 @@ local koulve = fk.CreateTriggerSkill{
       not data.to.dead and not data.to:isKongcheng() and data.to:isWounded()
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#koulve-invoke::"..data.to.id)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#koulue-invoke::"..data.to.id)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -1330,20 +1330,20 @@ local suirenq = fk.CreateTriggerSkill{
     room:moveCardTo(dummy, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
   end,
 }
-qiuliju:addSkill(koulve)
+qiuliju:addSkill(koulue)
 qiuliju:addSkill(suirenq)
 Fk:loadTranslationTable{
   ["qiuliju"] = "丘力居",
-  ["koulve"] = "寇略",
-  [":koulve"] = "出牌阶段内，当你对其他角色造成伤害后，你可以展示其X张手牌（X为其已损失体力值），你获得其中的【杀】和伤害锦囊牌。若展示牌中有红色牌，"..
+  ["koulue"] = "寇略",
+  [":koulue"] = "出牌阶段内，当你对其他角色造成伤害后，你可以展示其X张手牌（X为其已损失体力值），你获得其中的【杀】和伤害锦囊牌。若展示牌中有红色牌，"..
   "若你已受伤，你减1点体力上限；若你未受伤，则失去1点体力；然后你摸两张牌。",
   ["suirenq"] = "随认",
   [":suirenq"] = "你死亡时，可以将手牌中所有【杀】和伤害锦囊牌交给一名其他角色。",
-  ["#koulve-invoke"]= "寇略：你可以展示 %dest 的手牌，获得其中的伤害牌",
+  ["#koulue-invoke"]= "寇略：你可以展示 %dest 的手牌，获得其中的伤害牌",
   ["#suirenq-choose"] = "随认：你可以将手牌中所有【杀】和伤害锦囊牌交给一名角色",
 
-  ["$koulve1"] = "兵强马壮，时出寇略。",
-  ["$koulve2"] = "饥则寇略，饱则弃馀。",
+  ["$koulue1"] = "兵强马壮，时出寇略。",
+  ["$koulue2"] = "饥则寇略，饱则弃馀。",
   ["$suirenq1"] = "就交给你了。",
   ["$suirenq2"] = "我的财富，收好！",
   ["~qiuliju"] = "乌丸危矣！",

@@ -2157,8 +2157,8 @@ Fk:loadTranslationTable{
 }
 
 local xunchen = General(extension, "ty__xunchen", "qun", 3)
-local ty__fenglve = fk.CreateActiveSkill{
-  name = "ty__fenglve",
+local ty__fenglue = fk.CreateActiveSkill{
+  name = "ty__fenglue",
   anim_type = "control",
   card_num = 0,
   target_num = 1,
@@ -2225,21 +2225,21 @@ local anyong = fk.CreateTriggerSkill{
     }
   end,
 }
-xunchen:addSkill(ty__fenglve)
+xunchen:addSkill(ty__fenglue)
 xunchen:addSkill(anyong)
 Fk:loadTranslationTable{
   ["ty__xunchen"] = "荀谌",
   ["#ty__xunchen"] = "三公谋主",
   ["illustrator:xxx_general"] = "凝聚永恒",
-  ["ty__fenglve"] = "锋略",
-  [":ty__fenglve"] = "出牌阶段限一次，你可以和一名其他角色拼点。若你赢，该角色交给你其区域内的两张牌；若点数相同，此技能视为未发动过；"..
+  ["ty__fenglue"] = "锋略",
+  [":ty__fenglue"] = "出牌阶段限一次，你可以和一名其他角色拼点。若你赢，该角色交给你其区域内的两张牌；若点数相同，此技能视为未发动过；"..
   "若你输，该角色获得你拼点的牌。",
   ["anyong"] = "暗涌",
   [":anyong"] = "当一名角色于其回合内第一次对另一名角色造成伤害后，若此伤害值为1，你可以弃置一张牌对受到伤害的角色造成1点伤害。",
   ["#anyong-invoke"] = "暗涌：你可以弃置一张牌，对 %dest 造成1点伤害",
   
-  ["$ty__fenglve1"] = "当今敢称贤者，唯袁氏本初一人！",
-  ["$ty__fenglve2"] = "冀州宝地，本当贤者居之！",
+  ["$ty__fenglue1"] = "当今敢称贤者，唯袁氏本初一人！",
+  ["$ty__fenglue2"] = "冀州宝地，本当贤者居之！",
   ["$anyong1"] = "殿上太守且相看，殿下几人还拥韩？",
   ["$anyong2"] = "冀州暗潮汹涌，群士居危思变。",
   ["~ty__xunchen"] = "为臣当不贰，贰臣不当为……",

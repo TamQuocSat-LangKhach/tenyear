@@ -216,6 +216,7 @@ zhaoxiang:addSkill(ty__fuhan)
 Fk:loadTranslationTable{
   ["ty__zhaoxiang"] = "赵襄",
   ["#ty__zhaoxiang"] = "拾梅鹊影",
+  ["cv:ty__zhaoxiang"] = "闲踏梧桐",
   ["illustrator:ty__zhaoxiang"] = "木美人", -- 传说皮 芳芷飒敌
   ["ty__fanghun"] = "芳魂",
   [":ty__fanghun"] = "当你使用【杀】指定目标后或成为【杀】的目标后，你获得1个“梅影”标记；你可以移去1个“梅影”标记发动〖龙胆〗并摸一张牌。",

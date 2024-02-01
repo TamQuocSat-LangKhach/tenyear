@@ -2882,19 +2882,17 @@ local ty_ex__fencheng = fk.CreateActiveSkill{
     table.removeOne(targets, player)
     local n = 0
     for _, target in ipairs(targets) do
-      local total = #target:getCardIds{Player.Hand, Player.Equip}
-      if total < n + 1 then
-        room:damage{
-          from = player,
-          to = target,
-          damage = 2,
-          damageType = fk.FireDamage,
-          skillName = self.name,
-        }
-        n = 0
-      else
-        local cards = room:askForDiscard(target, n + 1, 999, true, self.name, true, ".", "#ty_ex__fencheng-discard:::"..tostring(n + 1))
-        if #cards == 0 then
+      if not target.dead then
+        local canDamage = (#target:getCardIds("he") < n + 1)
+        if not canDamage then
+          local cards = room:askForDiscard(target, n + 1, 999, true, self.name, true, ".", "#ty_ex__fencheng-discard:::"..tostring(n + 1))
+          if #cards > n then
+            n = #cards
+          else
+            canDamage = true
+          end
+        end
+        if canDamage then
           room:damage{
             from = player,
             to = target,
@@ -2903,8 +2901,6 @@ local ty_ex__fencheng = fk.CreateActiveSkill{
             skillName = self.name,
           }
           n = 0
-        else
-          n = #cards
         end
       end
     end
@@ -2914,7 +2910,9 @@ ty_ex__liru:addSkill("juece")
 ty_ex__liru:addSkill(ty_ex__mieji)
 ty_ex__liru:addSkill(ty_ex__fencheng)
 Fk:loadTranslationTable{
-  ["ty_ex__liru"] = "界李儒",
+  ["ty_ex__liru"] = "魔仕",
+  ["#ty_ex__liru"] = "界李儒",
+  ["illustrator:ty_ex__liru"] = "胖虎饭票",
   ["ty_ex__mieji"] = "灭计",
   [":ty_ex__mieji"] = "出牌阶段限一次，你可以将一张武器牌或黑色锦囊牌置于牌堆顶，令一名有手牌的其他角色弃置一张牌。若其弃置的牌不为锦囊牌，其弃置一张非锦囊牌（没有则不弃）。",
   ["ty_ex__fencheng"] = "焚城",
@@ -3034,6 +3032,8 @@ local ty_ex__qiuyuan = fk.CreateTriggerSkill{
 fuhuanghou:addSkill(ty_ex__qiuyuan)
 Fk:loadTranslationTable{
   ["ty_ex__fuhuanghou"] = "界伏皇后",
+  ["#ty_ex__fuhuanghou"] = "孤注一掷",
+  ["illustrator:ty_ex__fuhuanghou"] = "凝聚永恒",
   ["ty_ex__zhuikong"] = "惴恐",
   ["#ty_ex__zhuikong_delay"] = "惴恐",
   [":ty_ex__zhuikong"] = "其他角色的回合开始时，若你已受伤，你可以与其拼点：若你赢，本回合该角色只能对自己使用牌；若你没赢，你获得其拼点的牌，然后其视为对你使用一张【杀】。",
@@ -3115,7 +3115,7 @@ local ty_ex__anjian_prohibit = fk.CreateProhibitSkill{
   name = "#ty_ex__anjian_prohibit",
   prohibit_use = function(self, player, card)
     if card and card.name == "peach" and player.dying then
-      if RoomInstance and RoomInstance.logic:getCurrentEvent().event == GameEvent.Dying then
+      if RoomInstance and RoomInstance.logic:getCurrentEvent().event == GameEvent.Dying then --- FIXME: RoomInstance dont work !
         local data = RoomInstance.logic:getCurrentEvent().data[1]
         return data and data.extra_data and data.extra_data.ty_ex__anjian_poison
       end
@@ -3127,6 +3127,9 @@ ty_ex__anjian:addRelatedSkill(ty_ex__anjian_prohibit)
 ty_ex__panzhangmazhong:addSkill(ty_ex__anjian)
 Fk:loadTranslationTable{
   ["ty_ex__panzhangmazhong"] = "界潘璋马忠",
+  ["#ty_ex__panzhangmazhong"] = "擒龙伏虎",
+  ["illustrator:ty_ex__panzhangmazhong"] = "青学",
+  
   ["ty_ex__anjian"] = "暗箭",
   [":ty_ex__anjian"] = "锁定技，当你使用【杀】指定一名角色为目标后，若你不在其攻击范围内，此【杀】对其造成的基础伤害值+1且无视其防具，然后若该角色因此进入濒死状态，其不能使用【桃】直到此次濒死结算结束。",
   ["#ty_ex__anjian-invoke"] = "暗箭：是否令此【杀】对 %dest 造成的伤害+1且无视防具",

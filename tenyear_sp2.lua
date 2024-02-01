@@ -135,6 +135,8 @@ local ty__benyu = fk.CreateTriggerSkill{
 ty__chengyu:addSkill(ty__benyu)
 Fk:loadTranslationTable{
   ["ty__chengyu"] = "程昱",
+  ["#ty__chengyu"] = "泰山捧日",
+
   ["ty__shefu"] = "设伏",
   [":ty__shefu"] = "①结束阶段，你可以记录一个未被记录的基本牌或锦囊牌的牌名并扣置一张牌，称为“伏兵”；<br>"..
   "②当其他角色于你回合外使用手牌时，你可以移去一张记录牌名相同的“伏兵”，令此牌无效（若此牌有目标角色则改为取消所有目标），然后若此时是该角色的回合内，其本回合所有技能失效。",
@@ -248,6 +250,8 @@ wangyun:addSkill(ty__moucheng)
 wangyun:addRelatedSkill("jingong")
 Fk:loadTranslationTable{
   ["ty__wangyun"] = "王允",
+  ["#ty__wangyun"] = "忠魂不泯",
+  ["illustrator:ty__wangyun"] = "Thinking",
   ["ty__lianji"] = "连计",
   [":ty__lianji"] = "出牌阶段限一次，你可以弃置一张手牌并选择一名其他角色，令其使用牌堆中的一张武器牌。然后该角色选择一项：1.对除你以外的一名角色"..
   "使用一张【杀】，并将武器牌交给其中一名目标角色；2.视为你对其使用一张【杀】，并将武器牌交给你。",
@@ -338,6 +342,8 @@ jianggan:addSkill(weicheng)
 jianggan:addSkill(daoshu)
 Fk:loadTranslationTable{
   ["jianggan"] = "蒋干",
+  ["#jianggan"] = "锋谪悬信",
+  ["illustrator:jianggan"] = "biou09",
   ["weicheng"] = "伪诚",
   [":weicheng"] = "你交给其他角色手牌，或你的手牌被其他角色获得后，若你的手牌数小于体力值，你可以摸一张牌。",
   ["daoshu"] = "盗书",
@@ -428,6 +434,8 @@ zhaoang:addSkill(sushou)
 
 Fk:loadTranslationTable{
   ["zhaoang"] = "赵昂",
+  ["#zhaoang"] = "剜心筑城",
+  ["illustrator:zhaoang"] = "君桓文化",
   ["zhongjie"] = "忠节",
   [":zhongjie"] = "每轮限一次，当一名角色因失去体力而进入濒死状态时，你可以令其回复1点体力并摸一张牌。",
   ["sushou"] = "夙守",
@@ -548,6 +556,8 @@ liuye:addSkill(poyuan)
 liuye:addSkill(huace)
 Fk:loadTranslationTable{
   ["ty__liuye"] = "刘晔",
+  ["#ty__liuye"] = "佐世之才",
+  ["illustrator:ty__liuye"] = "一意动漫",
   ["poyuan"] = "破垣",
   [":poyuan"] = "游戏开始时或回合开始时，若你的装备区里没有【霹雳车】，你可以将【霹雳车】置于装备区；若有，你可以弃置一名其他角色至多两张牌。<br>"..
   "<font color='grey'>【霹雳车】<br>♦9 装备牌·宝物<br /><b>装备技能</b>：锁定技，你回合内使用基本牌的伤害和回复数值+1且无距离限制，"..
@@ -665,10 +675,14 @@ local yuanmo = fk.CreateTriggerSkill{
         end
         local tos = room:askForChoosePlayers(player, targets, 1, #targets, "#yuanmo-choose", self.name, true)
         if #tos > 0 then
+          room:sortPlayersByAction(tos)
           for _, id in ipairs(tos) do
-            room:doIndicate(player.id, {id})
-            local card = room:askForCardChosen(player, room:getPlayerById(id), "he", self.name)
-            room:obtainCard(player.id, card, false, fk.ReasonPrey)
+            if player.dead then break end
+            local p = room:getPlayerById(id)
+            if not p.dead and not p:isNude() then
+              local card = room:askForCardChosen(player, p, "he", self.name, "#yuanmo-prey:"..id)
+              room:obtainCard(player.id, card, false, fk.ReasonPrey)
+            end
           end
         end
       else
@@ -689,6 +703,8 @@ yanghong:addSkill(ty__jianji)
 yanghong:addSkill(yuanmo)
 Fk:loadTranslationTable{
   ["yanghong"] = "杨弘",
+  ["#yanghong"] = "柔迩驭远",
+  ["illustrator:yanghong"] = "虫师网络",
   ["ty__jianji"] = "间计",
   [":ty__jianji"] = "出牌阶段限一次，你可以令至多X名相邻的角色各弃置一张牌（X为你的攻击范围），然后其中手牌最多的角色可以视为对其中另一名角色使用【杀】。",
   ["yuanmo"] = "远谟",
@@ -701,6 +717,7 @@ Fk:loadTranslationTable{
   ["yuanmo_add"] = "攻击范围+1，获得因此进入攻击范围的角色各一张牌",
   ["yuanmo_minus"] = "攻击范围-1，摸两张牌",
   ["#yuanmo-choose"] = "远谟：你可以获得任意名角色各一张牌",
+  ["#yuanmo-prey"] = "远谟：选择 %src 的一张牌获得",
 
   ["$ty__jianji1"] = "备枭雄也，布虓虎也，当间之。",
   ["$ty__jianji2"] = "二虎和则我亡，二虎斗则我兴。",
@@ -815,6 +832,8 @@ xizheng:addSkill(danyi)
 xizheng:addSkill(wencan)
 Fk:loadTranslationTable{
   ["xizheng"] = "郤正",
+  ["#xizheng"] = "君子有取",
+  ["illustrator:xizheng"] = "黄宝",
   ["danyi"] = "耽意",
   [":danyi"] = "你使用牌指定目标后，若此牌目标与你使用的上一张牌有相同的目标，你可以摸X张牌（X为这些目标的数量）。",
   ["wencan"] = "文灿",
@@ -945,6 +964,8 @@ huanfan:addSkill(jianzheng)
 huanfan:addSkill(fumou)
 Fk:loadTranslationTable{
   ["huanfan"] = "桓范",
+  ["#huanfan"] = "雍国竝世",
+  ["illustrator:huanfan"] = "虫师",
   ["jianzheng"] = "谏诤",
   [":jianzheng"] = "出牌阶段限一次，你可以观看一名其他角色的手牌，然后若其中有你可以使用的牌，你可以获得并使用其中一张。"..
   "若此牌指定了其为目标，则横置你与其武将牌，然后其观看你的手牌。",
@@ -1061,6 +1082,8 @@ ty__liuqi:addSkill(ty__wenji)
 ty__liuqi:addSkill(ty__tunjiang)
 Fk:loadTranslationTable{
   ["ty__liuqi"] = "刘琦",
+  ["#ty__liuqi"] = "居外而安",
+  ["illustrator:ty__liuqi"] = "黑羽",
   ["ty__wenji"] = "问计",
   [":ty__wenji"] = "出牌阶段开始时，你可以令一名其他角色交给你一张牌，你于本回合内使用与该牌类别相同的牌不能被其他角色响应。",
   ["ty__tunjiang"] = "屯江",
@@ -1132,6 +1155,8 @@ ty__songci:addRelatedSkill(ty__songci_trigger)
 ty__chenlin:addSkill(ty__songci)
 Fk:loadTranslationTable{
   ["ty__chenlin"] = "陈琳",
+  ["#ty__chenlin"] = "破竹之咒",
+  ["illustrator:ty__chenlin"] = "Thinking", -- 破竹之咒 皮肤
   ["ty__songci"] = "颂词",
   [":ty__songci"] = "①出牌阶段，你可以选择一名角色（每名角色每局游戏限一次），若该角色的手牌数：不大于体力值，其摸两张牌；大于体力值，其弃置两张牌。②弃牌阶段结束时，若你对所有存活角色均发动过“颂词”，你摸一张牌。",
   ["#ty__songci_trigger"] = "颂词",
@@ -1216,6 +1241,8 @@ yangxiu:addSkill(ty__danlao)
 yangxiu:addSkill(ty__jilei)
 Fk:loadTranslationTable{
   ["ty__yangxiu"] = "杨修",
+  ["#ty__yangxiu"] = "恃才放旷",
+  ["illustrator:ty__yangxiu"] = "alien", -- 传说皮 度龙品酥
   ["ty__danlao"] = "啖酪",
   [":ty__danlao"] = "当你成为【杀】或锦囊牌的目标后，若你不是唯一目标，你可以摸一张牌，然后此牌对你无效。",
   ["ty__jilei"] = "鸡肋",
@@ -1329,6 +1356,8 @@ luotong:addSkill(renzheng)
 luotong:addSkill(jinjian)
 Fk:loadTranslationTable{
   ["ty__luotong"] = "骆统",
+  ["#ty__luotong"] = "蹇谔匪躬",
+  ["illustrator:ty__luotong"] = "匠人绘",
   ["renzheng"] = "仁政",  --这两个烂大街的技能名大概率撞车叭……
   [":renzheng"] = "锁定技，当有伤害被减少或防止后，你摸两张牌。",
   ["jinjian"] = "进谏",
@@ -1416,6 +1445,8 @@ wangchang:addSkill(ty__kaiji)
 wangchang:addSkill(pingxi)
 Fk:loadTranslationTable{
   ["ty__wangchang"] = "王昶",
+  ["#ty__wangchang"] = "攥策及江",
+  ["illustrator:ty__wangchang"] = "游漫美绘",
   ["ty__kaiji"] = "开济",
   [":ty__kaiji"] = "转换技，出牌阶段限一次，阳：你可以摸等于体力上限张数的牌；阴：你可以弃置至多等于体力上限张数的牌（至少一张）。",
   ["pingxi"] = "平袭",
@@ -1515,6 +1546,8 @@ chengbing:addSkill(jingzao)
 chengbing:addSkill(enyu)
 Fk:loadTranslationTable{
   ["chengbing"] = "程秉",
+  ["#chengbing"] = "通达五经",
+  ["illustrator:chengbing"] = "匠人绘",
   ["jingzao"] = "经造",
   [":jingzao"] = "出牌阶段每名角色限一次，你可以选择一名其他角色并亮出牌堆顶三张牌，然后该角色选择一项："..
   "1.弃置一张与亮出牌同名的牌，然后此技能本回合亮出的牌数+1；"..
@@ -1652,6 +1685,7 @@ yangbiao:addSkill(jinjie)
 yangbiao:addSkill(jue)
 Fk:loadTranslationTable{
   ["ty__yangbiao"] = "杨彪",
+  ["#ty__yangbiao"] = "德彰海内",
   ["ty__zhaohan"] = "昭汉",
   [":ty__zhaohan"] = "摸牌阶段，你可以多摸两张牌，然后选择一项：1.交给一名没有手牌的角色两张手牌；2.弃置两张手牌。",
   ["jinjie"] = "尽节",
@@ -1852,6 +1886,8 @@ ruanji:addSkill(zhaowen)
 ruanji:addSkill(jiudun)
 Fk:loadTranslationTable{
   ["ruanji"] = "阮籍",
+  ["#ruanji"] = "命世大贤",
+  ["illustrator:ruanji"] = "匠人绘",
   ["zhaowen"] = "昭文",
   [":zhaowen"] = "出牌阶段开始时，你可以展示所有手牌。若如此做，本回合其中的黑色牌可以当任意一张普通锦囊牌使用（每回合每种牌名限一次），"..
   "其中的红色牌你使用时摸一张牌。",
@@ -2042,6 +2078,8 @@ huaman:addSkill(zhanyuan)
 huaman:addRelatedSkill(xili)
 Fk:loadTranslationTable{
   ["ty__huaman"] = "花鬘",
+  ["#ty__huaman"] = "芳踪载馨",
+  ["illustrator:ty__huaman"] = "木美人",
   ["manyi"] = "蛮裔",
   [":manyi"] = "锁定技，【南蛮入侵】对你无效。",
   ["mansi"] = "蛮嗣",

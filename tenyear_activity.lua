@@ -4,7 +4,7 @@ extension.extensionName = "tenyear"
 local U = require "packages/utility/utility"
 
 Fk:loadTranslationTable{
-  ["tenyear_activity"] = "十周年-活动限定",
+  ["tenyear_activity"] = "十周年-南征北战",
 }
 
 --文和乱武：李傕 郭汜 樊稠 张济 梁兴 唐姬 段煨 张横 牛辅
@@ -2686,7 +2686,8 @@ local ty__liewei = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.EnterDying},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and player.phase ~= Player.NotActive
+    return player:hasSkill(self) and
+    (player.phase ~= Player.NotActive or player:usedSkillTimes(self.name) < player.hp)
   end,
   on_use = function(self, event, target, player, data)
     player:drawCards(1, self.name)
@@ -2701,7 +2702,7 @@ Fk:loadTranslationTable{
   ["cuirui"] = "摧锐",
   [":cuirui"] = "限定技，出牌阶段，你可以选择至多X名其他角色（X为你的体力值），你获得这些角色各一张手牌。",
   ["ty__liewei"] = "裂围",
-  [":ty__liewei"] = "你的回合内，有角色进入濒死状态时，你可以摸一张牌。",
+  [":ty__liewei"] = "每回合限X次（X为你的体力值，你的回合内无此限制），有角色进入濒死状态时，你可以摸一张牌。",
 
   ["$cuirui1"] = "摧折锐气，未战先衰。",
   ["$cuirui2"] = "挫其锐气，折其旌旗。",

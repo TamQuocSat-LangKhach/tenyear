@@ -2608,50 +2608,64 @@ local duanqiaoxiao = General(extension, "duanqiaoxiao", "wei", 3, 3, General.Fem
 local caizhuang = fk.CreateActiveSkill{
   name = "caizhuang",
   anim_type = "drawcard",
+  prompt = function (self, selected_cards, selected_targets)
+    local suits = {}
+    local suit = Card.NoSuit
+    for _, id in ipairs(selected_cards) do
+      suit = Fk:getCardById(id).suit
+      if suit ~= Card.NoSuit then
+        table.insertIfNeed(suits, suit)
+      end
+    end
+    return "#caizhuang-active:::" .. tostring(#suits)
+  end,
   min_card_num = 1,
   target_num = 0,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   card_filter = function(self, to_select, selected)
-    if #selected == 0 then
-      return true
-    else
-      return table.every(selected, function (id) return Fk:getCardById(to_select).suit ~= Fk:getCardById(id).suit end)
-    end
+    return not Self:prohibitDiscard(Fk:getCardById(to_select))
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
+    local suits = {}
+    local suit = Card.NoSuit
+    for _, id in ipairs(effect.cards) do
+      suit = Fk:getCardById(id).suit
+      if suit ~= Card.NoSuit then
+        table.insertIfNeed(suits, suit)
+      end
+    end
     room:throwCard(effect.cards, self.name, player, player)
+    local x = #suits
+    if x == 0 then return end
     while true do
       player:drawCards(1, self.name)
-      local suits = {}
+      suits = {}
       for _, id in ipairs(player:getCardIds("h")) do
-        local suit = Fk:getCardById(id).suit
+        suit = Fk:getCardById(id).suit
         if suit ~= Card.NoSuit then
           table.insertIfNeed(suits, suit)
         end
       end
-      if #suits >= #effect.cards then return end
+      if #suits >= x then return end
     end
   end,
 }
 local huayi = fk.CreateTriggerSkill{
   name = "huayi",
   anim_type = "drawcard",
-  events = {fk.EventPhaseEnd},
+  events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Finish
-  end,
-  on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#huayi-invoke")
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local judge = {
       who = player,
       reason = self.name,
-      pattern = ".",
+      pattern = ".|.|^nosuit",
     }
     room:judge(judge)
     if judge.card.color ~= Card.NoColor then
@@ -2674,7 +2688,7 @@ local huayi_trigger = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:getMark("@huayi") ~= 0 then
       if event == fk.TurnEnd then
-        return target ~= player and player:getMark("@huayi") == "red"
+        return player:getMark("@huayi") == "red"
       elseif event == fk.Damaged then
         return target == player and player:getMark("@huayi") == "black"
       end
@@ -2700,10 +2714,10 @@ duanqiaoxiao:addSkill(huayi)
 Fk:loadTranslationTable{
   ["duanqiaoxiao"] = "段巧笑",
   ["caizhuang"] = "彩妆",
-  [":caizhuang"] = "出牌阶段限一次，你可以弃置任意张花色各不相同的牌，然后重复摸牌直到手牌中的花色数等同于弃牌数。",
+  [":caizhuang"] = "出牌阶段限一次，你可以弃置任意张牌，然后重复摸牌直到手牌中的花色数等同于弃牌花色数。",
   ["huayi"] = "华衣",
-  [":huayi"] = "结束阶段，你可以判定，然后直到你的下回合开始时根据结果获得以下效果：红色，其他角色回合结束时摸一张牌；黑色，受到伤害后摸两张牌。",
-  ["#huayi-invoke"] = "华衣：你可以判定，根据颜色直到你下回合开始获得效果",
+  [":huayi"] = "结束阶段，你可以判定，然后直到你的下回合开始时根据结果获得以下效果：红色，每个回合结束时摸一张牌；黑色，受到伤害后摸两张牌。",
+  ["#caizhuang-active"] = "发动 彩妆，弃置任意张牌（包含的花色数：%arg）",
   ["@huayi"] = "华衣",
 
   ["$caizhuang1"] = "素手调脂粉，女子自有好颜色。",

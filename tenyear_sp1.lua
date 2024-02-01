@@ -4009,10 +4009,14 @@ local jianguo = fk.CreateActiveSkill{
   target_num = 1,
   prompt = "#jianguo",
   interaction = function(self)
-    return UI.ComboBox { choices = {"jianguo1", "jianguo2"} }
+    local all_choices = {"jianguo1", "jianguo2"}
+    local choices = table.filter(all_choices, function (choice)
+      return Self:getMark("jianguo_used-phase") ~= choice
+    end)
+    return UI.ComboBox { choices = choices, all_choices = all_choices }
   end,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 2
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected, selected_cards)
@@ -4024,16 +4028,17 @@ local jianguo = fk.CreateActiveSkill{
   end,
   on_use = function(self, room, effect)
     local target = room:getPlayerById(effect.tos[1])
+    room:setPlayerMark(room:getPlayerById(effect.from), "jianguo_used-phase", self.interaction.data)
     if self.interaction.data == "jianguo1" then
       target:drawCards(1, self.name)
-      if not target.dead and target:getHandcardNum() > 1 then
-        local n = target:getHandcardNum() // 2
+      if not target.dead and target:getHandcardNum() > 0 then
+        local n = (target:getHandcardNum() + 1) // 2
         room:askForDiscard(target, n, n, false, self.name, false)
       end
     else
       room:askForDiscard(target, 1, 1, true, self.name, false)
-      if not target.dead and target:getHandcardNum() > 1 then
-        local n = target:getHandcardNum() // 2
+      if not target.dead and target:getHandcardNum() > 0 then
+        local n = (target:getHandcardNum() + 1) // 2
         target:drawCards(n, self.name)
       end
     end
@@ -4083,8 +4088,8 @@ Fk:loadTranslationTable{
   ["#ty__duyu"] = "文成武德",
   ["illustrator:ty__duyu"] = "君桓文化",
   ["jianguo"] = "谏国",
-  [":jianguo"] = "出牌阶段限一次，你可以选择一项：令一名角色摸一张牌然后弃置一半的手牌（向下取整）；"..
-  "令一名角色弃置一张牌然后摸与当前手牌数一半数量的牌（向下取整）",
+  [":jianguo"] = "出牌阶段各限一次，你可以选择：令一名角色摸一张牌然后弃置一半的手牌（向上取整）；"..
+  "令一名角色弃置一张牌然后摸与当前手牌数一半数量的牌（向上取整）",
   ["qingshid"] = "倾势",
   [":qingshid"] = "当你于回合内使用【杀】或锦囊牌指定其他角色为目标后，若此牌是你本回合使用的第X张牌（X为你的手牌数），你可以对其中一名目标角色造成1点伤害。",
   ["#jianguo"] = "谏国：你可以选择一项令一名角色执行（向下取整）",

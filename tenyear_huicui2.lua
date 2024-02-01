@@ -1634,7 +1634,7 @@ local minze = fk.CreateActiveSkill{
   end,
   target_filter = function(self, to_select, selected, selected_cards)
     local target = Fk:currentRoom():getPlayerById(to_select)
-    return #selected == 0 and Self:getHandcardNum() > target:getHandcardNum() and target:getMark("minze-phase") == 0
+    return #selected == 0 and Self:getHandcardNum() > target:getHandcardNum()
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -1649,17 +1649,15 @@ local minze = fk.CreateActiveSkill{
     local dummy = Fk:cloneCard("dilu")
     dummy:addSubcards(effect.cards)
     room:obtainCard(target, dummy, false, fk.ReasonGive)
-    if target:getHandcardNum() > player:getHandcardNum() then
-      room:setPlayerMark(player, "@@minze-phase", 1)
-    end
   end,
 }
 local minze_trigger = fk.CreateTriggerSkill{
   name = "#minze_trigger",
   mute = true,
   events = {fk.EventPhaseStart},
+  main_skill = minze,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill("minze") and player.phase == Player.Finish and
+    return target == player and player:hasSkill(minze) and player.phase == Player.Finish and
       player:getMark("@$minze-turn") ~= 0 and player:getHandcardNum() < math.min(#player:getMark("@$minze-turn"), 5)
   end,
   on_cost = Util.TrueFunc,
@@ -1727,7 +1725,7 @@ Fk:loadTranslationTable{
   ["#liuchongluojun"] = "定境安民",
   ["illustrator:liuchongluojun"] = "匠人绘",
   ["minze"] = "悯泽",
-  [":minze"] = "出牌阶段每名角色限一次，你可以将至多两张牌名不同的牌交给一名手牌数小于你的角色，然后若其手牌数大于你，本阶段此技能失效。"..
+  [":minze"] = "出牌阶段每名角色限一次，你可以将至多两张牌名不同的牌交给一名手牌数小于你的角色。"..
   "结束阶段，你将手牌补至X张（X为本回合你因此技能失去牌的牌名数，至多为5）。",
   ["jini"] = "击逆",
   [":jini"] = "当你受到伤害后，你可以重铸任意张手牌（每回合以此法重铸的牌数不能超过你的体力上限），若你以此法获得了【杀】，"..

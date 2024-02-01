@@ -1,12 +1,14 @@
 local extension = Package("tenyear_star")
 extension.extensionName = "tenyear"
 
+local U = require "packages/utility/utility"
+
 Fk:loadTranslationTable{
   ["tenyear_star"] = "十周年-星河璀璨",
   ["tystar"] = "新服星",
 }
 
---天枢：袁术 董卓
+--天枢：袁术 董卓 袁绍
 local yuanshu = General(extension, "tystar__yuanshu", "qun", 4)
 local canxi = fk.CreateTriggerSkill{
   name = "canxi",
@@ -145,6 +147,8 @@ yuanshu:addSkill(pizhi)
 yuanshu:addSkill(zhonggu)
 Fk:loadTranslationTable{
   ["tystar__yuanshu"] = "星袁术",
+  ["#tystar__yuanshu"] = "狂貔猖貅",
+  ["illustrator:tystar__yuanshu"] = "黯萤岛工作室",
   ["canxi"] = "残玺",
   [":canxi"] = "锁定技，游戏开始时，你获得场上各势力的“玺角”标记。每轮开始时，你选择一个“玺角”势力并选择一个效果生效直到下轮开始：<br>"..
   "「妄生」：该势力角色每回合首次造成伤害+1，计算与其他角色距离-1；<br>「向死」：该势力角色每回合首次回复体力后失去1点体力，"..
@@ -315,6 +319,8 @@ dongzhuo:addSkill(zhangrong)
 dongzhuo:addSkill(haoshou)
 Fk:loadTranslationTable{
   ["tystar__dongzhuo"] = "星董卓",
+  ["#tystar__dongzhuo"] = "千里草的魔阀",
+  ["illustrator:tystar__dongzhuo"] = "",
   ["weilin"] = "威临",
   [":weilin"] = "锁定技，你于回合内对一名角色造成伤害时，若其本回合没有受到过伤害且你本回合已使用牌数不小于其体力值，则此伤害+1。",
   ["zhangrong"] = "掌戎",
@@ -336,6 +342,260 @@ Fk:loadTranslationTable{
   ["$haoshou2"] = "顺我者生，逆我者十死无生！",
   ["~tystar__dongzhuo"] = "美人迷人眼，溢权昏人智……",
 }
+
+local yuanshao = General(extension, "tystar__yuanshao", "qun", 4)
+
+local xiaoyan = fk.CreateTriggerSkill{
+  name = "xiaoyan",
+  anim_type = "offensive",
+  events = {fk.GameStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local targets = room:getOtherPlayers(player)
+    if #targets == 0 then return false end
+    room:doIndicate(player.id, table.map(targets, Util.IdMapper))
+    for _, p in ipairs(targets) do
+      if not p.dead then
+        room:damage{
+          from = player,
+          to = p,
+          damage = 1,
+          damageType = fk.FireDamage,
+          skillName = self.name,
+        }
+      end
+    end
+    for _, p in ipairs(targets) do
+      if player.dead then break end
+      if not p.dead then
+        local card = room:askForCard(p, 1, 1, false, self.name, true, ".", "#xiaoyan-give:"..player.id)
+        if #card > 0 then
+          room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonGive, self.name, nil, false, p.id)
+          if not p.dead and p:isWounded() then
+            room:recover{
+              who = p,
+              num = 1,
+              recoverBy = player,
+              skillName = self.name,
+            }
+          end
+        end
+      end
+    end
+  end,
+}
+
+local getZongshiTargets = function (room, player, card)
+  if player:prohibitUse(card) then return {} end
+
+  if card.skill:getMinTargetNum() > 0 then
+    if not player:canUse(card) then return {} end
+    local targets = {}
+    local extra_data = {
+      bypass_distances = true,
+      bypass_times = (player.phase == Player.NotActive)
+    }
+    for _, p in ipairs(room.alive_players) do
+      if not player:isProhibited(p, card) and card.skill:targetFilter(p.id, {}, player.id, card, extra_data) then
+        table.insert(targets, p.id)
+      end
+    end
+    return targets
+  else
+    local targets = {}
+    for _, p in ipairs(room.alive_players) do
+      if not player:isProhibited(p, card) and
+      card.skill:modTargetFilter(p.id, {}, player.id, card, player.phase == Player.NotActive) then
+        table.insert(targets, p.id)
+      end
+    end
+    return targets
+  end
+end
+
+
+
+local zongshiy = fk.CreateActiveSkill{
+  name = "zongshiy",
+  prompt = "#zongshiy-active",
+  anim_type = "special",
+  card_num = 1,
+  target_num = 0,
+  can_use = Util.TrueFunc,
+  card_filter = function(self, to_select, selected)
+    if #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Card.PlayerEquip then
+      local card = Fk:getCardById(to_select)
+      if card.type == Card.TypeBasic or card:isCommonTrick() then
+        --FIXME：未测试，暂且排除【借刀杀人】类卡。
+        if card.skill:getMinTargetNum() > 1 then return false end
+
+        local suit = card.suit
+        if suit == Card.NoSuit then return false end
+
+        local cards = table.filter(Self:getCardIds(Player.Hand), function (id)
+          return id ~= to_select and Fk:getCardById(id).suit == suit
+        end)
+        if #cards == 0 then return false end
+
+        local to_use = Fk:cloneCard(card.name)
+        to_use.skillName = self.name
+        to_use:addSubcards(cards)
+        return #getZongshiTargets(Fk:currentRoom(), Self, to_use) > 0
+      end
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local card = Fk:getCardById(effect.cards[1])
+    local suit = card.suit
+    player:showCards(effect.cards)
+    if player.dead then return end
+    local cards = table.filter(player:getCardIds(Player.Hand), function (id)
+      return id ~= effect.cards[1] and Fk:getCardById(id).suit == suit
+    end)
+    if #cards == 0 then return end
+    local to_use = Fk:cloneCard(card.name)
+    to_use.skillName = self.name
+    to_use:addSubcards(cards)
+    if player:prohibitUse(to_use) then return end
+    local targets = getZongshiTargets(room, player, to_use)
+    if #targets == 0 then return end
+
+    targets = room:askForChoosePlayers(player, targets, 1, #cards,
+    "#zongshiy-target:::" .. to_use:toLogString() .. ":" .. tostring(#cards), self.name, false, true)
+
+    room:useCard{
+      from = player.id,
+      tos = table.map(targets, function(p) return {p} end),
+      card = to_use,
+      extraUse = (player.phase == Player.NotActive),
+    }
+    
+  end,
+}
+local jiaowang = fk.CreateTriggerSkill{
+  name = "jiaowang",
+  frequency = Skill.Compulsory,
+  events = {fk.RoundEnd},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      local logic = player.room.logic
+      local deathevents = logic.event_recorder[GameEvent.Death] or Util.DummyTable
+      local round_event = logic:getCurrentEvent()
+      return #deathevents == 0 or deathevents[#deathevents].id < round_event.id
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:loseHp(player, 1, self.name)
+    xiaoyan:use(event, target, player, data)
+  end,
+}
+
+local aoshi = fk.CreateTriggerSkill{
+  name = "aoshi$",
+  mute = true,
+
+  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim, fk.AfterPropertyChange},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
+      return data == self
+    elseif event == fk.BuryVictim then
+      return target:hasSkill(self, true, true)
+    elseif event == fk.AfterPropertyChange then
+      return target == player
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local attached_aoshi = player.kingdom == "qun" and table.find(room.alive_players, function (p)
+      return p ~= player and p:hasSkill(self, true)
+    end)
+    if attached_aoshi and not player:hasSkill("aoshi_other&", true, true) then
+      room:handleAddLoseSkills(player, "aoshi_other&", nil, false, true)
+    elseif not attached_aoshi and player:hasSkill("aoshi_other&", true, true) then
+      room:handleAddLoseSkills(player, "-aoshi_other&", nil, false, true)
+    end
+  end,
+}
+local aoshi_other = fk.CreateActiveSkill{
+  name = "aoshi_other&",
+  anim_type = "support",
+  prompt = "#aoshi-active",
+  mute = true,
+  can_use = function(self, player)
+    if player.kingdom ~= "qun" then return false end
+    local targetRecorded = U.getMark(player, "aoshi_sources-phase")
+    return table.find(Fk:currentRoom().alive_players, function(p)
+      return p ~= player and p:hasSkill(aoshi) and not table.contains(targetRecorded, p.id)
+    end)
+  end,
+  card_num = 1,
+  card_filter = function(self, to_select, selected)
+    return #selected < 1 and Fk:currentRoom():getCardArea(to_select) ~= Card.PlayerEquip
+  end,
+  target_num = 1,
+  target_filter = function(self, to_select, selected)
+    return
+    #selected == 0 and to_select ~= Self.id and
+    Fk:currentRoom():getPlayerById(to_select):hasSkill(aoshi) and
+    table.contains(U.getMark(Self, "aoshi_sources-phase"), to_select)
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    room:notifySkillInvoked(player, aoshi.name)
+    target:broadcastSkillInvoke(aoshi.name)
+    local targetRecorded = U.getMark(player, "aoshi_sources-phase")
+    table.insertIfNeed(targetRecorded, target.id)
+    room:setPlayerMark(player, "aoshi_sources-phase", targetRecorded)
+    room:moveCardTo(effect.cards, Player.Hand, target, fk.ReasonGive, self.name, nil, true)
+    if target.dead then return end
+    room:askForUseActiveSkill(target, "zongshiy", "#zongshiy-active", true)
+  end,
+}
+
+Fk:addSkill(aoshi_other)
+yuanshao:addSkill(xiaoyan)
+yuanshao:addSkill(zongshiy)
+yuanshao:addSkill(jiaowang)
+yuanshao:addSkill(aoshi)
+yuanshao:addSkill("cheat")
+yuanshao:addSkill("test_zhenggong")
+
+
+Fk:loadTranslationTable{
+  ["tystar__yuanshao"] = "星袁绍",
+  ["#tystar__yuanshao"] = "熏灼群魔",
+  ["illustrator:tystar__yuanshao"] = "鬼画府",
+  ["xiaoyan"] = "硝焰",
+  [":xiaoyan"] = "游戏开始时，所有其他角色各受到你造成的1点火焰伤害，然后这些角色可以依次交给你一张牌并回复1点体力。",
+  ["zongshiy"] = "纵势",
+  [":zongshiy"] = "出牌阶段，你可以展示一张基本牌或普通锦囊牌，然后将此花色的所有其他手牌当这张牌使用（此牌可指定的目标数改为以此法使用的牌数）。",
+  ["jiaowang"] = "骄妄",
+  [":jiaowang"] = "锁定技，每轮结束时，若本轮没有角色死亡，你失去1点体力并发动〖硝焰〗。",
+  ["aoshi"] = "傲势",
+  [":aoshi"] = "主公技，其他群势力角色的出牌阶段限一次，其可以交给你一张手牌，然后你可以发动一次〖纵势〗。",
+  ["#xiaoyan-give"] = "硝焰：你可以选择一张牌交给%src来回复1点体力",
+  ["#zongshiy-active"] = "发动 纵势，选择展示一张基本牌或普通锦囊牌",
+  ["#zongshiy-target"] = "纵势：为即将使用的%arg指定至多%arg2个目标（无距离限制）",
+  ["#aoshi-active"] = "发动 傲势，选择一张手牌交给一名拥有“傲势”的角色",
+
+  ["$xiaoyan1"] = "万军付薪柴，戾火燃苍穹。",
+  ["$xiaoyan2"] = "九州硝烟起，烽火灼铁衣。",
+  ["$zongshiy1"] = "四世三公之家，当为天下之望。",
+  ["$zongshiy2"] = "大势在我，可怀问鼎之心。",
+  ["$jiaowang1"] = "剑顾四野，马踏青山，今谁堪敌手？	",
+  ["$jiaowang2"] = "并土四州，带甲百万，吾可居大否？",
+  ["$aoshi1"] = "无傲骨近于鄙夫，有傲心方为君子。",
+  ["$aoshi2"] = "得志则喜，临富贵如何不骄？",
+  ["~tystar__yuanshao"] = "骄兵必败，奈何不记前辙……",
+}
+
 
 --玉衡：曹仁
 local caoren = General(extension, "tystar__caoren", "wei", 4)
@@ -402,6 +662,8 @@ caoren:addSkill(sujun)
 caoren:addSkill(lifengc)
 Fk:loadTranslationTable{
   ["tystar__caoren"] = "星曹仁",
+  ["#tystar__caoren"] = "伏波四方",
+  ["illustrator:tystar__caoren"] = "君桓文化",
   ["sujun"] = "肃军",
   [":sujun"] = "当你使用一张牌时，若你手牌中基本牌与非基本牌数量相等，你可以摸两张牌。",
   ["lifengc"] = "砺锋",

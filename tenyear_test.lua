@@ -173,11 +173,4 @@ Fk:loadTranslationTable{
   ["zhugemengxue"] = "诸葛梦雪",
 }
 
-local mu__daqiao = General(extension, "mu__daqiao", "wu", 3, 3, General.Female)
-mu__daqiao:addSkill("tmp_illustrate")
-mu__daqiao.hidden = true
-Fk:loadTranslationTable{
-  ["mu__daqiao"] = "乐大乔",
-}
-
 return extension

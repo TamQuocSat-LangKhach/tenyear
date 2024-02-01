@@ -4513,7 +4513,9 @@ Fk:loadTranslationTable{
   ["~mu__zhoufei"] = "红颜薄命，望君珍重……",
 }
 
-local xiaoqiao = General(extension, "mu__xiaoqiao", "wu", 3, 3, General.Female)
+local daqiao = General(extension, "mu__daqiao", "wu", 3, 3, General.Female)
+daqiao.hidden = true
+
 local qiqin = fk.CreateTriggerSkill{
   name = "qiqin",
   anim_type = "special",
@@ -4582,8 +4584,38 @@ local qiqin_maxcards = fk.CreateMaxCardsSkill{
     return player:hasSkill(qiqin) and card:getMark("@@qiqin-inhand") > 0
   end,
 }
+
+local zixi = fk.CreateTriggerSkill{
+  name = "zixi",
+  can_trigger = Util.FalseFunc,
+}
+
 qiqin:addRelatedSkill(qiqin_maxcards)
-xiaoqiao:addSkill(qiqin)
+daqiao:addSkill(qiqin)
+daqiao:addSkill(zixi)
+
+Fk:loadTranslationTable{
+  ["mu__daqiao"] = "乐大乔",
+  ["#mu__daqiao"] = "玉桐姊韵",
+  ["qiqin"] = "绮琴",
+  [":qiqin"] = "锁定技，游戏开始时，你的初始手牌增加“琴”标记且不计入手牌上限。准备阶段，你获得弃牌堆中所有“琴”牌。",
+  ["zixi"] = "姊希",
+  [":zixi"] = "<font color='red'>（这个武将还没上线，你可以看看插画。不会出现在选将框。）</font>",
+  --[[
+  [":zixi"] = "出牌阶段开始时和结束时，你可以将一张“琴”放置在一名角色的判定区。"..
+  "你使用基本牌或普通锦囊牌指定唯一目标后，可根据其判定区牌的张数获得以下效果："..
+  "1张：此牌对其额外结算1次；2张：你摸2张牌；3张：弃置其判定区所有牌对其造成3点伤害。",
+  ]]
+  ["@@qiqin-inhand"] = "琴",
+
+  ["$qiqin_mu__daqiao1"] = "",
+  ["$qiqin_mu__daqiao2"] = "",
+  ["$zixi1"] = "",
+  ["$zixi2"] = "",
+  ["~mu__daqiao"] = "",
+}
+
+local xiaoqiao = General(extension, "mu__xiaoqiao", "wu", 3, 3, General.Female)
 local weiwan = fk.CreateActiveSkill{
   name = "weiwan",
   anim_type = "offensive",
@@ -4660,19 +4692,17 @@ local weiwan_prohibit = fk.CreateProhibitSkill{
   end,
 }
 weiwan:addRelatedSkill(weiwan_prohibit)
+xiaoqiao:addSkill("qiqin")
 xiaoqiao:addSkill(weiwan)
 Fk:loadTranslationTable{
   ["mu__xiaoqiao"] = "乐小乔",
   ["#mu__xiaoqiao"] = "绿绮嫒媛",
-  ["qiqin"] = "绮琴",
-  [":qiqin"] = "锁定技，①游戏开始时，将初始手牌标记为“琴”牌（“琴”牌不计入你的手牌上限）；②准备阶段，你获得弃牌堆中所有的“琴”牌。",
-  ["@@qiqin-inhand"] = "琴",
   ["weiwan"] = "媦婉",
   [":weiwan"] = "出牌阶段限一次，你可以弃置一张“琴”并选择一名其他角色，随机获得其区域内与此“琴”不同花色的牌各一张。若你获得的牌数为：1，其失去1点体力；2，你本回合对其使用牌无距离与次数限制；3，你本回合不能对其使用牌。",
   ["#weiwan-active"] = "发动 媦婉，选择一张“琴”弃置并选择一名其他角色",
 
-  ["$qiqin1"] = "渔歌唱晚落山月，素琴薄暮声。",
-  ["$qiqin2"] = "指上琴音浅，欲听还需抚瑶琴。",
+  ["$qiqin_mu__xiaoqiao1"] = "渔歌唱晚落山月，素琴薄暮声。",
+  ["$qiqin_mu__xiaoqiao2"] = "指上琴音浅，欲听还需抚瑶琴。",
   ["$weiwan1"] = "繁花初成，所幸未晚于桑榆。",
   ["$weiwan2"] = "群胥泛舟，共载佳期若瑶梦。",
   ["~mu__xiaoqiao"] = "独寄人间白首，曲误周郎难顾。",

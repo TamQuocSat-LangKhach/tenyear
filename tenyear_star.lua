@@ -564,9 +564,6 @@ yuanshao:addSkill(xiaoyan)
 yuanshao:addSkill(zongshiy)
 yuanshao:addSkill(jiaowang)
 yuanshao:addSkill(aoshi)
-yuanshao:addSkill("cheat")
-yuanshao:addSkill("test_zhenggong")
-
 
 Fk:loadTranslationTable{
   ["tystar__yuanshao"] = "星袁绍",

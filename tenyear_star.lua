@@ -400,7 +400,7 @@ local getZongshiTargets = function (room, player, card)
       bypass_times = (player.phase == Player.NotActive)
     }
     for _, p in ipairs(room.alive_players) do
-      if not player:isProhibited(p, card) and card.skill:targetFilter(p.id, {}, player.id, card, extra_data) then
+      if not player:isProhibited(p, card) and card.skill:targetFilter(p.id, {}, {}, card, extra_data) then
         table.insert(targets, p.id)
       end
     end
@@ -462,6 +462,8 @@ local zongshiy = fk.CreateActiveSkill{
     to_use.skillName = self.name
     to_use:addSubcards(cards)
     if player:prohibitUse(to_use) then return end
+    --FIXME：不给targetFilter传使用者真是离大谱，目前只能通过强制修改Self来实现
+    Self = player
     local targets = getZongshiTargets(room, player, to_use)
     if #targets == 0 then return end
 

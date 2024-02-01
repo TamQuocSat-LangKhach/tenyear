@@ -4574,23 +4574,28 @@ local jinjin = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.Damage, fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player:getMaxCards() ~= player.hp and
-      player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
+    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#jinjin-invoke::"..data.from.id..":"..player:getMaxCards())
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local n = math.abs(player:getMaxCards() - player.hp)
+    local n = math.max(1, math.abs(player:getMaxCards() - player.hp))
     room:setPlayerMark(player, MarkEnum.AddMaxCards, 0)
     room:setPlayerMark(player, MarkEnum.AddMaxCardsInTurn, 0)
     room:setPlayerMark(player, MarkEnum.MinusMaxCards, 0)
     room:setPlayerMark(player, MarkEnum.MinusMaxCardsInTurn, 0)
+    local new_n = player:getMaxCards() - player.hp
+    if new_n > 0 then
+      room:setPlayerMark(player, MarkEnum.MinusMaxCards, new_n)
+    else
+      room:setPlayerMark(player, MarkEnum.AddMaxCards, -new_n)
+    end
     room:broadcastProperty(player, "MaxCards")
     if data.from and not data.from.dead then
-      local x = #room:askForDiscard(data.from, 1, n, true, self.name, false, ".", "#jinjin-discard:"..player.id.."::"..n)
-      if x < n then
+      local x = #room:askForDiscard(data.from, 1, n, true, self.name, true, ".", "#jinjin-discard:"..player.id.."::"..n)
+      if x < n and not player.dead then
         player:drawCards(n - x, self.name)
       end
     end
@@ -4600,6 +4605,8 @@ qinlang:addSkill(haochong)
 qinlang:addSkill(jinjin)
 Fk:loadTranslationTable{
   ["qinlang"] = "秦朗",
+  ["#qinlang"] = "跼高蹐厚",
+  ["illustrator:qinlang"] = "匠人绘",
   ["haochong"] = "昊宠",
   [":haochong"] = "当你使用一张牌后，你可以将手牌调整至手牌上限（最多摸五张），然后若你以此法：获得牌，你的手牌上限-1；失去牌，你的手牌上限+1。",
   ["jinjin"] = "矜谨",
@@ -4608,7 +4615,7 @@ Fk:loadTranslationTable{
   ["#haochong-discard"] = "昊宠：你可以将手牌弃至手牌上限（弃置%arg张），然后手牌上限+1",
   ["#haochong-draw"] = "昊宠：你可以将手牌摸至手牌上限（当前手牌上限%arg，最多摸五张），然后手牌上限-1",
   ["#jinjin-invoke"] = "矜谨：你可将手牌上限（当前为%arg）重置为体力值，令 %dest 弃至多等量的牌",
-  ["#jinjin-discard"] = "矜谨：弃置1~%arg张牌，每少弃置一张 %src 便摸一张牌",
+  ["#jinjin-discard"] = "矜谨：请弃置至多 %arg 张牌，每少弃置一张 %src 便摸一张牌",
 
   ["$haochong1"] = "朗螟蛉之子，幸隆曹氏厚恩。",
   ["$haochong2"] = "幸得义父所重，必效死奉曹。",
@@ -4736,6 +4743,7 @@ dongzhao:addSkill(yijia)
 dongzhao:addSkill(dingji)
 Fk:loadTranslationTable{
   ["ty__dongzhao"] = "董昭",
+  ["#ty__dongzhao"] = "筹定魏勋",
   ["yijia"] = "移驾",
   [":yijia"] = "你距离1以内的角色受到伤害后，你可以将场上一张装备牌移动至其装备区（替换原装备），若其因此脱离了一名角色的攻击范围，你摸一张牌。",
   ["dingji"] = "定基",
@@ -4803,6 +4811,8 @@ tangzi:addSkill(ty__xingzhao)
 tangzi:addRelatedSkill("xunxun")
 Fk:loadTranslationTable{
   ["ty__tangzi"] = "唐咨",
+  ["#ty__tangzi"] = "工学之奇才",
+  ["illustrator:ty__tangzi"] = "六道目",
   ["ty__xingzhao"] = "兴棹",
   [":ty__xingzhao"] = "锁定技，场上受伤的角色为1个或以上，你拥有技能〖恂恂〗；2个或以上，你使用装备牌时摸一张牌；"..
   "3个或以上，你跳过判定和弃牌阶段；0个、4个或以上，你使用牌对目标角色造成的伤害+1。",
@@ -4876,6 +4886,8 @@ huanghao:addSkill("huisheng")
 huanghao:addSkill(cunwei)
 Fk:loadTranslationTable{
   ["ty__huanghao"] = "黄皓",
+  ["#ty__huanghao"] = "便辟佞慧",
+  ["illustrator:ty__huanghao"] = "游漫美绘",
   ["ty__qinqing"] = "寝情",
   [":ty__qinqing"] = "结束阶段，你可以弃置攻击范围内含有一号位的一名其他角色的一张牌，然后若其手牌数比一号位多，你摸一张牌。",
   ["cunwei"] = "存畏",
@@ -5018,6 +5030,8 @@ sunziliufang:addSkill(weidang)
 Fk:addSkill(weidang_active)
 Fk:loadTranslationTable{
   ["ty__sunziliufang"] = "孙资刘放",
+  ["#ty__sunziliufang"] = "谄陷负讥",
+  ["illustrator:ty__sunziliufang"] = "君桓文化",
   ["qinshen"] = "勤慎",
   [":qinshen"] = "弃牌阶段结束时，你可摸X张牌（X为本回合没有进入过弃牌堆的花色数量）。",
   ["weidang"] = "伪谠",
@@ -5130,6 +5144,7 @@ sunchen:addSkill(zigu)
 sunchen:addSkill(zuowei)
 Fk:loadTranslationTable{
   ["sunchen"] = "孙綝",
+  ["#sunchen"] = "凶竖盈溢",
   ["zigu"] = "自固",
   [":zigu"] = "出牌阶段限一次，你可以弃置一张牌，然后获得场上一张装备牌。若你没有因此获得其他角色的牌，你摸一张牌。",
   ["zuowei"] = "作威",
@@ -5297,6 +5312,8 @@ jiachong:addSkill(ty__beini)
 jiachong:addSkill(shizong)
 Fk:loadTranslationTable{
   ["ty__jiachong"] = "贾充",
+  ["#ty__jiachong"] = "始作俑者",
+  ["illustrator:ty__jiachong"] = "铁杵文化",
   ["ty__beini"] = "悖逆",
   [":ty__beini"] = "出牌阶段限一次，你可以将手牌数调整至体力上限，然后令一名角色视为对另一名角色使用一张【杀】；这两名角色的非锁定技本回合失效。",
   ["shizong"] = "恃纵",

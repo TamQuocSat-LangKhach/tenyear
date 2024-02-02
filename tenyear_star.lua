@@ -344,7 +344,6 @@ Fk:loadTranslationTable{
 }
 
 local yuanshao = General(extension, "tystar__yuanshao", "qun", 4)
-
 local xiaoyan = fk.CreateTriggerSkill{
   name = "xiaoyan",
   anim_type = "offensive",
@@ -388,7 +387,6 @@ local xiaoyan = fk.CreateTriggerSkill{
     end
   end,
 }
-
 local getZongshiTargets = function (room, player, card)
   if player:prohibitUse(card) then return {} end
 
@@ -416,9 +414,6 @@ local getZongshiTargets = function (room, player, card)
     return targets
   end
 end
-
-
-
 local zongshiy = fk.CreateActiveSkill{
   name = "zongshiy",
   prompt = "#zongshiy-active",
@@ -476,7 +471,6 @@ local zongshiy = fk.CreateActiveSkill{
       card = to_use,
       extraUse = (player.phase == Player.NotActive),
     }
-    
   end,
 }
 local jiaowang = fk.CreateTriggerSkill{
@@ -545,7 +539,7 @@ local aoshi_other = fk.CreateActiveSkill{
     return
     #selected == 0 and to_select ~= Self.id and
     Fk:currentRoom():getPlayerById(to_select):hasSkill(aoshi) and
-    table.contains(U.getMark(Self, "aoshi_sources-phase"), to_select)
+    not table.contains(U.getMark(Self, "aoshi_sources-phase"), to_select)
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -555,7 +549,7 @@ local aoshi_other = fk.CreateActiveSkill{
     local targetRecorded = U.getMark(player, "aoshi_sources-phase")
     table.insertIfNeed(targetRecorded, target.id)
     room:setPlayerMark(player, "aoshi_sources-phase", targetRecorded)
-    room:moveCardTo(effect.cards, Player.Hand, target, fk.ReasonGive, self.name, nil, true)
+    room:moveCardTo(effect.cards, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
     if target.dead then return end
     room:askForUseActiveSkill(target, "zongshiy", "#zongshiy-active", true)
   end,
@@ -579,6 +573,10 @@ Fk:loadTranslationTable{
   [":jiaowang"] = "锁定技，每轮结束时，若本轮没有角色死亡，你失去1点体力并发动〖硝焰〗。",
   ["aoshi"] = "傲势",
   [":aoshi"] = "主公技，其他群势力角色的出牌阶段限一次，其可以交给你一张手牌，然后你可以发动一次〖纵势〗。",
+
+  ["aoshi_other&"] = "傲势",
+  [":aoshi_other&"] = "出牌阶段限一次，你可将一张手牌交给星袁绍，然后其可以发动一次〖纵势〗。",
+
   ["#xiaoyan-give"] = "硝焰：你可以选择一张牌交给%src来回复1点体力",
   ["#zongshiy-active"] = "发动 纵势，选择展示一张基本牌或普通锦囊牌",
   ["#zongshiy-target"] = "纵势：为即将使用的%arg指定至多%arg2个目标（无距离限制）",
@@ -633,7 +631,13 @@ local lifengc = fk.CreateViewAsSkill{
   end,
   view_as = function(self, cards)
     if #cards ~= 1 or self.interaction.data == nil then return end
-    local card = Fk:cloneCard(self.interaction.data)
+    local card_name = self.interaction.data
+    local card = Fk:getCardById(cards[1])
+    if card.trueName == card_name then
+      card_name = card.name
+      --for 一个奇怪的本意 →_→
+    end
+    card = Fk:cloneCard(card_name)
     card.skillName = self.name
     card:addSubcard(cards[1])
     return card

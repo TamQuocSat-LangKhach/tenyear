@@ -4250,7 +4250,7 @@ Fk:loadTranslationTable{
   ["~mengyou"] = "大哥，诸葛亮又打来了。",
 }
 
---正音雅乐：蔡文姬 周妃 蔡邕 小乔
+--正音雅乐：蔡文姬 周妃 蔡邕 大乔 小乔
 local caiwenji = General(extension, "mu__caiwenji", "qun", 3, 3, General.Female)
 local shuangjia = fk.CreateTriggerSkill{
   name = "shuangjia",
@@ -4525,13 +4525,12 @@ local qiqin = fk.CreateTriggerSkill{
     if event == fk.GameStart then
       return player:hasSkill(self) and not player:isKongcheng()
     elseif player:hasSkill(self) and target == player and player.phase == Player.Start then
-      local cards = U.getMark(player, "qiqin_cards")
-      if #cards > 0 then
-        local get = table.filter(player.room.discard_pile, function(id) return table.contains(cards, id) end)
-        if #get > 0 then
-          self.cost_data = get
-          return true
-        end
+      local get = table.filter(player.room.discard_pile, function(id)
+        return Fk:getCardById(id):getMark("qiqin") > 0
+      end)
+      if #get > 0 then
+        self.cost_data = get
+        return true
       end
     end
   end,
@@ -4541,8 +4540,8 @@ local qiqin = fk.CreateTriggerSkill{
       local cards = player:getCardIds(Player.Hand)
       for _, id in ipairs(cards) do
         room:setCardMark(Fk:getCardById(id), "@@qiqin-inhand", 1)
+        room:setCardMark(Fk:getCardById(id), "qiqin", 1)
       end
-      room:setPlayerMark(player, "qiqin_cards", cards)
     else
       local dummy = Fk:cloneCard("dilu")
       dummy:addSubcards(self.cost_data)
@@ -4551,29 +4550,14 @@ local qiqin = fk.CreateTriggerSkill{
   end,
 
   refresh_events = {fk.AfterCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    if player.dead then return false end
-    local cards = U.getMark(player, "qiqin_cards")
-    if #cards == 0 then return false end
-    for _, move in ipairs(data) do
-      if move.toArea == Card.PlayerHand and move.to == player.id then
-        for _, info in ipairs(move.moveInfo) do
-          if table.contains(cards, info.cardId) then
-            return true
-          end
-        end
-      end
-    end
-  end,
+  can_refresh = Util.TrueFunc,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    local cards = U.getMark(player, "qiqin_cards")
-    for _, id in ipairs(cards) do
-      if table.contains(player:getCardIds("h"), id) then
-        local card = Fk:getCardById(id)
-        if card:getMark("@@qiqin-inhand") == 0 then
-          room:setCardMark(card, "@@qiqin-inhand", 1)
-        end
+    for _, id in ipairs(player:getCardIds(Player.Hand)) do
+      local card = Fk:getCardById(id)
+      local value = (card:getMark("qiqin") > 0 and player:hasSkill(self, true)) and 1 or 0
+      if card:getMark("@@qiqin-inhand") ~= value then
+        room:setCardMark(card, "@@qiqin-inhand", value)
       end
     end
   end,
@@ -4581,16 +4565,178 @@ local qiqin = fk.CreateTriggerSkill{
 local qiqin_maxcards = fk.CreateMaxCardsSkill{
   name = "#qiqin_maxcards",
   exclude_from = function(self, player, card)
-    return player:hasSkill(qiqin) and card:getMark("@@qiqin-inhand") > 0
+    return player:hasSkill(qiqin) and card:getMark("qiqin") > 0
+  end,
+}
+local zixi_active = fk.CreateActiveSkill{
+  name = "zixi_active",
+  card_num = 1,
+  target_num = 1,
+  interaction = function()
+    return UI.ComboBox {choices = {"indulgence", "supply_shortage", "lightning"}}
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:getCardById(to_select):getMark("qiqin") > 0
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if #selected_cards == 0 or #selected > 0 then return false end
+    local to = Fk:currentRoom():getPlayerById(to_select)
+    return not (table.contains(to.sealedSlots, Player.JudgeSlot) or to:hasDelayedTrick(self.interaction.data))
+  end,
+}
+Fk:addSkill(zixi_active)
+local zixi = fk.CreateTriggerSkill{
+  name = "zixi",
+  anim_type = "control",
+  events = {fk.EventPhaseStart, fk.EventPhaseEnd, fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    if target ~= player or not player:hasSkill(self) then return false end
+    if event == fk.TargetSpecified then
+      if (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) and
+      not table.contains(data.card.skillNames, self.name) then
+        local to = player.room:getPlayerById(data.to)
+        local x = #to:getCardIds(Player.Judge)
+        if x > 0 and x < 4 and U.isOnlyTarget(to, data, event) then
+          return true
+        end
+      end
+    else
+      return player.phase == Player.Play
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.TargetSpecified then
+      local to = room:getPlayerById(data.to)
+      local x = #to:getCardIds(Player.Judge)
+      if room:askForSkillInvoke(player, self.name, nil,
+      "#zixi-invoke" .. tostring(x) .. "::" .. data.to .. ":" .. data.card:toLogString()) then
+        room:doIndicate(player.id, {data.to})
+        return true
+      end
+    else
+      local _, dat = room:askForUseActiveSkill(player, "zixi_active", "#zixi-cost", true)
+      if dat then
+        self.cost_data = dat
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.TargetSpecified then
+      local to = room:getPlayerById(data.to)
+      local x = #to:getCardIds(Player.Judge)
+      if x == 1 then
+        data.extra_data = data.extra_data or {}
+        data.extra_data.zixi = {
+          from = player.id,
+          to = data.to,
+          subTargets = data.subTargets
+        }
+      elseif x == 2 then
+        room:drawCards(player, 2, self.name)
+      elseif x == 3 then
+        to:throwAllCards("j")
+        if not to.dead then
+          room:damage{
+            from = player,
+            to = to,
+            damage = 3,
+            skillName = self.name,
+          }
+        end
+      end
+    else
+      local dat = table.simpleClone(self.cost_data)
+      local to = room:getPlayerById(dat.targets[1])
+      local card = Fk:cloneCard(dat.interaction)
+      card:addSubcard(dat.cards[1])
+      card.skillName = self.name
+      to:addVirtualEquip(card)
+      room:moveCardTo(card, Player.Judge, to, fk.ReasonJustMove, self.name)
+    end
+  end,
+}
+local zixi_delay = fk.CreateTriggerSkill{
+  name = "#zixi_delay",
+  mute = true,
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    if data.extra_data and data.extra_data.zixi and not player.dead then
+      local use = table.simpleClone(data.extra_data.zixi)
+      if use.from == player.id then
+        local card = Fk:cloneCard(data.card.name)
+        card.skillName = zixi.name
+        if player:prohibitUse(card) then return false end
+        use.card = card
+        local room = player.room
+        local to = room:getPlayerById(use.to)
+        if U.canTransferTarget(to, use, false) then
+          local tos = {use.to}
+          if use.subTargets then
+            table.insertTable(tos, use.subTargets)
+          end
+          self.cost_data = {
+            from = player.id,
+            tos = table.map(tos, function(pid) return { pid } end),
+            card = card,
+            extraUse = true
+          }
+          return true
+        end
+      end
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    player.room:useCard(table.simpleClone(self.cost_data))
+  end,
+}
+local zixi_special_rule = fk.CreateTriggerSkill{
+  name = "#zixi_special_rule",
+  events = {fk.EventPhaseStart},
+  mute = true,
+  priority = 0, -- game rule
+  can_trigger = function(self, event, target, player, data)
+    return player.phase == Player.Judge
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = player:getCardIds(Player.Judge)
+    for i = #cards, 1, -1 do
+      if table.contains(player:getCardIds(Player.Judge), cards[i]) then
+        local zixi_card = player:getVirualEquip(cards[i])
+        if zixi_card == nil or not table.contains(zixi_card.skillNames, "zixi") then
+          local card
+          card = player:removeVirtualEquip(cards[i])
+          if not card then
+            card = Fk:getCardById(cards[i])
+          end
+          
+          room:moveCardTo(card, Card.Processing, nil, fk.ReasonPut, "game_rule")
+
+          ---@type CardEffectEvent
+          local effect_data = {
+            card = card,
+            to = player.id,
+            tos = { {player.id} },
+          }
+          room:doCardEffect(effect_data)
+          if effect_data.isCancellOut and card.skill then
+            card.skill:onNullified(room, effect_data)
+          end
+        end
+      end
+    end
+    return true
   end,
 }
 
-local zixi = fk.CreateTriggerSkill{
-  name = "zixi",
-  can_trigger = Util.FalseFunc,
-}
-
 qiqin:addRelatedSkill(qiqin_maxcards)
+zixi:addRelatedSkill(zixi_delay)
+zixi:addRelatedSkill(zixi_special_rule)
 daqiao:addSkill(qiqin)
 daqiao:addSkill(zixi)
 
@@ -4600,19 +4746,23 @@ Fk:loadTranslationTable{
   ["qiqin"] = "绮琴",
   [":qiqin"] = "锁定技，游戏开始时，你的初始手牌增加“琴”标记且不计入手牌上限。准备阶段，你获得弃牌堆中所有“琴”牌。",
   ["zixi"] = "姊希",
-  [":zixi"] = "<font color='red'>（这个武将还没上线，你可以看看插画。不会出现在选将框。）</font>",
-  --[[
   [":zixi"] = "出牌阶段开始时和结束时，你可以将一张“琴”放置在一名角色的判定区。"..
   "你使用基本牌或普通锦囊牌指定唯一目标后，可根据其判定区牌的张数获得以下效果："..
   "1张：此牌对其额外结算1次；2张：你摸2张牌；3张：弃置其判定区所有牌对其造成3点伤害。",
-  ]]
   ["@@qiqin-inhand"] = "琴",
+  ["#zixi-cost"] = "是否发动 姊希，将一张“琴”放置在一名角色的判定区",
+  ["zixi_active"] = "姊希",
+  ["#zixi_delay"] = "姊希",
+  ["#zixi_special_rule"] = "姊希",
+  ["#zixi-invoke1"] = "是否发动 姊希，令%arg对%dest额外结算一次",
+  ["#zixi-invoke2"] = "是否发动 姊希，摸两张牌",
+  ["#zixi-invoke3"] = "是否发动 姊希，令%dest弃置判定区所有牌并受到3点伤害",
 
-  ["$qiqin_mu__daqiao1"] = "",
-  ["$qiqin_mu__daqiao2"] = "",
-  ["$zixi1"] = "",
-  ["$zixi2"] = "",
-  ["~mu__daqiao"] = "",
+  ["$qiqin_mu__daqiao1"] = "山月栖瑶琴，一曲渔歌和晚音。",
+  ["$qiqin_mu__daqiao2"] = "指尖有琴音，何不于君指上听？",
+  ["$zixi1"] = "日暮飞伯劳，倦梳头，坐看鸥鹭争舟。",
+  ["$zixi2"] = "姊折翠柳寄江北，念君心悠悠。",
+  ["~mu__daqiao"] = "曲终人散，再会奈何桥畔……",
 }
 
 local xiaoqiao = General(extension, "mu__xiaoqiao", "wu", 3, 3, General.Female)
@@ -4625,11 +4775,9 @@ local weiwan = fk.CreateActiveSkill{
   end,
   card_num = 1,
   card_filter = function (self, to_select, selected)
+    if #selected > 0 then return false end
     local card = Fk:getCardById(to_select)
-    if #selected == 0 and not Self:prohibitDiscard(card) then
-      local cards = U.getMark(Self, "qiqin_cards")
-      return table.contains(cards, to_select)
-    end
+    return not Self:prohibitDiscard(card) and card:getMark("qiqin") > 0
   end,
   target_num = 1,
   target_filter = function(self, to_select, selected)
@@ -4705,7 +4853,7 @@ Fk:loadTranslationTable{
   ["$qiqin_mu__xiaoqiao2"] = "指上琴音浅，欲听还需抚瑶琴。",
   ["$weiwan1"] = "繁花初成，所幸未晚于桑榆。",
   ["$weiwan2"] = "群胥泛舟，共载佳期若瑶梦。",
-  ["~mu__xiaoqiao"] = "独寄人间白首，曲误周郎难顾。",
+  ["~mu__xiaoqiao"] = "独寄人间白首，曲误周郎难顾……",
 }
 
 return extension

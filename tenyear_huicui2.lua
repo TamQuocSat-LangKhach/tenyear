@@ -2514,7 +2514,7 @@ local deshao = fk.CreateTriggerSkill{
   anim_type = "defensive",
   events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.firstTarget and data.card.color == Card.Black and
+    return target == player and player:hasSkill(self) and data.card.color == Card.Black and
       data.from ~= player.id and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2
   end,
   on_cost = function(self, event, target, player, data)
@@ -2539,7 +2539,7 @@ local mingfa = fk.CreateTriggerSkill{
       if event == fk.CardUseFinished then
         return target == player and player.phase == Player.Play and #player:getPile(self.name) == 0 and
           (data.card.trueName == "slash" or data.card:isCommonTrick()) and player.room:getCardArea(data.card) == Card.Processing and
-          not data.card:isVirtual() and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+          U.isPureCard(data.card) and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
       else
         return target.phase == Player.Finish and player:getMark(self.name) ~= 0 and #player:getPile(self.name) > 0 and
           player:getMark(self.name) == target.id
@@ -2570,7 +2570,7 @@ local mingfa = fk.CreateTriggerSkill{
       room:setPlayerMark(to, "@@mingfa", mark)
     else
       local card = Fk:cloneCard(Fk:getCardById(player:getPile(self.name)[1]).name)
-      if card.trueName ~= "nullification" and card.name ~= "collateral" and not player:isProhibited(target, card) then
+      if card.trueName ~= "nullification" and card.skill:getMinTargetNum() < 2 and not player:isProhibited(target, card) then
         --据说没有合法性检测甚至无懈都能虚空用，甚至不合法目标还能触发贞烈。我不好说
         local n = math.max(target:getHandcardNum(), 1)
         n = math.min(n, 5)
@@ -2586,10 +2586,9 @@ local mingfa = fk.CreateTriggerSkill{
       end
       room:setPlayerMark(player, self.name, 0)
       if not target.dead then
-        local mark = target:getMark("@@mingfa")
+        local mark = U.getMark(target, "@@mingfa")
         table.removeOne(mark, player.id)
-        if #mark == 0 then mark = 0 end
-        room:setPlayerMark(target, "@@mingfa", mark)
+        room:setPlayerMark(target, "@@mingfa", #mark > 0 and mark or 0)
       end
       room:moveCards({
         from = player.id,
@@ -2626,10 +2625,9 @@ local mingfa = fk.CreateTriggerSkill{
         specialName = self.name,
       })
       if not to.dead then
-        local mark = to:getMark("@@mingfa")
+        local mark = U.getMark(to, "@@mingfa")
         table.removeOne(mark, player.id)
-        if #mark == 0 then mark = 0 end
-        room:setPlayerMark(to, "@@mingfa", mark)
+        room:setPlayerMark(to, "@@mingfa", #mark > 0 and mark or 0)
       end
     else
       local mark = target:getMark("@@mingfa")
@@ -2659,7 +2657,7 @@ Fk:loadTranslationTable{
   ["deshao"] = "德劭",
   [":deshao"] = "每回合限两次，当你成为其他角色使用黑色牌的目标后，你可以摸一张牌，然后若其手牌数大于等于你，你弃置其一张牌。",
   ["mingfa"] = "明伐",
-  [":mingfa"] = "出牌阶段内限一次，你使用【杀】或普通锦囊牌结算完毕后，若你没有“明伐”牌，可将此牌置于武将牌上并选择一名其他角色。"..
+  [":mingfa"] = "出牌阶段内限一次，你使用非转化的【杀】或普通锦囊牌结算完毕后，若你没有“明伐”牌，可将此牌置于武将牌上并选择一名其他角色。"..
   "该角色的结束阶段，视为你对其使用X张“明伐”牌（X为其手牌数，最少为1，最多为5），然后移去“明伐”牌。",
   ["#deshao-invoke"] = "德劭：你可以摸一张牌，然后若 %dest 手牌数不少于你，你弃置其一张牌",
   ["#mingfa-choose"] = "明伐：将%arg置为“明伐”，选择一名角色，其结束阶段视为对其使用其手牌张数次“明伐”牌",

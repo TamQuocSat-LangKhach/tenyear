@@ -168,6 +168,8 @@ caojinyu:addSkill(shanshen)
 caojinyu:addSkill(xianjing)
 Fk:loadTranslationTable{
   ["caojinyu"] = "曹金玉",
+  ["#caojinyu"] = "金乡公主",
+  ["illustrator:caojinyu"] = "MUMU",
   ["yuqi"] = "隅泣",
   [":yuqi"] = "每回合限两次，当一名角色受到伤害后，若你与其距离0或者更少，你可以观看牌堆顶的3张牌，将其中至多1张交给受伤角色，"..
   "至多1张自己获得，剩余的牌放回牌堆顶。",
@@ -308,6 +310,8 @@ sunyi:addRelatedSkill("ex__yingzi")
 sunyi:addRelatedSkill("yinghun")
 Fk:loadTranslationTable{
   ["ty__sunyi"] = "孙翊",
+  ["#ty__sunyi"] = "虓风快意",
+  ["illustrator:ty__sunyi"] = "君桓文化",
   ["jiqiaos"] = "激峭",
   [":jiqiaos"] = "出牌阶段开始时，你可以将牌堆顶的X张牌至于武将牌上（X为你的体力上限）；当你使用一张牌结算结束后，若你的武将牌上有“激峭”牌，"..
   "你获得其中一张，然后若剩余其中两种颜色牌的数量相等，你回复1点体力，否则你失去1点体力；出牌阶段结束时，移去所有“激峭”牌。",
@@ -415,6 +419,8 @@ fengyu:addSkill(tiqi)
 fengyu:addSkill(baoshu)
 Fk:loadTranslationTable{
   ["ty__fengfangnv"] = "冯妤",
+  ["#ty__fengfangnv"] = "泣珠伊人",
+  ["illustrator:ty__fengfangnv"] = "君桓文化",
   ["tiqi"] = "涕泣",
   [":tiqi"] = "其他角色出牌阶段、弃牌阶段、结束开始前，若其于此回合的摸牌阶段内因摸牌而得到的牌数之和不等于2且你于此回合内未发动过此技能，"..
   "则你摸超出或少于2的牌，然后可以令该角色本回合手牌上限增加或减少同样的数值。",
@@ -594,6 +600,8 @@ laiyinger:addSkill(huaping)
 laiyinger:addRelatedSkill(shawu)
 Fk:loadTranslationTable{
   ["laiyinger"] = "来莺儿",
+  ["#laiyinger"] = "雀台歌女",
+  ["illustrator:laiyinger"] = "君桓文化",
   ["xiaowu"] = "绡舞",
   [":xiaowu"] = "出牌阶段限一次，你可以从你的上家或下家起选择任意名座位连续的其他角色，每名角色依次选择一项：1.令你摸一张牌；2.自己摸一张牌。"..
   "选择完成后，若令你摸牌的选择人数较多，你获得一个“沙”标记；若自己摸牌的选择人数较多，你对这些角色各造成1点伤害。",
@@ -791,6 +799,8 @@ caohua:addSkill(caiyi)
 caohua:addSkill(guili)
 Fk:loadTranslationTable{
   ["caohua"] = "曹华",
+  ["#caohua"] = "殊凰求凤",
+  ["illustrator:caohua"] = "HEI-LE",
   ["caiyi"] = "彩翼",
   [":caiyi"] = "转换技，结束阶段，你可以令一名角色选择一项并移除该选项：阳：1.回复X点体力；2.摸X张牌；3.复原武将牌；4.随机执行一个已移除的阳选项；"..
   "阴：1.受到X点伤害；2.弃置X张牌；3.翻面并横置；4.随机执行一个已移除的阴选项（X为当前状态剩余选项数）。",
@@ -937,6 +947,8 @@ zhangfen:addSkill(xianzhu)
 zhangfen:addSkill(chaixie)
 Fk:loadTranslationTable{
   ["zhangfen"] = "张奋",
+  ["#zhangfen"] = "御驰大攻",
+  ["illustrator:zhangfen"] = "杨李ping",
   ["wanglu"] = "望橹",
   [":wanglu"] = "锁定技，准备阶段，你将【大攻车】置入你的装备区，若你的装备区内已有【大攻车】，则你执行一个额外的出牌阶段。<br>"..
   "<font color='grey'>【大攻车】<br>♠9 装备牌·宝物<br /><b>装备技能</b>：出牌阶段开始时，你可以视为使用一张【杀】，"..
@@ -1026,6 +1038,8 @@ zhugeruoxue:addSkill(qiongying)
 zhugeruoxue:addSkill(nuanhui)
 Fk:loadTranslationTable{
   ["zhugeruoxue"] = "诸葛若雪",
+  ["#zhugeruoxue"] = "玉榭霑露",
+
   ["qiongying"] = "琼英",
   [":qiongying"] = "出牌阶段限一次，你可以移动场上一张牌，然后你弃置一张同花色的手牌（若没有需展示手牌）。",
   ["nuanhui"] = "暖惠",
@@ -1177,6 +1191,7 @@ Fk:addSkill(zhifou_active)
 caoxian:addSkill(zhifou)
 Fk:loadTranslationTable{
   ["caoxian"] = "曹宪",
+  ["#caoxian"] = "蝶步韶华",
   ["lingxi"] = "灵犀",
   [":lingxi"] = "出牌阶段开始时或结束时，你可以将至多体力上限张牌置于你的武将牌上，称为“翼”。当你的“翼”被移去后，你将手牌摸至或弃置至“翼”包含的花色数的两倍。",
   ["#lingxi-put"] = "灵犀：将至多 %arg 张牌置入“翼”",
@@ -1335,6 +1350,8 @@ wanglang:addSkill(ty__gushe)
 wanglang:addSkill(ty__jici)
 Fk:loadTranslationTable{
   ["ty__wanglang"] = "王朗",
+  ["#ty__wanglang"] = "凤鹛",
+  ["illustrator:ty__wanglang"] = "第七个桔子", -- 皮肤 骧龙御宇
   ["ty__gushe"] = "鼓舌",
   [":ty__gushe"] = "出牌阶段，你可以用一张手牌与至多三名角色同时拼点，没赢的角色选择一项: 1.弃置一张牌；2.令你摸一张牌。"..
   "若你没赢，获得一个“饶舌”标记；若你有7个“饶舌”标记，你死亡。当你一回合内累计七次拼点赢时（每有一个“饶舌”标记，此累计次数减1），本回合此技能失效。",
@@ -1597,6 +1614,8 @@ liuhui:addSkill(jieshu)
 liuhui:addSkill(gusuan)
 Fk:loadTranslationTable{
   ["liuhui"] = "刘徽",
+  ["#liuhui"] = "周天古率",
+  ["illustrator:liuhui"] = "凡果_肉山大魔王",
   ["geyuan"] = "割圆",
   [":geyuan"] = '锁定技，游戏开始时，将A~K的所有点数随机排列成一个圆环。有牌进入弃牌堆时，将满足圆环进度的点数记录在圆环内。当圆环完成后，你获得牌堆和场上所有完成此圆环最初和最后点数的牌，然后从圆环中移除这两个点数（不会被移除到三个以下），重新开始圆环。<br><font color="grey">进度点数：圆环中即将被点亮的点数，直接显示在脸上。</font><br><font color="red">注：标记显示目前可能有bug，但不影响游玩。</font>',
   ["jieshu"] = "解术",
@@ -1847,6 +1866,8 @@ dongguiren:addSkill(fengying)
 dongguiren:addRelatedSkill(shouze)
 Fk:loadTranslationTable{
   ["dongguiren"] = "董贵人",
+  ["#dongguiren"] = "衣雪宫柳",
+  ["illustrator:dongguiren"] = "君桓文化",
   ["lianzhi"] = "连枝",
   [":lianzhi"] = "游戏开始时，你选择一名其他角色。每回合限一次，当你进入濒死状态时，若该角色没有死亡，你回复1点体力且与其各摸一张牌。"..
   "该角色死亡时，你可以选择一名其他角色，你与其获得〖受责〗，其获得与你等量的“绞”标记（至少1个）。",
@@ -1967,6 +1988,8 @@ tengfanglan:addSkill(ty__luochong)
 tengfanglan:addSkill(ty__aichen)
 Fk:loadTranslationTable{
   ["ty__tengfanglan"] = "滕芳兰",
+  ["#ty__tengfanglan"] = "铃兰零落",
+  ["illustrator:ty__tengfanglan"] = "鬼画府",
   ["ty__luochong"] = "落宠",
   [":ty__luochong"] = "每轮开始时，你可以弃置任意名角色区域内共计至多4张牌，若你一次性弃置了一名角色区域内至少3张牌，〖落宠〗弃置牌数-1。",
   ["ty__aichen"] = "哀尘",
@@ -2139,6 +2162,8 @@ zhangjinyun:addSkill(huizhi)
 zhangjinyun:addSkill(jijiao)
 Fk:loadTranslationTable{
   ["zhangjinyun"] = "张瑾云",
+  ["#zhangjinyun"] = "慧秀淑德",
+  ["illustrator:zhangjinyun"] = "匠人绘",
   ["huizhi"] = "蕙质",
   [":huizhi"] = "准备阶段，你可以弃置任意张手牌（可不弃），然后将手牌摸至与全场手牌最多的角色相同（至少摸一张，最多摸五张）。",
   ["jijiao"] = "继椒",
@@ -2360,6 +2385,8 @@ zhoubuyi:addSkill(shijiz)
 zhoubuyi:addSkill(silun)
 Fk:loadTranslationTable{
   ["zhoubuyi"] = "周不疑",
+  ["#zhoubuyi"] = "幼有异才",
+  ["illustrator:zhoubuyi"] = "虫师",
   ["shijiz"] = "十计",
   [":shijiz"] = "一名角色的结束阶段，若其本回合未造成伤害，你可以声明一种普通锦囊牌（每轮每种牌名限一次），其可以将一张牌当你声明的牌使用"..
   "（不能指定其为目标）。",
@@ -2525,6 +2552,8 @@ xujing:addSkill(shangyu)
 xujing:addSkill(caixia)
 Fk:loadTranslationTable{
   ["ty__xujing"] = "许靖",
+  ["#ty__xujing"] = "璞玉有瑕",
+  ["illustrator:ty__xujing"] = "黯荧岛工作室",
   ["shangyu"] = "赏誉",
   [":shangyu"] = "锁定技，游戏开始时，你获得一张【杀】并标记之，然后可以将其交给一名角色。此【杀】：造成伤害后，你和使用者各摸一张牌；"..
   "进入弃牌堆后，你将其交给一名本回合未以此法指定过的角色。",
@@ -2816,6 +2845,8 @@ zhugeliang:addSkill(qingshi)
 zhugeliang:addSkill(zhizhe)
 Fk:loadTranslationTable{
   ["wm__zhugeliang"] = "武诸葛亮",
+  ["#wm__zhugeliang"] = "忠武良弼",
+  ["illustrator:wm__zhugeliang"] = "梦回唐朝",
   ["jincui"] = "尽瘁",
   [":jincui"] = "锁定技，游戏开始时，你将手牌补至7张。准备阶段，你的体力值调整为与牌堆中点数为7的游戏牌数量相等（至少为1）。"..
   "然后你观看牌堆顶X张牌（X为你的体力值），将这些牌以任意顺序放回牌堆顶或牌堆底。",
@@ -2996,6 +3027,8 @@ luxun:addSkill(zhangcai)
 luxun:addSkill(ruxian)
 Fk:loadTranslationTable{
   ["wm__luxun"] = "武陆逊",
+  ["#wm__luxun"] = "释武怀儒",
+  ["illustrator:wm__luxun"] = "小新",
   ["xiongmu"] = "雄幕",
   [":xiongmu"] = "每轮开始时，你可以将手牌摸至体力上限，然后将任意张牌随机置入牌堆，从牌堆或弃牌堆中获得等量的点数为8的牌，"..
   "这些牌此轮内不计入你的手牌上限。当你每回合受到第一次伤害时，若你的手牌数小于等于体力值，此伤害-1。",

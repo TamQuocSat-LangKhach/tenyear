@@ -140,6 +140,8 @@ liwan:addSkill(liandui)
 liwan:addSkill(biejun)
 Fk:loadTranslationTable{
   ["liwan"] = "李婉",
+  ["#liwan"] = "才媛淑美",
+  ["illustrator:liwan"] = "荧光笔工作室",
   ["liandui"] = "联对",
   [":liandui"] = "当你使用一张牌时，若上一张牌的使用者不为你，你可以令其摸两张牌；其他角色使用一张牌时，若上一张牌的使用者为你，其可以令你摸两张牌。",
   ["biejun"] = "别君",
@@ -309,6 +311,8 @@ hanlong:addSkill(duwang)
 hanlong:addSkill(cibei)
 Fk:loadTranslationTable{
   ["hanlong"] = "韩龙",
+  ["#hanlong"] = "冯河易水",
+  ["illustrator:hanlong"] = "游漫美绘",
   ["duwang"] = "独往",
   [":duwang"] = "锁定技，游戏开始时，你将牌堆顶五张不为【杀】的牌置于武将牌上，称为“刺”。若你有“刺”，你与其他角色互相计算距离均+1。",
   ["cibei"] = "刺北",
@@ -489,6 +493,8 @@ zhugeshang:addSkill(sangu)
 zhugeshang:addSkill(yizu)
 Fk:loadTranslationTable{
   ["zhugeshang"] = "诸葛尚",
+  ["#zhugeshang"] = "尚节殉义",
+  ["illustrator:zhugeshang"] = "君桓文化",
   ["sangu"] = "三顾",
   [":sangu"] = "结束阶段，你可依次选择至多三张【杀】或普通锦囊牌（【借刀杀人】、【无懈可击】除外）并指定一名其他角色，"..
   "其下个出牌阶段使用的前X张牌视为你选择的牌（X为你选择的牌数）。若你选择的牌均为本回合你使用过的牌，防止“三顾”牌对你造成的伤害。",
@@ -592,6 +598,8 @@ qiaozhou:addSkill(shiming)
 qiaozhou:addSkill(jiangxi)
 Fk:loadTranslationTable{
   ["ty__qiaozhou"] = "谯周",
+  ["#ty__qiaozhou"] = "谶星沉祚",
+  ["illustrator:ty__qiaozhou"] = "鬼画府",
   ["shiming"] = "识命",
   [":shiming"] = "每轮限一次，一名角色的摸牌阶段，你可以观看牌堆顶两张牌，然后可以将其中一张置于牌堆底，若如此做，当前回合角色可以放弃摸牌，"..
   "改为对自己造成1点伤害，然后从牌堆底摸三张牌。",
@@ -747,6 +755,8 @@ lukai:addSkill(bushil)
 lukai:addSkill(zhongzhuang)
 Fk:loadTranslationTable{
   ["lukai"] = "陆凯",
+  ["#lukai"] = "青辞宰辅",
+  ["illustrator:lukai"] = "游漫美绘",
   ["bushil"] = "卜筮",
   [":bushil"] = "你使用♠牌无次数限制；<br>你使用或打出<font color='red'>♥</font>牌后，摸一张牌；<br>当你成为♣牌的目标后，"..
   "你可以弃置一张手牌令此牌对你无效；<br>结束阶段，你获得一张<font color='red'>♦</font>牌。<br>准备阶段，你可以将以上四种花色重新分配。",
@@ -835,6 +845,7 @@ Fk:addSkill(shuojian_viewas)
 sufei:addSkill(shuojian)
 Fk:loadTranslationTable{
   ["ty__sufei"] = "苏飞",
+  ["#ty__sufei"] = "义荐恩还",
   ["shuojian"] = "数荐",
   [":shuojian"] = "出牌阶段限三次，你可以交给一名其他角色一张牌，然后其选择一项：1.令你摸3张牌并弃2张牌；2.视为使用3张【过河拆桥】，本回合此技能失效。"..
   "此阶段下次发动该技能，选项中所有数字-1。",
@@ -966,6 +977,8 @@ koujing:addRelatedSkill(koujing_trigger)
 kebineng:addSkill(koujing)
 Fk:loadTranslationTable{
   ["kebineng"] = "轲比能",
+  ["#kebineng"] = "瀚海鲸波",
+  ["illustrator:kebineng"] = "君桓文化",
   ["koujing"] = "寇旌",
   [":koujing"] = "出牌阶段开始时，你可以选择任意张手牌，这些牌本回合视为不计入次数的【杀】。其他角色受到以此法使用的【杀】的伤害后展示这些牌，"..
   "其可用所有手牌交换这些牌。",
@@ -1117,6 +1130,8 @@ Fk:addSkill(diezhangYang)
 Fk:addSkill(diezhangYin)
 Fk:loadTranslationTable{
   ["wuanguo"] = "武安国",
+  ["#wuanguo"] = "虎口折腕",
+  ["illustrator:wuanguo"] = "目游",
   ["diezhang"] = "叠嶂",
   [":diezhang"] = "转换技，你出牌阶段使用【杀】次数上限+1。阳：当你使用牌被其他角色抵消后，你可以弃置一张牌视为对其使用(一)张【杀】；"..
   "阴：当你使用牌抵消其他角色使用的牌后，你可以摸(一)张牌视为对其使用一张【杀】。",

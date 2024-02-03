@@ -2690,6 +2690,12 @@ local guowu = fk.CreateTriggerSkill{
     for _, id in ipairs(cards) do
       table.insertIfNeed(types, Fk:getCardById(id).type)
     end
+    if #types > 1 then
+      room:addPlayerMark(player, "guowu2-phase", 1)
+    end
+    if #types > 2 then
+      room:addPlayerMark(player, "guowu3-phase", 1)
+    end
     local card = room:getCardsFromPileByRule("slash", 1, "discardPile")
     if #card > 0 then
       room:moveCards({
@@ -2701,12 +2707,6 @@ local guowu = fk.CreateTriggerSkill{
         skillName = self.name,
       })
     end
-    if #types > 1 then
-      room:addPlayerMark(player, "guowu2-phase", 1)
-    end
-    if #types > 2 then
-      room:addPlayerMark(player, "guowu3-phase", 1)
-    end
   end,
 }
 
@@ -2714,7 +2714,7 @@ local guowu_delay = fk.CreateTriggerSkill{
   name = "#guowu_delay",
   anim_type = "offensive",
   frequency = Skill.Compulsory,
-  events = {fk.CardUsing},
+  events = {fk.AfterCardTargetDeclared},
   mute = true,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("guowu3-phase") > 0 and not player.dead and

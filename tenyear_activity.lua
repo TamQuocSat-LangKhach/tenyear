@@ -383,6 +383,7 @@ liangxing:addSkill(zhuixi)
 Fk:loadTranslationTable{
   ["liangxing"] = "梁兴",
   ["#liangxing"] = "凶豺掠豹",
+  ["cv:liangxing"] = "虞晓旭",
   ["illustrator:liangxing"] = "匠人绘",
   ["lulue"] = "掳掠",
   [":lulue"] = "出牌阶段开始时，你可以令一名有手牌且手牌数小于你的其他角色选择一项：1.将所有手牌交给你，然后你翻面；2.翻面，然后视为对你使用一张【杀】。",

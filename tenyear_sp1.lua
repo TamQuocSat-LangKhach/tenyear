@@ -2506,6 +2506,7 @@ godzhangjiao:addSkill(tianjie)
 Fk:loadTranslationTable{
   ["godzhangjiao"] = "神张角",
   ["#godzhangjiao"] = "末世的起首",
+  ["cv:godzhangjiao"] = "虞晓旭",
   ["illustrator:godzhangjiao"] = "黯荧岛工作室",
   ["yizhao"] = "异兆",
   [":yizhao"] = "锁定技，当你使用或打出一张牌后，获得等同于此牌点数的“黄”标记，然后若“黄”标记数的十位数变化，你随机获得牌堆中一张点数为变化后十位数的牌。",

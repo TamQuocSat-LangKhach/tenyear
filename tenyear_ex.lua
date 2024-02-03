@@ -5032,6 +5032,8 @@ local ty_ex__anguo = fk.CreateActiveSkill{
 zhuzhi:addSkill(ty_ex__anguo)
 Fk:loadTranslationTable{
   ["ty_ex__zhuzhi"] = "界朱治",
+  ["#ty_ex__zhuzhi"] = "王事靡盬",
+  ["illustrator:ty_ex__zhuzhi"] = "福州明暗",
   ["ty_ex__anguo"] = "安国",
   [":ty_ex__anguo"] = "出牌阶段限一次，你可以选择一名其他角色，若其手牌数为全场最少，其摸一张牌；体力值为全场最低，回复1点体力；"..
   "装备区内牌数为全场最少，随机使用一张装备牌。然后若该角色有未执行的效果且你满足条件，你执行之。若双方执行了全部分支，你可以重铸任意张牌。",

@@ -84,6 +84,8 @@ yanjun:addSkill(guanchao)
 yanjun:addSkill(xunxian)
 Fk:loadTranslationTable{
   ["yanjun"] = "严畯",
+  ["#yanjun"] = "志存补益",
+  ["illustrator:yanjun"] = "YanBai",
   ["guanchao"] = "观潮",
   [":guanchao"] = "出牌阶段开始时，你可以选择一项直到回合结束：1.当你使用牌时，若你此阶段使用过的所有牌的点数为严格递增，你摸一张牌；"..
   "2.当你使用牌时，若你此阶段使用过的所有牌的点数为严格递减，你摸一张牌。",
@@ -143,6 +145,7 @@ lidian:addSkill("xunxun")
 lidian:addSkill(ty__wangxi)
 Fk:loadTranslationTable{
   ["ty__lidian"] = "李典",
+  ["#ty__lidian"] = "深明大义",
   ["ty__wangxi"] = "忘隙",
   [":ty__wangxi"] = "当你对其他角色造成1点伤害后，或当你受到其他角色造成的1点伤害后，若其存活，你可以摸两张牌，然后将一张牌交给该角色。",
 
@@ -252,6 +255,8 @@ duji:addSkill(andong)
 duji:addSkill(yingshi)
 Fk:loadTranslationTable{
   ["duji"] = "杜畿",
+  ["#duji"] = "卧镇京畿",
+  ["illustrator:duji"] = "李秀森",
   ["andong"] = "安东",
   [":andong"] = "当你受到其他角色造成的伤害时，你可令伤害来源选择一项：1.防止此伤害，本回合弃牌阶段<font color='red'>♥</font>牌不计入手牌上限；"..
   "2.观看其手牌，若其中有<font color='red'>♥</font>牌则你获得这些牌。",
@@ -420,6 +425,8 @@ panjun:addSkill(guanwei)
 panjun:addSkill(gongqing)
 Fk:loadTranslationTable{
   ["panjun"] = "潘濬",
+  ["#panjun"] = "方严疾恶",
+  ["illustrator:panjun"] = "秋呆呆",
   ["guanwei"] = "观微",
   [":guanwei"] = "一名角色的出牌阶段结束时，若其于此回合内使用过的牌数大于1，且其于此回合内使用过的牌花色均相同，且你于此回合未发动过此技能，"..
   "你可弃置一张牌。若如此做，其摸两张牌，然后其获得一个额外的出牌阶段。",
@@ -629,6 +636,8 @@ local denglou_viewas = fk.CreateViewAsSkill{
 Fk:addSkill(denglou_viewas)
 Fk:loadTranslationTable{
   ["ty__wangcan"] = "王粲",
+  ["#ty__wangcan"] = "七子之冠冕",
+  ["illustrator:ty__wangcan"] = "ZOO",
   ["sanwen"] = "散文",
   [":sanwen"] = "每回合限一次，当你获得牌时，若你手中有与这些牌牌名相同的牌，你可以展示之，并弃置获得的同名牌，然后摸弃牌数两倍数量的牌。",
   ["qiai"] = "七哀",
@@ -750,6 +759,8 @@ pangtong:addSkill(songsang)
 pangtong:addRelatedSkill(zhanji)
 Fk:loadTranslationTable{
   ["sp__pangtong"] = "庞统",
+  ["#sp__pangtong"] = "南州士冠",
+  ["illustrator:sp__pangtong"] = "兴游",
   ["guolun"] = "过论",
   [":guolun"] = "出牌阶段限一次，你可以展示一名其他角色的一张手牌，然后你可以展示一张手牌，交换这两张牌，展示牌点数小的角色摸一张牌。",
   ["songsang"] = "送丧",
@@ -861,6 +872,8 @@ jixu:addRelatedSkill(jixu_trigger)
 taishici:addSkill(jixu)
 Fk:loadTranslationTable{
   ["sp__taishici"] = "太史慈",
+  ["#sp__taishici"] = "北海酬恩",
+  ["illustrator:sp__taishici"] = "王立雄",
   ["jixu"] = "击虚",
   [":jixu"] = "出牌阶段限一次，你可令任意名体力值相同的其他角色同时猜测你的手牌中是否有【杀】。若有角色猜错，且你：有【杀】，你于本回合使用【杀】"..
   "额外指定所有猜错的角色为目标；没有【杀】，你弃置所有猜错的角色各一张牌。然后你摸等同于猜错的角色数的牌。若没有角色猜错，则你结束此阶段。",
@@ -927,6 +940,8 @@ zhoufang:addSkill(duanfa)
 zhoufang:addSkill(sp__youdi)
 Fk:loadTranslationTable{
   ["zhoufang"] = "周鲂",
+  ["#zhoufang"] = "下发载义",
+  ["illustrator:zhoufang"] = "黑白画谱",
   ["duanfa"] = "断发",
   [":duanfa"] = "出牌阶段，你可以弃置任意张黑色牌，然后摸等量的牌（你每阶段以此法弃置的牌数总和不能大于体力上限）。",
   ["sp__youdi"] = "诱敌",
@@ -1020,6 +1035,8 @@ qinguo:addRelatedSkill(qinguo_targetmod)
 lvdai:addSkill(qinguo)
 Fk:loadTranslationTable{
   ["lvdai"] = "吕岱",
+  ["#lvdai"] = "清身奉公",
+  ["illustrator:lvdai"] = "biou09",
   ["qinguo"] = "勤国",
   [":qinguo"] = "当你于回合内使用装备牌结算结束后，你可视为使用一张不计入次数限制的【杀】；当你的装备区里的牌数变化后，"..
   "若你装备区里的牌数与你的体力值相等，你回复1点体力。",
@@ -1075,6 +1092,8 @@ kannan:addRelatedSkill(kannan_record)
 liuyao:addSkill(kannan)
 Fk:loadTranslationTable{
   ["liuyao"] = "刘繇",
+  ["#liuyao"] = "宗英外镇",
+  ["illustrator:liuyao"] = "异酷",
   ["kannan"] = "戡难",
   [":kannan"] = "出牌阶段，若你于此阶段内发动过此技能的次数小于X（X为你的体力值），你可与你于此阶段内未以此法拼点过的一名角色拼点。"..
   "若：你赢，你使用的下一张【杀】的伤害值基数+1且你于此阶段内不能发动此技能；其赢，其使用的下一张【杀】的伤害值基数+1。",
@@ -1179,6 +1198,8 @@ lvqian:addSkill(weilu)
 lvqian:addSkill(zengdao)
 Fk:loadTranslationTable{
   ["lvqian"] = "吕虔",
+  ["#lvqian"] = "恩威并诸",
+  ["illustrator:lvqian"] = "Town",
   ["weilu"] = "威虏",
   [":weilu"] = "锁定技，当你受到其他角色造成的伤害后，伤害来源在你的下回合出牌阶段开始时失去体力至1，回合结束时其回复以此法失去的体力值。",
   ["zengdao"] = "赠刀",
@@ -1271,6 +1292,8 @@ local fangtong = fk.CreateTriggerSkill{
 zhangliang:addSkill(fangtong)
 Fk:loadTranslationTable{
   ["zhangliang"] = "张梁",
+  ["#zhangliang"] = "人公将军",
+  ["illustrator:zhangliang"] = "Town",
   ["jijun"] = "集军",
   [":jijun"] = "当你于出牌阶段使用武器或非装备牌指定你为目标后，你可以判定，将判定牌置于你的武将牌上，称为“方”。",
   ["zhangliang_fang"] = "方",

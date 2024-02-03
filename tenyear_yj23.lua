@@ -105,6 +105,8 @@ xiahoumao:addSkill(tongwei)
 xiahoumao:addSkill(cuguo)
 Fk:loadTranslationTable{
   ["xiahoumao"] = "夏侯楙",
+  ["#xiahoumao"] = "束甲之鸟",
+  ["designer:xiahoumao"] = "伯约",
   ["tongwei"] = "统围",
   [":tongwei"] = "出牌阶段限一次，你可以指定一名其他角色并重铸两张牌。若如此做，其使用下一张牌结算后，若此牌点数介于你上次此法重铸牌点数之间，"..
   "你视为对其使用一张【杀】或【过河拆桥】。",
@@ -207,6 +209,9 @@ qingbei:addRelatedSkill(qingbei_prohibit)
 chenshi:addSkill(qingbei)
 Fk:loadTranslationTable{
   ["chenshi"] = "陈式",
+  ["#chenshi"] = "裨将可期",
+  ["designer:chenshi"] = "绯瞳",
+  ["illustrator:chenshi"] = "游漫美绘",
   ["qingbei"] = "擎北",
   [":qingbei"] = "每轮开始时，你可以选择任意种花色令你本轮无法使用，然后本轮你使用一张手牌后，摸本轮〖擎北〗选择过的花色数的牌。",
   ["#qingbei-choice"] = "擎北：选择你本轮不能使用的花色",
@@ -254,6 +259,8 @@ local zhenfengf = fk.CreateTriggerSkill{
 feiyao:addSkill(zhenfengf)
 Fk:loadTranslationTable{
   ["feiyao"] = "费曜",
+  ["#feiyao"] = "费曜",
+  ["designer:feiyao"] = "米陶诺斯",
   ["zhenfengf"] = "镇锋",
   [":zhenfengf"] = "每回合限一次，一名其他角色于其回合内使用牌时，若其手牌数不大于体力值，你可以猜测其手牌中与此牌类别相同的牌数。"..
   "若你猜对，你摸X张牌并视为对其使用一张【杀】（X为你连续猜对次数且最多为5）；若猜错且差值大于1，则视为其对你使用一张【杀】。",

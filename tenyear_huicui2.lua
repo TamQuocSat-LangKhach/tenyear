@@ -69,9 +69,8 @@ local dunshi_record = fk.CreateTriggerSkill{
   anim_type = "special",
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    if player:usedSkillTimes("dunshi", Player.HistoryTurn) > 0 and target and target.phase ~= Player.NotActive then
+    if player:usedSkillTimes("dunshi", Player.HistoryTurn) > 0 and target and target == player.room.current then
       if target:getMark("dunshi-turn") == 0 then
-        player.room:addPlayerMark(target, "dunshi-turn", 1)
         return true
       end
     end
@@ -79,6 +78,7 @@ local dunshi_record = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    player.room:setPlayerMark(target, "dunshi-turn", 1)
     local choices = {"dunshi1", "dunshi2", "dunshi3"}
     for i = 1, 2, 1 do
       local choice = room:askForChoice(player, choices, self.name)
@@ -88,7 +88,7 @@ local dunshi_record = fk.CreateTriggerSkill{
         for _, general in ipairs(Fk:getAllGenerals()) do
           for _, skill in ipairs(general.skills) do
             local str = Fk:translate(skill.name)
-            if not target:hasSkill(skill) and
+            if not target:hasSkill(skill,true) and
               (string.find(str, "仁") or string.find(str, "义") or string.find(str, "礼") or string.find(str, "智") or string.find(str, "信")) then
               table.insertIfNeed(skills, skill.name)
             end
@@ -114,7 +114,7 @@ local dunshi_record = fk.CreateTriggerSkill{
         local UImark = player:getMark("@$dunshi")
         if type(UImark) == "table" then
           table.removeOne(UImark, player:getMark("dunshi_name-turn"))
-          room:setPlayerMark(player, "@$dunshi", UImark)
+          room:setPlayerMark(player, "@$dunshi", #UImark > 0 and UImark or 0)
         end
       end
     end
@@ -134,7 +134,7 @@ local dunshi_record = fk.CreateTriggerSkill{
         table.removeOne(UImark, name)
       end
       player:getMark("@$dunshi")
-      player.room:setPlayerMark(player, "@$dunshi", UImark)
+      player.room:setPlayerMark(player, "@$dunshi", #UImark > 0 and UImark or 0)
     else
       player.room:setPlayerMark(player, "@$dunshi", 0)
     end

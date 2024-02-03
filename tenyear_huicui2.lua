@@ -4512,7 +4512,6 @@ Fk:loadTranslationTable{
 }
 
 local daqiao = General(extension, "mu__daqiao", "wu", 3, 3, General.Female)
-daqiao.hidden = true
 
 local qiqin = fk.CreateTriggerSkill{
   name = "qiqin",
@@ -4565,6 +4564,20 @@ local qiqin_maxcards = fk.CreateMaxCardsSkill{
   exclude_from = function(self, player, card)
     return player:hasSkill(qiqin) and card:getMark("qiqin") > 0
   end,
+}
+Fk:addQmlMark{
+  name = "zixi",
+  how_to_show = function(name, value, p)
+    if type(value) ~= "table" then return " " end
+    return table.concat(table.map(value.ids, function(id)
+      local card = p:getVirualEquip(id)
+      if card then
+        return Fk:translate(card.name .. "_short")
+      end
+        return ""
+    end), " ")
+  end,
+  qml_path = "packages/tenyear/qml/ZixiBox"
 }
 local zixi_active = fk.CreateActiveSkill{
   name = "zixi_active",
@@ -4653,6 +4666,37 @@ local zixi = fk.CreateTriggerSkill{
       card.skillName = self.name
       to:addVirtualEquip(card)
       room:moveCardTo(card, Player.Judge, to, fk.ReasonJustMove, self.name)
+    end
+  end,
+
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = Util.TrueFunc,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local mark = {}
+    for _, id in ipairs(player:getCardIds(Player.Judge)) do
+      local zixi_card = player:getVirualEquip(id)
+      if zixi_card and table.contains(zixi_card.skillNames, "zixi") then
+        table.insert(mark, id)
+      end
+    end
+    local old_mark = player:getMark("@[zixi]")
+    if #mark == 0 then
+      if old_mark ~= 0 then
+        room:setPlayerMark(player, "@[zixi]", 0)
+      end
+      return false
+    end
+    if type(old_mark) ~= "table" then
+      old_mark = {player = player.id, ids = mark}
+      room:setPlayerMark(player, "@[zixi]", old_mark)
+      return false
+    end
+    if #mark ~= #old_mark.ids or table.find(mark, function (id)
+      return not table.contains(old_mark.ids, id)
+    end) then
+      old_mark.ids = mark
+      room:setPlayerMark(player, "@[zixi]", old_mark)
     end
   end,
 }
@@ -4755,6 +4799,11 @@ Fk:loadTranslationTable{
   ["#zixi-invoke1"] = "是否发动 姊希，令%arg对%dest额外结算一次",
   ["#zixi-invoke2"] = "是否发动 姊希，摸两张牌",
   ["#zixi-invoke3"] = "是否发动 姊希，令%dest弃置判定区所有牌并受到3点伤害",
+
+  ["@[zixi]"] = "姊希",
+  ["indulgence_short"] = "乐",
+  ["supply_shortage_short"] = "兵",
+  ["lightning_short"] = "电",
 
   ["$qiqin_mu__daqiao1"] = "山月栖瑶琴，一曲渔歌和晚音。",
   ["$qiqin_mu__daqiao2"] = "指尖有琴音，何不于君指上听？",

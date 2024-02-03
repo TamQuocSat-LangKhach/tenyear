@@ -7,7 +7,7 @@ import Fk.RoomElement
 ColumnLayout {
   id: root
   anchors.fill: parent
-  property var extra_data: ({})
+  property var extra_data: ({ name: "", data: {player: 0, ids: {}} })
   signal finish()
 
   BigGlowText {

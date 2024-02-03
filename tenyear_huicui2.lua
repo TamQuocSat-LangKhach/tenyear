@@ -4612,7 +4612,7 @@ local zixi = fk.CreateTriggerSkill{
         end
       end
     else
-      return player.phase == Player.Play
+      return player.phase == Player.Play and not player:isNude()
     end
   end,
   on_cost = function(self, event, target, player, data)

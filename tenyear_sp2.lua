@@ -1832,10 +1832,10 @@ local jiudun = fk.CreateTriggerSkill{
   events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.card.color == Card.Black and data.from ~= player.id and
-      (player.drank == 0 or not player:isKongcheng())
+      (player.drank + player:getMark("@jiudun_drank") == 0 or not player:isKongcheng())
   end,
   on_cost = function(self, event, target, player, data)
-    if player.drank == 0 then
+    if player.drank + player:getMark("@jiudun_drank") == 0 then
       return player.room:askForSkillInvoke(player, self.name, nil, "#jiudun-invoke")
     else
       local card = player.room:askForDiscard(player, 1, 1, false, self.name, true, ".|.|.|hand", "#jiudun-card:::"..data.card:toLogString(), true)
@@ -1847,7 +1847,7 @@ local jiudun = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if player.drank == 0 then
+    if player.drank + player:getMark("@jiudun_drank") == 0 then
       player:drawCards(1, self.name)
       room:useVirtualCard("analeptic", nil, player, player, self.name, false)
     else
@@ -1859,47 +1859,99 @@ local jiudun = fk.CreateTriggerSkill{
       end
     end
   end,
+}
 
-  refresh_events = {fk.EventPhaseStart, fk.TurnEnd},
-  can_refresh = function(self, event, target, player, data)
-    if player:hasSkill(self) then
-      if event == fk.EventPhaseStart then
-        return target.phase == Player.NotActive and player.drank > 0
-      else
-        return player:getMark(self.name) > 0
-      end
+local jiudun__analepticSkill = fk.CreateActiveSkill{
+  name = "jiudun__analepticSkill",
+  prompt = "#analeptic_skill",
+  max_turn_use_time = 1,
+  mod_target_filter = function(self, to_select, _, _, card, _)
+    return not table.find(Fk:currentRoom().alive_players, function(p)
+      return p.dying
+    end)
+  end,
+  can_use = function(self, player, card, extra_data)
+    return ((extra_data and (extra_data.bypass_times or extra_data.analepticRecover)) or
+      self:withinTimesLimit(player, Player.HistoryTurn, card, "analeptic", player))
+  end,
+  on_use = function(_, _, use)
+    if not use.tos or #TargetGroup:getRealTargets(use.tos) == 0 then
+      use.tos = { { use.from } }
+    end
+
+    if use.extra_data and use.extra_data.analepticRecover then
+      use.extraUse = true
     end
   end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.EventPhaseStart then
-      room:setPlayerMark(player, self.name, player.drank)
+  on_effect = function(_, room, effect)
+    local to = room:getPlayerById(effect.to)
+    if to.dead then return end
+    if effect.extra_data and effect.extra_data.analepticRecover then
+      room:recover({
+        who = to,
+        num = 1,
+        recoverBy = room:getPlayerById(effect.from),
+        card = effect.card,
+      })
     else
-      player.drank = player:getMark(self.name)
-      room:setPlayerMark(player, self.name, 0)
-      room:broadcastProperty(player, "drank")
+      room:addPlayerMark(to, "@jiudun_drank")
     end
   end,
 }
+Fk:addSkill(jiudun__analepticSkill)
+
+local jiudun_rule = fk.CreateTriggerSkill{
+  name = "#jiudun_rule",
+  events = {fk.PreCardEffect},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(jiudun) and data.to == player.id and data.card.trueName == "analeptic" and
+    not (data.extra_data and data.extra_data.analepticRecover)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local card = data.card:clone()
+    local c = table.simpleClone(data.card)
+    for k, v in pairs(c) do
+      card[k] = v
+    end
+    card.skill = jiudun__analepticSkill
+    data.card = card
+  end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function (self, event, target, player, data)
+    return player == target and data.card.trueName == "slash" and player:getMark("@jiudun_drank") > 0
+  end,
+  on_refresh = function (self, event, target, player, data)
+    data.additionalDamage = (data.additionalDamage or 0) + player:getMark("@jiudun_drank")
+    data.extra_data = data.extra_data or {}
+    data.extra_data.drankBuff = player:getMark("@jiudun_drank")
+    player.room:setPlayerMark(player, "@jiudun_drank", 0)
+  end,
+}
 zhaowen:addRelatedSkill(zhaowen_trigger)
+jiudun:addRelatedSkill(jiudun_rule)
 ruanji:addSkill(zhaowen)
 ruanji:addSkill(jiudun)
 Fk:loadTranslationTable{
   ["ruanji"] = "阮籍",
-  ["#ruanji"] = "命世大贤",
-  ["illustrator:ruanji"] = "匠人绘",
   ["zhaowen"] = "昭文",
   [":zhaowen"] = "出牌阶段开始时，你可以展示所有手牌。若如此做，本回合其中的黑色牌可以当任意一张普通锦囊牌使用（每回合每种牌名限一次），"..
   "其中的红色牌你使用时摸一张牌。",
   ["jiudun"] = "酒遁",
-  [":jiudun"] = "你的【酒】效果不会因回合结束而消失。当你成为其他角色使用黑色牌的目标后，若你未处于【酒】状态，你可以摸一张牌并视为使用一张【酒】；"..
+  [":jiudun"] = "以使用方法①使用的【酒】对你的作用效果改为：目标角色使用的下一张【杀】的伤害值基数+1。"..
+  "当你成为其他角色使用黑色牌的目标后，若你未处于【酒】状态，你可以摸一张牌并视为使用一张【酒】；"..
   "若你处于【酒】状态，你可以弃置一张手牌令此牌对你无效。",
+
   ["#zhaowen"] = "昭文：将一张黑色“昭文”牌当任意普通锦囊牌使用（每回合每种牌名限一次）",
   ["#zhaowen_trigger"] = "昭文",
   ["#zhaowen-invoke"] = "昭文：你可以展示手牌，本回合其中黑色牌可以当任意锦囊牌使用，红色牌使用时摸一张牌",
   ["@@zhaowen-turn"] = "昭文",
   ["#jiudun-invoke"] = "酒遁：你可以摸一张牌，视为使用【酒】",
   ["#jiudun-card"] = "酒遁：你可以弃置一张手牌，令%arg对你无效",
+  ["#jiudun_rule"] = "酒遁",
+  ["@jiudun_drank"] = "酒",
 
   ["$zhaowen1"] = "我辈昭昭，正始之音浩荡。",
   ["$zhaowen2"] = "正文之昭，微言之绪，绝而复续。",

@@ -645,60 +645,71 @@ local ty_ex__xuanfeng = fk.CreateTriggerSkill{
           if move.from == player.id then
             for _, info in ipairs(move.moveInfo) do
               if info.fromArea == Card.PlayerEquip then
-                return true
+                return table.find(player.room.alive_players, function (p)
+                  return not p:isNude() and p ~= player
+                end)
               end
             end
           end
         end
-      else
-        return target == player and player.phase == Player.Discard and player:getMark("ty_ex__xuanfeng-phase") > 1
+      elseif event == fk.EventPhaseEnd then
+        if target == player and player.phase == Player.Discard and
+        table.find(player.room.alive_players, function (p)
+          return not p:isNude() and p ~= player
+        end) then
+          local x = 0
+          local logic = player.room.logic
+          logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
+            for _, move in ipairs(e.data) do
+              if move.from == player.id and move.moveReason == fk.ReasonDiscard and move.skillName == "game_rule" then
+                x = x + #move.moveInfo
+                if x > 1 then return true end
+              end
+            end
+            return false
+          end, Player.HistoryTurn)
+          return x > 1
+        end
       end
     end
   end,
   on_cost = function(self, event, target, player, data)
-    if table.every(player.room:getOtherPlayers(player), function (p) return p:isNude() end) then return end
-    return player.room:askForSkillInvoke(player, self.name)
+    local room = player.room
+    local targets = table.map(table.filter(room.alive_players, function(p)
+      return not p:isNude() and p ~= player end), Util.IdMapper)
+    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__xuanfeng-choose", self.name, true)
+    if #tos > 0 then
+      self.cost_data = tos[1]
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local targetsx = {}
-    for i = 1, 2, 1 do
-      local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
-        return not p:isNude() end), Util.IdMapper)
-      if #targets > 0 then
-        local tos = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__xuanfeng-choose", self.name, true)
-        if #tos > 0 then
-          room:doIndicate(player.id, tos)
-          local card = room:askForCardChosen(player, room:getPlayerById(tos[1]), "he", self.name)
-          room:throwCard({card}, self.name, room:getPlayerById(tos[1]), player)
-          if player.phase ~= Player.NotActive then
-            table.insert(targetsx, tos[1])
-          end
-        end
+    local targets = {self.cost_data}
+    local to = room:getPlayerById(targets[1])
+    local card = room:askForCardChosen(player, to, "he", self.name)
+    room:throwCard({card}, self.name, to, player)
+    if player.dead then return false end
+    local tos = table.map(table.filter(room.alive_players, function(p)
+      return not p:isNude() and p ~= player end), Util.IdMapper)
+    if #tos > 0 then
+      tos = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__xuanfeng-choose", self.name, true)
+      if #tos > 0 then
+        table.insert(targets, tos[1])
+        to = room:getPlayerById(tos[1])
+        local card = room:askForCardChosen(player, to, "he", self.name)
+        room:throwCard({card}, self.name, to, player)
+        if player.dead then return false end
       end
     end
-    if #targetsx > 0 then
-      local tos = room:askForChoosePlayers(player, targetsx, 1, 1, "#ty_ex__xuanfeng-damage", self.name, true)
-      if #tos > 0 then
-        room:damage{
-          from = player,
-          to = room:getPlayerById(tos[1]),
-          damage = 1,
-          skillName = self.name,
-        }
-      end
-    else return end
-  end,
-
-  refresh_events = {fk.AfterCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self) and player.phase == Player.Discard
-  end,
-  on_refresh = function(self, event, target, player, data)
-    for _, move in ipairs(data) do
-      if move.from == player.id and move.moveReason == fk.ReasonDiscard then
-        player.room:addPlayerMark(player, "ty_ex__xuanfeng-phase", #move.moveInfo)
-      end
+    tos = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__xuanfeng-damage", self.name, true)
+    if #tos > 0 then
+      room:damage{
+        from = player,
+        to = room:getPlayerById(tos[1]),
+        damage = 1,
+        skillName = self.name,
+      }
     end
   end,
 }

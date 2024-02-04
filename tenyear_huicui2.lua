@@ -1555,7 +1555,11 @@ local pitian = fk.CreateTriggerSkill{
       if event == fk.AfterCardsMove then
         for _, move in ipairs(data) do
           if move.from == player.id and move.moveReason == fk.ReasonDiscard then
-            return true
+            for _, info in ipairs(move.moveInfo) do
+              if info.fromArea == Card.PlayerEquip or info.fromArea == Card.PlayerHand then
+                return true
+              end
+            end
           end
         end
       elseif event == fk.Damaged then
@@ -1578,6 +1582,7 @@ local pitian = fk.CreateTriggerSkill{
       player.room:setPlayerMark(player, "@pitian", 0)
     else
       player.room:addPlayerMark(player, "@pitian", 1)
+      player.room:broadcastProperty(player, "MaxCards")
     end
   end,
 }

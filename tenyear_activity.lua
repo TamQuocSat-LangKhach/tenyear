@@ -1692,15 +1692,15 @@ local biaozhao = fk.CreateTriggerSkill{
               recoverBy = player,
               skillName = self.name,
             }
-            if not to.dead then
-              local x = 0
-              for _, p in ipairs(room.alive_players) do
-                x = math.max(x, p:getHandcardNum())
-              end
-              x = x - to:getHandcardNum()
-              if x > 0 then
-                room:drawCards(to, math.min(5, x), self.name)
-              end
+          end
+          if not to.dead then
+            local x = 0
+            for _, p in ipairs(room.alive_players) do
+              x = math.max(x, p:getHandcardNum())
+            end
+            x = x - to:getHandcardNum()
+            if x > 0 then
+              room:drawCards(to, math.min(5, x), self.name)
             end
           end
         end
@@ -2072,8 +2072,8 @@ local ty__songshu = fk.CreateActiveSkill{
     return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   card_filter = Util.FalseFunc,
-  target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id and Self:canPindian(Fk:currentRoom():getPlayerById(to_select))
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -2082,8 +2082,12 @@ local ty__songshu = fk.CreateActiveSkill{
     if pindian.results[target.id].winner == player then
       player:setSkillUseHistory(self.name, 0, Player.HistoryPhase)
     else
-      player:drawCards(2, self.name)
-      target:drawCards(2, self.name)
+      if not player.dead then
+        player:drawCards(2, self.name)
+      end
+      if not target.dead then
+        target:drawCards(2, self.name)
+      end
     end
   end,
 }

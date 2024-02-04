@@ -851,12 +851,11 @@ local dongxie = General(extension, "dongxie", "qun", 4, 4, General.Female)
 
 local jiaoxia_viewas = fk.CreateViewAsSkill{
   name = "jiaoxia_viewas",
-  expand_pile = "jiaoxia",
+  expand_pile = function (self)
+    return U.getMark(Self, "jiaoxia_cards")
+  end,
   card_filter = function(self, to_select, selected)
-    if #selected == 0 then
-      local ids = Self:getMark("jiaoxia_cards")
-      return type(ids) == "table" and table.contains(ids, to_select)
-    end
+    return #selected == 0 and table.contains(U.getMark(Self, "jiaoxia_cards"), to_select)
   end,
   view_as = function(self, cards)
     if #cards == 1 then
@@ -899,29 +898,15 @@ local jiaoxia = fk.CreateTriggerSkill{
     elseif event == fk.CardUseFinished then
       local ids = Card:getIdList(data.card)
       local card = Fk:getCardById(data.card:getEffectiveId())
-      player.special_cards["jiaoxia"] = table.simpleClone(ids)
-      player:doNotify("ChangeSelf", json.encode {
-        id = player.id,
-        handcards = player:getCardIds("h"),
-        special_cards = player.special_cards,
-      })
       room:setPlayerMark(player, "jiaoxia_cards", ids)
       local success, dat = room:askForUseActiveSkill(player, "jiaoxia_viewas", "#jiaoxia-use:::" .. card:toLogString(),
       true, Util.DummyTable, true)
       room:setPlayerMark(player, "jiaoxia_cards", 0)
-
-      player.special_cards["jiaoxia"] = {}
-      player:doNotify("ChangeSelf", json.encode {
-        id = player.id,
-        handcards = player:getCardIds("h"),
-        special_cards = player.special_cards,
-      })
-
       if success then
         room:useCard{
           from = player.id,
           tos = table.map(dat.targets, function(id) return {id} end),
-          card = Fk.skills["jiaoxia_viewas"]:viewAs(dat.cards),
+          card = Fk:getCardById(dat.cards[1]),
         }
       end
     elseif event == fk.EventPhaseStart then

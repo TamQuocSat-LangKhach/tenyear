@@ -1936,6 +1936,8 @@ ruanji:addSkill(zhaowen)
 ruanji:addSkill(jiudun)
 Fk:loadTranslationTable{
   ["ruanji"] = "阮籍",
+  ["#ruanji"] = "命世大贤",
+  ["illustrator:ruanji"] = "匠人绘",
   ["zhaowen"] = "昭文",
   [":zhaowen"] = "出牌阶段开始时，你可以展示所有手牌。若如此做，本回合其中的黑色牌可以当任意一张普通锦囊牌使用（每回合每种牌名限一次），"..
   "其中的红色牌你使用时摸一张牌。",
@@ -3048,23 +3050,11 @@ local xiaoyin = fk.CreateTriggerSkill{
     end
     local targets = {}
     while #ids > 0 and not player.dead do
-      player.special_cards["xiaoyin_active"] = table.simpleClone(ids)
-      player:doNotify("ChangeSelf", json.encode {
-        id = player.id,
-        handcards = player:getCardIds("h"),
-        special_cards = player.special_cards,
-      })
       room:setPlayerMark(player, "xiaoyin_cards", ids)
       room:setPlayerMark(player, "xiaoyin_targets", targets)
       local success, dat = room:askForUseActiveSkill(player, "xiaoyin_active", "#xiaoyin-give", true)
       room:setPlayerMark(player, "xiaoyin_cards", 0)
       room:setPlayerMark(player, "xiaoyin_targets", 0)
-      player.special_cards["xiaoyin_active"] = {}
-      player:doNotify("ChangeSelf", json.encode {
-        id = player.id,
-        handcards = player:getCardIds("h"),
-        special_cards = player.special_cards,
-      })
       if not success then break end
       table.insert(targets, dat.targets[1])
       table.removeOne(ids, dat.cards[1])
@@ -3082,10 +3072,12 @@ local xiaoyin = fk.CreateTriggerSkill{
 }
 local xiaoyin_active = fk.CreateActiveSkill{
   name = "xiaoyin_active",
-  expand_pile = "xiaoyin_active",
   mute = true,
   card_num = 1,
   target_num = 1,
+  expand_pile = function (self)
+    return U.getMark(Self, "xiaoyin_cards")
+  end,
   card_filter = function(self, to_select, selected, targets)
     return #selected == 0 and table.contains(U.getMark(Self, "xiaoyin_cards"), to_select)
   end,
@@ -3135,7 +3127,7 @@ local xiaoyin_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function (self, event, target, player, data)
     local room = player.room
-    if data.from:hasskill(xiaoyin, true) then
+    if data.from:hasSkill(xiaoyin, true) then
       data.from:broadcastSkillInvoke("xiaoyin")
       room:notifySkillInvoked(data.from, "xiaoyin", "offensive")
     end

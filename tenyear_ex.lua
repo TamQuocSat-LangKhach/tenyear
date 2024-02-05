@@ -424,7 +424,9 @@ local ty_ex__sanyao = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name) == 0 and not player:isNude()
   end,
-  card_filter = Util.TrueFunc,
+  card_filter = function (self, to_select, selected, selected_targets)
+    return not Self:prohibitDiscard(Fk:getCardById(to_select))
+  end,
   target_filter = function(self, to_select, selected, selected_cards)
     if #selected < #selected_cards then
       local target = Fk:currentRoom():getPlayerById(to_select)
@@ -1987,7 +1989,7 @@ local ty_ex__jiefan = fk.CreateActiveSkill{
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
-    return #selected == 0
+    return #selected == 0 and not Self:prohibitDiscard(Fk:getCardById(to_select))
   end,
   on_use = function(self, room, effect)
     local target = room:getPlayerById(effect.tos[1])
@@ -2189,6 +2191,7 @@ Fk:loadTranslationTable{
 local zhonghui = General(extension, "ty_ex__zhonghui", "wei", 4)
 local ty_ex__quanji = fk.CreateTriggerSkill{
   name = "ty_ex__quanji",
+  derived_piles = "zhonghui_quan",
   anim_type = "masochism",
   events = {fk.AfterCardsMove, fk.Damaged},
   can_trigger = function(self, event, target, player, data)
@@ -2626,18 +2629,19 @@ local ty_ex__longyin = fk.CreateTriggerSkill{
     return player:hasSkill(self) and target.phase == Player.Play and data.card.trueName == "slash" and not player:isNude()
   end,
   on_cost = function(self, event, target, player, data)
-    local cards = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#ty_ex__longyin-invoke::"..target.id)
+    local cards = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#ty_ex__longyin-invoke::"..target.id, true)
     if #cards > 0 then
       self.cost_data = cards
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
+    player.room:throwCard(self.cost_data, self.name, player, player)
     if not data.extraUse then
       data.extraUse = true
       target:addCardUseHistory(data.card.trueName, -1)
     end
-    if data.card.color == Card.Red then
+    if data.card.color == Card.Red and not player.dead then
       player:drawCards(1, self.name)
     end
     if data.card.number == Fk:getCardById(self.cost_data[1]).number and player:usedSkillTimes("ty_ex__jiezhong", Player.HistoryGame) > 0 then
@@ -3444,6 +3448,7 @@ local ty_ex__caozhen = General(extension, "ty_ex__caozhen", "wei", 4)
 local ty_ex__sidi = fk.CreateTriggerSkill{
   name = "ty_ex__sidi",
   anim_type = "control",
+  derived_piles = "ty_ex__sidi",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
@@ -4104,12 +4109,14 @@ local ty_ex__shenxing = fk.CreateActiveSkill{
   end,
   can_use = Util.TrueFunc,
   card_filter = function(self, to_select, selected)
-    return #selected < math.min(2, Self:usedSkillTimes(self.name, Player.HistoryPhase))
+    return #selected < math.min(2, Self:usedSkillTimes(self.name, Player.HistoryPhase)) and not Self:prohibitDiscard(Fk:getCardById(to_select))
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     room:throwCard(effect.cards, self.name, player, player)
-    player:drawCards(1, self.name)
+    if not player.dead then
+      player:drawCards(1, self.name)
+    end
   end
 }
 local ty_ex__bingyi = fk.CreateTriggerSkill{
@@ -4663,6 +4670,8 @@ caorui:addSkill("xingshuai")
 
 Fk:loadTranslationTable{
   ["ty_ex__caorui"] = "界曹叡",
+  ["#ty_ex__caorui"] = "天资的明君",
+  ["illustrator:ty_ex__caorui"] = "君桓文化",
   ["ty_ex__huituo"] = "恢拓",
   [":ty_ex__huituo"] = "当你受到伤害后，你可以令一名角色判定，若结果为：红色，其回复1点体力；黑色，其摸X张牌（X为伤害值）。",
   ["ty_ex__mingjian"] = "明鉴",
@@ -4755,6 +4764,8 @@ caoxiu:addSkill("qianju")
 caoxiu:addSkill(ty_ex__qingxi)
 Fk:loadTranslationTable{
   ["ty_ex__caoxiu"] = "界曹休",
+  ["#ty_ex__caoxiu"] = "千里骐骥",
+  ["illustrator:ty_ex__caoxiu"] = "写之火工作室",
   ["ty_ex__qingxi"] = "倾袭",
   [":ty_ex__qingxi"] = "当你使用【杀】或【决斗】指定一名角色为目标后，你可以令其选择一项：1.弃置等同于你攻击范围内的角色数张手牌（至多为2，若你武器区里有武器牌则改为至多为4），然后弃置你装备区里的武器牌；2.令此牌对其造成的基础伤害值+1且你进行一次判定，若结果为红色，该角色不能响应此牌。",
   ["#ty_ex__qingxi"] = "倾袭：可令 %dest 选一项：1.弃 %arg 张手牌并弃置你的武器；2.伤害+1且你判定，为红不能响应",
@@ -4826,6 +4837,8 @@ ty_ex__zhongyao:addSkill(ty_ex__huomo)
 ty_ex__zhongyao:addSkill("zuoding")
 Fk:loadTranslationTable{
   ["ty_ex__zhongyao"] = "界钟繇",
+  ["#ty_ex__zhongyao"] = "正楷萧曹",
+  ["illustrator:ty_ex__zhongyao"] = "匠人绘",
   ["ty_ex__huomo"] = "活墨",
   [":ty_ex__huomo"] = "当你需要使用基本牌时（每种牌名每回合限一次），你可以将一张黑色非基本牌置于牌堆顶，视为使用此基本牌。",
   ["#ty_ex__huomo-card"] = "活墨：将一张黑色非基本牌置于牌堆顶",
@@ -4899,6 +4912,8 @@ Fk:addSkill(ty_ex__yaoming_active)
 quancong:addSkill(ty_ex__yaoming)
 Fk:loadTranslationTable{
   ["ty_ex__quancong"] = "界全琮",
+  ["#ty_ex__quancong"] = "慕势耀族",
+  ["illustrator:ty_ex__quancong"] = "YanBai",
   ["ty_ex__yaoming"] = "邀名",
   [":ty_ex__yaoming"] = "每回合每项限一次，当你造成或受到伤害后，你可以选择一项：1.弃置一名其他角色的一张手牌；2.令一名其他角色摸一张牌；3.令一名角色弃置至多两张牌再摸等量的牌。",
   ["#ty_ex__yaoming-invoke"] = "可以发动“邀名”",
@@ -5249,7 +5264,9 @@ local ty_ex__qinwang_trigger = fk.CreateTriggerSkill{
 ty_ex__qinwang:addRelatedSkill(ty_ex__qinwang_trigger)
 ty_ex__liuchen:addSkill(ty_ex__qinwang)
 Fk:loadTranslationTable{
-  ["ty_ex__liuchen"] = "刘谌",
+  ["ty_ex__liuchen"] = "界刘谌",
+  ["#ty_ex__liuchen"] = "血荐轩辕",
+  ["illustrator:ty_ex__liuchen"] = "青雨",
   ["ty_ex__zhanjue"] = "战绝",
   [":ty_ex__zhanjue"] = "出牌阶段，你可以将所有手牌（至少一张）当【决斗】使用，然后此【决斗】结算结束后，你和因此【决斗】受伤的角色各摸一张牌。"..
   "若你本阶段因此技能而摸过至少三张牌，本阶段你的〖战绝〗失效。",
@@ -5345,6 +5362,8 @@ ty_ex__zhangyi:addSkill(ty_ex__shizhi)
 
 Fk:loadTranslationTable{
   ["ty_ex__zhangyi"] = "界张嶷",
+  ["#ty_ex__zhangyi"] = "通壮逾古",
+  ["illustrator:ty_ex__zhangyi"] = "兴游",
   ["ty_ex__wurong"] = "怃戎",
   [":ty_ex__wurong"] = "出牌阶段限一次，你可以令一名其他角色与你同时展示一张手牌，若：你展示的是【杀】且该角色不是【闪】，你对其造成1点伤害；你展示的不是【杀】且该角色是【闪】，你获得其一张牌。",
   ["#ty_ex__wurong-show"] = "怃戎：选择一张展示的手牌",
@@ -5431,6 +5450,8 @@ xiahoushi:addSkill(ty_ex__qiaoshi)
 xiahoushi:addSkill(ty_ex__yanyu)
 Fk:loadTranslationTable{
   ["ty_ex__xiahoushi"] = "界夏侯氏",
+  ["#ty_ex__xiahoushi"] = "采缘撷睦",
+  ["illustrator:ty_ex__xiahoushi"] = "匠人绘",
   ["ty_ex__qiaoshi"] = "樵拾",
   [":ty_ex__qiaoshi"] = "其他角色的结束阶段，若其手牌数等于你，你可以与其各摸一张牌，若这两张牌颜色相同，你可以重复此流程。",
   ["ty_ex__yanyu"] = "燕语",
@@ -5508,7 +5529,9 @@ ty_ex__jigong:addRelatedSkill(ty_ex__jigong_recover)
 guotupangji:addSkill(ty_ex__jigong)
 guotupangji:addSkill("shifei")
 Fk:loadTranslationTable{
-  ["ty_ex__guotupangji"] = "郭图逄纪",
+  ["ty_ex__guotupangji"] = "界郭图逄纪",
+  ["#ty_ex__guotupangji"] = "凶蛇两端",
+  ["illustrator:ty_ex__guotupangji"] = "磐蒲",
   ["ty_ex__jigong"] = "急攻",
   [":ty_ex__jigong"] = "出牌阶段开始时，你可以摸至多三张牌。若如此做，你本回合的手牌上限基数改为X，且弃牌阶段结束时，若X不小于Y，则你回复1点体力。"..
   "（X为你本回合内造成的伤害值之和，Y为你本回合内因〖急攻〗摸牌而获得的牌的数量总和）",
@@ -5574,6 +5597,8 @@ local ty_ex__huaiyi = fk.CreateActiveSkill{
 gongsunyuan:addSkill(ty_ex__huaiyi)
 Fk:loadTranslationTable{
   ["ty_ex__gongsunyuan"] = "界公孙渊",
+  ["#ty_ex__gongsunyuan"] = "狡徒悬海",
+  ["illustrator:ty_ex__gongsunyuan"] = "君桓文化",
   ["ty_ex__huaiyi"] = "怀异",
   [":ty_ex__huaiyi"] = "出牌阶段限一次，你可以展示所有手牌。若仅有一种颜色，你摸一张牌，然后此技能本阶段改为“出牌阶段限两次”；"..
   "若有两种颜色，你弃置其中一种颜色的牌，然后获得至多X名角色各一张牌（X为弃置的手牌数），若你获得的牌大于一张，你失去1点体力。",

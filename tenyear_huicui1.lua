@@ -2378,6 +2378,7 @@ local yuanyu = fk.CreateActiveSkill{
   name = "yuanyu",
   anim_type = "control",
   prompt = "#yuanyu",
+  derived_piles = "yuanyu_resent",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 + player:getMark("yuanyu_extra_times-phase")
   end,

@@ -68,6 +68,8 @@ ty_ex__kuangbi:addRelatedSkill(ty_ex__kuangbi_trigger)
 ty_ex__sundeng:addSkill(ty_ex__kuangbi)
 Fk:loadTranslationTable{
   ["ty_ex__sundeng"] = "界孙登",
+  ["#ty_ex__sundeng"] = "才高德茂",
+  ["illustrator:ty_ex__sundeng"] = "匠人绘",
   ["ty_ex__kuangbi"] = "匡弼",
   [":ty_ex__kuangbi"] = "出牌阶段开始时，你可以令一名其他角色将一至三张牌置于你的武将牌上，本阶段结束时将“匡弼”牌置入弃牌堆。当你于有“匡弼”牌时"..
   "使用牌时，若你：有与之花色相同的“匡弼”牌，则随机将其中一张置入弃牌堆，然后你与该角色各摸一张牌；没有与之花色相同的“匡弼”牌，则随机将一张置入弃牌堆，"..
@@ -196,6 +198,8 @@ duji:addSkill(ty_ex__andong)
 duji:addSkill(ty_ex__yingshi)
 Fk:loadTranslationTable{
   ["ty_ex__duji"] = "界杜畿",
+  ["#ty_ex__duji"] = "卧镇京畿",
+  ["illustrator:ty_ex__duji"] = "匠人绘",
   ["ty_ex__andong"] = "安东",
   [":ty_ex__andong"] = "当你受到其他角色造成的伤害时，你可令伤害来源选择一项：1.防止此伤害，本回合弃牌阶段<font color='red'>♥</font>牌不计入手牌上限；"..
   "2.观看其手牌，若其中有<font color='red'>♥</font>牌则你获得这些牌。若选择2且其没有手牌，则下一次发动时改为由你选择。",
@@ -437,6 +441,8 @@ guohuanghou:addSkill(ty_ex__danxin)
 guohuanghou:addSkill(ty_ex__jiaozhao)
 Fk:loadTranslationTable{
   ["ty_ex__guohuanghou"] = "界郭皇后",
+  ["#ty_ex__guohuanghou"] = "月华驱霾",
+  ["illustrator:ty_ex__guohuanghou"] = "匠人绘",
   ["ty_ex__jiaozhao"] = "矫诏",
   [":ty_ex__jiaozhao"] = "出牌阶段限一次，你可以展示一张手牌并选择一名距离最近的其他角色，该角色声明一种或普通锦囊牌的牌名，"..
   "本回合你可以将此牌当声明的牌使用（不能指定自己为目标）。",
@@ -639,6 +645,8 @@ huangyueying:addSkill(ty__linglong)
 huangyueying:addRelatedSkill("ex__qicai")
 Fk:loadTranslationTable{
   ["ty_ex__huangyueying"] = "界黄月英",
+  ["#ty_ex__huangyueying"] = "闺中璞玉",
+  ["illustrator:ty_ex__huangyueying"] = "匠人绘",
   ["ty__jiqiao"] = "机巧",
   [":ty__jiqiao"] = "出牌阶段开始时，你可以弃置任意张牌，然后你亮出牌堆顶等量的牌，你弃置的牌中每有一张装备牌，则多亮出一张牌。然后你获得其中的非装备牌。",
   ["ty__linglong"] = "玲珑",
@@ -761,6 +769,8 @@ ty_ex__jixu:addRelatedSkill(ty_ex__jixu_targetmod)
 taishici:addSkill(ty_ex__jixu)
 Fk:loadTranslationTable{
   ["ty_ex__taishici"] = "界太史慈",
+  ["#ty_ex__taishici"] = "北海酬恩",
+  ["illustrator:ty_ex__taishici"] = "匠人绘",
   ["ty_ex__jixu"] = "击虚",
   [":ty_ex__jixu"] = "出牌阶段限一次，你可以令至多你体力值数量的其他角色各猜测你的手牌中是否有【杀】。若你的手牌中：有【杀】，此阶段你使用【杀】"..
   "次数上限+X且可以额外指定所有猜错的角色为目标；没有【杀】，你弃置所有猜错的角色各一张牌。然后你摸X张牌（X为猜错的角色数）。",
@@ -845,6 +855,8 @@ ty_ex__zhenwei:addRelatedSkill(ty_ex__zhenwei_delay)
 wenpin:addSkill(ty_ex__zhenwei)
 Fk:loadTranslationTable{
   ["ty_ex__wenpin"] = "界文聘",
+  ["#ty_ex__wenpin"] = "坚城宿将",
+  ["illustrator:ty_ex__wenpin"] = "黯荧岛工作室",
   ["ty_ex__zhenwei"] = "镇卫",
   [":ty_ex__zhenwei"] = "当其他角色成为【杀】或黑色锦囊牌的唯一目标时，若该角色的体力值不大于你，你可以弃置一张牌并选择一项：1.摸一张牌，"..
   "然后将此牌转移给你；2.令此牌无效，然后当前回合结束后，使用者获得此牌。",
@@ -924,6 +936,8 @@ ty_ex__yicong:addRelatedSkill(ty_ex__yicong_audio)
 gongsunzan:addSkill(ty_ex__yicong)
 Fk:loadTranslationTable{
   ["ty_ex__gongsunzan"] = "界公孙瓒",
+  ["#ty_ex__gongsunzan"] = "白马将军",
+  ["illustrator:ty_ex__gongsunzan"] = "匠人绘",
   ["ty_ex__qiaomeng"] = "趫猛",
   [":ty_ex__qiaomeng"] = "当你使用黑色牌指定目标后，你可以弃置其中一名其他目标角色的一张牌，若此牌为：锦囊牌，此黑色牌不能被响应；装备牌，你改为获得之。",
   ["#ty_ex__qiaomeng-choose"] = "趫猛：弃置一名其他目标角色的一张牌",
@@ -1012,6 +1026,7 @@ ty_ex__zhugedan:addRelatedSkill("benghuai")
 ty_ex__zhugedan:addRelatedSkill(ty_ex__weizhong)
 Fk:loadTranslationTable{
   ["ty_ex__zhugedan"] = "界诸葛诞",
+  ["#ty_ex__zhugedan"] = "薤露蒿里",
   ["ty_ex__gongao"] = "功獒",
   [":ty_ex__gongao"] = "锁定技，一名其他角色第一次进入濒死状态时，你加1点体力上限，然后回复1点体力。",
   ["ty_ex__juyi"] = "举义",
@@ -1105,6 +1120,7 @@ local ty_ex__quji = fk.CreateActiveSkill{
 ty_ex__simalang:addSkill(ty_ex__quji)
 Fk:loadTranslationTable{
   ["ty_ex__simalang"] = "界司马朗",
+  ["#ty_ex__simalang"] = "再世神农",
   ["ty_ex__junbing"] = "郡兵",
   [":ty_ex__junbing"] = "一名角色的结束阶段，若其手牌数小于体力值，该角色可以摸一张牌并将所有手牌交给你，然后你可以将等量的牌交给该角色。",
   ["ty_ex__quji"] = "去疾",

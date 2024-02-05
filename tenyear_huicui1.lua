@@ -1787,69 +1787,82 @@ local tongli = fk.CreateTriggerSkill{
       not (table.contains({"peach", "analeptic"}, data.card.trueName) and table.find(player.room.alive_players, function(p) return p.dying end)) then
       local suits = {}
       for _, id in ipairs(player.player_cards[Player.Hand]) do
-        if Fk:getCardById(id).suit ~= Card.NoSuit then
-          table.insertIfNeed(suits, Fk:getCardById(id).suit)
-        end
+        table.insertIfNeed(suits, Fk:getCardById(id).suit)
       end
       return #suits == player:getMark("@tongli-phase")
     end
   end,
   on_use = function(self, event, target, player, data)
     data.extra_data = data.extra_data or {}
-    data.extra_data.tongli = player:getMark("@tongli-phase")
-    player.room:setPlayerMark(player, "tongli_tos", AimGroup:getAllTargets(data.tos))
+    data.extra_data.tongli = {
+      from = player.id,
+      tos = data.extra_data.tongli_target,
+      times = player:getMark("@tongli-phase")
+    }
   end,
 
-  refresh_events = {fk.AfterCardUseDeclared, fk.EventAcquireSkill, fk.CardUseFinished},
+  refresh_events = {fk.PreCardUse},
   can_refresh = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self) then
-      if event == fk.AfterCardUseDeclared then
-        return player.phase == Player.Play and not table.contains(data.card.skillNames, self.name)
-      elseif event == fk.EventAcquireSkill then
-        return data == self and target == player and player.phase == Player.Play
-      else
-        return data.extra_data and data.extra_data.tongli and player:getMark("tongli_tos") ~= 0
-      end
-    end
+    return player == target and player:hasSkill(self, true) and player.phase == Player.Play and
+    not table.contains(data.card.skillNames, self.name)
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.AfterCardUseDeclared then
-      room:addPlayerMark(player, "@tongli-phase", 1)
-    elseif event == fk.EventAcquireSkill then
-      local num = #room.logic:getEventsOfScope(GameEvent.UseCard, 999, function(e)
-        local use = e.data[1]
-        return use.from == player.id
-      end, Player.HistoryPhase)
-      room:addPlayerMark(player, "@tongli-phase", num)
-    else
-      local n = data.extra_data.tongli
-      local targets = player:getMark("tongli_tos")
-      room:setPlayerMark(player, "tongli_tos", 0)
-      local tos = table.simpleClone(targets)
-      for i = 1, n, 1 do
-        if player.dead then return end
-        for _, id in ipairs(targets) do
-          if room:getPlayerById(id).dead then
-            return
-          end
+    room:addPlayerMark(player, "@tongli-phase", 1)
+    data.extra_data = data.extra_data or {}
+    data.extra_data.tongli_target = table.simpleClone(data.tos)
+  end,
+}
+local parseTongliUseStruct = function (player, name, targetGroup)
+  local card = Fk:cloneCard(name)
+  card.skillName = "tongli"
+  if player:prohibitUse(card) then return nil end
+  local room = player.room
+  local all_tos = {}
+  for _, tos in ipairs(targetGroup) do
+    local passed_target = {}
+    for _, to in ipairs(tos) do
+      local target = room:getPlayerById(to)
+      if target.dead then return nil end
+      if #passed_target == 0 and player:isProhibited(target, card) then return nil end
+      if not card.skill:modTargetFilter(to, passed_target, player.id, card, false) then return nil end
+      table.insert(passed_target, to)
+      table.insert(all_tos, {to})
+    end
+  end
+  return {
+    from = player.id,
+    tos = (card.multiple_targets and card.skill:getMinTargetNum() == 0) and {} or all_tos,
+    card = card,
+    extraUse = true
+  }
+end
+local tongli_delay = fk.CreateTriggerSkill{
+  name = "#tongli_delay",
+  mute = true,
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    if data.extra_data and data.extra_data.tongli and not player.dead then
+      local dat = table.simpleClone(data.extra_data.tongli)
+      if dat.from == player.id then
+        local use = parseTongliUseStruct(player, data.card.name, dat.tos)
+        if use then
+          self.cost_data = use
+          return true
         end
-        if table.contains({"savage_assault", "archery_attack"}, data.card.name) then  --to modify tenyear's stupid processing
-          for _, p in ipairs(room:getOtherPlayers(player)) do
-            if not player:isProhibited(p, Fk:cloneCard(data.card.name)) then
-              table.insertIfNeed(tos, p.id)
-            end
-          end
-        elseif table.contains({"amazing_grace", "god_salvation"}, data.card.name) then
-          for _, p in ipairs(room:getAlivePlayers()) do
-            if not player:isProhibited(p, Fk:cloneCard(data.card.name)) then
-              table.insertIfNeed(tos, p.id)
-            end
-          end
-        end
-        room:sortPlayersByAction(tos)
-        room:useVirtualCard(data.card.name, nil, player, table.map(tos, function(id) return room:getPlayerById(id) end), self.name, true)
       end
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local dat = table.simpleClone(data.extra_data.tongli)
+    local use = table.simpleClone(self.cost_data)
+    local room = player.room
+    for _ = 1, dat.times, 1 do
+      room:useCard(use)
+      if player.dead then break end
+      use = parseTongliUseStruct(player, data.card.name, dat.tos)
+      if use == nil then break end
     end
   end,
 }
@@ -1882,8 +1895,10 @@ local shezang = fk.CreateTriggerSkill{
     end
   end,
 }
+tongli:addRelatedSkill(tongli_delay)
 zhangxuan:addSkill(tongli)
 zhangxuan:addSkill(shezang)
+
 Fk:loadTranslationTable{
   ["zhangxuan"] = "张嫙",
   ["tongli"] = "同礼",
@@ -3801,7 +3816,7 @@ local ty__yongdi = fk.CreateActiveSkill{
    end
 }
 ty__jianshu:addRelatedSkill(ty__jianshu_record)
-jiaxu:addSkill("zhenlve")
+jiaxu:addSkill("zhenlue")
 jiaxu:addSkill(ty__jianshu)
 jiaxu:addSkill(ty__yongdi)
 Fk:loadTranslationTable{

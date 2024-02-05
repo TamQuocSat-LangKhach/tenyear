@@ -87,7 +87,7 @@ local yuqi = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "yuqi3", 0)
     room:setPlayerMark(player, "yuqi4", 0)
     if event == fk.EventAcquireSkill then
-      room:setPlayerMark(player, "@" .. self.name, string.format("%d-%d-%d-%d", 0, 3, 1, 1))
+      room:setPlayerMark(player, "@" .. self.name, {0, 3, 1, 1})
     else
       room:setPlayerMark(player, "@" .. self.name, 0)
     end
@@ -107,11 +107,11 @@ local function AddYuqi(player, skillName, num)
   if #choices > 0 then
     local choice = room:askForChoice(player, choices, skillName, "#yuqi-upgrade:::" .. tostring(num), false, all_choices)
     room:setPlayerMark(player, choice, math.min(5-yuqi_initial[table.indexOf(all_choices, choice)], player:getMark(choice)+num))
-    room:setPlayerMark(player, "@yuqi", string.format("%d-%d-%d-%d",
-    player:getMark("yuqi1"),
+    room:setPlayerMark(player, "@yuqi",
+    {player:getMark("yuqi1"),
     player:getMark("yuqi2")+3,
     player:getMark("yuqi3")+1,
-    player:getMark("yuqi4")+1))
+    player:getMark("yuqi4")+1})
   end
 end
 local shanshen = fk.CreateTriggerSkill{
@@ -138,7 +138,7 @@ local shanshen = fk.CreateTriggerSkill{
     return target == player and target:hasSkill(self) and data.to:getMark(self.name) == 0
   end,
   on_refresh = function(self, event, target, player, data)
-      player.room:setPlayerMark(data.to, self.name, 1)
+    player.room:setPlayerMark(data.to, self.name, 1)
   end,
 }
 local xianjing = fk.CreateTriggerSkill{

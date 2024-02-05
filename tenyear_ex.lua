@@ -84,6 +84,8 @@ caozhi:addSkill("luoying")
 caozhi:addSkill(ty_ex__jiushi)
 Fk:loadTranslationTable{
   ["ty_ex__caozhi"] = "界曹植",
+  ["#ty_ex__caozhi"] = "八斗之才",
+  ["illustrator:ty_ex__caozhi"] = "黯荧岛工作室",
   ["ty_ex__jiushi"] = "酒诗",
   [":ty_ex__jiushi"] = "①若你的武将牌正面朝上，你可以翻面视为使用一张【酒】。②当你的武将牌背面朝上，你受到伤害时，"..
   "你可在伤害结算后翻面。③当你使用【酒】时，你令你使用【杀】次数上限+1，直到你的下个回合结束。",
@@ -170,6 +172,8 @@ zhangchunhua:addSkill(ty_ex__jueqing)
 zhangchunhua:addSkill(ty_ex__shangshi)
 Fk:loadTranslationTable{
   ["ty_ex__zhangchunhua"] = "界张春华",
+  ["#ty_ex__zhangchunhua"] = "冷血皇后",
+  ["illustrator:ty_ex__zhangchunhua"] = "磐浦",
   ["ty_ex__jueqing"] = "绝情",
   ["#ty_ex__jueqing_trigger"] = "绝情",
   [":ty_ex__jueqing"] = "①每局限一次，当你造成伤害时，你可以失去同于伤害值点体力令此伤害翻倍。②锁定技，若你已发动过绝情①，你造成的伤害均视为体力流失。",
@@ -221,6 +225,8 @@ local ty_ex__zhenjun = fk.CreateTriggerSkill{
 ty_ex__yujin:addSkill(ty_ex__zhenjun)
 Fk:loadTranslationTable{
   ["ty_ex__yujin"] = "界于禁",
+  ["#ty_ex__yujin"] = "讨暴坚垒",
+  ["illustrator:ty_ex__yujin"] = "Yi章",
   ["ty_ex__zhenjun"] = "镇军",
   [":ty_ex__zhenjun"] = "准备阶段或结束阶段，你可以弃置一名角色X张牌（X为其手牌数减体力值且至少为1），若其中没有装备牌，你选择一项："..
   "1.你弃置一张牌；2.该角色摸等量的牌。",
@@ -385,6 +391,8 @@ fazheng:addSkill(ty_ex__enyuan)
 fazheng:addSkill(ty_ex__xuanhuo)
 Fk:loadTranslationTable{
   ["ty_ex__fazheng"] = "界法正",
+  ["#ty_ex__fazheng"] = "蜀汉的辅翼",
+  ["illustrator:ty_ex__fazheng"] = "君桓文化",
   ["ty_ex__enyuan"] = "恩怨",
   [":ty_ex__enyuan"] = "当你获得一名其他角色至少两张牌后，你可以令其摸一张牌；当你受到1点伤害后，伤害来源需选择一项：1.交给你一张手牌，"..
   "若不为<font color='red'>♥</font>，你摸一张牌；2.其失去1点体力。",
@@ -465,6 +473,8 @@ masu:addSkill(ty_ex__sanyao)
 masu:addSkill(ty_ex__zhiman)
 Fk:loadTranslationTable{
   ["ty_ex__masu"] = "界马谡",
+  ["#ty_ex__masu"] = "军略之才器",
+  ["illustrator:ty_ex__masu"] = "匠人绘",
   ["ty_ex__sanyao"] = "散谣",
   [":ty_ex__sanyao"] = "出牌阶段限一次，你可以弃置任意张牌，然后对体力值最多的等量名其他角色造成1点伤害。",
   ["ty_ex__zhiman"] = "制蛮",
@@ -614,6 +624,8 @@ local ty_ex__jianyan = fk.CreateActiveSkill{
 ty_ex__xushu:addRelatedSkill(ty_ex__jianyan)
 Fk:loadTranslationTable{
   ["ty_ex__xushu"] = "界徐庶",
+  ["#ty_ex__xushu"] = "化剑为犁",
+  ["illustrator:ty_ex__xushu"] = "君桓文化",
   ["ty_ex__zhuhai"] = "诛害",
   [":ty_ex__zhuhai"] = "其他角色的结束阶段，若其本回合造成过伤害，你可以将一张手牌当【杀】或【过河拆桥】对其使用（无距离限制）。",
   ["ty_ex__qianxin"] = "潜心",
@@ -746,6 +758,8 @@ lingtong:addSkill(ty_ex__xuanfeng)
 lingtong:addSkill(ex__yongjin)
 Fk:loadTranslationTable{
   ["ty_ex__lingtong"] = "界凌统",
+  ["#ty_ex__lingtong"] = "豪情烈胆",
+  ["illustrator:ty_ex__lingtong"] = "聚一",
   ["ty_ex__xuanfeng"] = "旋风",
   [":ty_ex__xuanfeng"] = "当你失去装备区里的牌，或于弃牌阶段弃掉两张或更多的牌时，你可以依次弃置一至两名角色的共计两张牌。"..
   "若此时是你的回合内，则你可以对其中一名角色造成1点伤害。",
@@ -909,6 +923,8 @@ wuguotai:addSkill(ty_ex__ganlu)
 wuguotai:addSkill(ty_ex__buyi)
 Fk:loadTranslationTable{
   ["ty_ex__wuguotai"] = "界吴国太",
+  ["#ty_ex__wuguotai"] = "武烈皇后",
+  ["illustrator:ty_ex__wuguotai"] = "匠人绘",
   ["ty_ex__ganlu"] = "甘露",
   [":ty_ex__ganlu"] = "出牌阶段限一次，你可以选择两名角色，交换其装备区内的所有牌，然后若其装备区牌数之差大于X，你需弃置两张手牌（X为你已损失体力值）。",
   ["ty_ex__buyi"] = "补益",
@@ -978,6 +994,8 @@ ty_ex__pojun:addRelatedSkill(ty_ex__pojun_delay)
 xusheng:addSkill(ty_ex__pojun)
 Fk:loadTranslationTable{
   ["ty_ex__xusheng"] = "界徐盛",
+  ["#ty_ex__xusheng"] = "江东的铁壁",
+  ["illustrator:ty_ex__xusheng"] = "黑羽",
   ["ty_ex__pojun"] = "破军",
   [":ty_ex__pojun"] = "当你于出牌阶段内使用【杀】指定一个目标后，你可以将其至多X张牌扣置于该角色的武将牌旁（X为其体力值），若其中有："..
   "装备牌，你弃置其中一张牌；锦囊牌，你摸一张牌。若如此做，当前回合结束后，该角色获得其武将牌旁的所有牌。",
@@ -1107,6 +1125,8 @@ local ty_ex__jinjiu = fk.CreateFilterSkill{
 ty_ex__gaoshun:addSkill(ty_ex__jinjiu)
 Fk:loadTranslationTable{
   ["ty_ex__gaoshun"] = "界高顺",
+  ["#ty_ex__gaoshun"] = "攻无不克",
+  ["illustrator:ty_ex__gaoshun"] = "鄧sir",
   ["ty_ex__xianzhen"] = "陷阵",
   [":ty_ex__xianzhen"] = "每回合限一次，出牌阶段，你可以与一名角色拼点：若你赢，本回合你无视该角色的防具、对其使用牌无距离和次数限制，"..
   "且你本回合使用牌对其造成伤害时，此伤害+1（每种牌名限一次）；若你没赢，本回合你不能使用【杀】且你的【杀】不计入手牌上限。",
@@ -1186,6 +1206,8 @@ chengong:addSkill(ty_ex__mingce)
 chengong:addSkill("zhichi")
 Fk:loadTranslationTable{
   ["ty_ex__chengong"] = "界陈宫",
+  ["#ty_ex__chengong"] = "刚直壮烈",
+  ["illustrator:ty_ex__chengong"] = "君桓文化",
   ["ty_ex__mingce"] = "明策",
   [":ty_ex__mingce"] = "出牌阶段限一次，你可以交给一名其他角色一张装备牌或【杀】，其选择一项：1.视为对其攻击范围内的另一名由你指定的角色使用【杀】，"..
   "若此【杀】造成伤害则执行选项2；2.你与其各摸一张牌。",
@@ -1246,6 +1268,8 @@ ty_ex__xunyou:addSkill("qice")
 ty_ex__xunyou:addSkill(ty_ex__zhiyu)
 Fk:loadTranslationTable{
   ["ty_ex__xunyou"] = "界荀攸",
+  ["#ty_ex__xunyou"] = "曹魏的谋主",
+  ["illustrator:ty_ex__xunyou"] = "柏桦",
   ["ty_ex__zhiyu"] = "智愚",
   [":ty_ex__zhiyu"] = "当你受到伤害后，你可以摸一张牌，然后展示所有手牌且伤害来源弃置一张手牌。若你以此法展示的牌颜色均相同，你获得其弃置的牌且下回合奇策发动次数+1。",
 
@@ -1261,6 +1285,8 @@ wangyi:addSkill("zhenlie")
 wangyi:addSkill("miji")
 Fk:loadTranslationTable{
   ["ty_ex__wangyi"] = "界王异",
+  ["#ty_ex__wangyi"] = "决意的巾帼",
+  ["illustrator:ty_ex__wangyi"] = "夏季和杨杨",
 
   ["$zhenlie_ty_ex__wangyi1"] = "女子，亦可有坚贞气节！",
   ["$zhenlie_ty_ex__wangyi2"] = "品德端正，心中不移。",
@@ -1354,6 +1380,8 @@ ty_ex__jiangchi:addRelatedSkill(ty_ex__jiangchi_prohibit)
 ty_ex__caozhang:addSkill(ty_ex__jiangchi)
 Fk:loadTranslationTable{
   ["ty_ex__caozhang"] = "界曹彰",
+  ["#ty_ex__caozhang"] = "黄须儿",
+  ["illustrator:ty_ex__caozhang"] = "凝聚永恒",
   ["ty_ex__jiangchi"] = "将驰",
   [":ty_ex__jiangchi"] = "出牌阶段开始时，你可以选择一项：1.摸两张牌，此阶段不能使用或打出【杀】；2.摸一张牌；3.弃置一张牌，此阶段使用【杀】无距离限制且可以多使用一张【杀】。",
   ["#ty_ex__jiangchi-invoke"] = "将驰：你可以选一项执行",
@@ -1459,6 +1487,8 @@ ty_ex__madai:addSkill("mashu")
 ty_ex__madai:addSkill(ty_ex__qianxi)
 Fk:loadTranslationTable{
   ["ty_ex__madai"] = "界马岱",
+  ["#ty_ex__madai"] = "临危受命",
+  ["illustrator:ty_ex__madai"] = "君桓文化",
   ["ty_ex__qianxi"] = "潜袭",
   [":ty_ex__qianxi"] = "准备阶段，你可以摸一张牌，并弃置一张牌，然后选择一名距离为1的其他角色。若如此做，本回合：1.其不能使用或打出与你以此法弃置牌颜色相同的手牌；2.你无视其装备区里与你以此法弃置牌颜色相同的防具；3.你于该角色回复体力时摸两张牌。",
   
@@ -1538,6 +1568,8 @@ liaohua:addSkill(ty_ex__dangxian)
 liaohua:addSkill(ty_ex__fuli)
 Fk:loadTranslationTable{
   ["ty_ex__liaohua"] = "界廖化",
+  ["#ty_ex__liaohua"] = "历尽沧桑",
+  ["illustrator:ty_ex__liaohua"] = "君桓文化",
   ["ty_ex__dangxian"] = "当先",
   [":ty_ex__dangxian"] = "锁定技，回合开始时，你执行一个额外的出牌阶段，此阶段开始时你失去1点体力并从弃牌堆获得一张【杀】。",
   ["ty_ex__fuli"] = "伏枥",
@@ -1602,6 +1634,8 @@ guanxingzhangbao:addRelatedSkill("ex__wusheng")
 guanxingzhangbao:addRelatedSkill("ex__paoxiao")
 Fk:loadTranslationTable{
   ["ty_ex__guanxingzhangbao"] = "界关兴张苞",
+  ["#ty_ex__guanxingzhangbao"] = "将门虎子",
+  ["illustrator:ty_ex__guanxingzhangbao"] = "黯荧岛工作室",
   ["ty_ex__tongxin"] = "同心",
   [":ty_ex__tongxin"] = "锁定技，你的攻击范围+2。",
   ["ty_ex__fuhun"] = "父魂",
@@ -1771,6 +1805,8 @@ chengpu:addSkill(ty_ex__lihuo)
 chengpu:addSkill(ty_ex__chunlao)
 Fk:loadTranslationTable{
   ["ty_ex__chengpu"] = "界程普",
+  ["#ty_ex__chengpu"] = "三朝虎臣",
+  ["illustrator:ty_ex__chengpu"] = "zoo",
   ["ty_ex__lihuo"] = "疬火",
   [":ty_ex__lihuo"] = "你使用普通【杀】可以改为火【杀】，结算后若此法使用的【杀】造成了伤害，你失去1点体力；你使用火【杀】时，可以增加一个目标。"..
   "你于一个回合内使用的第一张牌结算后，若此牌为【杀】，你可以将之置为“醇”。",
@@ -1849,7 +1885,7 @@ local ty_ex__zhuiyi = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.Death},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, false, true)
+    return target == player and player:hasSkill(self, false, true)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -1881,6 +1917,8 @@ bulianshi:addSkill(ty_ex__anxu)
 bulianshi:addSkill(ty_ex__zhuiyi)
 Fk:loadTranslationTable{
   ["ty_ex__bulianshi"] = "界步练师",
+  ["#ty_ex__bulianshi"] = "无冕之后",
+  ["illustrator:ty_ex__bulianshi"] = "匠人绘",
   ["ty_ex__anxu"] = "安恤",
   [":ty_ex__anxu"] = "出牌阶段限一次，你可以选择两名手牌数不同的其他角色，令其中手牌少的角色获得手牌多的角色一张手牌并展示之：若此牌不为♠，"..
   "你摸一张牌；若其手牌数因此相同，你回复1点体力。",
@@ -1981,6 +2019,8 @@ handang:addSkill(ty_ex__gongqi)
 handang:addSkill(ty_ex__jiefan)
 Fk:loadTranslationTable{
   ["ty_ex__handang"] = "界韩当",
+  ["#ty_ex__handang"] = "石城侯",
+  ["illustrator:ty_ex__handang"] = "君桓文化",
   ["ty_ex__gongqi"] = "弓骑",
   [":ty_ex__gongqi"] = "出牌阶段限一次，你可以弃置一张牌，此回合你的攻击范围无限，且使用此花色的【杀】无次数限制。若你以此法弃置的牌为装备牌，"..
   "你可以弃置一名其他角色的一张牌。",
@@ -2126,6 +2166,8 @@ ty_ex__zongshi:addRelatedSkill(ty_ex__zongshi_maxcards)
 ty_ex__liubiao:addSkill(ty_ex__zongshi)
 Fk:loadTranslationTable{
   ["ty_ex__liubiao"] = "界刘表",
+  ["#ty_ex__liubiao"] = "跨蹈汉南",
+  ["illustrator:ty_ex__liubiao"] = "聚一",
   ["ty_ex__zishou"] = "自守",
   [":ty_ex__zishou"] = "①摸牌阶段，你可以多摸X张牌（X为全场势力数），然后本回合你对其他角色造成伤害时，防止之；"..
   "<br>②结束阶段，若你本回合没有对其他角色使用过牌，你可以弃置任意张花色各不相同的手牌，摸等量的牌。",
@@ -2300,6 +2342,8 @@ zhonghui:addSkill(ty_ex__zili)
 zhonghui:addRelatedSkill(ty_ex__paiyi)
 Fk:loadTranslationTable{
   ["ty_ex__zhonghui"] = "界钟会",
+  ["#ty_ex__zhonghui"] = "桀骜的野心家",
+  ["illustrator:ty_ex__zhonghui"] = "君桓文化",
   ["ty_ex__quanji"] = "权计",
   [":ty_ex__quanji"] = "当你的牌被其他角色获得后或受到1点伤害后，你可以摸一张牌，然后将一张手牌置于武将牌上，称为“权”；每有一张“权”，你的手牌上限便+1。",
   ["ty_ex__zili"] = "自立",
@@ -2365,6 +2409,8 @@ caochong:addSkill(ty_ex__chengxiang)
 caochong:addSkill("renxin")
 Fk:loadTranslationTable{
   ["ty_ex__caochong"] = "界曹冲",
+  ["#ty_ex__caochong"] = "仁爱的神童",
+  ["illustrator:ty_ex__caochong"] = "虫师网络",
   ["ty_ex__chengxiang"] = "称象",
   [":ty_ex__chengxiang"] = "当你受到伤害后，你可以亮出牌堆顶的四张牌，然后获得其中的任意张点数之和小于等于13的牌。若获得的牌点数之和为13，你复原武将牌。",
 
@@ -2410,6 +2456,8 @@ local ty_ex__jingce = fk.CreateTriggerSkill{
 guohuai:addSkill(ty_ex__jingce)
 Fk:loadTranslationTable{
   ["ty_ex__guohuai"] = "界郭淮",
+  ["#ty_ex__guohuai"] = "垂问秦雍",
+  ["illustrator:ty_ex__guohuai"] = "心中一凛",
   ["ty_ex__jingce"] = "精策",
   [":ty_ex__jingce"] = "回合结束时，若你本回合已使用的牌数大于或等于你的体力值，你可以选择一项:1，执行一个额外的摸牌阶段。2，执行一个额外的出牌阶段。;若你本回合使用的牌花色也大于或等于你的体力值，则改为两项均执行。",
   ["jingce_draw"] = "执行一个摸牌阶段",
@@ -2452,17 +2500,17 @@ local ty_ex__xiansi = fk.CreateTriggerSkill{
   refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
   can_refresh = function(self, event, target, player, data)
     if event == fk.GameStart then
-      return player:hasSkill(self.name, true)
+      return player:hasSkill(self, true)
     elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
       return data == self
     else
-      return target == player and player:hasSkill(self.name, true, true)
+      return target == player and player:hasSkill(self, true, true)
     end
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     if event == fk.GameStart or event == fk.EventAcquireSkill then
-      if player:hasSkill(self.name, true) then
+      if player:hasSkill(self, true) then
         for _, p in ipairs(room:getOtherPlayers(player)) do
           room:handleAddLoseSkills(p, "ty_ex__xiansi&", nil, false, true)
         end
@@ -2513,7 +2561,7 @@ local ty_ex__xiansi_viewas = fk.CreateViewAsSkill{
 local ty_ex__xiansi_prohibit = fk.CreateProhibitSkill{  --FIXME: 目标多指！
   name = "#ty_ex__xiansi_prohibit",
   is_prohibited = function(self, from, to, card)
-    if from:hasSkill(self.name, true) then
+    if from:hasSkill(self, true) then
       return card.trueName == "slash" and table.contains(card.skillNames, "ty_ex__xiansi") and
         not (to:hasSkill("ty_ex__xiansi", true) and #to:getPile("ty_ex__xiansi_ni") > 1)
     end
@@ -2553,6 +2601,8 @@ ty_ex__xiansi:addRelatedSkill(ty_ex__xiansi_viewasSkill)
 liufeng:addSkill(ty_ex__xiansi)
 Fk:loadTranslationTable{
   ["ty_ex__liufeng"] = "界刘封",
+  ["#ty_ex__liufeng"] = "骑虎之殇",
+  ["illustrator:ty_ex__liufeng"] = "Thinking",
   ["ty_ex__xiansi"] = "陷嗣",
   [":ty_ex__xiansi"] = "回合开始阶段开始时，你可以将至多两名其他角色的各一张牌置于你的武将牌上，称为“逆”。每当其他角色需要对你使用一张【杀】时，"..
   "该角色可以弃置你武将牌上的两张“逆”，视为对你使用一张【杀】。若“逆”超过你的体力值，你可以移去一张“逆”，视为使用一张【杀】。",
@@ -2618,6 +2668,8 @@ guanping:addSkill(ty_ex__longyin)
 guanping:addSkill(ty_ex__jiezhong)
 Fk:loadTranslationTable{
   ["ty_ex__guanping"] = "界关平",
+  ["#ty_ex__guanping"] = "忠臣孝子",
+  ["illustrator:ty_ex__guanping"] = "君桓文化",
   ["ty_ex__longyin"] = "龙吟",
   [":ty_ex__longyin"] = "每当一名角色在其出牌阶段使用【杀】时，你可以弃置一张牌令此【杀】不计入出牌阶段使用次数，若此【杀】为红色，你摸一张牌。"..
   "若你以此法弃置的牌点数与此【杀】相同，你重置〖竭忠〗。",
@@ -2709,6 +2761,8 @@ ty_ex__jianyong:addSkill(ty_ex__qiaoshui)
 ty_ex__jianyong:addSkill("zongshij")
 Fk:loadTranslationTable{
   ["ty_ex__jianyong"] = "界简雍",
+  ["#ty_ex__jianyong"] = "悠游风议",
+  ["illustrator:ty_ex__jianyong"] = "黑羽",
   ["ty_ex__qiaoshui"] = "巧说",
   [":ty_ex__qiaoshui"] = "出牌阶段，你可以与一名角色拼点。若你赢，本回合你使用下一张基本牌或普通锦囊牌可以多或少选择一个目标；若你没赢，你结束出牌阶段且本回合锦囊牌不计入手牌上限。",
   ["#ty_ex__qiaoshui-choose"] = "巧说：你可以为%arg增加/减少至多 %arg2 个目标",
@@ -2819,6 +2873,8 @@ local ty_ex__danshou = fk.CreateTriggerSkill{
 zhuran:addSkill(ty_ex__danshou)
 Fk:loadTranslationTable{
   ["ty_ex__zhuran"] = "界朱然",
+  ["#ty_ex__zhuran"] = "不动之督",
+  ["illustrator:ty_ex__zhuran"] = "F源",
   ["ty_ex__danshou"] = "胆守",
   [":ty_ex__danshou"] = "每回合限一次，当你成为基本牌或锦囊牌的目标后，你可以摸X张牌（X为你本回合成为基本牌或锦囊牌的目标次数）；"..
   "一名角色的结束阶段，若你本回合没有以此法摸牌，你可以弃置其手牌数的牌，对其造成1点伤害。",
@@ -2921,8 +2977,8 @@ ty_ex__liru:addSkill("juece")
 ty_ex__liru:addSkill(ty_ex__mieji)
 ty_ex__liru:addSkill(ty_ex__fencheng)
 Fk:loadTranslationTable{
-  ["ty_ex__liru"] = "魔仕",
-  ["#ty_ex__liru"] = "界李儒",
+  ["ty_ex__liru"] = "界李儒",
+  ["#ty_ex__liru"] = "魔仕",
   ["illustrator:ty_ex__liru"] = "胖虎饭票",
   ["ty_ex__mieji"] = "灭计",
   [":ty_ex__mieji"] = "出牌阶段限一次，你可以将一张武器牌或黑色锦囊牌置于牌堆顶，令一名有手牌的其他角色弃置一张牌。若其弃置的牌不为锦囊牌，其弃置一张非锦囊牌（没有则不弃）。",
@@ -3275,6 +3331,8 @@ ty_ex__yufan:addSkill(ty_ex__zongxuan)
 ty_ex__yufan:addSkill(ty_ex__zhiyan)
 Fk:loadTranslationTable{
   ["ty_ex__yufan"] = "界虞翻",
+  ["#ty_ex__yufan"] = "狂直之士",
+  ["illustrator:ty_ex__yufan"] = "君桓文化",
   ["ty_ex__zongxuan"] = "纵玄",
   [":ty_ex__zongxuan"] = "当你的牌因弃置而置入弃牌堆时，若其中有锦囊牌，你可以令一名其他角色获得其中一张锦囊牌，然后你可以将其余的牌中任意张置于牌堆顶。",
   ["#ty_ex__zongxuan-choose"] = "纵玄：可以令一名其他角色获得其中一张锦囊牌",
@@ -3363,6 +3421,8 @@ chenqun:addSkill(ty_ex__pindi)
 chenqun:addSkill(ty_ex__faen)
 Fk:loadTranslationTable{
   ["ty_ex__chenqun"] = "界陈群",
+  ["#ty_ex__chenqun"] = "万世臣表",
+  ["illustrator:ty_ex__chenqun"] = "黯荧岛工作室",
   ["ty_ex__pindi"] = "品第",
   [":ty_ex__pindi"] = "出牌阶段每名角色限一次，你可以弃置一张本阶段未以此法弃置类型的牌并选择一名角色，令其摸X张牌或弃置X张牌"..
   "（X为本回合此技能发动次数）。若其已受伤，横置或重置你的武将牌。",
@@ -3483,6 +3543,8 @@ ty_ex__sidi:addRelatedSkill(ty_ex__sidi_delay)
 ty_ex__caozhen:addSkill(ty_ex__sidi)
 Fk:loadTranslationTable{
   ["ty_ex__caozhen"] = "界曹真",
+  ["#ty_ex__caozhen"] = "荷国天督",
+  ["illustrator:ty_ex__caozhen"] = "凝聚永恒",
   ["ty_ex__sidi"] = "司敌",
   [":ty_ex__sidi"] = "结束阶段，你可以将一张非基本牌置于武将牌上，称为“司”。其他角色的出牌阶段开始时，你可以移去一张“司”，令其于此阶段不能使用或打出与此“司”颜色相同的牌，此阶段结束时，若其没有使用过：【杀】，你视为对其使用一张【杀】；锦囊牌，你摸两张牌。",
   ["#ty_ex__sidi-put"] = "司敌：可以将一张非基本牌置于武将牌上，称为“司”",
@@ -3624,6 +3686,8 @@ ty_ex__hanhaoshihuan:addSkill(ty_ex__shenduan)
 ty_ex__hanhaoshihuan:addSkill(ty_ex__yonglue)
 Fk:loadTranslationTable{
   ["ty_ex__hanhaoshihuan"] = "韩浩史涣",
+  ["#ty_ex__hanhaoshihuan"] = "中军之主",
+  ["illustrator:ty_ex__hanhaoshihuan"] = "alien",
   ["ty_ex__shenduan"] = "慎断",
   [":ty_ex__shenduan"] = "当你的黑色非锦囊牌因弃置而置入弃牌堆时，你可以将此牌当【兵粮寸断】使用（无距离限制）。",
   ["ty_ex__yonglue"] = "勇略",
@@ -3757,6 +3821,8 @@ wuyi:addSkill(benxi)
 
 Fk:loadTranslationTable{
   ["ty_ex__wuyi"] = "界吴懿",
+  ["#ty_ex__wuyi"] = "建兴鞍辔",
+  ["illustrator:ty_ex__wuyi"] = "青岛磐蒲",
   ["ty_ex__benxi"] = "奔袭",
   [":ty_ex__benxi"] = "锁定技，当你于回合内使用牌时，本回合你至其他角色距离-1；你的回合内，若你与所有其他角色的距离均为1，你使用仅指定一个目标的"..
   "【杀】或普通锦囊牌时依次选择至多两项：1.为此牌额外指定一个目标；2.此牌无视防具；3.此牌不能被抵消；4.此牌造成伤害时，你摸一张牌。",
@@ -3829,6 +3895,8 @@ local ty_ex__zhongyong = fk.CreateTriggerSkill{
 zhoucang:addSkill(ty_ex__zhongyong)
 Fk:loadTranslationTable{
   ["ty_ex__zhoucang"] = "界周仓",
+  ["#ty_ex__zhoucang"] = "披肝沥胆",
+  ["illustrator:ty_ex__zhoucang"] = "君桓文化",
   ["ty_ex__zhongyong"] = "忠勇",
   [":ty_ex__zhongyong"] = "当你使用的【杀】结算结束后，你可以将此【杀】和响应此【杀】的【闪】交给另一名其他角色，然后若你交给其获得的牌中包含：红色牌，其可以对你攻击范围内的一名角色使用一张【杀】；黑色牌，其摸一张牌。",
   ["#ty_ex__zhongyong-choose"] = "忠勇：你可以将【杀】和响应之的【闪】交给另一名其他角色",
@@ -3894,6 +3962,8 @@ zhangsong:addSkill("qiangzhi")
 zhangsong:addSkill(ty_ex__xiantu)
 Fk:loadTranslationTable{
   ["ty_ex__zhangsong"] = "界张松",
+  ["#ty_ex__zhangsong"] = "怀璧待凤仪",
+  ["illustrator:ty_ex__zhangsong"] = "匠人绘",
   ["ty_ex__xiantu"] = "献图",
   [":ty_ex__xiantu"] = "其他角色出牌阶段开始时，你可以摸两张牌，然后将两张牌交给该角色。若如此做，此阶段结束时，"..
   "若其于此阶段内没有造成过伤害，你失去1点体力。",
@@ -3998,6 +4068,8 @@ local ty_ex__pingkou = fk.CreateTriggerSkill{
 zhuhuan:addSkill(ty_ex__pingkou)
 Fk:loadTranslationTable{
   ["ty_ex__zhuhuan"] = "界朱桓",
+  ["#ty_ex__zhuhuan"] = "中洲拒天人",
+  ["illustrator:ty_ex__zhuhuan"] = "XXX",
   ["ty_ex__fenli"] = "奋励",
   [":ty_ex__fenli"] = "若你的手牌数为全场最多，你可以跳过判定和摸牌阶段；若你的体力值为全场最多，你可以跳过出牌阶段；若你的装备区里有牌且数量为全场最多，你可以跳过弃牌阶段。",
   ["ty_ex__pingkou"] = "平寇",
@@ -4069,6 +4141,8 @@ ty_ex__guyong:addSkill(ty_ex__shenxing)
 ty_ex__guyong:addSkill(ty_ex__bingyi)
 Fk:loadTranslationTable{
   ["ty_ex__guyong"] = "界顾雍",
+  ["#ty_ex__guyong"] = "庙堂的玉磬",
+  ["illustrator:ty_ex__guyong"] = "大佬荣",
   ["ty_ex__shenxing"] = "慎行",
   [":ty_ex__shenxing"] = "出牌阶段，你可以弃置X张牌，然后摸一张牌（X为你此阶段发动本技能次数，至多为2）。",
   ["ty_ex__bingyi"] = "秉壹",
@@ -4175,6 +4249,8 @@ ty_ex__jiaojin:addRelatedSkill(ty_ex__jiaojin_delay)
 sunluban:addSkill(ty_ex__jiaojin)
 Fk:loadTranslationTable{
   ["ty_ex__sunluban"] = "界孙鲁班",
+  ["#ty_ex__sunluban"] = "为虎作伥",
+  ["illustrator:ty_ex__sunluban"] = "匠人绘",
   ["ty_ex__zenhui"] = "谮毁",
   [":ty_ex__zenhui"] = "当你使用【杀】或普通锦囊牌指定一名角色为唯一目标时，你可以令能成为此牌目标的另一名其他角色选择一项：1.交给你一张牌，然后代替你成为此牌的使用者；2.也成为此牌的目标，然后你的〖谮毁〗本回合失效。",
   ["#ty_ex__zenhui-choose"] = "谮毁：选择一名能成为%arg的目标的角色",
@@ -4286,7 +4362,9 @@ local ty_ex__xianzhou = fk.CreateActiveSkill{
 ty_ex__caifuren:addSkill(ty_ex__qieting)
 ty_ex__caifuren:addSkill(ty_ex__xianzhou)
 Fk:loadTranslationTable{
-  ["ty_ex__caifuren"] = "蔡夫人",
+  ["ty_ex__caifuren"] = "界蔡夫人",
+  ["#ty_ex__caifuren"] = "襄江的蒲苇",
+  ["illustrator:ty_ex__caifuren"] = "合子映画",
   ["ty_ex__qieting"] = "窃听",
   [":ty_ex__qieting"] = "其他角色的回合结束时，若其本回合：没有造成过伤害，你可以将其装备区里的一张牌置入你的装备区；没有对其他角色使用过牌，你摸一张牌。",
   ["ty_ex__xianzhou"] = "献州",
@@ -4332,7 +4410,7 @@ local ty_ex__jianying = fk.CreateTriggerSkill{
   refresh_events = {fk.AfterCardUseDeclared, fk.EventLoseSkill},
   can_refresh = function(self, event, target, player, data)
     if event == fk.AfterCardUseDeclared then
-      return target == player and player:hasSkill(self.name, true)
+      return target == player and player:hasSkill(self, true)
     elseif event == fk.EventLoseSkill then
       return data == self
     end
@@ -4406,6 +4484,8 @@ jvshou:addSkill(ty_ex__shibei)
 
 Fk:loadTranslationTable{
   ["ty_ex__jvshou"] = "界沮授",
+  ["#ty_ex__jvshou"] = "监军谋国",
+  ["illustrator:ty_ex__jvshou"] = "鲨鱼嚼嚼",
   ["ty_ex__jianying"] = "渐营",
   [":ty_ex__jianying"] = "当你使用牌时，若此牌与你使用的上一张牌点数或花色相同，你可以摸一张牌。",
   ["ty_ex__shibei"] = "矢北",

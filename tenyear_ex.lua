@@ -707,23 +707,25 @@ local ty_ex__xuanfeng = fk.CreateTriggerSkill{
     local tos = table.map(table.filter(room.alive_players, function(p)
       return not p:isNude() and p ~= player end), Util.IdMapper)
     if #tos > 0 then
-      tos = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__xuanfeng-choose", self.name, true)
+      tos = room:askForChoosePlayers(player, tos, 1, 1, "#ty_ex__xuanfeng-choose", self.name, true)
       if #tos > 0 then
         table.insert(targets, tos[1])
         to = room:getPlayerById(tos[1])
-        local card = room:askForCardChosen(player, to, "he", self.name)
+        card = room:askForCardChosen(player, to, "he", self.name)
         room:throwCard({card}, self.name, to, player)
         if player.dead then return false end
       end
     end
-    tos = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__xuanfeng-damage", self.name, true)
-    if #tos > 0 then
-      room:damage{
-        from = player,
-        to = room:getPlayerById(tos[1]),
-        damage = 1,
-        skillName = self.name,
-      }
+    if room.current == player then
+      tos = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__xuanfeng-damage", self.name, true)
+      if #tos > 0 then
+        room:damage{
+          from = player,
+          to = room:getPlayerById(tos[1]),
+          damage = 1,
+          skillName = self.name,
+        }
+      end
     end
   end,
 }
@@ -1946,7 +1948,7 @@ local ty_ex__gongqi = fk.CreateActiveSkill{
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isNude()
   end,
   card_filter = function(self, to_select, selected)
-    return #selected == 0
+    return #selected == 0 and not Self:prohibitDiscard(Fk:getCardById(to_select))
   end,
   target_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
@@ -1989,11 +1991,12 @@ local ty_ex__jiefan = fk.CreateActiveSkill{
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
-    return #selected == 0 and not Self:prohibitDiscard(Fk:getCardById(to_select))
+    return #selected == 0
   end,
   on_use = function(self, room, effect)
     local target = room:getPlayerById(effect.tos[1])
     for _, p in ipairs(room:getOtherPlayers(target)) do
+      if target.dead then break end
       if p:inMyAttackRange(target) then
         if #room:askForDiscard(p, 1, 1, true, self.name, true, ".|.|.|.|.|weapon", "#ty_ex__jiefan-discard::"..target.id) == 0 then
           target:drawCards(1, self.name)

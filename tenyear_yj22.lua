@@ -494,6 +494,7 @@ zhugeshang:addSkill(yizu)
 Fk:loadTranslationTable{
   ["zhugeshang"] = "诸葛尚",
   ["#zhugeshang"] = "尚节殉义",
+  ["designer:zhugeshang"] = "叫什么啊你妹",
   ["illustrator:zhugeshang"] = "君桓文化",
   ["sangu"] = "三顾",
   [":sangu"] = "结束阶段，你可依次选择至多三张【杀】或普通锦囊牌（【借刀杀人】、【无懈可击】除外）并指定一名其他角色，"..

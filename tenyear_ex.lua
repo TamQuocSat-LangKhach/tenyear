@@ -653,7 +653,7 @@ local ty_ex__xuanfeng = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.AfterCardsMove, fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) then
+    if player:hasSkill(self) and table.every(player.room.alive_players, function(p) return not p.dying end) then
       if event == fk.AfterCardsMove then
         for _, move in ipairs(data) do
           if move.from == player.id then
@@ -689,9 +689,9 @@ local ty_ex__xuanfeng = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.map(table.filter(room.alive_players, function(p)
-      return not p:isNude() and p ~= player end), Util.IdMapper)
-    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__xuanfeng-choose", self.name, true)
+    local targets = table.filter(room.alive_players, function(p) return not p:isNude() and p ~= player end)
+    if #targets == 0 then return false end
+    local tos = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#ty_ex__xuanfeng-choose", self.name, true)
     if #tos > 0 then
       self.cost_data = tos[1]
       return true
@@ -699,17 +699,16 @@ local ty_ex__xuanfeng = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local targets = {self.cost_data}
-    local to = room:getPlayerById(targets[1])
+    local victims = {self.cost_data}
+    local to = room:getPlayerById(self.cost_data)
     local card = room:askForCardChosen(player, to, "he", self.name)
     room:throwCard({card}, self.name, to, player)
     if player.dead then return false end
-    local tos = table.map(table.filter(room.alive_players, function(p)
-      return not p:isNude() and p ~= player end), Util.IdMapper)
-    if #tos > 0 then
-      tos = room:askForChoosePlayers(player, tos, 1, 1, "#ty_ex__xuanfeng-choose", self.name, true)
+    local targets = table.filter(room.alive_players, function(p) return not p:isNude() and p ~= player end)
+    if #targets > 0 then
+      local tos = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#ty_ex__xuanfeng-choose", self.name, true)
       if #tos > 0 then
-        table.insert(targets, tos[1])
+        table.insertIfNeed(targets, tos[1])
         to = room:getPlayerById(tos[1])
         card = room:askForCardChosen(player, to, "he", self.name)
         room:throwCard({card}, self.name, to, player)
@@ -717,7 +716,7 @@ local ty_ex__xuanfeng = fk.CreateTriggerSkill{
       end
     end
     if room.current == player then
-      tos = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__xuanfeng-damage", self.name, true)
+      local tos = room:askForChoosePlayers(player, victims, 1, 1, "#ty_ex__xuanfeng-damage", self.name, true)
       if #tos > 0 then
         room:damage{
           from = player,
@@ -765,9 +764,8 @@ Fk:loadTranslationTable{
   ["#ty_ex__lingtong"] = "豪情烈胆",
   ["illustrator:ty_ex__lingtong"] = "聚一",
   ["ty_ex__xuanfeng"] = "旋风",
-  [":ty_ex__xuanfeng"] = "当你失去装备区里的牌，或于弃牌阶段弃掉两张或更多的牌时，你可以依次弃置一至两名角色的共计两张牌。"..
-  "若此时是你的回合内，则你可以对其中一名角色造成1点伤害。",
-  ["#ty_ex__xuanfeng-choose"] = "旋风：你可以依次弃置一至两名角色的共计两张牌",
+  [":ty_ex__xuanfeng"] = "当你失去装备区里的牌，或于弃牌阶段弃掉两张或更多的牌时，且没有角色处于濒死状态，你可以依次弃置一至两名其他角色的共计两张牌。若此时是你的回合内，则你可以对其中一名角色造成1点伤害。",
+  ["#ty_ex__xuanfeng-choose"] = "旋风：你可以依次弃置一至两名其他角色的共计两张牌",
   ["#ty_ex__xuanfeng-damage"] = "旋风：你可以对其中一名角色造成一点伤害。",
   ["ex__yongjin"] = "勇进",
   [":ex__yongjin"] = "限定技，出牌阶段，你可以依次移动场上至多三张装备牌。",

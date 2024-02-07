@@ -4361,12 +4361,8 @@ local jj__yeyan = fk.CreateActiveSkill{
     return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   card_filter = function(self, to_select, selected)
-    if Fk:currentRoom():getCardArea(to_select) == Player.Equip or Self:prohibitDiscard(Fk:getCardById(to_select)) then return end
-    if #selected == 0 then
-      return true
-    else
-      return table.every(selected, function (id) return Fk:getCardById(to_select).suit ~= Fk:getCardById(id).suit end)
-    end
+    return table.contains(Self.player_cards[Player.Hand], to_select) and not Self:prohibitDiscard(Fk:getCardById(to_select))
+    and table.every(selected, function (id) return Fk:getCardById(to_select).suit ~= Fk:getCardById(id).suit end)
   end,
   target_filter = function(self, to_select, selected, selected_cards)
     if #selected_cards == 4 then
@@ -4381,55 +4377,36 @@ local jj__yeyan = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     doJianjieMarkChange (room, player, "@@dragon_mark", false, player)
     doJianjieMarkChange (room, player, "@@phoenix_mark", false, player)
+    local damageMap = {}
     if #effect.cards == 0 then
-      for _, id in ipairs(effect.tos) do
-        room:damage{
-          from = player,
-          to = room:getPlayerById(id),
-          damage = 1,
-          damageType = fk.FireDamage,
-          skillName = self.name,
-        }
+      for _, pid in ipairs(effect.tos) do
+        damageMap[pid] = 1
       end
     else
-      room:throwCard(effect.cards, self.name, player, player)
       if #effect.tos == 1 then
         local choice = room:askForChoice(player, {"3", "2"}, self.name)
+        damageMap[effect.tos[1]] = tonumber(choice)
+      else
+        local tos = room:askForChoosePlayers(player, effect.tos, 1, 1, "#yeyan-choose", self.name, false)
+        damageMap[tos[1]] = 2
+        damageMap[tos[1] == effect.tos[1] and effect.tos[2] or effect.tos[1]] = 1
+      end
+      room:throwCard(effect.cards, self.name, player, player)
+      if not player.dead then
         room:loseHp(player, 3, self.name)
+      end
+    end
+    room:sortPlayersByAction(effect.tos)
+    for _, pid in ipairs(effect.tos) do
+      local to = room:getPlayerById(pid)
+      if not to.dead then
         room:damage{
           from = player,
-          to = room:getPlayerById(effect.tos[1]),
-          damage = tonumber(choice),
+          to = to,
+          damage = damageMap[pid],
           damageType = fk.FireDamage,
           skillName = self.name,
         }
-      else
-        local target1 = room:getPlayerById(effect.tos[1])
-        local target2 = room:getPlayerById(effect.tos[2])
-        local to = room:askForChoosePlayers(player, effect.tos, 1, 1, "#jj__yeyan-choose:::".."1", self.name, false)
-        room:addPlayerMark(room:getPlayerById(to[1]), self.name, 1)
-        to = room:askForChoosePlayers(player, effect.tos, 1, 1, "#jj__yeyan-choose:::".."2", self.name, false)
-        room:addPlayerMark(room:getPlayerById(to[1]), self.name, 1)
-        if target1:getMark(self.name) > 0 and target2:getMark(self.name) > 0 then
-          to = room:askForChoosePlayers(player, effect.tos, 1, 1, "#jj__yeyan-choose:::".."3", self.name, false)
-          room:addPlayerMark(room:getPlayerById(to[1]), self.name, 1)
-        end
-        for _, p in ipairs({target1, target2}) do
-          if p:getMark(self.name) == 0 then
-            room:addPlayerMark(p, self.name, 1)
-          end
-        end
-        room:loseHp(player, 3, self.name)
-        for _, p in ipairs({target1, target2}) do
-          room:damage{
-            from = player,
-            to = p,
-            damage = p:getMark(self.name),
-            damageType = fk.FireDamage,
-            skillName = self.name,
-          }
-          room:setPlayerMark(p, self.name, 0)
-        end
       end
     end
   end,

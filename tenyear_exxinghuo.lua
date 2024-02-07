@@ -155,8 +155,9 @@ local ty_ex__yingshi = fk.CreateTriggerSkill{
     local use = room:askForUseCard(target2, "slash", "slash", "#ty_ex__yingshi-slash::"..target1.id, true,
       {must_targets = {target1.id}, bypass_distances = true, bypass_times = true})
     if use then
+      use.extraUse = true
       room:useCard(use)
-      if not target2.dead and room:getCardOwner(id) == player and room:getCardArea(id) == Card.PlayerHand then
+      if not target2.dead and (table.contains(player:getCardIds("he"), id) or room:getCardArea(id) == Card.DiscardPile) then
         room:moveCardTo(Fk:getCardById(id), Card.PlayerHand, target2, fk.ReasonPrey, self.name, nil, true, target2.id)
       end
       if not target2.dead and use.damageDealt and card_info[1] ~= "nosuit" then
@@ -166,7 +167,7 @@ local ty_ex__yingshi = fk.CreateTriggerSkill{
             ids = cards,
             to = target2.id,
             toArea = Card.PlayerHand,
-            moveReason = fk.ReasonJustMove,
+            moveReason = fk.ReasonPrey,
             proposer = target2.id,
             skillName = self.name,
           })
@@ -200,12 +201,13 @@ Fk:loadTranslationTable{
   ["ty_ex__duji"] = "界杜畿",
   ["#ty_ex__duji"] = "卧镇京畿",
   ["illustrator:ty_ex__duji"] = "匠人绘",
+
   ["ty_ex__andong"] = "安东",
   [":ty_ex__andong"] = "当你受到其他角色造成的伤害时，你可令伤害来源选择一项：1.防止此伤害，本回合弃牌阶段<font color='red'>♥</font>牌不计入手牌上限；"..
   "2.观看其手牌，若其中有<font color='red'>♥</font>牌则你获得这些牌。若选择2且其没有手牌，则下一次发动时改为由你选择。",
   ["ty_ex__yingshi"] = "应势",
   [":ty_ex__yingshi"] = "出牌阶段开始时，你可以展示一张手牌并选择一名其他角色，然后令另一名角色对其使用一张【杀】（无距离次数限制）。"..
-  "若其使用了【杀】，则其获得你展示的牌；若此【杀】造成了伤害，则再获得牌堆中所有与展示牌花色点数均相同的牌。",
+  "若其使用了【杀】，则其获得你展示的牌；若此【杀】造成了伤害，则其再获得牌堆中所有与展示牌花色点数均相同的牌。",
   ["#ty_ex__andong-invoke"] = "安东：你可以对 %dest 发动“安东”",
   ["ty_ex__andong1"] = "防止此伤害，本回合你的<font color='red'>♥</font>牌不计入手牌上限",
   ["ty_ex__andong2"] = "其观看你的手牌并获得其中的<font color='red'>♥</font>牌",

@@ -3247,7 +3247,9 @@ sunhuan:addSkill(niji)
 Fk:loadTranslationTable{
   ["sunhuan"] = "孙桓",
   ["#sunhuan"] = "扼龙决险",
+  ["designer:sunhuan"] = "坑坑",
   ["illustrator:sunhuan"] = "一意动漫",
+
   ["niji"] = "逆击",
   [":niji"] = "当你成为非装备牌的目标后，你可以摸一张牌，本回合结束阶段弃置这些牌，弃置前你可以先使用其中一张牌。",
   ["@@niji-inhand"] = "逆击",
@@ -3621,7 +3623,9 @@ shiyi:addRelatedSkill(zuojian)
 Fk:loadTranslationTable{
   ["shiyi"] = "是仪",
   ["#shiyi"] = "清恪贞佐",
+  ["designer:shiyi"] = "神壕",
   ["illustrator:shiyi"] = "福州乐战",
+
   ["cuichuan"] = "榱椽",
   [":cuichuan"] = "出牌阶段限一次，你可以弃置一张手牌并选择一名角色，从牌堆中将一张随机装备牌置入其装备区空位，你摸X张牌（X为其装备区牌数）。"..
   "若其装备区内的牌因此达到4张或以上，你失去〖榱椽〗并获得〖佐谏〗，然后令其在此回合结束后获得一个额外回合。",

@@ -1298,15 +1298,11 @@ local huguan = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and target.phase == Player.Play and data.card.color == Card.Red then
-      local n = 0
-      for _, v in pairs(target.cardUsedHistory) do
-        if v[Player.HistoryPhase] > 0 then
-          n = n + v[Player.HistoryPhase]
-          if n > 1 then return end
-        end
-      end
-      return n == 1
+    if player:hasSkill(self) and target.phase == Player.Play then
+      local use_e = player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e)
+        return e.data[1].from == target.id
+      end, Player.HistoryPhase)
+      return #use_e > 0 and use_e[1].data[1] == data and data.card.color == Card.Red
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -4731,8 +4727,7 @@ local dingji = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and player.phase == Player.Start
   end,
   on_cost = function(self, event, target, player, data)
-    local targets = table.map(player.room.alive_players, Util.IdMapper)
-    local to = player.room:askForChoosePlayers(player, targets, 1, 1, "#dingji-choose", self.name, true)
+    local to = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper), 1, 1, "#dingji-choose", self.name, true)
     if #to > 0 then
       self.cost_data = to[1]
       return true
@@ -4742,59 +4737,30 @@ local dingji = fk.CreateTriggerSkill{
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
     local n = to:getHandcardNum() - 5
-    if n <= 0 then
+    if n < 0 then
       to:drawCards(-n, self.name)
-    else
+    elseif n > 0 then
       room:askForDiscard(to, n, n, false, self.name, false, ".", "#dingji-discard:::"..n)
     end
     if to.dead then return end
     to:showCards(to:getCardIds("h"))
     if to.dead or to:isKongcheng() then return end
-    if table.every(player:getCardIds("h"), function(id)
-      return not table.find(player:getCardIds("h"), function(id2)
+    if table.every(to:getCardIds("h"), function(id)
+      return not table.find(to:getCardIds("h"), function(id2)
         return id ~= id2 and Fk:getCardById(id).trueName == Fk:getCardById(id2).trueName
       end)
     end) then
-      if not table.find(player:getCardIds("h"), function(id)
-        local card = Fk:getCardById(id)
-        return (card.type == Card.TypeBasic or card:isCommonTrick()) and to:canUse(card)
-      end) then return end
-      local success, dat = room:askForUseActiveSkill(to, "dingji_viewas", "#dingji-use", true)
-      if success then
-        local card = Fk.skills["dingji_viewas"]:viewAs(dat.cards)
-        card.skillName = self.name
-        room:useCard{
-          from = target.id,
-          tos = table.map(dat.targets, function(id) return {id} end),
-          card = card,
-          extraUse = true,
-        }
+      local names = {}
+      for _, id in ipairs(to:getCardIds("h")) do
+        local c = Fk:getCardById(id)
+        if c.type == Card.TypeBasic or c:isCommonTrick() then
+          table.insertIfNeed(names, c.name)
+        end
       end
+      U.askForUseVirtualCard(room, to, names, nil, self.name, "#dingji-use", true, true, false, true)
     end
   end,
 }
-local dingji_viewas = fk.CreateViewAsSkill{
-  name = "dingji_viewas",
-  interaction = function()
-    local names = {}
-    for _, id in ipairs(Self:getCardIds("h")) do
-      local card = Fk:getCardById(id)
-      if (card.type == Card.TypeBasic or card:isCommonTrick()) and Self:canUse(card) then
-        table.insertIfNeed(names, card.name)
-      end
-    end
-    if #names == 0 then return end
-    return UI.ComboBox {choices = names}
-  end,
-  card_filter = Util.FalseFunc,
-  view_as = function(self, cards)
-    if not self.interaction.data then return end
-    local card = Fk:cloneCard(self.interaction.data)
-    card.skillName = "dingji"
-    return card
-  end,
-}
-Fk:addSkill(dingji_viewas)
 dongzhao:addSkill(yijia)
 dongzhao:addSkill(dingji)
 Fk:loadTranslationTable{

@@ -800,6 +800,7 @@ caohua:addSkill(guili)
 Fk:loadTranslationTable{
   ["caohua"] = "曹华",
   ["#caohua"] = "殊凰求凤",
+  ["designer:caohua"] = "七哀",
   ["illustrator:caohua"] = "HEI-LE",
   ["caiyi"] = "彩翼",
   [":caiyi"] = "转换技，结束阶段，你可以令一名角色选择一项并移除该选项：阳：1.回复X点体力；2.摸X张牌；3.复原武将牌；4.随机执行一个已移除的阳选项；"..

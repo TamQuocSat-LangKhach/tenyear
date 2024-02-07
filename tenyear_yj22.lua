@@ -312,7 +312,9 @@ hanlong:addSkill(cibei)
 Fk:loadTranslationTable{
   ["hanlong"] = "韩龙",
   ["#hanlong"] = "冯河易水",
+  ["designer:hanlong"] = "雾燎鸟",
   ["illustrator:hanlong"] = "游漫美绘",
+
   ["duwang"] = "独往",
   [":duwang"] = "锁定技，游戏开始时，你将牌堆顶五张不为【杀】的牌置于武将牌上，称为“刺”。若你有“刺”，你与其他角色互相计算距离均+1。",
   ["cibei"] = "刺北",
@@ -757,7 +759,9 @@ lukai:addSkill(zhongzhuang)
 Fk:loadTranslationTable{
   ["lukai"] = "陆凯",
   ["#lukai"] = "青辞宰辅",
+  ["designer:lukai"] = "GT",
   ["illustrator:lukai"] = "游漫美绘",
+
   ["bushil"] = "卜筮",
   [":bushil"] = "你使用♠牌无次数限制；<br>你使用或打出<font color='red'>♥</font>牌后，摸一张牌；<br>当你成为♣牌的目标后，"..
   "你可以弃置一张手牌令此牌对你无效；<br>结束阶段，你获得一张<font color='red'>♦</font>牌。<br>准备阶段，你可以将以上四种花色重新分配。",
@@ -847,6 +851,8 @@ sufei:addSkill(shuojian)
 Fk:loadTranslationTable{
   ["ty__sufei"] = "苏飞",
   ["#ty__sufei"] = "义荐恩还",
+  ["designer:ty__sufei"] = "文小远",
+
   ["shuojian"] = "数荐",
   [":shuojian"] = "出牌阶段限三次，你可以交给一名其他角色一张牌，然后其选择一项：1.令你摸3张牌并弃2张牌；2.视为使用3张【过河拆桥】，本回合此技能失效。"..
   "此阶段下次发动该技能，选项中所有数字-1。",
@@ -979,7 +985,9 @@ kebineng:addSkill(koujing)
 Fk:loadTranslationTable{
   ["kebineng"] = "轲比能",
   ["#kebineng"] = "瀚海鲸波",
+  ["designer:kebineng"] = "zero",
   ["illustrator:kebineng"] = "君桓文化",
+
   ["koujing"] = "寇旌",
   [":koujing"] = "出牌阶段开始时，你可以选择任意张手牌，这些牌本回合视为不计入次数的【杀】。其他角色受到以此法使用的【杀】的伤害后展示这些牌，"..
   "其可用所有手牌交换这些牌。",

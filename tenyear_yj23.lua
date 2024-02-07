@@ -212,6 +212,7 @@ Fk:loadTranslationTable{
   ["#chenshi"] = "裨将可期",
   ["designer:chenshi"] = "绯瞳",
   ["illustrator:chenshi"] = "游漫美绘",
+
   ["qingbei"] = "擎北",
   [":qingbei"] = "每轮开始时，你可以选择任意种花色令你本轮无法使用，然后本轮你使用一张手牌后，摸本轮〖擎北〗选择过的花色数的牌。",
   ["#qingbei-choice"] = "擎北：选择你本轮不能使用的花色",

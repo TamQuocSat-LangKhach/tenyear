@@ -897,7 +897,9 @@ mengjie:addSkill(youqi)
 Fk:loadTranslationTable{
   ["mengjie"] = "孟节",
   ["#mengjie"] = "万安隐者",
+  ["designer:mengjie"] = "神壕",
   ["illustrator:mengjie"] = "君桓文化",
+
   ["yinlu"] = "引路",
   [":yinlu"] = "游戏开始时，你令三名角色依次获得以下一个标记：“乐泉”、“藿溪”、“瘴气”，然后你获得一个“芸香”。<br>"..
   "准备阶段，你可以移动一个标记；有标记的角色死亡时，你可以移动其标记。拥有标记的角色获得对应的效果：<br>"..
@@ -1728,6 +1730,7 @@ liuchongluojun:addSkill(jini)
 Fk:loadTranslationTable{
   ["liuchongluojun"] = "刘宠骆俊",
   ["#liuchongluojun"] = "定境安民",
+  ["designer:liuchongluojun"] = "坑坑",
   ["illustrator:liuchongluojun"] = "匠人绘",
   ["minze"] = "悯泽",
   [":minze"] = "出牌阶段每名角色限一次，你可以将至多两张牌名不同的牌交给一名手牌数小于你的角色。"..
@@ -3544,7 +3547,9 @@ gaoxiang:addSkill(chiying)
 Fk:loadTranslationTable{
   ["gaoxiang"] = "高翔",
   ["#gaoxiang"] = "玄乡侯",
+  ["designer:gaoxiang"] = "神壕",
   ["illustrator:gaoxiang"] = "黯荧岛工作室",
+
   ["chiying"] = "驰应",
   [":chiying"] = "出牌阶段限一次，你可以选择一名体力值不大于你的角色，令其攻击范围内的其他角色各弃置一张牌。若选择的角色不为你，其获得其中的基本牌。",
   ["#chiying-invoke"] = "驰应：选择一名角色，其攻击范围内其他角色各弃一张牌",

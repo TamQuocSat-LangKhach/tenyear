@@ -4087,7 +4087,9 @@ duyu:addSkill(qingshid)
 Fk:loadTranslationTable{
   ["ty__duyu"] = "杜预",
   ["#ty__duyu"] = "文成武德",
+  ["designer:ty__duyu"] = "坑坑",
   ["illustrator:ty__duyu"] = "君桓文化",
+
   ["jianguo"] = "谏国",
   [":jianguo"] = "出牌阶段各限一次，你可以选择：令一名角色摸一张牌然后弃置一半的手牌（向上取整）；"..
   "令一名角色弃置一张牌然后摸与当前手牌数一半数量的牌（向上取整）",
@@ -5826,7 +5828,9 @@ zhouxuan:addSkill(zhanmeng)
 Fk:loadTranslationTable{
   ["zhouxuan"] = "周宣",
   ["#zhouxuan"] = "夜华青乌",
+  ["designer:zhouxuan"] = "世外高v狼",
   ["illustrator:zhouxuan"] = "匠人绘",
+
   ["wumei"] = "寤寐",
   [":wumei"] = "每轮限一次，回合开始前，你可以令一名角色执行一个额外的回合：该回合结束时，将所有存活角色的体力值调整为此额外回合开始时的数值。",
   ["zhanmeng"] = "占梦",

@@ -2737,7 +2737,7 @@ local zhizhe = fk.CreateActiveSkill{
       moveReason = fk.ReasonPrey,
       proposer = effect.from,
       skillName = self.name,
-      moveVisible = false,
+      moveVisible = true,
     })
   end
 }

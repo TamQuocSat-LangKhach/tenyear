@@ -5149,37 +5149,72 @@ local tianji = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
+      local cards = {}
       for _, move in ipairs(data) do
         if move.toArea == Card.DiscardPile and move.moveReason == fk.ReasonJudge and move.skillName == "" then
-          self.cost_data = move
-          return true
+          table.insertTableIfNeed(cards, table.map(move.moveInfo, function (info)
+            return info.cardId
+          end))
         end
       end
+      if #cards > 0 then
+        self.cost_data = cards
+        return true
+      end
+    end
+  end,
+  on_trigger = function(self, event, target, player, data)
+    local cards = table.simpleClone(self.cost_data)
+    for _, id in ipairs(cards) do
+      if not player:hasSkill(self) then break end
+      self:doCost(event, target, player, {id = id})
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local move = self.cost_data
-    for _, info in ipairs(move.moveInfo) do
-      local card = Fk:getCardById(info.cardId, true)
-      local cards = {}
-      local bigNumber = #room.draw_pile
-      local rule = { ".|.|.|.|.|"..card:getTypeString(), ".|.|"..card:getSuitString(), ".|"..card.number }
-      for _, r in ipairs(rule) do
-        local targetCards = table.filter(room:getCardsFromPileByRule(r, bigNumber), function(cid) return not table.contains(cards, cid) end)
-        if #targetCards > 0 then
-          local loc = math.random(1, #targetCards)
-          table.insert(cards, targetCards[loc])
+    local id = data.id
+    local cards = {}
+    local card, card2 = Fk:getCardById(id, true)
+    local cardMap = {{}, {}, {}}
+    for _, id2 in ipairs(room.draw_pile) do
+      card2 = Fk:getCardById(id2, true)
+      if card2.type == card.type then
+        table.insert(cardMap[1], id2)
+      end
+      if card2.suit == card.suit then
+        table.insert(cardMap[2], id2)
+      end
+      if card2.number == card.number then
+        table.insert(cardMap[3], id2)
+      end
+    end
+    for _ = 1, 3, 1 do
+      local x = #cardMap[1] + #cardMap[2] + #cardMap[3]
+      if x == 0 then break end
+      local index = math.random(x)
+      for i = 1, 3, 1 do
+        if index > #cardMap[i] then
+          index = index - #cardMap[i]
+        else
+          id = cardMap[i][index]
+          table.insert(cards, id)
+          cardMap[i] = {}
+          for _, v in ipairs(cardMap) do
+            table.removeOne(v, id)
+          end
+          break
         end
       end
-      room:moveCards({
+    end
+    if #cards > 0 then
+      room:moveCards{
         ids = cards,
         to = player.id,
         toArea = Card.PlayerHand,
         moveReason = fk.ReasonJustMove,
         proposer = player.id,
         skillName = self.name,
-      })
+      }
     end
   end,
 }

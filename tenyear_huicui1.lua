@@ -1748,10 +1748,12 @@ local tongli = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self) and player.phase == Player.Play and data.firstTarget
-      and not table.contains(data.card.skillNames, self.name) and
-      data.card.type ~= Card.TypeEquip and data.card.sub_type ~= Card.SubtypeDelayedTrick and
-      not (table.contains({"peach", "analeptic"}, data.card.trueName) and table.find(player.room.alive_players, function(p) return p.dying end)) then
+    if target == player and player:hasSkill(self) and player.phase == Player.Play and data.firstTarget and
+    data.extra_data and data.extra_data.tongli_target and
+    not table.contains(data.card.skillNames, self.name) and player:getMark("@tongli-phase") > 0 and
+    data.card.type ~= Card.TypeEquip and data.card.sub_type ~= Card.SubtypeDelayedTrick and
+    not (table.contains({"peach", "analeptic"}, data.card.trueName) and
+    table.find(player.room.alive_players, function(p) return p.dying end)) then
       local suits = {}
       for _, id in ipairs(player.player_cards[Player.Hand]) do
         table.insertIfNeed(suits, Fk:getCardById(id).suit)
@@ -1843,12 +1845,14 @@ local shezang = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local suits = {"spade", "club", "heart", "diamond"}
+    local suits = {1, 2, 3, 4}
     local cards = {}
-    while #suits > 0 do
-      local pattern = table.random(suits)
-      table.removeOne(suits, pattern)
-      table.insertTable(cards, room:getCardsFromPileByRule(".|.|"..pattern))
+    local id = -1
+    for i = #room.draw_pile, 1, -1 do
+      id = room.draw_pile[i]
+      if table.removeOne(suits, Fk:getCardById(id).suit) then
+        table.insert(cards, id)
+      end
     end
     if #cards > 0 then
       room:moveCards({
@@ -1858,6 +1862,7 @@ local shezang = fk.CreateTriggerSkill{
         moveReason = fk.ReasonJustMove,
         proposer = player.id,
         skillName = self.name,
+        moveVisible = true
       })
     end
   end,
@@ -1870,11 +1875,11 @@ Fk:loadTranslationTable{
   ["zhangxuan"] = "张嫙",
   ["#zhangxuan"] = "玉宇嫁蔷",
 	["illustrator:zhangxuan"] = "匠人绘",
-
   ["tongli"] = "同礼",
-  [":tongli"] = "出牌阶段，当你使用牌指定目标后，若你手牌中的花色数等于你此阶段已使用牌的张数，你可令此牌效果额外执行X次（X为你手牌中的花色数）。",
+  [":tongli"] = "当你于出牌阶段内使用基本牌或普通锦囊牌指定目标后，若你此阶段使用过牌的次数为X，"..
+  "你可以令你于此牌结算后视为对此牌的原本目标使用X次牌名相同的牌。（X为你手牌中的花色数，包含无色）",
   ["shezang"] = "奢葬",
-  [":shezang"] = "每轮限一次，当你或你回合内有角色进入濒死状态时，你可以从牌堆获得不同花色的牌各一张。",
+  [":shezang"] = "每轮限一次，当你或你回合内有角色进入濒死状态时，你可以从牌堆底获得不同花色的牌各一张。",
   ["@tongli-phase"] = "同礼",
 
   ["$tongli1"] = "胞妹殊礼，妾幸同之。",
@@ -1961,7 +1966,7 @@ Fk:loadTranslationTable{
   ["$xiecui2"] = "江东多娇，锦花相簇。",
   ["$youxu1"] = "积富之家，当恤众急。",
   ["$youxu2"] = "周忧济难，请君恤之。",
-  ["~ty__sunru"] = "伯言，抗儿便托付于你了。",
+  ["~ty__sunru"] = "伯言，抗儿便托付于你了……",
 }
 
 local xiahoulingnv = General(extension, "xiahoulingnv", "wei", 4, 4, General.Female)

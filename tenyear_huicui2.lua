@@ -4724,7 +4724,7 @@ local zixi_delay = fk.CreateTriggerSkill{
         use.card = card
         local room = player.room
         local to = room:getPlayerById(use.to)
-        if U.canTransferTarget(to, use, false) then
+        if not to.dead and U.canTransferTarget(to, use, false) then
           local tos = {use.to}
           if use.subTargets then
             table.insertTable(tos, use.subTargets)
@@ -4798,9 +4798,10 @@ Fk:loadTranslationTable{
   ["qiqin"] = "绮琴",
   [":qiqin"] = "锁定技，游戏开始时，你的初始手牌增加“琴”标记且不计入手牌上限。准备阶段，你获得弃牌堆中所有“琴”牌。",
   ["zixi"] = "姊希",
-  [":zixi"] = "出牌阶段开始时和结束时，你可以将一张“琴”放置在一名角色的判定区。"..
-  "你使用基本牌或普通锦囊牌指定唯一目标后，可根据其判定区牌的张数获得以下效果："..
-  "1张：此牌对其额外结算1次；2张：你摸2张牌；3张：弃置其判定区所有牌对其造成3点伤害。",
+  [":zixi"] = "出牌阶段开始时和结束时，你可以将一张“琴”放置在一名角色的判定区"..
+  "（牌名当做【兵粮寸断】、【乐不思蜀】或【闪电】使用，且判定阶段不执行效果）。"..
+  "你使用基本牌或普通锦囊牌指定唯一目标后，可根据其判定区牌的张数执行："..
+  "1张：此牌结算后，你视为对其使用一张牌名相同的牌；2张：你摸2张牌；3张：弃置其判定区所有牌，对其造成3点伤害。",
   ["@@qiqin-inhand"] = "琴",
   ["#zixi-cost"] = "是否发动 姊希，将一张“琴”放置在一名角色的判定区",
   ["zixi_active"] = "姊希",

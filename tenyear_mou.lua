@@ -13,16 +13,25 @@ local ronghuo = fk.CreateTriggerSkill{
   name = "ronghuo",
   anim_type = "offensive",
   frequency = Skill.Compulsory,
-  events = {fk.PreCardUse},
+  events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and table.contains({"fire_attack", "fire__slash"}, data.card.name)
+    if target == player and player:hasSkill(self) and data.card and
+    table.contains({"fire_attack", "fire__slash"}, data.card.name) then
+      local room = player.room
+      if not U.damageByCardEffect(room) then return false end
+      local kingdoms = {}
+      for _, p in ipairs(room.alive_players) do
+        table.insertIfNeed(kingdoms, p.kingdom)
+      end
+      local x = #kingdoms - 1
+      if x > 0 then
+        self.cost_data = x
+        return true
+      end
+    end
   end,
   on_use = function(self, event, target, player, data)
-    local kingdoms = {}
-    for _, p in ipairs(player.room.alive_players) do
-      table.insertIfNeed(kingdoms, p.kingdom)
-    end
-    data.additionalDamage = (data.additionalDamage or 0) + #kingdoms - 1
+    data.damage = data.damage + self.cost_data
   end,
 }
 local yingmou = fk.CreateTriggerSkill{
@@ -107,7 +116,7 @@ tymou__zhouyu:addSkill(yingmou)
 Fk:loadTranslationTable{
   ["tymou__zhouyu"] = "谋周瑜",
   ["ronghuo"] = "融火",
-  [":ronghuo"] = "锁定技，你的【火攻】和火【杀】伤害基数值改为场上势力数。",
+  [":ronghuo"] = "锁定技，当你因执行火【杀】或【火攻】的效果而对一名角色造成伤害时，你令伤害值+X（X为势力数-1）。",
   ["yingmou"] = "英谋",
   [":yingmou"] = "转换技，每回合限一次，当你对其他角色使用牌结算后，你可以选择其中一个目标角色，阳：你将手牌摸至与其相同（至多摸五张），然后视为对其使用"..
   "一张【火攻】；阴：令一名手牌最多的角色对其使用手牌中所有【杀】和伤害锦囊牌，若没有则将手牌弃至与你相同。",

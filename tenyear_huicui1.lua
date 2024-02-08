@@ -2560,7 +2560,7 @@ Fk:loadTranslationTable{
   ["~zhangyao"] = "花开人赏，花败谁怜……",
 }
 
---芝兰玉树：张虎 吕玲绮 刘永 万年公主 滕公主 庞会 赵统赵广 袁谭袁尚袁熙 乐綝
+--芝兰玉树：张虎 吕玲绮 刘永 万年公主 滕公主 庞会 赵统赵广 袁谭袁尚袁熙 乐綝 刘理
 local zhanghu = General(extension, "zhanghu", "wei", 4)
 local cuijian = fk.CreateActiveSkill{
   name = "cuijian",

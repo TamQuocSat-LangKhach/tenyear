@@ -1962,7 +1962,7 @@ Fk:loadTranslationTable{
   ["~ruanji"] = "诸君，欲与我同醉否？",
 }
 
---豆蔻梢头：花鬘 辛宪英 薛灵芸 芮姬 段巧笑 田尚衣 马伶俐
+--豆蔻梢头：花鬘 辛宪英 薛灵芸 芮姬 段巧笑 田尚衣 柏灵筠 马伶俐
 local huaman = General(extension, "ty__huaman", "shu", 3, 3, General.Female)
 local manyi = fk.CreateTriggerSkill{
   name = "manyi",
@@ -3001,6 +3001,151 @@ Fk:loadTranslationTable{
   ["$xiaoren1"] = "红绡举腕重，明眸最溺人。",
   ["$xiaoren2"] = "飘然回雪轻，言然游龙惊。",
   ["~tianshangyi"] = "红梅待百花，魏宫无春风……",
+}
+
+local bailingyun = General(extension, "bailingyun", "wei", 3, 3, General.Female)
+local linghui = fk.CreateTriggerSkill{
+  name = "linghui",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and target.phase == Player.Finish then
+      if player == target then return true end
+      local logic = player.room.logic
+      local dyingevents = logic.event_recorder[GameEvent.Dying] or Util.DummyTable
+      local turnevents = logic.event_recorder[GameEvent.Turn] or Util.DummyTable
+      return #dyingevents > 0 and #turnevents > 0 and dyingevents[#dyingevents].id > turnevents[#turnevents].id
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local ids = room:getNCards(3)
+    local use = U.askForUseRealCard(room, player, ids, ".", self.name, "#linghui-use",
+    {expand_pile = ids, bypass_times = true}, false, false)
+    if use then
+      table.removeOne(ids, use.card:getEffectiveId())
+    end
+    for i = #ids, 1, -1 do
+      table.insert(room.draw_pile, 1, ids[i])
+    end
+    if not player.dead and use then
+      room:moveCards{
+        ids = table.random(ids, 1),
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonJustMove,
+        proposer = player.id,
+        skillName = self.name,
+      }
+    end
+  end,
+}
+local xiace = fk.CreateTriggerSkill{
+  name = "xiace",
+  anim_type = "masochism",
+  events = {fk.Damage, fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) then
+      if event == fk.Damage then
+        return player:getMark("xiace_damage-turn") == 0 and player:isWounded() and not player:isNude()
+      else
+        return player:getMark("xiace_damaged-turn") == 0
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if event == fk.Damage then
+      local card = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#xiace-recover", true)
+      if #card > 0 then
+        self.cost_data = card
+        return true
+      end
+    else
+      local room = player.room
+      local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
+      targets = room:askForChoosePlayers(player, targets, 1, 1, "#xiace-control", self.name, true)
+      if #targets > 0 then
+        self.cost_data = targets[1]
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.Damage then
+      room:setPlayerMark(player, "xiace_damage-turn", 1)
+      room:throwCard(self.cost_data, self.name, player)
+      if not player.dead and player:isWounded() then
+        room:recover {
+          who = player,
+          num = 1,
+          recoverBy = player,
+          skillName = self.name,
+        }
+      end
+    else
+      room:setPlayerMark(player, "xiace_damaged-turn", 1)
+      local tar = room:getPlayerById(self.cost_data)
+      room:addPlayerMark(tar, "@@xiace-turn")
+      room:addPlayerMark(tar, MarkEnum.UncompulsoryInvalidity .. "-turn")
+    end
+  end
+}
+local yuxin = fk.CreateTriggerSkill{
+  name = "yuxin",
+  frequency = Skill.Limited,
+  events = {fk.EnterDying},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if room:askForSkillInvoke(player, self.name, nil, "#yuxin-invoke::"..target.id) then
+      room:doIndicate(player.id, {target.id})
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:recover {
+      who = target,
+      num = math.max(1, player.hp) - target.hp,
+      recoverBy = player,
+      skillName = self.name,
+    }
+  end,
+}
+bailingyun:addSkill(linghui)
+bailingyun:addSkill(xiace)
+bailingyun:addSkill(yuxin)
+
+Fk:loadTranslationTable{
+  ["bailingyun"] = "柏灵筠",
+  ["#bailingyun"] = "玲珑心窍",
+  --["designer:bailingyun"] = "",
+  --["illustrator:bailingyun"] = "",
+  ["linghui"] = "灵慧",
+  [":linghui"] = "一名角色的结束阶段，若其为你或有角色于本回合内进入过濒死状态，"..
+  "你可以观看牌堆顶的三张牌，你可以使用其中一张牌，然后随机获得剩余牌中的一张。",
+  ["xiace"] = "黠策",
+  [":xiace"] = "每回合各限一次，当你受到伤害后，你可令一名其他角色的所有非锁定技于本回合内失效；"..
+  "当你造成伤害后，你可以弃置一张牌并回复1点体力。",
+  ["yuxin"] = "御心",
+  [":yuxin"] = "限定技，当一名角色进入濒死状态时，你可以令其回复体力至X点（X为你的体力值且至少为1）。",
+
+  ["#linghui-use"] = "灵慧：你可以使用其中的一张牌，然后获得剩余的随机一张",
+  ["#xiace-recover"] = "是否发动 黠策，弃置一张牌来回复1点体力",
+  ["#xiace-control"] = "是否发动 黠策，选择一名其他角色，令其本回合所有非锁定技失效",
+  ["@@xiace-turn"] = "黠策",
+  ["#yuxin-invoke"] = "是否对 %dest 发动 御心",
+
+  ["$linghui1"] = "",
+  ["$linghui2"] = "",
+  ["$xiace1"] = "",
+  ["$xiace2"] = "",
+  ["$yuxin1"] = "",
+  ["$yuxin2"] = "",
+  ["~bailingyun"] = "",
 }
 
 local malingli = General(extension, "malingli", "shu", 3, 3, General.Female)

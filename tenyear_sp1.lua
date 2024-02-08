@@ -1656,7 +1656,7 @@ Fk:loadTranslationTable{
   ["~caoyi"] = "霜落寒鸦浦，天下无故人……",
 }
 
---神·武：姜维 马超 张飞 张角 邓艾
+--神·武：姜维 马超 张飞 张角 邓艾 典韦 许褚
 local godjiangwei = General(extension, "godjiangwei", "god", 4)
 local tianren = fk.CreateTriggerSkill {
   name = "tianren",
@@ -2839,6 +2839,25 @@ Fk:loadTranslationTable{
   ["$cuixin1"] = "今兵临城下，其王庭可摧。",
   ["$cuixin2"] = "四面皆奏楚歌，问汝降是不降？",
   ["~goddengai"] = "灭蜀者，邓氏士载也！",
+}
+
+Fk:loadTranslationTable{
+  ["godxuchu"] = "神许褚",
+  ["#godxuchu"] = "嗜战的熊罴",
+  --["illustrator:godxuchu"] = "",
+  ["zhengqing"] = "争擎",
+  [":zhengqing"] = "锁定技，每轮结束时，移去所有“擎”标记，然后本轮单回合内造成伤害值最多的角色获得X个“擎”标记"..
+  "并与你各摸一张牌（X为其该回合造成的伤害数）。若是你获得“擎”且是获得数量最多的一次，你改为摸X张牌（最多摸5）。",
+  ["zhuangpo"] = "壮魄",
+  [":zhuangpo"] = "你可将牌面信息中有【杀】字的牌当【决斗】使用。"..
+  "若你拥有“擎”，则此【决斗】指定目标后，你可以移去任意个“擎”，然后令其弃置等量的牌；"..
+  "若此【决斗】指定了有“擎”的角色为目标，则此牌伤害+1。",
+
+  ["$zhengqing1"] = "",
+  ["$zhengqing2"] = "",
+  ["$zhuangpo1"] = "",
+  ["$zhuangpo2"] = "",
+  ["~godxuchu"] = "",
 }
 
 --百战虎贲：兀突骨 文鸯 夏侯霸 皇甫嵩 王双 留赞 黄祖 雷铜 吴兰 陈泰 王濬 杜预

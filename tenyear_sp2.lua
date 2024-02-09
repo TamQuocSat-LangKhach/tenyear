@@ -3139,13 +3139,13 @@ Fk:loadTranslationTable{
   ["@@xiace-turn"] = "黠策",
   ["#yuxin-invoke"] = "是否对 %dest 发动 御心",
 
-  ["$linghui1"] = "",
-  ["$linghui2"] = "",
-  ["$xiace1"] = "",
-  ["$xiace2"] = "",
-  ["$yuxin1"] = "",
-  ["$yuxin2"] = "",
-  ["~bailingyun"] = "",
+  ["$linghui1"] = "福兮祸所依，祸兮福所伏。",
+  ["$linghui2"] = "枯桑知风，沧海知寒。",
+  ["$xiace1"] = "风之积非厚，其负大翼也无力。",
+  ["$xiace2"] = "人情同于抔土，岂穷达而异心。",
+  ["$yuxin1"] = "得一人知情识趣，何妨同甘共苦。",
+  ["$yuxin2"] = "临千军而不改其静，御心无波尔。",
+  ["~bailingyun"] = "世人皆惧司马，独我痴情仲达。",
 }
 
 local malingli = General(extension, "malingli", "shu", 3, 3, General.Female)

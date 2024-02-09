@@ -2841,6 +2841,183 @@ Fk:loadTranslationTable{
   ["~goddengai"] = "灭蜀者，邓氏士载也！",
 }
 
+local godxuchu = General(extension, "godxuchu", "god", 5)
+local zhengqing = fk.CreateTriggerSkill{
+  name = "zhengqing",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.RoundEnd},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, p in ipairs(room.players) do
+      if p:getMark("@zhengqing_qing") then
+        room:setPlayerMark(p, "@zhengqing_qing", 0)
+      end
+    end
+
+    local phases = room.logic:getEventsOfScope(GameEvent.Turn, 999, Util.TrueFunc, Player.HistoryRound)
+    local damageEvents = U.getActualDamageEvents(room, 999, Util.TrueFunc, Player.HistoryRound)
+
+    if #phases > 0 and #damageEvents > 0 then
+      local curIndex = 1
+      local bestRecord = {}
+      for i = 1, #phases do
+        local records = {}
+        for j = curIndex, #damageEvents do
+          curIndex = j
+
+          local phaseEvent = phases[i]
+          local damageEvent = damageEvents[j]
+          if phaseEvent.id < damageEvent.id and (i == #phases or phases[i + 1].id > damageEvent.id) then
+            local damageData = damageEvent.data[1]
+            if damageData.from then
+              records[damageData.from.id] = (records[damageData.from.id] or 0) + damageData.damage
+            end
+          end
+
+          if i < #phases and phases[i + 1].id < damageEvent.id then
+            break
+          end
+        end
+
+        for playerId, damage in pairs(records) do
+          if damage > (bestRecord.damage or 0) then
+            bestRecord = { playerId = playerId, damage = damage }
+          end
+        end
+      end
+
+      local winnerId = bestRecord.playerId
+      if winnerId and room:getPlayerById(winnerId):isAlive() then
+        local winner = room:getPlayerById(winnerId)
+        local preRecord = (player.tag["zhengqing_best"] or 0)
+        room:addPlayerMark(winner, "@zhengqing_qing", bestRecord.damage)
+        player.tag["zhengqing_best"] = bestRecord.damage
+        if winner == player and bestRecord.damage > preRecord then
+          player:drawCards(math.min(bestRecord.damage, 5), self.name)
+        else
+          local players = { bestRecord.playerId, player.id }
+          room:sortPlayersByAction(players)
+          for _, p in ipairs(players) do
+            room:getPlayerById(p):drawCards(1, self.name)
+          end
+        end
+      end
+    end
+  end,
+}
+
+godxuchu:addSkill(zhengqing)
+
+local zhuangpo = fk.CreateViewAsSkill{
+  name = "zhuangpo",
+  anim_type = "offensive",
+  prompt = "#zhuangpo",
+  pattern = "duel",
+  card_filter = function(self, to_select, selected)
+    return
+      #selected == 0 and
+      (
+        Fk:getCardById(to_select).trueName == "slash" or
+        string.find(Fk:translate(":" .. Fk:getCardById(to_select).name), "【杀】")
+      )
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 then return end
+    local c = Fk:cloneCard("duel")
+    c.skillName = self.name
+    c:addSubcard(cards[1])
+    return c
+  end,
+  enabled_at_play = function(self, player)
+    return not player:isNude()
+  end,
+}
+local zhuangpoBuff = fk.CreateTriggerSkill{
+  name = "#zhuangpo_buff",
+  anim_type = "offensive",
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    return
+      target == player and player:hasSkill(self) and
+      table.contains(data.card.skillNames, zhuangpo.name) and
+      (
+        player:getMark("@zhengqing_qing") > 0 or
+        (
+          data.firstTarget and
+          table.find(AimGroup:getAllTargets(data.tos), function(p)
+            return player.room:getPlayerById(p):getMark("@zhengqing_qing") > 0
+          end)
+        )
+      )
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if player:getMark("@zhengqing_qing") > 0 and room:getPlayerById(data.to):isAlive() then
+      local choices = {}
+      for i = 1, player:getMark("@zhengqing_qing") do
+        table.insert(choices, tostring(i))
+      end
+      table.insert(choices, "Cancel")
+
+      local choice = room:askForChoice(player, choices, zhengqing.name, "#zhuangpo-choice::" .. data.to)
+      if choice == "Cancel" then
+        return (
+          data.firstTarget and
+          table.find(AimGroup:getAllTargets(data.tos), function(p)
+            return room:getPlayerById(p):getMark("@zhengqing_qing") > 0
+          end)
+        )
+      else
+        self.cost_data = tonumber(choice)
+      end
+    end
+
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if (self.cost_data or 0) > 0 then
+      local discardNum = self.cost_data
+      self.cost_data = nil
+      room:removePlayerMark(player, "@zhengqing_qing", discardNum)
+      room:askForDiscard(room:getPlayerById(data.to), discardNum, discardNum, true, self.name, false)
+    end
+
+    if
+      data.firstTarget and
+      table.find(AimGroup:getAllTargets(data.tos), function(p)
+        return room:getPlayerById(p):getMark("@zhengqing_qing") > 0
+      end)
+    then
+      data.additionalDamage = (data.additionalDamage or 0) + 1
+      data.extra_data = data.extra_data or {}
+      data.extra_data.zhengqingBuff = true
+
+      -- local e = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+      -- if e then
+      --   local _data = e.data[1]
+      --   _data.additionalDamage = (_data.additionalDamage or 0) + 1
+      -- end
+    end
+  end,
+
+  --FIXME: 需要本体取使用流程和指定流程的附加伤害基数最大值
+  refresh_events = {fk.TargetSpecified},
+  can_refresh = function(self, event, target, player, data)
+    return (data.extra_data or {}).zhengqingBuff
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.additionalDamage = (data.additionalDamage or 0) + 1
+  end,
+}
+
+zhuangpo:addRelatedSkill(zhuangpoBuff)
+godxuchu:addSkill(zhuangpo)
+
 Fk:loadTranslationTable{
   ["godxuchu"] = "神许褚",
   ["#godxuchu"] = "嗜战的熊罴",
@@ -2848,16 +3025,21 @@ Fk:loadTranslationTable{
   ["zhengqing"] = "争擎",
   [":zhengqing"] = "锁定技，每轮结束时，移去所有“擎”标记，然后本轮单回合内造成伤害值最多的角色获得X个“擎”标记"..
   "并与你各摸一张牌（X为其该回合造成的伤害数）。若是你获得“擎”且是获得数量最多的一次，你改为摸X张牌（最多摸5）。",
+  ["@zhengqing_qing"] = "擎",
+
   ["zhuangpo"] = "壮魄",
   [":zhuangpo"] = "你可将牌面信息中有【杀】字的牌当【决斗】使用。"..
   "若你拥有“擎”，则此【决斗】指定目标后，你可以移去任意个“擎”，然后令其弃置等量的牌；"..
   "若此【决斗】指定了有“擎”的角色为目标，则此牌伤害+1。",
+  ["#zhuangpo_buff"] = "壮魄",
+  ["#zhuangpo"] = "壮魄：你可将牌面信息中有【杀】字的牌当【决斗】使用",
+  ["#zhuangpo-choice"] = "壮魄：你可移去至少一枚“擎”标记，令 %dest 弃置等量的牌",
 
-  ["$zhengqing1"] = "",
-  ["$zhengqing2"] = "",
-  ["$zhuangpo1"] = "",
-  ["$zhuangpo2"] = "",
-  ["~godxuchu"] = "",
+  ["$zhengqing1"] = "锐势夺志，斩将者虎候是也！",
+  ["$zhengqing2"] = "三军争勇，擎纛者舍我其谁！",
+  ["$zhuangpo1"] = "腹吞龙虎，气撼山河！",
+  ["$zhuangpo2"] = "神魄凝威，魍魉辟易！",
+  ["~godxuchu"] = "猛虎归林晚，不见往来人。",
 }
 
 --百战虎贲：兀突骨 文鸯 夏侯霸 皇甫嵩 王双 留赞 黄祖 雷铜 吴兰 陈泰 王濬 杜预

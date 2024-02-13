@@ -2172,28 +2172,24 @@ local ty__fenglue = fk.CreateActiveSkill{
     return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   card_filter = Util.FalseFunc,
-  target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id and Self:canPindian(Fk:currentRoom():getPlayerById(to_select))
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    local pindian = player:pindian({target}, self.name)
-    if pindian.results[target.id].winner == player then
-      local dummy = Fk:cloneCard("dilu")
-      if #target:getCardIds{Player.Hand, Player.Equip, Player.Judge} < 3 then
-        dummy:addSubcards(target:getCardIds{Player.Hand, Player.Equip, Player.Judge})
-      else
-        local cards = room:askForCardsChosen(target, target, 2, 2, "hej", self.name)
-        dummy:addSubcards(cards)
+    local to = room:getPlayerById(effect.tos[1])
+    local pindian = player:pindian({to}, self.name)
+    local winner = pindian.results[to.id].winner
+    if winner == player then
+      if to:isAllNude() or player.dead then return end
+      local cards = to:getCardIds("hej")
+      if #cards > 2 then
+        cards = U.askForCard(to, cards, 2, 2, self.name, false, "#ty__fenglue-give:"..player.id, to:getCardIds("j"))
       end
-      if #dummy.subcards > 0 then
-        room:obtainCard(player, dummy, false, fk.ReasonGive)
-      end
-    elseif pindian.results[target.id].winner == target then
-      if room:getCardArea(pindian.fromCard.id) == Card.DiscardPile then
-        room:delay(1000)
-        room:obtainCard(target, pindian.fromCard.id, true, fk.ReasonJustMove)
+      room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonGive, self.name, "", false, to.id)
+    elseif winner == to then
+      if room:getCardArea(pindian.fromCard) == Card.DiscardPile and not to.dead then
+        room:obtainCard(to, pindian.fromCard, true, fk.ReasonPrey)
       end
     else
       player:setSkillUseHistory(self.name, 0, Player.HistoryPhase)
@@ -2205,11 +2201,9 @@ local anyong = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and data.from and data.from.phase ~= Player.NotActive and data.to ~= data.from then
-      if data.from:getMark("anyong-turn") == 0 then
-        player.room:addPlayerMark(data.from, "anyong-turn", 1)
-        return data.damage == 1 and not data.to.dead and not player:isNude()
-      end
+    if player:hasSkill(self) and not player:isNude() and target and target == player.room.current and data.to ~= target and not data.to.dead and data.damage == 1 then
+      local dat = U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == target and e.data[1].to ~= target end)
+      return #dat > 0 and dat[1].data[1] == data
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -2236,10 +2230,11 @@ xunchen:addSkill(anyong)
 Fk:loadTranslationTable{
   ["ty__xunchen"] = "荀谌",
   ["#ty__xunchen"] = "三公谋主",
-  ["illustrator:xxx_general"] = "凝聚永恒",
+  ["illustrator:ty__xunchen"] = "凝聚永恒",
+
   ["ty__fenglue"] = "锋略",
-  [":ty__fenglue"] = "出牌阶段限一次，你可以和一名其他角色拼点。若你赢，该角色交给你其区域内的两张牌；若点数相同，此技能视为未发动过；"..
-  "若你输，该角色获得你拼点的牌。",
+  [":ty__fenglue"] = "出牌阶段限一次，你可以和一名角色拼点。若：你赢，其交给你其区域内的两张牌；你与其均没赢，此技能视为未发动过；其赢，其获得你拼点的牌。",
+  ["#ty__fenglue-give"] = "锋略：请交给 %src 区域内两张牌",
   ["anyong"] = "暗涌",
   [":anyong"] = "当一名角色于其回合内第一次对另一名角色造成伤害后，若此伤害值为1，你可以弃置一张牌对受到伤害的角色造成1点伤害。",
   ["#anyong-invoke"] = "暗涌：你可以弃置一张牌，对 %dest 造成1点伤害",

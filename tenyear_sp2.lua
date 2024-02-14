@@ -4814,54 +4814,26 @@ local chanjuan = fk.CreateTriggerSkill{
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and (data.card:isCommonTrick() or data.card.type == Card.TypeBasic) and
-      data.tos and #TargetGroup:getRealTargets(data.tos) == 1 and
-      (player:getMark("@$chanjuan") == 0 or not table.contains(player:getMark("@$chanjuan"), data.card.trueName))
-  end,
-  on_trigger = function(self, event, target, player, data)
-    local room = player.room
-    room:setPlayerMark(player, self.name, {data.card.name, TargetGroup:getRealTargets(data.tos)[1]})
-    self:doCost(event, target, player, data)
-    room:setPlayerMark(player, self.name, 0)
+      data.tos and #TargetGroup:getRealTargets(data.tos) == 1 and U.IsUsingHandcard(player, data) and 
+      #table.filter(U.getMark(player, "@$chanjuan"), function(s) return s == data.card.trueName end) < 2
   end,
   on_cost = function(self, event, target, player, data)
-    local success, dat = player.room:askForUseActiveSkill(player, "chanjuan_viewas",
-      "#chanjuan-invoke::"..TargetGroup:getRealTargets(data.tos)[1]..":"..data.card.name, true)
-    if success then
-      self.cost_data = dat
+    local use = U.askForUseVirtualCard(player.room, player, data.card.trueName, nil, self.name, "#chanjuan-use::"..TargetGroup:getRealTargets(data.tos)[1]..":"..data.card.trueName, true, true, false, true, {}, true)
+    if use then
+      self.cost_data = use
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local card = Fk:cloneCard(player:getMark(self.name)[1])
-    local mark = player:getMark("@$chanjuan")
-    if mark == 0 then mark = {} end
-    table.insert(mark, card.trueName)
+    local use = self.cost_data
+    local mark = U.getMark(player, "@$chanjuan")
+    table.insert(mark, data.card.trueName)
     room:setPlayerMark(player, "@$chanjuan", mark)
-    if #self.cost_data.targets == 1 and player:getMark(self.name) ~= 0 and self.cost_data.targets[1] == player:getMark(self.name)[2] then
+    room:useCard(use)
+    if not player.dead and #TargetGroup:getRealTargets(use.tos) == 1 and TargetGroup:getRealTargets(data.tos)[1] == TargetGroup:getRealTargets(use.tos)[1] then
       player:drawCards(1, self.name)
     end
-    room:useCard{
-      from = player.id,
-      tos = table.map(self.cost_data.targets, function(id) return {id} end),
-      card = card,
-    }
-  end,
-}
-local chanjuan_viewas = fk.CreateViewAsSkill{
-  name = "chanjuan_viewas",
-  card_filter = Util.FalseFunc,
-  view_as = function(self, cards)
-    if Self:getMark("chanjuan") == 0 then return end
-    local card = Fk:cloneCard(Self:getMark("chanjuan")[1])
-    card.skillName = "chanjuan"
-    return card
-  end,
-}
-local chanjuan_targetmod = fk.CreateTargetModSkill{
-  name = "#chanjuan_targetmod",
-  bypass_times = function(self, player, skill, scope, card)
-    return card and table.contains(card.skillNames, "chanjuan")
   end,
 }
 local xunbie = fk.CreateTriggerSkill{
@@ -4875,25 +4847,26 @@ local xunbie = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local generals = {}
-    if not table.find(room.alive_players, function(p) return p.general == "ty__ganfuren" end) then
+    if not table.find(room.alive_players, function(p) return p.general == "ty__ganfuren" or p.deputyGeneral == "ty__ganfuren" end) then
       table.insert(generals, "ty__ganfuren")
     end
-    if not table.find(room.alive_players, function(p) return p.general == "ty__mifuren" end) then
+    if not table.find(room.alive_players, function(p) return p.general == "ty__mifuren" or p.deputyGeneral == "ty__mifuren" end) then
       table.insert(generals, "ty__mifuren")
     end
     if #generals > 0 then
       local general = room:askForGeneral(player, generals, 1)
       room:changeHero(player, general, false, false, true)
-      if not player.dead and player:isWounded() then
-        room:recover({
-          who = player,
-          num = 1 - player.hp,
-          recoverBy = player,
-          skillName = self.name
-        })
-      end
+      if player.dead then return end
     end
     room:setPlayerMark(player, "@@xunbie-turn", 1)
+    if player:isWounded() then
+      room:recover({
+        who = player,
+        num = 1 - player.hp,
+        recoverBy = player,
+        skillName = self.name
+      })
+    end
   end,
 }
 local xunbie_trigger = fk.CreateTriggerSkill{
@@ -4901,26 +4874,27 @@ local xunbie_trigger = fk.CreateTriggerSkill{
   events = {fk.DamageInflicted},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:usedSkillTimes("xunbie", Player.HistoryTurn) > 0
+    return target == player and player:getMark("@@xunbie-turn") > 0
   end,
   on_use = function(self, event, target, player, data)
     player:broadcastSkillInvoke("xunbie")
     return true
   end,
 }
-chanjuan_viewas:addRelatedSkill(chanjuan_targetmod)
-Fk:addSkill(chanjuan_viewas)
 xunbie:addRelatedSkill(xunbie_trigger)
 ganfurenmifuren:addSkill(chanjuan)
 ganfurenmifuren:addSkill(xunbie)
 Fk:loadTranslationTable{
   ["ganfurenmifuren"] = "甘夫人糜夫人",
+  ["#ganfurenmifuren"] = "千里婵娟",
+  ["illustrator:ganfurenmifuren"] = "七兜豆",
+
   ["chanjuan"] = "婵娟",
-  [":chanjuan"] = "你使用指定唯一目标的基本牌或普通锦囊牌结算完毕后，你可以视为使用一张同名牌，若目标完全相同，你摸一张牌。每种牌名限一次。",
+  [":chanjuan"] = "每种牌名限两次，你使用指定唯一目标的基本牌或普通锦囊牌结算完毕后，你可以视为使用一张同名牌，若目标完全相同，你摸一张牌。",
   ["xunbie"] = "殉别",
   [":xunbie"] = "限定技，当你进入濒死状态时，你可以将武将牌改为甘夫人或糜夫人，然后回复体力至1并防止你受到的伤害直到回合结束。",
   ["@$chanjuan"] = "婵娟",
-  ["#chanjuan-invoke"] = "婵娟：你可以视为使用【%arg】，若目标为 %dest ，你摸一张牌",
+  ["#chanjuan-use"] = "婵娟：你可以视为使用【%arg】，若目标为 %dest ，你摸一张牌",
   ["chanjuan_viewas"] = "婵娟",
   ["#xunbie_trigger"] = "殉别",
   ["@@xunbie-turn"] = "殉别",

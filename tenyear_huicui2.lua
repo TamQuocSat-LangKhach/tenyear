@@ -2184,7 +2184,11 @@ local ty__fenglue = fk.CreateActiveSkill{
       if to:isAllNude() or player.dead then return end
       local cards = to:getCardIds("hej")
       if #cards > 2 then
-        cards = U.askForCard(to, cards, 2, 2, self.name, false, "#ty__fenglue-give:"..player.id, to:getCardIds("j"))
+        if #to:getCardIds("j") == 0 then
+          cards = room:askForCard(to, 2, 2, true, self.name, false, ".", "#ty__fenglue-give:"..player.id)
+        else
+          cards = room:askForCardsChosen(to, to, 2, 2, "hej", self.name, "#ty__fenglue-give:"..player.id)
+        end
       end
       room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonGive, self.name, "", false, to.id)
     elseif winner == to then
@@ -2234,7 +2238,7 @@ Fk:loadTranslationTable{
 
   ["ty__fenglue"] = "锋略",
   [":ty__fenglue"] = "出牌阶段限一次，你可以和一名角色拼点。若：你赢，其交给你其区域内的两张牌；你与其均没赢，此技能视为未发动过；其赢，其获得你拼点的牌。",
-  ["#ty__fenglue-give"] = "锋略：请交给 %src 区域内两张牌",
+  ["#ty__fenglue-give"] = "锋略：请选择你区域内的两张牌交给 %src",
   ["anyong"] = "暗涌",
   [":anyong"] = "当一名角色于其回合内第一次对另一名角色造成伤害后，若此伤害值为1，你可以弃置一张牌对受到伤害的角色造成1点伤害。",
   ["#anyong-invoke"] = "暗涌：你可以弃置一张牌，对 %dest 造成1点伤害",

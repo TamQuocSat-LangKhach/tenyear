@@ -2108,7 +2108,7 @@ local yanrou = General(extension, "yanrou", "wei", 4)
 local choutao = fk.CreateTriggerSkill{
   name = "choutao",
   anim_type = "offensive",
-  events ={fk.TargetSpecified, fk.TargetConfirmed},
+  events = {fk.TargetSpecified, fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.card.trueName == "slash" and data.firstTarget and
       not player.room:getPlayerById(data.from):isNude()

@@ -2184,11 +2184,7 @@ local ty__fenglue = fk.CreateActiveSkill{
       if to:isAllNude() or player.dead then return end
       local cards = to:getCardIds("hej")
       if #cards > 2 then
-        if #to:getCardIds("j") == 0 then
-          cards = room:askForCard(to, 2, 2, true, self.name, false, ".", "#ty__fenglue-give:"..player.id)
-        else
-          cards = room:askForCardsChosen(to, to, 2, 2, "hej", self.name, "#ty__fenglue-give:"..player.id)
-        end
+        cards = room:askForCardsChosen(to, to, 2, 2, "hej", self.name, "#ty__fenglue-give:"..player.id)
       end
       room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonGive, self.name, "", false, to.id)
     elseif winner == to then
@@ -2263,7 +2259,7 @@ local yusui = fk.CreateTriggerSkill{
     local room = player.room
     local to = room:getPlayerById(data.from)
     room:loseHp(player, 1, self.name)
-    if player.dead then return end
+    if player.dead or to.dead then return end
     local choices = {}
     if #to.player_cards[Player.Hand] > #player.player_cards[Player.Hand] then
       table.insert(choices, "yusui_discard")
@@ -2274,12 +2270,8 @@ local yusui = fk.CreateTriggerSkill{
     if #choices > 0 then
       local choice = room:askForChoice(player, choices, self.name)
       if choice == "yusui_discard" then
-        if player:isKongcheng() then
-          to:throwAllCards("h")
-        else
-          local n = #to.player_cards[Player.Hand] - #player.player_cards[Player.Hand]
-          room:askForDiscard(to, n, n, false, self.name, false)
-        end
+        local n = #to.player_cards[Player.Hand] - #player.player_cards[Player.Hand]
+        room:askForDiscard(to, n, n, false, self.name, false)
       else
         room:loseHp(to, to.hp - player.hp, self.name)
       end
@@ -2304,16 +2296,26 @@ local boyan = fk.CreateActiveSkill{
     if n > 0 then
       target:drawCards(n, self.name)
     end
-    room:addPlayerMark(target, "boyan-turn", 1)
+    room:setPlayerMark(target, "@@boyan-turn", 1)
   end,
 }
 local boyan_prohibit = fk.CreateProhibitSkill{
   name = "#boyan_prohibit",
   prohibit_use = function(self, player, card)
-    return player:getMark("boyan-turn") > 0
+    if player:getMark("@@boyan-turn") > 0 then
+      local cardlist = Card:getIdList(card)
+      return #cardlist > 0 and table.every(cardlist, function(id)
+        return table.contains(player:getCardIds(Player.Hand), id)
+      end)
+    end
   end,
   prohibit_response = function(self, player, card)
-    return player:getMark("boyan-turn") > 0
+    if player:getMark("@@boyan-turn") > 0 then
+      local cardlist = Card:getIdList(card)
+      return #cardlist > 0 and table.every(cardlist, function(id)
+        return table.contains(player:getCardIds(Player.Hand), id)
+      end)
+    end
   end,
 }
 boyan:addRelatedSkill(boyan_prohibit)
@@ -2329,6 +2331,7 @@ Fk:loadTranslationTable{
   [":boyan"] = "出牌阶段限一次，你可以选择一名其他角色，该角色将手牌摸至体力上限（最多摸至5张），其本回合不能使用或打出手牌。",
   ["yusui_discard"] = "令其弃置手牌至与你相同",
   ["yusui_loseHp"] = "令其失去体力值至与你相同",
+  ["@@boyan-turn"] = "驳言",
 
   ["$yusui1"] = "宁为玉碎，不为瓦全！",
   ["$yusui2"] = "生义相左，舍生取义。",
@@ -2448,7 +2451,7 @@ local qiao = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.firstTarget and data.from ~= player.id and
+    return target == player and player:hasSkill(self) and data.from ~= player.id and
       not player.room:getPlayerById(data.from):isNude() and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2
   end,
   on_cost = function(self, event, target, player, data)

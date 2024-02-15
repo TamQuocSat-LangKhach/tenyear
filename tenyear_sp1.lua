@@ -4472,22 +4472,7 @@ local chenghao = fk.CreateTriggerSkill{
       end
     end
     local cards = room:getNCards(n)
-    player.special_cards["chenghao"] = table.simpleClone(cards)
-    player:doNotify("ChangeSelf", json.encode {
-      id = player.id,
-      handcards = player:getCardIds("h"),
-      special_cards = player.special_cards,
-    })
-    local move = U.askForDistribution(player, cards, room.alive_players, self.name, #cards, #cards, nil, "chenghao", true)
-    player.special_cards["chenghao"] = {}
-    player:doNotify("ChangeSelf", json.encode {
-      id = player.id,
-      handcards = player:getCardIds("h"),
-      special_cards = player.special_cards,
-    })
-    if move then
-      U.doDistribution(room, move, player.id, self.name)
-    end
+    U.askForDistribution(player, cards, room.alive_players, self.name, #cards, #cards, nil, cards)
   end,
 }
 simahui:addSkill(chenghao)

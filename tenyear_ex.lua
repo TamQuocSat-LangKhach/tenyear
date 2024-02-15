@@ -3614,21 +3614,8 @@ local ty_ex__shenduan = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     room:delay(500)
-    player.special_cards["ty_ex__shenduan"] = table.simpleClone(data)
-    player:doNotify("ChangeSelf", json.encode {
-      id = player.id,
-      handcards = player:getCardIds("h"),
-      special_cards = player.special_cards,
-    })
     room:setPlayerMark(player, "ty_ex__shenduan_cards", data)
-    local success, dat = room:askForUseActiveSkill(player, "ty_ex__shenduan_active", "#ty_ex__shenduan-use", true)
-    room:setPlayerMark(player, "ty_ex__shenduan-tmp", 0)
-    player.special_cards["ty_ex__shenduan"] = {}
-    player:doNotify("ChangeSelf", json.encode {
-      id = player.id,
-      handcards = player:getCardIds("h"),
-      special_cards = player.special_cards,
-    })
+    local success, dat = room:askForUseActiveSkill(player, "ty_ex__shenduan_active", "#ty_ex__shenduan-use", true, {expand_pile = data})
     if success then
       self.cost_data = dat
       return true
@@ -3691,9 +3678,10 @@ Fk:addSkill(ty_ex__shenduan_active)
 ty_ex__hanhaoshihuan:addSkill(ty_ex__shenduan)
 ty_ex__hanhaoshihuan:addSkill(ty_ex__yonglue)
 Fk:loadTranslationTable{
-  ["ty_ex__hanhaoshihuan"] = "韩浩史涣",
+  ["ty_ex__hanhaoshihuan"] = "界韩浩史涣",
   ["#ty_ex__hanhaoshihuan"] = "中军之主",
   ["illustrator:ty_ex__hanhaoshihuan"] = "alien",
+
   ["ty_ex__shenduan"] = "慎断",
   [":ty_ex__shenduan"] = "当你的黑色非锦囊牌因弃置而置入弃牌堆时，你可以将此牌当【兵粮寸断】使用（无距离限制）。",
   ["ty_ex__yonglue"] = "勇略",

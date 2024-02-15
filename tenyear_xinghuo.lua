@@ -563,7 +563,7 @@ local denglou = fk.CreateTriggerSkill{
       toArea = Card.Processing,
       moveReason = fk.ReasonPut,
     })
-    U.viewCards(player, cards, self.name)
+    room:delay(500)
     local get = {}
     for i = 4, 1, -1 do
       if Fk:getCardById(cards[i]).type ~= Card.TypeBasic then
@@ -571,45 +571,17 @@ local denglou = fk.CreateTriggerSkill{
       end
     end
     if #get > 0 then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(get)
-      room:obtainCard(player, dummy, true, fk.ReasonPrey)
+      room:moveCardTo(get, Card.PlayerHand, player, fk.ReasonPrey, self.name)
     end
-    if #cards == 0 then return end
     while not player.dead and #cards > 0 do
-      player.special_cards["denglou"] = table.simpleClone(cards)
-      player:doNotify("ChangeSelf", json.encode {
-        id = player.id,
-        handcards = player:getCardIds("h"),
-        special_cards = player.special_cards,
-      })
-      room:setPlayerMark(player, MarkEnum.BypassTimesLimit .. "-tmp", 1)
-      local to_use = table.filter(cards, function(id)
-        local card = Fk:getCardById(id)
-        return player:canUse(card) and not player:prohibitUse(card)
-      end)
-      room:setPlayerMark(player, "denglou_cards", to_use)
-      local success, dat = room:askForUseActiveSkill(player, "denglou_viewas", "#denglou-use", true)
-      room:setPlayerMark(player, MarkEnum.BypassTimesLimit .. "-tmp", 0)
-      player.special_cards["denglou"] = {}
-      player:doNotify("ChangeSelf", json.encode {
-        id = player.id,
-        handcards = player:getCardIds("h"),
-        special_cards = player.special_cards,
-      })
-      if success and dat then
-        table.removeOne(cards, dat.cards[1])
-        local card = Fk.skills["denglou_viewas"]:viewAs(dat.cards)
-        room:useCard{
-          from = player.id,
-          tos = table.map(dat.targets, function(id) return {id} end),
-          card = card,
-          extraUse = true,
-        }
+      local use = U.askForUseRealCard(room, player, cards, ".", self.name, nil, {expand_pile = cards})
+      if use then
+        table.removeOne(cards, use.card.id)
       else
         break
       end
     end
+    cards = table.filter(cards, function(id) return room:getCardArea(id) == Card.Processing end)
     if #cards > 0 then
       room:moveCards({
         ids = cards,
@@ -620,24 +592,11 @@ local denglou = fk.CreateTriggerSkill{
   end,
 }
 ty__wangcan:addSkill(denglou)
-local denglou_viewas = fk.CreateViewAsSkill{
-  name = "denglou_viewas",
-  expand_pile = "denglou",
-  card_filter = function(self, to_select, selected)
-    local ids = U.getMark(Self, "denglou_cards")
-    return #selected == 0 and table.contains(ids, to_select)
-  end,
-  view_as = function(self, cards)
-    if #cards == 1 then
-      return Fk:getCardById(cards[1])
-    end
-  end,
-}
-Fk:addSkill(denglou_viewas)
 Fk:loadTranslationTable{
   ["ty__wangcan"] = "王粲",
   ["#ty__wangcan"] = "七子之冠冕",
   ["illustrator:ty__wangcan"] = "ZOO",
+
   ["sanwen"] = "散文",
   [":sanwen"] = "每回合限一次，当你获得牌时，若你手中有与这些牌牌名相同的牌，你可以展示之，并弃置获得的同名牌，然后摸弃牌数两倍数量的牌。",
   ["qiai"] = "七哀",

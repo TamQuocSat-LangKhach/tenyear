@@ -1925,6 +1925,7 @@ local shouli = fk.CreateViewAsSkill{
 local shouli_trigger = fk.CreateTriggerSkill{
   name = "#shouli_trigger",
   events = {fk.GameStart},
+  main_skill = shouli,
   mute = true,
   main_skill = shouli,
   can_trigger = function(self, event, target, player, data)
@@ -3021,7 +3022,7 @@ godxuchu:addSkill(zhuangpo)
 Fk:loadTranslationTable{
   ["godxuchu"] = "神许褚",
   ["#godxuchu"] = "嗜战的熊罴",
-  --["illustrator:godxuchu"] = "",
+  ["illustrator:godxuchu"] = "小新",
   ["zhengqing"] = "争擎",
   [":zhengqing"] = "锁定技，每轮结束时，移去所有“擎”标记，然后本轮单回合内造成伤害值最多的角色获得X个“擎”标记"..
   "并与你各摸一张牌（X为其该回合造成的伤害数）。若是你获得“擎”且是获得数量最多的一次，你改为摸X张牌（最多摸5）。",
@@ -3039,7 +3040,7 @@ Fk:loadTranslationTable{
   ["$zhengqing2"] = "三军争勇，擎纛者舍我其谁！",
   ["$zhuangpo1"] = "腹吞龙虎，气撼山河！",
   ["$zhuangpo2"] = "神魄凝威，魍魉辟易！",
-  ["~godxuchu"] = "猛虎归林晚，不见往来人。",
+  ["~godxuchu"] = "猛虎归林晚，不见往来人……",
 }
 
 --百战虎贲：兀突骨 文鸯 夏侯霸 皇甫嵩 王双 留赞 黄祖 雷铜 吴兰 陈泰 王濬 杜预

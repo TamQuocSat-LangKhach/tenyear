@@ -2281,6 +2281,8 @@ ty__caishi:addRelatedSkill(ty__caishi_prohibit)
 xinxianying:addSkill(ty__caishi)
 Fk:loadTranslationTable{
   ["ty__xinxianying"] = "辛宪英",
+  ["#ty__xinxianying"] = "忠鉴清识",
+  ["illustrator:ty__xinxianying"] = "张晓溪",
   ["ty__zhongjian"] = "忠鉴",
   [":ty__zhongjian"] = "出牌阶段限一次，你可以秘密选择以下一项，再秘密选择一名本回合未选择过的角色，直到你的下回合开始：1.当该角色下次造成伤害后，"..
   "其弃置两张牌；2.当该角色下次受到伤害后，其摸两张牌。当〖忠鉴〗被触发时，你摸一张牌。",
@@ -2478,6 +2480,8 @@ xuelingyun:addSkill(xialei)
 xuelingyun:addSkill(anzhi)
 Fk:loadTranslationTable{
   ["xuelingyun"] = "薛灵芸",
+  ["#xuelingyun"] = "霓裳缀红泪",
+  ["illustrator:xuelingyun"] = "Jzeo",
   ["xialei"] = "霞泪",
   [":xialei"] = "当你的红色牌进入弃牌堆后，你可观看牌堆顶的三张牌，然后你获得一张并可将其他牌置于牌堆底，你本回合观看牌数-1。",
   ["anzhi"] = "暗织",
@@ -2666,6 +2670,8 @@ ruiji:addSkill(lingyin)
 ruiji:addSkill(liying)
 Fk:loadTranslationTable{
   ["ty__ruiji"] = "芮姬",
+  ["#ty__ruiji"] = "柔荑弄钺",
+  ["illustrator:ty__ruiji"] = "匠人绘",
   ["wangyuan"] = "妄缘",
   [":wangyuan"] = "当你于回合外失去牌后，你可以随机将牌堆中一张基本牌或锦囊牌置于你的武将牌上，称为“妄”（“妄”的牌名不重复且至多为游戏人数）。",
   ["lingyin"] = "铃音",
@@ -2975,6 +2981,9 @@ tianshangyi:addSkill(xiaoren)
 
 Fk:loadTranslationTable{
   ["tianshangyi"] = "田尚衣",
+  ["#tianshangyi"] = "婀娜盈珠袖",
+  --["designer:tianshangyi"] = "",
+  ["illustrator:tianshangyi"] = "alien",
   ["posuo"] = "婆娑",
   [":posuo"] = "出牌阶段每种花色限一次，若你本阶段未对其他角色造成过伤害，你可以将一张手牌当此花色有的一张伤害牌使用。",
   ["xiaoren"] = "绡刃",
@@ -3116,7 +3125,7 @@ Fk:loadTranslationTable{
   ["bailingyun"] = "柏灵筠",
   ["#bailingyun"] = "玲珑心窍",
   --["designer:bailingyun"] = "",
-  --["illustrator:bailingyun"] = "",
+  ["illustrator:bailingyun"] = "君桓文化",
   ["linghui"] = "灵慧",
   [":linghui"] = "一名角色的结束阶段，若其为你或有角色于本回合内进入过濒死状态，"..
   "你可以观看牌堆顶的三张牌，你可以使用其中一张牌，然后随机获得剩余牌中的一张。",
@@ -3345,6 +3354,9 @@ malingli:addSkill(xiaoyin)
 malingli:addSkill(huahuo)
 Fk:loadTranslationTable{
   ["malingli"] = "马伶俐",
+  ["#malingli"] = "火树银花",
+  --["designer:malingli"] = "",
+  ["illustrator:malingli"] = "匠人绘",
   ["lima"] = "骊马",
   [":lima"] = "锁定技，场上每有一张坐骑牌，你计算与其他角色的距离-1（至少为1）。",
   ["xiaoyin"] = "硝引",
@@ -3426,6 +3438,8 @@ ty__sunhao:addSkill(ty__chouhai)
 ty__sunhao:addSkill("guiming")
 Fk:loadTranslationTable{
   ["ty__sunhao"] = "孙皓",
+  ["#ty__sunhao"] = "时日曷丧",
+  ["illustrator:ty__sunhao"] = "君桓文化",--传说皮
   ["ty__canshi"] = "残蚀",
   [":ty__canshi"] = "摸牌阶段，你可以多摸X张牌（X为已受伤的角色数），若如此做，当你于此回合内使用【杀】或普通锦囊牌时，你弃置一张牌。",
   ["#ty__canshi_delay"] = "残蚀",
@@ -3512,6 +3526,8 @@ ty__lixia:addRelatedSkill(ty__lixia_distance)
 ty__shixie:addSkill(ty__lixia)
 Fk:loadTranslationTable{
   ["ty__shixie"] = "士燮",
+  ["#ty__shixie"] = "雄长百越",
+  ["illustrator:ty__shixie"] = "陈龙",--史诗皮
   ["ty__biluan"] = "避乱",
   [":ty__biluan"] = "结束阶段，若有其他角色计算与你的距离为1，你可以弃置一张牌，令其他角色计算与你的距离+X（X为全场角色数且至多为4）。",
   ["ty__lixia"] = "礼下",
@@ -3717,6 +3733,8 @@ caomao:addSkill(juetao)
 caomao:addSkill(zhushi)
 Fk:loadTranslationTable{
   ["caomao"] = "曹髦",
+  ["#caomao"] = "霸业的终耀",
+  ["illustrator:caomao"] = "游漫美绘",
   ["qianlong"] = "潜龙",
   [":qianlong"] = "当你受到伤害后，你可以展示牌堆顶的三张牌并获得其中至多X张牌（X为你已损失的体力值），然后将剩余的牌置于牌堆底。",
   ["fensi"] = "忿肆",
@@ -3829,6 +3847,8 @@ liubian:addSkill(dushi)
 liubian:addSkill(yuwei)
 Fk:loadTranslationTable{
   ["liubian"] = "刘辩",
+  ["#liubian"] = "弘农怀王",
+  ["illustrator:liubian"] = "zoo",
   ["shiyuan"] = "诗怨",
   [":shiyuan"] = "每回合每项限一次，当你成为其他角色使用牌的目标后：1.若其体力值比你多，你摸三张牌；2.若其体力值与你相同，你摸两张牌；"..
   "3.若其体力值比你少，你摸一张牌。",
@@ -3932,6 +3952,8 @@ liuyu:addSkill(pijing)
 liuyu:addRelatedSkill(zimu)
 Fk:loadTranslationTable{
   ["ty__liuyu"] = "刘虞",
+  ["#ty__liuyu"] = "维城燕北",
+  ["illustrator:ty__liuyu"] = "君桓文化",
   ["suifu"] = "绥抚",
   [":suifu"] = "其他角色的结束阶段，若本回合你和一号位共计至少受到两点伤害，你可将当前回合角色的所有手牌置于牌堆顶，视为使用一张【五谷丰登】。",
   ["pijing"] = "辟境",
@@ -4174,13 +4196,16 @@ quanhuijie:addSkill(yishu)
 quanhuijie:addSkill(ligong)
 Fk:loadTranslationTable{
   ["quanhuijie"] = "全惠解",
+  ["#quanhuijie"] = "春宫早深",
+  ["illustrator:quanhuijie"] = "游漫美绘",
   ["huishu"] = "慧淑",
-  [":huishu"] = "摸牌阶段结束时，你可以摸3张牌然后弃置1张手牌。若如此做，你本回合弃置超过2张牌时，从弃牌堆中随机获得等量的非基本牌。",
+  [":huishu"] = "摸牌阶段结束时，你可以摸3张牌然后弃置1张手牌。"..
+  "若如此做，你本回合弃置超过2张牌时，从弃牌堆中随机获得等量的非基本牌。",
   ["yishu"] = "易数",
   [":yishu"] = "锁定技，当你于出牌阶段外失去牌后，〖慧淑〗中最小的一个数字+2且最大的一个数字-1。",
   ["ligong"] = "离宫",
-  [":ligong"] = "觉醒技，准备阶段，若〖慧淑〗有数字达到5，你加1点体力上限并回复1点体力，失去〖易数〗，然后从随机四个吴国女性武将中选择至多"..
-  "两个技能获得（如果不获得技能则不失去〖慧淑〗并摸三张牌）。",
+  [":ligong"] = "觉醒技，准备阶段，若〖慧淑〗有数字达到5，你加1点体力上限并回复1点体力，失去〖易数〗，"..
+  "然后从随机四个吴国女性武将中选择至多两个技能获得并失去〖慧淑〗（如果不获得技能则改为摸三张牌）。",
   ["@huishu"] = "慧淑",
   ["huishu1"] = "摸牌数",
   ["huishu2"] = "摸牌后弃牌数",
@@ -4330,6 +4355,8 @@ dingfuren:addSkill(fengyan)
 dingfuren:addSkill(fudao)
 Fk:loadTranslationTable{
   ["dingfuren"] = "丁尚涴",
+  ["#dingfuren"] = "与君不载",
+  ["illustrator:dingfuren"] = "匠人绘",
   ["fengyan"] = "讽言",
   [":fengyan"] = "出牌阶段每项限一次，你可以选择一名其他角色，若其体力值小于等于你，你令其交给你一张手牌；"..
   "若其手牌数小于等于你，你视为对其使用一张无距离和次数限制的【杀】。",
@@ -4448,6 +4475,8 @@ yuanji:addSkill(fangdu)
 yuanji:addSkill(jiexing)
 Fk:loadTranslationTable{
   ["yuanji"] = "袁姬",
+  ["#yuanji"] = "袁门贵女",
+  ["illustrator:yuanji"] = "匠人绘",
   ["fangdu"] = "芳妒",
   [":fangdu"] = "锁定技，你的回合外，你每回合第一次受到普通伤害后回复1点体力，你每回合第一次受到属性伤害后随机获得伤害来源一张手牌。",
   ["jiexing"] = "节行",
@@ -4553,6 +4582,8 @@ xielingyu:addSkill(yuandi)
 xielingyu:addSkill(xinyou)
 Fk:loadTranslationTable{
   ["xielingyu"] = "谢灵毓",
+  ["#xielingyu"] = "淑静才媛",
+  ["illustrator:xielingyu"] = "游漫美绘",
   ["yuandi"] = "元嫡",
   [":yuandi"] = "其他角色于其出牌阶段使用第一张牌时，若此牌没有指定除其以外的角色为目标，你可以选择一项：1.弃置其一张手牌；2.你与其各摸一张牌。",
   ["xinyou"] = "心幽",
@@ -4579,11 +4610,14 @@ local quanshou = fk.CreateTriggerSkill{
     return player:hasSkill(self) and target:getHandcardNum() <= target.maxHp
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#quanshou-invoke::"..target.id)
+    local room = player.room
+    if room:askForSkillInvoke(player, self.name, nil, "#quanshou-invoke::"..target.id) then
+      room:doIndicate(player.id, {target.id})
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:doIndicate(player.id, {target.id})
     local choice = room:askForChoice(target, {"quanshou1", "quanshou2:"..player.id}, self.name, "#quanshou-choice:"..player.id)
     if choice == "quanshou1" then
       room:setPlayerMark(target, "quanshou1-turn", 1)
@@ -4621,40 +4655,103 @@ local shexue = fk.CreateTriggerSkill{
   anim_type = "special",
   events = {fk.EventPhaseStart, fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player.phase == Player.Play then
+    if target.phase == Player.Play and player:hasSkill(self) then
       if event == fk.EventPhaseStart then
-        return player:getMark("shexue-phase") ~= 0 and not player:isNude()
-      elseif event == fk.EventPhaseEnd and player:hasSkill(self) then
+        if target:isNude() then return false end
         local room = player.room
-        local name = ""
-        room.logic:getEventsOfScope(GameEvent.UseCard, 999, function(e)
+        if player == target then
+          local all_names = player:getMark("shexue_last-turn")
+          if type(all_names) ~= "table" then
+            all_names = {}
+            local logic = room.logic
+            local turn_event = logic:getCurrentEvent():findParent(GameEvent.Turn)
+            if turn_event == nil then return false end
+            local all_turn_events = logic.event_recorder[GameEvent.Turn]
+            if type(all_turn_events) == "table" then
+              local index = #all_turn_events
+              if index > 1 then
+                turn_event = all_turn_events[index - 1]
+                local last_player = turn_event.data[1]
+                local all_phase_events = logic.event_recorder[GameEvent.Phase]
+                if type(all_phase_events) == "table" then
+                  local play_ids = {}
+                  for i = #all_phase_events, 1, -1 do
+                    local e = all_phase_events[i]
+                    if e.id < turn_event.id then
+                      break
+                    end
+                    if e.id < turn_event.end_id and e.data[2] == Player.Play then
+                      table.insert(play_ids, {e.id, e.end_id})
+                    end
+                  end
+                  if #play_ids > 0 then
+                    U.getEventsByRule(room, GameEvent.UseCard, 1, function (e)
+                      local in_play = false
+                      for _, ids in ipairs(play_ids) do
+                        if #ids == 2 and e.id > ids[1] and e.id < ids[2] then
+                          in_play = true
+                          break
+                        end
+                      end
+                      if in_play then
+                        local use = e.data[1]
+                        if use.from == last_player.id and (use.card.type == Card.TypeBasic or use.card:isCommonTrick()) then
+                          table.insertIfNeed(all_names, use.card.name)
+                        end
+                      end
+                    end, turn_event.id)
+                  end
+                end
+              end
+            end
+            room:setPlayerMark(player, "shexue_last-turn", all_names)
+          end
+          local extra_data = {bypass_times = true, bypass_distances = true}
+          local names = table.filter(all_names, function (n)
+            local card = Fk:cloneCard(n)
+            card.skillName = "shexue"
+            return card.skill:canUse(player, card, extra_data) and not player:prohibitUse(card)
+            and table.find(room.alive_players, function (p)
+              return not player:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, player.id, card, false)
+            end)
+          end)
+          if #names > 0 then
+            extra_data.virtualuse_allnames = all_names
+            extra_data.virtualuse_names = names
+            self.cost_data = extra_data
+            return true
+          end
+        elseif not target.dead then
+          local all_names = U.getMark(player, "shexue_invoking-turn")
+          if #all_names == 0 then return false end
+          local extra_data = {bypass_times = true, bypass_distances = true}
+          local names = table.filter(all_names, function (n)
+            local card = Fk:cloneCard(n)
+            card.skillName = "shexue"
+            return card.skill:canUse(target, card, extra_data) and not target:prohibitUse(card)
+            and table.find(room.alive_players, function (p)
+              return not target:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, target.id, card, not bypass_distances)
+            end)
+          end)
+          if #names > 0 then
+            extra_data.virtualuse_allnames = all_names
+            extra_data.virtualuse_names = names
+            self.cost_data = extra_data
+            return true
+          end
+        end
+      elseif event == fk.EventPhaseEnd and player == target then
+        local room = player.room
+        local names = {}
+        room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e)
           local use = e.data[1]
           if use.from == player.id and (use.card.type == Card.TypeBasic or use.card:isCommonTrick()) then
-            name = use.card.name
+            table.insertIfNeed(names, use.card.name)
           end
         end, Player.HistoryPhase)
-        if name ~= "" then
-          room:setPlayerMark(player, "shexue2-phase", name)
+        if #names > 0 then
+          self.cost_data = names
           return true
-        end
-      end
-    end
-  end,
-  on_trigger = function(self, event, target, player, data)
-    if event == fk.EventPhaseEnd then
-      self:doCost(event, target, player, data)
-    else
-      local room = player.room
-      local names = table.simpleClone(player:getMark("shexue-phase"))  --tableMark以防同时被发动设学2和设学1
-      room:setPlayerMark(player, "shexue-phase", 0)
-      for _, name in ipairs(names) do
-        if player.dead then return end
-        local card = Fk:cloneCard(name)
-        card.skillName = self.name
-        if player:canUse(card) then
-          room:setPlayerMark(player, "shexue-tmp", name)
-          self:doCost(event, target, player, data)
-          room:setPlayerMark(player, "shexue-tmp", 0)
         end
       end
     end
@@ -4662,95 +4759,83 @@ local shexue = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     if event == fk.EventPhaseStart then
-      local success, dat = room:askForUseActiveSkill(player, "shexue_viewas", "#shexue-use:::"..player:getMark("shexue-tmp"), true)
-      if success then
-        self.cost_data = dat
+      if player == target then
+        local success, dat = room:askForUseActiveSkill(player, "shexue_viewas", "#shexue-use", true, self.cost_data)
+        if success then
+          self.cost_data = dat
+          return true
+        end
+      else
+        room:doIndicate(player.id, {target.id})
         return true
       end
     else
-      return room:askForSkillInvoke(player, self.name, nil, "#shexue-invoke:::"..player:getMark("shexue2-phase"))
+      return room:askForSkillInvoke(player, self.name, nil, "#shexue-invoke")
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.EventPhaseStart then
-      local card = Fk.skills["shexue_viewas"]:viewAs(self.cost_data.cards)
-      card.skillName = self.name
-      room:useCard{
-        from = player.id,
-        tos = table.map(self.cost_data.targets, function(id) return {id} end),
-        card = card,
-        extraUse = true,
-      }
+      local dat = table.simpleClone(self.cost_data)
+      if player == target then
+        local card = Fk:cloneCard(dat.interaction)
+        card:addSubcards(dat.cards)
+        card.skillName = "shexue"
+        room:useCard{
+          from = player.id,
+          tos = table.map(dat.targets, function(id) return {id} end),
+          card = card,
+          extraUse = true,
+        }
+        if player.dead or player ~= target then return false end
+        local all_names = U.getMark(player, "shexue_invoking-turn")
+        if #all_names == 0 then return false end
+        local extra_data = {bypass_times = true, bypass_distances = true}
+        local names = table.filter(all_names, function (n)
+          local card = Fk:cloneCard(n)
+          card.skillName = "shexue"
+          return card.skill:canUse(player, card, extra_data) and not player:prohibitUse(card)
+          and table.find(room.alive_players, function (p)
+            return not player:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, player.id, card, not bypass_distances)
+          end)
+        end)
+        if #names == 0 then return false end
+        extra_data.virtualuse_allnames = all_names
+        extra_data.virtualuse_names = names
+        dat = extra_data
+      end
+      local success, dat2 = room:askForUseActiveSkill(target, "shexue_viewas", "#shexue-use", true, dat)
+      if success and dat2 then
+        local card = Fk:cloneCard(dat2.interaction)
+        card:addSubcards(dat2.cards)
+        card.skillName = "shexue"
+        room:useCard{
+          from = target.id,
+          tos = table.map(dat2.targets, function(id) return {id} end),
+          card = card,
+          extraUse = true,
+        }
+      end
     else
-      local mark = player:getMark("shexue2_invoking")  --tableMark以考虑观微、当先
-      if mark == 0 then mark = {} end
-      table.insert(mark, player:getMark("shexue2-phase"))
-      room:setPlayerMark(player, "shexue2_invoking", mark)
+      room:setPlayerMark(player, "shexue_invoking", table.simpleClone(self.cost_data))
     end
   end,
 
-  refresh_events = {fk.TurnStart, fk.EventPhaseStart},
-  can_refresh = function (self, event, target, player, data)
-    if event == fk.TurnStart then
-      return player:getMark("shexue2_invoking") ~= 0
-    else
-      return target == player and player.phase == Player.Play
-    end
+  refresh_events = {fk.TurnStart},
+  can_refresh = function(self, event, target, player, data)
+    return player:getMark("shexue_invoking") ~= 0
   end,
-  on_refresh = function (self, event, target, player, data)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.TurnStart then  --下回合开始时为其添加mark记录
-      room:doIndicate(player.id, {target.id})
-      room:notifySkillInvoked(player, self.name, "support")
-      local mark = target:getMark("shexue2-turn")  --按描述如果一回合有多个出牌阶段，每个阶段开始时都能发动设学2
-      room:setPlayerMark(target, "shexue2-turn", player:getMark("shexue2_invoking"))
-      room:setPlayerMark(player, "shexue2_invoking", 0)
-    else
-      if player:getMark("shexue2-turn") ~= 0 then
-        room:setPlayerMark(player, "shexue-phase", player:getMark("shexue2-turn"))
-      end
-      if player:hasSkill(self) then
-        local current_event = room.logic:getCurrentEvent()
-        local all_turn_events = room.logic.event_recorder[GameEvent.Turn]
-        if type(all_turn_events) == "table" then
-          local index = #all_turn_events
-          if index > 0 then
-            local turn_event = current_event:findParent(GameEvent.Turn)  --抄占梦
-            if turn_event ~= nil then
-              index = index - 1
-            end
-            if index > 0 then
-              current_event = all_turn_events[index]
-              U.getEventsByRule(room, GameEvent.Phase, 1, function(e)  --反查出牌阶段
-                if e.data[2] == Player.Play then
-                  local current_player = e.data[1]
-                  if current_player ~= player then
-                    U.getEventsByRule(room, GameEvent.UseCard, 1, function(u)  --反查使用事件
-                      local use = u.data[1]
-                      if use.from == current_player.id and (use.card.type == Card.TypeBasic or use.card:isCommonTrick()) then
-                        local mark = player:getMark("shexue-phase")
-                        if mark == 0 then mark = {} end
-                        table.insert(mark, use.card.name)
-                        room:setPlayerMark(player, "shexue-phase", mark)
-                        return true
-                      end
-                    end, e.id)
-                    return true
-                  end
-                end
-              end, current_event.id)
-            end
-          end
-        end
-      end
-    end
+    room:setPlayerMark(player, "shexue_invoking-turn", player:getMark("shexue_invoking"))
+    room:setPlayerMark(player, "shexue_invoking", 0)
   end,
 }
+
 local shexue_viewas = fk.CreateViewAsSkill{
   name = "shexue_viewas",
-  interaction = function()
-    return UI.ComboBox {choices = {Self:getMark("shexue-tmp")}}
+  interaction = function(self)
+    return UI.ComboBox {choices = self.virtualuse_names, all_choices = self.virtualuse_allnames }
   end,
   card_filter = function (self, to_select, selected)
     return #selected == 0
@@ -4763,36 +4848,31 @@ local shexue_viewas = fk.CreateViewAsSkill{
     return card
   end,
 }
-local shexue_targetmod = fk.CreateTargetModSkill{
-  name = "#shexue_targetmod",
-  bypass_times = function(self, player, skill, scope, card)
-    return card and table.contains(card.skillNames, "shexue")
-  end,
-  bypass_distances = function(self, player, skill, card)
-    return card and table.contains(card.skillNames, "shexue")
-  end,
-}
+
 quanshou:addRelatedSkill(quanshou_trigger)
 quanshou:addRelatedSkill(quanshou_targetmod)
 Fk:addSkill(shexue_viewas)
-shexue:addRelatedSkill(shexue_targetmod)
 sunyu:addSkill(quanshou)
 sunyu:addSkill(shexue)
 Fk:loadTranslationTable{
   ["sunyu"] = "孙瑜",
+  ["#sunyu"] = "镇据边陲",
+  ["illustrator:sunyu"] = "CatJade玉猫",
   ["quanshou"] = "劝守",
-  [":quanshou"] = "一名角色回合开始时，若其手牌数不大于体力上限，你可以令其选择一项：1.将手牌摸至体力上限，本回合出牌阶段使用【杀】次数上限-1"..
-  "（至多摸五张）；2.其本回合使用牌被抵消后，你摸一张牌。",
+  [":quanshou"] = "一名角色回合开始时，若其手牌数不大于体力上限，你可以令其选择："..
+  "1.将手牌摸至体力上限（至多摸五张），其于此回合的出牌阶段内使用【杀】的次数上限-1；"..
+  "2.其于此回合内使用牌被抵消后，你摸一张牌。",
   ["shexue"] = "设学",
-  [":shexue"] = "出牌阶段开始时，你可以将一张牌当上回合角色出牌阶段使用的最后一张基本牌或普通锦囊牌使用；出牌阶段结束时，你可以令下回合角色于其"..
-  "出牌阶段开始时可以将一张牌当你本阶段使用的最后一张基本牌或普通锦囊牌使用（均无距离次数限制）。",
+  [":shexue"] = "出牌阶段开始时，你可以将一张牌当上个回合角色出牌阶段内使用过的一张基本牌或普通锦囊牌使用；"..
+  "出牌阶段结束时，你可以令下个回合角色于其出牌阶段开始时可以将一张牌当你本阶段使用过的一张基本牌或普通锦囊牌使用。"..
+  "（均无距离次数限制）",
   ["#quanshou-invoke"] = "劝守：是否对 %dest 发动“劝守”？",
   ["#quanshou-choice"] = "劝守：选择 %src 令你执行的一项",
   ["quanshou1"] = "摸牌至体力上限，本回合使用【杀】次数-1",
   ["quanshou2"] = "你本回合使用牌被抵消后，%src摸一张牌",
-  ["#shexue-invoke"] = "设学：你可以令下回合角色出牌阶段开始时可以将一张牌当【%arg】使用",
+  ["#shexue-invoke"] = "是否使用 设学，令下回合角色出牌阶段开始时可以将一张牌当你本阶段使用过的牌使用",
   ["shexue_viewas"] = "设学",
-  ["#shexue-use"] = "设学：你可以将一张牌当【%arg】使用",
+  ["#shexue-use"] = "是否使用 设学，将一张牌当上个回合角色出牌阶段内使用过的牌使用",
 
   ["$quanshou1"] = "曹军势大，不可刚其锋。",
   ["$quanshou2"] = "持重待守，不战而胜十万雄兵。",
@@ -4976,6 +5056,9 @@ ganfuren:addSkill(ty__shushen)
 ganfuren:addSkill(ty__shenzhi)
 Fk:loadTranslationTable{
   ["ty__ganfuren"] = "甘夫人",
+  ["#ty__ganfuren"] = "昭烈皇后",
+  ["illustrator:ty__ganfuren"] = "胖虎饭票",
+
   ["ty__shushen"] = "淑慎",
   [":ty__shushen"] = "当你回复1点体力后，你可以选择一名其他角色，令其回复1点体力或与其各摸一张牌。",
   ["ty__shenzhi"] = "神智",
@@ -5075,6 +5158,8 @@ mifuren:addSkill(ty__cunsi)
 mifuren:addRelatedSkill(ty__yongjue)
 Fk:loadTranslationTable{
   ["ty__mifuren"] = "糜夫人",
+  ["#ty__mifuren"] = "乱世沉香",
+  ["illustrator:ty__mifuren"] = "鲨鱼嚼嚼",
   ["ty__guixiu"] = "闺秀",
   [":ty__guixiu"] = "锁定技，你获得此技能后的第一个回合开始时，你摸两张牌；当你发动〖存嗣〗后，你回复1点体力。",
   ["ty__cunsi"] = "存嗣",
@@ -5300,6 +5385,8 @@ guozhao:addSkill(pianchong)
 guozhao:addSkill(zunwei)
 Fk:loadTranslationTable{
   ["guozhao"] = "郭照",
+  ["#guozhao"] = "碧海青天",
+  ["illustrator:guozhao"] = "杨杨和夏季",
   ["pianchong"] = "偏宠",
   [":pianchong"] = "摸牌阶段，你可以改为从牌堆获得红牌和黑牌各一张，然后选择一项直到你的下回合开始：1.你每失去一张红色牌时摸一张黑色牌，"..
   "2.你每失去一张黑色牌时摸一张红色牌。",
@@ -5491,6 +5578,8 @@ fanyufeng:addSkill(bazhan)
 fanyufeng:addSkill(jiaoying)
 Fk:loadTranslationTable{
   ["fanyufeng"] = "樊玉凤",
+  ["#fanyufeng"] = "红鸾寡宿",
+  ["illustrator:fanyufeng"] = "匠人绘",
   ["bazhan"] = "把盏",
   [":bazhan"] = "转换技，出牌阶段限一次，阳：你可以交给一名其他角色至多两张手牌；阴：你可以获得一名其他角色至多两张手牌。"..
   "然后若这些牌里包括【酒】或<font color='red'>♥</font>牌，你可令获得此牌的角色回复1点体力或复原武将牌。",
@@ -5700,6 +5789,8 @@ ruanyu:addSkill(xingzuo)
 ruanyu:addSkill(miaoxian)
 Fk:loadTranslationTable{
   ["ruanyu"] = "阮瑀",
+  ["#ruanyu"] = "斐章雅律",
+  ["illustrator:ruanyu"] = "alien",
   ["xingzuo"] = "兴作",
   [":xingzuo"] = "出牌阶段开始时，你可观看牌堆底的三张牌并用任意张手牌替换其中等量的牌。若如此做，结束阶段，"..
   "你可以令一名有手牌的角色用所有手牌替换牌堆底的三张牌，然后若交换前该角色的手牌数大于3，你失去1点体力。",
@@ -5867,6 +5958,8 @@ yangwan:addSkill(youyan)
 yangwan:addSkill(zhuihuan)
 Fk:loadTranslationTable{
   ["ty__yangwan"] = "杨婉",
+  ["#ty__yangwan"] = "融沫之鲡",
+  ["illustrator:ty__yangwan"] = "木美人",
   ["youyan"] = "诱言",
   [":youyan"] = "你的回合内，当你的牌因使用或打出之外的方式进入弃牌堆后，你可以从牌堆中获得本次弃牌中没有的花色的牌各一张（出牌阶段、弃牌阶段各限一次）。",
   ["zhuihuan"] = "追还",
@@ -6010,6 +6103,8 @@ panshu:addSkill(zhiren)
 panshu:addSkill(yaner)
 Fk:loadTranslationTable{
   ["ty__panshu"] = "潘淑",
+  ["#ty__panshu"] = "神女",
+  ["illustrator:ty__panshu"] = "杨杨和夏季",
   ["zhiren"] = "织纴",
   [":zhiren"] = "你的回合内，当你使用本回合的第一张非转化牌时，若X：不小于1，你观看牌堆顶X张牌并以任意顺序放回牌堆顶或牌堆底；"..
   "不小于2，你可以弃置场上一张装备牌和一张延时锦囊牌；不小于3，你回复1点体力；不小于4，你摸三张牌（X为此牌名称字数）。",

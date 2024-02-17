@@ -946,6 +946,7 @@ local xunli = fk.CreateTriggerSkill{
   anim_type = "special",
   frequency = Skill.Compulsory,
   events = {fk.AfterCardsMove, fk.EventPhaseStart},
+  derived_piles = "jiping_li",
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and player:getMark("lieyi_using-phase") == 0 then  --发动烈医过程中不会触发询疠，新杀智慧
       if event == fk.AfterCardsMove and #player:getPile("jiping_li") < 9 then

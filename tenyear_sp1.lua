@@ -1927,9 +1927,9 @@ local shouli_trigger = fk.CreateTriggerSkill{
   events = {fk.GameStart},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(shouli.name)
+    return player:hasSkill(shouli)
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(shouli.name)
@@ -2018,8 +2018,7 @@ Fk:loadTranslationTable{
   ["#shouli_trigger"] = "狩骊",
   ["#shouli_delay"] = "狩骊",
   [":shouli"] = "游戏开始时，从下家开始所有角色随机使用牌堆中的一张坐骑。你可将场上的一张进攻马当【杀】（不计入次数）、"..
-  "防御马当【闪】使用或打出，以此法失去坐骑的其他角色本回合非锁定技失效，你与其本回合受到的伤害+1且改为雷电伤害。"..
-  '<br /><font color="red">（村：以此法使用的牌的合法性检测按无对应实体牌的牌处理，发动后先获得对应的坐骑牌，再从手牌区转化使用）</font>',
+  "防御马当【闪】使用或打出，以此法失去坐骑的其他角色本回合非锁定技失效，你与其本回合受到的伤害+1且改为雷电伤害。",
   ["hengwu"] = "横骛",
   [":hengwu"] = "当你使用或打出牌时，若你没有该花色的手牌，你可摸X张牌（X为场上与此牌花色相同的装备数量）。",
 

@@ -166,11 +166,4 @@ Fk:loadTranslationTable{
   ["hansong"] = "韩嵩",
 }
 
-local zhugemengxue = General(extension, "zhugemengxue", "wei", 3, 3, General.Female)
-zhugemengxue:addSkill("tmp_illustrate")
-zhugemengxue.hidden = true
-Fk:loadTranslationTable{
-  ["zhugemengxue"] = "诸葛梦雪",
-}
-
 return extension

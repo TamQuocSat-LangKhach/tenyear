@@ -164,6 +164,7 @@ local hanlong = General(extension, "hanlong", "wei", 4)
 local duwang = fk.CreateTriggerSkill{
   name = "duwang",
   anim_type = "special",
+  derived_piles = "hanlong_ci",
   frequency = Skill.Compulsory,
   events = {fk.AfterDrawInitialCards},
   can_trigger = function(self, event, target, player, data)

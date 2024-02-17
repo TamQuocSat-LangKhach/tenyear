@@ -8,7 +8,7 @@ Fk:loadTranslationTable{
   ["wm"] = "武",
 }
 
---锦瑟良缘：曹金玉 孙翊 冯妤 来莺儿 曹华 张奋 诸葛若雪 曹宪
+--锦瑟良缘：曹金玉 孙翊 冯妤 来莺儿 曹华 张奋 诸葛梦雪 诸葛若雪 曹宪
 local caojinyu = General(extension, "caojinyu", "wei", 3, 3, General.Female)
 local yuqi = fk.CreateTriggerSkill{
   name = "yuqi",
@@ -198,7 +198,7 @@ local sunyi = General(extension, "ty__sunyi", "wu", 5)
 local jiqiaos = fk.CreateTriggerSkill{
   name = "jiqiaos",
   anim_type = "drawcard",
-  expand_pile = "jiqiaos",
+  derived_piles = "jiqiaos",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Play
@@ -963,7 +963,7 @@ Fk:loadTranslationTable{
   ["xianzhu1"] = "无视距离和防具",
   ["xianzhu2"] = "可指定目标+1",
   ["xianzhu3"] = "造成伤害后弃牌数+1",
-  
+
   ["$wanglu1"] = "大攻车前，坚城弗当。",
   ["$wanglu2"] = "大攻既作，天下可望！",
   ["$xianzhu1"] = "敌垒已陷，当长驱直入！",
@@ -971,6 +971,143 @@ Fk:loadTranslationTable{
   ["$chaixie1"] = "利器经久，拆合自用。",
   ["$chaixie2"] = "损一得十，如鲸落宇。",
   ["~zhangfen"] = "身陨外，愿魂归江东……",
+}
+
+local zhugemengxue = General(extension, "zhugemengxue", "wei", 3, 3, General.Female)
+local jichun = fk.CreateActiveSkill{
+  name = "jichun",
+  anim_type = "support",
+  prompt = "#jichun-active",
+  card_num = 1,
+  target_num = 0,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local card = Fk:getCardById(effect.cards[1])
+    local n = Fk:translate(card.trueName):len() -- FIXME: depends on config language, catastrophe!
+    player:showCards(effect.cards)
+    --room:delay(1000)
+    local targets = table.map(table.filter(room.alive_players, function (p)
+      return p:getHandcardNum() < player:getHandcardNum()
+    end), Util.IdMapper)
+    local choices = {}
+    if #targets > 0 then
+      table.insert(choices, "jichun_give")
+    end
+    if not player:prohibitDiscard(card) then
+      table.insert(choices, "jichun_discard")
+    end
+    if #choices == 0 then return end
+    local choice = room:askForChoice(player, choices, self.name,
+    "#jichun-choice:::" .. card:toLogString() .. ":" .. tostring(n),
+    false, {"jichun_give", "jichun_discard"})
+    if choice == "jichun_give" then
+      targets = room:askForChoosePlayers(player, targets, 1, 1,
+      "#jichun-give:::" .. card:toLogString() .. ":" .. tostring(n), self.name, false)
+      room:moveCardTo(effect.cards, Player.Hand, room:getPlayerById(targets[1]), fk.ReasonGive, self.name,
+      nil, false, player.id)
+      if not player.dead then
+        player:drawCards(n, self.name)
+      end
+    else
+      room:throwCard(effect.cards, self.name, player)
+      if player.dead then return end
+      targets = table.map(table.filter(room.alive_players, function (p)
+        return p:getHandcardNum() > player:getHandcardNum()
+      end), Util.IdMapper)
+      if #targets == 0 then return end
+      targets = room:askForChoosePlayers(player, targets, 1, 1,
+      "#jichun-discard:::" .. tostring(n), self.name, false)
+      local to = room:getPlayerById(targets[1])
+      local cards = room:askForCardsChosen(player, to, 1, n, "hej", self.name)
+      if #cards > 0 then
+        room:throwCard(cards, self.name, to, player)
+      end
+    end
+  end,
+}
+local hanying = fk.CreateTriggerSkill{
+  name = "hanying",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Start
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local card = nil
+    for _, id in ipairs(room.draw_pile) do
+      local c = Fk:getCardById(id)
+      if c.type == Card.TypeEquip then
+        card = c
+        break
+      end
+    end
+    if card == nil then
+      room:sendLog{ type = "#SearchFailed", from = player.id, arg = self.name, arg2 = "equip" }
+      return false
+    end
+    room:moveCards({
+      ids = {card.id},
+      toArea = Card.Processing,
+      skillName = self.name,
+      moveReason = fk.ReasonJustMove,
+    })
+    --room:delay(1000)
+    local targets = table.map(table.filter(room.alive_players, function (p)
+      return p:getHandcardNum() == player:getHandcardNum() and p:canUseTo(card, p)
+    end), Util.IdMapper)
+    if #targets == 0 then
+      room:moveCards{
+        ids = {card.id},
+        toArea = Card.DiscardPile,
+        moveReason = fk.ReasonJustMove,
+        skillName = self.name,
+      }
+      return false
+    end
+    targets = room:askForChoosePlayers(player, targets, 1, 1,
+    "#hanying-choose:::" .. card:toLogString(), self.name, false)
+    --FIXME:暂不考虑赠物（十周年逐鹿天下版）
+    room:useCard{
+      from = targets[1],
+      card = card,
+      tos = { targets }
+    }
+  end,
+}
+
+zhugemengxue:addSkill(jichun)
+zhugemengxue:addSkill(hanying)
+
+Fk:loadTranslationTable{
+  ["zhugemengxue"] = "诸葛梦雪",
+  ["#zhugemengxue"] = "仙苑停云",
+  --["illustrator:zhugemengxue"] = "",
+  ["jichun"] = "寄春",
+  [":jichun"] = "出牌阶段限一次，你可以展示一张牌，选择：1.将此牌交给一名手牌数小于你的角色，然后摸X张牌；"..
+  "2.弃置此牌，然后弃置一名手牌数大于你的角色区域里至多X张牌。（X为此牌的牌名字数）",
+  ["hanying"] = "寒英",
+  [":hanying"] = "准备阶段，你可以展示牌堆顶第一张装备牌，然后令一名手牌数等于你的角色使用之。",
+
+  ["#jichun-active"] = "发动 寄春，选择一张牌展示之",
+  ["#jichun-choice"] = "寄春：你展示的%arg牌名字数为%arg2，清选择：",
+  ["jichun_give"] = "将展示牌交给一名手牌数小于你的角色并摸牌",
+  ["jichun_discard"] = "弃置展示牌，然后弃置一名手牌数大于你的角色区域里的牌",
+  ["#jichun-give"] = "寄春：将展示的%arg交给一名手牌数小于你的角色并摸%arg2张牌",
+  ["#jichun-discard"] = "寄春：选择一名手牌数大于你的角色弃置其区域里至多%arg张牌",
+  ["#SearchFailed"] = "%from 发动 %arg 失败，无法检索到 %arg2",
+  ["#hanying-choose"] = "寒英：选择一名手牌数等于你的角色，令其使用%arg",
+
+  ["$jichun1"] = "寒冬已至，花开不远矣。",
+  ["$jichun2"] = "梅凌霜雪，其香不逊晚来者。",
+  ["$hanying1"] = "寒梅不争春，空任群芳妒。",
+  ["$hanying2"] = "三九寒天，尤有寒英凌霜。",
+  ["~zhugemengxue"] = "雪落青丝上，与君共白头……",
 }
 
 local zhugeruoxue = General(extension, "zhugeruoxue", "wei", 3, 3, General.Female)
@@ -1060,6 +1197,7 @@ Fk:loadTranslationTable{
 local caoxian = General(extension, "caoxian", "wei", 3, 3, General.Female)
 local lingxi = fk.CreateTriggerSkill{
   name = "lingxi",
+  derived_piles = "lingxi_wing",
   mute = true,
   events = {fk.EventPhaseStart, fk.EventPhaseEnd, fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
@@ -1210,7 +1348,7 @@ Fk:loadTranslationTable{
   ["$lingxi2"] = "心有玲珑曲，万籁皆空灵。",
   ["$zhifou1"] = "满怀相思意，念君君可知？",
   ["$zhifou2"] = "世有人万万，相知无二三。",
-  ["~caoxian"] = "恨生枭雄府，恨嫁君王家。",
+  ["~caoxian"] = "恨生枭雄府，恨嫁君王家……",
 }
 
 --高山仰止：王朗 刘徽

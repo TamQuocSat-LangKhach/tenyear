@@ -1621,6 +1621,7 @@ local biaozhao = fk.CreateTriggerSkill{
   name = "biaozhao",
   mute = true,
   events = {fk.EventPhaseStart, fk.AfterCardsMove},
+  derived_piles = "biaozhao_message",
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self) then return false end
     if event == fk.EventPhaseStart then
@@ -3012,6 +3013,7 @@ local shilie = fk.CreateActiveSkill{
   anim_type = "special",
   card_num = 0,
   target_num = 0,
+  derived_piles = "shilie",
   prompt = function (self)
     return "#shilie-"..self.interaction.data
   end,

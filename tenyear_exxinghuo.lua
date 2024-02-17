@@ -11,6 +11,7 @@ local ty_ex__sundeng = General(extension, "ty_ex__sundeng", "wu", 4)
 local ty_ex__kuangbi = fk.CreateTriggerSkill {
   name = "ty_ex__kuangbi",
   events = {fk.EventPhaseStart},
+  derived_piles = "ty_ex__kuangbi",
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self) and target == player and player.phase == Player.Play
   end,

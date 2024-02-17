@@ -12,6 +12,7 @@ local ty__chengyu = General(extension, "ty__chengyu", "wei", 3)
 local ty__shefu = fk.CreateTriggerSkill{
   name = "ty__shefu",
   anim_type = "control",
+  derived_piles = "ty__shefu",
   events ={fk.EventPhaseStart, fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
@@ -2510,6 +2511,7 @@ local ruiji = General(extension, "ty__ruiji", "wu", 4, 4, General.Female)
 local wangyuan = fk.CreateTriggerSkill{
   name = "wangyuan",
   anim_type = "special",
+  derived_piles = "ruiji_wang",
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and player.phase == Player.NotActive and #player:getPile("ruiji_wang") < #player.room.players then
@@ -3145,7 +3147,7 @@ Fk:loadTranslationTable{
   ["$xiace2"] = "人情同于抔土，岂穷达而异心。",
   ["$yuxin1"] = "得一人知情识趣，何妨同甘共苦。",
   ["$yuxin2"] = "临千军而不改其静，御心无波尔。",
-  ["~bailingyun"] = "世人皆惧司马，独我痴情仲达。",
+  ["~bailingyun"] = "世人皆惧司马，独我痴情仲达……",
 }
 
 local malingli = General(extension, "malingli", "shu", 3, 3, General.Female)

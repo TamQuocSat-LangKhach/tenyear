@@ -1706,14 +1706,17 @@ local ty_ex__lihuo = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     if event == fk.AfterCardUseDeclared then
       local card = Fk:cloneCard("fire__slash", data.card.suit, data.card.number)
+      for k, v in pairs(data.card) do
+        if card[k] == nil then
+          card[k] = v
+        end
+      end
       if data.card:isVirtual() then
-        card:addSubcard(data.card)
-        card.skillNames = data.card.skillNames
-        card.skillName = self.name
+        card.subcards = data.card.subcards
       else
         card.id = data.card.id
-        card.skillName = self.name
       end
+      card.skillNames = data.card.skillNames
       data.card = card
       data.extra_data = data.extra_data or {}
       data.extra_data.ty_ex__lihuo = data.extra_data.ty_ex__lihuo or {}
@@ -1741,7 +1744,7 @@ local ty_ex__lihuo_record = fk.CreateTriggerSkill{
 local ty_ex__chunlao = fk.CreateTriggerSkill{
   name = "ty_ex__chunlao",
   anim_type = "support",
-  expand_pile = "ty_ex__chengpu_chun",
+  derived_piles = "ty_ex__chengpu_chun",
   events = {fk.EventPhaseEnd, fk.AskForPeaches},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
@@ -2476,6 +2479,7 @@ Fk:loadTranslationTable{
 local liufeng = General(extension, "ty_ex__liufeng", "shu", 4)
 local ty_ex__xiansi = fk.CreateTriggerSkill{
   name = "ty_ex__xiansi",
+  derived_piles = "ty_ex__xiansi_ni",
   anim_type = "control",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)

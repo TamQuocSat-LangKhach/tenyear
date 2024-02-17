@@ -1926,6 +1926,7 @@ local shouli_trigger = fk.CreateTriggerSkill{
   name = "#shouli_trigger",
   events = {fk.GameStart},
   mute = true,
+  main_skill = shouli,
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(shouli)
   end,

@@ -1267,12 +1267,9 @@ local renzheng = fk.CreateTriggerSkill{
   events = {fk.DamageFinished},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
-      if data.extra_data and data.extra_data.renzheng_invoke then
-        return true
-      end
-      if data.to:getMark("renzheng-phase") > 0 then
-        player.room:setPlayerMark(data.to, "renzheng-phase", 0)--FIXME: 伪实现！！！
-        return true
+      if not data.dealtRecorderId then return true end
+      if data.extra_data and data.extra_data.renzheng_maxDamage then
+        return data.damage < data.extra_data.renzheng_maxDamage
       end
     end
   end,
@@ -1280,23 +1277,17 @@ local renzheng = fk.CreateTriggerSkill{
     player:drawCards(2, self.name)
   end,
 
-  refresh_events = {fk.PreDamage, fk.AfterSkillEffect, fk.Damaged},
-  can_refresh = Util.TrueFunc,
+  refresh_events = {fk.AfterSkillEffect, fk.SkillEffect},
+  can_refresh = function (self, event, target, player, data)
+    return player == player.room.players[1]
+  end,
   on_refresh = function(self, event, target, player, data)
-    if event == fk.PreDamage then
-      data.extra_data = data.extra_data or {}
-      data.extra_data.renzheng = data.damage
-      player.room:setPlayerMark(data.to, "renzheng-phase", 1)--FIXME
-    elseif event == fk.AfterSkillEffect then
-      local e = player.room.logic:getCurrentEvent():findParent(GameEvent.Damage, true)
-      if e then
-        local dat = e.data[1]
-        if dat.extra_data and dat.extra_data.renzheng and dat.damage < dat.extra_data.renzheng then
-          dat.extra_data.renzheng_invoke = true
-        end
-      end
-    elseif event == fk.Damaged then
-      player.room:setPlayerMark(data.to, "renzheng-phase", 0)--FIXME
+    local e = player.room.logic:getCurrentEvent():findParent(GameEvent.Damage, true)
+    if e then
+      local dat = e.data[1]
+      dat.extra_data = dat.extra_data or {}
+      dat.extra_data.renzheng_maxDamage = dat.extra_data.renzheng_maxDamage or 0
+      dat.extra_data.renzheng_maxDamage = math.max(dat.damage, dat.extra_data.renzheng_maxDamage)
     end
   end,
 }

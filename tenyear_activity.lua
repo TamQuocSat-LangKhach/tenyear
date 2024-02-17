@@ -4416,7 +4416,7 @@ local longsong_active = fk.CreateActiveSkill{
     return #selected == 0 and Fk:getCardById(to_select).color == Card.Red
   end,
   target_filter = function(self, to_select, selected, cards)
-    return #selected == 0 and to_select ~= Self.id
+    return #selected == 0 and to_select ~= Self.id and #cards == 1
   end,
 }
 local longsong = fk.CreateTriggerSkill{

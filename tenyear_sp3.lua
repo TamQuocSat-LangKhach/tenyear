@@ -995,14 +995,10 @@ local jichun = fk.CreateActiveSkill{
     local targets = table.map(table.filter(room.alive_players, function (p)
       return p:getHandcardNum() < player:getHandcardNum()
     end), Util.IdMapper)
-    local choices = {}
+    local choices = {"jichun_discard"}
     if #targets > 0 then
       table.insert(choices, "jichun_give")
     end
-    if not player:prohibitDiscard(card) then
-      table.insert(choices, "jichun_discard")
-    end
-    if #choices == 0 then return end
     local choice = room:askForChoice(player, choices, self.name,
     "#jichun-choice:::" .. card:toLogString() .. ":" .. tostring(n),
     false, {"jichun_give", "jichun_discard"})
@@ -1010,11 +1006,11 @@ local jichun = fk.CreateActiveSkill{
       targets = room:askForChoosePlayers(player, targets, 1, 1,
       "#jichun-give:::" .. card:toLogString() .. ":" .. tostring(n), self.name, false)
       room:moveCardTo(effect.cards, Player.Hand, room:getPlayerById(targets[1]), fk.ReasonGive, self.name,
-      nil, false, player.id)
+      nil, true, player.id)
       if not player.dead then
         player:drawCards(n, self.name)
       end
-    else
+    elseif not player:prohibitDiscard(card) then
       room:throwCard(effect.cards, self.name, player)
       if player.dead then return end
       targets = table.map(table.filter(room.alive_players, function (p)

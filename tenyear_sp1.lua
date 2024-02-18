@@ -1925,7 +1925,6 @@ local shouli = fk.CreateViewAsSkill{
 local shouli_trigger = fk.CreateTriggerSkill{
   name = "#shouli_trigger",
   events = {fk.GameStart},
-  main_skill = shouli,
   mute = true,
   main_skill = shouli,
   can_trigger = function(self, event, target, player, data)

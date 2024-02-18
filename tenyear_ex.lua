@@ -3137,9 +3137,6 @@ local ty_ex__anjian = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and data.card.trueName == "slash"
     and not player.room:getPlayerById(data.to):inMyAttackRange(player)
   end,
-  on_cost = function (self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#ty_ex__anjian-invoke::"..data.to)
-  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     data.additionalDamage = (data.additionalDamage or 0) + 1
@@ -3166,12 +3163,9 @@ local ty_ex__anjian = fk.CreateTriggerSkill{
 }
 local ty_ex__anjian_delay = fk.CreateTriggerSkill{
   name = "#ty_ex__anjian_delay",
-  mute = true,
-  frequency = Skill.Compulsory,
-  events = {fk.EnterDying},
-  can_trigger = function(self, event, target, player, data)
+  refresh_events = {fk.EnterDying, fk.AfterDying},
+  can_refresh = function(self, event, target, player, data)
     if player == target then
-      player.room.logic:dumpEventStack()
       local e = player.room.logic:getCurrentEvent():findParent(GameEvent.CardEffect)
       if e then
         local use = e.data[1]
@@ -3181,21 +3175,19 @@ local ty_ex__anjian_delay = fk.CreateTriggerSkill{
       end
     end
   end,
-  on_use = function(self, event, target, player, data)
-    data.extra_data = data.extra_data or {}
-    data.extra_data.ty_ex__anjian_poison = true
+  on_refresh = function(self, event, target, player, data)
+    if event == fk.EnterDying then
+      player.room:addPlayerMark(player, "ty_ex__anjian_poison")
+    else
+      player.room:removePlayerMark(player, "ty_ex__anjian_poison")
+    end
   end,
 }
 ty_ex__anjian:addRelatedSkill(ty_ex__anjian_delay)
 local ty_ex__anjian_prohibit = fk.CreateProhibitSkill{
   name = "#ty_ex__anjian_prohibit",
   prohibit_use = function(self, player, card)
-    if card and card.name == "peach" and player.dying then
-      if RoomInstance and RoomInstance.logic:getCurrentEvent().event == GameEvent.Dying then --- FIXME: RoomInstance dont work !
-        local data = RoomInstance.logic:getCurrentEvent().data[1]
-        return data and data.extra_data and data.extra_data.ty_ex__anjian_poison
-      end
-    end
+    return card and card.name == "peach" and player:getMark("ty_ex__anjian_poison") > 0
   end,
 }
 ty_ex__panzhangmazhong:addSkill("duodao")
@@ -3208,7 +3200,6 @@ Fk:loadTranslationTable{
   
   ["ty_ex__anjian"] = "暗箭",
   [":ty_ex__anjian"] = "锁定技，当你使用【杀】指定一名角色为目标后，若你不在其攻击范围内，此【杀】对其造成的基础伤害值+1且无视其防具，然后若该角色因此进入濒死状态，其不能使用【桃】直到此次濒死结算结束。",
-  ["#ty_ex__anjian-invoke"] = "暗箭：是否令此【杀】对 %dest 造成的伤害+1且无视防具",
 
   ["$duodao_ty_ex__panzhangmazhong1"] = "宝刀配英雄，此刀志在必得！",
   ["$duodao_ty_ex__panzhangmazhong2"] = "你根本不会用刀！",

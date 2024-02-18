@@ -786,6 +786,156 @@ Fk:loadTranslationTable{
   ["~tycl__sunquan"] = "父亲大哥仲谋愧矣。",
 }
 
+local sunwukong = General(extension, "sunwukong", "god", 3)
+local jinjing = fk.CreateActiveSkill{
+  name = "jinjing",
+  mute = true,
+  frequency = Skill.Compulsory,
+  card_num = 0,
+  card_filter = Util.FalseFunc,
+  target_num = 1,
+  target_filter = function (self, to_select, selected)
+    return #selected == 0 and Self.id ~= to_select and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local to = room:getPlayerById(effect.tos[1])
+    U.viewCards(player, to.player_cards[Player.Hand], self.name)
+  end,
+}
+local jinjing_trigger = fk.CreateTriggerSkill{
+  name = "#jinjing_trigger",
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function (self, event, target, player, data)
+    return player:hasSkill(jinjing) and player:usedSkillTimes(jinjing.name, Player.HistoryPhase) > 0
+  end,
+  on_refresh = function (self, event, target, player, data)
+    player:setSkillUseHistory(jinjing.name, 0, Player.HistoryPhase)
+  end,
+}
+jinjing:addRelatedSkill(jinjing_trigger)
+sunwukong:addSkill(jinjing)
+local ruyi = fk.CreateActiveSkill{
+  name = "ruyi",
+  prompt = "#ruyi",
+  frequency = Skill.Compulsory,
+  card_num = 0,
+  target_num = 0,
+  interaction = function()
+    return UI.Spin { from = 1, to = 4 }
+  end,
+  card_filter = Util.FalseFunc,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:setPlayerMark(player, "@ruyi", self.interaction.data)
+  end,
+}
+local ruyi_attackrange = fk.CreateAttackRangeSkill{
+  name = "#ruyi_attackrange",
+  correct_func = function (self, player)
+    if player:hasSkill(ruyi) and player:getMark("@ruyi") ~= 0 then
+      return player:getMark("@ruyi") - 1
+    end
+  end,
+}
+local ruyi_filter = fk.CreateFilterSkill{
+  name = "#ruyi_filter",
+  card_filter = function(self, card, player)
+    return card.sub_type == Card.SubtypeWeapon and table.contains(player.player_cards[Player.Hand], card.id)
+  end,
+  view_as = function(self, card)
+    local c = Fk:cloneCard("slash", card.suit, card.number)
+    c.skillName = "ruyi"
+    return c
+  end,
+}
+local ruyi_targetmod = fk.CreateTargetModSkill{
+  name = "#ruyi_targetmod",
+  bypass_times = function(self, player, skill, scope)
+    return player:hasSkill(ruyi) and player:getMark("@ruyi") <= 1 and skill.trueName == "slash_skill" and scope == Player.HistoryPhase
+  end,
+}
+local ruyi_trigger = fk.CreateTriggerSkill{
+  name = "#ruyi_trigger",
+  mute = true,
+  events = {fk.AfterCardUseDeclared, fk.AfterCardTargetDeclared},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    if player == target and player:hasSkill(ruyi) and data.card.trueName == "slash" then
+      if event == fk.AfterCardUseDeclared then
+        return player:getMark("@ruyi") == 2 or player:getMark("@ruyi") == 3
+      else
+        return player:getMark("@ruyi") == 4 and #U.getUseExtraTargets(player.room, data) > 0
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    if player:getMark("@ruyi") == 2 then
+      data.additionalDamage = (data.additionalDamage or 0) + 1
+    elseif player:getMark("@ruyi") == 3 then
+      data.disresponsiveList = table.map(player.room.alive_players, Util.IdMapper)
+    else
+      local to = player.room:askForChoosePlayers(player, U.getUseExtraTargets(player.room, data),
+      1, 1, "#ruyi-choose:::"..data.card:toLogString(), ruyi.name, true)
+      if #to > 0 then
+        table.insert(data.tos, to)
+      end
+    end
+  end,
+}
+ruyi:addRelatedSkill(ruyi_attackrange)
+ruyi:addRelatedSkill(ruyi_filter)
+ruyi:addRelatedSkill(ruyi_targetmod)
+ruyi:addRelatedSkill(ruyi_trigger)
+sunwukong:addSkill(ruyi)
+local cibeis = fk.CreateTriggerSkill{
+  name = "cibeis",
+  anim_type = "drawcard",
+  events = {fk.DamageCaused},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and target == player then
+      return not table.contains(U.getMark(player, "cibeis-turn"), data.to.id)
+    end
+  end,
+  on_cost = function (self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#cibeis-invoke:"..data.to.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local mark = U.getMark(player, "cibeis-turn")
+    table.insert(mark, data.to.id)
+    player.room:setPlayerMark(player, "cibeis-turn", mark)
+    player:drawCards(5, self.name)
+    return true
+  end,
+}
+sunwukong:addSkill(cibeis)
+Fk:loadTranslationTable{
+  ["sunwukong"] = "孙悟空",
+  ["jinjing"] = "金睛",
+  [":jinjing"] = "锁定技，出牌阶段，你可以观看一名其他角色的手牌。",
+  ["ruyi"] = "如意",
+  [":ruyi"] = "锁定技，你手牌中的武器牌均视为【杀】。出牌阶段限一次，你可以调整攻击范围（1~4），若你的攻击范围基数为：1，使用【杀】无次数限制；2，使用【杀】伤害+1；3，使用【杀】无法响应；4，使用【杀】可额外选择一个目标。",
+  ["@ruyi"] = "如意",
+  ["#ruyi"] = "如意：选择你的攻击范围",
+  ["#ruyi_filter"] = "如意",
+  ["#ruyi_trigger"] = "如意",
+  ["#ruyi-choose"] = "如意：%arg 可额外选择一个目标",
+  ["cibeis"] = "慈悲",
+  [":cibeis"] = "每回合每名角色限一次，当你对其他角色造成伤害时，你可以防止此伤害，摸五张牌。",
+  ["#cibeis-invoke"] = "慈悲：你可以防止对 %src 造成伤害，摸五张牌",
+  ["$ruyi1"] = "俺老孙来也！",
+  ["$ruyi2"] = "吃俺老孙一棒！",
+  ["$cibeis1"] = "生亦何欢，死亦何苦。",
+  ["$cibeis2"] = "我欲成佛，天下无魔；我欲成魔，佛奈我何？",
+  ["~sunwukong"] = "曾经有一整片蟠桃园在我面前，失去后才追悔莫及……",
+}
+
 local nezha = General(extension, "nezha", "god", 3)
 local santou = fk.CreateTriggerSkill{
   name = "santou",

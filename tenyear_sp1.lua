@@ -4461,7 +4461,7 @@ local chenghao = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and data.damageType ~= fk.NormalDamage and data.beginnerOfTheDamage and not data.chain
+    return player:hasSkill(self) and data.damageType ~= fk.NormalDamage and data.beginnerOfTheDamage and not data.chain and not target.dead
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

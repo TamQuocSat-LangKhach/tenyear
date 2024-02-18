@@ -172,7 +172,7 @@ local qingbei = fk.CreateTriggerSkill{
       if event == fk.RoundStart then
         return true
       elseif event == fk.CardUseFinished then
-        if target == player and player:getMark("@qingbei-round") ~= 0 then
+        if target == player and data.card.suit ~= Card.NoSuit and player:getMark("@qingbei-round") ~= 0 then
           return U.IsUsingHandcard(player, data)
         end
       end
@@ -214,7 +214,7 @@ Fk:loadTranslationTable{
   ["illustrator:chenshi"] = "游漫美绘",
 
   ["qingbei"] = "擎北",
-  [":qingbei"] = "每轮开始时，你可以选择任意种花色令你本轮无法使用，然后本轮你使用一张手牌后，摸本轮〖擎北〗选择过的花色数的牌。",
+  [":qingbei"] = "每轮开始时，你可以选择任意种花色令你本轮无法使用，然后本轮你使用一张有花色的手牌后，摸本轮〖擎北〗选择过的花色数的牌。",
   ["#qingbei-choice"] = "擎北：选择你本轮不能使用的花色",
   ["@qingbei-round"] = "擎北",
 

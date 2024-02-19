@@ -659,9 +659,7 @@ local zhenyi = fk.CreateViewAsSkill{
     player.room:removePlayerMark(player, "@@faluclub", 1)
   end,
   view_as = function(self, cards)
-    if #cards ~= 1 then
-      return nil
-    end
+    if #cards ~= 1 then return nil end
     local c = Fk:cloneCard("peach")
     c.skillName = self.name
     c:addSubcard(cards[1])
@@ -669,7 +667,7 @@ local zhenyi = fk.CreateViewAsSkill{
   end,
   enabled_at_play = Util.FalseFunc,
   enabled_at_response = function(self, player)
-    return player.phase == Player.NotActive and player:getMark("@@faluclub") > 0 and not player:isNude()
+    return player.phase == Player.NotActive and player:getMark("@@faluclub") > 0
   end,
 }
 local zhenyi_trigger = fk.CreateTriggerSkill {
@@ -711,6 +709,13 @@ local zhenyi_trigger = fk.CreateTriggerSkill {
       new_card.skillName = zhenyi.name
       new_card.id = data.card.id
       data.card = new_card
+      room:sendLog{
+        type = "#ChangedJudge",
+        from = player.id,
+        to = { data.who.id },
+        arg2 = new_card:toLogString(),
+        arg = zhenyi.name,
+      }
     elseif event == fk.DamageCaused then
       room:notifySkillInvoked(player, zhenyi.name, "offensive")
       room:removePlayerMark(player, "@@faluheart", 1)
@@ -735,7 +740,6 @@ local zhenyi_trigger = fk.CreateTriggerSkill {
     end
   end,
 }
-
 local dianhua = fk.CreateTriggerSkill{
   name = "dianhua",
   anim_type = "control",
@@ -5160,21 +5164,8 @@ local fanyin = fk.CreateTriggerSkill{
         skillName = self.name,
         moveReason = fk.ReasonJustMove,
       })
-      room:setPlayerMark(player, "fanyin_to_use", cards[1])
-      room:setPlayerMark(player, MarkEnum.BypassDistancesLimit .. "-tmp", 1)
-      local success, dat = room:askForUseActiveSkill(player, "fanyin_view_as", "#fanyin-ask", true)
-      room:setPlayerMark(player, MarkEnum.BypassDistancesLimit .. "-tmp", 0)
-
-      room:setPlayerMark(player, "fanyin_to_use", 0)
-      if success then
-        local use = {
-          from = player.id,
-          tos = table.map(dat.targets, function(e) return {e} end),
-          card = to_use,
-          extraUse = true,
-        }
-        room:useCard(use)
-      else
+      if U.askForUseRealCard(room, player, cards, ".", self.name, "#fanyin-ask:::"..Fk:getCardById(cards[1]):toLogString(),
+      { expand_pile = cards, bypass_distances = true }) == nil then
         room:moveCards({
           ids = cards,
           toArea = Card.DiscardPile,
@@ -5185,29 +5176,11 @@ local fanyin = fk.CreateTriggerSkill{
       end
       if player.dead then break end
       x = 2*x
+      if x > 13 then break end
       cards = room:getCardsFromPileByRule(".|" .. x)
       if #cards == 0 then break end
     end
   end,
-}
-local fanyin_view_as = fk.CreateViewAsSkill{
-  name = "fanyin_view_as",
-  interaction = function()
-    local card = Fk:getCardById(Self:getMark("fanyin_to_use"))
-    if not card then return end
-    return UI.ComboBox {
-      choices = { Fk:translate(card.name) .. '[' .. card:getSuitCompletedString(true) .. ']' }
-    }
-  end,
-  card_filter = Util.FalseFunc,
-  view_as = function(self, cards)
-    local card = Fk:getCardById(Self:getMark("fanyin_to_use"))
-    if Self:canUse(card) and not Self:prohibitUse(card) then
-      return card
-    end
-  end,
-  enabled_at_play = Util.FalseFunc,
-  enabled_at_response = Util.FalseFunc,
 }
 local fanyin_delay = fk.CreateTriggerSkill{
   name = "#fanyin_delay",
@@ -5256,7 +5229,6 @@ local peiqi = fk.CreateTriggerSkill{
     end
   end
 }
-Fk:addSkill(fanyin_view_as)
 fanyin:addRelatedSkill(fanyin_delay)
 dukui:addSkill(fanyin)
 dukui:addSkill(peiqi)
@@ -5271,8 +5243,7 @@ Fk:loadTranslationTable{
   ["peiqi"] = "配器",
   [":peiqi"] = "当你受到伤害后，你可以移动场上一张牌。然后若所有角色均在所有角色攻击范围内，你可再移动场上一张牌。",
 
-  ["#fanyin-ask"] = "泛音：使用亮出的牌，或点取消则令你本回合使用的下一张牌可多选目标",
-  ["fanyin_view_as"] = "泛音",
+  ["#fanyin-ask"] = "泛音：使用%arg，或点取消则令你本回合使用的下一张牌可多选目标",
   ["@fanyin-turn"] = "泛音",
   ["#peiqi-choose"] = "配器：你可以移动场上的一张牌",
   ["#fanyin-choose"] = "泛音：你可以为%arg额外指定至多%arg2个目标",

@@ -848,23 +848,6 @@ Fk:loadTranslationTable{
 }
 
 local dongxie = General(extension, "dongxie", "qun", 4, 4, General.Female)
-
-local jiaoxia_viewas = fk.CreateViewAsSkill{
-  name = "jiaoxia_viewas",
-  expand_pile = function (self)
-    return U.getMark(Self, "jiaoxia_cards")
-  end,
-  card_filter = function(self, to_select, selected)
-    return #selected == 0 and table.contains(U.getMark(Self, "jiaoxia_cards"), to_select)
-  end,
-  view_as = function(self, cards)
-    if #cards == 1 then
-      return Fk:getCardById(cards[1])
-    end
-  end,
-}
-Fk:addSkill(jiaoxia_viewas)
-
 local jiaoxia = fk.CreateTriggerSkill{
   name = "jiaoxia",
   events = {fk.EventPhaseStart, fk.CardUseFinished, fk.TargetSpecified},
@@ -897,18 +880,8 @@ local jiaoxia = fk.CreateTriggerSkill{
       room:setPlayerMark(player, "jiaoxia_target-phase", mark)
     elseif event == fk.CardUseFinished then
       local ids = Card:getIdList(data.card)
-      local card = Fk:getCardById(data.card:getEffectiveId())
-      room:setPlayerMark(player, "jiaoxia_cards", ids)
-      local success, dat = room:askForUseActiveSkill(player, "jiaoxia_viewas", "#jiaoxia-use:::" .. card:toLogString(),
-      true, Util.DummyTable, true)
-      room:setPlayerMark(player, "jiaoxia_cards", 0)
-      if success then
-        room:useCard{
-          from = player.id,
-          tos = table.map(dat.targets, function(id) return {id} end),
-          card = Fk:getCardById(dat.cards[1]),
-        }
-      end
+      U.askForUseRealCard(room, player, ids, ".", self.name, "#jiaoxia-use:::"..Fk:getCardById(ids[1]):toLogString(),
+      { expand_pile = ids, bypass_times = false, extraUse = false })
     elseif event == fk.EventPhaseStart then
       room:setPlayerMark(player, "@@jiaoxia-phase", 1)
       player:filterHandcards()
@@ -1029,7 +1002,6 @@ Fk:loadTranslationTable{
   ["#jiaoxia-invoke"] = "狡黠：你可以令本阶段你的手牌均视为【杀】，且结算后你可以使用原卡牌！",
   ["#jiaoxia_filter"] = "狡黠",
   ["@@jiaoxia-phase"] = "狡黠",
-  ["jiaoxia_viewas"] = "狡黠",
   ["#jiaoxia-use"] = "狡黠：你可以使用【%arg】",
   ["#humei_trigger"] = "狐魅",
   ["@humei-phase"] = "狐魅",

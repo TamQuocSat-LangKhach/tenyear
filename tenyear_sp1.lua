@@ -669,7 +669,7 @@ local zhenyi = fk.CreateViewAsSkill{
   end,
   enabled_at_play = Util.FalseFunc,
   enabled_at_response = function(self, player)
-    return player.phase == Player.NotActive and player:getMark("@@faluclub") > 0
+    return player.phase == Player.NotActive and player:getMark("@@faluclub") > 0 and not player:isNude()
   end,
 }
 local zhenyi_trigger = fk.CreateTriggerSkill {
@@ -792,7 +792,7 @@ Fk:loadTranslationTable{
   ["@@faludiamond"] = "<font color='red'>♦</font>勾陈",
   ["#zhenyi1"] = "真仪：你可以弃置♠紫微，将 %dest 的判定结果改为♠5或<font color='red'>♥5</font>",
   ["#zhenyi2"] = "真仪：你可以弃置♣后土，将一张手牌当【桃】使用",
-  ["#zhenyi3"] = "真仪：你可以弃置<font color='red'>♥</font>玉清，你进行判定，若结果为黑色，你对 %dest 造成的伤害+1",
+  ["#zhenyi3"] = "真仪：你可以弃置<font color='red'>♥</font>玉清，对 %dest 造成的伤害+1",
   ["#zhenyi4"] = "真仪：你可以弃置<font color='red'>♦</font>勾陈，从牌堆中随机获得三种类型的牌各一张",
   ["#zhenyi_trigger"] = "真仪",
   ["zhenyi_spade"] = "将判定结果改为♠5",
@@ -4100,7 +4100,7 @@ local changqu = fk.CreateActiveSkill{
           if not target.chained then
             target:setChainState(true)
           end
-          room:setPlayerMark(target, "@changqu", x)
+          room:addPlayerMark(target, "@changqu", x)
           room:setPlayerMark(target, "@@battleship", 0)
           break
         end
@@ -4129,7 +4129,7 @@ local tongye = fk.CreateTriggerSkill{
   events = {fk.GameStart, fk.Deathed, fk.DrawNCards},
   anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and (event ~= fk.DrawNCards or (player == target and player:getMark("@tongye_count") > 3))
+    return player:hasSkill(self) and (event ~= fk.DrawNCards or (player == target and player:getMark("@tongye_count") == 1))
   end,
   on_use = function(self, event, target, player, data)
     if event == fk.DrawNCards then
@@ -4140,17 +4140,15 @@ local tongye = fk.CreateTriggerSkill{
       for _, p in ipairs(room.alive_players) do
         table.insertIfNeed(kingdoms, p.kingdom)
       end
-      local x = 5 - #kingdoms
-      if x > 0 then
-        room:setPlayerMark(player, "@tongye_count", x)
-      end
+      room:setPlayerMark(player, "@tongye_count", #kingdoms)
+      room:broadcastProperty(player, "MaxCards")
     end
   end,
 }
 local tongye_maxcards = fk.CreateMaxCardsSkill{
   name = "#tongye_maxcards",
   correct_func = function(self, player)
-    if player:hasSkill(tongye.name) and player:getMark("@tongye_count") > 0 then
+    if player:hasSkill(tongye) and player:getMark("@tongye_count") <= 4 then
       return 3
     end
   end,
@@ -4158,7 +4156,7 @@ local tongye_maxcards = fk.CreateMaxCardsSkill{
 local tongye_attackrange = fk.CreateAttackRangeSkill{
   name = "#tongye_attackrange",
   correct_func = function (self, from, to)
-    if from:hasSkill(tongye.name) and from:getMark("@tongye_count") > 1 then
+    if from:hasSkill(tongye) and from:getMark("@tongye_count") <= 3 then
       return 3
     end
   end,
@@ -4166,7 +4164,7 @@ local tongye_attackrange = fk.CreateAttackRangeSkill{
 local tongye_targetmod = fk.CreateTargetModSkill{
   name = "#tongye_targetmod",
   residue_func = function(self, player, skill, scope)
-    if skill.trueName == "slash_skill" and player:hasSkill(tongye.name) and player:getMark("@tongye_count") > 2 then
+    if skill.trueName == "slash_skill" and player:hasSkill(tongye) and player:getMark("@tongye_count") <= 2 then
       return 3
     end
     return 0
@@ -4185,7 +4183,7 @@ Fk:loadTranslationTable{
   ["mianyao"] = "免徭",
   [":mianyao"] = "摸牌阶段结束时，你可以展示手牌中点数最小的一张牌并将之置于牌堆随机位置，若如此做，本回合结束时，你摸此牌点数张牌。",
   ["tongye"] = "统业",
-  [":tongye"] = "锁定技，游戏开始时或有角色死亡后，若场上现存势力数：不大于4，你的手牌上限+3；不大于3，你的攻击范围+3；不大于2，你出牌阶段可以多使用三张【杀】；为1，你摸牌阶段多摸三张牌。",
+  [":tongye"] = "锁定技，游戏开始时，或其他角色死亡后，你根据场上势力数获得对应效果（覆盖之前获得的效果）：不大于4，你的手牌上限+3；不大于3，你的攻击范围+3；不大于2，你于出牌阶段内使用【杀】的次数上限+3；为1，你于摸牌阶段多摸三张牌。",
   ["changqu"] = "长驱",
   [":changqu"] = "出牌阶段限一次，你可以<font color='red'>开一艘战舰</font>，从你的上家或下家开始选择任意名座次连续的其他角色，第一个目标角色获得战舰标记。"..
   "获得战舰标记的角色选择一项：1.交给你X张手牌，然后将战舰标记移动至下一个目标；2.下次受到的属性伤害+X，然后横置武将牌（X为本次选择1的次数，至少为1）。",
@@ -4193,6 +4191,7 @@ Fk:loadTranslationTable{
   ["@@battleship"] = "战舰",
   ["#changqu-card"] = "长驱：交给 %src %arg张手牌以使战舰驶向下一名角色",
   ["@changqu"] = "长驱",
+  ["#changqu_trigger"] = "长驱",
   ["@tongye_count"] = "统业",
 
   ["$tongye1"] = "白首全金瓯，著风流于春秋。",

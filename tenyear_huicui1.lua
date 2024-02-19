@@ -5219,11 +5219,11 @@ local ty__beini = fk.CreateActiveSkill{
     else
       player:drawCards(-n, self.name)
     end
-    if player.dead then return end
-    local success, dat = room:askForUseActiveSkill(player, "ty__beini_active", "#ty__beini-choose", false)
-    if success then
-      local target1 = room:getPlayerById(dat.targets[1])
-      local target2 = room:getPlayerById(dat.targets[2])
+    if player.dead or #room.alive_players < 2 then return end
+    local targets = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper), 2, 2, "#ty__beini-choose", self.name, false)
+    if #targets == 2 then
+      local target1 = room:getPlayerById(targets[1])
+      local target2 = room:getPlayerById(targets[2])
       room:doIndicate(player.id, {target1.id})
       room:setPlayerMark(target1, "@@ty__beini-turn", 1)
       room:setPlayerMark(target2, "@@ty__beini-turn", 1)
@@ -5233,24 +5233,7 @@ local ty__beini = fk.CreateActiveSkill{
     end
   end,
 }
-local ty__beini_active = fk.CreateActiveSkill{
-  name = "ty__beini_active",
-  mute = true,
-  card_num = 0,
-  target_num = 2,
-  card_filter = Util.FalseFunc,
-  target_filter = function(self, to_select, selected)
-    local target = Fk:currentRoom():getPlayerById(to_select)
-    if #selected == 0 then
-      return not target:prohibitUse(Fk:cloneCard("slash"))
-    elseif #selected == 1 then
-      local target1 = Fk:currentRoom():getPlayerById(selected[1])
-      return target1:inMyAttackRange(target) and not target1:isProhibited(target, Fk:cloneCard("slash"))
-    else
-      return false
-    end
-  end,
-}
+jiachong:addSkill(ty__beini)
 local shizong = fk.CreateViewAsSkill{
   name = "shizong",
   pattern = ".|.|.|.|.|basic",
@@ -5269,6 +5252,34 @@ local shizong = fk.CreateViewAsSkill{
     return UI.ComboBox {choices = names}
   end,
   card_filter = Util.FalseFunc,
+  before_use = function (self, player, use)
+    local room = player.room
+    -- please fix askForChooseCardsAndPlayers
+    local _, dat = room:askForUseActiveSkill(player, "shizong_active",
+      "#shizong-give:::"..player:usedSkillTimes("shizong", Player.HistoryTurn), false)
+    if dat then
+      local to = room:getPlayerById(dat.targets[1])
+      if to ~= room.current then
+        room:setPlayerMark(player, "@@shizong_fail-turn", 1)
+      end
+      room:moveCardTo(dat.cards, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
+      if not to.dead and not to:isNude() then
+        local card = room:askForCard(to, 1, 1, true, "shizong", true, ".", "#shizong-put:"..player.id.."::"..use.card.name)
+        if #card > 0 then
+          room:moveCards({
+            ids = card,
+            from = to.id,
+            toArea = Card.DrawPile,
+            moveReason = fk.ReasonJustMove,
+            skillName = "shizong",
+            drawPilePosition = -1,
+          })
+          return
+        end
+      end
+    end
+    return self.name
+  end,
   view_as = function(self, cards)
     if not self.interaction.data then return end
     local card = Fk:cloneCard(self.interaction.data)
@@ -5282,48 +5293,6 @@ local shizong = fk.CreateViewAsSkill{
   enabled_at_response = function(self, player, response)
     return not response and player:getMark("@@shizong_fail-turn") == 0 and
       #player:getCardIds("he") > player:usedSkillTimes(self.name, Player.HistoryTurn)
-  end,
-}
-local shizong_trigger = fk.CreateTriggerSkill{
-  name = "#shizong_trigger",
-  events = {fk.PreCardUse},
-  mute = true,
-  priority = 10,
-  can_trigger = function(self, event, target, player, data)
-    return target == player and table.contains(data.card.skillNames, "shizong")
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    room:doIndicate(player.id, TargetGroup:getRealTargets(data.tos))
-    return true
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local success, dat = room:askForUseActiveSkill(player, "shizong_active",
-      "#shizong-give:::"..player:usedSkillTimes("shizong", Player.HistoryTurn), false)
-    if success then
-      local to = room:getPlayerById(dat.targets[1])
-      if to.phase == Player.NotActive then
-        room:setPlayerMark(player, "@@shizong_fail-turn", 1)
-      end
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(dat.cards)
-      room:obtainCard(to.id, dummy, false, fk.ReasonGive)
-      if to.dead or to:isNude() then return true end
-      local card = room:askForCard(to, 1, 1, true, "shizong", true, ".", "#shizong-put:"..player.id.."::"..data.card.name)
-      if #card > 0 then
-        room:moveCards({
-          ids = card,
-          from = to.id,
-          toArea = Card.DrawPile,
-          moveReason = fk.ReasonJustMove,
-          skillName = "shizong",
-          drawPilePosition = -1,
-        })
-        return false
-      end
-    end
-    return true
   end,
 }
 local shizong_active = fk.CreateActiveSkill{
@@ -5340,16 +5309,13 @@ local shizong_active = fk.CreateActiveSkill{
     return #selected == 0 and to_select ~= Self.id
   end,
 }
-Fk:addSkill(ty__beini_active)
 Fk:addSkill(shizong_active)
-shizong:addRelatedSkill(shizong_trigger)
-jiachong:addSkill(ty__beini)
 jiachong:addSkill(shizong)
 Fk:loadTranslationTable{
   ["ty__jiachong"] = "贾充",
   ["#ty__jiachong"] = "始作俑者",
   ["designer:ty__jiachong"] = "拔都沙皇",
-  ["illustrator:ty__jiachong"] = "铁杵文化",
+  ["illustrator:ty__jiachong"] = "鬼画府", -- 皮肤 妄锋斩龙
 
   ["ty__beini"] = "悖逆",
   [":ty__beini"] = "出牌阶段限一次，你可以将手牌数调整至体力上限，然后令一名角色视为对另一名角色使用一张【杀】；这两名角色的非锁定技本回合失效。",

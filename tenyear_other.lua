@@ -847,7 +847,7 @@ local ruyi_attackrange = fk.CreateAttackRangeSkill{
 local ruyi_filter = fk.CreateFilterSkill{
   name = "#ruyi_filter",
   card_filter = function(self, card, player)
-    return card.sub_type == Card.SubtypeWeapon and table.contains(player.player_cards[Player.Hand], card.id)
+    return player:hasSkill(ruyi) and card.sub_type == Card.SubtypeWeapon and table.contains(player.player_cards[Player.Hand], card.id)
   end,
   view_as = function(self, card)
     local c = Fk:cloneCard("slash", card.suit, card.number)

@@ -3238,9 +3238,9 @@ local xiaoyin_active = fk.CreateActiveSkill{
       if #targets == 0 then return true end
       if table.contains(targets, to_select) then return false end
       local target = Fk:currentRoom():getPlayerById(to_select)
-      if table.contains(targets, target.next.id) then return true end
+      if table.contains(targets, target:getNextAlive().id) then return true end
       for _, p in ipairs(Fk:currentRoom().alive_players) do
-        if p.next == target then
+        if p:getNextAlive() == target then
           return table.contains(targets, p.id)
         end
       end

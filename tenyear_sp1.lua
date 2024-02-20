@@ -1863,9 +1863,13 @@ local shouli = fk.CreateViewAsSkill{
   interaction = function()
     local names = {}
     local pat = Fk.currentResponsePattern
-    if pat == nil and Self:canUse(Fk:cloneCard("slash")) and table.find(Fk:currentRoom().alive_players, function(p)
+    if pat == nil and table.find(Fk:currentRoom().alive_players, function(p)
       return p:getEquipment(Card.SubtypeOffensiveRide) ~= nil end) then
-      table.insert(names, "slash")
+      local slash = Fk:cloneCard("slash")
+      slash.skillName = "shouli"
+      if Self:canUse(slash) and not Self:prohibitUse(slash) then
+        table.insert(names, "slash")
+      end
     else
       if Exppattern:Parse(pat):matchExp("slash") and table.find(Fk:currentRoom().alive_players, function(p)
         return p:getEquipment(Card.SubtypeOffensiveRide) ~= nil end) then
@@ -1955,7 +1959,7 @@ local shouli_trigger = fk.CreateTriggerSkill{
         for i = 1, #room.draw_pile, 1 do
           local card = Fk:getCardById(room.draw_pile[i])
           if (card.sub_type == Card.SubtypeOffensiveRide or card.sub_type == Card.SubtypeDefensiveRide) and
-              card.skill:canUse(p, card) and not p:prohibitUse(card) then
+          p:canUse(card) and not p:prohibitUse(card) then
             table.insertIfNeed(cards, card)
           end
         end
@@ -1977,14 +1981,21 @@ local shouli_delay = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("@@shouli-turn") > 0
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     data.damage = data.damage + 1
     data.damageType = fk.ThunderDamage
   end,
 }
+local shouli_targetmod = fk.CreateTargetModSkill{
+  name = "#shouli_targetmod",
+  bypass_times = function(self, player, skill, scope, card)
+    return card and scope == Player.HistoryPhase and table.contains(card.skillNames, shouli.name)
+  end,
+}
 shouli:addRelatedSkill(shouli_trigger)
 shouli:addRelatedSkill(shouli_delay)
+shouli:addRelatedSkill(shouli_targetmod)
 local hengwu = fk.CreateTriggerSkill{
   name = "hengwu",
   anim_type = "drawcard",
@@ -2020,16 +2031,16 @@ Fk:loadTranslationTable{
   ["#godmachao"] = "神威天将军",
   ["illustrator:godmachao"] = "君桓文化",
   ["shouli"] = "狩骊",
-  ["#shouli_trigger"] = "狩骊",
-  ["#shouli_delay"] = "狩骊",
-  [":shouli"] = "游戏开始时，从下家开始所有角色随机使用牌堆中的一张坐骑。你可将场上的一张进攻马当【杀】（不计入次数）、"..
+  [":shouli"] = "游戏开始时，从下家开始所有角色随机使用牌堆中的一张坐骑。你可以将场上的一张进攻马当【杀】（不计入限制的次数且无次数限制）、"..
   "防御马当【闪】使用或打出，以此法失去坐骑的其他角色本回合非锁定技失效，你与其本回合受到的伤害+1且改为雷电伤害。",
   ["hengwu"] = "横骛",
-  [":hengwu"] = "当你使用或打出牌时，若你没有该花色的手牌，你可摸X张牌（X为场上与此牌花色相同的装备数量）。",
+  [":hengwu"] = "当你使用或打出牌时，若你没有该花色的手牌，你可以摸X张牌（X为场上与此牌花色相同的装备数量）。",
 
   ["#shouli-active"] = "发动狩骊，将场上的一张进攻马当【杀】、防御马当【闪】使用或打出",
   ["@@shouli-turn"] = "狩骊",
   ["#shouli-horse"] = "狩骊：选择一名装备着 %arg 的角色",
+  ["#shouli_trigger"] = "狩骊",
+  ["#shouli_delay"] = "狩骊",
 
   ["$shouli1"] = "赤骊骋疆，巡狩八荒！",
   ["$shouli2"] = "长缨在手，百骥可降！",
@@ -2122,7 +2133,7 @@ local shencai_delay = fk.CreateTriggerSkill{
       return player == target and player:getMark("@shencai_si") > #player.room.alive_players
     end
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.FinishJudge then
@@ -2138,8 +2149,11 @@ local shencai_delay = fk.CreateTriggerSkill{
     elseif event == fk.TargetConfirmed then
       data.disresponsive = true
     elseif event == fk.AfterCardsMove then
-      if not player:isKongcheng() then
-        room:throwCard({table.random(player.player_cards[Player.Hand])}, shencai.name, player, player)
+      local cards = table.filter(player.player_cards[Player.Hand], function (id)
+        return not player:prohibitDiscard(Fk:getCardById(id))
+      end)
+      if #cards > 0 then
+        room:throwCard(table.random(cards, 1), shencai.name, player, player)
       end
     elseif event == fk.EventPhaseStart then
       player:turnOver()
@@ -2162,12 +2176,9 @@ local xunshi = fk.CreateFilterSkill{
     return player:hasSkill(self) and card.multiple_targets and table.contains(player.player_cards[Player.Hand], card.id)
   end,
   view_as = function(self, card)
-    local card = Fk:cloneCard("slash", Card.NoSuit, card.number)
-    card.skillName = self.name
-    return card
+    return Fk:cloneCard("slash", Card.NoSuit, card.number)
   end,
 }
-
 local xunshi_trigger = fk.CreateTriggerSkill{
   name = "#xunshi_trigger",
   anim_type = "offensive",
@@ -2198,10 +2209,10 @@ local xunshi_trigger = fk.CreateTriggerSkill{
 local xunshi_targetmod = fk.CreateTargetModSkill{
   name = "#xunshi_targetmod",
   bypass_times = function(self, player, skill, scope, card)
-    return player:hasSkill(xunshi.name) and card and card.color == Card.NoColor
+    return player:hasSkill(xunshi) and card and card.color == Card.NoColor
   end,
   bypass_distances =  function(self, player, skill, card)
-    return player:hasSkill(xunshi.name) and card and card.color == Card.NoColor
+    return player:hasSkill(xunshi) and card and card.color == Card.NoColor
   end,
 }
 shencai:addRelatedSkill(shencai_delay)
@@ -2375,11 +2386,11 @@ local sijun = fk.CreateTriggerSkill{
         postsum[i] = postsum[i+1] + nums[i]
       end
       local function nSum(n, l, r, target)
-        local ret = {}
+        local _ret = {}
         if n == 1 then
           for i = l, r, 1 do
             if nums[i] == target then
-              table.insert(ret, {target})
+              table.insert(_ret, {target})
               break
             end
           end
@@ -2391,7 +2402,7 @@ local sijun = fk.CreateTriggerSkill{
             elseif now < target then
               l = l + 1
             else
-              table.insert(ret, {nums[l], nums[r]})
+              table.insert(_ret, {nums[l], nums[r]})
               l = l + 1
               r = r - 1
               while l < r and nums[l] == nums[l-1] do
@@ -2413,12 +2424,12 @@ local sijun = fk.CreateTriggerSkill{
               local v = nSum(n-1, i+1, r, target - nums[i])
               for j = 1, #v, 1 do
                 table.insert(v[j], nums[i])
-                table.insert(ret, v[j])
+                table.insert(_ret, v[j])
               end
             end
           end
         end
-        return ret
+        return _ret
       end
       for i = 3, total, 1 do
         table.insertTable(ret, nSum(i, 1, #nums, total))
@@ -2474,7 +2485,8 @@ local tianjie = fk.CreateTriggerSkill{
     end
   end,
   on_cost = function(self, event, target, player, data)
-    local tos = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 3, "#tianjie-choose", self.name, true)
+    local room = player.room
+    local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 3, "#tianjie-choose", self.name, true)
     if #tos > 0 then
       self.cost_data = tos
       return true
@@ -2497,7 +2509,7 @@ local tianjie = fk.CreateTriggerSkill{
 
   refresh_events = {fk.AfterDrawPileShuffle},
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self)
+    return player:hasSkill(self, true)
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:addPlayerMark(player, self.name, 1)
@@ -2677,46 +2689,46 @@ local qijing = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeMaxHp(player, -1)
-    if not player:isAlive() then return false end
-
+    if player.dead then return false end
     room:handleAddLoseSkills(player, "cuixin", nil, true, false)
-    if #room.alive_players > 2 then
-      local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#qijing-choose", self.name, false)
+    local tos = table.filter(room.alive_players, function (p)
+      return p ~= player and p:getNextAlive(true) ~= player
+      --无视被调虎吧……
+    end)
+    if #tos > 0 then
+      local to = room:askForChoosePlayers(player, table.map(tos, Util.IdMapper), 1, 1, "#qijing-choose", self.name, false, true)
       if #to > 0 then
         to = room:getPlayerById(to[1])
-        if to:getNextAlive() ~= player then
-          local players = table.simpleClone(room.players)
-          local n = 1
-          for i, v in ipairs(room.players) do
-            if v == to and i < #room.players then
-              n = i + 1
-              break
-            end
+        local players = table.simpleClone(room.players)
+        local n = 1
+        for i, v in ipairs(room.players) do
+          if v == to and i < #room.players then
+            n = i + 1
+            break
           end
-
-          players[n] = player
-          repeat
-            local nextIndex = n + 1 > #room.players and 1 or n + 1
-            players[nextIndex] = room.players[n]
-
-            n = nextIndex
-          until room.players[n] == player
-
-          room.players = players
-          local player_circle = {}
-          for i = 1, #room.players do
-            room.players[i].seat = i
-            table.insert(player_circle, room.players[i].id)
-          end
-          for i = 1, #room.players - 1 do
-            room.players[i].next = room.players[i + 1]
-          end
-          room.players[#room.players].next = room.players[1]
-          room:doBroadcastNotify("ArrangeSeats", json.encode(player_circle))
         end
 
-        player:gainAnExtraTurn(true)
+        players[n] = player
+        repeat
+          local nextIndex = n + 1 > #room.players and 1 or n + 1
+          players[nextIndex] = room.players[n]
+
+          n = nextIndex
+        until room.players[n] == player
+
+        room.players = players
+        local player_circle = {}
+        for i = 1, #room.players do
+          room.players[i].seat = i
+          table.insert(player_circle, room.players[i].id)
+        end
+        for i = 1, #room.players - 1 do
+          room.players[i].next = room.players[i + 1]
+        end
+        room.players[#room.players].next = room.players[1]
+        room:doBroadcastNotify("ArrangeSeats", json.encode(player_circle))
       end
+      player:gainAnExtraTurn(true)
     end
   end,
 }

@@ -2900,13 +2900,16 @@ local zhengqing = fk.CreateTriggerSkill{
         end
 
         for playerId, damage in pairs(records) do
-          if damage > (bestRecord.damage or 0) then
-            bestRecord = { playerId = playerId, damage = damage }
+          local curDMG = bestRecord.damage or 0
+          if damage > curDMG then
+            bestRecord = { playerIds = { playerId }, damage = damage }
+          elseif damage == curDMG then
+            table.insertIfNeed(bestRecord.playerIds, playerId)
           end
         end
       end
 
-      local winnerId = bestRecord.playerId
+      local winnerId = table.find(bestRecord.playerIds, function(id) return id == player.id end) or table.random(bestRecord.playerIds)
       if winnerId and room:getPlayerById(winnerId):isAlive() then
         local winner = room:getPlayerById(winnerId)
         local preRecord = (player.tag["zhengqing_best"] or 0)
@@ -2915,7 +2918,7 @@ local zhengqing = fk.CreateTriggerSkill{
         if winner == player and bestRecord.damage > preRecord then
           player:drawCards(math.min(bestRecord.damage, 5), self.name)
         else
-          local players = { bestRecord.playerId, player.id }
+          local players = { winnerId, player.id }
           room:sortPlayersByAction(players)
           for _, p in ipairs(players) do
             room:getPlayerById(p):drawCards(1, self.name)

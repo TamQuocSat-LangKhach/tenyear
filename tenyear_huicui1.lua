@@ -3729,17 +3729,17 @@ Fk:loadTranslationTable{
   ["~yuechen"] = "天下犹魏，公休何故如此？",
 }
 
-local liuli = General(extension, "liuli", "shu", 3)
+local liuli = General(extension, "liuliG", "shu", 3)
 Fk:loadTranslationTable{
-  ["liuli"] = "刘理",
-  ["#liuli"] = "安平王",
-	["illustrator:liuli"] = "黯荧岛工作室",
-  ["~liuli"] = "覆舟之水，皆百姓之泪。",
+  ["liuliG"] = "刘理",
+  ["#liuliG"] = "安平王",
+  ["illustrator:liuliG"] = "黯荧岛工作室",
+  ["~liuliG"] = "覆舟之水，皆百姓之泪。",
 }
 
 local liuliFuli = fk.CreateActiveSkill{
   name = "liuli__fuli",
-  anim_type = "control",
+  anim_type = "drawcard",
   card_num = 0,
   target_num = 0,
   can_use = function(self, player)
@@ -3885,7 +3885,7 @@ local dehua = fk.CreateTriggerSkill{
           end)
       end)
   end,
-  on_trigger = function(self, event, target, player, data)
+  on_use = function(self, event, target, player, data)
     local room = player.room
 
     local availableNames = U.getMark(player, "@$dehua")

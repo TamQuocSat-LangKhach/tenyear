@@ -2422,15 +2422,38 @@ local silun = fk.CreateTriggerSkill{
     player:drawCards(4, self.name)
     for i = 1, 4, 1 do
       if player.dead or player:isNude() then return end
-      local success, _ = room:askForUseActiveSkill(player, "silun_active", "#silun-card:::" .. tostring(i), false)
-      if not success then
+      local _, dat = room:askForUseActiveSkill(player, "silun_active", "#silun-card:::" .. tostring(i), false)
+      local card_id = dat and dat.cards[1] or player:getCardIds("he")[1]
+      local choice = dat and dat.interaction or "Top"
+      local reset_self = room:getCardArea(card_id) == Card.PlayerEquip
+      if choice == "Field" then
+        local to = room:getPlayerById(dat.targets[1])
+        local card = Fk:getCardById(card_id)
+        if card.type == Card.TypeEquip then
+          room:moveCardTo(card, Card.PlayerEquip, to, fk.ReasonPut, "silun", "", true, player.id)
+          if not to.dead then
+            to:reset()
+          end
+        elseif card.sub_type == Card.SubtypeDelayedTrick then
+          -- FIXME : deal with visual DelayedTrick
+          room:moveCardTo(card, Card.PlayerJudge, to, fk.ReasonPut, "silun", "", true, player.id)
+        end
+      else
+        local drawPilePosition = 1
+        if choice == "Bottom" then
+          drawPilePosition = -1
+        end
         room:moveCards({
-          ids = {player:getCardIds("he")[1]},
+          ids = {card_id},
           from = player.id,
           toArea = Card.DrawPile,
           moveReason = fk.ReasonPut,
-          skillName = self.name,
+          skillName = "silun",
+          drawPilePosition = drawPilePosition,
         })
+      end
+      if reset_self and not player.dead then
+        player:reset()
       end
     end
   end,
@@ -2461,8 +2484,8 @@ local silun_active = fk.CreateActiveSkill{
       elseif card.sub_type == Card.SubtypeDelayedTrick then
         return not target:isProhibited(target, card)
       end
-      return false
     end
+    return false
   end,
   feasible = function(self, selected, selected_cards)
     if #selected_cards == 1 then
@@ -2470,45 +2493,6 @@ local silun_active = fk.CreateActiveSkill{
         return #selected == 1
       else
         return true
-      end
-    end
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local card_id = effect.cards[1]
-    local reset_self = room:getCardArea(card_id) == Card.PlayerEquip
-    if self.interaction.data == "Field" then
-      local target = room:getPlayerById(effect.tos[1])
-      local card = Fk:getCardById(card_id)
-      if card.type == Card.TypeEquip then
-        room:moveCardTo(card, Card.PlayerEquip, target, fk.ReasonPut, "silun", "", true, player.id)
-        if reset_self and not player.dead then
-          player:reset()
-        end
-        if not target.dead then
-          target:reset()
-        end
-      elseif card.sub_type == Card.SubtypeDelayedTrick then
-        room:moveCardTo(card, Card.PlayerJudge, target, fk.ReasonPut, "silun", "", true, player.id)
-        if reset_self and not player.dead then
-          player:reset()
-        end
-      end
-    else
-      local drawPilePosition = 1
-      if self.interaction.data == "Bottom" then
-        drawPilePosition = -1
-      end
-      room:moveCards({
-        ids = effect.cards,
-        from = player.id,
-        toArea = Card.DrawPile,
-        moveReason = fk.ReasonPut,
-        skillName = "silun",
-        drawPilePosition = drawPilePosition,
-      })
-      if reset_self and not player.dead then
-        player:reset()
       end
     end
   end,

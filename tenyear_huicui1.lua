@@ -3949,6 +3949,10 @@ local dehuaBuff = fk.CreateMaxCardsSkill{
 local dehuaProhibited = fk.CreateProhibitSkill{
   name = "#dehua_prohibited",
   prohibit_use = function(self, player, card)
+    if not player:hasSkill("dehua") then
+      return false
+    end
+
     local namesChosen = U.getMark(player, "dehuaChosen")
     if type(namesChosen) == "table" and table.contains(namesChosen, card.trueName) then
       local subcards = card:isVirtual() and card.subcards or {card.id}
@@ -3962,8 +3966,8 @@ local dehuaProhibited = fk.CreateProhibitSkill{
 Fk:loadTranslationTable{
   ["dehua"] = "德化",
   ["#dehua_prohibited"] = "德化",
-  [":dehua"] = "锁定技，每轮开始时，你选择一种你可使用的伤害牌牌名，视为使用此牌，然后你本局游戏不能再使用相同牌名的手牌" ..
-  "（若所有伤害牌均被选择过，则改为你失去本技能）；你的手牌上限增加以此法选择过的牌名数量。",
+  [":dehua"] = "锁定技，每轮开始时，你选择一种你可使用的伤害牌牌名，视为使用此牌，然后若所有伤害牌均被选择过，则你失去本技能；" ..
+  "你不能使用与以此法选择过的牌名相同的手牌，且你的手牌上限增加以此法选择过的牌名数量。",
   ["@$dehua"] = "德化",
   ["#dehua-use"] = "德化：请选择一种伤害牌使用，然后你不能再使用同名手牌",
 

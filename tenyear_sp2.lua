@@ -3049,7 +3049,7 @@ local xiace = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) then
       if event == fk.Damage then
-        return player:getMark("xiace_damage-turn") == 0 and player:isWounded() and not player:isNude()
+        return player:getMark("xiace_damage-turn") == 0 and not player:isNude()
       else
         return player:getMark("xiace_damaged-turn") == 0
       end

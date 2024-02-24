@@ -439,7 +439,9 @@ local ty_ex__sanyao = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     room:throwCard(effect.cards, self.name, player, player)
-    for _, id in ipairs(effect.tos) do
+    local targets = table.simpleClone(effect.tos)
+    room:sortPlayersByAction(targets)
+    for _, id in ipairs(targets) do
       local p = room:getPlayerById(id)
       if not p.dead then
         room:damage{
@@ -466,7 +468,7 @@ local ty_ex__zhiman = fk.CreateTriggerSkill{
     room:doIndicate(player.id, {data.to.id})
     if not data.to:isAllNude() then
       local card = room:askForCardChosen(player, data.to, "hej", self.name)
-      room:obtainCard(player.id, card, true, fk.ReasonPrey)
+      room:obtainCard(player.id, card, false, fk.ReasonPrey)
     end
     return true
   end

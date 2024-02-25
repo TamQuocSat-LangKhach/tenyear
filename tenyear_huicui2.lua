@@ -307,22 +307,19 @@ local yinshih = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
       if event == fk.FinishJudge then
-        return table.contains({"bazhen", "eight_diagram"}, data.reason) and player.room:getCardArea(data.card) == Card.Processing
-      elseif event == fk.DamageInflicted then
-        return player == target and (not data.card or data.card.color == Card.NoColor) and player:getMark("yinshih_defensive-turn") == 0 and
-        #player.room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
-          local damage = e.data[5]
-          if damage and damage.to == player and (not damage.card or damage.card.color == Card.NoColor) then
-            return true
-          end
-        end, Player.HistoryTurn) == 0
+        return table.contains({"eight_diagram", "#eight_diagram_skill"}, data.reason) and player.room:getCardArea(data.card) == Card.Processing
+      elseif player == target and (not data.card or data.card.color == Card.NoColor) and player:getMark("yinshih_defensive-turn") == 0 then
+        return #U.getActualDamageEvents(player.room, 1, function(e)
+          local damage = e.data[1]
+          return damage.to == player and (not damage.card or damage.card.color == Card.NoColor)
+        end) == 0
       end
     end
   end,
   on_use = function(self, event, target, player, data)
     if event == fk.FinishJudge then
-      player.room:obtainCard(player.id, data.card, true, fk.ReasonJustMove)
-    elseif event == fk.DamageInflicted then
+      player.room:moveCardTo(data.card, Card.PlayerHand, player, fk.ReasonPrey, self.name)
+    else
       player.room:setPlayerMark(player, "yinshih_defensive-turn", 1)
       return true
     end

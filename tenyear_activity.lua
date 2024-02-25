@@ -2920,7 +2920,7 @@ local bingji = fk.CreateActiveSkill{
     if #targets == 0 then return end
     local tos = room:askForChoosePlayers(player, targets, 1, 1, "#bingji-choose:::"..self.interaction.data, self.name, false)
     local to = room:getPlayerById(tos[1])
-    room:useVirtualCard(self.interaction.data, nil, player, to, self.name, false)
+    room:useVirtualCard(self.interaction.data, nil, player, to, self.name, true)
   end
 }
 zhaoyan:addSkill(funing)

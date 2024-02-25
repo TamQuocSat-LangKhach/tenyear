@@ -5594,9 +5594,10 @@ local tongguan = fk.CreateTriggerSkill{
   events = {fk.TurnStart},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and target:getMark("@[:]tongguan") == 0 then
-      return #U.getEventsByRule(player.room, GameEvent.Turn, 2, function (e)
+      local events = player.room.logic:getEventsOfScope(GameEvent.Turn, 1, function(e)
         return e.data[1] == target
-      end, 1) == 1
+      end, Player.HistoryGame)
+      return #events > 0 and events[1] == player.room.logic:getCurrentEvent()
     end
   end,
   on_cost = Util.TrueFunc,

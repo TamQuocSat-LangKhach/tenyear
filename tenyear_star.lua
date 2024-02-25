@@ -14,21 +14,19 @@ local canxi = fk.CreateTriggerSkill{
   name = "canxi",
   anim_type = "special",
   frequency = Skill.Compulsory,
-  events = {fk.GameStart, fk.EventAcquireSkill, fk.RoundStart},
+  events = {fk.GameStart, fk.RoundStart},
   can_trigger = function (self, event, target, player, data)
     if player:hasSkill(self) then
       if event == fk.GameStart then
         return true
-      elseif event == fk.EventAcquireSkill then
-        return target == player and data == self
       elseif event == fk.RoundStart then
-        return true
+        return #U.getMark(player, "canxi_exist_kingdoms") > 0
       end
     end
   end,
   on_use = function (self, event, target, player, data)
     local room = player.room
-    if event == fk.GameStart or event == fk.EventAcquireSkill then
+    if event == fk.GameStart then
       local kingdoms = {}
       for _, p in ipairs(room.alive_players) do
         table.insertIfNeed(kingdoms, p.kingdom)

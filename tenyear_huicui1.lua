@@ -193,7 +193,7 @@ local liushi = fk.CreateActiveSkill{
     if use.damageDealt then
       for _, p in ipairs(room.alive_players) do
         if use.damageDealt[p.id] then
-          room:addPlayerMark(target, "@@liushi", 1)
+          room:addPlayerMark(target, "@liushi", 1)
         end
       end
     end
@@ -202,8 +202,8 @@ local liushi = fk.CreateActiveSkill{
 local liushi_maxcards = fk.CreateMaxCardsSkill{
   name = "#liushi_maxcards",
   correct_func = function(self, player)
-    if player:getMark("@@liushi") > 0 then
-      return -player:getMark("@@liushi")
+    if player:getMark("@liushi") > 0 then
+      return -player:getMark("@liushi")
     end
     return 0
   end,
@@ -214,7 +214,7 @@ local zhanwan = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and target.phase == Player.Discard and target:getMark("@@liushi") > 0 then
+    if player:hasSkill(self) and target.phase == Player.Discard and target:getMark("@liushi") > 0 then
       local n = 0
       player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
         for _, move in ipairs(e.data) do
@@ -236,7 +236,7 @@ local zhanwan = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     player:drawCards(self.cost_data, self.name)
-    player.room:setPlayerMark(target, "@@liushi", 0)
+    player.room:setPlayerMark(target, "@liushi", 0)
   end,
 }
 liushi:addRelatedSkill(liushi_maxcards)
@@ -253,7 +253,7 @@ Fk:loadTranslationTable{
   "受到此【杀】伤害的角色手牌上限-1。",
   ["zhanwan"] = "斩腕",
   [":zhanwan"] = "锁定技，受到〖流矢〗效果影响的角色弃牌阶段结束时，若其于此阶段内弃置过牌，你摸等量的牌，然后移除其〖流矢〗的效果。",
-  ["@@liushi"] = "流矢",
+  ["@liushi"] = "流矢",
 
   ["$liushi1"] = "就你叫夏侯惇？",
   ["$liushi2"] = "兀那贼将，且吃我一箭！",

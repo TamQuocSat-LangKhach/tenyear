@@ -4638,7 +4638,7 @@ Fk:loadTranslationTable{
   [":chenghao"] = "当一名角色受到属性伤害后，若其受到此伤害前处于“连环状态”且是此伤害传导的起点，你可以观看牌堆顶的X张牌并将这些牌分配给任意角色（X为横置角色数+1）。",
 
   ["yinshi"] = "隐士",
-  [":yinshi"] = "锁定技，当你受到属性伤害或锦囊牌造成的伤害时，若你没有“龙印”或“凤印”且装备区内没有防具牌，防止此伤害。",
+  [":yinshi"] = "锁定技，当你受到属性伤害或锦囊牌造成的伤害时，若你没有“龙印”、“凤印”且装备区内没有防具牌，防止此伤害。",
 
   ["jj__lianhuan&"] = "连环",
   [":jj__lianhuan&"] = "你可以将一张梅花手牌当【铁索连环】使用或重铸（每回合限三次）。",
@@ -4822,15 +4822,9 @@ local tuiyan = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if #room.draw_pile < 3 then
-      room:shuffleDrawPile()
-      if #room.draw_pile < 3 then
-        room:gameOver("")
-      end
-    end
-    local ids = {}
-    for i = 1, 3, 1 do
-      table.insert(ids, room.draw_pile[i])
+    local ids = room:getNCards(3)
+    for i = 3, 1, -1 do
+      table.insert(room.draw_pile, 1, ids[i])
     end
     U.viewCards(player, ids, self.name)
   end,

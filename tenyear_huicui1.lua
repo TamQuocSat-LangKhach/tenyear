@@ -1810,7 +1810,6 @@ local parseTongliUseStruct = function (player, name, targetGroup)
 end
 local tongli_delay = fk.CreateTriggerSkill{
   name = "#tongli_delay",
-  mute = true,
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
     if data.extra_data and data.extra_data.tongli and not player.dead then
@@ -1829,6 +1828,7 @@ local tongli_delay = fk.CreateTriggerSkill{
     local dat = table.simpleClone(data.extra_data.tongli)
     local use = table.simpleClone(self.cost_data)
     local room = player.room
+    player:broadcastSkillInvoke("tongli")
     for _ = 1, dat.times, 1 do
       room:useCard(use)
       if player.dead then break end
@@ -1883,6 +1883,7 @@ Fk:loadTranslationTable{
   ["shezang"] = "奢葬",
   [":shezang"] = "每轮限一次，当你或你回合内有角色进入濒死状态时，你可以从牌堆底获得不同花色的牌各一张。",
   ["@tongli-phase"] = "同礼",
+  ["#tongli_delay"] = "同礼",
 
   ["$tongli1"] = "胞妹殊礼，妾幸同之。",
   ["$tongli2"] = "夫妻之礼，举案齐眉。",
@@ -2369,15 +2370,18 @@ local yuanyu = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     room:drawCards(player, 1, self.name)
-    if player:isKongcheng() then return end
-    local tar, card =  player.room:askForChooseCardAndPlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1, ".|.|.|hand", "#yuanyu-choose", self.name, false)
+    if player.dead or player:isKongcheng() then return end
+    local targets = room:getOtherPlayers(player, false)
+    if #targets == 0 then return end
+    local tar, card = room:askForChooseCardAndPlayers(player, table.map(targets, Util.IdMapper), 1, 1, ".|.|.|hand",
+    "#yuanyu-choose", self.name, false)
     if #tar > 0 and card then
-      local targetRecorded = type(player:getMark("yuanyu_targets")) == "table" and player:getMark("yuanyu_targets") or {}
+      local targetRecorded = U.getMark(player, "yuanyu_targets")
       if not table.contains(targetRecorded, tar[1]) then
         table.insert(targetRecorded, tar[1])
+        room:setPlayerMark(player, "yuanyu_targets", targetRecorded)
         room:addPlayerMark(room:getPlayerById(tar[1]), "@@yuanyu")
       end
-      room:setPlayerMark(player, "yuanyu_targets", targetRecorded)
       player:addToPile("yuanyu_resent", card, true, self.name)
     end
   end
@@ -2385,17 +2389,18 @@ local yuanyu = fk.CreateActiveSkill{
 local yuanyu_trigger = fk.CreateTriggerSkill{
   name = "#yuanyu_trigger",
   events = {fk.Damage, fk.EventPhaseStart},
+  anim_type = "control",
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(yuanyu.name) then
+    if player:hasSkill(yuanyu) then
       if event == fk.Damage then
-        return target and not target:isKongcheng() and player:getMark("yuanyu_targets") ~= 0 and table.contains(player:getMark("yuanyu_targets"), target.id)
+        return target and not target:isKongcheng() and table.contains(U.getMark(player, "yuanyu_targets"), target.id)
       elseif event == fk.EventPhaseStart and target.phase == Player.Discard then
         if target == player then
-          return player:getMark("yuanyu_targets") ~= 0 and table.find(player:getMark("yuanyu_targets"), function (pid)
+          return table.find(U.getMark(player, "yuanyu_targets"), function (pid)
             local p = player.room:getPlayerById(pid)
             return not p:isKongcheng() and not p.dead end)
         else
-          return not target:isKongcheng() and player:getMark("yuanyu_targets") ~= 0 and table.contains(player:getMark("yuanyu_targets"), target.id)
+          return not target:isKongcheng() and table.contains(U.getMark(player, "yuanyu_targets"), target.id)
         end
       end
     end
@@ -2412,6 +2417,7 @@ local yuanyu_trigger = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    player:broadcastSkillInvoke("yuanyu")
     local tos = {}
     if event == fk.EventPhaseStart and target == player then
       local targetRecorded = player:getMark("yuanyu_targets")
@@ -2426,7 +2432,7 @@ local yuanyu_trigger = fk.CreateTriggerSkill{
       if targetRecorded == 0 then break end
       if not to.dead and not to:isKongcheng() and table.contains(targetRecorded, to.id) then
         local card = room:askForCard(to, 1, 1, false, self.name, false, ".|.|.|hand", "#yuanyu-push:" .. player.id)
-        player:addToPile("yuanyu_resent", card, true, self.name) --原为false
+        player:addToPile("yuanyu_resent", card, true, self.name)
       end
     end
   end,
@@ -2512,8 +2518,8 @@ local xiyan = fk.CreateTriggerSkill{
 }
 local xiyan_targetmod = fk.CreateTargetModSkill{
   name = "#xiyan_targetmod",
-  residue_func = function(self, player, skill, scope, card)
-    return (card and player:getMark("xiyan_targetmod-turn") > 0) and 999 or 0
+  bypass_times = function(self, player, skill, scope, card, to)
+    return player:getMark("xiyan_targetmod-turn") > 0
   end,
 }
 local xiyan_prohibit = fk.CreateProhibitSkill{

@@ -190,7 +190,7 @@ local jiezhen_trigger = fk.CreateTriggerSkill{
   name = "#jiezhen_trigger",
   events = {fk.FinishJudge, fk.TurnStart},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(jiezhen.name) then
+    if player:hasSkill(jiezhen) then
       if event == fk.FinishJudge then
         return not target.dead and table.contains({"bazhen", "eight_diagram"}, data.reason) and
         target:getMark("jiezhen_source") == player.id
@@ -296,7 +296,9 @@ local zecai = fk.CreateTriggerSkill{
     return player:getMark("zecai_tmpjizhi") > 0
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:handleAddLoseSkills(player, "-ex__jizhi", nil, true, false)
+    local room = player.room
+    room:setPlayerMark(player, "zecai_tmpjizhi", 0)
+    room:handleAddLoseSkills(player, "-ex__jizhi", nil, true, false)
   end,
 }
 local yinshih = fk.CreateTriggerSkill{
@@ -336,8 +338,8 @@ Fk:loadTranslationTable{
   ["illustrator:ty__huangchengyan"] = "凡果",
   ["jiezhen"] = "解阵",
   ["#jiezhen_trigger"] = "解阵",
-  [":jiezhen"] = "出牌阶段限一次，你可令一名其他角色的所有技能替换为〖八阵〗（锁定技、限定技、觉醒技、主公技除外），"..
-  "你的下回合开始或当其【八卦阵】判定后，其失去〖八阵〗并获得原技能，然后你获得其区域里的一张牌。",
+  [":jiezhen"] = "出牌阶段限一次，你可令一名其他角色的所有技能替换为〖八阵〗（锁定技、限定技、觉醒技、主公技除外）。"..
+  "你的回合开始时或当其【八卦阵】判定后，你令其失去〖八阵〗并获得原技能，然后你获得其区域里的一张牌。",
   ["zecai"] = "择才",
   [":zecai"] = "限定技，一轮结束时，你可令一名其他角色获得〖集智〗直到下一轮结束，若其是本轮使用锦囊牌数唯一最多的角色，其执行一个额外的回合。",
   ["yinshih"] = "隐世",

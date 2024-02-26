@@ -1811,6 +1811,7 @@ end
 local tongli_delay = fk.CreateTriggerSkill{
   name = "#tongli_delay",
   events = {fk.CardUseFinished},
+  anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
     if data.extra_data and data.extra_data.tongli and not player.dead then
       local dat = table.simpleClone(data.extra_data.tongli)

@@ -333,7 +333,7 @@ local shixian = fk.CreateTriggerSkill{
     elseif event == fk.AfterCardUseDeclared then
       return player == target
     elseif event == fk.AfterCardsMove then
-      return player:hasSkill(self.name, true) and player:getMark("shixian_name") ~= 0
+      return player:hasSkill(self, true) and player:getMark("shixian_name") ~= 0
     elseif event == fk.TurnEnd then
       return player:getMark("shixian_name") ~= 0
     end
@@ -367,7 +367,7 @@ local shixian = fk.CreateTriggerSkill{
       local card = Fk:getCardById(id)
       local cardname = card.trueName
       local marked = 0
-      if player:hasSkill(self.name, true) then
+      if player:hasSkill(self, true) then
         for _, p in ipairs(shixian_pairs) do
           if table.contains(p, cardname) and table.contains(p, lastcardname) then
             marked = 1

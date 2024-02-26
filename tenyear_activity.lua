@@ -1160,7 +1160,7 @@ local zhenxing = fk.CreateTriggerSkill{
   anim_type = "masochism",
   events = {fk.Damaged, fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) then
+    if target == player and player:hasSkill(self) then
       if event == fk.Damaged then
         return true
       else
@@ -1294,7 +1294,7 @@ local bijing = fk.CreateTriggerSkill{
   anim_type = "defensive",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish and not player:isKongcheng()
+    return target == player and player:hasSkill(self) and player.phase == Player.Finish and not player:isKongcheng()
   end,
   on_cost = function(self, event, target, player, data)
     local cards = player.room:askForCard(player, 1, 2, false, self.name, true, ".", "#bijing-invoke")
@@ -1707,7 +1707,7 @@ local yechou = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.Death},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, false, true) and table.find(player.room.alive_players, function (p)
+    return target == player and player:hasSkill(self, false, true) and table.find(player.room.alive_players, function (p)
       return p:getLostHp() > 1
     end)
   end,
@@ -2299,7 +2299,7 @@ local ty__yanhuo = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.Death},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, false, true)
+    return target == player and player:hasSkill(self, false, true)
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, data, "#yanhuo-invoke")
@@ -3350,13 +3350,16 @@ local wujie = fk.CreateTriggerSkill{
       if event == fk.AfterCardUseDeclared then
         return player:hasSkill(self) and data.card.color == Card.NoColor
       else
-        return player:hasSkill(self.name, false, true) and not player.room:getTag("SkipNormalDeathProcess")
+        return player:hasSkill(self, false, true) and not player.room:getTag("SkipNormalDeathProcess")
       end
     end
   end,
   on_use = function(self, event, target, player, data)
     if event == fk.AfterCardUseDeclared then
-      player:addCardUseHistory(data.card.trueName, -1)
+      if not data.extraUse then
+        data.extraUse = true
+        player:addCardUseHistory(data.card.trueName, -1)
+      end
     else
       player.room:setTag("SkipNormalDeathProcess", true)
       player.room:setTag(self.name, true)
@@ -3374,15 +3377,8 @@ local wujie = fk.CreateTriggerSkill{
 }
 local wujie_targetmod = fk.CreateTargetModSkill{
   name = "#wujie_targetmod",
-  residue_func = function(self, player, skill, scope, card)
-    if player:hasSkill("wujie") and card and card.color == Card.NoColor and scope == Player.HistoryPhase then
-      return 999
-    end
-  end,
-  distance_limit_func =  function(self, player, skill, card)
-    if player:hasSkill("wujie") and card and card.color == Card.NoColor then
-      return 999
-    end
+  bypass_distances = function(self, player, skill, card)
+    return player:hasSkill(wujie) and card and card.color == Card.NoColor
   end,
 }
 Fk:addSkill(libang_active)
@@ -3395,7 +3391,7 @@ Fk:loadTranslationTable{
   ["#ty__mengda"] = "据国向己",
   ["illustrator:ty__mengda"] = "六道目",
   ["libang"] = "利傍",
-  [":libang"] = "出牌阶段限一次，你可以弃置一张牌，获得并展示两名其他角色各一张牌，然后你判定，若结果与这两张牌的颜色："..
+  [":libang"] = "出牌阶段限一次，你可以弃置一张牌，获得两名其他角色各一张牌并展示，然后你判定，若结果与这两张牌的颜色："..
   "均不同，你交给其中一名角色两张牌或失去1点体力；至少一张相同，你获得判定牌并视为对其中一名角色使用一张【杀】。",
   ["wujie"] = "无节",
   [":wujie"] = "锁定技，你使用的无色牌不计入次数且无距离限制；其他角色杀死你后不执行奖惩。",
@@ -3577,7 +3573,7 @@ local zuojian = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.CardUsing then
       room:addPlayerMark(player, "zuojian-phase", 1)
-      if player:hasSkill(self.name, true) then
+      if player:hasSkill(self, true) then
         room:addPlayerMark(player, "@zuojian-phase", 1)
       end
     else
@@ -4237,7 +4233,7 @@ local chongyi = fk.CreateTriggerSkill{
 
   refresh_events = {fk.AfterCardUseDeclared},
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self.name, true) and target.phase == Player.Play
+    return player:hasSkill(self, true) and target.phase == Player.Play
   end,
   on_refresh = function(self, event, target, player, data)
     player.tag[self.name] = player.tag[self.name] or {}

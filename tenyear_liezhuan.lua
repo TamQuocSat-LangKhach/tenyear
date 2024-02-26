@@ -774,7 +774,7 @@ local zhuide = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.Death},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, false, true)
+    return target == player and player:hasSkill(self, false, true)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -1331,7 +1331,7 @@ local suirenq = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.Death},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, false, true) and
+    return target == player and player:hasSkill(self, false, true) and
       table.find(player:getCardIds("h"), function(id) return Fk:getCardById(id).is_damage_card end)
   end,
   on_cost = function(self, event, target, player, data)
@@ -2163,7 +2163,7 @@ local xiangshu = fk.CreateTriggerSkill{
 
   refresh_events = {fk.Damage},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, true) and player.phase ~= Player.NotActive
+    return target == player and player:hasSkill(self, true) and player.phase ~= Player.NotActive
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:addPlayerMark(player, "xiangshu-turn", data.damage)

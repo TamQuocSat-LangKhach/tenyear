@@ -78,7 +78,7 @@ local biejun = fk.CreateTriggerSkill{
     elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
       return data == self
     elseif event == fk.BuryVictim then
-      return player:hasSkill(self.name, true, true)
+      return player:hasSkill(self, true, true)
     end
   end,
   on_refresh = function(self, event, target, player, data)
@@ -88,7 +88,7 @@ local biejun = fk.CreateTriggerSkill{
         room:setCardMark(Fk:getCardById(id), "@@biejun-inhand", 0)
       end
     else
-      if table.every(room.alive_players, function(p) return not p:hasSkill(self.name, true) or p == player end) then
+      if table.every(room.alive_players, function(p) return not p:hasSkill(self, true) or p == player end) then
         if player:hasSkill("biejun&", true, true) then
           room:handleAddLoseSkills(player, "-biejun&", nil, false, true)
         end
@@ -742,7 +742,7 @@ local bushil = fk.CreateTriggerSkill{
 
   refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill},
   can_refresh = function(self, event, target, player, data)
-    if player:hasSkill(self.name, true) then
+    if player:hasSkill(self, true) then
       if event == fk.GameStart then
         return true
       else

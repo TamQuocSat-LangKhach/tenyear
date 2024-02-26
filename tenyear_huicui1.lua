@@ -1897,11 +1897,9 @@ local xiecui = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and data.from and not data.from.dead and data.from.phase ~= Player.NotActive and data.card then
-      if data.from:getMark("xiecui-turn") == 0 then
-        player.room:addPlayerMark(data.from, "xiecui-turn", 1)
-        return true
-      end
+    if player:hasSkill(self) and target and not target.dead and target == player.room.current and data.card then
+      return player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and
+      #U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == target end) == 0
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -1910,9 +1908,9 @@ local xiecui = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     data.damage = data.damage + 1
-    if data.from.kingdom == "wu" and room:getCardArea(data.card) == Card.Processing then
-      room:obtainCard(data.from, data.card, false)
-      room:addPlayerMark(data.from, MarkEnum.AddMaxCardsInTurn, 1)
+    if not target.dead and target.kingdom == "wu" and room:getCardArea(data.card) == Card.Processing then
+      room:addPlayerMark(target, MarkEnum.AddMaxCardsInTurn, 1)
+      room:moveCardTo(data.card, Card.PlayerHand, target, fk.ReasonPrey, self.name)
     end
   end,
 }
@@ -1931,15 +1929,11 @@ local youxu = fk.CreateTriggerSkill{
     local id = room:askForCardChosen(player, target, "h", self.name)
     target:showCards({id})
     local targets = table.map(room:getOtherPlayers(target), Util.IdMapper)
-    local to = room:askForChoosePlayers(player, targets, 1, 1, "#youxu-choose:::"..Fk:getCardById(id):toLogString(), self.name, false)
-    if #to > 0 then
-      to = to[1]
-    else
-      to = table.random(targets)
-    end
-    room:obtainCard(to, id, true, fk.ReasonGive)
-    to = room:getPlayerById(to)
-    if to:isWounded() and table.every(room:getOtherPlayers(to), function (p) return p.hp >= to.hp end) then
+    if #targets == 0 then return end
+    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#youxu-choose:::"..Fk:getCardById(id):toLogString(), self.name, false)
+    local to = room:getPlayerById(tos[1])
+    room:moveCardTo(id, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, true, player.id)
+    if not to.dead and to:isWounded() and table.every(room:getOtherPlayers(to), function (p) return p.hp >= to.hp end) then
       room:recover({
         who = to,
         num = 1,
@@ -1962,7 +1956,7 @@ Fk:loadTranslationTable{
   [":youxu"] = "一名角色回合结束时，若其手牌数大于体力值，你可以展示其一张手牌然后交给另一名角色。若获得牌的角色体力值全场最低，其回复1点体力。",
   ["#xiecui-invoke"] = "撷翠：你可以令 %src 对 %dest造成的伤害+1",
   ["#youxu-invoke"] = "忧恤：你可以展示 %dest 的一张手牌，然后交给另一名角色",
-  ["#youxu-choose"] = "忧恤：选择获得%arg的角色",
+  ["#youxu-choose"] = "忧恤：将 %arg 交给另一名角色",
 
   ["$xiecui1"] = "东隅既得，亦收桑榆。",
   ["$xiecui2"] = "江东多娇，锦花相簇。",
@@ -2508,7 +2502,7 @@ local xiyan = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local suitsRecorded = {}
-    if player:hasSkill(self.name, true) then
+    if player:hasSkill(self, true) then
       for _, id in ipairs(player:getPile("yuanyu_resent")) do
         table.insertIfNeed(suitsRecorded, Fk:getCardById(id):getSuitString(true))
       end
@@ -2941,7 +2935,7 @@ local fengxiang = fk.CreateTriggerSkill{
   refresh_events = {fk.BeforeCardsMove, fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)
     if event == fk.BeforeCardsMove then
-      if player:hasSkill(self.name, true) then
+      if player:hasSkill(self, true) then
         for _, move in ipairs(data) do
           for _, info in ipairs(move.moveInfo) do
             if info.fromArea == Card.PlayerHand then

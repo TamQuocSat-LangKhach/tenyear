@@ -508,7 +508,7 @@ local huaping = fk.CreateTriggerSkill{
   events = {fk.Death},
   frequency = Skill.Limited,
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self.name, false, player == target) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+    return player:hasSkill(self, false, player == target) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   on_cost = function(self, event, target, player, data)
     if player == target then
@@ -1428,7 +1428,7 @@ local ty__jici = fk.CreateTriggerSkill{
         end
       end
     elseif event == fk.Death then
-      return target == player and player:hasSkill(self.name, false, true) and data.damage and data.damage.from and not data.damage.from.dead
+      return target == player and player:hasSkill(self, false, true) and data.damage and data.damage.from and not data.damage.from.dead
     end
   end,
   on_use = function(self, event, target, player, data)

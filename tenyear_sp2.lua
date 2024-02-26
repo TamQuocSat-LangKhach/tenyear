@@ -2094,8 +2094,8 @@ local xili = fk.CreateTriggerSkill{
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self) and data.from and target ~= player and
-      target:hasSkill(self.name, true, true) and target.phase ~= Player.NotActive and
-      not data.to:hasSkill(self.name, true) and not player:isNude() and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
+      target:hasSkill(self, true, true) and target.phase ~= Player.NotActive and
+      not data.to:hasSkill(self, true) and not player:isNude() and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
   end,
   on_cost = function(self, event, target, player, data)
     local card = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#xili-invoke:"..data.from.id..":"..data.to.id, true)
@@ -2209,7 +2209,7 @@ local ty__zhongjian_trigger = fk.CreateTriggerSkill{
 
   refresh_events = {fk.TurnStart, fk.Deathed},
   can_refresh = function (self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, true, true)
+    return target == player and player:hasSkill(self, true, true)
   end,
   on_refresh = function (self, event, target, player, data)
     local room = player.room
@@ -3462,7 +3462,7 @@ local ty__biluan = fk.CreateTriggerSkill{
   anim_type = "defensive",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self.name) and player.phase == Player.Finish then
+    if target == player and player:hasSkill(self) and player.phase == Player.Finish then
       return table.find(player.room:getOtherPlayers(player), function(p) return p:distanceTo(player) == 1 end)
     end
   end,
@@ -3499,7 +3499,7 @@ local ty__lixia = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target ~= player and player:hasSkill(self.name) and target.phase == Player.Finish and not target:inMyAttackRange(player)
+    return target ~= player and player:hasSkill(self) and target.phase == Player.Finish and not target:inMyAttackRange(player)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -3804,7 +3804,7 @@ local dushi = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.Death},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, false, true)
+    return target == player and player:hasSkill(self, false, true)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -3894,7 +3894,7 @@ local suifu = fk.CreateTriggerSkill{
 
   refresh_events = {fk.Damaged},
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self.name, true) and (target == player or target.seat == 1)
+    return player:hasSkill(self, true) and (target == player or target.seat == 1)
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:addPlayerMark(player, "suifu-turn", data.damage)
@@ -4272,7 +4272,7 @@ local fudao = fk.CreateTriggerSkill{
   events = {fk.GameStart, fk.TargetSpecified, fk.Death, fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
     if event == fk.Death then
-      if player:hasSkill(self.name, false, (player == target)) then
+      if player:hasSkill(self, false, (player == target)) then
         local to = player.room:getPlayerById(player:getMark(self.name))
         return to ~= nil and ((player == target and not to.dead) or to == target) and data.damage and data.damage.from and
           not data.damage.from.dead and data.damage.from ~= player and data.damage.from ~= to

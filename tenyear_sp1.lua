@@ -3549,7 +3549,7 @@ local liji_record = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     if event == fk.TurnStart then
-      if player:hasSkill(self.name, true) then
+      if player:hasSkill(self, true) then
         player.room:setPlayerMark(player, "@liji-turn", {0, "-", 0, "/", #player.room.alive_players < 5 and 4 or 8})
       end
     elseif event == fk.EventPhaseStart then

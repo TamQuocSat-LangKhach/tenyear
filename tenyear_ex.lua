@@ -3837,7 +3837,7 @@ local ty_ex__zhongyong = fk.CreateTriggerSkill{
   events = {fk.CardUseFinished},
   anim_type = "drawCard",
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and target == player and data.card.trueName == "slash" then
+    if player:hasSkill(self) and target == player and data.card.trueName == "slash" and data.tos then
       local ids = player.room:getSubcardsByRule(data.card, { Card.Processing })
       if data.cardsResponded then
         for _, c in ipairs(data.cardsResponded) do
@@ -3863,9 +3863,7 @@ local ty_ex__zhongyong = fk.CreateTriggerSkill{
     for _, c in ipairs(data.cardsResponded) do
       table.insertTableIfNeed(ids, player.room:getSubcardsByRule(c, { Card.DiscardPile }))
     end
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(ids)
-    room:obtainCard(to, dummy, false, fk.ReasonPrey)
+    room:moveCardTo(ids, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, true, player.id)
     if to.dead then return end
     if table.find(ids, function(id) return Fk:getCardById(id).color == Card.Black end) then
       to:drawCards(1, self.name)

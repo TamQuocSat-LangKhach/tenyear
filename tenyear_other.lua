@@ -899,7 +899,7 @@ local cibeis = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and target == player then
+    if player:hasSkill(self) and target == player and player ~= data.to then
       return not table.contains(U.getMark(player, "cibeis-turn"), data.to.id)
     end
   end,

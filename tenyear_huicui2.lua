@@ -4581,7 +4581,7 @@ Fk:addQmlMark{
   name = "zixi",
   how_to_show = function(name, value, p)
     if type(value) ~= "table" then return " " end
-    return table.concat(table.map(value.ids, function(id)
+    return table.concat(table.map(value, function(id)
       local card = p:getVirualEquip(id)
       if card then
         return Fk:translate(card.name .. "_short")
@@ -4699,16 +4699,10 @@ local zixi = fk.CreateTriggerSkill{
       end
       return false
     end
-    if type(old_mark) ~= "table" then
-      old_mark = {player = player.id, ids = mark}
-      room:setPlayerMark(player, "@[zixi]", old_mark)
-      return false
-    end
-    if #mark ~= #old_mark.ids or table.find(mark, function (id)
-      return not table.contains(old_mark.ids, id)
+    if type(old_mark) ~= "table" or #mark ~= #old_mark or table.find(mark, function (id)
+      return not table.contains(old_mark, id)
     end) then
-      old_mark.ids = mark
-      room:setPlayerMark(player, "@[zixi]", old_mark)
+      room:setPlayerMark(player, "@[zixi]", mark)
     end
   end,
 }

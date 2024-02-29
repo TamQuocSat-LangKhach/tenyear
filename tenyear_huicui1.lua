@@ -2359,11 +2359,26 @@ Fk:loadTranslationTable{
 }
 
 local zhangyao = General(extension, "zhangyao", "wu", 3, 3, General.Female)
+Fk:addQmlMark{
+  name = "yuanyu",
+  how_to_show = function(name, value, p)
+    if type(value) ~= "table" then return " " end
+    local suits = {}
+    for _, id in ipairs(value) do
+      table.insertIfNeed(suits, Fk:getCardById(id).suit)
+    end
+    value = {value = table.simpleClone(value)}
+    return table.concat(table.map(suits, function(suit)
+      return Fk:translate(Card.getSuitString({ suit = suit }, true))
+    end), " ")
+  end,
+  qml_path = "packages/tenyear/qml/ZixiBox"
+}
 local yuanyu = fk.CreateActiveSkill{
   name = "yuanyu",
   anim_type = "control",
   prompt = "#yuanyu",
-  derived_piles = "yuanyu_resent",
+  derived_piles = "#yuanyu_resent",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 + player:getMark("yuanyu_extra_times-phase")
   end,
@@ -2383,7 +2398,7 @@ local yuanyu = fk.CreateActiveSkill{
         room:setPlayerMark(player, "yuanyu_targets", targetRecorded)
         room:addPlayerMark(room:getPlayerById(tar[1]), "@@yuanyu")
       end
-      player:addToPile("yuanyu_resent", card, true, self.name)
+      player:addToPile("#yuanyu_resent", card, true, self.name)
     end
   end
 }
@@ -2433,18 +2448,31 @@ local yuanyu_trigger = fk.CreateTriggerSkill{
       if targetRecorded == 0 then break end
       if not to.dead and not to:isKongcheng() and table.contains(targetRecorded, to.id) then
         local card = room:askForCard(to, 1, 1, false, self.name, false, ".|.|.|hand", "#yuanyu-push:" .. player.id)
-        player:addToPile("yuanyu_resent", card, true, self.name)
+        player:addToPile("#yuanyu_resent", card, true, self.name)
       end
     end
   end,
 
-  refresh_events = {fk.EventLoseSkill, fk.Death},
+  refresh_events = {fk.EventLoseSkill, fk.Death, fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)
+    if event == fk.AfterCardsMove then return true end
     if event == fk.EventLoseSkill and data ~= yuanyu then return false end
     return player == target and type(player:getMark("yuanyu_targets")) == "table"
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
+    if event == fk.AfterCardsMove then
+      local cards = player:getPile("#yuanyu_resent")
+      if #cards == 0 then
+        if player:getMark("@[yuanyu]") ~= 0 then
+          room:setPlayerMark(player, "@[yuanyu]", 0)
+        end
+        return false
+      end
+      --FIXME:待优化
+      room:setPlayerMark(player, "@[yuanyu]", cards)
+      return false
+    end
     local targets = player:getMark("yuanyu_targets")
     if type(targets) == "table" then
       for _, pid in ipairs(targets) do
@@ -2461,9 +2489,9 @@ local xiyan = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
       for _, move in ipairs(data) do
-        if move.to == player.id and move.toArea == Card.PlayerSpecial and move.specialName == "yuanyu_resent" then
+        if move.to == player.id and move.toArea == Card.PlayerSpecial and move.specialName == "#yuanyu_resent" then
           local suits = {}
-          for _, id in ipairs(player:getPile("yuanyu_resent")) do
+          for _, id in ipairs(player:getPile("#yuanyu_resent")) do
             table.insertIfNeed(suits, Fk:getCardById(id).suit)
           end
           table.removeOne(suits, Card.NoSuit)
@@ -2482,7 +2510,7 @@ local xiyan = fk.CreateTriggerSkill{
     end
     room:setPlayerMark(player, "yuanyu_targets", 0)
     local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(player:getPile("yuanyu_resent"))
+    dummy:addSubcards(player:getPile("#yuanyu_resent"))
     room:obtainCard(player, dummy, false, fk.ReasonJustMove)
     if room.current and not room.current.dead and room.current.phase ~= Player.NotActive then
       if room.current == player then
@@ -2496,25 +2524,6 @@ local xiyan = fk.CreateTriggerSkill{
         room:addPlayerMark(room.current, "@@xiyan_prohibit-turn")
       end
     end
-  end,
-
-  refresh_events = {fk.AfterCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    for _, move in ipairs(data) do
-      if (move.from == player.id and table.find(move.moveInfo, function (info)
-        return info.fromSpecialName == "yuanyu_resent" end)) or (move.to == player.id and move.specialName == "yuanyu_resent") then
-          return true
-        end
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local suitsRecorded = {}
-    if player:hasSkill(self, true) then
-      for _, id in ipairs(player:getPile("yuanyu_resent")) do
-        table.insertIfNeed(suitsRecorded, Fk:getCardById(id):getSuitString(true))
-      end
-    end
-    player.room:setPlayerMark(player, "@xiyan", #suitsRecorded > 0 and suitsRecorded or 0)
   end,
 }
 local xiyan_targetmod = fk.CreateTargetModSkill{
@@ -2547,12 +2556,12 @@ Fk:loadTranslationTable{
   [":xiyan"] = "每次增加“怨”时，若“怨”的花色数达到4种，你可以获得所有“怨”。然后若此时是你的回合，你的〖怨语〗视为未发动过，"..
   "本回合手牌上限+4且使用牌无次数限制；若不是你的回合，你可令当前回合角色本回合手牌上限-4且本回合不能使用基本牌。",
 
-  ["yuanyu_resent"] = "怨",
+  ["#yuanyu_resent"] = "怨",
   ["@@yuanyu"] = "怨语",
+  ["@[yuanyu]"] = "怨",
   ["#yuanyu"] = "怨语：你可以摸一张牌，然后放置一张手牌作为“怨”",
   ["#yuanyu-choose"] = "怨语：选择作为“怨”的一张手牌以及作为目标的一名其他角色",
   ["#yuanyu-push"] = "怨语：选择一张手牌作为%src的“怨”",
-  ["@xiyan"] = "夕颜",
   ["#xiyan-debuff"] = "夕颜：是否令%dest本回合不能使用基本牌且手牌上限-4",
   ["@@xiyan_prohibit-turn"] = "夕颜 不能出牌",
 
@@ -4882,7 +4891,7 @@ local jinjin = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.Damage, fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
+    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#jinjin-invoke::"..data.from.id..":"..player:getMaxCards())
@@ -4920,7 +4929,7 @@ Fk:loadTranslationTable{
   ["haochong"] = "昊宠",
   [":haochong"] = "当你使用一张牌后，你可以将手牌调整至手牌上限（最多摸五张），然后若你以此法：获得牌，你的手牌上限-1；失去牌，你的手牌上限+1。",
   ["jinjin"] = "矜谨",
-  [":jinjin"] = "每回合限一次，当你造成或受到伤害后，你可以将你的手牌上限重置为当前体力值。"..
+  [":jinjin"] = "每回合限两次，当你造成或受到伤害后，你可以将你的手牌上限重置为当前体力值。"..
   "若如此做，伤害来源可以弃置至多X张牌（X为你因此变化的手牌上限数且至少为1），然后其每少弃置一张，你便摸一张牌。",
   ["#haochong-discard"] = "昊宠：你可以将手牌弃至手牌上限（弃置%arg张），然后手牌上限+1",
   ["#haochong-draw"] = "昊宠：你可以将手牌摸至手牌上限（当前手牌上限%arg，最多摸五张），然后手牌上限-1",

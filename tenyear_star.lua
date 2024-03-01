@@ -592,7 +592,7 @@ Fk:loadTranslationTable{
 }
 
 
---玉衡：曹仁
+--玉衡：曹仁 张春华
 local caoren = General(extension, "tystar__caoren", "wei", 4)
 local sujun = fk.CreateTriggerSkill{
   name = "sujun",
@@ -675,6 +675,165 @@ Fk:loadTranslationTable{
   ["$lifengc1"] = "锋出百砺，健卒亦如是。",
   ["$lifengc2"] = "强军者，必校之以三九，练之三伏。",
   ["~tystar__caoren"] = "濡须之败，此生之耻……",
+}
+
+local zhangchunhua = General(extension, "tystar__zhangchunhua", "wei", 3, 3, General.Female)
+local liangyan = fk.CreateActiveSkill{
+  name = "liangyan",
+  target_num = 1,
+  min_card_num = 0,
+  max_card_num = 2,
+  prompt = function(self, card, selected_targets)
+    if self.interaction.data == "liangyan_discard" then
+      return "#liangyan1-active"
+    else
+      return "#liangyan2-active"
+    end
+  end,
+  interaction = function()
+    return UI.ComboBox {
+      choices = {"liangyan_discard", "draw1", "draw2"}
+    }
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return self.interaction.data == "liangyan_discard" and #selected < 2 and not Self:prohibitDiscard(Fk:getCardById(to_select))
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0 and to_select ~= Self.id and (#selected_cards > 0 or self.interaction.data ~= "liangyan_discard")
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local n = #effect.cards
+    if n > 0 then
+      room:throwCard(effect.cards, self.name, player, player)
+      if target.dead then return end
+      target:drawCards(n, self.name)
+      if not (player.dead or target.dead) and player:getHandcardNum() == target:getHandcardNum() then
+        room:setPlayerMark(target, "@@liangyan", 1)
+      end
+    else
+      n = 1
+      if self.interaction.data == "draw2" then
+        n = 2
+      end
+      player:drawCards(n, self.name)
+      if target.dead then return end
+      room:askForDiscard(target, n, n, true, self.name, false)
+      if not (player.dead or target.dead) and player:getHandcardNum() == target:getHandcardNum() then
+        room:setPlayerMark(player, "@@liangyan", 1)
+      end
+    end
+  end,
+}
+local liangyan_delay = fk.CreateTriggerSkill{
+  name = "#liangyan_delay",
+  events = {fk.EventPhaseChanging},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:getMark("@@liangyan") > 0 and data.to == Player.Discard
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@@liangyan", 0)
+    player:skip(Player.Discard)
+    return true
+  end,
+}
+local minghui = fk.CreateTriggerSkill{
+  name = "minghui",
+  anim_type = "offensive",
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      local linghui_max, linghui_min = true, true
+      local x, y = player:getHandcardNum(), 0
+      for _, p in ipairs(player.room.alive_players) do
+        y = p:getHandcardNum()
+        if x > y then
+          linghui_min = false
+        elseif x < y then
+          linghui_max = false
+        end
+      end
+      return linghui_max or linghui_min
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local x = player:getHandcardNum()
+    if table.every(room.alive_players, function (p)
+      return p:getHandcardNum() >= x
+    end) then
+      if U.askForUseVirtualCard(room, player, "slash", {}, self.name, "#minghui-slash", true, true, true, true) then
+        if player.dead then return false end
+        x = player:getHandcardNum()
+      end
+    end
+    if player:isKongcheng() or #room.alive_players < 2 then return false end
+    local y, z = 0, 0
+    for _, p in ipairs(room.alive_players) do
+      if player ~= p then
+        y = p:getHandcardNum()
+        if y > x then return false end
+        if y > z then
+          z = y
+        end
+      end
+    end
+    y = math.max(1, x-z)
+    if #room:askForDiscard(player, y, x, false, self.name, true, ".", "#minghui-discard:::" .. tostring(y)) > 0 and
+    not player.dead then
+      local targets = table.map(table.filter(room.alive_players, function (p)
+        return p:isWounded()
+      end), Util.IdMapper)
+      if #targets > 0 then
+        targets = room:askForChoosePlayers(player, targets, 1, 1, "#minghui-recover", self.name, false)
+        room:recover({
+          who = room:getPlayerById(targets[1]),
+          num = 1,
+          recoverBy = player,
+          skillName = self.name,
+        })
+      end
+    end
+  end,
+}
+liangyan:addRelatedSkill(liangyan_delay)
+zhangchunhua:addSkill(liangyan)
+zhangchunhua:addSkill(minghui)
+
+Fk:loadTranslationTable{
+  ["tystar__zhangchunhua"] = "星张春华",
+  ["#tystar__zhangchunhua"] = "皑雪皎月",
+  ["illustrator:tystar__zhangchunhua"] = "七兜豆",
+
+  ["liangyan"] = "梁燕",
+  [":liangyan"] = "出牌阶段限一次，你可以选择一名其他角色并选择："..
+  "1.你摸一至两张牌，其弃置等量的牌，若你与其手牌数相同，你跳过下个弃牌阶段；"..
+  "2.你弃置一至两张牌，其摸等量的牌，若你与其手牌数相同，其跳过下个弃牌阶段。",
+  ["minghui"] = "明慧",
+  [":minghui"] = "一名角色的回合结束时，若你是手牌数最小的角色，你可视为使用一张【杀】（无距离关系的限制）。"..
+  "若你是手牌数最大的角色，你可将手牌弃置至不为全场最多，令一名角色回复1点体力。",
+
+  ["liangyan_discard"] = "弃置至多两张牌",
+  ["#liangyan1-active"] = "发动 梁燕，弃置1-2张牌，令一名其他角色摸等量的牌",
+  ["#liangyan2-active"] = "发动 梁燕，摸1-2张牌，令一名其他角色弃置等量的牌",
+  ["@@liangyan"] = "梁燕",
+  ["#liangyan_delay"] = "梁燕",
+  ["#minghui-slash"] = "明慧：你可以视为使用【杀】",
+  ["#minghui-discard"] = "明慧：你可以弃置至少%arg张手牌，然后令一名角色回复1点体力",
+  ["#minghui-recover"] = "明慧：选择一名角色，令其回复1点体力",
+
+  ["$liangyan1"] = "家燕并头语，不恋雕梁而归于万里。",
+  ["$liangyan2"] = "灵禽非醴泉不饮，非积善之家不栖。",
+  ["$minghui1"] = "大智若愚，女子之锦绣常隐于华服。",
+  ["$minghui2"] = "知者不惑，心有明镜以照人。",
+  ["~tystar__zhangchunhua"] = "我何为也？竟称可憎之老物……",
 }
 
 return extension

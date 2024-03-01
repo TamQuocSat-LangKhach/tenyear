@@ -572,19 +572,22 @@ local shiming = fk.CreateTriggerSkill{
     return player:hasSkill(self) and target.phase == Player.Draw and player:usedSkillTimes(self.name, Player.HistoryRound) == 0
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#shiming-invoke::"..target.id)
+    local room = player.room
+    if room:askForSkillInvoke(player, self.name, nil, "#shiming-invoke::"..target.id) then
+      room:doIndicate(player.id, {target.id})
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:doIndicate(player.id, {target.id})
-    local cards = room:getNCards(2)
-    local result = room:askForGuanxing(player, cards, nil, {0, 1}, self.name, true, {"Top", "Bottom"})
-    if #result.bottom > 0 then
-      table.insert(room.draw_pile, 1, result.top[1])
-      table.insert(room.draw_pile, result.bottom[1])
-    else
-      table.insert(room.draw_pile, 1, cards[2])
-      table.insert(room.draw_pile, 1, cards[1])
+    local ids = room:getNCards(3)
+    local to_return = U.askforChooseCardsAndChoice(player, ids, {"OK"}, self.name, "#shiming-chooose", {"Cancel"})
+    if #to_return > 0 then
+      table.insert(room.draw_pile, to_return[1])
+      table.removeOne(ids, to_return[1])
+    end
+    for i = #ids, 1, -1 do
+      table.insert(room.draw_pile, 1, ids[i])
     end
     if room:askForSkillInvoke(target, self.name, nil, "#shiming-damage") then
       room:damage{
@@ -606,26 +609,6 @@ local jiangxi = fk.CreateTriggerSkill{
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
-      local events = player.room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function(e)
-        local damage = e.data[5]
-        return damage
-      end, Player.HistoryTurn)
-      return #events == 0
-    end
-  end,
-  on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#jiangxi-invoke::"..target.id)
-  end,
-  on_use = function(self, event, target, player, data)
-    player:drawCards(1, self.name)
-    if not target.dead then
-      target:drawCards(1, self.name)
-    end
-  end,
-
-  refresh_events = {fk.TurnEnd},  --偷懒_(:з」∠)_
-  can_refresh = function(self, event, target, player, data)
-    if player:hasSkill(self) and player:usedSkillTimes("shiming", Player.HistoryRound) > 0 then
       local room = player.room
       local events = room.logic:getEventsOfScope(GameEvent.Dying, 1, function(e)
         local dying = e.data[1]
@@ -639,8 +622,22 @@ local jiangxi = fk.CreateTriggerSkill{
       return #events == 0
     end
   end,
-  on_refresh = function(self, event, target, player, data)
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
     player:setSkillUseHistory("shiming", 0, Player.HistoryRound)
+    player:drawCards(1, self.name)
+    if player.dead or target.dead then return false end
+    local room = player.room
+    local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
+    if turn_event == nil then return false end
+    if #U.getEventsByRule(room, GameEvent.ChangeHp, 1, function (e)
+      return e.data[5]
+    end, turn_event.id) == 0 and room:askForSkillInvoke(player, self.name, nil, "#jiangxi-invoke::" .. target.id) then
+      player:drawCards(1, self.name)
+      if not target.dead then
+        target:drawCards(1, self.name)
+      end
+    end
   end,
 }
 qiaozhou:addSkill(shiming)
@@ -650,12 +647,13 @@ Fk:loadTranslationTable{
   ["#ty__qiaozhou"] = "谶星沉祚",
   ["illustrator:ty__qiaozhou"] = "鬼画府",
   ["shiming"] = "识命",
-  [":shiming"] = "每轮限一次，一名角色的摸牌阶段，你可以观看牌堆顶两张牌，然后可以将其中一张置于牌堆底，若如此做，当前回合角色可以放弃摸牌，"..
-  "改为对自己造成1点伤害，然后从牌堆底摸三张牌。",
+  [":shiming"] = "每轮限一次，一名角色的摸牌阶段，你可以观看牌堆顶三张牌，然后可以将其中一张置于牌堆底，"..
+  "若如此做，当前回合角色可以放弃摸牌，改为对自己造成1点伤害，然后从牌堆底摸三张牌。",
   ["jiangxi"] = "将息",
-  [":jiangxi"] = "一名角色回合结束时，若一号位本回合进入过濒死状态或未受到过伤害，你重置〖识命〗；若所有角色均未受到过伤害，你可以与当前回合角色"..
-  "各摸一张牌。",
-  ["#shiming-invoke"] = "识命：%dest 的摸牌阶段，你可以先观看牌堆顶两张牌，将其中一张置于牌堆底",
+  [":jiangxi"] = "一名角色回合结束时，若一号位本回合进入过濒死状态或未受到过伤害，你重置〖识命〗并摸一张牌。"..
+  "若所有角色均未受到过伤害，你可以与当前回合角色各摸一张牌。",
+  ["#shiming-invoke"] = "识命：%dest 的摸牌阶段，你可以先观看牌堆顶三张牌，将其中一张置于牌堆底",
+  ["#shiming-chooose"] = "识命：你可以将其中一张牌置于牌堆底",
   ["#shiming-damage"] = "识命：你可以对自己造成1点伤害，放弃摸牌，改为从牌堆底摸三张牌",
   ["#jiangxi-invoke"] = "将息：你可以与 %dest 各摸一张牌",
 

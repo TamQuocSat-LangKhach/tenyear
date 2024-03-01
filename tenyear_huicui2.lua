@@ -3154,16 +3154,16 @@ local gue = fk.CreateViewAsSkill{
   pattern = "slash,jink",
   prompt = "#gue",
   interaction = function()
-    local names = {"slash", "jink"}
-    for _, name in ipairs(names) do
+    local names = {}
+    for _, name in ipairs({"slash", "jink"}) do
       local card = Fk:cloneCard(name)
-      if ((Fk.currentResponsePattern == nil and card.skill:canUse(Self, card) and not Self:prohibitUse(card)) or
+      if ((Fk.currentResponsePattern == nil and Self:canUse(card) and not Self:prohibitUse(card)) or
         (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
         table.insertIfNeed(names, card.name)
       end
     end
     if #names == 0 then return false end
-    return UI.ComboBox { choices = names }
+    return UI.ComboBox { choices = names, all_choices = {"slash", "jink"} }
   end,
   card_filter = Util.FalseFunc,
   view_as = function(self, cards)
@@ -3172,30 +3172,22 @@ local gue = fk.CreateViewAsSkill{
     card.skillName = self.name
     return card
   end,
+  before_use = function(self, player)
+    local room = player.room
+    local cards = player:getCardIds("h")
+    if #cards == 0 then return end
+    player:showCards(cards)
+    if #table.filter(cards, function(id)
+      return table.contains({"slash", "jink"}, Fk:getCardById(id).trueName)
+    end) > 1 then
+      return ""
+    end
+  end,
   enabled_at_play = Util.FalseFunc,
   enabled_at_response = function(self, player, response)
-    return not player:isKongcheng() and player.phase == Player.NotActive and
-      player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
-  end,
-}
-local gue_trigger = fk.CreateTriggerSkill{
-  name = "#gue_trigger",
-  events = {fk.PreCardUse, fk.PreCardRespond},
-  mute = true,
-  priority = 10,
-  can_trigger = function(self, event, target, player, data)
-    return target == player and table.contains(data.card.skillNames, "gue")
-  end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
-    player:showCards(player:getCardIds("h"))
-    if player.dead then return end
-    local n = #table.filter(player:getCardIds("h"), function(id)
-      return Fk:getCardById(id).trueName == "slash" or Fk:getCardById(id).trueName == "jink" end)
-    if n > 1 then
-      return true
-    end
-    return false
+    return player:usedSkillTimes(self.name) == 0 and table.find(Fk:currentRoom().alive_players, function (p)
+      return p ~= player and p.phase ~= Player.NotActive
+    end)
   end,
 }
 local sigong = fk.CreateTriggerSkill{
@@ -3272,7 +3264,6 @@ local sigong = fk.CreateTriggerSkill{
     end
   end,
 }
-gue:addRelatedSkill(gue_trigger)
 huojun:addSkill(gue)
 huojun:addSkill(sigong)
 Fk:loadTranslationTable{
@@ -3280,7 +3271,7 @@ Fk:loadTranslationTable{
   ["#ty__huojun"] = "坚磐石锐",
   ["illustrator:ty__huojun"] = "热图文化",
   ["gue"] = "孤扼",
-  [":gue"] = "每名其他角色的回合内限一次，当你需要使用或打出【杀】或【闪】时，你可以展示所有手牌，若其中【杀】和【闪】的总数不大于1，视为你使用或打出之。",
+  [":gue"] = "每名其他角色的回合内限一次，当你需要使用或打出【杀】或【闪】时，你可以：展示所有手牌，若其中【杀】和【闪】的总数小于2，视为你使用或打出之。",
   ["sigong"] = "伺攻",
   [":sigong"] = "其他角色的回合结束时，若其本回合内使用牌被响应过，你可以将手牌调整至一张，视为对其使用一张需要X张【闪】抵消且伤害+1的【杀】"..
   "（X为你以此法弃置牌数且至少为1）。若此【杀】造成伤害，此技能本轮失效。",

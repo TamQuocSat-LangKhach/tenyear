@@ -2680,36 +2680,81 @@ local ty__fengshih = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.TargetSpecified, fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self) and data.tos and #AimGroup:getAllTargets(data.tos) == 1 then
+    if target == player and player:hasSkill(self) then
       if event == fk.TargetSpecified then
-        return player:getHandcardNum() > player.room:getPlayerById(data.to):getHandcardNum()
+        if not data.firstTarget then return false end
+        local room = player.room
+        local n = player:getHandcardNum()
+        local targets = table.filter(AimGroup:getAllTargets(data.tos), function (id)
+          local to = room:getPlayerById(id)
+          return not to.dead and to:getHandcardNum() < n and not to:isKongcheng()
+        end)
+        if #targets > 0 then
+          self.cost_data = targets
+          return true
+        end
       else
-        return player:getHandcardNum() < player.room:getPlayerById(data.from):getHandcardNum() and not player:isNude()
+        local from = player.room:getPlayerById(data.from)
+        if not from.dead and from:getHandcardNum() > player:getHandcardNum() then
+          self.cost_data = {data.from}
+          return true
+        end
       end
     end
   end,
   on_cost = function (self, event, target, player, data)
     local room = player.room
-    local to = (event == fk.TargetSpecified) and data.to or data.from
-    local cards = room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#ty__fengshih-discard::"..to..":"..data.card.name, true)
-    if #cards > 0 then
-      self.cost_data = cards
-      return true
+    local targets = table.simpleClone(self.cost_data)
+    if #targets == 1 then
+      if room:askForSkillInvoke(player, self.name, nil, "#ty__fengshih-invoke::" .. targets[1]) then
+        room:doIndicate(player.id, targets)
+        self.cost_data = targets
+        return true
+      end
+    else
+      targets = room:askForChoosePlayers(player, targets, 1, 1, "#ty__fengshih-choose", self.name, true)
+      if #targets > 0 then
+        self.cost_data = targets
+        return true
+      end
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = (event == fk.TargetSpecified) and data.to or data.from
-    room:throwCard(self.cost_data, self.name, player, player)
-    to = room:getPlayerById(to)
+    local to = room:getPlayerById(self.cost_data[1])
+    room:askForDiscard(player, 1, 1, true, self.name, false)
+    if player.dead then return false end
     if not to:isNude() then
-      local cid = room:askForCardChosen(player, to, "he", self.name)
-      room:throwCard({cid}, self.name, to, player)
+      local card = room:askForCardChosen(player, to, "he", self.name)
+      room:throwCard({card}, self.name, to, player)
     end
-    data.additionalDamage = (data.additionalDamage or 0) + 1
+    data.extra_data = data.extra_data or {}
+    data.extra_data.ty__fengshih = data.extra_data.ty__fengshih or {}
+    if event == fk.TargetSpecified then
+      table.insert(data.extra_data.ty__fengshih, to.id)
+    else
+      table.insert(data.extra_data.ty__fengshih, player.id)
+    end
   end,
 }
-
+local ty__fengshih_delay = fk.CreateTriggerSkill {
+  name = "#ty__fengshih_delay",
+  mute = true,
+  events = {fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    if player.dead or data.card == nil or target ~= player then return false end
+    local room = player.room
+    local card_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+    if not card_event then return false end
+    local use = card_event.data[1]
+    return use.extra_data and use.extra_data.ty__fengshih and table.contains(use.extra_data.ty__fengshih, player.id)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    data.damage = data.damage + 1
+  end,
+}
+ty__fengshih:addRelatedSkill(ty__fengshih_delay)
 ty__mifangfushiren:addSkill(ty__fengshih)
 
 Fk:loadTranslationTable{
@@ -2717,9 +2762,12 @@ Fk:loadTranslationTable{
   ["#ty__mifangfushiren"] = "进退维谷",
   ["illustrator:ty__mifangfushiren"] = "游漫美绘",
   ["ty__fengshih"] = "锋势",
-  [":ty__fengshih"] = "①当你使用牌指定一名其他角色为唯一目标后，若其手牌数小于你，你可以弃置一张牌，然后弃置其一张牌，且此牌伤害+1；"..
-  "<br>②当你成为其他角色使用牌的唯一目标后，若你的手牌数小于其，你可以弃置一张牌，然后弃置其一张牌，且此牌伤害+1。",
-  ["#ty__fengshih-discard"] = "锋势：可以弃置一张牌，并弃置 %dest 一张牌，然后 %arg 的伤害基数+1",
+  [":ty__fengshih"] = "当你使用牌指定第一个目标后，若其中一名目标角色手牌数小于你，你可以弃置你与其各一张牌，然后此牌对其伤害+1；"..
+  "当你成为其他角色使用牌的目标后，若你的手牌数小于其，你可以弃置你与其各一张牌，然后此牌对你伤害+1。",
+
+  ["#ty__fengshih-invoke"] = "是否对 %dest 发动 锋势，弃置你与其各一张牌",
+  ["#ty__fengshih-choose"] = "是否发动 锋势，弃置你与一名目标角色的各一张牌",
+  ["#ty__fengshih_delay"] = "锋势",
 
   ["$ty__fengshih1"] = "锋芒之锐，势不可挡！",
   ["$ty__fengshih2"] = "势须砥砺，就其锋芒。",

@@ -5601,7 +5601,7 @@ Fk:loadTranslationTable{
   ["~ty__jiachong"] = "诸公勿怪，充乃奉命行事……",
 }
 
---代汉涂高：马日磾 张勋 纪灵 雷薄 桥蕤 董绾
+--代汉涂高：马日磾 张勋 纪灵 雷薄 乐就 桥蕤 董绾
 local ty__mamidi = General(extension, "ty__mamidi", "qun", 4, 6)
 local bingjie = fk.CreateTriggerSkill{
   name = "bingjie",
@@ -5992,6 +5992,74 @@ Fk:loadTranslationTable{
   ["$shuaijie1"] = "弱肉强食，实乃天地至理。",
   ["$shuaijie2"] = "恃强凌弱，方为我辈本色！",
   ["~leibo"] = "此人不可力敌，速退！",
+}
+
+local yuejiu = General(extension, "ty__yuejiu", "qun", 4)
+local ty__cuijin = fk.CreateTriggerSkill{
+  name = "ty__cuijin",
+  anim_type = "offensive",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and (player:inMyAttackRange(target) or target == player)
+      and table.contains({"slash", "duel"}, data.card.trueName) and not player:isNude()
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local card = room:askForDiscard(player, 1, 1, true, self.name, true, nil, "#ty__cuijin-ask::" .. target.id, true)
+    if #card > 0 then
+      room:doIndicate(player.id, {target.id})
+      self.cost_data = card
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:throwCard(self.cost_data, self.name, player, player)
+    data.additionalDamage = (data.additionalDamage or 0) + 1
+    data.extra_data = data.extra_data or {}
+    data.extra_data.ty__cuijinUser = data.extra_data.ty__cuijinUser or {}
+    table.insert(data.extra_data.ty__cuijinUser, player.id)
+  end,
+}
+local ty__cuijin_delay = fk.CreateTriggerSkill{
+  name = "#ty__cuijin_delay",
+  events = {fk.CardUseFinished},
+  mute = true,
+  anim_type = "offensive",
+  can_trigger = function(self, event, target, player, data)
+    return not player.dead and table.contains((data.extra_data or {}).ty__cuijinUser or {}, player.id) and not data.damageDealt
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:notifySkillInvoked(player, ty__cuijin.name, "offensive")
+    player:broadcastSkillInvoke(ty__cuijin.name)
+    player:drawCards(2, ty__cuijin.name)
+    if not target.dead then
+      room:damage{
+        from = player,
+        to = target,
+        damage = 1,
+        skillName = ty__cuijin.name,
+      }
+    end
+  end,
+}
+ty__cuijin:addRelatedSkill(ty__cuijin_delay)
+yuejiu:addSkill(ty__cuijin)
+
+Fk:loadTranslationTable{
+  ["ty__yuejiu"] = "乐就",
+  ["ty__cuijin"] = "催进",
+  [":ty__cuijin"] = "当你或攻击范围内的角色使用【杀】或【决斗】时，你可弃置一张牌，令此【杀】伤害值基数+1。"..
+  "当此牌结算结束后，若此牌未造成伤害，你摸两张牌，对使用者造成1点伤害。",
+
+  ["#ty__cuijin-ask"] = "是否弃置一张牌，对 %dest 发动 催进",
+  ["#ty__cuijin_delay"] = "催进",
+
+  ["$ty__cuijin1"] = "军令如山，诸君焉敢不前？",
+  ["$ty__cuijin2"] = "前攻者赏之，后靡斩之！",
+  ["~ty__yuejiu"] = "此役既败，请速斩我……",
 }
 
 local qiaorui = General(extension, "ty__qiaorui", "qun", 4)

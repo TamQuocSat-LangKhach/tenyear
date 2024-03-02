@@ -2007,9 +2007,9 @@ local ty__zhanyi = fk.CreateTriggerSkill{
     local choices = {"Cancel"}
     for _, id in ipairs(player:getCardIds("he")) do
       local card = Fk:getCardById(id)
-      if not player:prohibitDiscard(card) then
-        table.insertIfNeed(choices, card:getTypeString())
-      end
+      --if not player:prohibitDiscard(card) then
+      table.insertIfNeed(choices, card:getTypeString())
+      --end
     end
     if #choices == 1 then return end
     local choice = player.room:askForChoice(player, choices, self.name, "#ty__zhanyi-choice", false, all_choices)
@@ -2021,48 +2021,79 @@ local ty__zhanyi = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local types = {"basic", "trick", "equip"}
-    table.removeOne(types, self.cost_data)
-    room:setPlayerMark(player, "ty__zhanyi_"..types[1].."-turn", 1)
-    room:setPlayerMark(player, "ty__zhanyi_"..types[2].."-turn", 1)
-    room:setPlayerMark(player, "@ty__zhanyi-turn", Fk:translate(types[1].."_char").." "..Fk:translate(types[2].."_char"))
-    local cards = table.filter(player:getCardIds("he"), function(id) return Fk:getCardById(id):getTypeString() == self.cost_data end)
-    room:throwCard(cards, self.name, player, player)
+    local card_type = self.cost_data
+    local mark = U.getMark(player, "@[cardtypes]ty__zhanyi")
+    if card_type == "basic" then
+      table.insertTableIfNeed(mark, {2, 3})
+    elseif card_type == "trick" then
+      table.insertTableIfNeed(mark, {1, 3})
+    elseif card_type == "equip" then
+      table.insertTableIfNeed(mark, {1, 2})
+    end
+    room:setPlayerMark(player, "@[cardtypes]ty__zhanyi", mark)
+    local cards = table.filter(player:getCardIds("he"), function(id)
+      local card = Fk:getCardById(id)
+      return card:getTypeString() == card_type and not player:prohibitDiscard(card)
+    end)
+    if #cards > 0 then
+      room:throwCard(cards, self.name, player, player)
+    end
+  end,
+
+  refresh_events = {fk.TurnStart},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark("@[cardtypes]ty__zhanyi") ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@[cardtypes]ty__zhanyi", 0)
   end,
 }
 local ty__zhanyi_trigger = fk.CreateTriggerSkill{
   name = "#ty__zhanyi_trigger",
   mute = true,
-  events = {fk.CardUsing},
+  events = {fk.CardUsing, fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:getMark("ty__zhanyi_"..data.card:getTypeString().."-turn") > 0
+    if event == fk.CardUsing then
+      return target == player and not player.dead and
+      data.card.type < 3 and table.contains(U.getMark(player, "@[cardtypes]ty__zhanyi"), data.card.type)
+    elseif table.contains(U.getMark(player, "@[cardtypes]ty__zhanyi"), 3) then
+      for _, move in ipairs(data) do
+        if move.to and move.to == player.id and move.toArea == Player.Equip and #move.moveInfo > 0 then
+          return true
+        end
+      end
+    end
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if data.card.type == Card.TypeBasic then
-      if data.card.is_damage_card then
+    if event == fk.CardUsing then
+      if data.card.type == Card.TypeBasic then
+        if data.card.is_damage_card then
+          player:broadcastSkillInvoke("ty__zhanyi")
+          room:notifySkillInvoked(player, "ty__zhanyi", "offensive")
+          data.additionalDamage = (data.additionalDamage or 0) + 1
+        elseif data.card.name == "peach" or (data.card.name == "analeptic" and data.extra_data and data.extra_data.analepticRecover) then
+          player:broadcastSkillInvoke("ty__zhanyi")
+          room:notifySkillInvoked(player, "ty__zhanyi", "support")
+          data.additionalRecover = (data.additionalRecover or 0) + 1
+        end
+        if data.card.trueName == "slash" and data.extra_data and data.extra_data.drankBuff then
+          data.additionalDamage = (data.additionalDamage or 0) + data.extra_data.drankBuff
+        end
+      elseif data.card.type == Card.TypeTrick then
         player:broadcastSkillInvoke("ty__zhanyi")
-        room:notifySkillInvoked(player, "ty__zhanyi", "offensive")
-        data.additionalDamage = (data.additionalDamage or 0) + 1
-      elseif data.card.name == "peach" or (data.card.name == "analeptic" and data.extra_data and data.extra_data.analepticRecover) then
-        player:broadcastSkillInvoke("ty__zhanyi")
-        room:notifySkillInvoked(player, "ty__zhanyi", "support")
-        data.additionalRecover = (data.additionalRecover or 0) + 1
+        room:notifySkillInvoked(player, "ty__zhanyi", "drawcard")
+        player:drawCards(1, "ty__zhanyi")
       end
-      if data.card.trueName == "slash" and data.extra_data and data.extra_data.drankBuff then
-        data.additionalDamage = (data.additionalDamage or 0) + data.extra_data.drankBuff
-      end
-    elseif data.card.type == Card.TypeTrick then
+    else
       player:broadcastSkillInvoke("ty__zhanyi")
-      room:notifySkillInvoked(player, "ty__zhanyi", "drawcard")
-      player:drawCards(1, "ty__zhanyi")
-    elseif data.card.type == Card.TypeEquip then
-      local targets = table.map(table.filter(room:getOtherPlayers(player), function(p) return not p:isNude() end), Util.IdMapper)
-      if #targets == 0 then return end
+      room:notifySkillInvoked(player, "ty__zhanyi", "control")
+      local targets = table.map(table.filter(room.alive_players, function(p)
+        return p ~= player and not p:isNude() end), Util.IdMapper)
+      if #targets == 0 then return false end
       local to = room:askForChoosePlayers(player, targets, 1, 1, "#ty__zhanyi-discard", "ty__zhanyi", true)
       if #to > 0 then
-        player:broadcastSkillInvoke("ty__zhanyi")
-        room:notifySkillInvoked(player, "ty__zhanyi", "control")
         to = room:getPlayerById(to[1])
         local id = room:askForCardChosen(player, to, "he", "ty__zhanyi")
         room:throwCard({id}, "ty__zhanyi", to, player)
@@ -2073,13 +2104,13 @@ local ty__zhanyi_trigger = fk.CreateTriggerSkill{
 local ty__zhanyi_targetmod = fk.CreateTargetModSkill{
   name = "#ty__zhanyi_targetmod",
   bypass_distances = function(self, player, skill, card)
-    return player:getMark("ty__zhanyi_basic-turn") > 0 and card and card.type == Card.TypeBasic
+    return table.contains(U.getMark(player, "@[cardtypes]ty__zhanyi"), 1) and card and card.type == Card.TypeBasic
   end,
 }
 local ty__zhanyi_maxcards = fk.CreateMaxCardsSkill{
   name = "#ty__zhanyi_maxcards",
   exclude_from = function(self, player, card)
-    return player:getMark("ty__zhanyi_trick-turn") > 0 and card.type == Card.TypeTrick
+    return table.contains(U.getMark(player, "@[cardtypes]ty__zhanyi"), 2) and card.type == Card.TypeTrick
   end,
 }
 ty__zhanyi:addRelatedSkill(ty__zhanyi_trigger)
@@ -2091,16 +2122,16 @@ Fk:loadTranslationTable{
   ["#ty__zhuling"] = "良将之亚",
   ["illustrator:ty__zhuling"] = "XXX&Karneval",
   ["ty__zhanyi"] = "战意",
-  [":ty__zhanyi"] = "出牌阶段开始时，你可以弃置一种类别的所有牌，另外两种类别的牌本回合获得以下效果：<br>"..
-  "基本牌：你使用基本牌无距离限制且造成的伤害和回复值+1，使用【酒】使【杀】伤害基数值增加的效果+1；<br>"..
+  [":ty__zhanyi"] = "出牌阶段开始时，你可以弃置一种类别的所有牌，另外两种类别的牌获得以下效果直到你的下个回合开始：<br>"..
+  "基本牌：你使用基本牌无距离限制且造成的伤害和回复值+1；<br>"..
   "锦囊牌：你使用锦囊牌时摸一张牌，你的锦囊牌不计入手牌上限；<br>"..
-  "装备牌：你使用装备牌时，可以弃置一名其他角色的一张牌。",
-  ["#ty__zhanyi-choice"] = "战意：弃置一种类别所有的牌，本回合另两张类别的牌获得额外效果",
-  ["@ty__zhanyi-turn"] = "战意",
+  "装备牌：当装备牌置入你的装备区后，可以弃置一名其他角色的一张牌。",
+  ["#ty__zhanyi-choice"] = "是否发动 战意，弃置一种类别所有的牌，另两张类别的牌获得额外效果",
+  ["@[cardtypes]ty__zhanyi"] = "战意",
   ["#ty__zhanyi-discard"] = "战意：你可以弃置一名角色一张牌",
 
-  ["$ty__zhanyi1"] = "以役兴国，战意磅礴！",
-  ["$ty__zhanyi2"] = "此命不已，此战不休！",
+  ["$ty__zhanyi1"] = "此命不已，此战不休！",
+  ["$ty__zhanyi2"] = "以役兴国，战意磅礴！",
   ["~ty__zhuling"] = "吾，错付曹公……",
 }
 

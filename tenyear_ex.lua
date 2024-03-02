@@ -3860,9 +3860,14 @@ local ty_ex__zhongyong = fk.CreateTriggerSkill{
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
     local ids = player.room:getSubcardsByRule(data.card, { Card.Processing })
-    for _, c in ipairs(data.cardsResponded) do
+    for _, c in ipairs(data.cardsResponded or {}) do
       table.insertTableIfNeed(ids, player.room:getSubcardsByRule(c, { Card.DiscardPile }))
     end
+
+    if #ids < 1 then
+      return false
+    end
+
     room:moveCardTo(ids, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, true, player.id)
     if to.dead then return end
     if table.find(ids, function(id) return Fk:getCardById(id).color == Card.Black end) then

@@ -308,7 +308,14 @@ local daoshu = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     local suits = {"log_spade", "log_club", "log_heart", "log_diamond"}
     local choice = room:askForChoice(player, suits, self.name)
-    room:doBroadcastNotify("ShowToast", Fk:translate("#daoshu_chose") .. Fk:translate(choice))
+    room:sendLog{
+      type = "#DaoshuLog",
+      from = player.id,
+      to = effect.tos,
+      arg = choice,
+      arg2 = self.name,
+      toast = true,
+    }
     local card = room:askForCardChosen(player, target, "h", self.name)
     room:obtainCard(player, card, true, fk.ReasonPrey)
     if Fk:getCardById(card):getSuitString(true) == choice then
@@ -350,7 +357,7 @@ Fk:loadTranslationTable{
   ["daoshu"] = "盗书",
   [":daoshu"] = "出牌阶段限一次，你可以选择一名其他角色并选择一种花色，然后获得其一张手牌。若此牌与你选择的花色："..
   "相同，你对其造成1点伤害且此技能视为未发动过；不同，你交给其一张其他花色的手牌（若没有需展示所有手牌）。",
-  ["#daoshu_chose"] = "蒋干盗书选择了",
+  ["#DaoshuLog"] = "%from 对 %to 发动了 “%arg2”，选择了 %arg",
   ["#daoshu-give"] = "盗书：交给 %dest 一张非%arg手牌",
 
   ["$weicheng1"] = "略施谋略，敌军便信以为真。",

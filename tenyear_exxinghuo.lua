@@ -267,7 +267,13 @@ local ty_ex__jiaozhao = fk.CreateActiveSkill{
       end
     end
     local choice = room:askForChoice(target, names, self.name, "#ty_ex__jiaozhao-choice:"..player.id.."::"..c:toLogString())
-    room:doBroadcastNotify("ShowToast", Fk:translate("ty_ex__jiaozhao_choice")..Fk:translate(choice))
+    room:sendLog{
+      type = "#TYEXJiaozhaoChoice",
+      from = player.id,
+      arg = choice,
+      arg2 = self.name,
+      toast = true,
+    }
     if room:getCardOwner(c) == player and room:getCardArea(c) == Card.PlayerHand then
       room:setCardMark(c, "ty_ex__jiaozhao-inhand", choice)
       room:setCardMark(c, "@ty_ex__jiaozhao-inhand", Fk:translate(choice))
@@ -372,7 +378,13 @@ local ty_ex__jiaozhaoEx1 = fk.CreateActiveSkill{
       end
     end
     local choice = room:askForChoice(player, names, "ty_ex__jiaozhao", "#ty_ex__jiaozhao-choice:"..player.id.."::"..c:toLogString())
-    room:doBroadcastNotify("ShowToast", Fk:translate("ty_ex__jiaozhao_choice")..Fk:translate(choice))
+    room:sendLog{
+      type = "#TYEXJiaozhaoChoice",
+      from = player.id,
+      arg = choice,
+      arg2 = self.name,
+      toast = true,
+    }
     if room:getCardOwner(c) == player and room:getCardArea(c) == Card.PlayerHand then
       room:setCardMark(c, "ty_ex__jiaozhao-inhand", choice)
       room:setCardMark(c, "@ty_ex__jiaozhao-inhand", Fk:translate(choice))
@@ -410,7 +422,13 @@ local ty_ex__jiaozhaoEx2 = fk.CreateActiveSkill{
       end
     end
     local choice = room:askForChoice(player, names, "ty_ex__jiaozhao", "#ty_ex__jiaozhao-choice:"..player.id.."::"..c:toLogString())
-    room:doBroadcastNotify("ShowToast", Fk:translate("ty_ex__jiaozhao_choice")..Fk:translate(choice))
+    room:sendLog{
+      type = "#TYEXJiaozhaoChoice",
+      from = player.id,
+      arg = choice,
+      arg2 = self.name,
+      toast = true,
+    }
     room:setPlayerMark(player, "ty_ex__jiaozhao_"..Fk:cloneCard(choice):getTypeString().."-phase", 1)
     if room:getCardOwner(c) == player and room:getCardArea(c) == Card.PlayerHand then
       room:setCardMark(c, "ty_ex__jiaozhao-inhand", choice)
@@ -463,7 +481,7 @@ Fk:loadTranslationTable{
   ["#ty_ex__jiaozhaoEx2"] = "矫诏：展示一张手牌并声明一种基本牌或普通锦囊牌，你本回合可以将此牌当声明的牌使用",
   ["#ty_ex__jiaozhaoVS"] = "矫诏：你可以将“矫诏”牌当本回合被声明的牌使用",
   ["#ty_ex__jiaozhao-choice"] = "矫诏：声明一种牌名，%src 本回合可以将%arg当此牌使用",
-  ["ty_ex__jiaozhao_choice"] = "矫诏声明牌名：",
+  ["#TYEXJiaozhaoChoice"] = "%from “%arg2” 声明牌名 %arg",
   ["@ty_ex__jiaozhao-inhand"] = "矫诏",
 
   ["$ty_ex__jiaozhao1"] = "事关社稷，万望阁下谨慎行事。",

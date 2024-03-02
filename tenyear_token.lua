@@ -58,8 +58,8 @@ local quenchedBladeSkill = fk.CreateTriggerSkill{
   attached_equip = "quenched_blade",
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash" and not data.chain and
-      player:usedSkillTimes(self.name, Player.HistoryTurn) < 2
+    return target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash" and not player:isNude()
+    and U.damageByCardEffect(player.room) and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2
   end,
   on_cost = function(self, event, target, player, data)
     local cards = player.room:askForDiscard(player, 1, 1, true, self.name, true,
@@ -270,7 +270,7 @@ local siegeEngineSkill = fk.CreateTriggerSkill{
       return target == player and player:hasSkill(self) and player.phase == Player.Play
     elseif event == fk.Damage then
       return target == player and player:hasSkill(self) and data.card and table.contains(data.card.skillNames, self.name) and
-        not data.chain and not data.to.dead and not data.to:isNude()
+      U.damageByCardEffect(player.room) and not data.to.dead and not data.to:isNude()
     elseif event == fk.BeforeCardsMove then
       if player:getEquipment(Card.SubtypeTreasure) and Fk:getCardById(player:getEquipment(Card.SubtypeTreasure)).name == "siege_engine" and
         (player:getMark("xianzhu1") == 0 and player:getMark("xianzhu2") == 0 and player:getMark("xianzhu3") == 0) then

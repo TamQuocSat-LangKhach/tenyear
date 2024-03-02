@@ -5071,7 +5071,7 @@ local ty__xingzhao = fk.CreateTriggerSkill{
       elseif event == fk.EventPhaseChanging then
         return target == player and (data.to == Player.Judge or data.to == Player.Discard) and n > 2
       elseif event == fk.DamageCaused then
-        return target == player and data.card and not data.chain and (n == 0 or n > 3)
+        return target == player and data.card and U.damageByCardEffect(player.room) and (n == 0 or n > 3)
       end
     end
   end,

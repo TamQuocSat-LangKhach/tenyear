@@ -604,7 +604,7 @@ local ty__jianji = fk.CreateActiveSkill{
     return Self:getAttackRange()
   end,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name) == 0
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and player:getAttackRange() > 0
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
@@ -614,34 +614,34 @@ local ty__jianji = fk.CreateActiveSkill{
         return true
       else
         for _, id in ipairs(selected) do
-          if IsNext(target, Fk:currentRoom():getPlayerById(id)) or IsNext(Fk:currentRoom():getPlayerById(id), target) then
+          local p = Fk:currentRoom():getPlayerById(id)
+          if target:getNextAlive() == p or p:getNextAlive() == target then
             return true
           end
         end
-        return false
       end
     end
   end,
   on_use = function(self, room, effect)
-    for _, id in ipairs(effect.tos) do
-      room:askForDiscard(room:getPlayerById(id), 1, 1, true, self.name, false, ".")
+    local tos = effect.tos
+    room:sortPlayersByAction(tos)
+    tos = table.map(tos, Util.Id2PlayerMapper)
+    for _, p in ipairs(tos) do
+      room:askForDiscard(p, 1, 1, true, self.name, false)
     end
-    if #effect.tos < 2 then return end
-    local n = 0
-    for _, id in ipairs(effect.tos) do
-      local num = #room:getPlayerById(id).player_cards[Player.Hand]
-      if num > n then
-        n = num
-      end
+    if #tos < 2 then return end
+    local max_num = 0
+    for _, p in ipairs(tos) do
+      max_num = math.max(max_num, p:getHandcardNum())
     end
-    local src = table.filter(effect.tos, function(id) return #room:getPlayerById(id).player_cards[Player.Hand] == n end)
-    src = room:getPlayerById(table.random(src))
-    table.removeOne(effect.tos, src.id)
-    local targets = table.filter(effect.tos, function(id) return not src:isProhibited(room:getPlayerById(id), Fk:cloneCard("slash")) end)
+    local from = table.filter(tos, function(p) return p:getHandcardNum() == max_num end)
+    from = table.random(from)
+    table.removeOne(tos, from)
+    local targets = table.filter(tos, function(p) return not from:isProhibited(p, Fk:cloneCard("slash")) end)
     if #targets == 0 then return end
-    local to = room:askForChoosePlayers(src, effect.tos, 1, 1, "#ty__jianji-choose", self.name, true)
-    if #to > 0 then
-      room:useVirtualCard("slash", nil, src, room:getPlayerById(to[1]), self.name, true)
+    local tos = room:askForChoosePlayers(from, table.map(targets, Util.IdMapper), 1, 1, "#ty__jianji-choose", self.name, true)
+    if #tos > 0 then
+      room:useVirtualCard("slash", nil, from, room:getPlayerById(tos[1]), self.name, true)
     end
   end,
 }

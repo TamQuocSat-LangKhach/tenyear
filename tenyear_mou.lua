@@ -6,6 +6,7 @@ local U = require "packages/utility/utility"
 Fk:loadTranslationTable{
   ["tenyear_mou"] = "十周年-谋定天下",
   ["tymou"] = "新服谋",
+  ["tymou2"] = "新服谋",
 }
 
 --谋定天下：周瑜、鲁肃、司马懿
@@ -315,16 +316,204 @@ Fk:loadTranslationTable{
   ["~tymou__lusu"] = "虎可为之用，亦可为之伤……",
 }
 
+
+local tymou__simayi = General(extension, "tymou__simayi", "wei", 3)
+local pingliao = fk.CreateTriggerSkill{
+  name = "pingliao",
+  anim_type = "control",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    return player == target and player:hasSkill(self) and data.card.trueName == "slash"
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.filter(room:getAlivePlayers(), function (p)
+      return player:inMyAttackRange(p)
+    end)
+    room:doIndicate(player.id, table.map(targets, Util.IdMapper))
+    local tos = TargetGroup:getRealTargets(data.tos)
+    local drawcard = false
+    local targets2 = {}
+    for _, p in ipairs(targets) do
+      local card = room:askForResponse(p, self.name, ".|.|heart,diamond|.|.|basic", "#pingliao-ask:" .. player.id, true)
+      if card then
+        room:responseCard{
+          from = p.id,
+          card = card
+        }
+        if not table.contains(tos, p.id) then
+          drawcard = true
+        end
+      elseif table.contains(tos, p.id) then
+        table.insert(targets2, p)
+      end
+    end
+    for _, p in ipairs(targets2) do
+      room:setPlayerMark(p, "@@pingliao-turn", 1)
+    end
+    if player.dead then return false end
+    if drawcard then
+      player:drawCards(2, self.name)
+      room:addPlayerMark(player, MarkEnum.SlashResidue .. "-phase")
+    end
+  end,
+}
+local pingliao_prohibit = fk.CreateProhibitSkill{
+  name = "#pingliao_prohibit",
+  prohibit_use = function(self, player, card)
+    if player:getMark("@@pingliao-turn") > 0 then
+      local subcards = card:isVirtual() and card.subcards or {card.id}
+      return #subcards > 0 and table.every(subcards, function(id)
+        return table.contains(player:getCardIds(Player.Hand), id)
+      end)
+    end
+  end,
+  prohibit_response = function(self, player, card)
+    if player:getMark("@@pingliao-turn") > 0 then
+      local subcards = card:isVirtual() and card.subcards or {card.id}
+      return #subcards > 0 and table.every(subcards, function(id)
+        return table.contains(player:getCardIds(Player.Hand), id)
+      end)
+    end
+  end,
+}
+local quanmou = fk.CreateActiveSkill{
+  name = "quanmou",
+  anim_type = "switch",
+  switch_skill_name = "quanmou",
+  card_num = 0,
+  target_num = 1,
+  prompt = function ()
+    return Self:getSwitchSkillState("quanmou", false) == fk.SwitchYang and "#quanmou-Yang" or "#quanmou-Yin"
+  end,
+  can_use = Util.TrueFunc,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if #selected == 0 and not table.contains(U.getMark(Self, "quanmou_targets-phase"), to_select) then
+      local target = Fk:currentRoom():getPlayerById(to_select)
+      return not target:isNude() and Self:inMyAttackRange(target)
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local mark = U.getMark(player, "quanmou_targets-phase")
+    table.insert(mark, target.id)
+    room:setPlayerMark(player, "quanmou_targets-phase", mark)
+
+    local isYang = player:getSwitchSkillState(self.name, true) == fk.SwitchYang
+    local from_name = "tymou__simayi"
+    local to_name = "tymou__simayi"
+    if isYang then
+      to_name = "tymou2__simayi"
+    else
+      from_name = "tymou2__simayi"
+    end
+    if player.general == from_name then
+      player.general = to_name
+      room:broadcastProperty(player, "general")
+    end
+    if player.deputyGeneral == from_name then
+      player.deputyGeneral = to_name
+      room:broadcastProperty(player, "deputyGeneral")
+    end
+
+    local card = room:askForCard(target, 1, 1, true, self.name, false, ".", "#quanmou-give::"..player.id)
+    room:obtainCard(player.id, card[1], false, fk.ReasonGive, target.id)
+    if player.dead or target.dead then return false end
+    room:setPlayerMark(target, "@quanmou-phase", isYang and "yang" or "yin")
+    local mark_name = "quanmou_" .. (isYang and "yang" or "yin") .. "-phase"
+    mark = U.getMark(player, mark_name)
+    table.insert(mark, target.id)
+    room:setPlayerMark(player, mark_name, mark)
+  end,
+}
+local quanmou_delay = fk.CreateTriggerSkill{
+  name = "#quanmou_delay",
+  events = {fk.DamageCaused, fk.Damage},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if player.dead or player.phase ~= Player.Play or player ~= target then return false end
+    if event == fk.DamageCaused then
+      return table.contains(U.getMark(player, "quanmou_yang-phase"), data.to.id)
+    elseif event == fk.Damage then
+      return table.contains(U.getMark(player, "quanmou_yin-phase"), data.to.id)
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {data.to.id})
+    room:setPlayerMark(data.to, "@quanmou-phase", 0)
+    if event == fk.DamageCaused then
+      local mark = U.getMark(player, "quanmou_yang-phase")
+      table.removeOne(mark, data.to.id)
+      room:setPlayerMark(player, "quanmou_yang-phase", mark)
+      room:notifySkillInvoked(player, "quanmou", "defensive")
+      if player:getSwitchSkillState("quanmou", false) == fk.SwitchYang then
+        player:broadcastSkillInvoke("quanmou")
+      end
+      return true
+    elseif event == fk.Damage then
+      local mark = U.getMark(player, "quanmou_yin-phase")
+      table.removeOne(mark, data.to.id)
+      room:setPlayerMark(player, "quanmou_yin-phase", mark)
+      room:notifySkillInvoked(player, "quanmou", "offensive")
+      if player:getSwitchSkillState("quanmou", false) == fk.SwitchYin then
+        player:broadcastSkillInvoke("quanmou")
+      end
+      local targets = table.filter(room.alive_players, function (p)
+        return p ~= player and p ~= data.to
+      end)
+      if #targets == 0 then return false end
+      targets = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 3, "#quanmou-damage", "quanmou")
+      if #targets == 0 then return false end
+      room:sortPlayersByAction(targets)
+      for _, id in ipairs(targets) do
+        local p = room:getPlayerById(id)
+        if not p.dead then
+          room:damage{
+            from = player,
+            to = p,
+            damage = 1,
+            skillName = "quanmou",
+          }
+        end
+      end
+    end
+  end,
+}
+pingliao:addRelatedSkill(pingliao_prohibit)
+quanmou:addRelatedSkill(quanmou_delay)
+tymou__simayi:addSkill(pingliao)
+tymou__simayi:addSkill(quanmou)
+
+local tymou2__simayi = General(extension, "tymou2__simayi", "wei", 3)
+tymou2__simayi.hidden = true
+tymou2__simayi:addSkill("pingliao")
+tymou2__simayi:addSkill("quanmou")
+
 Fk:loadTranslationTable{
   ["tymou__simayi"] = "谋司马懿",
   ["#tymou__simayi"] = "韬谋韫势",
-  --["illustrator:tymou__simayi"] = "",
+  ["illustrator:tymou__simayi"] = "米糊PU",
   ["pingliao"] = "平辽",
-  [":pingliao"] = "锁定技，当你使用【杀】指定目标时，不公开指定的目标。你攻击范围内的其他角色依次选择是否打出一张红色基本牌。"..
+  [":pingliao"] = "锁定技，<font color='red'>当你使用【杀】指定目标时，不公开指定的目标（暂时无法生效）。</font>"..
+  "你攻击范围内的其他角色依次选择是否打出一张红色基本牌。"..
   "若此【杀】的目标未打出基本牌，其本回合无法使用或打出手牌；若有至少一名非目标打出基本牌，你摸两张牌且此阶段使用【杀】的次数上限+1。",
   ["quanmou"] = "权谋",
   [":quanmou"] = "转换技，出牌阶段每名角色限一次，你可以令攻击范围内的一名其他角色交给你一张牌，"..
   "阳：防止你此阶段下次对其造成的伤害；阴：你此阶段下次对其造成伤害后，可以对至多三名该角色外的其他角色各造成1点伤害。",
+
+  ["#pingliao-ask"] = "平辽：%from 使用了一张【杀】，你可以打出一张红色基本牌",
+  ["@@pingliao-turn"] = "平辽",
+  ["#quanmou-Yang"] = "发动 权谋（阳），选择攻击范围内的一名角色",
+  ["#quanmou-Yin"] = "发动 权谋（阴），选择攻击范围内的一名角色",
+  ["#quanmou-give"] = "权谋：选择一张牌交给 %dest ",
+  ["@quanmou-phase"] = "权谋",
+  ["#quanmou_delay"] = "权谋",
+  ["#quanmou-damage"] = "权谋：你可以选择1-3名角色，对这些角色各造成1点伤害",
 
   --阳形态
   ["$pingliao1"] = "烽烟起大荒，戎军远役，问不臣者谁？",
@@ -334,11 +523,14 @@ Fk:loadTranslationTable{
   ["~tymou__simayi"] = "以权谋而立者，必失大义于千秋……",
 
   --阴形态
-  ["$pingliao3"] = "率土之滨皆为王臣，辽土亦居普天之下。",
-  ["$pingliao4"] = "青云远上，寒锋试刃，北雁当寄红翎。",
-  ["$quanmou3"] = "鸿门之宴虽歇，会稽之胆尚悬，孤岂姬、项之辈？",
-  ["$quanmou4"] = "昔藏青锋于沧海，今潮落，可现兵！",
-  ["~tymou__simayi2"] = "人立中流，非已力可向，实大势所迫……",
+  ["tymou2__simayi"] = "谋司马懿",
+  ["#tymou2__simayi"] = "韬谋韫势",
+  ["illustrator:tymou2__simayi"] = "鬼画府",
+  ["$pingliao_tymou2__simayi1"] = "率土之滨皆为王臣，辽土亦居普天之下。",
+  ["$pingliao_tymou2__simayi2"] = "青云远上，寒锋试刃，北雁当寄红翎。",
+  ["$quanmou_tymou2__simayi1"] = "鸿门之宴虽歇，会稽之胆尚悬，孤岂姬、项之辈？",
+  ["$quanmou_tymou2__simayi2"] = "昔藏青锋于沧海，今潮落，可现兵！",
+  ["~tymou2__simayi"] = "人立中流，非已力可向，实大势所迫……",
 }
 
 --冢虎狼顾：曹爽

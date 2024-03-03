@@ -271,7 +271,10 @@ local xiongyis = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local prompt = "#xiongyis1-invoke:::"..tostring(math.min(3, player.maxHp))
-    if table.find(player.room.alive_players, function(p) return string.find(p.general, "xushi") end) then
+    if table.find(player.room.alive_players, function(p)
+      return Fk.generals[p.general].trueName == "xushi"
+      or (Fk.generals[p.deputyGeneral] and Fk.generals[p.deputyGeneral].trueName == "xushi") end)
+    then
       prompt = "#xiongyis2-invoke"
     end
     if player.room:askForSkillInvoke(player, self.name, nil, prompt) then
@@ -291,6 +294,7 @@ local xiongyis = fk.CreateTriggerSkill{
         skillName = self.name
       })
       room:changeHero(player, "xushi", false, false, true, false)
+      room:findGeneral("xushi")
     else
       room:recover({
         who = player,
@@ -2166,6 +2170,7 @@ local huizhi = fk.CreateTriggerSkill{
     if #self.cost_data > 0 then
       room:throwCard(self.cost_data, self.name, player, player)
     end
+    if player.dead then return end
     local n = 0
     for _, p in ipairs(room.alive_players) do
       n = math.max(n, p:getHandcardNum())

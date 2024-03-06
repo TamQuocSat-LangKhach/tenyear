@@ -2141,8 +2141,9 @@ local choutao = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.TargetSpecified, fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.card.trueName == "slash" and data.firstTarget and
-      not player.room:getPlayerById(data.from):isNude()
+    return target == player and player:hasSkill(self) and data.card.trueName == "slash"
+      and not player.room:getPlayerById(data.from):isNude()
+      and (event == fk.TargetConfirmed or data.firstTarget)
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#choutao-invoke::"..data.from)
@@ -2152,10 +2153,11 @@ local choutao = fk.CreateTriggerSkill{
     local from = room:getPlayerById(data.from)
     local id = room:askForCardChosen(player, from, "he", self.name)
     room:throwCard({id}, self.name, from, player)
-    data.disresponsive = true
-    if data.from == player.id then
+    if data.from == player.id and not data.extraUse then
+      data.extraUse = true
       player:addCardUseHistory(data.card.trueName, -1)
     end
+    data.disresponsiveList = table.map(room.alive_players, Util.IdMapper)
   end,
 }
 local xiangshu = fk.CreateTriggerSkill{
@@ -2164,40 +2166,40 @@ local xiangshu = fk.CreateTriggerSkill{
   frequency = Skill.Limited,
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Finish and player:getMark("xiangshu-turn") > 0 and
-      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+    return target == player and player:hasSkill(self) and player.phase == Player.Finish
+    and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+    and #U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == player end) > 0
+    and table.find(player.room.alive_players, function(p) return p:isWounded() end)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.map(table.filter(room:getAlivePlayers(), function(p)
-      return p:isWounded() end), Util.IdMapper)
+    local n = 0
+    U.getActualDamageEvents(player.room, 1, function(e)
+      if e.data[1].from == player then
+        n = n + e.data[1].damage
+      end
+    end)
+    local targets = table.map(table.filter(room.alive_players, function(p) return p:isWounded() end), Util.IdMapper)
     if #targets == 0 then return end
-    local n = math.min(player:getMark("xiangshu-turn"), 5)
-    local to = room:askForChoosePlayers(player, targets, 1, 1, "#xiangshu-invoke:::"..n..":"..n, self.name, true)
+    n = math.min(n, 5)
+    local to = room:askForChoosePlayers(player, targets, 1, 1, "#xiangshu-invoke:::"..n, self.name, true)
     if #to > 0 then
-      self.cost_data = to[1]
+      self.cost_data = {to[1], n}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(self.cost_data)
-    local n = math.min(player:getMark("xiangshu-turn"), 5)
+    local to = room:getPlayerById(self.cost_data[1])
+    local n = self.cost_data[2]
     room:recover({
       who = to,
       num = math.min(n, to:getLostHp()),
       recoverBy = player,
       skillName = self.name
     })
+    if to.dead then return end
     to:drawCards(n, self.name)
-  end,
-
-  refresh_events = {fk.Damage},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self, true) and player.phase ~= Player.NotActive
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "xiangshu-turn", data.damage)
   end,
 }
 yanrou:addSkill(choutao)
@@ -2207,11 +2209,11 @@ Fk:loadTranslationTable{
   ["#yanrou"] = "冠玉啸北",
   ["illustrator:yanrou"] = "凝聚永恒",
   ["choutao"] = "仇讨",
-  [":choutao"] = "当你使用【杀】指定目标后或成为【杀】的目标后，你可以弃置使用者一张牌，令此【杀】不能被响应；若你是使用者，则此【杀】不计入次数限制。",
+  [":choutao"] = "当你使用【杀】指定目标后，或你成为【杀】的目标后，你可以弃置此【杀】使用者的一张牌，令此【杀】所有目标角色不能响应此【杀】。若使用者为你，此【杀】不计入次数。",
   ["xiangshu"] = "襄戍",
   [":xiangshu"] = "限定技，结束阶段，若你本回合造成过伤害，你可令一名已受伤角色回复X点体力并摸X张牌（X为你本回合造成的伤害值且最多为5）。",
   ["#choutao-invoke"] = "仇讨：你可以弃置 %dest 一张牌令此【杀】不能被响应；若为你则此【杀】不计次",
-  ["#xiangshu-invoke"] = "襄戍：你可令一名已受伤角色回复%arg点体力并摸%arg2张牌",
+  ["#xiangshu-invoke"] = "襄戍：你可令一名已受伤角色回复 %arg 点体力并摸 %arg 张牌",
 
   ["$choutao1"] = "大恨深仇，此剑讨之！",
   ["$choutao2"] = "是非恩怨，此役决之！",

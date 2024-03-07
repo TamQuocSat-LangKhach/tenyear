@@ -929,20 +929,27 @@ local koujing = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     for _, id in ipairs(self.cost_data) do
-      player.room:setCardMark(Fk:getCardById(id), "@@koujing-turn", 1)
+      player.room:setCardMark(Fk:getCardById(id), "@@koujing-inhand", 1)
     end
+    player:filterHandcards()
   end,
 
-  refresh_events = {fk.AfterCardsMove},
-  can_refresh = Util.TrueFunc,
+  refresh_events = {fk.AfterTurnEnd, fk.PreCardUse},
+  can_refresh = function (self, event, target, player, data)
+    if event == fk.AfterTurnEnd then
+      return target == player and table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@koujing-inhand") > 0 end)
+    else
+      return target == player and table.contains(data.card.skillNames, "koujing")
+    end
+  end,
   on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    for _, move in ipairs(data) do
-      if move.toArea ~= Card.Processing then
-        for _, info in ipairs(move.moveInfo) do
-          room:setCardMark(Fk:getCardById(info.cardId), "@@koujing-turn", 0)
-        end
+    if event == fk.AfterTurnEnd then
+      for _, id in ipairs(player.player_cards[Player.Hand]) do
+        player.room:setCardMark(Fk:getCardById(id), "@@koujing-inhand", 0)
       end
+      player:filterHandcards()
+    else
+      data.extraUse = true
     end
   end,
 }
@@ -950,7 +957,7 @@ local koujing_filter = fk.CreateFilterSkill{
   name = "#koujing_filter",
   anim_type = "offensive",
   card_filter = function(self, card, player)
-    return card:getMark("@@koujing-turn") > 0 and table.contains(player.player_cards[Player.Hand], card.id)
+    return card:getMark("@@koujing-inhand") > 0 and table.contains(player.player_cards[Player.Hand], card.id)
   end,
   view_as = function(self, card)
     local c = Fk:cloneCard("slash", card.suit, card.number)
@@ -971,54 +978,20 @@ local koujing_trigger = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if data.from and data.from == player and target ~= player and not player.dead and
       data.card and table.contains(data.card.skillNames, "koujing") then
-      return table.find(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@koujing-turn") > 0 end)
+      return table.find(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@koujing-inhand") > 0 end)
     end
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local ids = table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@koujing-turn") > 0 end)
+    local ids = table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@koujing-inhand") > 0 end)
     player:showCards(ids)
     if player.dead or target.dead or target:isKongcheng() then return end
     room:doIndicate(player.id, {target.id})
     if room:askForSkillInvoke(target, "koujing", nil, "#koujing-card:"..player.id) then
-      local cards1 = table.simpleClone(target:getCardIds("h"))
-      local cards2 = table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@koujing-turn") > 0 end)
-      local move1 = {
-        from = target.id,
-        ids = cards1,
-        toArea = Card.Processing,
-        moveReason = fk.ReasonExchange,
-        proposer = player.id,
-        skillName = self.name,
-      }
-      local move2 = {
-        from = player.id,
-        ids = cards2,
-        toArea = Card.Processing,
-        moveReason = fk.ReasonExchange,
-        proposer = player.id,
-        skillName = self.name,
-      }
-      room:moveCards(move1, move2)
-      local move3 = {ids = table.filter(cards1, function(id) return room:getCardArea(id) == Card.Processing end),
-        fromArea = Card.Processing,
-        to = player.id,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonExchange,
-        proposer = player.id,
-        skillName = self.name,
-      }
-      local move4 = {
-        ids = table.filter(cards2, function(id) return room:getCardArea(id) == Card.Processing end),
-        fromArea = Card.Processing,
-        to = target.id,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonExchange,
-        proposer = player.id,
-        skillName = self.name,
-      }
-      room:moveCards(move3, move4)
+      local cards2 = table.simpleClone(target:getCardIds("h"))
+      local cards1 = table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@koujing-inhand") > 0 end)
+      U.swapCards(room, player, player, target, cards1, cards2, "koujing")
     end
   end,
 }
@@ -1036,7 +1009,7 @@ Fk:loadTranslationTable{
   [":koujing"] = "出牌阶段开始时，你可以选择任意张手牌，这些牌本回合视为不计入次数的【杀】。其他角色受到以此法使用的【杀】的伤害后展示这些牌，"..
   "其可用所有手牌交换这些牌。",
   ["#koujing-invoke"] = "寇旌：你可以将任意张手牌作为“寇旌”牌，本回合视为不计入次数的【杀】",
-  ["@@koujing-turn"] = "寇旌",
+  ["@@koujing-inhand"] = "寇旌",
   ["#koujing_filter"] = "寇旌",
   ["#koujing-card"] = "寇旌：你可以用所有手牌交换 %src 这些“寇旌”牌",
 

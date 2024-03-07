@@ -1234,10 +1234,13 @@ local tunan = fk.CreateActiveSkill{
     local cards = room:getNCards(1)
     local card = Fk:getCardById(cards[1])
     local choices = {}  --选项一无距离限制，选项二有距离限制，不能用interaction……
-    if table.find(room.alive_players, function(p) return U.canUseCardTo(room, target, p, card, false, false) end) then
+    if U.getDefaultTargets(target, card, false, true) then
       table.insert(choices, "tunan1:::"..card:toLogString())
     end
-    if target:canUse(Fk:cloneCard("slash")) then
+    local slash = Fk:cloneCard("slash")
+    slash.skillName = self.name
+    slash:addSubcard(card)
+    if U.getDefaultTargets(target, slash, true, false) then
       table.insert(choices, "tunan2:::"..card:toLogString())
     end
     if #choices == 0 then
@@ -1248,44 +1251,9 @@ local tunan = fk.CreateActiveSkill{
       {"tunan1:::"..card:toLogString(), "tunan2:::"..card:toLogString()})
     local success, dat
     if choice[6] == "1" then
-      room:setPlayerMark(target, MarkEnum.BypassDistancesLimit .. "-tmp", 1)
-      room:setPlayerMark(target, "tunan-tmp", {1, cards[1]})
-      success, dat = room:askForUseActiveSkill(target, "tunan_viewas", "#tunan1-use:::"..card:toLogString(), false)
-      room:setPlayerMark(target, MarkEnum.BypassDistancesLimit .. "-tmp", 0)
-      room:setPlayerMark(target, "tunan-tmp", 0)
+      U.askForUseRealCard(room, target, cards, ".", self.name, nil, {expand_pile = cards, bypass_distances = true}, false, false)
     else
-      room:setPlayerMark(target, "tunan-tmp", {2})
-      success, dat = room:askForUseActiveSkill(target, "tunan_viewas", "#tunan2-use:::"..card:toLogString(), false)
-      room:setPlayerMark(target, "tunan-tmp", 0)
-    end
-    if success then
-      if choice[6] == "2" then
-        card = Fk:cloneCard("slash")
-        card:addSubcards(cards)
-        card.skillName = self.name
-      end
-      local use = {
-        from = target.id,
-        tos = table.map(dat.targets, function(e) return{e} end),
-        card = card,
-        extraUse = true,
-      }
-      room:useCard(use)
-    end
-  end,
-}
-local tunan_viewas = fk.CreateViewAsSkill{
-  name = "tunan_viewas",
-  card_filter = Util.FalseFunc,
-  view_as = function(self, cards)
-    if Self:getMark("tunan-tmp")[1] == 1 then
-      local card = Fk:getCardById(Self:getMark("tunan-tmp")[2])
-      if Self:canUse(card) and not Self:prohibitUse(card) then
-        return card
-      end
-    else
-      local card = Fk:cloneCard("slash")
-      return card
+      U.askForUseVirtualCard(room, target, "slash", cards, self.name, "#tunan2-use:::"..card:toLogString(), false, true, false, true)
     end
   end,
 }
@@ -1370,7 +1338,6 @@ local bijing_trigger = fk.CreateTriggerSkill{
     end
   end,
 }
-Fk:addSkill(tunan_viewas)
 bijing:addRelatedSkill(bijing_trigger)
 lvkai:addSkill(tunan)
 lvkai:addSkill(bijing)
@@ -1387,7 +1354,6 @@ Fk:loadTranslationTable{
   ["tunan1"] = "使用%arg（无距离限制）",
   ["tunan2"] = "将%arg当【杀】使用",
   ["tunan_viewas"] = "图南",
-  ["#tunan1-use"] = "图南：使用%arg（无距离限制）",
   ["#tunan2-use"] = "图南：将%arg当【杀】使用",
   ["#bijing-invoke"] = "闭境：你可以将至多两张手牌标记为“闭境”牌",
   ["@@bijing"] = "闭境",

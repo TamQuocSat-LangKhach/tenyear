@@ -3810,13 +3810,10 @@ local yise = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
       for _, move in ipairs(data) do
-        if move.from == player.id and move.to and move.to ~= player.id and move.toArea == Card.PlayerHand then
-          self.yise_to = move.to
+        if move.from == player.id and move.to and move.to ~= player.id
+        and not player.room:getPlayerById(move.to).dead and move.toArea == Card.PlayerHand then
           for _, info in ipairs(move.moveInfo) do
-            self.yise_color = Fk:getCardById(info.cardId).color
-            if self.yise_color == Card.Red then
-              return player.room:getPlayerById(move.to):isWounded()
-            else
+            if Fk:getCardById(info.cardId).color ~= Card.NoColor then
               return true
             end
           end
@@ -3824,25 +3821,46 @@ local yise = fk.CreateTriggerSkill{
       end
     end
   end,
-  on_cost = function(self, event, target, player, data)
-    if self.yise_color == Card.Red then
-      return player.room:askForSkillInvoke(player, self.name, data, "#yise-invoke::"..self.yise_to)
-    elseif self.yise_color == Card.Black then
-      return true
+  on_trigger = function(self, event, target, player, data)
+    local room = player.room
+    local list = {}
+    for _, move in ipairs(data) do
+      if move.from == player.id and move.to and move.to ~= player.id and not room:getPlayerById(move.to).dead and
+      move.toArea == Card.PlayerHand then
+        for _, info in ipairs(move.moveInfo) do
+          if Fk:getCardById(info.cardId).color ~= Card.NoColor then
+            list[move.to] = list[move.to] or {}
+            table.insertIfNeed(list[move.to], Fk:getCardById(info.cardId).color)
+          end
+        end
+      end
     end
+    for _, p in ipairs(room:getAlivePlayers()) do
+      if not player:hasSkill(self) then break end
+      if not p.dead and list[p.id] then
+        self:doCost(event, p, player, list[p.id])
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if table.contains(data, Card.Red) and (not target:isWounded() or
+    not player.room:askForSkillInvoke(player, self.name, nil, "#yise-invoke::"..target.id)) then
+      table.removeOne(data, Card.Red)
+    end
+    return #data > 0
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(self.yise_to)
-    if self.yise_color == Card.Red then
+    if table.contains(data, Card.Red) then
       room:recover({
-        who = to,
+        who = target,
         num = 1,
         recoverBy = player,
         skillName = self.name
       })
-    elseif self.yise_color == Card.Black then
-      room:addPlayerMark(to, "@yise", 1)
+    end
+    if table.contains(data, Card.Black) and not target.dead then
+      room:addPlayerMark(target, "@yise", 1)
     end
   end,
 }
@@ -3868,7 +3886,7 @@ local shunshi = fk.CreateTriggerSkill{
       if event == fk.EventPhaseStart then
         return player.phase == Player.Start
       else
-        return true
+        return player ~= player.room.current
       end
     end
   end,
@@ -3888,7 +3906,8 @@ local shunshi = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:obtainCard(self.cost_data[1], self.cost_data[2], false, fk.ReasonGive)
+    room:moveCardTo(self.cost_data[2], Card.PlayerHand, self.cost_data[1], fk.ReasonGive, self.name, nil, false, player.id)
+    if player.dead then return end
     room:addPlayerMark(player, "@shunshi", 1)
   end,
 

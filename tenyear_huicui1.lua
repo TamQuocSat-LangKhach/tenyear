@@ -181,6 +181,7 @@ local liushi = fk.CreateActiveSkill{
       toArea = Card.DrawPile,
       moveReason = fk.ReasonJustMove,
       skillName = self.name,
+      moveVisible = true
     })
     local use = {
       from = player.id,
@@ -202,10 +203,7 @@ local liushi = fk.CreateActiveSkill{
 local liushi_maxcards = fk.CreateMaxCardsSkill{
   name = "#liushi_maxcards",
   correct_func = function(self, player)
-    if player:getMark("@liushi") > 0 then
-      return -player:getMark("@liushi")
-    end
-    return 0
+    return -player:getMark("@liushi")
   end,
 }
 local zhanwan = fk.CreateTriggerSkill{
@@ -4654,6 +4652,7 @@ local yingtu = fk.CreateTriggerSkill{
     end
     if #targets == 1 then
       if room:askForSkillInvoke(player, self.name, nil, "#yingtu-invoke::"..targets[1]) then
+        room:doIndicate(player.id, targets)
         self.cost_data = targets[1]
         return true
       end
@@ -6053,6 +6052,7 @@ Fk:loadTranslationTable{
   ["ty__cuijin"] = "催进",
   [":ty__cuijin"] = "当你或攻击范围内的角色使用【杀】或【决斗】时，你可弃置一张牌，令此【杀】伤害值基数+1。"..
   "当此牌结算结束后，若此牌未造成伤害，你摸两张牌，对使用者造成1点伤害。",
+  --FIXME:实际上是对每个目标的{被抵消后、被防止的伤害的结算结束后、被无效的对此目标的结算结束后}都要处理后续效果
 
   ["#ty__cuijin-ask"] = "是否弃置一张牌，对 %dest 发动 催进",
   ["#ty__cuijin_delay"] = "催进",

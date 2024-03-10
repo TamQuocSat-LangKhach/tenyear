@@ -1376,13 +1376,13 @@ local taji = fk.CreateTriggerSkill{
         for _, info in ipairs(move.moveInfo) do
           if info.fromArea == Card.PlayerHand then
             if move.moveReason == fk.ReasonUse then
-              table.insert(index, 1)
+              table.insertIfNeed(index, 1)
             elseif move.moveReason == fk.ReasonResonpse then
-              table.insert(index, 2)
+              table.insertIfNeed(index, 2)
             elseif move.moveReason == fk.ReasonDiscard then
-              table.insert(index, 3)
+              table.insertIfNeed(index, 3)
             else
-              table.insert(index, 4)
+              table.insertIfNeed(index, 4)
             end
           end
         end

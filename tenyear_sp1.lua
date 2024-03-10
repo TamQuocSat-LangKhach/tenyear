@@ -2259,7 +2259,7 @@ local yizhao = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.CardUsing, fk.CardResponding},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.card.number > 0
+    return target == player and player:hasSkill(self) and player:getMark("@zhangjiao_huang") < 184 and data.card.number > 0
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

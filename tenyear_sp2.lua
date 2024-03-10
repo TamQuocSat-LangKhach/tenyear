@@ -1181,8 +1181,7 @@ local ty__danlao = fk.CreateTriggerSkill{
   anim_type = "defensive",
   events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and (data.card.trueName == "slash" or data.card.type == Card.TypeTrick) and
-      #AimGroup:getAllTargets(data.tos) > 1
+    return target == player and player:hasSkill(self) and (data.card.trueName == "slash" or data.card.type == Card.TypeTrick) and not U.isOnlyTarget(player, data, event)
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#ty__danlao-invoke:::"..data.card:toLogString())
@@ -1200,15 +1199,19 @@ local ty__jilei = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and data.from and not data.from.dead
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#ty__jilei-invoke::"..data.from.id)
+    local room = player.room
+    if room:askForSkillInvoke(player, self.name, nil, "#ty__jilei-invoke::"..data.from.id) then
+      room:doIndicate(player.id, {data.from.id})
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local choice = room:askForChoice(player, {"basic", "trick", "equip"}, self.name)
-    local mark = data.from:getMark("@ty__jilei")
-    if mark == 0 then mark = {} end
-    table.insertIfNeed(mark, choice .. "_char")
-    room:setPlayerMark(data.from, "@ty__jilei", mark)
+    local mark = U.getMark(data.from, "@ty__jilei")
+    if table.insertIfNeed(mark, choice .. "_char") then
+      room:setPlayerMark(data.from, "@ty__jilei", mark)
+    end
   end,
 
   refresh_events = {fk.TurnStart},
@@ -1222,8 +1225,7 @@ local ty__jilei = fk.CreateTriggerSkill{
 local ty__jilei_prohibit = fk.CreateProhibitSkill{
   name = "#ty__jilei_prohibit",
   prohibit_use = function(self, player, card)
-    local mark = player:getMark("@ty__jilei")
-    if type(mark) == "table" and table.contains(mark, card:getTypeString() .. "_char") then
+    if table.contains(U.getMark(player, "@ty__jilei"), card:getTypeString() .. "_char") then
       local subcards = card:isVirtual() and card.subcards or {card.id}
       return #subcards > 0 and table.every(subcards, function(id)
         return table.contains(player:getCardIds(Player.Hand), id)
@@ -1231,8 +1233,7 @@ local ty__jilei_prohibit = fk.CreateProhibitSkill{
     end
   end,
   prohibit_response = function(self, player, card)
-    local mark = player:getMark("@ty__jilei")
-    if type(mark) == "table" and table.contains(mark, card:getTypeString() .. "_char") then
+    if table.contains(U.getMark(player, "@ty__jilei"), card:getTypeString() .. "_char") then
       local subcards = card:isVirtual() and card.subcards or {card.id}
       return #subcards > 0 and table.every(subcards, function(id)
         return table.contains(player:getCardIds(Player.Hand), id)
@@ -1240,8 +1241,7 @@ local ty__jilei_prohibit = fk.CreateProhibitSkill{
     end
   end,
   prohibit_discard = function(self, player, card)
-    local mark = player:getMark("@ty__jilei")
-    return type(mark) == "table" and table.contains(mark, card:getTypeString() .. "_char")
+    return table.contains(U.getMark(player, "@ty__jilei"), card:getTypeString() .. "_char")
   end,
 }
 ty__jilei:addRelatedSkill(ty__jilei_prohibit)
@@ -1258,7 +1258,7 @@ Fk:loadTranslationTable{
   ["#ty__danlao-invoke"] = "啖酪：你可以摸一张牌，令 %arg 对你无效",
   ["#ty__jilei-invoke"] = "鸡肋：是否令 %dest 不能使用、打出、弃置一种类别的牌直到其下回合开始？",
   ["@ty__jilei"] = "鸡肋",
-  
+
   ["$ty__danlao1"] = "此酪味美，诸君何不与我共食之？",
   ["$ty__danlao2"] = "来来来，丞相美意，不可辜负啊。",
   ["$ty__jilei1"] = "今进退两难，势若鸡肋，魏王必当罢兵而还。",
@@ -4914,6 +4914,14 @@ local chanjuan = fk.CreateTriggerSkill{
     if not player.dead and #TargetGroup:getRealTargets(use.tos) == 1 and TargetGroup:getRealTargets(data.tos)[1] == TargetGroup:getRealTargets(use.tos)[1] then
       player:drawCards(1, self.name)
     end
+  end,
+  
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == self and player:getMark("@$chanjuan") ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@$chanjuan", 0)
   end,
 }
 local xunbie = fk.CreateTriggerSkill{

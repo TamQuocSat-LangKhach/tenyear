@@ -1875,7 +1875,7 @@ local fengying = fk.CreateViewAsSkill{
   pattern = ".",
   prompt = "#fengying",
   interaction = function()
-    local all_names, names = Self:getMark("fengying"), {}
+    local all_names, names = U.getMark(Self, "@$fengying"), {}
     for _, name in ipairs(all_names) do
       local to_use = Fk:cloneCard(name)
       to_use.skillName = "fengying"
@@ -1899,7 +1899,7 @@ local fengying = fk.CreateViewAsSkill{
     return card
   end,
   enabled_at_play = function(self, player)
-    local names = player:getMark("fengying")
+    local names = player:getMark("@$fengying")
     if player:getMark("@dongguiren_jiao") == 0 or type(names) ~= "table" then return false end
     for _, name in ipairs(names) do
       local to_use = Fk:cloneCard(name)
@@ -1911,7 +1911,7 @@ local fengying = fk.CreateViewAsSkill{
   end,
   enabled_at_response = function(self, player, response)
     if response then return false end
-    local names = player:getMark("fengying")
+    local names = player:getMark("@$fengying")
     if player:getMark("@dongguiren_jiao") == 0 or type(names) ~= "table" then return false end
     for _, name in ipairs(names) do
       local to_use = Fk:cloneCard(name)
@@ -1922,10 +1922,8 @@ local fengying = fk.CreateViewAsSkill{
     end
   end,
   before_use = function(self, player, useData)
-    local names = player:getMark("fengying")
-    if type(names) == "table" then
-      table.removeOne(names, useData.card.name)
-      player.room:setPlayerMark(player, "fengying", names)
+    local names = U.getMark(player, "@$fengying")
+    if table.removeOne(names, useData.card.name) then
       player.room:setPlayerMark(player, "@$fengying", names)
     end
   end,
@@ -1935,31 +1933,27 @@ local fengying_trigger = fk.CreateTriggerSkill{
   events = {fk.TurnStart},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(fengying.name)
+    return player:hasSkill(fengying)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
+    local room = player.room
     local names = {}
-    for _, id in ipairs(player.room.discard_pile) do
+    for _, id in ipairs(room.discard_pile) do
       local card = Fk:getCardById(id)
       if card.color == Card.Black and (card.type == Card.TypeBasic or card:isCommonTrick()) then
         table.insertIfNeed(names, card.name)
       end
     end
-    if #names == 0 then return end
-    player.room:setPlayerMark(player, "fengying", names)
-    if player:hasSkill("fengying", true) then
-      player.room:setPlayerMark(player, "@$fengying", names)
-    end
+    room:setPlayerMark(player, "@$fengying", #names > 0 and names or 0)
   end,
 
   refresh_events = {fk.EventLoseSkill},
   can_refresh = function(self, event, target, player, data)
-    return player == target and data.name == "fengying"
+    return player == target and data == fengying
   end,
   on_refresh = function(self, event, target, player, data)
-      player.room:setPlayerMark(player, "fengying", 0)
-      player.room:setPlayerMark(player, "@$fengying", 0)
+    player.room:setPlayerMark(player, "@$fengying", 0)
   end,
 }
 local fengying_targetmod = fk.CreateTargetModSkill{

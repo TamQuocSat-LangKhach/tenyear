@@ -284,10 +284,20 @@ local zhenrao = fk.CreateTriggerSkill{
     end
   end,
   on_cost = function(self, event, target, player, data)
-    local to = player.room:askForChoosePlayers(player, self.cost_data, 1, 1, "#zhenrao-choose", self.name, true)
-    if #to > 0 then
-      self.cost_data = to[1]
-      return true
+    local targets = table.simpleClone(self.cost_data)
+    local room = player.room
+    if #targets == 1 then
+      if room:askForSkillInvoke(player, self.name, nil, "#zhenrao-invoke::" .. targets[1]) then
+        room:doIndicate(player.id, targets)
+        self.cost_data = targets[1]
+        return true
+      end
+    else
+      targets = room:askForChoosePlayers(player, targets, 1, 1, "#zhenrao-choose", self.name, true)
+      if #targets > 0 then
+        self.cost_data = targets[1]
+        return true
+      end
     end
   end,
   on_use = function(self, event, target, player, data)
@@ -347,7 +357,7 @@ local chenlue_delay = fk.CreateTriggerSkill{
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    player:addToPile("chenlue", table.simpleClone(self.cost_data), true, self.name)
+    player:addToPile("#chenlue", table.simpleClone(self.cost_data), true, self.name)
   end,
 }
 chenlue:addRelatedSkill(chenlue_delay)
@@ -369,8 +379,10 @@ Fk:loadTranslationTable{
   "此回合结束时，将这些牌移出游戏直到你死亡。",
   ["@@expendables-inhand"] = "死士",
   ["#zhenrao-choose"] = "是否发动 震扰，对其中手牌数大于你的1名角色造成1点伤害",
+  ["#zhenrao-invoke"] = "是否发动 震扰，对%dest造成1点伤害",
   ["#chenlue-active"] = "发动 沉略，获得所有被标记的“死士”牌（回合结束后移出游戏）",
   ["#chenlue_delay"] = "沉略",
+  ["#chenlue"] = "沉略",
 
 }
 

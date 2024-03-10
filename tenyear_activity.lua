@@ -3809,9 +3809,10 @@ local yise = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
+      local room = player.room
       for _, move in ipairs(data) do
         if move.from == player.id and move.to and move.to ~= player.id
-        and not player.room:getPlayerById(move.to).dead and move.toArea == Card.PlayerHand then
+        and not room:getPlayerById(move.to).dead and move.toArea == Card.PlayerHand then
           for _, info in ipairs(move.moveInfo) do
             if Fk:getCardById(info.cardId).color ~= Card.NoColor then
               return true
@@ -3893,7 +3894,7 @@ local shunshi = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = {}
-    for _, p in ipairs(room:getOtherPlayers(player)) do
+    for _, p in ipairs(room:getOtherPlayers(player, false)) do
       if event == fk.EventPhaseStart or (event == fk.Damaged and p ~= data.from) then
         table.insert(targets, p.id)
       end
@@ -3906,7 +3907,7 @@ local shunshi = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:moveCardTo(self.cost_data[2], Card.PlayerHand, self.cost_data[1], fk.ReasonGive, self.name, nil, false, player.id)
+    room:moveCardTo(self.cost_data[2], Card.PlayerHand, room:getPlayerById(self.cost_data[1]), fk.ReasonGive, self.name, nil, false, player.id)
     if player.dead then return end
     room:addPlayerMark(player, "@shunshi", 1)
   end,

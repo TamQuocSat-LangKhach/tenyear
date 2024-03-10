@@ -506,7 +506,7 @@ Fk:loadTranslationTable{
   [":quanmou"] = "转换技，出牌阶段每名角色限一次，你可以令攻击范围内的一名其他角色交给你一张牌，"..
   "阳：防止你此阶段下次对其造成的伤害；阴：你此阶段下次对其造成伤害后，可以对至多三名该角色外的其他角色各造成1点伤害。",
 
-  ["#pingliao-ask"] = "平辽：%from 使用了一张【杀】，你可以打出一张红色基本牌",
+  ["#pingliao-ask"] = "平辽：%src 使用了一张【杀】，你可以打出一张红色基本牌",
   ["@@pingliao-turn"] = "平辽",
   ["#quanmou-Yang"] = "发动 权谋（阳），选择攻击范围内的一名角色",
   ["#quanmou-Yin"] = "发动 权谋（阴），选择攻击范围内的一名角色",
@@ -715,6 +715,7 @@ Fk:loadTranslationTable{
   ["ty__caoshuang"] = "曹爽",
   ["#ty__caoshuang"] = "托孤傲臣",
   ["illustrator:ty__caoshuang"] = "鬼画府",
+  ["designer:ty__caoshuang"] = "韩旭",
 
   ["jianzhuan"] = "渐专",
   [":jianzhuan"] = "锁定技，当你于出牌阶段内使用牌时，你选择于此阶段内未选择过的一项："..

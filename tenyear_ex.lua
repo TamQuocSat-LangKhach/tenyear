@@ -309,10 +309,11 @@ local ty_ex__xuanhuo = fk.CreateTriggerSkill{
   events = {fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Draw and player:getHandcardNum() > 1
+    and #player.room.alive_players > 2
   end,
   on_cost = function(self, event, target, player, data)
-    local success, dat = player.room:askForUseActiveSkill(player, "ty_ex__xuanhuo_active", "#ty_ex__xuanhuo-invoke", true)
-    if success then
+    local _, dat = player.room:askForUseActiveSkill(player, "ty_ex__xuanhuo_choose", "#ty_ex__xuanhuo-invoke", true)
+    if dat then
       self.cost_data = dat
       return true
     end
@@ -320,73 +321,54 @@ local ty_ex__xuanhuo = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data.targets[1])
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(self.cost_data.cards)
-    room:obtainCard(to, dummy, false, fk.ReasonGive)
-    local slash = Fk:cloneCard("slash")
-    local duel = Fk:cloneCard("duel")
-    local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
-      return p ~= to and (U.canUseCardTo(room, to, p, slash, true, false) or U.canUseCardTo(room, to, p, duel, true, false))
-     end), Util.IdMapper)
-    if #targets == 0 then
-      if not to:isKongcheng() then
-        local dummy2 = Fk:cloneCard("dilu")
-        dummy2:addSubcards(to:getCardIds("h"))
-        room:obtainCard(player, dummy2, false, fk.ReasonGive)
-      end
-    else
-      local victim = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__xuanhuo-choose::"..to.id, self.name, false)[1]
-      room:doIndicate(to.id, {victim})
-      room:setPlayerMark(to, "ty_ex__xuanhuo-phase", victim)
-      local command = "AskForUseActiveSkill"
-      room:notifyMoveFocus(to, "ty_ex__xuanhuo_viewas")
-      local dat = {"ty_ex__xuanhuo_viewas", "#ty_ex__xuanhuo-slash:"..player.id..":"..victim, true, {}}
-      local result = room:doRequest(to, command, json.encode(dat))
-      room:setPlayerMark(to, "ty_ex__xuanhuo-phase", 0)
-      if result ~= "" then
-        dat = json.decode(result)
-        room:useVirtualCard(dat.interaction_data, nil, to, room:getPlayerById(victim), self.name, true)
-      else
-        if not to:isKongcheng() then
-          local dummy2 = Fk:cloneCard("dilu")
-          dummy2:addSubcards(to:getCardIds("h"))
-          room:obtainCard(player, dummy2, false, fk.ReasonGive)
+    room:moveCardTo(self.cost_data.cards, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
+    if to.dead then return end
+    local victim = room:getPlayerById(self.cost_data.targets[2])
+    local cards = {}
+    for _, id in ipairs(U.prepareUniversalCards(room)) do
+      local card = Fk:getCardById(id)
+      if card.trueName == "slash" or card.trueName == "duel" then
+        if to:canUseTo(card, victim, {bypass_times = true}) then
+          table.insertIfNeed(cards, id)
         end
       end
     end
+    local name
+    if #cards > 0 then
+      local cancel = to:isKongcheng() and {} or {"ty_ex__xuanhuo_give"}
+      local choices,_ = U.askforChooseCardsAndChoice(to, cards, {"ty_ex__xuanhuo_use"}, self.name,
+      "#ty_ex__xuanhuo-choice:"..player.id..":"..victim.id, cancel, 1, 1)
+      if #choices > 0 then
+        name = Fk:getCardById(choices[1]).name
+      end
+    end
+    if name then
+      room:useVirtualCard(name, nil, to, victim, self.name, true)
+    else
+      room:moveCardTo(to.player_cards[Player.Hand], Card.PlayerHand, player, fk.ReasonGive, self.name, nil, false, to.id)
+    end
   end,
 }
-local ty_ex__xuanhuo_active = fk.CreateActiveSkill{
-  name = "ty_ex__xuanhuo_active",
-  mute = true,
+local ty_ex__xuanhuo_choose = fk.CreateActiveSkill{
+  name = "ty_ex__xuanhuo_choose",
   card_num = 2,
-  target_num = 1,
+  target_num = 2,
   card_filter = function(self, to_select, selected)
     return #selected < 2 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
   end,
-  target_filter = function(self, to_select, selected)
-    return #selected == 0 and to_select ~= Self.id
-  end,
-}
-local ty_ex__xuanhuo_viewas = fk.CreateActiveSkill{
-  name = "ty_ex__xuanhuo_viewas",
-  interaction = function()
-    local names = {}
-    local victim = Self:getMark("ty_ex__xuanhuo-phase")
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if (card.trueName == "slash" or card.trueName == "duel") and
-        card.skill:targetFilter(victim, {}, {}, card) and not Self:isProhibited(Fk:currentRoom():getPlayerById(victim), card) then
-        table.insertIfNeed(names, card.name)
-      end
+  target_filter = function(self, to_select, selected, cards)
+    if to_select == Self.id or #selected == 2 or #cards ~= 2 then return false end
+    local first = Fk:currentRoom():getPlayerById(selected[1])
+    local victim = Fk:currentRoom():getPlayerById(to_select)
+    if #selected == 0 then
+      return true
+    else
+      return first:canUseTo(Fk:cloneCard("slash"), victim, {bypass_times = true})
+      or first:canUseTo(Fk:cloneCard("duel"), victim, {bypass_times = true})
     end
-    if #names == 0 then return end
-    return UI.ComboBox {choices = names}
   end,
-  card_filter = Util.FalseFunc,
 }
-Fk:addSkill(ty_ex__xuanhuo_active)
-Fk:addSkill(ty_ex__xuanhuo_viewas)
+Fk:addSkill(ty_ex__xuanhuo_choose)
 fazheng:addSkill(ty_ex__enyuan)
 fazheng:addSkill(ty_ex__xuanhuo)
 Fk:loadTranslationTable{
@@ -401,11 +383,11 @@ Fk:loadTranslationTable{
   "其视为对该角色使用任意一种【杀】或【决斗】；2.交给你所有手牌。",
   ["#ty_ex__enyuan-invoke"] = "恩怨：你可以令 %dest 摸一张牌",
   ["#ty_ex__enyuan-give"] = "恩怨：你需交给 %src 一张手牌，否则失去1点体力",
-  ["ty_ex__xuanhuo_active"] = "眩惑",
-  ["#ty_ex__xuanhuo-invoke"] = "眩惑：你可以交出两张手牌，令目标视为使用【杀】或【决斗】或交给你所有手牌",
-  ["#ty_ex__xuanhuo-choose"] = "眩惑：选择令 %dest 视为使用【杀】或【决斗】的目标",
-  ["ty_ex__xuanhuo_viewas"] = "眩惑",
-  ["#ty_ex__xuanhuo-slash"] = "眩惑：选择一种牌视为对 %dest 使用，否则 %src 获得你所有手牌",
+  ["ty_ex__xuanhuo_choose"] = "眩惑",
+  ["#ty_ex__xuanhuo-invoke"] = "眩惑：交给第一名角色两张手牌，令其选择视为对第二名角色使用杀或决斗或交给你所有手牌",
+  ["ty_ex__xuanhuo_use"] = "使用",
+  ["ty_ex__xuanhuo_give"] = "交出所有手牌",
+  ["#ty_ex__xuanhuo-choice"] = "眩惑：选择一种牌视为对 %dest 使用，否则交给 %src 所有手牌",
 
   ["$ty_ex__enyuan1"] = "善因得善果，恶因得恶报！",
   ["$ty_ex__enyuan2"] = "私我者赠之琼瑶，厌我者报之斧钺！",
@@ -3908,7 +3890,7 @@ local ty_ex__xiantu = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target ~= player and player:hasSkill(self) and target.phase == Player.Play
+    return target ~= player and player:hasSkill(self) and target.phase == Player.Play and not target.dead
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, data, "#ty_ex__xiantu-invoke::"..target.id)

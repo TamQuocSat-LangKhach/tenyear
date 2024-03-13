@@ -293,7 +293,7 @@ local ty_ex__enyuan = fk.CreateTriggerSkill{
       local card = room:askForCard(data.from, 1, 1, false, self.name, true, ".|.|.|hand|.|.", "#ty_ex__enyuan-give:"..player.id)
       if #card > 0 then
         local suit = Fk:getCardById(card[1]).suit
-        room:obtainCard(player, card[1], false, fk.ReasonGive)
+        room:obtainCard(player, card[1], false, fk.ReasonGive, data.from.id)
         if suit ~= Card.Heart then
           player:drawCards(1, self.name)
         end
@@ -597,11 +597,12 @@ local ty_ex__jianyan = fk.CreateActiveSkill{
     get = Fk:getCardById(get)
     room:moveCardTo(get, Card.Processing, nil, fk.ReasonJustMove, self.name)
     room:delay(500)
-    local targets = table.map(table.filter(room.alive_players, function(p) return p.gender == General.Male end), Util.IdMapper)
+    local targets = table.map(table.filter(room.alive_players, function(p) return p.gender == General.Male 
+    or p.gender == General.Bigender end), Util.IdMapper)
     if #targets > 0 then
       local to = room:askForChoosePlayers(player, targets, 1, 1,
       "#ty_ex__jianyan-give:::" .. get:toLogString(), self.name, false)[1]
-      room:obtainCard(to, get, true, fk.ReasonGive)
+      room:obtainCard(to, get, true, fk.ReasonGive, player.id)
     elseif room:getCardArea(get.id) == Card.Processing then
       room:moveCardTo(get, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
     end
@@ -1144,7 +1145,7 @@ local ty_ex__mingce = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    room:obtainCard(target, Fk:getCardById(effect.cards[1]), false, fk.ReasonGive)
+    room:obtainCard(target, Fk:getCardById(effect.cards[1]), false, fk.ReasonGive, player.id)
     local targets = {}
     for _, p in ipairs(room:getOtherPlayers(target)) do
       if target:inMyAttackRange(p) then
@@ -3075,7 +3076,7 @@ local ty_ex__qiuyuan = fk.CreateTriggerSkill{
     if #cards > 0 then
       local card = room:askForCard(to, 1, 1, false, self.name, true, ".|.|.|.|.|.|"..table.concat(cards, ","), "#ty_ex__qiuyuan-give::"..player.id)
       if #card > 0 then
-        room:obtainCard(player, Fk:getCardById(card[1]), true, fk.ReasonGive)
+        room:obtainCard(player, Fk:getCardById(card[1]), true, fk.ReasonGive, to.id)
         return
       end
     end
@@ -3909,7 +3910,7 @@ local ty_ex__xiantu = fk.CreateTriggerSkill{
     end
     local dummy = Fk:cloneCard("dilu")
     dummy:addSubcards(cards)
-    room:obtainCard(target.id, dummy, false, fk.ReasonGive)
+    room:obtainCard(target.id, dummy, false, fk.ReasonGive, player.id)
   end,
 }
 local ty_ex__xiantu_trigger = fk.CreateTriggerSkill{
@@ -4162,7 +4163,7 @@ local ty_ex__zenhui = fk.CreateTriggerSkill{
       local cards = room:askForCard(to, 1, 1, true, self.name, true, ".",
       "#ty_ex__zenhui-give::"..player.id..":"..data.card:toLogString())
       if #cards > 0 then
-        room:obtainCard(player, cards[1], false, fk.ReasonPrey)
+        room:obtainCard(player, cards[1], false, fk.ReasonPrey, to.id)
         data.from = to.id
         room:sendLog{
           type = "#ChangeUserBySkill",
@@ -4311,7 +4312,7 @@ local ty_ex__xianzhou = fk.CreateActiveSkill{
     local n = #player:getCardIds("e")
     local dummy = Fk:cloneCard("dilu")
     dummy:addSubcards(player.player_cards[Player.Equip])
-    room:obtainCard(target, dummy, false, fk.ReasonGive)
+    room:obtainCard(target, dummy, false, fk.ReasonGive, player.id)
     if not player.dead and player:isWounded() then
       room:recover({
         who = player,
@@ -4933,7 +4934,7 @@ local ty_ex__yanzhu = fk.CreateActiveSkill{
     elseif choice == "ty_ex__yanzhu_choice2" then
       local dummy = Fk:cloneCard("dilu")
       dummy:addSubcards(target:getCardIds("e"))
-      room:obtainCard(player.id, dummy, true, fk.ReasonGive)
+      room:obtainCard(player.id, dummy, true, fk.ReasonGive, target.id)
       room:setPlayerMark(player, self.name, 1)
     end
   end,
@@ -5191,7 +5192,7 @@ local ty_ex__qinwang = fk.CreateActiveSkill{
             to = player.id,
             toArea = Card.PlayerHand,
             moveReason = fk.ReasonGive,
-            proposer = player.id,
+            proposer = p.id,
             skillName = self.name,
             moveVisible = false,
           })

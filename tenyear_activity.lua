@@ -357,7 +357,7 @@ local lulue = fk.CreateTriggerSkill{
     if choice == "lulue_give" then
       local dummy = Fk:cloneCard("dilu")
       dummy:addSubcards(to:getCardIds(Player.Hand))
-      room:obtainCard(player.id, dummy, false, fk.ReasonGive)
+      room:obtainCard(player.id, dummy, false, fk.ReasonGive, to.id)
       player:turnOver()
     else
       to:turnOver()
@@ -956,7 +956,7 @@ local humei = fk.CreateActiveSkill{
       target:drawCards(1, self.name)
     elseif self.interaction.data == "humei2-phase" then
       local card = room:askForCard(target, 1, 1, true, self.name, false, ".", "#humei-give:"..player.id)
-      room:obtainCard(player, card[1], false, fk.ReasonGive)
+      room:obtainCard(player, card[1], false, fk.ReasonGive, target.id)
     elseif self.interaction.data == "humei3-phase" then
       room:recover{
         who = target,
@@ -2068,7 +2068,7 @@ local sibian = fk.CreateTriggerSkill{
       if #to > 0 then
         local dummy2 = Fk:cloneCard("dilu")
         dummy2:addSubcards(cards)
-        room:obtainCard(room:getPlayerById(to[1]), dummy2, false, fk.ReasonGive)
+        room:obtainCard(room:getPlayerById(to[1]), dummy2, false, fk.ReasonGive, player.id)
       else
         room:moveCards({
           ids = cards,
@@ -2251,7 +2251,7 @@ local ty__mouzhu = fk.CreateActiveSkill{
       if player.dead or target.dead then return end
       if not target:isKongcheng() then
         local card = room:askForCard(target, 1, 1, false, self.name, false, ".", "#mouzhu-give::"..player.id)
-        room:obtainCard(player, card[1], false, fk.ReasonGive)
+        room:obtainCard(player, card[1], false, fk.ReasonGive, target.id)
         if #player.player_cards[Player.Hand] > #target.player_cards[Player.Hand] then
           local choice = room:askForChoice(target, {"slash", "duel"}, self.name)
           room:useVirtualCard(choice, nil, target, player, self.name, true)
@@ -3260,7 +3260,7 @@ local libang = fk.CreateActiveSkill{
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isNude()
   end,
   card_filter = function(self, to_select, selected)
-    return #selected == 0
+    return #selected == 0 and not Self:prohibitDiscard(Fk:getCardById(to_select))
   end,
   target_filter = function(self, to_select, selected)
     return #selected < 2 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isNude()
@@ -3293,14 +3293,15 @@ local libang = fk.CreateActiveSkill{
     room:judge(judge)
   end,
 }
-local libang_record = fk.CreateTriggerSkill{
-  name = "#libang_record",
-
-  refresh_events = {fk.FinishJudge},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and data.reason == "libang"
+local libang_delay = fk.CreateTriggerSkill{
+  name = "#libang_delay",
+  mute = true,
+  events = {fk.FinishJudge},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and data.reason == "libang" and not player.dead
   end,
-  on_refresh = function(self, event, target, player, data)
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if data.card.color == Card.NoColor then return end
     local targets = data.extra_data[1]
@@ -3314,11 +3315,14 @@ local libang_record = fk.CreateTriggerSkill{
       if #targets == 0 or #player:getCardIds{Player.Hand, Player.Equip} < 2 then
         room:loseHp(player, 1, "libang")
       else
-        room:setPlayerMark(player, "libang-phase", targets)
-        if not room:askForUseActiveSkill(player, "#libang_active", "#libang-card", true) then
+        local _,dat = room:askForUseActiveSkill(player, "libang_active", "#libang-card", true, {targets = targets})
+        if dat then
+          local dummy = Fk:cloneCard("dilu")
+          dummy:addSubcards(dat.cards)
+          room:obtainCard(dat.targets[1], dummy, false, fk.ReasonGive, player.id)
+        else
           room:loseHp(player, 1, "libang")
         end
-        room:setPlayerMark(player, "libang-phase", 0)
       end
     else
       if room:getCardArea(data.card) == Card.Processing then
@@ -3326,32 +3330,20 @@ local libang_record = fk.CreateTriggerSkill{
       end
       targets = table.filter(targets, function(id) return not player:isProhibited(room:getPlayerById(id), Fk:cloneCard("slash")) end)
       if #targets == 0 then return end
-      local to = room:askForChoosePlayers(player, targets, 1, 1, "#libang-slash", "libang", false)
-      if #to > 0 then
-        to = to[1]
-      else
-        to = table.random(targets)
-      end
-      room:useVirtualCard("slash", nil, player, room:getPlayerById(to), "libang")
+      local tos = room:askForChoosePlayers(player, targets, 1, 1, "#libang-slash", "libang", false)
+      room:useVirtualCard("slash", nil, player, room:getPlayerById(tos[1]), "libang")
     end
   end,
 }
 local libang_active = fk.CreateActiveSkill{
   name = "libang_active",
-  mute = true,
   card_num = 2,
   target_num = 1,
-  card_filter = function(self, to_select, selected, targets)
+  card_filter = function(self, to_select, selected)
     return #selected < 2
   end,
   target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0 and table.contains(Self:getMark("libang-phase"), to_select)
-  end,
-  on_use = function(self, room, effect)
-    local target = room:getPlayerById(effect.tos[1])
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(effect.cards)
-    room:obtainCard(target.id, dummy, false, fk.ReasonGive)
+    return #selected == 0 and table.contains(self.targets, to_select) and #selected_cards == 2
   end,
 }
 local wujie = fk.CreateTriggerSkill{
@@ -3396,7 +3388,7 @@ local wujie_targetmod = fk.CreateTargetModSkill{
   end,
 }
 Fk:addSkill(libang_active)
-libang:addRelatedSkill(libang_record)
+libang:addRelatedSkill(libang_delay)
 wujie:addRelatedSkill(wujie_targetmod)
 mengda:addSkill(libang)
 mengda:addSkill(wujie)
@@ -3412,6 +3404,7 @@ Fk:loadTranslationTable{
   ["#libang-card"] = "利傍：交给其中一名角色两张牌，否则失去1点体力",
   ["#libang-slash"] = "利傍：视为对其中一名角色使用一张【杀】",
   ["libang_active"] = "利傍",
+  ["#libang_delay"] = "利傍",
 
   ["$libang1"] = "天下熙攘，所为者利尔。",
   ["$libang2"] = "我有武力傍身，必可待价而沽。",

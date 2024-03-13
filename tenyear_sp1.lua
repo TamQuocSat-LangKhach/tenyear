@@ -4112,7 +4112,7 @@ local changqu = fk.CreateActiveSkill{
         if #cards > 0 then
           local dummy = Fk:cloneCard("dilu")
           dummy:addSubcards(cards)
-          room:obtainCard(player, dummy, false, fk.ReasonGive)
+          room:obtainCard(player, dummy, false, fk.ReasonGive, id)
           n = n + 1
         else
           room:doIndicate(player.id, {target.id})
@@ -5102,7 +5102,7 @@ local zhafu_delay = fk.CreateTriggerSkill{
     local card = room:askForCard(player, 1, 1, false, "zhafu", false, ".|.|.|hand", "#zhafu-invoke:"..src.id)[1]
     local dummy = Fk:cloneCard("dilu")
     dummy:addSubcards(table.filter(player.player_cards[Player.Hand], function(id) return id ~= card end))
-    room:obtainCard(src, dummy, false, fk.ReasonGive)
+    room:obtainCard(src, dummy, false, fk.ReasonGive, player.id)
   end,
 }
 lianhua:addRelatedSkill(lianhua_trigger)

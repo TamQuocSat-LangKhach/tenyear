@@ -129,7 +129,7 @@ local biejun_active = fk.CreateActiveSkill{
     table.insertIfNeed(targetRecorded, target.id)
     room:setPlayerMark(player, "biejun_targets-phase", targetRecorded)
     local id = effect.cards[1]
-    room:obtainCard(target, id, false, fk.ReasonGive)
+    room:obtainCard(target, id, false, fk.ReasonGive, player.id)
     if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == target then
       room:setCardMark(Fk:getCardById(id), "@@biejun-inhand", 1)
     end

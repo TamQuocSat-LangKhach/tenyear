@@ -77,7 +77,7 @@ local xunxian = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:obtainCard(self.cost_data, data.card, true, fk.ReasonGive)
+    player.room:obtainCard(self.cost_data, data.card, true, fk.ReasonGive, player.id)
   end,
 }
 yanjun:addSkill(guanchao)
@@ -539,7 +539,7 @@ local qiai = fk.CreateTriggerSkill{
         to = player.id,
         toArea = Card.PlayerHand,
         moveReason = fk.ReasonGive,
-        proposer = player.id,
+        proposer = p.id,
         skillName = self.name,
       })
     end

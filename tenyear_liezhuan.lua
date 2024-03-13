@@ -982,7 +982,7 @@ local caosong = General(extension, "ty__caosong", "wei", 4)
 local lilu = fk.CreateTriggerSkill{
   name = "lilu",
   anim_type = "support",
-  events ={fk.EventPhaseStart},
+  events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Draw
   end,
@@ -999,7 +999,7 @@ local lilu = fk.CreateTriggerSkill{
     local targets = room:getOtherPlayers(player, false)
     if #targets == 0 then return true end
     local x = player:getMark("@lilu")
-    local tos, cards = room:askForChooseCardsAndPlayers(player, 1, 999, table.map(targets, Util.IdMapper), 1, 1, ".|.|.|hand",
+    local tos, cards = U.askForChooseCardsAndPlayers(room, player, 1, 999, table.map(targets, Util.IdMapper), 1, 1, ".|.|.|hand",
     "#lilu-card:::"..tostring(x), self.name, false, true)
     local to = room:getPlayerById(tos[1])
     room:moveCardTo(cards, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)

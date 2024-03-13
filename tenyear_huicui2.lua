@@ -628,7 +628,7 @@ local huagui = fk.CreateTriggerSkill{
       local card = Fk:getCardById(p:getMark("huagui-phase"))
       if choice == "huagui1" then
         get = false
-        room:obtainCard(player, card, false, fk.ReasonGive)
+        room:obtainCard(player, card, false, fk.ReasonGive, p.id)
       else
         p:showCards({card})
       end
@@ -1655,7 +1655,7 @@ local minze = fk.CreateActiveSkill{
     room:setPlayerMark(target, "minze-phase", 1)
     local dummy = Fk:cloneCard("dilu")
     dummy:addSubcards(effect.cards)
-    room:obtainCard(target, dummy, false, fk.ReasonGive)
+    room:obtainCard(target, dummy, false, fk.ReasonGive, player.id)
   end,
 }
 local minze_trigger = fk.CreateTriggerSkill{
@@ -2186,7 +2186,7 @@ local ty__fenglue = fk.CreateActiveSkill{
       if #cards > 2 then
         cards = room:askForCardsChosen(to, to, 2, 2, "hej", self.name, "#ty__fenglue-give:"..player.id)
       end
-      room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonGive, self.name, "", false, to.id)
+      room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonGive, self.name, nil, false, to.id)
     elseif winner == to then
       if room:getCardArea(pindian.fromCard) == Card.DiscardPile and not to.dead then
         room:obtainCard(to, pindian.fromCard, true, fk.ReasonPrey)
@@ -2376,7 +2376,7 @@ local weimeng = fk.CreateActiveSkill{
     return "#weimeng:::"..Self.hp
   end,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and player.hp > 0
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
@@ -2410,7 +2410,7 @@ local weimeng = fk.CreateActiveSkill{
     end
     local dummy2 = Fk:cloneCard("dilu")
     dummy2:addSubcards(cards2)
-    room:obtainCard(target, dummy2, false, fk.ReasonGive)
+    room:obtainCard(target, dummy2, false, fk.ReasonGive, player.id)
     if n1 < n2 then
       if not player.dead then
         player:drawCards(1, self.name)
@@ -2982,18 +2982,15 @@ local tujue = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(player.player_cards[Player.Hand])
-    dummy:addSubcards(player.player_cards[Player.Equip])
-    local n = #dummy.subcards
-    room:obtainCard(self.cost_data, dummy, false, fk.ReasonGive)
+    local cards = player:getCardIds("he")
+    room:moveCardTo(cards, Card.PlayerHand, room:getPlayerById(self.cost_data), fk.ReasonGive, self.name, nil, false, player.id)
     room:recover({
       who = player,
-      num = math.min(n, player.maxHp - player.hp),
+      num = math.min(#cards, player.maxHp - player.hp),
       recoverBy = player,
       skillName = self.name
     })
-    player:drawCards(n, self.name)
+    player:drawCards(#cards, self.name)
   end,
 }
 quanjian:addRelatedSkill(quanjian_prohibit)
@@ -4471,7 +4468,7 @@ local xianshu = fk.CreateActiveSkill{
     local color = Fk:getCardById(effect.cards[1]).color
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    room:obtainCard(target.id, effect.cards[1], true, fk.ReasonGive)
+    room:obtainCard(target.id, effect.cards[1], true, fk.ReasonGive, player.id)
     if player.dead or target.dead then return end
     local x = math.abs(player.hp - target.hp)
     if x > 0 then

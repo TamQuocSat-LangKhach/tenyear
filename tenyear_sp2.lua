@@ -1021,7 +1021,7 @@ local ty__wenji = fk.CreateTriggerSkill{
     local mark = U.getMark(player, "@ty__wenji-turn")
     table.insertIfNeed(mark, Fk:getCardById(card[1]):getTypeString().."_char")
     room:setPlayerMark(player, "@ty__wenji-turn", mark)
-    room:obtainCard(player, card[1], false, fk.ReasonGive)
+    room:obtainCard(player, card[1], false, fk.ReasonGive, to.id)
   end,
 }
 local ty__wenji_record = fk.CreateTriggerSkill{
@@ -2648,7 +2648,7 @@ local liying = fk.CreateTriggerSkill{
     local ret = self.cost_data
     local dummy = Fk:cloneCard("dilu")
     dummy:addSubcards(ret.cards)
-    room:obtainCard(room:getPlayerById(ret.targets[1]), dummy, false, fk.ReasonGive)
+    room:obtainCard(room:getPlayerById(ret.targets[1]), dummy, false, fk.ReasonGive, player.id)
     if not player.dead then
       player:drawCards(1, self.name)
       if not player.dead and player.phase ~= Player.NotActive and #player:getPile("ruiji_wang") < #room.players then
@@ -4266,7 +4266,7 @@ local fengyan = fk.CreateActiveSkill{
     room:setPlayerMark(player, self.interaction.data, 1)
     if self.interaction.data == "fengyan1-phase" then
       local card = room:askForCard(target, 1, 1, false, self.name, false, ".|.|.|hand", "#fengyan-give:"..player.id)
-      room:obtainCard(player.id, card[1], false, fk.ReasonGive)
+      room:obtainCard(player.id, card[1], false, fk.ReasonGive, target.id)
     elseif self.interaction.data == "fengyan2-phase" then
       room:useVirtualCard("slash", nil, player, target, self.name, true)
     end
@@ -5457,7 +5457,7 @@ local bazhan = fk.CreateActiveSkill{
       table.insertTable(to_check, effect.cards)
       local dummy = Fk:cloneCard("dilu")
       dummy:addSubcards(to_check)
-      room:obtainCard(target.id, dummy, false, fk.ReasonGive)
+      room:obtainCard(target.id, dummy, false, fk.ReasonGive, player.id)
     elseif not isYang and not target:isKongcheng() then
       to_check = room:askForCardsChosen(player, target, 1, 2, "h", self.name)
       local dummy = Fk:cloneCard("dilu")

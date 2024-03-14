@@ -1754,7 +1754,9 @@ liuhui:addSkill(gusuan)
 Fk:loadTranslationTable{
   ["liuhui"] = "刘徽",
   ["#liuhui"] = "周天古率",
+  ["cv:liuhui"] = "冰霜墨菊",
   ["illustrator:liuhui"] = "凡果_肉山大魔王",
+
   ["geyuan"] = "割圆",
   [":geyuan"] = '锁定技，游戏开始时，将A~K的所有点数随机排列成一个圆环。有牌进入弃牌堆时，将满足圆环进度的点数记录在圆环内。当圆环完成后，你获得牌堆和场上所有完成此圆环最初和最后点数的牌，然后从圆环中移除这两个点数（不会被移除到三个以下），重新开始圆环。<br><font color="grey">进度点数：圆环中即将被点亮的点数。</font>',
   ["jieshu"] = "解术",

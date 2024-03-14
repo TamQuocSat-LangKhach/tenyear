@@ -2122,7 +2122,7 @@ local lixun = fk.CreateTriggerSkill{
       room:notifySkillInvoked(player, self.name, "negative")
       local pattern = ".|A~"..(player:getMark("@lisu_zhu") - 1)
       if player:getMark("@lisu_zhu") <= 1 then
-        pattern = "false"
+        pattern = "."
       end
       local judge = {
         who = player,
@@ -2900,7 +2900,7 @@ local bingji = fk.CreateActiveSkill{
   anim_type = "control",
   card_num = 0,
   target_num = 0,
-  interaction = UI.ComboBox {choices = {"slash", "peach"}},
+  prompt = "#bingji",
   can_use = function(self, player)
     if not player:isKongcheng() then
       local suit = Fk:getCardById(player.player_cards[Player.Hand][1]):getSuitString(true)
@@ -2916,25 +2916,24 @@ local bingji = fk.CreateActiveSkill{
     table.insert(mark, suit)
     room:setPlayerMark(player, "@bingji-phase", mark)
     player:showCards(player.player_cards[Player.Hand])
-    local card = Fk:cloneCard(self.interaction.data)
-    card.skillName = self.name
-    if player:prohibitUse(card) then return end
-    local targets = {}
+    local targets = {["peach"] = {}, ["slash"] = {}}
+    local choices = {}
     for _, p in ipairs(room:getOtherPlayers(player)) do
-      if self.interaction.data == "peach" then
-        if p:isWounded() and not player:isProhibited(p, card) then
-          table.insert(targets, p.id)
-        end
-      else
-        if not player:isProhibited(p, card) then
-          table.insert(targets, p.id)
-        end
+      if player:canUseTo(Fk:cloneCard("slash"), p, {bypass_times = true}) then
+        table.insert(targets["slash"], p.id)
+      end
+      local peach = Fk:cloneCard("peach")
+      if not player:prohibitUse(peach) and not player:isProhibited(p, peach) and p:isWounded() then
+        table.insert(targets["peach"], p.id)
       end
     end
-    if #targets == 0 then return end
-    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#bingji-choose:::"..self.interaction.data, self.name, false)
+    if #targets["peach"] > 0 then table.insert(choices, "peach") end
+    if #targets["slash"] > 0 then table.insert(choices, "slash") end
+    if #choices == 0 then return end
+    local choice = room:askForChoice(player, choices, self.name, "#bingji-choice", false, {"slash", "peach"})
+    local tos = room:askForChoosePlayers(player, targets[choice], 1, 1, "#bingji-choose:::"..choice, self.name, false)
     local to = room:getPlayerById(tos[1])
-    room:useVirtualCard(self.interaction.data, nil, player, to, self.name, true)
+    room:useVirtualCard(choice, nil, player, to, self.name, true)
   end
 }
 zhaoyan:addSkill(funing)
@@ -2942,14 +2941,18 @@ zhaoyan:addSkill(bingji)
 Fk:loadTranslationTable{
   ["ty__zhaoyan"] = "赵俨",
   ["#ty__zhaoyan"] = "扬历干功",
+  ["cv:ty__zhaoyan"] = "冰霜墨菊",
   ["illustrator:ty__zhaoyan"] = "游漫美绘",
+
   ["funing"] = "抚宁",
   [":funing"] = "当你使用一张牌时，你可以摸两张牌然后弃置X张牌（X为此技能本回合发动次数）。",
   ["bingji"] = "秉纪",
-  [":bingji"] = "出牌阶段每种花色限一次，若你的手牌均为同一花色，则你可以展示所有手牌（至少一张），然后视为对一名其他角色使用一张【杀】或一张【桃】。",
+  [":bingji"] = "出牌阶段每种花色限一次，若你的手牌均为同一花色，则你可以展示所有手牌（至少一张），然后视为对一名其他角色使用一张【杀】（有距离限制且不计入次数）或一张【桃】。",
   ["#funing-invoke"] = "抚宁：你可以摸两张牌，然后弃置%arg张牌",
   ["@bingji-phase"] = "秉纪",
-  ["#bingji-choose"] = "秉纪：选择一名其他角色视为对其使用【%arg】",
+  ["#bingji-choice"] = "秉纪：选择对其他角色使用的牌名",
+  ["#bingji-choose"] = "秉纪：视为对一名其他角色使用【%arg】",
+  ["#bingji"] = "秉纪：展示所有手牌，视为对一名其他角色使用【杀】或【桃】",
 
   ["$funing1"] = "为国效力，不可逞一时之气。",
   ["$funing2"] = "诸将和睦，方为国家之幸。",

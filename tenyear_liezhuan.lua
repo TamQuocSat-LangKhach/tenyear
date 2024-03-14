@@ -911,7 +911,7 @@ local ty__weipo = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and player == target and player:getMark("@@ty__weipo_invalidity-round") == 0 and
+    return player:hasSkill(self) and player == target and player:getMark("@@ty__weipo_invalidity") == 0 and
       data.from ~= player.id and (data.card.trueName == "slash" or data.card:isCommonTrick()) and player:getHandcardNum() < player.maxHp
   end,
   on_use = function(self, event, target, player, data)
@@ -922,6 +922,14 @@ local ty__weipo = fk.CreateTriggerSkill{
       table.insertIfNeed(weipo_players, player.id)
       data.extra_data.ty__weipo_players = weipo_players
     end
+  end,
+
+  refresh_events = {fk.TurnStart},
+  can_refresh = function (self, event, target, player, data)
+    return target == player and player:getMark("@@ty__weipo_invalidity") > 0
+  end,
+  on_refresh = function (self, event, target, player, data)
+    player.room:setPlayerMark(player, "@@ty__weipo_invalidity", 0)
   end,
 }
 local ty__weipo_delay = fk.CreateTriggerSkill{
@@ -944,7 +952,7 @@ local ty__weipo_delay = fk.CreateTriggerSkill{
         room:obtainCard(target.id, card[1], false, fk.ReasonGive)
       end
     end
-    room:addPlayerMark(player, "@@ty__weipo_invalidity-round")
+    room:setPlayerMark(player, "@@ty__weipo_invalidity", 1)
   end,
 }
 ty__jieying:addRelatedSkill(ty__jieying_delay)
@@ -956,6 +964,7 @@ hanfu:addSkill(ty__weipo)
 Fk:loadTranslationTable{
   ["hanfu"] = "韩馥",
   ["#hanfu"] = "度势恇然",
+  ["designer:hanfu"] = "hanfu",
   ["illustrator:hanfu"] = "福州明暗",
   ["ty__jieying"] = "节应",
   ["#ty__jieying_delay"] = "节应",
@@ -969,7 +978,7 @@ Fk:loadTranslationTable{
   ["#ty__jieying-choose"] = "节应：选择一名其他角色，令其下个回合<br>使用牌无距离限制且可多指定1个目标，造成伤害后不能使用牌",
   ["#ty__jieying-extra"] = "节应：可为此【%arg】额外指定1个目标",
   ["#ty__weipo-give"] = "危迫：必须选择一张手牌交给%src，且本回合危迫失效",
-  ["@@ty__weipo_invalidity-round"] = "危迫失效",
+  ["@@ty__weipo_invalidity"] = "危迫失效",
   ["$ty__jieying1"] = "秉志持节，应时而动。",
   ["$ty__jieying2"] = "授节于汝，随机应变！",
   ["$ty__weipo1"] = "临渊勒马，进退维谷！",
@@ -1098,6 +1107,7 @@ caosong:addSkill(yizhengc)
 Fk:loadTranslationTable{
   ["ty__caosong"] = "曹嵩",
   ["#ty__caosong"] = "依权弼子",
+  ["designer:ty__caosong"] = "步穗",
   ["illustrator:ty__caosong"] = "凝聚永恒",
   ["lilu"] = "礼赂",
   [":lilu"] = "摸牌阶段，你可以放弃摸牌，改为将手牌摸至体力上限（最多摸至5张），并将至少一张手牌交给一名其他角色；"..
@@ -1267,6 +1277,7 @@ zhangmiao:addRelatedSkill(zhangu)
 Fk:loadTranslationTable{
   ["zhangmiao"] = "张邈",
   ["#zhangmiao"] = "苔岑往却",
+  ["designer:zhangmiao"] = "步穗",
   ["illustrator:zhangmiao"] = "猎枭",
   ["mouni"] = "谋逆",
   [":mouni"] = "准备阶段，你可对一名其他角色依次使用你手牌中所有的【杀】直到该角色进入濒死状态。若以此法使用的【杀】中有未造成伤害的【杀】，"..
@@ -1441,6 +1452,7 @@ dongcheng:addSkill(xuezhao)
 Fk:loadTranslationTable{
   ["ty__dongcheng"] = "董承",
   ["#ty__dongcheng"] = "扬义誓诛",
+  ["designer:ty__dongcheng"] = "步穗",
   ["illustrator:ty__dongcheng"] = "游漫美绘",
   ["xuezhao"] = "血诏",
   [":xuezhao"] = "出牌阶段限一次，你可以弃置一张手牌并选择至多X名其他角色（X为你的体力上限），然后令这些角色依次选择是否交给你一张牌，"..

@@ -5805,6 +5805,7 @@ ruanyu:addSkill(miaoxian)
 Fk:loadTranslationTable{
   ["ruanyu"] = "阮瑀",
   ["#ruanyu"] = "斐章雅律",
+  ["designer:ruanyu"] = "步穗",
   ["illustrator:ruanyu"] = "alien",
   ["xingzuo"] = "兴作",
   [":xingzuo"] = "出牌阶段开始时，你可观看牌堆底的三张牌并用任意张手牌替换其中等量的牌。若如此做，结束阶段，"..

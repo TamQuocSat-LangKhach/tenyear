@@ -2819,6 +2819,7 @@ goddengai:addRelatedSkill(cuixin)
 Fk:loadTranslationTable{
   ["goddengai"] = "神邓艾",
   ["#goddengai"] = "带砺山河",
+  ["designer:goddengai"] = "步穗",
   ["illustrator:goddengai"] = "黯荧岛工作室",
   ["tuoyu"] = "拓域",
   [":tuoyu"] = "锁定技，你的手牌区域添加三个未开发的副区域：<br>丰田：伤害和回复值+1；<br>清渠：无距离和次数限制；<br>峻山：不能被响应。<br>"..
@@ -6156,6 +6157,7 @@ zerong:addSkill(fozong)
 Fk:loadTranslationTable{
   ["zerong"] = "笮融",
   ["#zerong"] = "刺血济饥",
+  ["designer:zerong"] = "步穗",
   ["illustrator:zerong"] = "君桓文化",
   ["cansi"] = "残肆",
   [":cansi"] = "锁定技，准备阶段，你选择一名其他角色，你与其各回复1点体力，然后依次视为对其使用【杀】、【决斗】和【火攻】，其每因此受到1点伤害，你摸两张牌。",

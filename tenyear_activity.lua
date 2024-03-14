@@ -991,6 +991,7 @@ dongxie:addSkill(humei)
 Fk:loadTranslationTable{
   ["dongxie"] = "董翓",
   ["#dongxie"] = "暗夜豺狐",
+  ["designer:dongxie"] = "步穗",
   ["illustrator:dongxie"] = "凝聚永恒",
   ["jiaoxia"] = "狡黠",
   [":jiaoxia"] = "出牌阶段开始时，你可以令本阶段你的手牌均视为【杀】。若你以此法使用的【杀】造成了伤害，"..
@@ -3951,6 +3952,7 @@ dufuren:addSkill(shunshi)
 Fk:loadTranslationTable{
   ["dufuren"] = "杜夫人",
   ["#dufuren"] = "沛王太妃",
+  ["designer:dufuren"] = "步穗",
   ["illustrator:dufuren"] = "匠人绘",
   ["yise"] = "异色",
   [":yise"] = "当其他角色获得你的牌后，若此牌为：红色，你可以令其回复1点体力；黑色，其下次受到【杀】造成的伤害时，此伤害+1。",
@@ -5239,6 +5241,7 @@ pangdegong:addSkill(yinyi)
 Fk:loadTranslationTable{
   ["ty__pangdegong"] = "庞德公",
   ["#ty__pangdegong"] = "友睦风疏",
+  ["designer:ty__pangdegong"] = "步穗",
   ["illustrator:ty__pangdegong"] = "君桓文化",
   ["heqia"] = "和洽",
   [":heqia"] = "出牌阶段开始时，你可以选择一项：1.你交给一名其他角色至少一张牌；2.令一名有手牌的其他角色交给你至少一张牌。然后获得牌的角色可以将一张手牌当任意基本牌使用（无距离次数限制），且此牌目标上限改为X（X为其本次获得的牌数）。",

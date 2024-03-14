@@ -2124,6 +2124,7 @@ tengfanglan:addSkill(ty__aichen)
 Fk:loadTranslationTable{
   ["ty__tengfanglan"] = "滕芳兰",
   ["#ty__tengfanglan"] = "铃兰零落",
+  ["designer:ty__tengfanglan"] = "步穗",
   ["illustrator:ty__tengfanglan"] = "鬼画府",
   ["ty__luochong"] = "落宠",
   [":ty__luochong"] = "每轮开始时，你可以弃置任意名角色区域内共计至多4张牌，若你一次性弃置了一名角色区域内至少3张牌，〖落宠〗弃置牌数-1。",
@@ -2673,6 +2674,7 @@ xujing:addSkill(caixia)
 Fk:loadTranslationTable{
   ["ty__xujing"] = "许靖",
   ["#ty__xujing"] = "璞玉有瑕",
+  ["designer:ty__xujing"] = "步穗",
   ["illustrator:ty__xujing"] = "黯荧岛工作室",
   ["shangyu"] = "赏誉",
   [":shangyu"] = "锁定技，游戏开始时，你获得一张【杀】并标记之，然后可以将其交给一名角色。此【杀】：造成伤害后，你和使用者各摸一张牌；"..

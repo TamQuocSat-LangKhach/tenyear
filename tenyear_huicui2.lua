@@ -3799,7 +3799,8 @@ peiyuanshao:addSkill(moyu)
 Fk:loadTranslationTable{
   ["peiyuanshao"] = "裴元绍",
   ["#peiyuanshao"] = "买椟还珠",
-  ["illustrator:xxx_general"] = "匠人绘",
+  ["designer:peiyuanshao"] = "步穗",
+  ["illustrator:peiyuanshao"] = "匠人绘",
   ["moyu"] = "没欲",
   [":moyu"] = "出牌阶段每名角色限一次，你可以获得一名其他角色区域内的一张牌，然后该角色可以对你使用一张无距离限制且伤害值为X的【杀】"..
   "（X为本回合本技能发动次数），若此【杀】对你造成了伤害，本技能于本回合失效。",

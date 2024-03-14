@@ -5123,50 +5123,53 @@ Fk:loadTranslationTable{
 }
 
 local ty_ex__liuchen = General(extension, "ty_ex__liuchen", "shu", 4)
-local ty_ex__zhanjue = fk.CreateViewAsSkill{
+local ty_ex__zhanjue = fk.CreateActiveSkill{
   name = "ty_ex__zhanjue",
   anim_type = "offensive",
-  card_filter = Util.FalseFunc,
-  view_as = function(self)
+  card_num = 0,
+  min_target_num = 1,
+  prompt = "#ty_ex__zhanjue",
+  can_use = function(self, player)
+    return player:getMark("ty_ex__zhanjue-phase") < 3 and table.find(player:getCardIds("h"), function (id) return Fk:getCardById(id):getMark("@@ty_ex__qinwang-inhand") == 0 end)
+  end,
+  card_filter = function(self, to_select, selected, selected_targets)
+    return false
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
     local card = Fk:cloneCard("duel")
-    local cards = table.filter(Self:getCardIds("h"), function (id) return Fk:getCardById(id):getMark("@@ty_ex__qinwang-inhand") == 0 end)
+    local cards = table.filter(Self:getCardIds("h"), function (id) return Fk:getCardById(id):getMark("@@ty_ex__qinwang-inhand-turn") == 0 end)
     card:addSubcards(cards)
-    card.skillName = self.name
-    return card
+    return Self:canUse(card) and card.skill:targetFilter(to_select, selected, selected_cards, card) and
+      not Self:isProhibited(Fk:currentRoom():getPlayerById(to_select), card)
   end,
-  enabled_at_play = function(self, player)
-    if player:getMark("ty_ex__zhanjue-turn") < 3 and not player:isKongcheng() then
-      return table.find(player:getCardIds("h"), function (id) return Fk:getCardById(id):getMark("@@ty_ex__qinwang-inhand") == 0 end)
-    end
-  end,
-}
-local ty_ex__zhanjue_trigger = fk.CreateTriggerSkill{
-  name = "#ty_ex__zhanjue_trigger",
-  mute = true,
-  events = {fk.CardUseFinished},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and table.contains(data.card.skillNames, "ty_ex__zhanjue")
-  end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local card = Fk:cloneCard("duel")
+    local cards = table.filter(player:getCardIds("h"), function (id) return Fk:getCardById(id):getMark("@@ty_ex__qinwang-inhand-turn") == 0 end)
+    card:addSubcards(cards)
+    -- use
+    local use = {} ---@type CardUseStruct
+    use.from = effect.from
+    use.tos = table.map(effect.tos, function(pid) return { pid } end)
+    use.card = card
+
+    room:useCard(use)
     if not player.dead then
       player:drawCards(1, "ty_ex__zhanjue")
-      room:addPlayerMark(player, "ty_ex__zhanjue-turn", 1)
+      room:addPlayerMark(player, "ty_ex__zhanjue-phase", 1)
     end
-    if data.damageDealt then
+    if use.damageDealt then
       for _, p in ipairs(room.alive_players) do
-        if data.damageDealt[p.id] and not p.dead then
+        if use.damageDealt[p.id] then
           p:drawCards(1, "ty_ex__zhanjue")
           if p == player then
-            room:addPlayerMark(player, "ty_ex__zhanjue-turn", 1)
+            room:addPlayerMark(player, "ty_ex__zhanjue-phase", 1)
           end
         end
       end
     end
   end,
 }
-ty_ex__zhanjue:addRelatedSkill(ty_ex__zhanjue_trigger)
 ty_ex__liuchen:addSkill(ty_ex__zhanjue)
 local ty_ex__qinwang = fk.CreateActiveSkill{
   name = "ty_ex__qinwang$",
@@ -5196,6 +5199,9 @@ local ty_ex__qinwang = fk.CreateActiveSkill{
             skillName = self.name,
             moveVisible = false,
           })
+          if table.contains(player:getCardIds("h"), cards[1]) then
+            room:setCardMark(Fk:getCardById(cards[1]), "@@ty_ex__qinwang-inhand-turn", 1)
+          end
         end
       end
     end
@@ -5208,32 +5214,6 @@ local ty_ex__qinwang = fk.CreateActiveSkill{
     end
   end,
 }
-local ty_ex__qinwang_trigger = fk.CreateTriggerSkill{
-  name = "#ty_ex__qinwang_trigger",
-  refresh_events = {fk.AfterCardsMove, fk.TurnEnd},
-  can_refresh = function(self, event, target, player, data)
-    return player:usedSkillTimes(ty_ex__qinwang.name, Player.HistoryTurn) > 0
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.AfterCardsMove then
-      for _, move in ipairs(data) do
-        if move.skillName == ty_ex__qinwang.name and move.moveReason == fk.ReasonGive and move.to == player.id then
-          for _, info in ipairs(move.moveInfo) do
-            if table.contains(player:getCardIds("h"), info.cardId) then
-              room:setCardMark(Fk:getCardById(info.cardId), "@@ty_ex__qinwang-inhand", 1)
-            end
-          end
-        end
-      end
-    else
-      for _, id in ipairs(player:getCardIds("h")) do
-        room:setCardMark(Fk:getCardById(id), "@@ty_ex__qinwang-inhand", 0)
-      end
-    end
-  end,
-}
-ty_ex__qinwang:addRelatedSkill(ty_ex__qinwang_trigger)
 ty_ex__liuchen:addSkill(ty_ex__qinwang)
 Fk:loadTranslationTable{
   ["ty_ex__liuchen"] = "界刘谌",
@@ -5245,9 +5225,10 @@ Fk:loadTranslationTable{
   ["ty_ex__qinwang"] = "勤王",
   [":ty_ex__qinwang"] = "主公技，出牌阶段限一次，你可以令其他蜀势力角色依次选择是否交给你一张【杀】，然后你可以令所有交给你【杀】的角色摸一张牌"..
   "（以此法获得的【杀】于本回合不会被〖战绝〗使用）。",
+  ["#ty_ex__zhanjue"] = "战绝：你可以将除因勤王获得的牌外的所有手牌当【决斗】使用，然后你和受伤的角色各摸一张牌",
   ["#ty_ex__qinwang-ask"] = "勤王：可以交给 %src 一张【杀】",
   ["#ty_ex__qinwang-draw"] = "勤王：你可以令所有交给你【杀】的角色摸一张牌",
-  ["@@ty_ex__qinwang-inhand"] = "勤王",
+  ["@@ty_ex__qinwang-inhand-turn"] = "勤王",
 
   ["$ty_ex__zhanjue1"] = "千里锦绣江山，岂能拱手相让！",
   ["$ty_ex__zhanjue2"] = "先帝一生心血，安可坐以待毙！",

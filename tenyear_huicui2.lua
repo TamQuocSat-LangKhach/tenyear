@@ -4055,7 +4055,7 @@ Fk:loadTranslationTable{
   ["~ty__zhangmancheng"] = "逡巡不前，坐以待毙……",
 }
 
---异军突起：公孙度 孟优
+--异军突起：公孙度 孟优 公孙修
 local gongsundu = General(extension, "gongsundu", "qun", 4)
 local zhenze = fk.CreateTriggerSkill{
   name = "zhenze",
@@ -4249,6 +4249,119 @@ Fk:loadTranslationTable{
   ["~mengyou"] = "大哥，诸葛亮又打来了。",
 }
 
+local gongsunxiu = General(extension, "gongsunxiu", "qun", 4)
+local ganggu = fk.CreateTriggerSkill{
+  name = "ganggu",
+  frequency = Skill.Compulsory,
+  events = {fk.HpLost},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and player:usedSkillTimes(self.name) == 0
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(2, self.name)
+    if not player.dead then
+      player.room:loseHp(player, 1, self.name)
+    end
+  end,
+}
+local kuizhen = fk.CreateActiveSkill{
+  name = "kuizhen",
+  anim_type = "offensive",
+  prompt = "#kuizhen-active",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    if #selected == 0 then
+      local target = Fk:currentRoom():getPlayerById(to_select)
+      if target.hp > Self.hp or target:getHandcardNum() > Self:getHandcardNum() then
+        local duel = Fk:cloneCard("duel")
+        duel.skillName = self.name
+        return target:canUseTo(duel, Self)
+      end
+    end
+  end,
+  target_num = 1,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local card = Fk:cloneCard("duel")
+    card.skillName = self.name
+    local use = {} ---@type CardUseStruct
+    use.from = target.id
+    use.tos = { {player.id} }
+    use.card = card
+    use.extraUse = true
+    room:useCard(use)
+    if target.dead then return end
+    if use.damageDealt and use.damageDealt[player.id] then
+      if player.dead then return end
+      local cards = target:getCardIds(Player.Hand)
+      if #cards == 0 then return end
+      U.viewCards(player, cards, self.name)
+      cards = table.filter(cards, function (id)
+        return Fk:getCardById(id).trueName == "slash"
+      end)
+      if #cards == 0 then return end
+      room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, false, player.id)
+    else
+      room:loseHp(target, 1, self.name)
+    end
+  end,
+}
+local kuizhen_refresh = fk.CreateTriggerSkill{
+  name = "#kuizhen_refresh",
+
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = Util.TrueFunc,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    for _, move in ipairs(data) do
+      if move.to == player.id and move.toArea == Card.PlayerHand and move.skillName == "kuizhen" then
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player then
+            room:setCardMark(Fk:getCardById(id), "@@kuizhen-inhand", 1)
+          end
+        end
+      end
+    end
+  end,
+}
+local kuizhen_targetmod = fk.CreateTargetModSkill{
+  name = "#kuizhen_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    return card and card.trueName == "slash" and not card:isVirtual() and card:getMark("@@kuizhen-inhand") > 0
+  end,
+}
+kuizhen:addRelatedSkill(kuizhen_targetmod)
+kuizhen:addRelatedSkill(kuizhen_refresh)
+gongsunxiu:addSkill(ganggu)
+gongsunxiu:addSkill(kuizhen)
+Fk:loadTranslationTable{
+  ["gongsunxiu"] = "公孙修",
+  ["#gongsunxiu"] = "寸莛击钟",
+  ["illustrator:mengyou"] = "鬼画府",
+  ["ganggu"] = "干蛊",
+  [":ganggu"] = "锁定技，当一名角色失去体力后，若你于当前回合内未发动过此技能，你摸两张牌，失去1点体力。",
+  ["kuizhen"] = "溃阵",
+  [":kuizhen"] = "出牌阶段限一次，你可以选择一名手牌数或体力值大于你的角色，其视为对你使用【决斗】，若你："..
+  "受到过此【决斗】造成的伤害，你观看其所有手牌，获得其中所有的【杀】且你使用以此法获得的【杀】无次数限制；"..
+  "未受到过此【决斗】造成的伤害，其失去1点体力。",
+
+  ["#kuizhen-active"] = "发动 溃阵，选择一名角色，令其视为对你使用【决斗】",
+  ["@@kuizhen-inhand"] = "溃阵",
+
+  ["$ganggu1"] = "承志奉祠，达于行伍之事。",
+  ["$ganggu2"] = "干父之蛊，全辽裔未竟之业。",
+  ["$kuizhen1"] = "今一马当先，效霸王破釜！",
+  ["$kuizhen2"] = "自古北马皆傲，视南风为鱼俎。",
+  ["~gongsunxiu"] = "大星坠地，父子俱亡……",
+}
+
+
+
 --正音雅乐：蔡文姬 周妃 蔡邕 大乔 小乔
 local caiwenji = General(extension, "mu__caiwenji", "qun", 3, 3, General.Female)
 local shuangjia = fk.CreateTriggerSkill{
@@ -4371,10 +4484,12 @@ local beifen = fk.CreateTriggerSkill{
 local beifen_targetmod = fk.CreateTargetModSkill{
   name = "#beifen_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return player:hasSkill(beifen) and player:getHandcardNum() > 2 * player:getMark("@shuangjia")
+    return player:hasSkill(beifen) and player:usedSkillTimes("shuangjia", Player.HistoryGame) > 0 and
+    player:getHandcardNum() > 2 * player:getMark("@shuangjia")
   end,
   bypass_distances = function(self, player, skill, card, to)
-    return player:hasSkill(beifen) and player:getHandcardNum() > 2 * player:getMark("@shuangjia")
+    return player:hasSkill(beifen) and player:usedSkillTimes("shuangjia", Player.HistoryGame) > 0 and
+    player:getHandcardNum() > 2 * player:getMark("@shuangjia")
   end,
 }
 shuangjia:addRelatedSkill(shuangjia_maxcards)

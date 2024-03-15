@@ -3062,7 +3062,7 @@ Fk:loadTranslationTable{
   ["~godxuchu"] = "猛虎归林晚，不见往来人……",
 }
 
---百战虎贲：兀突骨 文鸯 夏侯霸 皇甫嵩 王双 留赞 黄祖 雷铜 吴兰 陈泰 王濬 杜预
+--百战虎贲：兀突骨 文鸯 夏侯霸 皇甫嵩 王双 留赞 黄祖 雷铜 吴兰 陈泰 王濬 杜预 陈武董袭 丁奉（同OL） 胡遵
 local wutugu = General(extension, "ty__wutugu", "qun", 15)
 local ty__ranshang = fk.CreateTriggerSkill{
   name = "ty__ranshang",
@@ -4311,8 +4311,8 @@ Fk:loadTranslationTable{
   ["illustrator:ty__duyu"] = "君桓文化",
 
   ["jianguo"] = "谏国",
-  [":jianguo"] = "出牌阶段各限一次，你可以选择：令一名角色摸一张牌然后弃置一半的手牌（向上取整）；"..
-  "令一名角色弃置一张牌然后摸与当前手牌数一半数量的牌（向上取整）",
+  [":jianguo"] = "出牌阶段各限一次，你可以选择：1.令一名角色摸一张牌然后弃置一半的手牌（向上取整）；"..
+  "2.令一名角色弃置一张牌然后摸与当前手牌数一半数量的牌（向上取整）。",
   ["qingshid"] = "倾势",
   [":qingshid"] = "当你于回合内使用【杀】或锦囊牌指定其他角色为目标后，若此牌是你本回合使用的第X张牌（X为你的手牌数），你可以对其中一名目标角色造成1点伤害。",
   ["#jianguo"] = "谏国：你可以选择一项令一名角色执行（向下取整）",
@@ -4326,6 +4326,128 @@ Fk:loadTranslationTable{
   ["$qingshid1"] = "潮起万丈之仞，可阻江南春风。",
   ["$qingshid2"] = "缮甲兵，耀威武，伐吴指日可待。",
   ["~ty__duyu"] = "六合即归一统，奈何寿数已尽……",
+}
+
+local huzun = General(extension, "huzun", "wei", 4)
+local zhantao = fk.CreateTriggerSkill{
+  name = "zhantao",
+  anim_type = "offensive",
+  events = {fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and (player == target or player:inMyAttackRange(target)) and
+    data.from and not data.from.dead and data.from ~= player
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if room:askForSkillInvoke(player, self.name, nil, "#zhantao-invoke::" .. data.from.id) then
+      room:doIndicate(player.id, {data.from.id})
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local n = 13
+    local pattern = "."
+    if data.card and data.card.number > 0 and data.card.number < 13 then
+      n = data.card.number
+      pattern = ".|" .. tostring(n) .. "~13"
+    end
+    local judge = {
+      who = player,
+      reason = self.name,
+      pattern = pattern,
+    }
+    room:judge(judge)
+    if judge.card.number > n then
+      room:useVirtualCard("slash", nil, player, data.from, self.name, true)
+    end
+  end,
+}
+local anjing = fk.CreateTriggerSkill{
+  name = "anjing",
+  anim_type = "support",
+  events = {fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and player == target and player:usedSkillTimes(self.name) < 1 and
+    not table.every(player.room.alive_players, function (p)
+      return not p:isWounded()
+    end)
+  end,
+  on_cost = function (self, event, target, player, data)
+    local targets = table.filter(player.room.alive_players, function (p) return p:isWounded() end)
+    local n = math.min(#targets, player:getMark(self.name) + 1)
+    local tos = player.room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, n,
+    "#anjing-choose:::" .. tostring(n), self.name, true)
+    if #tos > 0 then
+      self.cost_data = tos
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:addPlayerMark(player, self.name, 1)
+    local tos = table.simpleClone(self.cost_data)
+    room:sortPlayersByAction(tos)
+    tos = table.map(tos, Util.Id2PlayerMapper)
+    for _, p in ipairs(tos) do
+      if not p.dead then
+        p:drawCards(1, self.name)
+      end
+    end
+    local recovers = {}
+    for _, p in ipairs(tos) do
+      if not p.dead and p:isWounded() then
+        if #recovers == 0 then
+          table.insert(recovers, p)
+        else
+          if p.hp < recovers[1].hp then
+            recovers = {p}
+          elseif p.hp == recovers[1].hp then
+            table.insert(recovers, p)
+          end
+        end
+      end
+    end
+    if #recovers > 0 then
+      room:recover{
+        who = table.random(recovers),
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      }
+    end
+  end,
+
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == self
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, self.name, 0)
+  end,
+}
+huzun:addSkill(zhantao)
+huzun:addSkill(anjing)
+Fk:loadTranslationTable{
+  ["huzun"] = "胡遵",
+  ["#huzun"] = "",
+  --["designer:huzun"] = "",
+  --["illustrator:huzun"] = "",
+
+  ["zhantao"] = "斩涛",
+  [":zhantao"] = "当你或你攻击范围内的角色受到伤害后，若来源不为你，你可判定，若点数大于伤害牌的点数，你视为对来源使用【杀】。",
+  ["anjing"] = "安境",
+  [":anjing"] = "当你造成伤害后，若你于当前回合内未发动过此技能，你可选择至多X名已受伤的角色（X为此技能发动过的次数+1）"..
+  "这些角色各摸一张牌，然后其中体力值最小的角色回复1点体力（若有多名则随机一名）。",
+
+  ["#zhantao-invoke"] = "是否对 %dest 发动 斩涛，进行判定",
+  ["#anjing-choose"] = "是否发动 安境，令1-%arg名已受伤的角色摸牌，体力值最少的角色回复体力",
+
+  ["$zhantao1"] = "",
+  ["$zhantao2"] = "",
+  ["$anjing1"] = "",
+  ["$anjing2"] = "",
+  ["~huzun"] = "",
 }
 
 --奇人异士：张宝 司马徽 蒲元 管辂 葛玄 杜夔 朱建平 吴范 赵直 周宣 笮融

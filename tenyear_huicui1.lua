@@ -101,33 +101,29 @@ local xuhe = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.EventPhaseStart then
       room:changeMaxHp(player, -1)
-      if not player.dead then
-        local choice = room:askForChoice(player, {"xuhe_discard", "xuhe_draw"}, self.name)
-        if choice == "xuhe_discard" then
-          for _, p in ipairs(room:getAlivePlayers()) do
-            if player:distanceTo(p) < 2 and not p:isNude() then
-              room:doIndicate(player.id, {p.id})
-              local id = room:askForCardChosen(player, p, "he", self.name)
-              room:throwCard({id}, self.name, p, player)
-            end
-          end
-        else
-          for _, p in ipairs(room:getAlivePlayers()) do
-            if player:distanceTo(p) < 2  then
-              p:drawCards(1, self.name)
-            end
+      if player.dead or player:isRemoved() then return end
+      local choice = room:askForChoice(player, {"xuhe_discard", "xuhe_draw"}, self.name)
+      for _, p in ipairs(room:getAlivePlayers()) do
+        if player:distanceTo(p) < 2 and not p:isRemoved() then
+          room:doIndicate(player.id, {p.id})
+          if choice == "xuhe_draw" then
+            p:drawCards(1, self.name)
+          elseif not p:isNude() then
+            local id = room:askForCardChosen(player, p, "he", self.name)
+            room:throwCard({id}, self.name, p, player)
           end
         end
       end
     else
       room:changeMaxHp(player, 1)
+      if player.dead then return end
       local choices = {"draw2"}
       if player:isWounded() then
         table.insert(choices, "recover")
       end
       local choice = room:askForChoice(player, choices, self.name)
       if choice == "draw2" then
-        player:drawCards(2)
+        player:drawCards(2, self.name)
       else
         room:recover({
           who = player,

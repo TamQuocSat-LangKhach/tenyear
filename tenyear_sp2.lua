@@ -913,17 +913,17 @@ local fumou = fk.CreateTriggerSkill{
   anim_type = "masochism",
   events = {fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
+    return target == player and player:hasSkill(self) and player:isWounded()
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(room.alive_players, Util.IdMapper)
     local tos = room:askForChoosePlayers(player, targets, 1, player:getLostHp(), "#fumou-choose:::"..player:getLostHp(), self.name, true)
     if #tos > 0 then
+      room:sortPlayersByAction(tos)
       self.cost_data = tos
       return true
     end
-    self.cancel_cost = true
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -3730,7 +3730,7 @@ local zhushi = fk.CreateTriggerSkill{
     local room = player.room
     local choice = room:askForChoice(target, {"zhushi_draw", "Cancel"}, self.name, "#zhushi-invoke:"..player.id)
     if choice == "zhushi_draw" then
-      player:drawCards(1)
+      player:drawCards(1, self.name)
     end
   end,
 }
@@ -5594,6 +5594,7 @@ fanyufeng:addSkill(jiaoying)
 Fk:loadTranslationTable{
   ["fanyufeng"] = "樊玉凤",
   ["#fanyufeng"] = "红鸾寡宿",
+  ["cv:fanyufeng"] = "杨子怡",
   ["illustrator:fanyufeng"] = "匠人绘",
   ["bazhan"] = "把盏",
   [":bazhan"] = "转换技，出牌阶段限一次，阳：你可以交给一名其他角色至多两张手牌；阴：你可以获得一名其他角色至多两张手牌。"..

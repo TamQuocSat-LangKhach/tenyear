@@ -2029,6 +2029,7 @@ godmachao:addSkill(hengwu)
 Fk:loadTranslationTable{
   ["godmachao"] = "神马超",
   ["#godmachao"] = "神威天将军",
+  ["cv:godmachao"] = "张桐铭",
   ["illustrator:godmachao"] = "君桓文化",
   ["shouli"] = "狩骊",
   [":shouli"] = "游戏开始时，从下家开始所有角色随机使用牌堆中的一张坐骑。你可以将场上的一张进攻马当【杀】（不计入限制的次数且无次数限制）、"..
@@ -4742,6 +4743,7 @@ Fk:addSkill(jj__yeyan)
 Fk:loadTranslationTable{
   ["simahui"] = "司马徽",
   ["#simahui"] = "水镜先生",
+  ["cv:simahui"] = "于松涛",
   ["illustrator:simahui"] = "黑桃J",
   ["jianjie"] = "荐杰",
   [":jianjie"] = "①你的第一个回合开始时，你令一名其他角色获得“龙印”，然后令另一名其他角色获得“凤印”；②出牌阶段限一次（你的第一个回合除外），或当拥有“龙印”/“凤印”的角色死亡时，你可以转移“龙印”/“凤印”。"..
@@ -5062,7 +5064,7 @@ local mingjie = fk.CreateTriggerSkill {
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local card = Fk:getCardById(player:drawCards(1)[1])
+    local card = Fk:getCardById(player:drawCards(1, self.name)[1])
     if card.color == Card.Black then
       if player.hp > 1 then
         room:loseHp(player, 1, self.name)
@@ -5071,7 +5073,7 @@ local mingjie = fk.CreateTriggerSkill {
     else
       for i = 1, 2, 1 do
         if room:askForSkillInvoke(player, self.name) then
-          card = Fk:getCardById(player:drawCards(1)[1])
+          card = Fk:getCardById(player:drawCards(1, self.name)[1])
           if card.color == Card.Black then
             if player.hp > 1 then
               room:loseHp(player, 1, self.name)

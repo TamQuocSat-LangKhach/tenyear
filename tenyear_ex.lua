@@ -3288,7 +3288,7 @@ local ty_ex__zhiyan = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
-    local id = to:drawCards(1)[1]
+    local id = to:drawCards(1, self.name)[1]
     local card = Fk:getCardById(id)
     to:showCards(card)
     room:delay(1000)

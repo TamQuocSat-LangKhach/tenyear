@@ -587,7 +587,7 @@ local jianzhuan = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.CardUsing then
       local choices = table.simpleClone(self.cost_data)
-      local x = player:usedSkillTimes(self.name)
+      local x = player:usedSkillTimes(self.name, Player.HistoryPhase)
       local choice = room:askForChoice(player, choices[1], self.name, "#jianzhuan-choice:::"..tostring(x), nil, choices[2])
       room:setPlayerMark(player, choice .. "-phase", 1)
       doJianzhuan(player, choice, x)

@@ -386,13 +386,16 @@ local ty__pingjian = fk.CreateActiveSkill{
     local used_skills = U.getMark(player, "ty__pingjian_used_skills")
     local skills = table.filter({
       "qiangwu", "ol_ex__qiangxi", "ol_ex__luanji", "ty_ex__sanyao", "ol__xuehen", "ex__yijue", "daoshu", "m_ex__xianzhen",
-      "tianyi", "ty_ex__zhanjue", "ty__lianji", "ty_ex__wurong", "fenxun", "ol_ex__jiuchi", "m_ex__zenhui", "xuezhao", "hs__kurou", "m_ex__mieji",
-      "ex__zhiheng", "ex__guose", "ty_ex__shenxing", "ty__songci", "guolun", "os__gongxin", "lueming", "busuan", "ty__lianzhu",
-      "ex__fanjian", "tanbei", "ty__qingcheng", "chengshang", "ty__songshu", "poxi", "m_ex__ganlu", "qixi", "ty__kuangfu", "qice",
-      "os_ex__gongqi", "ty_ex__huaiyi", "shanxi", "ol_ex__tiaoxin", "qingnang", "quji", "ty_ex__anguo", "limu", "ex__jieyin",
-      "m_ex__anxu", "ty_ex__mingce", "ziyuan", "mou__lijian", "mingjian", "ex__rende", "mizhao", "yanjiao", "ol_ex__dimeng", "ol_ex__zhijian",
-      "quhu", "nuchen", "kanji", "ol_ex__duanliang", "yangjie", "hongyi", "m_ex__junxing", "m_ex__yanzhu", "ol_ex__changbiao",
-      "fengzi", "yanxi", "jiwu", "xuanbei", "yushen", "jinhui", "shuojian", "qingshi", "guanxu", "zunwei", "jichun", "liangyan"
+      "tianyi", "mansi", "ty__lianji", "ty_ex__wurong", "xuezhao", "hs__kurou", "m_ex__mieji",
+      "ex__zhiheng", "ex__guose", "guolun", "duliang", "os__gongxin", "lueming", "jijie", "busuan", "minsi", "ty__lianzhu",
+      "ex__fanjian", "tanbei", "ty__qingcheng", "jinhui", "weimeng", "ty__songshu", "poxi", "m_ex__ganlu", "ty__kuangfu", "qice",
+      "ty_ex__gongqi", "ty_ex__huaiyi", "shanxi", "cuijian", "ol_ex__tiaoxin", "qingnang", "quji", "ty_ex__anguo", "ex__jieyin",
+      "m_ex__anxu", "ty_ex__mingce", "ziyuan", "mou__lijian", "mingjian", "ex__rende", "mizhao", "yanjiao", "ol_ex__dimeng",
+      "quhu", "tunan", "nuchen", "feijun", "yingshui", "qiongying", "zigu", "weiwu", "chiying",
+
+      "yangjie", "hongyi", "m_ex__junxing", "m_ex__yanzhu", "ol_ex__changbiao", "yanxi", "jiwu", "xuanbei", "yushen", "guanxu",
+      "ty__jianji", "wencan", "xiangmian", "zhuren", "changqu", "jiuxianc", "caizhuang", "ty__beini", "jichun", "tongwei",
+      "liangyan", "kuizhen"
     }, function (skill_name)
       return not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
     end)
@@ -430,17 +433,19 @@ local ty__pingjian_trigger = fk.CreateTriggerSkill{
     if event == fk.Damaged then
       skills = table.filter({
         "guixin", "ty__benyu", "ex__fankui", "ex__ganglie", "ex__yiji", "ex__jianxiong", "os_ex__enyuan", "chouce", "ol_ex__jieming",
-        "fangzhu", "chengxiang", "huituo", "ty__wangxi", "yuce", "zhiyu", "wanggui", "qianlong", "ty__jilei",
-        "xianchou", "rangjie", "liejie", "os__fupan", "zhichi", "yuqi", "silun", "yashi", "qingxian", "xiace"
+        "fangzhu", "chengxiang", "huituo", "ty__wangxi", "yuce", "zhichi", "zhiyu", "wanggui", "qianlong", "dingcuo", "peiqi",
+
+        "ty__jilei", "xianchou", "rangjie", "liejie", "os__fupan", "yuqi", "silun", "yashi", "qingxian", "xiace", "fumou"
       }, function (skill_name)
         return not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
       end)
     elseif event == fk.EventPhaseStart then
       skills = table.filter({
-        "ty_ex__zhiyan", "ex__biyue", "fujian", "kunfen", "ol_ex__jushou", "os_ex__bingyi", "miji", "zhengu",
-        "juece", "sp__youdi", "kuanshi", "ty__jieying", "suizheng", "m_ex__jieyue", "shenfu", "meihun",
-        "pijing", "zhuihuan", "os__juchen", "os__xingbu", "zuilun", "mozhi", "ty_ex__jingce", "nuanhui", "sangu",
-        "js__pianchong", "linghui"
+        "ty_ex__zhiyan", "ex__biyue", "zuilun", "mozhi", "fujian", "kunfen", "ol_ex__jushou", "os_ex__bingyi", "miji", "zhengu",
+        "juece", "sp__youdi", "kuanshi", "ty__jieying", "suizheng", "m_ex__jieyue",
+
+        "shenfu", "meihun", "pijing", "zhuihuan", "os__juchen", "os__xingbu", "ty_ex__jingce", "nuanhui", "sangu",
+        "js__pianchong", "linghui", "huayi"
       }, function (skill_name)
         return not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
       end)

@@ -12,47 +12,43 @@ local liwan = General(extension, "liwan", "wei", 3, 3, General.Female)
 local liandui = fk.CreateTriggerSkill{
   name = "liandui",
   events = {fk.CardUsing},
+  mute = true,
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self) or target.dead then return false end
-    local liandui_target = (data.extra_data or {}).liandui_lastplayer
-    return liandui_target ~= nil and ((liandui_target == player.id) ~= (player == target))
-      and not player.room:getPlayerById(liandui_target).dead
-  end,
-  on_cost = function(self, event, target, player, data)
-    local to = player.id
-    if player == target then
-      to = (data.extra_data or {}).liandui_lastplayer
-    end
-    if player.room:askForSkillInvoke(target, self.name, nil, "#liandui-invoke:"..player.id .. ":" .. to) then
-      self.cost_data = to
-      return true
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    local tar = player.room:getPlayerById(self.cost_data)
-    tar:drawCards(2, self.name)
-  end,
-
-  refresh_events = {fk.AfterCardUseDeclared},
-  can_refresh = function(self, event, target, player, data)
-    return target == player
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    local liandui_target = {}
-    for _, p in ipairs(room.alive_players) do
-      if p:getMark("liandui_lastplayer") > 0 then
-        table.insert(liandui_target, p.id)
-        room:setPlayerMark(p, "liandui_lastplayer", 0)
+    local logic = player.room.logic
+    local use_event = logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
+    if use_event == nil then return false end
+    local events = logic.event_recorder[GameEvent.UseCard] or Util.DummyTable
+    local last_find = false
+    for i = #events, 1, -1 do
+      local e = events[i]
+      if e.id == use_event.id then
+        last_find = true
+      elseif last_find then
+        local last_use = e.data[1]
+        if player == target then
+          if last_use.from ~= player.id then
+            self.cost_data = last_use.from
+            return true
+          end
+        else
+          if last_use.from == player.id then
+            self.cost_data = player.id
+            return true
+          end
+        end
+        return false
       end
     end
-    if #liandui_target > 0 then
-      data.extra_data = data.extra_data or {}
-      data.extra_data.liandui_lastplayer = liandui_target[1]
-    end
-    if not player.dead then
-      room:setPlayerMark(player, "liandui_lastplayer", 1)
-    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(target, self.name, nil, "#liandui-invoke:"..player.id .. ":" .. self.cost_data)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke(self.name)
+    room:notifySkillInvoked(player, self.name, player == target and "support" or "drawcard")
+    room:getPlayerById(self.cost_data):drawCards(2, self.name)
   end,
 }
 local biejun = fk.CreateTriggerSkill{
@@ -61,7 +57,7 @@ local biejun = fk.CreateTriggerSkill{
   events = {fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self) and target == player and
-      table.every(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@biejun-inhand") == 0 end)
+      table.every(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@biejun-inhand-turn") == 0 end)
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#biejun-invoke")
@@ -71,9 +67,9 @@ local biejun = fk.CreateTriggerSkill{
     return true
   end,
 
-  refresh_events = {fk.TurnEnd, fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
+  refresh_events = {fk.AfterCardsMove, fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.TurnEnd then
+    if event == fk.AfterCardsMove then
       return true
     elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
       return data == self
@@ -83,9 +79,16 @@ local biejun = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.TurnEnd then
-      for _, id in ipairs(player:getCardIds(Player.Hand)) do
-        room:setCardMark(Fk:getCardById(id), "@@biejun-inhand", 0)
+    if event == fk.AfterCardsMove then
+      for _, move in ipairs(data) do
+        if move.to == player.id and move.toArea == Card.PlayerHand and move.skillName == "biejun" then
+          for _, info in ipairs(move.moveInfo) do
+            local id = info.cardId
+            if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player then
+              room:setCardMark(Fk:getCardById(id), "@@biejun-inhand-turn", 1)
+            end
+          end
+        end
       end
     else
       if table.every(room.alive_players, function(p) return not p:hasSkill(self, true) or p == player end) then
@@ -107,32 +110,26 @@ local biejun_active = fk.CreateActiveSkill{
   card_num = 1,
   target_num = 1,
   can_use = function(self, player)
-    local targetRecorded = player:getMark("biejun_targets-phase")
+    local targetRecorded = U.getMark(player, "biejun_targets-phase")
     return table.find(Fk:currentRoom().alive_players, function(p)
-      return p ~= player and p:hasSkill(biejun.name) and (type(targetRecorded) ~= "table" or not table.contains(targetRecorded, p.id))
+      return p ~= player and p:hasSkill(biejun) and not table.contains(targetRecorded, p.id)
     end)
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Card.PlayerEquip
   end,
   target_filter = function(self, to_select, selected)
-    if #selected == 0 and to_select ~= Self.id and Fk:currentRoom():getPlayerById(to_select):hasSkill(biejun.name) then
-      local targetRecorded = Self:getMark("biejun_targets-phase")
-      return type(targetRecorded) ~= "table" or not table.contains(targetRecorded, to_select)
-    end
+    return #selected == 0 and to_select ~= Self.id and Fk:currentRoom():getPlayerById(to_select):hasSkill(biejun) and
+    not table.contains(U.getMark(Self, "biejun_targets-phase"), to_select)
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    player:broadcastSkillInvoke(biejun.name)
-    local targetRecorded = type(player:getMark("biejun_targets-phase")) == "table" and player:getMark("biejun_targets-phase") or {}
-    table.insertIfNeed(targetRecorded, target.id)
+    target:broadcastSkillInvoke(biejun.name)
+    local targetRecorded = U.getMark(player, "biejun_targets-phase")
+    table.insert(targetRecorded, target.id)
     room:setPlayerMark(player, "biejun_targets-phase", targetRecorded)
-    local id = effect.cards[1]
-    room:obtainCard(target, id, false, fk.ReasonGive, player.id)
-    if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == target then
-      room:setCardMark(Fk:getCardById(id), "@@biejun-inhand", 1)
-    end
+    room:moveCardTo(effect.cards[1], Card.PlayerHand, target, fk.ReasonGive, "biejun", nil, false, player.id)
   end,
 }
 Fk:addSkill(biejun_active)
@@ -150,7 +147,7 @@ Fk:loadTranslationTable{
   [":biejun&"] = "出牌阶段限一次，你可以将一张手牌交给李婉。",
   ["#liandui-invoke"] = "联对：你可以发动 %src 的“联对”，令 %dest 摸两张牌",
   ["#biejun-invoke"] = "别君：你可以翻面，防止你受到的伤害",
-  ["@@biejun-inhand"] = "别君",
+  ["@@biejun-inhand-turn"] = "别君",
   ["#biejun-active"] = "别君：选择一张手牌交给一名拥有“别君”的角色",
 
   ["$liandui1"] = "以句相联，抒离散之苦。",

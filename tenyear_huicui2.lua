@@ -4250,8 +4250,8 @@ Fk:loadTranslationTable{
 }
 
 local gongsunxiu = General(extension, "gongsunxiu", "qun", 4)
-local ganggu = fk.CreateTriggerSkill{
-  name = "ganggu",
+local gangu = fk.CreateTriggerSkill{
+  name = "gangu",
   frequency = Skill.Compulsory,
   events = {fk.HpLost},
   can_trigger = function(self, event, target, player, data)
@@ -4337,14 +4337,14 @@ local kuizhen_targetmod = fk.CreateTargetModSkill{
 }
 kuizhen:addRelatedSkill(kuizhen_targetmod)
 kuizhen:addRelatedSkill(kuizhen_refresh)
-gongsunxiu:addSkill(ganggu)
+gongsunxiu:addSkill(gangu)
 gongsunxiu:addSkill(kuizhen)
 Fk:loadTranslationTable{
   ["gongsunxiu"] = "公孙修",
   ["#gongsunxiu"] = "寸莛击钟",
   ["illustrator:mengyou"] = "鬼画府",
-  ["ganggu"] = "干蛊",
-  [":ganggu"] = "锁定技，当一名角色失去体力后，若你于当前回合内未发动过此技能，你摸两张牌，失去1点体力。",
+  ["gangu"] = "干蛊",
+  [":gangu"] = "锁定技，当一名角色失去体力后，若你于当前回合内未发动过此技能，你摸两张牌，失去1点体力。",
   ["kuizhen"] = "溃阵",
   [":kuizhen"] = "出牌阶段限一次，你可以选择一名手牌数或体力值大于你的角色，其视为对你使用【决斗】，若你："..
   "受到过此【决斗】造成的伤害，你观看其所有手牌，获得其中所有的【杀】且你使用以此法获得的【杀】无次数限制；"..
@@ -4353,8 +4353,8 @@ Fk:loadTranslationTable{
   ["#kuizhen-active"] = "发动 溃阵，选择一名角色，令其视为对你使用【决斗】",
   ["@@kuizhen-inhand"] = "溃阵",
 
-  ["$ganggu1"] = "承志奉祠，达于行伍之事。",
-  ["$ganggu2"] = "干父之蛊，全辽裔未竟之业。",
+  ["$gangu1"] = "承志奉祠，达于行伍之事。",
+  ["$gangu2"] = "干父之蛊，全辽裔未竟之业。",
   ["$kuizhen1"] = "今一马当先，效霸王破釜！",
   ["$kuizhen2"] = "自古北马皆傲，视南风为鱼俎。",
   ["~gongsunxiu"] = "大星坠地，父子俱亡……",

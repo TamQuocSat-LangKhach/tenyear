@@ -4582,7 +4582,7 @@ local ty_ex__huituo = fk.CreateTriggerSkill{
         local room = player.room
         local damage_event = room.logic:getCurrentEvent()
         if not damage_event then return false end
-        local x = target:getMark("ty_ex__huituo_record-trun")
+        local x = target:getMark("ty_ex__huituo_record-turn")
         if x == 0 then
           room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function (e)
             local reason = e.data[3]
@@ -4590,7 +4590,7 @@ local ty_ex__huituo = fk.CreateTriggerSkill{
               local first_damage_event = e:findParent(GameEvent.Damage)
               if first_damage_event and first_damage_event.data[1].from == target then
                 x = first_damage_event.id
-                room:setPlayerMark(target, "ty_ex__huituo_record-trun", x)
+                room:setPlayerMark(target, "ty_ex__huituo_record-turn", x)
                 return true
               end
             end

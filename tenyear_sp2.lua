@@ -3032,7 +3032,7 @@ local linghui = fk.CreateTriggerSkill{
     local room = player.room
     local ids = room:getNCards(3)
     local use = U.askForUseRealCard(room, player, ids, ".", self.name, "#linghui-use",
-    {expand_pile = ids, bypass_times = true}, false, false)
+    {expand_pile = ids, bypass_times = true}, false, true)
     if use then
       table.removeOne(ids, use.card:getEffectiveId())
     end

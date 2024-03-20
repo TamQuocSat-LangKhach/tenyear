@@ -3385,7 +3385,6 @@ local qingren = fk.CreateTriggerSkill{
     player:drawCards(player:usedSkillTimes("ty__yizan", Player.HistoryTurn), self.name)
   end,
 }
-ty__zhaotongzhaoguang:addSkill(qingren)
 local ty__longyuan = fk.CreateTriggerSkill{
   name = "ty__longyuan",
   frequency = Skill.Wake,
@@ -3407,6 +3406,7 @@ local ty__longyuan = fk.CreateTriggerSkill{
 }
 ty__zhaotongzhaoguang:addSkill(ty__yizan)
 ty__zhaotongzhaoguang:addSkill(ty__longyuan)
+ty__zhaotongzhaoguang:addSkill(qingren)
 Fk:loadTranslationTable{
   ["ty__zhaotongzhaoguang"] = "赵统赵广",
   ["#ty__zhaotongzhaoguang"] = "翊赞季兴",
@@ -3415,20 +3415,20 @@ Fk:loadTranslationTable{
 
   ["ty__yizan"] = "翊赞",
   [":ty__yizan"] = "你可以将两张牌（其中至少一张是基本牌）当任意基本牌使用或打出。",
-  ["qingren"] = "青刃",
-  [":qingren"] = "结束阶段，你可以摸X张牌（X为你本回合发动“翊赞”的次数）。",
   ["ty__longyuan"] = "龙渊",
   [":ty__longyuan"] = "觉醒技，一名角色的结束阶段，若你本局游戏内发动过至少三次“翊赞”，你摸两张牌并回复1点体力，将“翊赞”中的“两张牌”修改为“一张牌”。",
+  ["qingren"] = "青刃",
+  [":qingren"] = "结束阶段，你可以摸X张牌（X为你本回合发动“翊赞”的次数）。",
   ["#ty__yizan1"] = "翊赞：你可以将两张牌（其中至少一张是基本牌）当任意基本牌使用或打出",
   ["#ty__yizan2"] = "翊赞：你可以将一张基本牌当任意基本牌使用或打出",
 
-  ["$ty__yizan1"] = "承吾父之勇，翊军立阵。",
-  ["$ty__yizan2"] = "继先帝之志，季兴大汉。",
-  ["$qingren1"] = "此身忠义，可鉴天涯明月。",
-  ["$qingren2"] = "青釭并龙胆，试刃三千里。",
-  ["$ty__longyuan1"] = "金鳞岂是池中物，一遇风云便化龙。",
-  ["$ty__longyuan2"] = "忍时待机，今日终于可以建功立业。",
-  ["~ty__zhaotongzhaoguang"] = "守业死战，不愧初心。",
+  ["$ty__yizan1"] = "擎龙胆枪锋砺天，抱青釭霜刃谁试！",
+  ["$ty__yizan2"] = "束坚甲以拥豹尾，立长戈而伐不臣。",
+  ["$ty__longyuan1"] = "尔等不闻九霄雷鸣，亦不闻渊龙之啸乎？",
+  ["$ty__longyuan2"] = "双龙战于玄黄地，渊潭浪涌惊四方。",
+  ["$qingren1"] = "父凭长枪行四海，子承父志卫江山。",
+  ["$qingren2"] = "纵至天涯海角，亦当忠义相随。",
+  ["~ty__zhaotongzhaoguang"] = "汉室存亡之际，岂敢撒手人寰……",
 }
 
 local yuantanyuanshangyuanxi = General(extension, "yuantanyuanshangyuanxi", "qun", 4)

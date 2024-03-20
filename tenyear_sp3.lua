@@ -1331,6 +1331,7 @@ caoxian:addSkill(zhifou)
 Fk:loadTranslationTable{
   ["caoxian"] = "曹宪",
   ["#caoxian"] = "蝶步韶华",
+  ["designer:caoxian"] = "快雪时晴",
   ["lingxi"] = "灵犀",
   [":lingxi"] = "出牌阶段开始时或结束时，你可以将至多体力上限张牌置于你的武将牌上，称为“翼”。当你的“翼”被移去后，你将手牌摸至或弃置至“翼”包含的花色数的两倍。",
   ["#lingxi-put"] = "灵犀：将至多 %arg 张牌置入“翼”",
@@ -2507,6 +2508,7 @@ zhoubuyi:addSkill(silun)
 Fk:loadTranslationTable{
   ["zhoubuyi"] = "周不疑",
   ["#zhoubuyi"] = "幼有异才",
+  ["designer:zhoubuyi"] = "拔都沙皇",
   ["illustrator:zhoubuyi"] = "虫师",
   ["shijiz"] = "十计",
   [":shijiz"] = "一名角色的结束阶段，若其本回合未造成伤害，你可以声明一种普通锦囊牌（每轮每种牌名限一次），其可以将一张牌当你声明的牌使用"..

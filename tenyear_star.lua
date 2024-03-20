@@ -146,6 +146,7 @@ yuanshu:addSkill(zhonggu)
 Fk:loadTranslationTable{
   ["tystar__yuanshu"] = "星袁术",
   ["#tystar__yuanshu"] = "狂貔猖貅",
+  ["designer:tystar__yuanshu"] = "头发好借好还",
   ["illustrator:tystar__yuanshu"] = "黯萤岛工作室",
   ["canxi"] = "残玺",
   [":canxi"] = "锁定技，游戏开始时，你获得场上各势力的“玺角”标记。每轮开始时，你选择一个“玺角”势力并选择一个效果生效直到下轮开始：<br>"..
@@ -318,7 +319,8 @@ dongzhuo:addSkill(haoshou)
 Fk:loadTranslationTable{
   ["tystar__dongzhuo"] = "星董卓",
   ["#tystar__dongzhuo"] = "千里草的魔阀",
-  ["illustrator:tystar__dongzhuo"] = "",
+  ["designer:tystar__dongzhuo"] = "对勾对勾w",
+  ["illustrator:tystar__dongzhuo"] = "黯荧岛工作室",
   ["weilin"] = "威临",
   [":weilin"] = "锁定技，你于回合内对一名角色造成伤害时，若其本回合没有受到过伤害且你本回合已使用牌数不小于其体力值，则此伤害+1。",
   ["zhangrong"] = "掌戎",
@@ -664,6 +666,7 @@ caoren:addSkill(lifengc)
 Fk:loadTranslationTable{
   ["tystar__caoren"] = "星曹仁",
   ["#tystar__caoren"] = "伏波四方",
+  ["designer:tystar__caoren"] = "追风少年",
   ["illustrator:tystar__caoren"] = "君桓文化",
   ["sujun"] = "肃军",
   [":sujun"] = "当你使用一张牌时，若你手牌中基本牌与非基本牌数量相等，你可以摸两张牌。",

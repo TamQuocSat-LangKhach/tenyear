@@ -3593,10 +3593,10 @@ local ty_ex__shenduan = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    room:delay(500)
-    room:setPlayerMark(player, "ty_ex__shenduan_cards", data)
-    local success, dat = room:askForUseActiveSkill(player, "ty_ex__shenduan_active", "#ty_ex__shenduan-use", true, {expand_pile = data})
-    if success then
+    room:setPlayerMark(player, self.name, data)
+    local _, dat = room:askForUseViewAsSkill(player, "ty_ex__shenduan_active", "#ty_ex__shenduan-use", true,
+    {expand_pile = data, bypass_distances = true})
+    if dat then
       self.cost_data = dat
       return true
     else
@@ -3605,29 +3605,24 @@ local ty_ex__shenduan = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local dat = self.cost_data
-    local to = room:getPlayerById(dat.targets[1])
-    room:useVirtualCard("supply_shortage", dat.cards, player, to, self.name, true)
+    room:useVirtualCard("supply_shortage", self.cost_data.cards, player, room:getPlayerById(self.cost_data.targets[1]), self.name)
   end,
 }
-local ty_ex__shenduan_active = fk.CreateActiveSkill{
+local ty_ex__shenduan_active = fk.CreateViewAsSkill{
   name = "ty_ex__shenduan_active",
-  card_num = 1,
-  target_num = 1,
-  expand_pile = "ty_ex__shenduan",
+  expand_pile = function () return U.getMark(Self, "ty_ex__shenduan") end,
   card_filter = function(self, to_select, selected)
     if #selected == 0 then
-      local ids = U.getMark(Self, "ty_ex__shenduan_cards")
-      return table.contains(ids, to_select)
+      local ids = Self:getMark("ty_ex__shenduan")
+      return type(ids) == "table" and table.contains(ids, to_select)
     end
   end,
-  target_filter = function (self, to_select, selected, selected_cards)
-    if #selected == 0 and to_select ~= Self.id then
-      local card = Fk:cloneCard("supply_shortage")
-      card:addSubcards(selected_cards)
-      local target = Fk:currentRoom():getPlayerById(to_select)
-      return not target:isProhibited(target, card) and not Self:prohibitUse(card)
-    end
+  view_as = function(self, cards)
+    if #cards ~= 1 then return nil end
+    local c = Fk:cloneCard("supply_shortage")
+    c.skillName = "ty_ex__shenduan"
+    c:addSubcard(cards[1])
+    return c
   end,
 }
 local ty_ex__yonglue = fk.CreateTriggerSkill{

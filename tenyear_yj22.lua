@@ -642,6 +642,7 @@ qiaozhou:addSkill(jiangxi)
 Fk:loadTranslationTable{
   ["ty__qiaozhou"] = "谯周",
   ["#ty__qiaozhou"] = "谶星沉祚",
+  ["designer:ty__qiaozhou"] = "夜者之歌",
   ["illustrator:ty__qiaozhou"] = "鬼画府",
   ["shiming"] = "识命",
   [":shiming"] = "每轮限一次，一名角色的摸牌阶段，你可以观看牌堆顶三张牌，然后可以将其中一张置于牌堆底，"..
@@ -1154,6 +1155,7 @@ Fk:addSkill(diezhangYin)
 Fk:loadTranslationTable{
   ["wuanguo"] = "武安国",
   ["#wuanguo"] = "虎口折腕",
+  ["designer:wuanguo"] = "息吹123",
   ["illustrator:wuanguo"] = "目游",
   ["diezhang"] = "叠嶂",
   [":diezhang"] = "转换技，你出牌阶段使用【杀】次数上限+1。阳：当你使用牌被其他角色抵消后，你可以弃置一张牌视为对其使用(一)张【杀】；"..

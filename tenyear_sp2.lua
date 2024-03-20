@@ -712,6 +712,7 @@ yanghong:addSkill(yuanmo)
 Fk:loadTranslationTable{
   ["yanghong"] = "杨弘",
   ["#yanghong"] = "柔迩驭远",
+  ["designer:yanghong"] = "黑寡妇无敌",
   ["illustrator:yanghong"] = "虫师网络",
   ["ty__jianji"] = "间计",
   [":ty__jianji"] = "出牌阶段限一次，你可以令至多X名相邻的角色各弃置一张牌（X为你的攻击范围），然后其中手牌最多的角色可以视为对其中另一名角色使用【杀】。",
@@ -2488,6 +2489,7 @@ xuelingyun:addSkill(anzhi)
 Fk:loadTranslationTable{
   ["xuelingyun"] = "薛灵芸",
   ["#xuelingyun"] = "霓裳缀红泪",
+  ["designer:xuelingyun"] = "懵萌猛梦",
   ["illustrator:xuelingyun"] = "Jzeo",
   ["xialei"] = "霞泪",
   [":xialei"] = "当你的红色牌进入弃牌堆后，你可观看牌堆顶的三张牌，然后你获得一张并可将其他牌置于牌堆底，你本回合观看牌数-1。",

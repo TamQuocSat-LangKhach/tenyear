@@ -1600,6 +1600,7 @@ zhenghun:addSkill(pitian)
 Fk:loadTranslationTable{
   ["zhenghun"] = "郑浑",
   ["#zhenghun"] = "民安寇灭",
+  ["designer:zhenghun"] = "黑寡妇无敌",
   ["illustrator:zhenghun"] = "青雨",
   ["qiangzhiz"] = "强峙",
   [":qiangzhiz"] = "出牌阶段限一次，你可以弃置你和一名其他角色共计三张牌。若有角色因此弃置三张牌，其对另一名角色造成1点伤害。",
@@ -3000,6 +3001,7 @@ huangquan:addSkill(tujue)
 Fk:loadTranslationTable{
   ["ty__huangquan"] = "黄权",
   ["#ty__huangquan"] = "忠事三朝",
+  ["designer:ty__huangquan"] = "头发好借好还",
   ["illustrator:ty__huangquan"] = "匠人绘",
   ["quanjian"] = "劝谏",
   [":quanjian"] = "出牌阶段每项限一次，你选择以下一项令一名其他角色选择是否执行：1.对一名其攻击范围内你指定的角色造成1点伤害。"..
@@ -4036,6 +4038,7 @@ zhangmancheng:addSkill(zhongji)
 Fk:loadTranslationTable{
   ["ty__zhangmancheng"] = "张曼成",
   ["#ty__zhangmancheng"] = "蚁萃宛洛",
+  ["designer:ty__zhangmancheng"] = "快雪时晴",
   ["illustrator:ty__zhangmancheng"] = "君桓文化",
   ["luecheng"] = "掠城",
   [":luecheng"] = "出牌阶段限一次，你可以选择一名其他角色，你本回合对其使用当前手牌中的【杀】无次数限制。"..
@@ -4122,6 +4125,7 @@ gongsundu:addSkill(anliao)
 Fk:loadTranslationTable{
   ["gongsundu"] = "公孙度",
   ["#gongsundu"] = "雄张海东",
+  ["designer:gongsundu"] = "拔都沙皇",
   ["illustrator:gongsundu"] = "匠人绘",
   ["zhenze"] = "震泽",
   [":zhenze"] = "弃牌阶段开始时，你可以选择一项：1.令所有手牌数和体力值的大小关系与你不同的角色失去1点体力；"..

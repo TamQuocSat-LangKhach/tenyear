@@ -764,7 +764,7 @@ local dianhua = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:askForGuanxing(player, room:getNCards(self.cost_data), nil, {0, 0}, self.name)
+    room:askForGuanxing(player, room:getNCards(self.cost_data))
   end,
 }
 zhenyi:addRelatedSkill(zhenyi_trigger)
@@ -785,17 +785,17 @@ Fk:loadTranslationTable{
   ["zhenyi"] = "真仪",
   [":zhenyi"] = "你可以在以下时机弃置相应的标记来发动以下效果：<br>"..
   "当一张判定牌生效前，你可以弃置“紫微”，然后将判定结果改为♠5或<font color='red'>♥5</font>；<br>"..
-  "当你于回合外需要使用【桃】时，你可以弃置“后土”，然后将你的一张手牌当【桃】使用；<br>"..
+  "当你于回合外需要使用【桃】时，你可以弃置“后土”，然后将你的一张牌当【桃】使用；<br>"..
   "当你造成伤害时，你可以弃置“玉清”，此伤害+1；<br>"..
   "当你受到属性伤害后，你可以弃置“勾陈”，然后你从牌堆中随机获得三种类型的牌各一张。",
   ["dianhua"] = "点化",
-  [":dianhua"] = "准备阶段或结束阶段，你可以观看牌堆顶的X张牌（X为你的标记数）。若如此做，你将这些牌以任意顺序放回牌堆顶。",
+  [":dianhua"] = "准备阶段或结束阶段，你可以观看牌堆顶的X张牌（X为你的标记数）。若如此做，你将这些牌以任意顺序放回牌堆顶或牌堆底。",
   ["@@faluspade"] = "♠紫微",
   ["@@faluclub"] = "♣后土",
   ["@@faluheart"] = "<font color='red'>♥</font>玉清",
   ["@@faludiamond"] = "<font color='red'>♦</font>勾陈",
   ["#zhenyi1"] = "真仪：你可以弃置♠紫微，将 %dest 的判定结果改为♠5或<font color='red'>♥5</font>",
-  ["#zhenyi2"] = "真仪：你可以弃置♣后土，将一张手牌当【桃】使用",
+  ["#zhenyi2"] = "真仪：你可以弃置♣后土，将一张牌当【桃】使用",
   ["#zhenyi3"] = "真仪：你可以弃置<font color='red'>♥</font>玉清，对 %dest 造成的伤害+1",
   ["#zhenyi4"] = "真仪：你可以弃置<font color='red'>♦</font>勾陈，从牌堆中随机获得三种类型的牌各一张",
   ["#zhenyi_trigger"] = "真仪",

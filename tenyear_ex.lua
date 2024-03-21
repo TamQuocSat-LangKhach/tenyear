@@ -482,27 +482,21 @@ local ty_ex__zhuhai = fk.CreateTriggerSkill{
   anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and player ~= target and target.phase == Player.Finish and not player:isKongcheng() and not target.dead then
-      local events = player.room.logic:getEventsOfScope(GameEvent.Damage, 1, function(e)
-        local damage = e.data[1]
-        return damage.from == target
-      end, Player.HistoryTurn)
-      return #events > 0
+      return #U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == target end) > 0
     end
   end,
   on_cost = function(self, event, target, player, data)
-    local room = player.room
-    local success, dat = room:askForUseActiveSkill(player, "ty_ex__zhuhai_active", "#ty_ex__zhuhai-use:"..target.id, true,
+    local success, dat = player.room:askForUseActiveSkill(player, "ty_ex__zhuhai_active", "#ty_ex__zhuhai-use:"..target.id, true,
     {ty_ex__zhuhai_victim = target.id}, true)
     if success and dat then
-      self.cost_data = dat.cards[1]
+      self.cost_data = {dat.cards[1], dat.interaction}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local subcard = self.cost_data
-    local card = Fk:cloneCard(player:getMark("ty_ex__zhuhai_card"))
-    card:addSubcard(subcard)
+    local card = Fk:cloneCard(self.cost_data[2])
+    card:addSubcard(self.cost_data[1])
     card.skillName = self.name
     room:useCard{
       from = player.id,
@@ -529,10 +523,6 @@ local ty_ex__zhuhai_active = fk.CreateActiveSkill{
       return not Self:prohibitUse(card) and not Self:isProhibited(to, card)
       and card.skill:modTargetFilter(to.id, {}, Self.id, card, false)
     end
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    room:setPlayerMark(player, "ty_ex__zhuhai_card", self.interaction.data)
   end,
 }
 Fk:addSkill(ty_ex__zhuhai_active)

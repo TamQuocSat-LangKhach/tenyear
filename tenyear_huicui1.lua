@@ -4659,6 +4659,7 @@ local yingtu = fk.CreateTriggerSkill{
     local lastplayer = (player:getNextAlive() == from)
     local card = room:askForCardChosen(player, from, "he", self.name)
     room:obtainCard(player.id, card, false, fk.ReasonPrey)
+    if player.dead or player:isNude() then return false end
     local to = player:getNextAlive()
     if lastplayer then
       to = table.find(room.alive_players, function (p)
@@ -4882,7 +4883,7 @@ local jinjin = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#jinjin-invoke::"..data.from.id..":"..player:getMaxCards())
+    return player.room:askForSkillInvoke(player, self.name, nil, "#jinjin-invoke:::"..player:getMaxCards())
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -4921,7 +4922,7 @@ Fk:loadTranslationTable{
   "若如此做，伤害来源可以弃置至多X张牌（X为你因此变化的手牌上限数且至少为1），然后其每少弃置一张，你便摸一张牌。",
   ["#haochong-discard"] = "昊宠：你可以将手牌弃至手牌上限（弃置%arg张），然后手牌上限+1",
   ["#haochong-draw"] = "昊宠：你可以将手牌摸至手牌上限（当前手牌上限%arg，最多摸五张），然后手牌上限-1",
-  ["#jinjin-invoke"] = "矜谨：你可将手牌上限（当前为%arg）重置为体力值，令 %dest 弃至多等量的牌",
+  ["#jinjin-invoke"] = "矜谨：你可将手牌上限（当前为%arg）重置为体力值",
   ["#jinjin-discard"] = "矜谨：请弃置至多 %arg 张牌，每少弃置一张 %src 便摸一张牌",
 
   ["$haochong1"] = "朗螟蛉之子，幸隆曹氏厚恩。",

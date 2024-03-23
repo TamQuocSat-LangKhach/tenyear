@@ -1460,6 +1460,7 @@ local jilis = fk.CreateTriggerSkill{
         local e = logic:getCurrentEvent()
         if end_id == 0 then
           local turn_event = e:findParent(GameEvent.Turn, false)
+          if turn_event == nil then return false end
           end_id = turn_event.id
         end
         room:setPlayerMark(player, "jilis_record-turn", logic.current_event_id)

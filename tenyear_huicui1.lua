@@ -10,6 +10,7 @@ Fk:loadTranslationTable{
 local panfeng = General(extension, "ty__panfeng", "qun", 4)
 local ty__kuangfu = fk.CreateActiveSkill{
   name = "ty__kuangfu",
+  prompt = "#ty__kuangfu-active",
   anim_type = "offensive",
   card_num = 0,
   target_num = 1,
@@ -27,37 +28,28 @@ local ty__kuangfu = fk.CreateActiveSkill{
     room:throwCard({id}, self.name, target, player)
     if player.dead then return end
     local targets = {}
-    for _, p in ipairs(room:getOtherPlayers(player)) do
-      if not player:isProhibited(p, Fk:cloneCard("slash")) then
+    local slash = Fk:cloneCard("slash")
+    slash.skillName = self.name
+    if player:prohibitUse(slash) then return end
+    for _, p in ipairs(room.alive_players) do
+      if p ~= player and not player:isProhibited(p, slash) then
         table.insert(targets, p.id)
       end
     end
     if #targets == 0 then return end
     local to = room:askForChoosePlayers(player, targets, 1, 1, "#ty__kuangfu-slash", self.name, false)
-    if #to > 0 then
-      to = to[1]
-    else
-      to = table.random(targets)
-    end
     local use = {
       from = player.id,
-      tos = {{to}},
-      card = Fk:cloneCard("slash"),
+      tos = { to },
+      card = slash,
       extraUse = true,
     }
-    use.card.skillName = self.name
     room:useCard(use)
-    if not player.dead then
-      if effect.from == effect.tos[1] and use.damageDealt then
-        player:drawCards(2, self.name)
-      end
-      if effect.from ~= effect.tos[1] and not use.damageDealt then
-        if #player.player_cards[Player.Hand] < 3 then
-          player:throwAllCards("he")
-        else
-          player.room:askForDiscard(player, 2, 2, false, self.name, false)
-        end
-      end
+    if player.dead then return end
+    if effect.from == effect.tos[1] and use.damageDealt then
+      room:drawCards(player ,2, self.name)
+    elseif effect.from ~= effect.tos[1] and not use.damageDealt then
+      room:askForDiscard(player, 2, 2, false, self.name, false)
     end
   end,
 }
@@ -69,6 +61,7 @@ Fk:loadTranslationTable{
   ["ty__kuangfu"] = "狂斧",
   [":ty__kuangfu"] = "出牌阶段限一次，你可以弃置场上的一张装备牌，视为使用一张【杀】（此【杀】无距离限制且不计次数）。"..
   "若你弃置的不是你的牌且此【杀】未造成伤害，你弃置两张手牌；若弃置的是你的牌且此【杀】造成伤害，你摸两张牌。",
+  ["#ty__kuangfu-active"] = "发动 狂斧，选择一名角色，弃置其一张装备牌",
   ["#ty__kuangfu-slash"] = "狂斧：选择视为使用【杀】的目标",
 
   ["$ty__kuangfu1"] = "大斧到处，片甲不留！",

@@ -299,9 +299,14 @@ local ty__xushen = fk.CreateTriggerSkill{
       to = room:getPlayerById(to[1])
       if room:askForSkillInvoke(to, self.name, nil, "#ty__xushen-invoke") then
         room:changeHero(to, "ty__guansuo", false, false, true)
-      end
-      if not to.dead then
-        to:drawCards(3, self.name)
+        --- FIXME:先耦了，因模式更改初始上限需要统一处理
+        if to.role == "lord" and to.role_shown and #room.players > 4 then
+          room:setPlayerProperty(to, "maxHp", to.maxHp + 1)
+          room:setPlayerProperty(to, "hp", to.hp + 1)
+        end
+        if not to.dead then
+          to:drawCards(3, self.name)
+        end
       end
     end
   end,
@@ -345,8 +350,8 @@ Fk:loadTranslationTable{
   [":ty__zhennan"] = "当有角色使用普通锦囊牌指定目标后，若此牌目标数大于1，你可以对一名其他角色造成1点伤害。",
   ["#ty__wuniang1-choose"] = "武娘：你可以获得一名其他角色的一张牌，其摸一张牌",
   ["#ty__wuniang2-choose"] = "武娘：你可以获得一名其他角色的一张牌，其摸一张牌，关索摸一张牌",
-  ["#ty__xushen-choose"] = "许身：你可以令一名其他角色摸三张牌并选择是否变身为十周年关索！",
-  ["#ty__xushen-invoke"]= "许身：你可以变身为十周年关索！",
+  ["#ty__xushen-choose"] = "许身：你可以令一名其他角色选择是否变身为十周年关索并摸三张牌！",
+  ["#ty__xushen-invoke"]= "许身：你可以变身为十周年关索并摸三张牌！",
   ["#ty__zhennan-choose"] = "镇南：你可以对一名其他角色造成1点伤害",
   
   ["$ty__wuniang1"] = "得公亲传，彰其武威。",
@@ -3911,44 +3916,34 @@ local jiuxianc = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     room:recastCard(effect.cards, player, self.name)
-    local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
-      return not player:isProhibited(p, Fk:cloneCard("duel")) end), Util.IdMapper)
-    if #targets > 0 and not player.dead then
-      local to = room:askForChoosePlayers(player, targets, 1, 1, "#jiuxianc-slash", self.name, false)
-      if #to > 0 then
-        to = room:getPlayerById(to[1])
-      else
-        to = room:getPlayerById(table.random(targets))
-      end
-      targets = table.filter(room:getOtherPlayers(player), function(p) return to:inMyAttackRange(p) and p:isWounded() end)
-      local use = {
-        from = player.id,
-        tos = {{to.id}},
-        card = Fk:cloneCard("duel"),
-      }
-      use.card.skillName = self.name
-      room:useCard(use)
-      if not player.dead and use.damageDealt and use.damageDealt[to.id] then
-        if to.dead then
-          targets = table.map(table.filter(targets, function(p) return not p.dead and p:isWounded() end), Util.IdMapper)
-        else
-          targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
-            return to:inMyAttackRange(p) and p:isWounded() end), Util.IdMapper)
-        end
-        if #targets > 0 then
-          to = room:askForChoosePlayers(player, targets, 1, 1, "#jiuxianc-recover", self.name, true)
-          if #to > 0 then
-            room:recover({
-              who = room:getPlayerById(to[1]),
-              num = 1,
-              recoverBy = player,
-              skillName = self.name
-            })
-          end
-        end
+    if player.dead then return end
+    U.askForUseVirtualCard(room, player, "duel", nil, self.name, nil, false)
+  end
+}
+local jiuxianc_delay = fk.CreateTriggerSkill{
+  name = "#jiuxianc_delay",
+  mute = true,
+  events = {fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and U.damageByCardEffect(player.room) and not player.dead and not data.to.dead
+    and data.card and table.contains(data.card.skillNames, "jiuxianc")
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.filter(room:getOtherPlayers(player), function(p) return data.to:inMyAttackRange(p) and p:isWounded() end)
+    if #targets > 0 then
+      local tos = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#jiuxianc-recover", "jiuxianc", true)
+      if #tos > 0 then
+        room:recover({
+          who = room:getPlayerById(tos[1]),
+          num = 1,
+          recoverBy = player,
+          skillName = "jiuxianc"
+        })
       end
     end
-  end
+  end,
 }
 local chenyong = fk.CreateTriggerSkill{
   name = "chenyong",
@@ -3977,6 +3972,7 @@ local chenyong = fk.CreateTriggerSkill{
   end,
 }
 chentai:addSkill(jiuxianc)
+jiuxianc:addRelatedSkill(jiuxianc_delay)
 chentai:addSkill(chenyong)
 Fk:loadTranslationTable{
   ["chentai"] = "陈泰",
@@ -3990,6 +3986,7 @@ Fk:loadTranslationTable{
   ["#jiuxianc"] = "救陷：你可以重铸一半手牌（%arg张），然后视为使用一张【决斗】",
   ["#jiuxianc-slash"] = "救陷：选择一名角色，视为对其使用【决斗】",
   ["#jiuxianc-recover"] = "救陷：你可以令其中一名角色回复1点体力",
+  ["#jiuxianc_delay"] = "救陷",
   ["@chenyong-turn"] = "沉勇",
 
   ["$jiuxianc1"] = "救袍泽于水火，返清明于天下。",

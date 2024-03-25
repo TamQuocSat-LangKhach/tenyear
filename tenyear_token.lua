@@ -280,6 +280,7 @@ local siegeEngineSkill = fk.CreateTriggerSkill{
       end
     elseif event == fk.TargetSpecified then
       return target == player and player:hasSkill(self) and data.card and table.contains(data.card.skillNames, self.name)
+      and player:getMark("xianzhu1") > 0
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -346,10 +347,9 @@ local siegeEngineSkill = fk.CreateTriggerSkill{
 }
 local siege_engine_targetmod = fk.CreateTargetModSkill{
   name = "#siege_engine_targetmod",
-  distance_limit_func =  function(self, player, skill, card, to)
-    if skill.trueName == "slash_skill" and card and table.contains(card.skillNames, "#siege_engine_skill") and player:getMark("xianzhu1") > 0 then
-      return 999
-    end
+  bypass_distances = function(self, player, skill, card)
+    return skill.trueName == "slash_skill" and card and table.contains(card.skillNames, "#siege_engine_skill")
+    and player:getMark("xianzhu1") > 0
   end,
   extra_target_func = function(self, player, skill, card)
     if skill.trueName == "slash_skill" and card and table.contains(card.skillNames, "#siege_engine_skill") then
@@ -364,6 +364,22 @@ local siegeEngine = fk.CreateTreasure{
   suit = Card.Spade,
   number = 9,
   equip_skill = siegeEngineSkill,
+  on_uninstall = function(self, room, player)
+    Treasure.onUninstall(self, room, player)
+    local n = 0
+    for i = 1, 3, 1 do
+      n = n + player:getMark("xianzhu"..tostring(i))
+      room:setPlayerMark(player, "xianzhu"..tostring(i), 0)
+    end
+    if n > 0 then
+      local e = room.logic:getCurrentEvent()
+      if e and e.event == GameEvent.MoveCards then
+        e.data.extra_data = e.data.extra_data or {}
+        e.data.extra_data.chaixie_draw = {}
+        table.insert(e.data.extra_data.chaixie_draw, {player.id, n})
+      end
+    end
+  end,
 }
 extension:addCard(siegeEngine)
 Fk:loadTranslationTable{

@@ -884,23 +884,18 @@ local chaixie = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
-      for _, move in ipairs(data) do
-        if move.toArea == Card.Void then
-          for _, info in ipairs(move.moveInfo) do
-            if Fk:getCardById(info.cardId, true).name == "siege_engine" then
-              return true
-            end
-          end
-        end
-      end
+      return data.extra_data and data.extra_data.chaixie_draw and table.find(data.extra_data.chaixie_draw, function (dat)
+        return dat[1] == player.id
+      end)
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local n = 0
-    for i = 1, 3, 1 do
-      n = n + player:getMark("xianzhu"..tostring(i))
-      room:setPlayerMark(player, "xianzhu"..tostring(i), 0)
+    for _, dat in ipairs(data.extra_data.chaixie_draw) do
+      if dat[1] == player.id then
+        n = n + dat[2]
+      end
     end
     player:drawCards(n, self.name)
   end,

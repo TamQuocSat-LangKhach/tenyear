@@ -4554,6 +4554,7 @@ local jinghe = fk.CreateActiveSkill{
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
+    room:sortPlayersByAction(effect.tos)
     local mark = U.getMark(player, "jinghe_data")
     player:showCards(effect.cards)
     local skills = table.random(

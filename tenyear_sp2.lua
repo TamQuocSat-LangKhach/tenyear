@@ -2815,7 +2815,7 @@ Fk:loadTranslationTable{
   ["duanqiaoxiao"] = "段巧笑",
   ["#duanqiaoxiao"] = "柔荑点绛唇",
   ["designer:duanqiaoxiao"] = "韩旭",
-	["illustrator:duanqiaoxiao"] = "Jzeo",
+  ["illustrator:duanqiaoxiao"] = "Jzeo",
 
   ["caizhuang"] = "彩妆",
   [":caizhuang"] = "出牌阶段限一次，你可以弃置任意张牌，然后重复摸牌直到手牌中的花色数等同于弃牌花色数。",

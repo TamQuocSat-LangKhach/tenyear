@@ -2061,7 +2061,7 @@ Fk:loadTranslationTable{
 
   ["$kuangcai1"] = "耳所瞥闻，不忘于心。",
   ["$kuangcai2"] = "吾焉能从屠沽儿耶？",
-  ["$shejian1"] = "伤人的，可不止刀剑！	",
+  ["$shejian1"] = "伤人的，可不止刀剑！",
   ["$shejian2"] = "死公！云等道？",
   ["~ty__miheng"] = "恶口……终至杀身……",
 }

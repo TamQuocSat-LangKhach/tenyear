@@ -1342,7 +1342,10 @@ local lingyue = fk.CreateTriggerSkill{
       local end_id = player:getMark("lingyue_record-turn")
       if end_id == 0 then
         local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
-        if not turn_event then return false end
+        if not turn_event then
+          player:drawCards(1, self.name)
+          return false
+        end
         end_id = turn_event.id
       end
       room:setPlayerMark(player, "lingyue_record-turn", room.logic.current_event_id)
@@ -1485,7 +1488,7 @@ Fk:loadTranslationTable{
   ["#pandi-active"] = "发动盻睇，选择一名其他角色，下一张牌视为由该角色使用",
   ["#pandi-use"] = "盻睇：选择一张牌，视为由 %dest 使用（若需要选目标则你来选择目标）",
 
-  ["$lingyue1"] = "宫商催角羽，仙乐自可聆。	",
+  ["$lingyue1"] = "宫商催角羽，仙乐自可聆。",
   ["$lingyue2"] = "玉琶奏折柳，天地尽箫声。",
   ["$pandi1"] = "待君归时，共泛轻舟于湖海。",
   ["$pandi2"] = "妾有一曲，可壮卿之峥嵘。",
@@ -2316,9 +2319,29 @@ local sanshou = fk.CreateTriggerSkill{
       moveReason = fk.ReasonJustMove,
       skillName = self.name,
     })
+    local mark = U.getMark(player, "sanshou-turn")
+    if #mark ~= 3 then
+      mark = {0, 0, 0}
+    end
+    if not table.every(mark, function (value) return value == 1 end) then
+      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
+      if turn_event ~= nil then
+        local mark_change = false
+        U.getEventsByRule(room, GameEvent.UseCard, 1, function (e)
+          local use = e.data[1]
+          if mark[use.card.type] == 0 then
+            mark_change = true
+            mark[use.card.type] = 1
+          end
+        end, turn_event.id)
+        if mark_change then
+          room:setPlayerMark(player, "sanshou-turn", mark)
+        end
+      end
+    end
     local yes = false
     for _, id in ipairs(cards) do
-      if player:getMark("sanshou_"..Fk:getCardById(id):getTypeString().."-turn") == 0 then
+      if mark[Fk:getCardById(id).type] == 0 then
         room:setCardEmotion(id, "judgegood")
         yes = true
       else
@@ -2333,17 +2356,7 @@ local sanshou = fk.CreateTriggerSkill{
       moveReason = fk.ReasonJustMove,
       skillName = self.name,
     })
-    if yes then
-      return true
-    end
-  end,
-
-  refresh_events = {fk.AfterCardUseDeclared},
-  can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self, true)
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "sanshou_"..data.card:getTypeString().."-turn", 1)
+    return yes
   end,
 }
 local sijun = fk.CreateTriggerSkill{
@@ -2559,83 +2572,75 @@ local tuoyu = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.EventPhaseStart, fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Play and
-      table.find({"1", "2", "3"}, function(n) return player:getMark("tuoyu"..n) > 0 end) and not player:isKongcheng()
+    return target == player and player:hasSkill(self) and player.phase == Player.Play and not player:isKongcheng() and
+    table.find({"1", "2", "3"}, function(n) return player:getMark("tuoyu"..n) > 0 end)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    for i = 1, 3, 1 do
-      if player:getMark("tuoyu"..i) > 0 then
-        local cards = room:askForCard(player, 1, 5, false, self.name, true, ".", "#tuoyu"..i.."-cards")
-        if #cards > 0 then
-          for _, id in ipairs(player.player_cards[Player.Hand]) do
-            local card = Fk:getCardById(id)
-            if card:getMark("@@tuoyu"..i) > 0 and not table.contains(cards, id) then
-              room:setCardMark(card, "@@tuoyu"..i, 0)
-            elseif table.contains(cards, id) then
-              for j = 1, 3, 1 do
-                room:setCardMark(card, "@@tuoyu"..j, 0)
-              end
-              room:setCardMark(card, "@@tuoyu"..i, 1)
-            end
-          end
+    local cards = player.player_cards[Player.Hand]
+    local markedcards = {{}, {}, {}}
+    local card
+    for _, id in ipairs(cards) do
+      card = Fk:getCardById(id)
+      for i = 1, 3, 1 do
+        if card:getMark("@@tuoyu" .. tostring(i) .. "-inhand") > 0 then
+          table.insert(markedcards[i], id)
+          break
+        end
+      end
+    end
+    local result = room:askForCustomDialog(player, self.name,
+    "packages/tenyear/qml/TuoyuBox.qml", {
+      cards,
+      markedcards[1], player:getMark("tuoyu1") > 0,
+      markedcards[2], player:getMark("tuoyu2") > 0,
+      markedcards[3], player:getMark("tuoyu3") > 0,
+    })
+    if result ~= "" then
+      local d = json.decode(result)
+      for _, id in ipairs(cards) do
+        card = Fk:getCardById(id)
+        for i = 1, 3, 1 do
+          room:setCardMark(card, "@@tuoyu"..i .. "-inhand", table.contains(d[i], id) and 1 or 0)
         end
       end
     end
   end,
 
-  refresh_events = {fk.AfterCardsMove, fk.EventLoseSkill},
+  refresh_events = {fk.EventLoseSkill},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.AfterCardsMove then
-      return true
-    elseif event == fk.EventLoseSkill then
-      return target == player and data == self
-    end
+    return target == player and data == self
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.AfterCardsMove then
-      for _, move in ipairs(data) do
-        if move.toArea ~= Card.Processing then
-          for _, info in ipairs(move.moveInfo) do
-            room:setCardMark(Fk:getCardById(info.cardId), "@@tuoyu1", 0)
-            room:setCardMark(Fk:getCardById(info.cardId), "@@tuoyu2", 0)
-            room:setCardMark(Fk:getCardById(info.cardId), "@@tuoyu3", 0)
-          end
-        end
-      end
-    elseif event == fk.EventLoseSkill then
-      for _, id in ipairs(player.player_cards[Player.Hand]) do
-        room:setCardMark(Fk:getCardById(id), "@@tuoyu1", 0)
-        room:setCardMark(Fk:getCardById(id), "@@tuoyu2", 0)
-        room:setCardMark(Fk:getCardById(id), "@@tuoyu3", 0)
-      end
+    local card
+    for _, id in ipairs(player.player_cards[Player.Hand]) do
+      card = Fk:getCardById(id)
+      room:setCardMark(card, "@@tuoyu1-inhand", 0)
+      room:setCardMark(card, "@@tuoyu2-inhand", 0)
+      room:setCardMark(card, "@@tuoyu3-inhand", 0)
     end
   end,
 }
 local tuoyu_targetmod = fk.CreateTargetModSkill{
   name = "#tuoyu_targetmod",
-  residue_func = function(self, player, skill, scope, card)
-    if player:hasSkill("tuoyu") and card:getMark("@@tuoyu2") > 0 then
-      return 999
-    end
+  bypass_times = function(self, player, skill, scope, card)
+    return player:hasSkill(tuoyu) and card:getMark("@@tuoyu2-inhand") > 0
   end,
-  distance_limit_func =  function(self, player, skill, card)
-    if player:hasSkill("tuoyu") and card:getMark("@@tuoyu2") > 0 then
-      return 999
-    end
+  bypass_distances =  function(self, player, skill, card)
+    return player:hasSkill(tuoyu) and card:getMark("@@tuoyu2-inhand") > 0
   end,
 }
 local tuoyu_trigger = fk.CreateTriggerSkill{
   name = "#tuoyu_trigger",
   mute = true,
-  frequency = Skill.Compulsory,
-  events = {fk.CardUsing, fk.CardResponding},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and (data.card:getMark("@@tuoyu1") > 0 or data.card:getMark("@@tuoyu3") > 0)
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and (data.card:getMark("@@tuoyu1-inhand") > 0 or data.card:getMark("@@tuoyu3-inhand") > 0)
   end,
-  on_use = function(self, event, target, player, data)
-    if data.card:getMark("@@tuoyu1") > 0 then
+  on_refresh = function(self, event, target, player, data)
+    if data.card:getMark("@@tuoyu1-inhand") > 0 then
       if data.card.is_damage_card then
         data.additionalDamage = (data.additionalDamage or 0) + 1
       elseif data.card.name == "peach" or (data.card.name == "analeptic" and data.extra_data and data.extra_data.analepticRecover) then
@@ -2644,7 +2649,7 @@ local tuoyu_trigger = fk.CreateTriggerSkill{
       --[[if data.card.trueName == "slash" and data.extra_data and data.extra_data.drankBuff then
         data.additionalDamage = (data.additionalDamage or 0) + data.extra_data.drankBuff
       end]]--
-    elseif data.card:getMark("@@tuoyu3") > 0 then
+    elseif data.card:getMark("@@tuoyu3-inhand") > 0 then
       data.disresponsiveList = table.map(player.room.alive_players, Util.IdMapper)
     end
   end,
@@ -2734,8 +2739,8 @@ local qijing = fk.CreateTriggerSkill{
         room.players[#room.players].next = room.players[1]
         room:doBroadcastNotify("ArrangeSeats", json.encode(player_circle))
       end
-      player:gainAnExtraTurn(true)
     end
+    player:gainAnExtraTurn(true)
   end,
 }
 local cuixin = fk.CreateTriggerSkill{
@@ -2837,17 +2842,15 @@ Fk:loadTranslationTable{
   ["cuixin"] = "摧心",
   [":cuixin"] = "当你不以此法对上家/下家使用的牌结算后，你可以视为对下家/上家使用一张同名牌。",
   ["tuoyu1"] = "丰田",
-  ["@@tuoyu1"] = "丰田",
+  ["@@tuoyu1-inhand"] = "丰田",
   [":tuoyu1"] = "伤害和回复值+1",
-  ["#tuoyu1-cards"] = "拓域：你可以将至多五张手牌置入“丰田”（伤害和回复值+1）",
   ["tuoyu2"] = "清渠",
-  ["@@tuoyu2"] = "清渠",
+  ["@@tuoyu2-inhand"] = "清渠",
   [":tuoyu2"] = "无距离和次数限制",
-  ["#tuoyu2-cards"] = "拓域：你可以将至多五张手牌置入“清渠”（无距离和次数限制）",
   ["tuoyu3"] = "峻山",
-  ["@@tuoyu3"] = "峻山",
+  ["@@tuoyu3-inhand"] = "峻山",
   [":tuoyu3"] = "不能被响应",
-  ["#tuoyu3-cards"] = "拓域：你可以将至多五张手牌置入“峻山”（不能被响应）",
+  ["#tuoyu"] = "拓域：将手牌分配至已开发的副区域中（每个区域至多5张）",
   ["#xianjin-choice"] = "险进：选择你要开发的手牌副区域",
   ["#qijing-choose"] = "奇径：选择一名角色，你移动座次成为其下家",
   ["#cuixin-invoke"] = "摧心：你可以视为对 %dest 使用【%arg】",

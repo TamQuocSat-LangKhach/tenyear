@@ -342,7 +342,7 @@ Fk:loadTranslationTable{
   ["liuyan"] = "刘焉",
   ["#liuyan"] = "裂土之宗",
   ["cv:liuyan"] = "金垚",
-	["illustrator:liuyan"] = "明暗交界", -- 传说皮 雄踞益州
+  ["illustrator:liuyan"] = "明暗交界", -- 传说皮 雄踞益州
   ["tushe"] = "图射",
   [":tushe"] = "当你使用非装备牌指定目标后，若你没有基本牌，则你可以摸X张牌（X为此牌指定的目标数）。",
   ["limu"] = "立牧",

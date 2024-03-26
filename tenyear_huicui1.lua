@@ -233,7 +233,7 @@ Fk:loadTranslationTable{
   ["caoxing"] = "曹性",
   ["#caoxing"] = "健儿",
   ["cv:caoxing"] = "曹真",
-	["illustrator:caoxing"] = "匠人绘",
+  ["illustrator:caoxing"] = "匠人绘",
 
   ["liushi"] = "流矢",
   [":liushi"] = "出牌阶段，你可以将一张<font color='red'>♥</font>牌置于牌堆顶，视为对一名角色使用一张【杀】（不计入次数且无距离限制）。"..
@@ -446,8 +446,8 @@ xiahoujie:addSkill(zhuangdan)
 Fk:loadTranslationTable{
   ["xiahoujie"] = "夏侯杰",
   ["#xiahoujie"] = "当阳虎胆",
-	["cv:xiahoujie"] = "虞晓旭",
-	["illustrator:xiahoujie"] = "凝聚永恒",
+  ["cv:xiahoujie"] = "虞晓旭",
+  ["illustrator:xiahoujie"] = "凝聚永恒",
   ["liedan"] = "裂胆",
   [":liedan"] = "锁定技，其他角色的准备阶段，你的手牌数、体力值和装备区里的牌数每有一项大于该角色，便摸一张牌。"..
   "若均大于其，你加1点体力上限（至多加至8）；若均不大于其，你失去1点体力并获得1枚“裂胆”标记。准备阶段，若“裂胆”标记不小于5，你死亡。",
@@ -944,7 +944,7 @@ Fk:loadTranslationTable{
   ["ty__dongbai"] = "董白",
   ["#ty__dongbai"] = "董白",
   ["cv:ty__dongbai"] = "周洁云",
-	["illustrator:ty__dongbai"] = "alien",
+  ["illustrator:ty__dongbai"] = "alien",
 
   ["ty__lianzhu"] = "连诛",
   [":ty__lianzhu"] = "出牌阶段限一次，你可以展示并交给一名其他角色一张牌，若此牌为：红色，你摸一张牌；黑色，其选择一项：1.你摸两张牌；2.弃置两张牌。",
@@ -1096,7 +1096,7 @@ Fk:loadTranslationTable{
   ["heyan"] = "何晏",
   ["#heyan"] = "傅粉何郎",
   ["designer:heyan"] = "梦魇狂朝",
-	["illustrator:heyan"] = "MUMU",
+  ["illustrator:heyan"] = "MUMU",
 
   ["yachai"] = "崖柴",
   [":yachai"] = "当你受到伤害后，你可以令伤害来源选择一项：1.弃置一半手牌（向上取整）；2.其本回合不能再使用手牌，你摸两张牌；"..
@@ -1391,7 +1391,7 @@ Fk:loadTranslationTable{
   ["wangtao"] = "王桃",
   ["#wangtao"] = "晔兮如华",
   ["designer:wangtao"] = "七哀",
-	["illustrator:wangtao"] = "alien",
+  ["illustrator:wangtao"] = "alien",
 
   ["huguan"] = "护关",
   [":huguan"] = "一名角色于其出牌阶段内使用第一张牌时，若为红色，你可以声明一个花色，本回合此花色的牌不计入其手牌上限。",
@@ -1443,7 +1443,7 @@ Fk:loadTranslationTable{
   ["wangyues"] = "王悦",
   ["#wangyues"] = "温乎如莹",
   ["designer:wangyues"] = "七哀",
-	["illustrator:wangyues"] = "alien",
+  ["illustrator:wangyues"] = "alien",
 
   ["mingluan"] = "鸣鸾",
   [":mingluan"] = "其他角色的结束阶段，若本回合有角色回复过体力，你可以弃置任意张牌，然后摸等同于当前回合角色手牌数的牌（最多摸至五张）。",
@@ -1558,7 +1558,7 @@ Fk:loadTranslationTable{
   ["zhaoyanw"] = "赵嫣",
   ["#zhaoyanw"] = "霞蔚青歇",
   ["designer:zhaoyanw"] = "七哀",
-	["illustrator:zhaoyanw"] = "游漫美绘",
+  ["illustrator:zhaoyanw"] = "游漫美绘",
 
   ["jinhui"] = "锦绘",
   [":jinhui"] = "出牌阶段限一次，你可以将牌堆中随机三张不同名且目标数为一的非伤害牌置于你的武将牌上，然后选择一名其他角色，该角色使用其中一张，"..
@@ -1708,7 +1708,7 @@ Fk:loadTranslationTable{
   ["tengyin"] = "滕胤",
   ["#tengyin"] = "厉操遵蹈",
   ["designer:tengyin"] = "步穗",
-	["illustrator:tengyin"] = "猎枭",
+  ["illustrator:tengyin"] = "猎枭",
 
   ["chenjian"] = "陈见",
   [":chenjian"] = "准备阶段，你可以亮出牌堆顶的三张牌并可以执行：1.弃置一张牌，令一名角色获得其中此牌花色的牌；2.使用其中一张牌。"..
@@ -1864,7 +1864,7 @@ zhangxuan:addSkill(shezang)
 Fk:loadTranslationTable{
   ["zhangxuan"] = "张嫙",
   ["#zhangxuan"] = "玉宇嫁蔷",
-	["illustrator:zhangxuan"] = "匠人绘",
+  ["illustrator:zhangxuan"] = "匠人绘",
   ["tongli"] = "同礼",
   [":tongli"] = "当你于出牌阶段内使用基本牌或普通锦囊牌指定目标后，若你此阶段使用过牌的次数为X，"..
   "你可以令你于此牌结算后视为对此牌的原本目标使用X次牌名相同的牌。（X为你手牌中的花色数，包含无色）",
@@ -1937,7 +1937,7 @@ sunru:addSkill(youxu)
 Fk:loadTranslationTable{
   ["ty__sunru"] = "孙茹",
   ["#ty__sunru"] = "呦呦鹿鸣",
-	["illustrator:ty__sunru"] = "石蝉",
+  ["illustrator:ty__sunru"] = "石蝉",
 
   ["xiecui"] = "撷翠",
   [":xiecui"] = "当一名角色于其回合内使用牌首次造成伤害时，你可令此伤害+1。若该角色为吴势力角色，其获得此伤害牌且本回合手牌上限+1。",
@@ -2105,7 +2105,7 @@ xiahoulingnv:addSkill(weilie)
 Fk:loadTranslationTable{
   ["xiahoulingnv"] = "夏侯令女",
   ["#xiahoulingnv"] = "女义如山",
-	["illustrator:xiahoulingnv"] = "匠人绘",
+  ["illustrator:xiahoulingnv"] = "匠人绘",
 
   ["fuping"] = "浮萍",
   [":fuping"] = "当其他角色以你为目标的基本牌或锦囊牌牌结算后，若你未记录此牌，你可以废除一个装备栏并记录此牌。"..
@@ -2533,7 +2533,7 @@ zhangyao:addSkill(xiyan)
 Fk:loadTranslationTable{
   ["zhangyao"] = "张媱",
   ["#zhangyao"] = "琼楼孤蒂",
-	["illustrator:zhangyao"] = "匠人绘",
+  ["illustrator:zhangyao"] = "匠人绘",
 
   ["yuanyu"] = "怨语",
   ["#yuanyu_trigger"] = "怨语",
@@ -2657,7 +2657,7 @@ zhanghu:addSkill(tongyuan)
 Fk:loadTranslationTable{
   ["zhanghu"] = "张虎",
   ["#zhanghu"] = "晋阳侯",
-	["illustrator:zhanghu"] = "君桓文化",
+  ["illustrator:zhanghu"] = "君桓文化",
 
   ["cuijian"] = "摧坚",
   [":cuijian"] = "出牌阶段限一次，你可以选择一名有手牌的其他角色，若其手牌中有【闪】，其将所有【闪】和防具牌交给你，然后你交给其等量的牌。",
@@ -2783,8 +2783,8 @@ lvlingqi:addRelatedSkill("wushuang")
 Fk:loadTranslationTable{
   ["lvlingqi"] = "吕玲绮",
   ["#lvlingqi"] = "无双虓姬",
-	["cv:lvlingqi"] = "闲踏梧桐",
-	["illustrator:lvlingqi"] = "君桓文化",
+  ["cv:lvlingqi"] = "闲踏梧桐",
+  ["illustrator:lvlingqi"] = "君桓文化",
 
   ["guowu"] = "帼武",
   ["#guowu_delay"] = "帼武",
@@ -2983,7 +2983,7 @@ Fk:loadTranslationTable{
   ["liuyong"] = "刘永",
   ["#liuyong"] = "甘陵王",
   ["designer:liuyong"] = "笔枔",
-	["illustrator:liuyong"] = "君桓文化",
+  ["illustrator:liuyong"] = "君桓文化",
 
   ["zhuning"] = "诛佞",
   [":zhuning"] = "出牌阶段限一次，你可以交给一名其他角色任意张牌，这些牌标记为“隙”，然后你可以视为使用一张不计次数的【杀】或伤害类锦囊牌，"..
@@ -3090,8 +3090,8 @@ wanniangongzhu:addSkill(xinghan)
 Fk:loadTranslationTable{
   ["wanniangongzhu"] = "万年公主",
   ["#wanniangongzhu"] = "还汉明珠",
-	["cv:wanniangongzhu"] = "侯小菲",
-	["illustrator:wanniangongzhu"] = "匠人绘",
+  ["cv:wanniangongzhu"] = "侯小菲",
+  ["illustrator:wanniangongzhu"] = "匠人绘",
 
   ["zhenge"] = "枕戈",
   [":zhenge"] = "准备阶段，你可以令一名角色的攻击范围+1（加值至多为5），然后若其他角色都在其的攻击范围内，你可以令其视为对另一名你选择的角色使用一张【杀】。",
@@ -3240,7 +3240,7 @@ Fk:loadTranslationTable{
   ["tenggongzhu"] = "滕公主",
   ["#tenggongzhu"] = "芳华荏苒",
   ["designer:tenggongzhu"] = "步穗",
-	["illustrator:tenggongzhu"] = "君桓文化",
+  ["illustrator:tenggongzhu"] = "君桓文化",
 
   ["xingchong"] = "幸宠",
   [":xingchong"] = "每轮游戏开始时，你可以摸任意张牌并展示任意张牌（摸牌和展示牌的总数不能超过你的体力上限）。"..
@@ -3313,7 +3313,7 @@ Fk:loadTranslationTable{
   ["panghui"] = "庞会",
   ["3panghui"] = "临渭亭侯",
   ["designer:panghui"] = "韩旭",
-	["illustrator:panghui"] = "秋呆呆",
+  ["illustrator:panghui"] = "秋呆呆",
 
   ["yiyong"] = "异勇",
   [":yiyong"] = "每当你对其他角色造成伤害时，你可以和该角色同时弃置至少一张牌（该角色没牌则不弃）。若你弃置的牌的点数之和：不大于其，你摸X张牌（X为该角色弃置的牌数）；不小于其，此伤害+1。",
@@ -3404,7 +3404,7 @@ Fk:loadTranslationTable{
   ["ty__zhaotongzhaoguang"] = "赵统赵广",
   ["#ty__zhaotongzhaoguang"] = "翊赞季兴",
   ["designer:ty__zhaotongzhaoguang"] = "Loun老萌",
-	["illustrator:ty__zhaotongzhaoguang"] = "alien", -- 传说皮 龙威承泽
+  ["illustrator:ty__zhaotongzhaoguang"] = "alien", -- 传说皮 龙威承泽
 
   ["ty__yizan"] = "翊赞",
   [":ty__yizan"] = "你可以将两张牌（其中至少一张是基本牌）当任意基本牌使用或打出。",
@@ -3509,7 +3509,7 @@ Fk:loadTranslationTable{
   ["yuantanyuanshangyuanxi"] = "袁谭袁尚袁熙",
   ["#yuantanyuanshangyuanxi"] = "兄弟阋墙",
   ["designer:yuantanyuanshangyuanxi"] = "笔枔",
-	["illustrator:yuantanyuanshangyuanxi"] = "君桓文化",
+  ["illustrator:yuantanyuanshangyuanxi"] = "君桓文化",
 
   ["ty__neifa"] = "内伐",
   [":ty__neifa"] = "出牌阶段开始时，你可以摸三张牌，然后弃置一张牌。若弃置的牌：是基本牌，你本回合不能使用锦囊牌，"..
@@ -3700,7 +3700,7 @@ Fk:loadTranslationTable{
   ["yuechen"] = "乐綝",
   ["#yuechen"] = "广昌亭侯",
   ["designer:yuechen"] = "残昼厄夜",
-	["illustrator:yuechen"] = "君桓文化",
+  ["illustrator:yuechen"] = "君桓文化",
 
   ["porui"] = "破锐",
   [":porui"] = "每轮限一次，其他角色的结束阶段，你可以弃置一张牌并选择本回合内失去过牌的另一名其他角色，你视为对该角色依次使用X+1张【杀】，然后你"..
@@ -4248,7 +4248,7 @@ Fk:loadTranslationTable{
   ["$yingshui2"] = "施恩行惠，赡之以义。",
   ["$fuyuan1"] = "今君困顿，扶援相助。",
   ["$fuyuan2"] = "恤君之患，以相扶援。",
-  ["~ty__chendeng"] = "吾疾无人可治。",	
+  ["~ty__chendeng"] = "吾疾无人可治。",
 }
 
 local caimaozhangyun = General(extension, "caimaozhangyun", "wei", 4)
@@ -4315,7 +4315,7 @@ Fk:loadTranslationTable{
   ["caimaozhangyun"] = "蔡瑁张允",
   ["#caimaozhangyun"] = "乘雷潜狡",
   ["designer:caimaozhangyun"] = "七哀",
-	["illustrator:caimaozhangyun"] = "君桓文化",
+  ["illustrator:caimaozhangyun"] = "君桓文化",
 
   ["lianzhou"] = "连舟",
   [":lianzhou"] = "锁定技，准备阶段，将你的武将牌横置，然后横置任意名体力值等于你的角色。",
@@ -4401,7 +4401,7 @@ gaolan:addSkill(xizhen)
 Fk:loadTranslationTable{
   ["ty__gaolan"] = "高览",
   ["designer:ty__gaolan"] = "七哀",
-	["illustrator:ty__gaolan"] = "君桓文化",
+  ["illustrator:ty__gaolan"] = "君桓文化",
 
   ["xizhen"] = "袭阵",
   [":xizhen"] = "出牌阶段开始时，你可选择一名其他角色，视为对其使用【杀】或【决斗】，然后本阶段你的牌每次被使用或打出牌响应时，"..
@@ -4700,7 +4700,7 @@ Fk:loadTranslationTable{
   ["chengui"] = "陈珪",
   ["#chengui"] = "弄虎如婴",
   ["designer:chengui"] = "狗", -- 千幻
-	["illustrator:chengui"] = "游漫美绘",
+  ["illustrator:chengui"] = "游漫美绘",
 
   ["yingtu"] = "营图",
   [":yingtu"] = "每回合限一次，当一名角色于其摸牌阶段外获得牌后，若其是你的上家或下家，你可以获得该角色的一张牌，然后交给你的下家或上家一张牌。若以此法给出的牌为装备牌，获得牌的角色使用之。",
@@ -4814,7 +4814,7 @@ Fk:loadTranslationTable{
   ["chenjiao"] = "陈矫",
   ["#chenjiao"] = "刚断骨鲠",
   ["designer:chenjiao"] = "朔方的雪",
-	["illustrator:chenjiao"] = "青岛君桓",
+  ["illustrator:chenjiao"] = "青岛君桓",
 
   ["xieshou"] = "协守",
   [":xieshou"] = "每回合限一次，一名角色受到伤害后，若你与其距离不大于2，你可以令你的手牌上限-1，然后其选择一项：1.回复1点体力；2.复原武将牌并摸两张牌。",

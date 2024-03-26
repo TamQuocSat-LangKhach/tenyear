@@ -184,7 +184,7 @@ Fk:loadTranslationTable{
 
   ["$tanbei1"] = "此机，我怎么会错失。",
   ["$tanbei2"] = "你的东西，现在是我的了！",
-  ["$sidao1"] = "连发伺动，顺手可得。	",
+  ["$sidao1"] = "连发伺动，顺手可得。",
   ["$sidao2"] = "伺机而动，此地可窃。",
   ["~guosi"] = "伍习，你……",
 }
@@ -2435,7 +2435,7 @@ Fk:loadTranslationTable{
   ["$diting2"] = "且容我查验一二。",
   ["$bihuo1"] = "董卓乱政，京师不可久留。",
   ["$bihuo2"] = "权臣当朝，不如早日脱身。",
-  ["~fengfang"] = "掌控校事，为人所忌。",	
+  ["~fengfang"] = "掌控校事，为人所忌。",
 }
 
 local zhaozhong = General(extension, "zhaozhong", "qun", 6)
@@ -2444,14 +2444,22 @@ local yangzhong = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.Damage, fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and not data.from.dead and not data.to.dead and
+    return target == player and player:hasSkill(self) and data.from and not data.from.dead and not data.to.dead and
       #data.from:getCardIds{Player.Hand, Player.Equip} > 1
   end,
   on_cost = function(self, event, target, player, data)
-    return #player.room:askForDiscard(data.from, 2, 2, true, self.name, true, ".", "#yangzhong-invoke::"..data.to.id) > 0
+    local room = player.room
+    local cards = room:askForDiscard(data.from, 2, 2, true, self.name, true, ".", "#yangzhong-invoke::"..data.to.id)
+    if #cards > 0 then
+      self.cost_data = cards
+    end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:loseHp(data.to, 1, self.name)
+    local room = player.room
+    room:throwCard(self.cost_data, self.name, player, player)
+    if not data.to.dead then
+      room:loseHp(data.to, 1, self.name)
+    end
   end
 }
 local huangkong = fk.CreateTriggerSkill{
@@ -2655,7 +2663,7 @@ local ty__fengshih = fk.CreateTriggerSkill{
         local n = player:getHandcardNum()
         local targets = table.filter(AimGroup:getAllTargets(data.tos), function (id)
           local to = room:getPlayerById(id)
-          return not to.dead and to:getHandcardNum() < n and not to:isKongcheng()
+          return not to.dead and to:getHandcardNum() < n
         end)
         if #targets > 0 then
           self.cost_data = targets
@@ -3794,7 +3802,7 @@ Fk:loadTranslationTable{
 
   ["$ex__wusheng_ty__guanyu1"] = "以义传魂，以武入圣！",
   ["$ex__wusheng_ty__guanyu2"] = "义击逆流，武安黎庶。",
-  ["$ty__danji1"] = "单骑护嫂千里，只为桃园之义！	",
+  ["$ty__danji1"] = "单骑护嫂千里，只为桃园之义！",
   ["$ty__danji2"] = "独身远涉，赤心归国！",
   ["$nuchen1"] = "触关某之逆鳞者，杀无赦！",
   ["$nuchen2"] = "天下碌碌之辈，安敢小觑关某？！",

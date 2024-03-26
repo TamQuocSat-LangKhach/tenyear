@@ -736,7 +736,7 @@ Fk:loadTranslationTable{
   ["#fanshi-invoke"] = "是否发动 覆斗，与%dest各 %arg",
 
   ["$jianzhuan1"] = "今作擎天之柱，何怜八方风雨？",
-  ["$jianzhuan2"] = "吾寄百里之命，当居万丈危楼。	",
+  ["$jianzhuan2"] = "吾寄百里之命，当居万丈危楼。",
   ["$fanshi1"] = "垒巨木为寨，发屯兵自守。",
   ["$fanshi2"] = "吾居伊周之位，怎可以罪见黜？",
   ["$fudou1"] = "既作困禽，何妨铤险以覆车？",

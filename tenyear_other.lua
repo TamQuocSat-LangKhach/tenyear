@@ -547,7 +547,7 @@ local bianzhuang_choices = {
   {"ol_ex__huangzhong","ol_ex__liegong"}, {"ol_ex__pangde","ol_ex__jianchu"},
   {"zhaoji","qin__shanwu"}, {"ol__dingfeng","ol__duanbing"}, {"ol_ex__jiaxu","ol_ex__wansha"},
   {"ol__fanchou","ol__xingluan"}, {"yingzheng","qin__yitong"}, {"ol__dengzhi","xiuhao"},
-  {"qinghegongzhu","zengou"}, {"ol__wenqin","guangao"}, {"olz__zhonghui","xieshu"},
+  {"qinghegongzhu","zengou"}, {"ol__wenqin","guangao"}, {"olz__zhonghui","xieshu"},{"olmou__yuanshao", "shenliy"},
   --offline
   {"es__chendao","jianglie"},
   --mini
@@ -567,7 +567,7 @@ local bianzhuang_choices = {
   {"zhaozhong","yangzhong"}, {"sunlang","benshi"}, {"yanrou","choutao"}, {"panghui","yiyong"},
   {"ty__huaxin","wanggui"}, {"guanhai","suoliang"}, {"ty_ex__zhangchunhua","ty_ex__jueqing"},
   {"ty_ex__panzhangmazhong","ty_ex__anjian"}, {"ty_ex__masu","ty_ex__zhiman"},
-  {"ty__xujing","caixia"}, {"wenyang","lvli"}, {"ty__luotong","jinjian"},
+  {"wenyang","lvli"}, {"ty__luotong","jinjian"},{"tymou__simayi","pingliao"},
   --jsrg
   {"js__sunjian","juelie"}, {"js__zhujun","fendi"}, {"js__liubei","zhenqiao"}, {"js__lvbu","wuchang"},
   --yjtw
@@ -590,7 +590,10 @@ local bianzhuang = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local n = player:usedSkillTimes(self.name, Player.HistoryGame) > 3 and 3 or 2
-    local choices = table.random(bianzhuang_choices, n)
+    local all_choices = table.filter(bianzhuang_choices, function (c)
+      return Fk.generals[c[1]] ~= nil and Fk.skills[c[2]] ~= nil
+    end)
+    local choices = table.random(all_choices, n)
     local generals = table.map(choices, function(c) return c[1] end)
     local skills = table.map(choices, function(c) return {c[2]} end)
 

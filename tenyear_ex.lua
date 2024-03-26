@@ -3380,7 +3380,7 @@ local ty_ex__faen = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.TurnedOver, fk.ChainStateChanged},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) then
+    if player:hasSkill(self) and not target.dead then
       return (event == fk.TurnedOver and target.faceup) or (event == fk.ChainStateChanged and target.chained)
     end
   end,

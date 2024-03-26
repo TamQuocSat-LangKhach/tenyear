@@ -904,7 +904,7 @@ local jianzheng = fk.CreateActiveSkill{
         target:setChainState(true)
       end
       if not player.dead and not target.dead and not player:isKongcheng() then
-        U.viewCards(target, player:getCardIds("h"), self.name)
+        U.viewCards(target, player:getCardIds("h"), self.name, "$ViewCardsFrom:"..player.id)
       end
     end
   end,

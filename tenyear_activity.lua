@@ -4008,7 +4008,7 @@ local tuoxian = fk.CreateTriggerSkill{
   anim_type = "spcial",
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryGame) < player:getMark(self.name) then
+    if player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryGame) < player:getMark(self.name) + 1 then
       for _, move in ipairs(data) do
         if move.skillName == "piaoping" and move.moveReason == fk.ReasonDiscard and move.from == player.id then
           for _, info in ipairs(move.moveInfo) do
@@ -4073,7 +4073,9 @@ local zhuili = fk.CreateTriggerSkill{
     local room = player.room
     if player:getSwitchSkillState("piaoping", false) == fk.SwitchYang then
       room:addPlayerMark(player, "tuoxian", 1)
-      room:setPlayerMark(player, "zhuili_invalid-turn", 1)
+      if player:getMark("tuoxian") - player:usedSkillTimes("tuoxian", Player.HistoryGame) > 2 then
+        room:setPlayerMark(player, "zhuili_invalid-turn", 1)
+      end
     else
       room:setPlayerMark(player, MarkEnum.SwithSkillPreName.."piaoping", fk.SwitchYang)
     end
@@ -4090,10 +4092,11 @@ Fk:loadTranslationTable{
   ["piaoping"] = "漂萍",
   [":piaoping"] = "锁定技，转换技，当你使用一张牌时，阳：你摸X张牌；阴：你弃置X张牌（X为本回合〖漂萍〗发动次数且至多为你当前体力值）。",
   ["tuoxian"] = "托献",
-  [":tuoxian"] = "每局游戏限零次，当你因〖漂萍〗弃置的牌进入弃牌堆后，你可以改为将这些牌交给一名其他角色，然后其选择一项：1.其弃置其区域内等量的牌；"..
+  [":tuoxian"] = "每局游戏限一次，当你因〖漂萍〗弃置的牌进入弃牌堆后，你可以改为将这些牌交给一名其他角色，然后其选择一项：1.其弃置其区域内等量的牌；"..
   "2.令〖漂萍〗本回合失效。",
   ["zhuili"] = "惴栗",
-  [":zhuili"] = "锁定技，当你成为其他角色使用黑色牌的目标后，若此时〖漂萍〗状态为：阳，令〖托献〗可使用次数+1，然后此技能本回合失效；"..
+  [":zhuili"] = "锁定技，当你成为其他角色使用黑色牌的目标后，若此时〖漂萍〗状态为：阳，令〖托献〗可使用次数+1，"..
+  "然后若〖托献〗可使用次数超过3，此技能本回合失效；"..
   "阴，令〖漂萍〗状态转换为阳。",
   ["#piaoping-discard"] = "漂萍：请弃置%arg张牌",
   ["#tuoxian-choose"] = "托献：你可以将这些牌交给一名其他角色，其选择弃置等量牌或令你的〖漂萍〗失效",

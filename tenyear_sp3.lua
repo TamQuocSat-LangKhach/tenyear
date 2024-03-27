@@ -1139,12 +1139,12 @@ local nuanhui = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Finish and
-      table.find(player.room.alive_players, function(p) return #p:getCardIds("e") > 0 end)
+    return target == player and player:hasSkill(self) and player.phase == Player.Finish
   end,
   on_cost = function(self, event, target, player, data)
-    local targets = table.map(table.filter(player.room.alive_players, function(p) return #p:getCardIds("e") > 0 end), Util.IdMapper)
-    local to = player.room:askForChoosePlayers(player, targets, 1, 1, "#nuanhui-choose", self.name, true)
+    local room = player.room
+    local to = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper), 1, 1,
+    "#nuanhui-choose", self.name, true)
     if #to > 0 then
       self.cost_data = to[1]
       return true
@@ -1153,16 +1153,23 @@ local nuanhui = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
-    local n = #to:getCardIds("e")
-    local count = 0
+    local n = math.max(#to:getCardIds("e"), 1)
+    local throwEquip = false
+    local names = {}
     for i = 1, n, 1 do
-      if to.dead then return end
-      if not U.askForUseVirtualCard(room, to, U.getAllCardNames("b"), nil, self.name, "#nuanhui-use:::"..i..":"..n, true, true, false, true) then
+      local use = U.askForUseVirtualCard(room, to, U.getAllCardNames("b"), nil, self.name,
+      "#nuanhui-use:::"..i..":"..n, true, true, false, true)
+      if use then
+        if not table.insertIfNeed(names, use.card.trueName) then
+          throwEquip = true
+        end
+        if to.dead then return false end
+        n = math.max(#to:getCardIds("e"), 1)
+      else
         break
       end
-      count = count + 1
     end
-    if not to.dead and count > 1 then
+    if throwEquip then
       to:throwAllCards("e")
     end
   end,
@@ -1176,7 +1183,8 @@ Fk:loadTranslationTable{
   ["qiongying"] = "琼英",
   [":qiongying"] = "出牌阶段限一次，你可以移动场上一张牌，然后你弃置一张同花色的手牌（若没有需展示手牌）。",
   ["nuanhui"] = "暖惠",
-  [":nuanhui"] = "结束阶段，你可以选择一名角色，该角色可视为使用X张基本牌（X为其装备区牌数）。若其使用超过一张，结算完成后弃置装备区所有牌。",
+  [":nuanhui"] = "结束阶段，你可以选择一名角色，该角色可视为使用X张基本牌（X为其装备区牌数且至少为1）。"..
+  "若其使用了同名牌，其弃置装备区所有牌。",
   ["#qiongying"] = "琼英：你可以移动场上一张牌，然后弃置一张此花色的手牌",
   ["#nuanhui-choose"] = "暖惠：选择一名角色，其可以视为使用其装备区内牌张数的基本牌",
   ["nuanhui_viewas"] = "暖惠",

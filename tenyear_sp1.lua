@@ -411,11 +411,7 @@ local xionghuo_record = fk.CreateTriggerSkill{
     else
       room:doIndicate(player.id, {target.id})
       room:removePlayerMark(target, "@baoli", 1)
-      local n = 3
-      if target:isNude() then
-        n = 2
-      end
-      local rand = math.random(1, 3)
+      local rand = math.random(1, target:isNude() and 2 or 3)
       if rand == 1 then
         room:damage {
           from = player,
@@ -432,14 +428,8 @@ local xionghuo_record = fk.CreateTriggerSkill{
         room:loseHp(target, 1, "xionghuo")
         room:addPlayerMark(target, "MinusMaxCards-turn", 1)
       else
-        local dummy = Fk:cloneCard("dilu")
-        if not target:isKongcheng() then
-          dummy:addSubcard(table.random(target.player_cards[Player.Hand]))
-        end
-        if #target.player_cards[Player.Equip] > 0 then
-          dummy:addSubcard(table.random(target.player_cards[Player.Equip]))
-        end
-        room:obtainCard(player.id, dummy, false, fk.ReasonPrey)
+        local cards = table.random(target:getCardIds{Player.Hand, Player.Equip}, 2)
+        room:moveCardTo(cards, Player.Hand, player, fk.ReasonPrey, "xionghuo", "", false, player.id)
       end
     end
   end,
@@ -483,7 +473,7 @@ Fk:loadTranslationTable{
   "你对有此标记的其他角色造成的伤害+1，且其出牌阶段开始时，移去“暴戾”并随机执行一项："..
   "1.受到1点火焰伤害且本回合不能对你使用【杀】；"..
   "2.流失1点体力且本回合手牌上限-1；"..
-  "3.你随机获得其一张手牌和一张装备区里的牌。",
+  "3.你随机获得其两张牌。",
   ["shajue"] = "杀绝",
   [":shajue"] = "锁定技，其他角色进入濒死状态时，你获得一个“暴戾”标记，"..
   "若其需要超过一张【桃】或【酒】救回，你获得使其进入濒死状态的牌。",

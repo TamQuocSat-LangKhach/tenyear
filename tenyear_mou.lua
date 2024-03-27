@@ -146,40 +146,23 @@ local mingshil = fk.CreateTriggerSkill{
 }
 local mingshil_trigger = fk.CreateTriggerSkill{
   name = "#mingshil_trigger",
-  events = {fk.AfterDrawNCards},
+  events = {fk.EventPhaseEnd},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:usedSkillTimes("mingshil", Player.HistoryPhase) > 0 and player:getHandcardNum() > 2 and
-      table.find(player.room:getOtherPlayers(player), function(p) return not p.dead end)
+    return target == player and not player.dead and player:usedSkillTimes("mingshil", Player.HistoryPhase) > 0 and
+    player:getHandcardNum() > 2 and #player.room.alive_players > 1
   end,
   on_cost = Util.TrueFunc,
   on_use = function (self, event, target, player, data)
     local room = player.room
-    local success, dat = room:askForUseActiveSkill(player, "mingshil_active", "#mingshil-give", false)
-    local to, cards
-    if success then
-      to = room:getPlayerById(dat.targets[1])
-      cards = dat.cards
-    else
-      to = table.random(room:getOtherPlayers(player))
-      cards = table.random(player:getCardIds("h"), 3)
-    end
+    local tos, cards = U.askForChooseCardsAndPlayers(room, player, 3, 3,
+    table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, ".", "#mingshil-give", "mingshil", false)
     player:showCards(cards)
     cards = table.filter(cards, function(id) return table.contains(player:getCardIds("h"), id) end)
+    local to = room:getPlayerById(tos[1])
     if to.dead or #cards == 0 then return end
     local card = U.askforChooseCardsAndChoice(to, cards, {"OK"}, "mingshil", "#mingshil-choose", nil, 1, 1)
     room:moveCardTo(Fk:getCardById(card[1]), Card.PlayerHand, to, fk.ReasonPrey, "mingshil", nil, true, to.id)
-  end,
-}
-local mingshil_active = fk.CreateActiveSkill{
-  name = "mingshil_active",
-  card_num = 3,
-  target_num = 1,
-  card_filter  = function (self, to_select, selected)
-    return #selected < 3 and Fk:currentRoom():getCardArea(to_select) == Player.Hand
-  end,
-  target_filter  = function (self, to_select, selected, selected_cards, card)
-    return #selected == 0 and to_select ~= Self.id
   end,
 }
 local mengmou = fk.CreateTriggerSkill{
@@ -189,62 +172,64 @@ local mengmou = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
+      local targets = {}
       for _, move in ipairs(data) do
-        if move.from == player.id and player:getMark("mengmou1-turn") == 0 and move.to and not player.room:getPlayerById(move.to).dead then
-          for _, info in ipairs(move.moveInfo) do
-            if info.fromArea == Card.PlayerHand then
-              return true
+        if move.toArea == Card.PlayerHand then
+          if move.from == player.id and move.to and move.to ~= player.id and not table.contains(targets, move.to) then
+            for _, info in ipairs(move.moveInfo) do
+              if info.fromArea == Card.PlayerHand then
+                table.insert(targets, move.to)
+                break
+              end
             end
-          end
-        elseif move.to == player.id and player:getMark("mengmou2-turn") == 0 and move.from and not player.room:getPlayerById(move.from).dead then
-          for _, info in ipairs(move.moveInfo) do
-            if info.fromArea == Card.PlayerHand then
-              return true
+          elseif move.to == player.id and move.from and move.from ~= player.id and not table.contains(targets, move.from) then
+            for _, info in ipairs(move.moveInfo) do
+              if info.fromArea == Card.PlayerHand then
+                table.insert(targets, move.from)
+                break
+              end
             end
           end
         end
       end
-    end
-  end,
-  on_trigger = function(self, event, target, player, data)
-    local dat = {}
-    for _, move in ipairs(data) do
-      if move.from == player.id and player:getMark("mengmou1-turn") == 0 and move.to and not player.room:getPlayerById(move.to).dead then
-        for _, info in ipairs(move.moveInfo) do
-          if info.fromArea == Card.PlayerHand then
-            dat = {move.to, "mengmou1-turn"}
-          end
-        end
-      elseif move.to == player.id and player:getMark("mengmou2-turn") == 0 and move.from and not player.room:getPlayerById(move.from).dead then
-        for _, info in ipairs(move.moveInfo) do
-          if info.fromArea == Card.PlayerHand then
-            dat = {move.from, "mengmou2-turn"}
-          end
-        end
+      local room = player.room
+      targets = table.filter(targets, function (id)
+        return not room:getPlayerById(id).dead
+      end)
+      if #targets > 0 then
+        self.cost_data = targets
+        return true
       end
     end
-    self:doCost(event, nil, player, dat)
   end,
   on_cost = function(self, event, target, player, data)
-    if player:getSwitchSkillState(self.name, false) == fk.SwitchYang then
-      return player.room:askForSkillInvoke(player, self.name, nil, "#mengmou-yang::"..data[1]..":"..player.hp)
+    local targets = table.simpleClone(self.cost_data)
+    local room = player.room
+    local prompt = (player:getSwitchSkillState(self.name, false) == fk.SwitchYang) and "#mengmou-yang" or "#mengmou-yin"
+    if #targets == 1 then
+      if room:askForSkillInvoke(player, self.name, nil, prompt.."-invoke::"..targets[1]..":"..player.maxHp) then
+        room:doIndicate(player.id, targets)
+        self.cost_data = targets[1]
+        return true
+      end
     else
-      return player.room:askForSkillInvoke(player, self.name, nil, "#mengmou-yin::"..data[1]..":"..player.hp)
+      targets = room:askForChoosePlayers(player, targets, 1, 1, prompt.."-choose::"..targets[1]..":"..player.maxHp, self.name, true)
+      if #targets > 0 then
+        self.cost_data = targets[1]
+        return true
+      end
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(data[1])
-    room:setPlayerMark(player, data[2], 1)
+    local to = room:getPlayerById(self.cost_data)
     room:doIndicate(player.id, {to.id})
-    local n = player.hp
+    local n = player.maxHp
     if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
       local count = 0
       for i = 1, n, 1 do
         if to.dead then return end
-        room:setPlayerMark(to, MarkEnum.BypassTimesLimit.."tmp", 1)
-        local use = room:askForUseCard(to, "slash", "slash", "#mengmou-slash:::"..i..":"..n, true)
-        room:setPlayerMark(to, MarkEnum.BypassTimesLimit.."tmp", 0)
+        local use = room:askForUseCard(to, "slash", "slash", "#mengmou-slash:::"..i..":"..n, true, { bypass_times = true })
         if use then
           use.extraUse = true
           room:useCard(use)
@@ -288,7 +273,7 @@ local mengmou = fk.CreateTriggerSkill{
     end
   end,
 }
-Fk:addSkill(mingshil_active)
+
 mingshil:addRelatedSkill(mingshil_trigger)
 tymou__lusu:addSkill(mingshil)
 tymou__lusu:addSkill(mengmou)
@@ -299,13 +284,14 @@ Fk:loadTranslationTable{
   ["mingshil"] = "明势",
   [":mingshil"] = "摸牌阶段，你可以多摸两张牌，然后展示三张手牌并令一名其他角色获得其中一张。",
   ["mengmou"] = "盟谋",
-  [":mengmou"] = "转换技，每回合各限一次，当你获得其他角色的手牌后，或当其他角色获得你的手牌后，你可以令该角色执行（其中X为你的体力值）：<br>"..
+  [":mengmou"] = "转换技，每回合各限一次，当你获得其他角色的手牌后，或当其他角色获得你的手牌后，你可以令该角色执行（其中X为你的体力上限）：<br>"..
   "阳：使用X张【杀】，每造成1点伤害回复1点体力；<br>阴：打出X张【杀】，每少打出一张失去1点体力。",
-  ["mingshil_active"] = "明势",
-  ["#mingshil-give"] = "明势：展示三张手牌，令一名其他角色获得其中一张",
+  ["#mingshil-give"] = "明势：展示3张手牌，令1名其他角色获得其中1张",
   ["#mingshil-choose"] = "明势：获得其中一张牌",
-  ["#mengmou-yang"] = "盟谋：你可以令 %dest 使用%arg张【杀】，造成伤害后其回复体力",
-  ["#mengmou-yin"] = "盟谋：你可以令 %dest 打出%arg张【杀】，每少打出一张其失去1点体力",
+  ["#mengmou-yang-invoke"] = "你可以发动 盟谋（阳），令 %dest 使用%arg张【杀】，造成伤害后其回复体力",
+  ["#mengmou-yin-invoke"] = "你可以发动 盟谋（阴），令 %dest 打出%arg张【杀】，每少打出一张其失去1点体力",
+  ["#mengmou-yang-choose"] = "你可以发动 盟谋（阳），令一名角色使用%arg张【杀】，造成伤害后其回复体力",
+  ["#mengmou-yin-choose"] = "你可以发动 盟谋（阴），令一名角色打出%arg张【杀】，每少打出一张其失去1点体力",
   ["#mengmou-slash"] = "盟谋：你可以连续使用【杀】，造成伤害后你回复体力（第%arg张，共%arg2张）",
   ["#mengmou-ask"] = "盟谋：你需连续打出【杀】，每少打出一张你失去1点体力（第%arg张，共%arg2张）",
 
@@ -315,7 +301,6 @@ Fk:loadTranslationTable{
   ["$mengmou2"] = "求同存异，邀英雄问鼎。",
   ["~tymou__lusu"] = "虎可为之用，亦可为之伤……",
 }
-
 
 local tymou__simayi = General(extension, "tymou__simayi", "wei", 3)
 local pingliao = fk.CreateTriggerSkill{

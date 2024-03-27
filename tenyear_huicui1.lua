@@ -489,7 +489,7 @@ local xunji = fk.CreateActiveSkill{
 local xunji_trigger = fk.CreateTriggerSkill{
   name = "#xunji_trigger",
   mute = true,
-  events = {fk.EventPhaseStart, fk.Damage},
+  events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player.phase == Player.Finish and player:getMark("@@xunji") ~= 0
   end,
@@ -498,11 +498,12 @@ local xunji_trigger = fk.CreateTriggerSkill{
     local room = player.room
     local mark = player:getMark("@@xunji")
     room:setPlayerMark(player, "@@xunji", 0)
-    local events = room.logic:getEventsOfScope(GameEvent.Damage, 999, function(e)
-      local damage = e.data[1]
-      return damage.from == player
-    end, Player.HistoryTurn)
-    if #events == 0 then return end
+    local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
+    if turn_event == nil then return false end
+    if #U.getEventsByRule(room, GameEvent.UseCard, 1, function (e)
+      local use = e.data[1]
+      return use.from == player.id and use.card.color == Card.Black
+    end, turn_event.id) == 0 then return false end
     for _, id in ipairs(mark) do
       if player.dead then return end
       local p = room:getPlayerById(id)
@@ -565,7 +566,7 @@ Fk:loadTranslationTable{
   ["#caiyang"] = "一据千里",
   ["illustrator:caiyang"] = "君桓文化",
   ["xunji"] = "寻嫉",
-  [":xunji"] = "出牌阶段限一次，你可以秘密选择一名其他角色。该角色下个回合结束阶段，若其本回合造成过伤害，则你视为对其使用一张【决斗】；"..
+  [":xunji"] = "出牌阶段限一次，你可以秘密选择一名其他角色。该角色下个回合结束阶段，若其本回合使用过黑色牌，则你视为对其使用一张【决斗】；"..
   "此【决斗】对其造成伤害后，若其存活，则其对你造成等量的伤害。",
   ["jiaofeng"] = "交锋",
   [":jiaofeng"] = "锁定技，当你每回合首次造成伤害时，若你已损失体力值：大于0，你摸一张牌；大于1，此伤害+1；大于2，你回复1点体力。",
@@ -4547,27 +4548,26 @@ local shuhe = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     player:showCards(effect.cards)
     local card = Fk:getCardById(effect.cards[1])
-    local yes = false
+    local cards = {}
     for _, p in ipairs(room:getAlivePlayers()) do
       for _, id in ipairs(p:getCardIds{Player.Equip, Player.Judge}) do
         if Fk:getCardById(id).number == card.number then
-          room:obtainCard(player, id, true, fk.ReasonPrey)
-          yes = true
+          table.insert(cards, id)
         end
       end
     end
-    if not yes then
-      local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+    if #cards > 0 then
+      room:moveCardTo(cards, Player.Hand, player, fk.ReasonPrey, self.name, "", true, player.id)
+      if player.dead then return false end
+    end
+    if player:getMark("@ty__liehou") < 5 then
+      room:addPlayerMark(player, "@ty__liehou", 1)
+    end
+    if #cards == 0 then
+      local targets = table.map(room:getOtherPlayers(player, true), Util.IdMapper)
+      if #targets == 0 then return false end
       local to = room:askForChoosePlayers(player, targets, 1, 1, "#shuhe-choose:::"..card:toLogString(), self.name, false)
-      if #to > 0 then
-        to = room:getPlayerById(to[1])
-      else
-        to = room:getPlayerById(table.random(targets))
-      end
-      room:obtainCard(to, card, true, fk.ReasonGive)
-      if player:getMark("@ty__liehou") < 5 then
-        room:addPlayerMark(player, "@ty__liehou", 1)
-      end
+      room:obtainCard(to[1], card, true, fk.ReasonGive)
     end
   end,
 }
@@ -4575,12 +4575,15 @@ local ty__liehou = fk.CreateTriggerSkill{
   name = "ty__liehou",
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
-  events = {fk.DrawNCards, fk.AfterDrawNCards},
+  events = {fk.DrawNCards, fk.EventPhaseEnd},
+  mute = true,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
+    return target == player and player:hasSkill(self) and
+    (event == fk.DrawNCards or player:usedSkillTimes(self.name, Player.HistoryPhase) > 0)
   end,
   on_use = function(self, event, target, player, data)
     if event == fk.DrawNCards then
+      player.room:notifySkillInvoked(player, self.name)
       data.n = data.n + 1 + player:getMark("@ty__liehou")
     else
       local room = player.room
@@ -4596,8 +4599,8 @@ lvkuanglvxiang:addSkill(ty__liehou)
 Fk:loadTranslationTable{
   ["ty__lvkuanglvxiang"] = "吕旷吕翔",
   ["shuhe"] = "数合",
-  [":shuhe"] = "出牌阶段限一次，你可以展示一张手牌，并获得场上与展示牌相同点数的牌。如果你没有因此获得牌，你需将展示牌交给一名其他角色，"..
-  "然后〖列侯〗的额外摸牌数+1（至多为5）。",
+  [":shuhe"] = "出牌阶段限一次，你可以展示一张手牌，并获得场上与展示牌相同点数的牌，然后〖列侯〗的额外摸牌数+1（至多为5）。"..
+  "如果你没有因此获得牌，你需将展示牌交给一名其他角色，",
   ["ty__liehou"] = "列侯",
   [":ty__liehou"] = "锁定技，摸牌阶段，你额外摸一张牌，然后选择一项：1.弃置等量的牌；2.失去1点体力。",
   ["#shuhe-choose"] = "数合：选择一名其他角色，将%arg交给其",

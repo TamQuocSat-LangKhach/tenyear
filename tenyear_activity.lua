@@ -4860,6 +4860,7 @@ local yanzhengn = fk.CreateTriggerSkill{
     local tos, card = player.room:askForChooseCardAndPlayers(player, targets, 1, player:getHandcardNum() - 1, ".|.|.|hand",
       "#yanzhengn-invoke:::"..(player:getHandcardNum() - 1), self.name, true)
     if #tos > 0 and card then
+      player.room:sortPlayersByAction(tos)
       self.cost_data = {tos, card}
       return true
     end

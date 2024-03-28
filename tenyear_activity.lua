@@ -7,7 +7,7 @@ Fk:loadTranslationTable{
   ["tenyear_activity"] = "十周年-南征北战",
 }
 
---文和乱武：李傕 郭汜 樊稠 张济 梁兴 唐姬 段煨 张横 牛辅
+--文和乱武：李傕 郭汜 樊稠 张济 梁兴 唐姬 段煨 张横 牛辅 李傕郭汜
 
 local lijue = General(extension, "lijue", "qun", 4, 6)
 local langxi = fk.CreateTriggerSkill{
@@ -187,6 +187,50 @@ Fk:loadTranslationTable{
   ["$sidao1"] = "连发伺动，顺手可得。",
   ["$sidao2"] = "伺机而动，此地可窃。",
   ["~guosi"] = "伍习，你……",
+}
+
+local lijueguosi = General(extension, "ty__lijueguosi", "qun", 4)
+local xiongsuan = fk.CreateActiveSkill{
+  name = "ty__xiongsuan",
+  anim_type = "offensive",
+  card_num = 1,
+  target_num = 1,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function (self, to_select, selected)
+    return #selected == 0 and table.contains(Self.player_cards[Player.Hand], to_select)
+    and not Self:prohibitDiscard(Fk:getCardById(to_select))
+  end,
+  target_filter = function(self, to_select, selected, cards)
+    return #selected == 0 and #cards == 1
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    player:broadcastSkillInvoke("xiongsuan")
+    local to = room:getPlayerById(effect.tos[1])
+    room:throwCard(effect.cards, self.name, player, player)
+    room:damage { from = player, to = to, damage = 1, skillName = self.name }
+    if not player.dead then
+      player:drawCards(3, self.name)
+    end
+    if not player.dead and to ~= player then
+      room:loseHp(player, 1, self.name)
+    end
+  end,
+}
+lijueguosi:addSkill(xiongsuan)
+
+Fk:loadTranslationTable{
+  ["ty__lijueguosi"] = "李傕郭汜",
+  ["#ty__lijueguosi"] = "犯祚倾祸",
+  ["illustrator:ty__lijueguosi"] = "君桓文化",
+  ["ty__xiongsuan"] = "凶算",
+  [":ty__xiongsuan"] = "出牌阶段限一次，你可以弃置一张手牌并对一名角色造成1点伤害，然后摸三张牌。若该角色不为你，你失去1点体力。",
+  ["#ty__xiongsuan"] = "凶算:弃置一张手牌并对一名角色造成1点伤害，然后你摸三张牌",
+  ["$ty__xiongsuan1"] = "此战虽凶，得益颇高。",
+  ["$ty__xiongsuan2"] = "谋算计策，吾二人尚有险招。",
+  ["~ty__lijueguosi"] = "异心相争，兵败战损……",
 }
 
 local fanchou = General(extension, "fanchou", "qun", 4)
@@ -4078,6 +4122,7 @@ local zhuili = fk.CreateTriggerSkill{
       end
     else
       room:setPlayerMark(player, MarkEnum.SwithSkillPreName.."piaoping", fk.SwitchYang)
+      player:setSkillUseHistory("piaoping", player:usedSkillTimes("piaoping", Player.HistoryTurn), Player.HistoryTurn)
     end
   end,
 }

@@ -639,6 +639,18 @@ local falu = fk.CreateTriggerSkill{
       end
     end
   end,
+
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == self
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local suits = {"spade", "club", "heart", "diamond"}
+    for i = 1, 4, 1 do
+      room:setPlayerMark(player, "@@falu" .. suits[i], 0)
+    end
+  end,
 }
 
 local zhenyi = fk.CreateViewAsSkill{

@@ -135,9 +135,7 @@ GraphicsBox {
       suit: modelData.suit
       number: modelData.number
       draggable: true
-      onReleased: {
-        root.updateCardReleased(cid);
-      }
+      onReleased: updateCardReleased(cid);
     }
   }
 
@@ -174,7 +172,7 @@ GraphicsBox {
     let overflow = handcards.length > 9;
     for (i = 0; i < handcards.length; i++) {
       card = handcards[i];
-      card.origX = overflow ? (840 / handcards.length * i + 20) : (20 + 100 * i);
+      card.origX = overflow ? (830 / (handcards.length - 1) * i + 20) : (20 + 100 * i);
       card.origY = 250;
       card.z = i + 1;
       card.initialZ = i + 1;
@@ -186,7 +184,7 @@ GraphicsBox {
       overflow = result[j].length > 2
       for (i = 0; i < result[j].length; i++) {
         card = result[j][i];
-        card.origX = overflow ? (215 / result[j].length * i + 40 + 305 * j) : (40 + 305 * j + 100 * i);
+        card.origX = overflow ? (180 / (result[j].length - 1) * i + 40 + 305 * j) : (40 + 305 * j + 100 * i);
         card.origY = 60;
         card.z = i + 1;
         card.initialZ = i + 1;

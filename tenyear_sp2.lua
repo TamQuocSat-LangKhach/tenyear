@@ -5633,13 +5633,11 @@ local xingzuo = fk.CreateTriggerSkill{
     cards = table.reverse(cards)
     --FIXME:从牌堆底获取牌是逆序的……
     local handcards = player:getCardIds(Player.Hand)
-    local to_buttom = room:askForPoxi(player, "xingzuo", {
-      { "牌堆底", cards },
-      { "手牌区", handcards },
-    })
-    if #to_buttom ~= 3 then
-      to_buttom = cards
-    end
+
+    local to_buttom = U.askForArrangeCards(player, self.name,
+    {"Bottom", cards, "$Hand", handcards},
+    "#xingzuo-invoke", false)[1]
+
     local moveInfos = {}
     local drawPilePosition = #room.draw_pile
     for i = 1, 3, 1 do

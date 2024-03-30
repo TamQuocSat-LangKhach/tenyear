@@ -417,6 +417,7 @@ local ty__pingjian = fk.CreateActiveSkill{
     if #skills == 0 then return false end
     local choices = table.random(skills, 3)
     local skill_name = room:askForChoice(player, choices, self.name, "#ty__pingjian-choice", true)
+    local used_skills = U.getMark(player, "ty__pingjian_used_skills")
     table.insert(used_skills, skill_name)
     room:setPlayerMark(player, "ty__pingjian_used_skills", used_skills)
     local phase_event = room.logic:getCurrentEvent():findParent(GameEvent.Phase)
@@ -449,6 +450,7 @@ local ty__pingjian_trigger = fk.CreateTriggerSkill{
     if #skills == 0 then return false end
     local choices = table.random(skills, 3)
     local skill_name = room:askForChoice(player, choices, ty__pingjian.name, "#ty__pingjian-choice", true)
+    local used_skills = U.getMark(player, "ty__pingjian_used_skills")
     table.insert(used_skills, skill_name)
     room:setPlayerMark(player, "ty__pingjian_used_skills", used_skills)
     local skill = Fk.skills[skill_name]

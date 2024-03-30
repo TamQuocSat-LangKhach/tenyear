@@ -2493,7 +2493,7 @@ local yangzhong = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local cards = room:askForDiscard(data.from, 2, 2, true, self.name, true, ".", "#yangzhong-invoke::"..data.to.id)
+    local cards = room:askForDiscard(data.from, 2, 2, true, self.name, true, ".", "#yangzhong-invoke::"..data.to.id, true)
     if #cards > 0 then
       self.cost_data = cards
     end

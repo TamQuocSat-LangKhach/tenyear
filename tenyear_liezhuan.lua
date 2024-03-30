@@ -372,19 +372,9 @@ local removeTYPingjianSkill = function(player, skill_name)
   end
 end
 
-local ty__pingjian = fk.CreateActiveSkill{
-  name = "ty__pingjian",
-  prompt = "#ty__pingjian-active",
-  card_num = 0,
-  target_num = 0,
-  can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
-  end,
-  card_filter = Util.FalseFunc,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local used_skills = U.getMark(player, "ty__pingjian_used_skills")
-    local skills = table.filter({
+local function getPingjianSkills(player, event)
+  local list = {
+    ["play"] = {
       "qiangwu", "ol_ex__qiangxi", "ol_ex__luanji", "ty_ex__sanyao", "ol__xuehen", "ex__yijue", "daoshu", "m_ex__xianzhen",
       "tianyi", "mansi", "ty__lianji", "ty_ex__wurong", "xuezhao", "hs__kurou", "m_ex__mieji",
       "ex__zhiheng", "ex__guose", "guolun", "duliang", "os__gongxin", "lueming", "jijie", "busuan", "minsi", "ty__lianzhu",
@@ -396,9 +386,40 @@ local ty__pingjian = fk.CreateActiveSkill{
       "yangjie", "hongyi", "m_ex__junxing", "m_ex__yanzhu", "ol_ex__changbiao", "yanxi", "jiwu", "xuanbei", "yushen", "guanxu",
       "ty__jianji", "wencan", "xiangmian", "zhuren", "changqu", "jiuxianc", "caizhuang", "ty__beini", "jichun", "tongwei",
       "liangyan", "kuizhen"
-    }, function (skill_name)
-      return not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
-    end)
+    },
+    [fk.Damaged] = {
+      "guixin", "ty__benyu", "ex__fankui", "ex__ganglie", "ex__yiji", "ex__jianxiong", "os_ex__enyuan", "chouce", "ol_ex__jieming",
+      "fangzhu", "ty_ex__chengxiang", "huituo", "ty__wangxi", "yuce", "zhichi", "ty_ex__zhiyu", "wanggui", "qianlong", "dingcuo",
+      "peiqi",
+      
+      "ty__jilei", "xianchou", "rangjie", "liejie", "os__fupan", "yuqi", "silun", "yashi", "qingxian", "xiace", "fumou",
+    },
+    [fk.EventPhaseStart] = {
+      "ty_ex__zhiyan", "ex__biyue", "zuilun", "mozhi", "fujian", "kunfen", "ol_ex__jushou", "os_ex__bingyi", "miji", "zhengu",
+      "juece", "sp__youdi", "kuanshi", "ty__jieying", "suizheng", "m_ex__jieyue",
+      
+      "shenfu", "meihun", "pijing", "zhuihuan", "os__juchen", "os__xingbu", "ty_ex__jingce", "nuanhui", "sangu",
+      "js__pianchong", "linghui", "huayi"
+    },
+  }
+  local used_skills = U.getMark(player, "ty__pingjian_used_skills")
+  return table.filter(list[event] or {}, function (skill_name)
+    return Fk.skills[skill_name] and not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
+  end)
+end
+
+local ty__pingjian = fk.CreateActiveSkill{
+  name = "ty__pingjian",
+  prompt = "#ty__pingjian-active",
+  card_num = 0,
+  target_num = 0,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local skills = getPingjianSkills(player, "play")
     if #skills == 0 then return false end
     local choices = table.random(skills, 3)
     local skill_name = room:askForChoice(player, choices, self.name, "#ty__pingjian-choice", true)
@@ -428,28 +449,7 @@ local ty__pingjian_trigger = fk.CreateTriggerSkill{
     local room = player.room
     room:notifySkillInvoked(player, ty__pingjian.name)
     player:broadcastSkillInvoke(ty__pingjian.name)
-    local used_skills = U.getMark(player, "ty__pingjian_used_skills")
-    local skills = {}
-    if event == fk.Damaged then
-      skills = table.filter({
-        "guixin", "ty__benyu", "ex__fankui", "ex__ganglie", "ex__yiji", "ex__jianxiong", "os_ex__enyuan", "chouce", "ol_ex__jieming",
-        "fangzhu", "chengxiang", "huituo", "ty__wangxi", "yuce", "zhichi", "zhiyu", "wanggui", "qianlong", "dingcuo", "peiqi",
-
-        "ty__jilei", "xianchou", "rangjie", "liejie", "os__fupan", "yuqi", "silun", "yashi", "qingxian", "xiace", "fumou"
-      }, function (skill_name)
-        return not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
-      end)
-    elseif event == fk.EventPhaseStart then
-      skills = table.filter({
-        "ty_ex__zhiyan", "ex__biyue", "zuilun", "mozhi", "fujian", "kunfen", "ol_ex__jushou", "os_ex__bingyi", "miji", "zhengu",
-        "juece", "sp__youdi", "kuanshi", "ty__jieying", "suizheng", "m_ex__jieyue",
-
-        "shenfu", "meihun", "pijing", "zhuihuan", "os__juchen", "os__xingbu", "ty_ex__jingce", "nuanhui", "sangu",
-        "js__pianchong", "linghui", "huayi"
-      }, function (skill_name)
-        return not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
-      end)
-    end
+    local skills = getPingjianSkills(player, event)
     if #skills == 0 then return false end
     local choices = table.random(skills, 3)
     local skill_name = room:askForChoice(player, choices, ty__pingjian.name, "#ty__pingjian-choice", true)

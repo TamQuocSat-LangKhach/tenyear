@@ -1890,6 +1890,7 @@ zhangchangpu:addSkill(xingshen)
 Fk:loadTranslationTable{
   ["ty__zhangchangpu"] = "张昌蒲",
   ["#ty__zhangchangpu"] = "矜严明训",
+  ["designer:ty__zhangchangpu"] = "韩旭",
   ["illustrator:ty__zhangchangpu"] = "biou09",
   ["yanjiao"] = "严教",
   [":yanjiao"] = "出牌阶段限一次，你可以选择一名其他角色并亮出牌堆顶的四张牌，然后令该角色将这些牌分成点数之和相等的两组牌分配给你与其，"..

@@ -169,6 +169,7 @@ caojinyu:addSkill(xianjing)
 Fk:loadTranslationTable{
   ["caojinyu"] = "曹金玉",
   ["#caojinyu"] = "金乡公主",
+  ["designer:caojinyu"] = "韩旭",
   ["illustrator:caojinyu"] = "MUMU",
   ["yuqi"] = "隅泣",
   [":yuqi"] = "每回合限两次，当一名角色受到伤害后，若你与其距离0或者更少，你可以观看牌堆顶的3张牌，将其中至多1张交给受伤角色，"..

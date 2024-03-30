@@ -583,18 +583,6 @@ Fk:loadTranslationTable{
 }
 
 local yanghong = General(extension, "yanghong", "qun", 3)
-local function IsNext(from, to)
-  if from.dead or to.dead then return false end
-  if from.next == to then return true end
-  local temp = table.simpleClone(from.next)
-  while true do
-    if temp.dead then
-      temp = temp.next
-    else
-      return temp == to
-    end
-  end
-end
 local ty__jianji = fk.CreateActiveSkill{
   name = "ty__jianji",
   anim_type = "control",
@@ -603,13 +591,16 @@ local ty__jianji = fk.CreateActiveSkill{
   max_target_num = function()
     return Self:getAttackRange()
   end,
+  prompt = function ()
+    return "#ty__jianji-prompt:::"..Self:getAttackRange()
+  end,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and player:getAttackRange() > 0
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     local target = Fk:currentRoom():getPlayerById(to_select)
-    if not target:isNude() and #selected < Self:getAttackRange() then
+    if #selected < Self:getAttackRange() then
       if #selected == 0 then
         return true
       else
@@ -623,25 +614,30 @@ local ty__jianji = fk.CreateActiveSkill{
     end
   end,
   on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
     local tos = effect.tos
     room:sortPlayersByAction(tos)
     tos = table.map(tos, Util.Id2PlayerMapper)
     for _, p in ipairs(tos) do
       room:askForDiscard(p, 1, 1, true, self.name, false)
     end
+    tos = table.filter(tos, function(p) return not p.dead end)
     if #tos < 2 then return end
     local max_num = 0
     for _, p in ipairs(tos) do
       max_num = math.max(max_num, p:getHandcardNum())
     end
-    local from = table.filter(tos, function(p) return p:getHandcardNum() == max_num end)
-    from = table.random(from)
-    table.removeOne(tos, from)
-    local targets = table.filter(tos, function(p) return not from:isProhibited(p, Fk:cloneCard("slash")) end)
-    if #targets == 0 then return end
-    local tos = room:askForChoosePlayers(from, table.map(targets, Util.IdMapper), 1, 1, "#ty__jianji-choose", self.name, true)
-    if #tos > 0 then
-      room:useVirtualCard("slash", nil, from, room:getPlayerById(tos[1]), self.name, true)
+    local froms = table.filter(tos, function(p) return p:getHandcardNum() == max_num end)
+    local from = (#froms == 1) and froms[1] or room:getPlayerById(
+    room:askForChoosePlayers(player, table.map(froms, Util.IdMapper), 1, 1, "#ty__jianji-from", self.name, false)[1])
+    local targets = table.filter(tos, function(p)
+      return not p.dead and from:canUseTo(Fk:cloneCard("slash"), p, {bypass_times = true, bypass_distances = true})
+    end)
+    if #targets > 0 then
+      local victim = room:askForChoosePlayers(from, table.map(targets, Util.IdMapper), 1, 1, "#ty__jianji-choose", self.name, true)
+      if #victim > 0 then
+        room:useVirtualCard("slash", nil, from, room:getPlayerById(victim[1]), self.name, true)
+      end
     end
   end,
 }
@@ -715,11 +711,13 @@ Fk:loadTranslationTable{
   ["designer:yanghong"] = "黑寡妇无敌",
   ["illustrator:yanghong"] = "虫师网络",
   ["ty__jianji"] = "间计",
-  [":ty__jianji"] = "出牌阶段限一次，你可以令至多X名相邻的角色各弃置一张牌（X为你的攻击范围），然后其中手牌最多的角色可以视为对其中另一名角色使用【杀】。",
+  [":ty__jianji"] = "出牌阶段限一次，你可以令至多X名相邻的角色各弃置一张牌（X为你的攻击范围），然后你令其中手牌数最多的一名角色选择是否视为对其中的另一名角色使用一张【杀】。",
   ["yuanmo"] = "远谟",
   [":yuanmo"] = "①准备阶段或你受到伤害后，你可以选择一项：1.令你的攻击范围+1，然后获得任意名因此进入你攻击范围内的角色各一张牌；"..
   "2.令你的攻击范围-1，然后摸两张牌。<br>②结束阶段，若你攻击范围内没有角色，你可以令你的攻击范围+1。",
   ["#ty__jianji-choose"] = "间计：你可以视为对其中一名角色使用【杀】",
+  ["#ty__jianji-from"] = "间计：选择视为使用【杀】的角色",
+  ["#ty__jianji-prompt"] = "间计:令至多 %arg 名相邻的角色各弃置一张牌",
   ["#yuanmo1-invoke"]= "远谟：你可以令攻击范围+1并获得进入你攻击范围的角色各一张牌，或攻击范围-1并摸两张牌",
   ["#yuanmo2-invoke"]= "远谟：你可以令攻击范围+1",
   ["@yuanmo"] = "远谟",
@@ -3448,6 +3446,7 @@ ty__sunhao:addSkill("guiming")
 Fk:loadTranslationTable{
   ["ty__sunhao"] = "孙皓",
   ["#ty__sunhao"] = "时日曷丧",
+  ["designer:ty__sunhao"] = "韩旭",
   ["illustrator:ty__sunhao"] = "君桓文化",--传说皮
   ["ty__canshi"] = "残蚀",
   [":ty__canshi"] = "摸牌阶段，你可以多摸X张牌（X为已受伤的角色数），若如此做，当你于此回合内使用【杀】或普通锦囊牌时，你弃置一张牌。",
@@ -6079,6 +6078,7 @@ panshu:addSkill(yaner)
 Fk:loadTranslationTable{
   ["ty__panshu"] = "潘淑",
   ["#ty__panshu"] = "神女",
+  ["designer:ty__panshu"] = "韩旭",
   ["illustrator:ty__panshu"] = "杨杨和夏季",
   ["zhiren"] = "织纴",
   [":zhiren"] = "你的回合内，当你使用本回合的第一张非转化牌时，若X：不小于1，你观看牌堆顶X张牌并以任意顺序放回牌堆顶或牌堆底；"..

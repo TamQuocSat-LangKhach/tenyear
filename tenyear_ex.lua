@@ -2325,6 +2325,7 @@ zhonghui:addRelatedSkill(ty_ex__paiyi)
 Fk:loadTranslationTable{
   ["ty_ex__zhonghui"] = "界钟会",
   ["#ty_ex__zhonghui"] = "桀骜的野心家",
+  ["designer:ty_ex__zhonghui"] = "韩旭",
   ["illustrator:ty_ex__zhonghui"] = "君桓文化",
   ["ty_ex__quanji"] = "权计",
   [":ty_ex__quanji"] = "当你的牌被其他角色获得后或受到1点伤害后，你可以摸一张牌，然后将一张手牌置于武将牌上，称为“权”；每有一张“权”，你的手牌上限便+1。",

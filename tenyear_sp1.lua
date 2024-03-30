@@ -1837,6 +1837,7 @@ godjiangwei:addSkill(pingxiang)
 Fk:loadTranslationTable{
   ["godjiangwei"] = "神姜维",
   ["#godjiangwei"] = "怒麟布武",
+  ["designer:godjiangwei"] = "韩旭",
   ["illustrator:godjiangwei"] = "匠人绘",
   ["tianren"] = "天任",
   [":tianren"] = "锁定技，当一张基本牌或普通锦囊牌不因使用而置入弃牌堆后，你获得1个“天任”标记，"..
@@ -2544,6 +2545,7 @@ Fk:loadTranslationTable{
   ["godzhangjiao"] = "神张角",
   ["#godzhangjiao"] = "末世的起首",
   ["cv:godzhangjiao"] = "虞晓旭",
+  ["designer:godzhangjiao"] = "韩旭",
   ["illustrator:godzhangjiao"] = "黯荧岛工作室",
   ["yizhao"] = "异兆",
   [":yizhao"] = "锁定技，当你使用或打出一张牌后，获得等同于此牌点数的“黄”标记，然后若“黄”标记数的十位数变化，你随机获得牌堆中一张点数为变化后十位数的牌。",
@@ -3292,6 +3294,7 @@ wenyang:addRelatedSkill(qingjiao)
 Fk:loadTranslationTable{
   ["wenyang"] = "文鸯",
   ["#wenyang"] = "万将披靡",
+  ["designer:wenyang"] = "韩旭",
   ["illustrator:wenyang"] = "Thinking",
   ["lvli"] = "膂力",
   [":lvli"] = "每名角色的回合限一次，当你造成伤害后，你可以将手牌摸至与体力值相同或将体力回复至与手牌数相同。",

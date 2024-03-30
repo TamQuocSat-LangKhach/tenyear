@@ -364,12 +364,6 @@ local removeTYPingjianSkill = function(player, skill_name)
     end
   end
   room:setPlayerMark(player, "ty__pingjian_skill_times", record_copy)
-
-  if invoked then
-    local used_skills = U.getMark(player, "ty__pingjian_used_skills")
-    table.insertIfNeed(used_skills, skill_name)
-    room:setPlayerMark(player, "ty__pingjian_used_skills", used_skills)
-  end
 end
 
 local function getPingjianSkills(player, event)
@@ -423,6 +417,8 @@ local ty__pingjian = fk.CreateActiveSkill{
     if #skills == 0 then return false end
     local choices = table.random(skills, 3)
     local skill_name = room:askForChoice(player, choices, self.name, "#ty__pingjian-choice", true)
+    table.insert(used_skills, skill_name)
+    room:setPlayerMark(player, "ty__pingjian_used_skills", used_skills)
     local phase_event = room.logic:getCurrentEvent():findParent(GameEvent.Phase)
     if phase_event ~= nil then
       addTYPingjianSkill(player, skill_name)
@@ -453,6 +449,8 @@ local ty__pingjian_trigger = fk.CreateTriggerSkill{
     if #skills == 0 then return false end
     local choices = table.random(skills, 3)
     local skill_name = room:askForChoice(player, choices, ty__pingjian.name, "#ty__pingjian-choice", true)
+    table.insert(used_skills, skill_name)
+    room:setPlayerMark(player, "ty__pingjian_used_skills", used_skills)
     local skill = Fk.skills[skill_name]
     if skill == nil then return false end
 

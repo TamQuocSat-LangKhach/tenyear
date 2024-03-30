@@ -219,7 +219,7 @@ local cibei = fk.CreateTriggerSkill{
     if event == fk.CardUseFinished then
       local c = data.card:getEffectiveId()
       local ids = table.filter(player:getPile("hanlong_ci"), function(id) return Fk:getCardById(id).trueName ~= "slash" end)
-      local piles = room:askForExchange(player, {{c}, ids}, {"slash", "hanlong_ci"}, self.name)
+      local piles = U.askForArrangeCards(player, self.name, { "slash", {c}, "hanlong_ci", ids }, "#cibei-exchange")
       local c2 = 0
       if piles[1][1] == c then
         c2 = table.random(ids)
@@ -364,6 +364,7 @@ Fk:loadTranslationTable{
   "一名角色的回合结束时，若所有“刺”均为【杀】，你获得所有“刺”，这些【杀】不能被弃置、不计入手牌上限、使用时无距离次数限制。",
   ["hanlong_ci"] = "刺",
   ["#cibei-invoke"] = "刺北：是否将此【杀】和一张“刺”交换？",
+  ["#cibei-exchange"] = "刺北：将此【杀】和一张“刺”交换",
   ["#cibei-choose"] = "刺北：选择一名角色，弃置其区域内一张牌",
   ["@@cibei-inhand"] = "刺北",
   ["#cibei_delay"] = "刺北",

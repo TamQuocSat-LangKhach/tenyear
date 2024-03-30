@@ -5633,53 +5633,11 @@ local xingzuo = fk.CreateTriggerSkill{
     cards = table.reverse(cards)
     --FIXME:从牌堆底获取牌是逆序的……
     local handcards = player:getCardIds(Player.Hand)
-
-    local to_buttom = U.askForArrangeCards(player, self.name,
+    local cardmap = U.askForArrangeCards(player, self.name,
     {"Bottom", cards, "$Hand", handcards},
-    "#xingzuo-invoke", false)[1]
-
-    local moveInfos = {}
-    local drawPilePosition = #room.draw_pile
-    for i = 1, 3, 1 do
-      local id = to_buttom[i]
-      if table.contains(cards, id) then
-        table.insert(room.draw_pile, id)
-      else
-        table.insert(moveInfos, {
-          ids = {id},
-          from = player.id,
-          toArea = Card.DrawPile,
-          moveReason = fk.ReasonJustMove,
-          skillName = self.name,
-          drawPilePosition = drawPilePosition + i,
-        })
-      end
-    end
-    if #moveInfos > 0 then
-      room:moveCards(table.unpack(moveInfos))
-    end
-    cards = table.filter(cards, function (id)
-      return not table.contains(to_buttom, id)
-    end)
-    if #cards == 0 then return false end
-    if player.dead then
-      room:moveCardTo(cards, Card.DiscardPile, nil, fk.ReasonJustMove, self.name, nil, true)
-    else
-      room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, false, player.id)
-    end
+    "#xingzuo-invoke", false)
+    U.swapCardsWithPile(player, cardmap[1], cardmap[2], self.name, "Bottom")
   end,
-}
-Fk:addPoxiMethod{
-  name = "xingzuo",
-  card_filter = function(to_select, selected, data)
-    return #selected < 3
-  end,
-  feasible = function(selected, data)
-    return #selected == 0 or #selected == 3
-  end,
-  prompt = function ()
-    return "兴作：选择三张卡牌以点击的顺序置于牌堆底"
-  end
 }
 local xingzuo_delay = fk.CreateTriggerSkill{
   name = "#xingzuo_delay",

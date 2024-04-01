@@ -695,7 +695,7 @@ local liangyan = fk.CreateActiveSkill{
   end,
   interaction = function()
     return UI.ComboBox {
-      choices = {"liangyan_discard", "draw1", "draw2"}
+      choices = {"draw2", "draw1", "liangyan_discard"}
     }
   end,
   can_use = function(self, player)
@@ -748,21 +748,27 @@ local liangyan_delay = fk.CreateTriggerSkill{
 }
 local minghui = fk.CreateTriggerSkill{
   name = "minghui",
-  anim_type = "offensive",
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
-      local linghui_max, linghui_min = true, true
-      local x, y = player:getHandcardNum(), 0
+      local x = player:getHandcardNum()
+      if x == 0 then return true end
+      local linghui_max, linghui_min, all_kongcheng = true, true, true
+      local y = 0
       for _, p in ipairs(player.room.alive_players) do
-        y = p:getHandcardNum()
-        if x > y then
-          linghui_min = false
-        elseif x < y then
-          linghui_max = false
+        if p ~= player then
+          y = p:getHandcardNum()
+          if y > 0 then
+            all_kongcheng = false
+          end
+          if x > y then
+            linghui_min = false
+          elseif x < y then
+            linghui_max = false
+          end
         end
       end
-      return linghui_max or linghui_min
+      return (linghui_max and not all_kongcheng) or linghui_min
     end
   end,
   on_cost = Util.TrueFunc,
@@ -788,7 +794,8 @@ local minghui = fk.CreateTriggerSkill{
         end
       end
     end
-    y = math.max(1, x-z)
+    if z == 0 then return false end
+    y = x-z+1
     if #room:askForDiscard(player, y, x, false, self.name, true, ".", "#minghui-discard:::" .. tostring(y)) > 0 and
     not player.dead then
       local targets = table.map(table.filter(room.alive_players, function (p)

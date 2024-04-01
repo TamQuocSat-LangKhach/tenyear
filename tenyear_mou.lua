@@ -136,25 +136,18 @@ Fk:loadTranslationTable{
 }
 
 local tymou__lusu = General(extension, "tymou__lusu", "wu", 3)
+
 local mingshil = fk.CreateTriggerSkill{
   name = "mingshil",
-  anim_type = "drawcard",
-  events = {fk.DrawNCards},
-  on_use = function(self, event, target, player, data)
-    data.n = data.n + 2
-  end,
-}
-local mingshil_trigger = fk.CreateTriggerSkill{
-  name = "#mingshil_trigger",
   events = {fk.EventPhaseEnd},
-  mute = true,
+  anim_type = "support",
   can_trigger = function(self, event, target, player, data)
-    return target == player and not player.dead and player:usedSkillTimes("mingshil", Player.HistoryPhase) > 0 and
-    player:getHandcardNum() > 2 and #player.room.alive_players > 1
+    return target == player and player.phase == Player.Draw and player:hasSkill(self)
   end,
-  on_cost = Util.TrueFunc,
   on_use = function (self, event, target, player, data)
     local room = player.room
+    room:drawCards(player, 2, self.name)
+    if player.dead or player:getHandcardNum() < 3 or #room.alive_players < 2 then return false end
     local tos, cards = U.askForChooseCardsAndPlayers(room, player, 3, 3,
     table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, ".", "#mingshil-give", "mingshil", false)
     player:showCards(cards)
@@ -282,7 +275,7 @@ Fk:loadTranslationTable{
   ["#tymou__lusu"] = "鸿谋翼远",
   --["illustrator:tymou__lusu"] = "",
   ["mingshil"] = "明势",
-  [":mingshil"] = "摸牌阶段，你可以多摸两张牌，然后展示三张手牌并令一名其他角色获得其中一张。",
+  [":mingshil"] = "摸牌阶段结束时，你可以摸两张牌，然后展示三张手牌并令一名其他角色获得其中一张。",
   ["mengmou"] = "盟谋",
   [":mengmou"] = "转换技，每回合各限一次，当你获得其他角色的手牌后，或当其他角色获得你的手牌后，你可以令该角色执行（其中X为你的体力上限）：<br>"..
   "阳：使用X张【杀】，每造成1点伤害回复1点体力；<br>阴：打出X张【杀】，每少打出一张失去1点体力。",
@@ -545,6 +538,7 @@ end
 local jianzhuan = fk.CreateTriggerSkill{
   name = "jianzhuan",
   anim_type = "drawcard",
+  mute = true,
   events = {fk.CardUsing, fk.EventPhaseEnd},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
@@ -562,7 +556,7 @@ local jianzhuan = fk.CreateTriggerSkill{
       if event == fk.CardUsing and #choices > 0 then
         self.cost_data = {choices, all_choices}
         return true
-      elseif event == fk.EventPhaseEnd and #choices == 0 then
+      elseif event == fk.EventPhaseEnd and #choices == 0 and #all_choices > 1 then
         self.cost_data = all_choices
         return true
       end
@@ -570,13 +564,16 @@ local jianzhuan = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    player:broadcastSkillInvoke(self.name)
     if event == fk.CardUsing then
+      room:notifySkillInvoked(player, self.name)
       local choices = table.simpleClone(self.cost_data)
       local x = player:usedSkillTimes(self.name, Player.HistoryPhase)
       local choice = room:askForChoice(player, choices[1], self.name, "#jianzhuan-choice:::"..tostring(x), nil, choices[2])
       room:setPlayerMark(player, choice .. "-phase", 1)
       doJianzhuan(player, choice, x)
     else
+      room:notifySkillInvoked(player, self.name, "negative")
       room:setPlayerMark(player, table.random(self.cost_data), 1)
     end
   end,
@@ -652,7 +649,7 @@ local fudou = fk.CreateTriggerSkill{
     local mark = U.getMark(player, "fudou_record")
     if table.contains(mark, data.to) then
       return data.card.color == Card.Black
-    elseif data.card.color == Card.Red then
+    else
       if #U.getActualDamageEvents(room, 1, function (e)
         local damage = e.data[1]
         if damage.from == to and damage.to == player then
@@ -661,8 +658,9 @@ local fudou = fk.CreateTriggerSkill{
       end, nil, 0) > 0 then
         table.insert(mark, data.to)
         room:setPlayerMark(player, "fudou_record", mark)
+        return data.card.color == Card.Black
       else
-        return true
+        return data.card.color == Card.Red
       end
     end
   end,
@@ -705,7 +703,7 @@ Fk:loadTranslationTable{
   ["jianzhuan"] = "渐专",
   [":jianzhuan"] = "锁定技，当你于出牌阶段内使用牌时，你选择于此阶段内未选择过的一项："..
   "1.令一名角色弃置X张牌；2.摸X张牌；3.重铸X张牌；4.弃置X张牌。"..
-  "出牌阶段结束时，若所有选项于此阶段内都被选择过，你随机删除一个选项。（X为你于此阶段内发动过此技能的次数）",
+  "出牌阶段结束时，若选项数大于1且所有选项于此阶段内都被选择过，你随机删除一个选项。（X为你于此阶段内发动过此技能的次数）",
   ["fanshi"] = "返势",
   [":fanshi"] = "觉醒技，结束阶段。若〖渐专〗的选项数小于2，你依次执行3次剩余项，加2点体力上限，回复2点体力，失去〖渐专〗，获得〖覆斗〗。",
   ["fudou"] = "覆斗",

@@ -2774,7 +2774,7 @@ local qingshi = fk.CreateTriggerSkill{
         return true
       end
     elseif choice == "qingshi2" then
-      local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1,
+      local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 998,
       "#qingshi2-choose:::"..data.card:toLogString(), self.name)
       if #to > 0 then
         self.cost_data = {choice, to}

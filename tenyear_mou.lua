@@ -516,9 +516,7 @@ local caoshuang = General(extension, "ty__caoshuang", "wei", 4)
 local function doJianzhuan(player, choice, x)
   local room = player.room
   if choice == "jianzhuan1" then
-    local targets = table.filter(room.alive_players, function (p)
-      return not p:isNude()
-    end)
+    local targets = room:getOtherPlayers(player, false)
     if #targets == 0 then return end
     targets = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1,
     "#jianzhuan-target:::" .. tostring(x), "jianzhuan", false)
@@ -702,7 +700,7 @@ Fk:loadTranslationTable{
 
   ["jianzhuan"] = "渐专",
   [":jianzhuan"] = "锁定技，当你于出牌阶段内使用牌时，你选择于此阶段内未选择过的一项："..
-  "1.令一名角色弃置X张牌；2.摸X张牌；3.重铸X张牌；4.弃置X张牌。"..
+  "1.令一名其他角色弃置X张牌；2.摸X张牌；3.重铸X张牌；4.弃置X张牌。"..
   "出牌阶段结束时，若选项数大于1且所有选项于此阶段内都被选择过，你随机删除一个选项。（X为你于此阶段内发动过此技能的次数）",
   ["fanshi"] = "返势",
   [":fanshi"] = "觉醒技，结束阶段。若〖渐专〗的选项数小于2，你依次执行3次剩余项，加2点体力上限，回复2点体力，失去〖渐专〗，获得〖覆斗〗。",

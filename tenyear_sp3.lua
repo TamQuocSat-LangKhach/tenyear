@@ -2457,6 +2457,7 @@ local silun = fk.CreateTriggerSkill{
           moveReason = fk.ReasonPut,
           skillName = "silun",
           drawPilePosition = drawPilePosition,
+          moveVisible = true
         })
       end
       if reset_self and not player.dead then
@@ -3161,9 +3162,9 @@ Fk:loadTranslationTable{
   [":xiongmu"] = "每轮开始时，你可以将手牌摸至体力上限，然后将任意张牌随机置入牌堆，从牌堆或弃牌堆中获得等量的点数为8的牌，"..
   "这些牌此轮内不计入你的手牌上限。当你每回合受到第一次伤害时，若你的手牌数小于等于体力值，此伤害-1。",
   ["zhangcai"] = "彰才",
-  [":zhangcai"] = "当你使用或打出点数为8的牌时，你可摸X张牌（X为手牌中与使用的牌点数相同的牌的数量且至少为1）。",
+  [":zhangcai"] = "当你使用或打出点数为8的牌时，你可以摸X张牌（X为手牌中与使用的牌点数相同的牌的数量且至少为1）。",
   ["ruxian"] = "儒贤",
-  [":ruxian"] = "限定技，出牌阶段，你可将〖彰才〗改为所有点数均可触发摸牌直到你的下回合开始。",
+  [":ruxian"] = "限定技，出牌阶段，你可以将〖彰才〗改为所有点数均可触发摸牌直到你的下回合开始。",
 
   ["#xiongmu-draw"] = "雄幕：是否将手牌补至体力上限（摸%arg张牌）",
   ["#xiongmu-cards"] = "雄幕：你可将任意张牌随机置入牌堆，然后获得等量张点数为8的牌",

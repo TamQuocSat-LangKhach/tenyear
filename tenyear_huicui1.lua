@@ -3436,14 +3436,18 @@ local ty__neifa = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(3, self.name)
-    local card = room:askForDiscard(player, 1, 1, true, self.name, false)
+    if player.dead then return false end
+    local card = room:askForDiscard(player, 1, 1, true, self.name, false, ".", nil, true)
     if #card == 0 then return false end
-    if Fk:getCardById(card[1]).type == Card.TypeBasic then
+    local card_type = Fk:getCardById(card[1]).type
+    room:throwCard(card, self.name, player, player)
+    if player.dead then return false end
+    if card_type == Card.TypeBasic then
       local cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id).type == Card.TypeTrick end)
-      room:setPlayerMark(player, "@ty__neifa-turn", "basic")
-      room:setPlayerMark(player, "ty__neifa-turn", math.min(#cards, 5))
+      room:setPlayerMark(player, "@ty__neifa-phase", "basic")
+      room:setPlayerMark(player, "ty__neifa-phase", math.min(#cards, 5))
     elseif Fk:getCardById(card[1]).type == Card.TypeTrick then
-      room:setPlayerMark(player, "@ty__neifa-turn", "trick")   
+      room:setPlayerMark(player, "@ty__neifa-phase", "trick")
     end
   end,
 }
@@ -3452,54 +3456,51 @@ local ty__neifa_trigger = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.AfterCardTargetDeclared},
   can_trigger = function(self, event, target, player, data)
-    if target == player and not player.dead and player:getMark("@ty__neifa-turn") == "trick"
-    and data.card:isCommonTrick() then
-      local room = player.room
-      local targets = U.getUseExtraTargets(room, data)
-      local origin_targets = U.getActualUseTargets(room, data, event)
-      if #origin_targets > 1 then
-        table.insertTable(targets, origin_targets)
-      end
-      if #targets > 0 then
-        self.cost_data = targets
+    if player == target then
+      local mark = player:getMark("@ty__neifa-phase")
+      if data.card:isCommonTrick() and mark == "trick" then
+        return true
+      elseif data.card.trueName == "slash" and mark == "basic" then
         return true
       end
     end
   end,
-  on_cost = function(self, event, target, player, data)
-    local targets = player.room:askForChoosePlayers(player, self.cost_data, 1, 1,
-    "#ty__neifa_trigger-choose:::"..data.card:toLogString(), self.name, true)
-    if #targets > 0 then
-      self.cost_data = targets[1]
-      return true
-    end
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    if table.contains(TargetGroup:getRealTargets(data.tos), self.cost_data) then
-      TargetGroup:removeTarget(data.tos, self.cost_data)
+    player:broadcastSkillInvoke(ty__neifa.name)
+    local room = player.room
+    local targets = U.getUseExtraTargets(room, data, true)
+    local can_minus = ""
+    if data.card:isCommonTrick() then
+      if #TargetGroup:getRealTargets(data.tos) > 1 then
+        can_minus = "orMinus"
+        table.insertTable(targets, TargetGroup:getRealTargets(data.tos))
+      end
+    end
+    if #targets == 0 then return false end
+    targets = room:askForChoosePlayers(player, targets, 1, 1,
+    "#ty__neifa-choose:::"..data.card:toLogString() .. ":" .. can_minus, ty__neifa.name, true)
+    if #targets == 0 then return false end
+    if table.contains(TargetGroup:getRealTargets(data.tos), targets[1]) then
+      TargetGroup:removeTarget(data.tos, targets[1])
     else
-      TargetGroup:pushTargets(data.tos, self.cost_data)
+      table.insert(data.tos, targets)
     end
   end,
 }
 local ty__neifa_targetmod = fk.CreateTargetModSkill{
   name = "#ty__neifa_targetmod",
   residue_func = function(self, player, skill, scope)
-    if skill.trueName == "slash_skill" and player:getMark("@ty__neifa-turn") == "basic" and scope == Player.HistoryPhase then
-      return player:getMark("ty__neifa-turn")
-    end
-  end,
-  extra_target_func = function(self, player, skill)
-    if skill.trueName == "slash_skill" and player:getMark("@ty__neifa-turn") == "basic" then
-      return 1
+    if skill.trueName == "slash_skill" and player:getMark("@ty__neifa-phase") == "basic" and scope == Player.HistoryPhase then
+      return player:getMark("ty__neifa-phase")
     end
   end,
 }
 local ty__neifa_prohibit = fk.CreateProhibitSkill{
   name = "#ty__neifa_prohibit",
   prohibit_use = function(self, player, card)
-    return (player:getMark("@ty__neifa-turn") == "basic" and card.type == Card.TypeTrick) or
-      (player:getMark("@ty__neifa-turn") == "trick" and card.type == Card.TypeBasic)
+    return (player:getMark("@ty__neifa-phase") == "basic" and card.type == Card.TypeTrick) or
+      (player:getMark("@ty__neifa-phase") == "trick" and card.type == Card.TypeBasic)
   end,
 }
 ty__neifa:addRelatedSkill(ty__neifa_targetmod)
@@ -3513,11 +3514,12 @@ Fk:loadTranslationTable{
   ["illustrator:yuantanyuanshangyuanxi"] = "君桓文化",
 
   ["ty__neifa"] = "内伐",
-  [":ty__neifa"] = "出牌阶段开始时，你可以摸三张牌，然后弃置一张牌。若弃置的牌：是基本牌，你本回合不能使用锦囊牌，"..
-  "本阶段使用【杀】次数上限+X，目标上限+1；是锦囊牌，你本回合不能使用基本牌，使用普通锦囊牌的目标+1或-1。"..
-  "（X为发动技能时手牌中因本技能不能使用的牌且至多为5）。",
-  ["@ty__neifa-turn"] = "内伐",
-  ["#ty__neifa_trigger-choose"] = "内伐：你可以为%arg增加/减少一个目标",
+  [":ty__neifa"] = "出牌阶段开始时，你可以摸三张牌，然后弃置一张牌。若弃置的牌为："..
+  "基本牌，你于此阶段内不能使用锦囊牌、使用【杀】次数上限+X且可增加一个目标（X为发动技能时手牌中的基本牌数且至多为5）；"..
+  "锦囊牌，你于此阶段内不能使用基本牌、使用普通锦囊牌时可增加或减少一个目标（目标数至少为一）。",
+  ["@ty__neifa-phase"] = "内伐",
+  ["#ty__neifa-choose"] = "内伐：你可以为%arg增加%arg2一个目标",
+  ["orMinus"] = "或减少",
   ["#ty__neifa_trigger"] = "内伐",
 
   ["$ty__neifa1"] = "同室操戈，胜者王、败者寇。",

@@ -242,7 +242,7 @@ local ty__wuniang = fk.CreateTriggerSkill{
   events = {fk.CardUsing, fk.CardResponding},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.card.trueName == "slash" and
-      not table.every(player.room:getOtherPlayers(player), function(p) return p:isNude() end)
+      not table.every(player.room:getOtherPlayers(player, false), function(p) return p:isNude() end)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -292,17 +292,48 @@ local ty__xushen = fk.CreateTriggerSkill{
       skillName = self.name
     })
     room:handleAddLoseSkills(player, "ty__zhennan", nil, true, false)
-    if player.dead or table.find(room.alive_players, function(p) return string.find(p.general, "guansuo") end) then return end
-    local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+    data.extra_data = data.extra_data or {}
+    data.extra_data.ty__xushen_data = player.id
+  end,
+}
+local ty__xushen_delay = fk.CreateTriggerSkill{
+  name = "#ty__xushen_delay",
+  events = {fk.AfterDying},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return not player.dead and data.extra_data and data.extra_data.ty__xushen_data == player.id
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if table.find(room.alive_players, function(p) return string.find(p.general, "guansuo") end) then return end
+    local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
     local to = room:askForChoosePlayers(player, targets, 1, 1, "#ty__xushen-choose", self.name, true)
     if #to > 0 then
       to = room:getPlayerById(to[1])
       if room:askForSkillInvoke(to, self.name, nil, "#ty__xushen-invoke") then
-        room:changeHero(to, "ty__guansuo", false, false, true)
-        --- FIXME:先耦了，因模式更改初始上限需要统一处理
-        if to.role == "lord" and to.role_shown and #room.players > 4 then
-          room:setPlayerProperty(to, "maxHp", to.maxHp + 1)
-          room:setPlayerProperty(to, "hp", to.hp + 1)
+        local skills = {}
+        for _, s in ipairs(to.player_skills) do
+          if not (s.attached_equip or s.name[#s.name] == "&") then
+            table.insertIfNeed(skills, s.name)
+          end
+        end
+        if room.settings.gameMode == "m_1v2_mode" and to.role == "lord" then
+          table.removeOne(skills, "m_feiyang")
+          table.removeOne(skills, "m_bahu")
+        end
+        if #skills > 0 then
+          room:handleAddLoseSkills(to, "-"..table.concat(skills, "|-"), nil, true, false)
+        end
+        room:changeHero(to, "ty__guansuo", false, false, true, false)
+        room:changeHero(to, "", false, true, true, false)
+        if to.dead then return false end
+        local x = to:getGeneralMaxHp()
+        if to.role == "lord" and to.role_shown and (#room.players > 4 or room.settings.gameMode == "m_1v2_mode") then
+          x = x + 1
+        end
+        if to.maxHp ~= x then
+          room:changeMaxHp(to, to.maxHp - x)
         end
         if not to.dead then
           to:drawCards(3, self.name)
@@ -334,6 +365,7 @@ local ty__zhennan = fk.CreateTriggerSkill{
     }
   end,
 }
+ty__xushen:addRelatedSkill(ty__xushen_delay)
 baosanniang:addSkill(ty__wuniang)
 baosanniang:addSkill(ty__xushen)
 baosanniang:addRelatedSkill(ty__zhennan)
@@ -350,10 +382,11 @@ Fk:loadTranslationTable{
   [":ty__zhennan"] = "当有角色使用普通锦囊牌指定目标后，若此牌目标数大于1，你可以对一名其他角色造成1点伤害。",
   ["#ty__wuniang1-choose"] = "武娘：你可以获得一名其他角色的一张牌，其摸一张牌",
   ["#ty__wuniang2-choose"] = "武娘：你可以获得一名其他角色的一张牌，其摸一张牌，关索摸一张牌",
+  ["#ty__xushen_delay"] = "许身",
   ["#ty__xushen-choose"] = "许身：你可以令一名其他角色选择是否变身为十周年关索并摸三张牌！",
   ["#ty__xushen-invoke"]= "许身：你可以变身为十周年关索并摸三张牌！",
   ["#ty__zhennan-choose"] = "镇南：你可以对一名其他角色造成1点伤害",
-  
+
   ["$ty__wuniang1"] = "得公亲传，彰其武威。",
   ["$ty__wuniang2"] = "灵彩武动，娇影摇曳。",
   ["$ty__xushen1"] = "倾郎心，许君身。",

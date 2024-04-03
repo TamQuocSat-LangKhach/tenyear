@@ -4469,7 +4469,7 @@ huzun:addSkill(zhantao)
 huzun:addSkill(anjing)
 Fk:loadTranslationTable{
   ["huzun"] = "胡遵",
-  ["#huzun"] = "",
+  ["#huzun"] = "蓝翎紫璧",
   --["designer:huzun"] = "",
   --["illustrator:huzun"] = "",
 

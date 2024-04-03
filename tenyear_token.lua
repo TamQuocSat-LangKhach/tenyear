@@ -438,4 +438,57 @@ Fk:loadTranslationTable{
   "增加的效果+1。你回合外使用或打出基本牌时摸一张牌。离开装备区时销毁。",
 }
 
+local ty__drowningSkill = fk.CreateActiveSkill{
+  name = "ty__drowning_skill",
+  prompt = "#ty__drowning_skill",
+  target_num = 2,
+  mod_target_filter = function(self, to_select, selected, user, card, distance_limited)
+    return to_select ~= user
+  end,
+  target_filter = function (self, to_select, selected, selected_cards, card)
+    if #selected < self:getMaxTargetNum(Self, card) then
+      return self:modTargetFilter(to_select, selected, Self.id, card)
+    end
+  end,
+  on_use = function(self, room, cardUseEvent)
+    if cardUseEvent.tos == nil or #cardUseEvent.tos == 0 then return end
+    cardUseEvent.extra_data = cardUseEvent.extra_data or {}
+    cardUseEvent.extra_data.firstTargetOfTYDrowning = cardUseEvent.tos[1][1]
+  end,
+  on_effect = function(self, room, effect)
+    local from = room:getPlayerById(effect.from)
+    local to = room:getPlayerById(effect.to)
+    room:damage({
+      from = from,
+      to = to,
+      card = effect.card,
+      damage = 1,
+      damageType = fk.ThunderDamage,
+      skillName = self.name
+    })
+    if not to.dead then
+      if effect.extra_data and effect.extra_data.firstTargetOfTYDrowning == effect.to then
+        room:askForDiscard(to, 1, 1, true, self.name, false)
+      else
+        to:drawCards(1, self.name)
+      end
+    end
+  end
+}
+local ty__drowning = fk.CreateTrickCard{
+  name = "&ty__drowning",
+  skill = ty__drowningSkill,
+  is_damage_card = true,
+  suit = Card.Spade,
+  number = 6,
+}
+extension:addCard(ty__drowning)
+Fk:loadTranslationTable{
+  ["ty__drowning"] = "水淹七军",
+  ["ty__drowning_skill"] = "水淹七军",
+  [":ty__drowning"] = "锦囊牌<br/><b>时机</b>：出牌阶段<br/><b>目标</b>：一至两名其他角色<br /><b>效果</b>："..
+  "第一名角色受到1点雷电伤害并弃置一张牌，其他角色受到1点雷电伤害并摸一张牌",
+  ["#ty__drowning_skill"] = "选择1-2名目标角色，第一名角色受到1点雷电伤害并摸牌，第二名角色受到1点雷电伤害并弃牌",
+}
+
 return extension

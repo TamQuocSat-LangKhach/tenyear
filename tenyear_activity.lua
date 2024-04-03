@@ -1389,6 +1389,7 @@ lvkai:addSkill(bijing)
 Fk:loadTranslationTable{
   ["lvkai"] = "吕凯",
   ["#lvkai"] = "铁心司南",
+  ["designer:lvkai"] = "世外高v狼",
   ["illustrator:lvkai"] = "大佬荣&alien",
   ["tunan"] = "图南",
   [":tunan"] = "出牌阶段限一次，你可令一名其他角色观看牌堆顶一张牌，然后该角色选择一项：1.使用此牌（无距离限制）；2.将此牌当【杀】使用。",
@@ -3819,13 +3820,10 @@ local nuchen = fk.CreateActiveSkill{
         skillName = self.name,
       }
     else
-      local dummy = Fk:cloneCard("dilu")
-      for _, id in ipairs(target.player_cards[Player.Hand]) do
-        if Fk:getCardById(id):getSuitString() == suit then
-          dummy:addSubcard(id)
-        end
-      end
-      room:obtainCard(player.id, dummy, false, fk.ReasonPrey)
+      local get = table.filter(target.player_cards[Player.Hand], function(id)
+        return  Fk:getCardById(id):getSuitString() == suit
+      end)
+      room:moveCardTo(get, Player.Hand, player, fk.ReasonGive, self.name, nil, false, player.id)
     end
   end,
 }
@@ -3835,9 +3833,8 @@ guanyu:addRelatedSkill(nuchen)
 Fk:loadTranslationTable{
   ["ty__guanyu"] = "关羽",
   ["#ty__guanyu"] = "汉寿亭侯",
+  ["designer:ty__guanyu"] = "韩旭",
   ["illustrator:ty__guanyu"] = "写之火工作室",
-  ["ty__wusheng"] = "武圣",
-  [":ty__wusheng"] = "你可以将一张红色牌当【杀】使用或打出；你使用<font color='red'>♦</font>【杀】无距离限制。",
   ["ty__danji"] = "单骑",
   [":ty__danji"] = "觉醒技，准备阶段，若你的手牌数大于体力值，你减1点体力上限，回复体力至体力上限，然后获得〖马术〗和〖怒嗔〗。",
   ["nuchen"] = "怒嗔",
@@ -4345,6 +4342,7 @@ huban:addSkill(chongyi)
 Fk:loadTranslationTable{
   ["ty__huban"] = "胡班",
   ["#ty__huban"] = "血火照路",
+  ["designer:ty__huban"] = "世外高v狼",
   ["illustrator:ty__huban"] = "君桓文化",
   ["chongyi"] = "崇义",
   [":chongyi"] = "一名角色出牌阶段内使用的第一张牌若为【杀】，你可令其摸两张牌且此阶段使用【杀】次数上限+1；一名角色出牌阶段结束时，"..

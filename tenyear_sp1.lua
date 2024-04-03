@@ -5914,6 +5914,7 @@ zhaozhi:addSkill(mengjiez)
 Fk:loadTranslationTable{
   ["zhaozhi"] = "赵直",
   ["#zhaozhi"] = "捕梦黄粱",
+  ["designer:zhaozhi"] = "韩旭",
   ["illustrator:zhaozhi"] = "匠人绘",
   ["tongguan"] = "统观",
   [":tongguan"] = "一名角色的第一个回合开始时，你为其选择一项属性（每种属性至多被选择两次）。",

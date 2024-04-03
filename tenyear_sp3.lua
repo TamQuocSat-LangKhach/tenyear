@@ -1083,6 +1083,7 @@ zhugemengxue:addSkill(hanying)
 Fk:loadTranslationTable{
   ["zhugemengxue"] = "诸葛梦雪",
   ["#zhugemengxue"] = "仙苑停云",
+  ["designer:zhugemengxue"] = "韩旭",
   --["illustrator:zhugemengxue"] = "",
   ["jichun"] = "寄春",
   [":jichun"] = "出牌阶段限一次，你可以展示一张牌，选择：1.将此牌交给一名手牌数小于你的角色，然后摸X张牌；"..
@@ -2007,6 +2008,7 @@ dongguiren:addRelatedSkill(shouze)
 Fk:loadTranslationTable{
   ["dongguiren"] = "董贵人",
   ["#dongguiren"] = "衣雪宫柳",
+  ["designer:dongguiren"] = "韩旭",
   ["illustrator:dongguiren"] = "君桓文化",
   ["lianzhi"] = "连枝",
   [":lianzhi"] = "游戏开始时，你选择一名其他角色。每回合限一次，当你进入濒死状态时，若该角色没有死亡，你回复1点体力且与其各摸一张牌。"..
@@ -2305,6 +2307,7 @@ zhangjinyun:addSkill(jijiao)
 Fk:loadTranslationTable{
   ["zhangjinyun"] = "张瑾云",
   ["#zhangjinyun"] = "慧秀淑德",
+  ["designer:zhangjinyun"] = "韩旭",
   ["illustrator:zhangjinyun"] = "匠人绘",
   ["huizhi"] = "蕙质",
   [":huizhi"] = "准备阶段，你可以弃置任意张手牌（可不弃），然后将手牌摸至与全场手牌最多的角色相同（至少摸一张，最多摸五张）。",
@@ -3157,6 +3160,7 @@ luxun:addSkill(ruxian)
 Fk:loadTranslationTable{
   ["wm__luxun"] = "武陆逊",
   ["#wm__luxun"] = "释武怀儒",
+  ["designer:wm__luxun"] = "韩旭",
   ["illustrator:wm__luxun"] = "小新",
   ["xiongmu"] = "雄幕",
   [":xiongmu"] = "每轮开始时，你可以将手牌摸至体力上限，然后将任意张牌随机置入牌堆，从牌堆或弃牌堆中获得等量的点数为8的牌，"..

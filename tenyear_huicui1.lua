@@ -2534,6 +2534,7 @@ zhangyao:addSkill(xiyan)
 Fk:loadTranslationTable{
   ["zhangyao"] = "张媱",
   ["#zhangyao"] = "琼楼孤蒂",
+  ["designer:zhangyao"] = "世外高v狼",
   ["illustrator:zhangyao"] = "匠人绘",
 
   ["yuanyu"] = "怨语",
@@ -3312,7 +3313,7 @@ local yiyong = fk.CreateTriggerSkill{
 panghui:addSkill(yiyong)
 Fk:loadTranslationTable{
   ["panghui"] = "庞会",
-  ["3panghui"] = "临渭亭侯",
+  ["#panghui"] = "临渭亭侯",
   ["designer:panghui"] = "韩旭",
   ["illustrator:panghui"] = "秋呆呆",
 

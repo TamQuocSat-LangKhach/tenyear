@@ -351,6 +351,7 @@ jianggan:addSkill(daoshu)
 Fk:loadTranslationTable{
   ["jianggan"] = "蒋干",
   ["#jianggan"] = "锋谪悬信",
+  ["designer:jianggan"] = "韩旭",
   ["illustrator:jianggan"] = "biou09",
   ["weicheng"] = "伪诚",
   [":weicheng"] = "你交给其他角色手牌，或你的手牌被其他角色获得后，若你的手牌数小于体力值，你可以摸一张牌。",
@@ -1444,6 +1445,7 @@ wangchang:addSkill(pingxi)
 Fk:loadTranslationTable{
   ["ty__wangchang"] = "王昶",
   ["#ty__wangchang"] = "攥策及江",
+  ["designer:ty__wangchang"] = "韩旭",
   ["illustrator:ty__wangchang"] = "游漫美绘",
   ["ty__kaiji"] = "开济",
   [":ty__kaiji"] = "转换技，出牌阶段限一次，阳：你可以摸等于体力上限张数的牌；阴：你可以弃置至多等于体力上限张数的牌（至少一张）。",
@@ -1545,6 +1547,7 @@ chengbing:addSkill(enyu)
 Fk:loadTranslationTable{
   ["chengbing"] = "程秉",
   ["#chengbing"] = "通达五经",
+  ["designer:chengbing"] = "韩旭",
   ["illustrator:chengbing"] = "匠人绘",
   ["jingzao"] = "经造",
   [":jingzao"] = "出牌阶段每名角色限一次，你可以选择一名其他角色并亮出牌堆顶三张牌，然后该角色选择一项："..
@@ -1935,6 +1938,7 @@ ruanji:addSkill(jiudun)
 Fk:loadTranslationTable{
   ["ruanji"] = "阮籍",
   ["#ruanji"] = "命世大贤",
+  ["designer:ruanji"] = "韩旭",
   ["illustrator:ruanji"] = "匠人绘",
   ["zhaowen"] = "昭文",
   [":zhaowen"] = "出牌阶段开始时，你可以展示所有手牌。若如此做，本回合其中的黑色牌可以当任意一张普通锦囊牌使用（每回合每种牌名限一次），"..
@@ -2678,6 +2682,7 @@ ruiji:addSkill(liying)
 Fk:loadTranslationTable{
   ["ty__ruiji"] = "芮姬",
   ["#ty__ruiji"] = "柔荑弄钺",
+  ["designer:ty__ruiji"] = "韩旭",
   ["illustrator:ty__ruiji"] = "匠人绘",
   ["wangyuan"] = "妄缘",
   [":wangyuan"] = "当你于回合外失去牌后，你可以随机将牌堆中一张基本牌或锦囊牌置于你的武将牌上，称为“妄”（“妄”的牌名不重复且至多为游戏人数）。",
@@ -2989,7 +2994,7 @@ tianshangyi:addSkill(xiaoren)
 Fk:loadTranslationTable{
   ["tianshangyi"] = "田尚衣",
   ["#tianshangyi"] = "婀娜盈珠袖",
-  --["designer:tianshangyi"] = "",
+  ["designer:tianshangyi"] = "韩旭",
   ["illustrator:tianshangyi"] = "alien",
   ["posuo"] = "婆娑",
   [":posuo"] = "出牌阶段每种花色限一次，若你本阶段未对其他角色造成过伤害，你可以将一张手牌当此花色有的一张伤害牌使用。",
@@ -3856,6 +3861,7 @@ liubian:addSkill(yuwei)
 Fk:loadTranslationTable{
   ["liubian"] = "刘辩",
   ["#liubian"] = "弘农怀王",
+  ["designer:liubian"] = "韩旭",
   ["illustrator:liubian"] = "zoo",
   ["shiyuan"] = "诗怨",
   [":shiyuan"] = "每回合每项限一次，当你成为其他角色使用牌的目标后：1.若其体力值比你多，你摸三张牌；2.若其体力值与你相同，你摸两张牌；"..
@@ -4484,6 +4490,7 @@ yuanji:addSkill(jiexing)
 Fk:loadTranslationTable{
   ["yuanji"] = "袁姬",
   ["#yuanji"] = "袁门贵女",
+  ["designer:yuanji"] = "韩旭",
   ["illustrator:yuanji"] = "匠人绘",
   ["fangdu"] = "芳妒",
   [":fangdu"] = "锁定技，你的回合外，你每回合第一次受到普通伤害后回复1点体力，你每回合第一次受到属性伤害后随机获得伤害来源一张手牌。",
@@ -4591,6 +4598,7 @@ xielingyu:addSkill(xinyou)
 Fk:loadTranslationTable{
   ["xielingyu"] = "谢灵毓",
   ["#xielingyu"] = "淑静才媛",
+  ["designer:xielingyu"] = "韩旭",
   ["illustrator:xielingyu"] = "游漫美绘",
   ["yuandi"] = "元嫡",
   [":yuandi"] = "其他角色于其出牌阶段使用第一张牌时，若此牌没有指定除其以外的角色为目标，你可以选择一项：1.弃置其一张手牌；2.你与其各摸一张牌。",
@@ -5402,6 +5410,7 @@ guozhao:addSkill(zunwei)
 Fk:loadTranslationTable{
   ["guozhao"] = "郭照",
   ["#guozhao"] = "碧海青天",
+  ["designer:guozhao"] = "世外高v狼",
   ["illustrator:guozhao"] = "杨杨和夏季",
   ["pianchong"] = "偏宠",
   [":pianchong"] = "摸牌阶段，你可以改为从牌堆获得红牌和黑牌各一张，然后选择一项直到你的下回合开始：1.你每失去一张红色牌时摸一张黑色牌，"..

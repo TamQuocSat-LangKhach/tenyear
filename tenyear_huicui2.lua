@@ -1438,6 +1438,7 @@ sunhanhua:addRelatedSkill(qinghuang)
 Fk:loadTranslationTable{
   ["ty__sunhanhua"] = "孙寒华",
   ["#ty__sunhanhua"] = "青丝慧剑",
+  ["designer:ty__sunhanhua"] = "韩旭",
   ["illustrator:ty__sunhanhua"] = "鬼宿一",
   ["huiling"] = "汇灵",
   [":huiling"] = "锁定技，你使用牌时，若弃牌堆中的红色牌数量多于黑色牌，你回复1点体力；"..
@@ -3376,6 +3377,7 @@ furongfuqian:addSkill(yuguan)
 Fk:loadTranslationTable{
   ["furongfuqian"] = "傅肜傅佥",
   ["#furongfuqian"] = "奕世忠义",
+  ["designer:furongfuqian"] = "韩旭",
   ["illustrator:furongfuqian"] = "一意动漫",
   ["ty__xuewei"] = "血卫",
   [":ty__xuewei"] = "结束阶段，你可以选择一名体力值不大于你的角色。直到你的下回合开始前，该角色受到伤害时，防止此伤害，然后你失去1点体力并与其各摸一张牌。",
@@ -3751,6 +3753,7 @@ liupi:addSkill(juying)
 Fk:loadTranslationTable{
   ["liupi"] = "刘辟",
   ["#liupi"] = "慕义渠帅",
+  ["designer:liupi"] = "韩旭",
   ["illustrator:liupi"] = "君桓文化",
   ["juying"] = "踞营",
   [":juying"] = "出牌阶段结束时，若你本阶段使用【杀】的次数小于次数上限，你可以选择任意项：1.下个回合出牌阶段使用【杀】次数上限+1；"..
@@ -3915,6 +3918,7 @@ zhangchu:addSkill(guangshi)
 Fk:loadTranslationTable{
   ["zhangchu"] = "张楚",
   ["#zhangchu"] = "大贤后裔",
+  ["designer:zhangchu"] = "韩旭",
   ["illustrator:zhangchu"] = "黯荧岛工作室",
   ["jizhong"] = "集众",
   [":jizhong"] = "出牌阶段限一次，你可以令一名其他角色摸两张牌，然后若其：不是“信众”，则其选择一项：1.成为“信众”；"..

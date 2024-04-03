@@ -3189,6 +3189,7 @@ local guanyu = General(extension, "wm__guanyu", "shu", 4)
 local juewu = fk.CreateViewAsSkill{
   name = "juewu",
   prompt = "#juewu-viewas",
+  pattern = ".",
   interaction = function()
     local names = Self:getMark("juewu_names")
     if type(names) ~= "table" then
@@ -3202,17 +3203,11 @@ local juewu = fk.CreateViewAsSkill{
       table.insertIfNeed(names, "ty__drowning")
       Self:setMark("juewu_names", names)
     end
-    local choices = {}
-    for _, name in pairs(names) do
-      local to_use = Fk:cloneCard(name)
-      if Self:canUse(to_use) and not Self:prohibitUse(to_use) then
-        table.insert(choices, name)
-      end
-    end
+    local choices = U.getViewAsCardNames(Self, "juewu", names)
     if #choices == 0 then return false end
     return UI.ComboBox { choices = choices, all_choices = names }
   end,
-  --enabled_at_play = Util.TrueFunc,
+  enabled_at_play = Util.TrueFunc,
   card_filter = function(self, to_select, selected)
     if self.interaction.data == nil or #selected > 0 then return false end
     local card = Fk:getCardById(to_select)
@@ -3226,6 +3221,29 @@ local juewu = fk.CreateViewAsSkill{
     card:addSubcard(cards[1])
     card.skillName = self.name
     return card
+  end,
+  enabled_at_response = function(self, player, response)
+    if response then return false end
+    if Fk.currentResponsePattern == nil then return false end
+    local names = player:getMark("juewu_names")
+    if type(names) ~= "table" then
+      names = {}
+      for _, id in ipairs(Fk:getAllCardIds()) do
+        local card = Fk:getCardById(id)
+        if card.is_damage_card and not card.is_derived then
+          table.insertIfNeed(names, card.name)
+        end
+      end
+      table.insertIfNeed(names, "ty__drowning")
+      player:setMark("juewu_names", names)
+    end
+    local choices = {}
+    for _, name in pairs(names) do
+      local to_use = Fk:cloneCard(name)
+      if Exppattern:Parse(Fk.currentResponsePattern):match(to_use) then
+        return true
+      end
+    end
   end,
 }
 local juewu_trigger = fk.CreateTriggerSkill{
@@ -3448,6 +3466,7 @@ Fk:loadTranslationTable{
   ["#lingxian-declare"] = "灵显：你可以将一张牌交给%dest并令此牌视为声明的牌名",
   ["lingxian_declare"] = "灵显",
   ["#lingxian_filter"] = "灵显",
+  ["@@lingxian-inhand"] = "灵显",
   ["#yixian-active"] = "发动 义贤，获得场上和其他角色手牌区中的所有武器牌和防具牌",
   ["yixian_draw"] = "令%dest摸%arg张牌",
   ["yixian_recover"] = "令%dest回复%arg点体力",

@@ -441,7 +441,8 @@ Fk:loadTranslationTable{
 local ty__drowningSkill = fk.CreateActiveSkill{
   name = "ty__drowning_skill",
   prompt = "#ty__drowning_skill",
-  target_num = 2,
+  min_target_num = 1,
+  max_target_num = 2,
   mod_target_filter = function(self, to_select, selected, user, card, distance_limited)
     return to_select ~= user
   end,

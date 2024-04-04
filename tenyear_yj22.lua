@@ -501,6 +501,7 @@ local sangu_delay = fk.CreateTriggerSkill{
 }
 local sangu_filter = fk.CreateFilterSkill{
   name = "#sangu_filter",
+  mute = true,
   card_filter = function(self, to_select, player)
     return player:getMark("sangu_effect-phase") ~= 0 and #U.getMark(player, "@$sangu") > 0 and
     table.contains(player.player_cards[Player.Hand], to_select.id)

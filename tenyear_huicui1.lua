@@ -467,6 +467,7 @@ local caiyang = General(extension, "caiyang", "wei", 4)
 local xunji = fk.CreateActiveSkill{
   name = "xunji",
   anim_type = "offensive",
+  no_indicate = true,
   card_num = 0,
   target_num = 1,
   prompt = "#xunji",

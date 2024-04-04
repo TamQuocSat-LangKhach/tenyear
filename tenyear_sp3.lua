@@ -3280,6 +3280,7 @@ local juewu_trigger = fk.CreateTriggerSkill{
 }
 local juewu_filter = fk.CreateFilterSkill{
   name = "#juewu_filter",
+  mute = true,
   card_filter = function(self, card, player, isJudgeEvent)
     return card:getMark("@@juewu-inhand") > 0 and table.contains(player.player_cards[Player.Hand], card.id)
   end,

@@ -336,6 +336,14 @@ local pingliao = fk.CreateTriggerSkill{
       room:addPlayerMark(player, MarkEnum.SlashResidue .. "-phase")
     end
   end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function (self, event, target, player, data)
+    return player == target and player:hasSkill(self) and data.card.trueName == "slash"
+  end,
+  on_refresh = function (self, event, target, player, data)
+    data.noIndicate = true
+  end,
 }
 local pingliao_prohibit = fk.CreateProhibitSkill{
   name = "#pingliao_prohibit",

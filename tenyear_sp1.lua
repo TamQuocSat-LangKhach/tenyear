@@ -312,29 +312,7 @@ local ty__xushen_delay = fk.CreateTriggerSkill{
     if #to > 0 then
       to = room:getPlayerById(to[1])
       if room:askForSkillInvoke(to, self.name, nil, "#ty__xushen-invoke") then
-        local skills = {}
-        for _, s in ipairs(to.player_skills) do
-          if not (s.attached_equip or s.name[#s.name] == "&") then
-            table.insertIfNeed(skills, s.name)
-          end
-        end
-        if room.settings.gameMode == "m_1v2_mode" and to.role == "lord" then
-          table.removeOne(skills, "m_feiyang")
-          table.removeOne(skills, "m_bahu")
-        end
-        if #skills > 0 then
-          room:handleAddLoseSkills(to, "-"..table.concat(skills, "|-"), nil, true, false)
-        end
-        room:changeHero(to, "ty__guansuo", false, false, true, false)
-        room:changeHero(to, "", false, true, true, false)
-        if to.dead then return false end
-        local x = to:getGeneralMaxHp()
-        if to.role == "lord" and to.role_shown and (#room.players > 4 or room.settings.gameMode == "m_1v2_mode") then
-          x = x + 1
-        end
-        if to.maxHp ~= x then
-          room:changeMaxHp(to, to.maxHp - x)
-        end
+        U.changeHero(to, "ty__guansuo")
         if not to.dead then
           to:drawCards(3, self.name)
         end

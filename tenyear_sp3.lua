@@ -211,23 +211,21 @@ local jiqiaos = fk.CreateTriggerSkill{
 local jiqiaos_trigger = fk.CreateTriggerSkill{
   name = "#jiqiaos_trigger",
   anim_type = "drawcard",
-  expand_pile = "jiqiaos",
-  events = {fk.EventPhaseEnd, fk.CardUseFinished, fk.EventLoseSkill},
+  mute = true,
+  events = {fk.EventPhaseEnd, fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
     if target == player and #player:getPile("jiqiaos") > 0 then
       if event == fk.EventPhaseEnd then
         return player.phase == Player.Play
       elseif event == fk.CardUseFinished then
         return true
-      elseif event == fk.EventLoseSkill then
-        return data.name == "jiqiaos"
       end
     end
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.EventPhaseEnd or event == fk.EventLoseSkill then
+    if event == fk.EventPhaseEnd then
       room:moveCards({
         from = player.id,
         ids = player:getPile("jiqiaos"),
@@ -237,6 +235,8 @@ local jiqiaos_trigger = fk.CreateTriggerSkill{
         specialName = "jiqiaos",
       })
     else
+      room:notifySkillInvoked(player, "jiqiaos")
+      player:broadcastSkillInvoke("jiqiaos")
       local cards = player:getPile("jiqiaos")
       if #cards == 0 then return false end
       local id = room:askForCardChosen(player, player, {
@@ -294,8 +294,7 @@ local xiongyis = fk.CreateTriggerSkill{
         recoverBy = player,
         skillName = self.name
       })
-      room:changeHero(player, "xushi", false, false, true, false)
-      room:findGeneral("xushi")
+      U.changeHero(player, "xushi", false)
     else
       room:recover({
         who = player,

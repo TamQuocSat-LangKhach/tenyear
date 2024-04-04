@@ -4951,8 +4951,8 @@ local xunbie = fk.CreateTriggerSkill{
       table.insert(generals, "ty__mifuren")
     end
     if #generals > 0 then
-      local general = room:askForGeneral(player, generals, 1)
-      room:changeHero(player, general, false, false, true)
+      local general = room:askForGeneral(player, generals, 1, true)
+      U.changeHero(player, general, false)
       if player.dead then return end
     end
     room:setPlayerMark(player, "@@xunbie-turn", 1)

@@ -106,7 +106,7 @@ xiahoumao:addSkill(cuguo)
 Fk:loadTranslationTable{
   ["xiahoumao"] = "夏侯楙",
   ["#xiahoumao"] = "束甲之鸟",
-  ["designer:xiahoumao"] = "伯约",
+  ["designer:xiahoumao"] = "伯约的崛起",
   ["tongwei"] = "统围",
   [":tongwei"] = "出牌阶段限一次，你可以指定一名其他角色并重铸两张牌。若如此做，其使用下一张牌结算后，若此牌点数介于你上次此法重铸牌点数之间，"..
   "你视为对其使用一张【杀】或【过河拆桥】。",
@@ -157,6 +157,7 @@ local kangli = fk.CreateTriggerSkill{
 sunli:addSkill(kangli)
 Fk:loadTranslationTable{
   ["sunli"] = "孙礼",
+  ["designer:sunli"] = "老酒馆的猫",
   ["kangli"] = "伉厉",
   [":kangli"] = "当你造成或受到伤害后，你摸两张牌，然后你下次造成伤害时弃置这些牌。",
   ["@@kangli-inhand"] = "伉厉",

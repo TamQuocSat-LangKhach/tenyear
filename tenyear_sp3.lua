@@ -1180,6 +1180,7 @@ zhugeruoxue:addSkill(nuanhui)
 Fk:loadTranslationTable{
   ["zhugeruoxue"] = "诸葛若雪",
   ["#zhugeruoxue"] = "玉榭霑露",
+  ["designer:zhugeruoxue"] = "星移",
 
   ["qiongying"] = "琼英",
   [":qiongying"] = "出牌阶段限一次，你可以移动场上一张牌，然后你弃置一张同花色的手牌（若没有需展示手牌）。",

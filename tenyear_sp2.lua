@@ -3367,8 +3367,9 @@ malingli:addSkill(huahuo)
 Fk:loadTranslationTable{
   ["malingli"] = "马伶俐",
   ["#malingli"] = "火树银花",
-  --["designer:malingli"] = "",
+  ["designer:malingli"] = "星移",
   ["illustrator:malingli"] = "匠人绘",
+  
   ["lima"] = "骊马",
   [":lima"] = "锁定技，场上每有一张坐骑牌，你计算与其他角色的距离-1（至少为1）。",
   ["xiaoyin"] = "硝引",
@@ -4873,6 +4874,7 @@ sunyu:addSkill(shexue)
 Fk:loadTranslationTable{
   ["sunyu"] = "孙瑜",
   ["#sunyu"] = "镇据边陲",
+  ["designer:sunyu"] = "胜天半子ying",
   ["illustrator:sunyu"] = "CatJade玉猫",
   ["quanshou"] = "劝守",
   [":quanshou"] = "一名角色回合开始时，若其手牌数不大于体力上限，你可以令其选择："..
@@ -4984,6 +4986,7 @@ ganfurenmifuren:addSkill(xunbie)
 Fk:loadTranslationTable{
   ["ganfurenmifuren"] = "甘夫人糜夫人",
   ["#ganfurenmifuren"] = "千里婵娟",
+  ["designer:ganfurenmifuren"] = "星移",
   ["illustrator:ganfurenmifuren"] = "七兜豆",
 
   ["chanjuan"] = "婵娟",

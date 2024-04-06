@@ -4508,6 +4508,7 @@ caiwenji:addSkill(beifen)
 Fk:loadTranslationTable{
   ["mu__caiwenji"] = "乐蔡文姬",
   ["#mu__caiwenji"] = "胡笳十八拍",
+  ["designer:mu__caiwenji"] = "星移",
   ["illustrator:mu__caiwenji"] = "匠人绘",
   ["shuangjia"] = "霜笳",
   [":shuangjia"] = "锁定技，游戏开始时，你的初始手牌增加“胡笳”标记且不计入手牌上限。你每拥有一张“胡笳”，其他角色计算与你距离+1（最多+5）。",
@@ -4903,6 +4904,8 @@ daqiao:addSkill(zixi)
 Fk:loadTranslationTable{
   ["mu__daqiao"] = "乐大乔",
   ["#mu__daqiao"] = "玉桐姊韵",
+  ["designer:mu__daqiao"] = "星移",
+
   ["qiqin"] = "绮琴",
   [":qiqin"] = "锁定技，游戏开始时，你的初始手牌增加“琴”标记且不计入手牌上限。准备阶段，你获得弃牌堆中所有“琴”牌。",
   ["zixi"] = "姊希",
@@ -5011,6 +5014,8 @@ xiaoqiao:addSkill(weiwan)
 Fk:loadTranslationTable{
   ["mu__xiaoqiao"] = "乐小乔",
   ["#mu__xiaoqiao"] = "绿绮嫒媛",
+  ["designer:mu__xiaoqiao"] = "星移",
+
   ["weiwan"] = "媦婉",
   [":weiwan"] = "出牌阶段限一次，你可以弃置一张“琴”并选择一名其他角色，随机获得其区域内与此“琴”不同花色的牌各一张。若你获得的牌数为：1，其失去1点体力；2，你本回合对其使用牌无距离与次数限制；3，你本回合不能对其使用牌。",
   ["#weiwan-active"] = "发动 媦婉，选择一张“琴”弃置并选择一名其他角色",

@@ -1299,7 +1299,9 @@ luyi:addRelatedSkill(shoutan)
 Fk:loadTranslationTable{
   ["luyi"] = "卢弈",
   ["#luyi"] = "落子惊鸿",
+  ["designer:luyi"] = "星移",
   ["illustrator:luyi"] = "匠人绘",
+
   ["fuxue"] = "复学",
   [":fuxue"] = "准备阶段，你可以从弃牌堆中获得至多X张不因使用而进入弃牌堆的牌。结束阶段，若你手中没有以此法获得的牌，你摸X张牌。（X为你的体力值）",
   ["yaoyi"] = "邀弈",
@@ -1490,7 +1492,9 @@ sunlingluan:addSkill(pandi)
 Fk:loadTranslationTable{
   ["sunlingluan"] = "孙翎鸾",
   ["#sunlingluan"] = "弦凤栖梧",
+  ["designer:sunlingluan"] = "星移",
   ["illustrator:sunlingluan"] = "HEI-LEI",
+
   ["lingyue"] = "聆乐",
   [":lingyue"] = "锁定技，一名角色在本轮首次造成伤害后，你摸一张牌。若此时是该角色回合外，改为摸X张牌（X为本回合全场造成的伤害值）。",
   ["pandi"] = "盻睇",
@@ -1663,6 +1667,7 @@ caoyi:addSkill(yinjun)
 Fk:loadTranslationTable{
   ["caoyi"] = "曹轶",
   ["#caoyi"] = "飒姿缔燹",
+  ["designer:caoyi"] = "星移",
   ["miyi"] = "蜜饴",
   [":miyi"] = "准备阶段，你可以选择一项令任意名角色执行：1.回复1点体力；2.你对其造成1点伤害。若如此做，结束阶段，这些角色执行另一项。",
   ["yinjun"] = "寅君",
@@ -2247,7 +2252,9 @@ godzhangfei:addSkill(xunshi)
 Fk:loadTranslationTable{
   ["godzhangfei"] = "神张飞",
   ["#godzhangfei"] = "两界大巡环使",
+  ["designer:godzhangfei"] = "星移",
   ["illustrator:godzhangfei"] = "荧光笔工作室",
+
   ["shencai"] = "神裁",
   ["#shencai_delay"] = "神裁",
   [":shencai"] = "出牌阶段限一次，你可以令一名其他角色进行判定，你获得判定牌。若判定牌包含以下内容，其获得（已有标记则改为修改）对应标记：<br>"..
@@ -3065,6 +3072,7 @@ godxuchu:addSkill(zhuangpo)
 Fk:loadTranslationTable{
   ["godxuchu"] = "神许褚",
   ["#godxuchu"] = "嗜战的熊罴",
+  ["designer:godxuchu"] = "商天害",
   ["illustrator:godxuchu"] = "小新",
   ["zhengqing"] = "争擎",
   [":zhengqing"] = "锁定技，每轮结束时，移去所有“擎”标记，然后本轮单回合内造成伤害值最多的角色获得X个“擎”标记"..
@@ -5532,6 +5540,7 @@ Fk:loadTranslationTable{
   ["#zhujianping"] = "识面知秋",
   ["designer:zhujianping"] = "星移",
   ["illustrator:zhujianping"] = "游漫美绘",
+
   ["xiangmian"] = "相面",
   [":xiangmian"] = "出牌阶段限一次，你可以令一名其他角色进行一次判定，当该角色使用判定花色的牌或使用第X张牌后（X为判定点数），其失去所有体力。"..
   "每名其他角色限一次。",

@@ -5045,13 +5045,17 @@ Fk:loadTranslationTable{
 local zhangning = General(extension, "ty__zhangning", "qun", 3, 3, General.Female)
 local tianze = fk.CreateTriggerSkill{
   name = "tianze",
-  events = {fk.CardUseFinished},
-  anim_type = "offensive",
+  events = {fk.CardUseFinished, fk.FinishJudge},
+  mute = true,
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and target ~= player and target.phase == Player.Play and data.card.color == Card.Black and
-      player:usedSkillTimes(self.name) == 0 and not player:isNude()
+    if player:hasSkill(self) and target ~= player and data.card.color == Card.Black then
+      if event == fk.FinishJudge then return true end
+      return target.phase == Player.Play and player:getMark("tianze_damage-turn") == 0 and not player:isNude()
+      and U.IsUsingHandcard(target, data)
+    end
   end,
   on_cost = function(self, event, target, player, data)
+    if event == fk.FinishJudge then return true end
     local card = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".|.|spade,club|hand,equip", "#tianze-invoke::"..target.id, true)
     if #card > 0 then
       self.cost_data = card
@@ -5060,24 +5064,17 @@ local tianze = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:doIndicate(player.id, {target.id})
-    room:throwCard(self.cost_data, self.name, player, player)
-    room:damage{ from = player, to = target, damage = 1, skillName = self.name}
-  end,
-}
-local tianze_draw = fk.CreateTriggerSkill{
-  name = "#tianze_draw",
-  events = {fk.FinishJudge},
-  anim_type = "drawcard",
-  mute = true,
-  can_trigger = function(self, event, target, player, data)
-    return target ~= player and player:hasSkill(tianze.name) and data.card.color == Card.Black
-  end,
-  on_cost = function() return true end,
-  on_use = function(self, event, target, player, data)
-    player:broadcastSkillInvoke(tianze.name)
-    player.room:notifySkillInvoked(player, tianze.name, self.anim_type)
-    player.room:drawCards(player, 1, self.name)
+    player:broadcastSkillInvoke(self.name)
+    if event == fk.CardUseFinished then
+      room:notifySkillInvoked(player, self.name, "offensive")
+      room:doIndicate(player.id, {target.id})
+      room:setPlayerMark(player, "tianze_damage-turn", 1)
+      room:throwCard(self.cost_data, self.name, player, player)
+      room:damage{ from = player, to = target, damage = 1, skillName = self.name}
+    else
+      room:notifySkillInvoked(player, self.name, "drawcard")
+      player:drawCards(1, self.name)
+    end
   end,
 }
 local difa = fk.CreateTriggerSkill{
@@ -5136,7 +5133,6 @@ local difa = fk.CreateTriggerSkill{
     end
   end,
 }
-tianze:addRelatedSkill(tianze_draw)
 zhangning:addSkill(tianze)
 zhangning:addSkill(difa)
 Fk:loadTranslationTable{
@@ -5144,7 +5140,7 @@ Fk:loadTranslationTable{
   ["#ty__zhangning"] = "大贤后人",
   ["illustrator:ty__zhangning"] = "君桓文化",
   ["tianze"] = "天则",
-  [":tianze"] = "其他角色的出牌阶段限一次，其使用黑色牌结算后，你可以弃置一张黑色牌对其造成1点伤害；其他角色的黑色判定牌生效后，你摸一张牌。",
+  [":tianze"] = "①每回合限一次，当其他角色于其出牌阶段内使用一张黑色手牌结算结束后，你可以弃置一张黑色牌，对其造成1点伤害；<br>②当其他角色的黑色判定牌生效后，你摸一张牌。",
   ["difa"] = "地法",
   [":difa"] = "你的回合内限一次，当你从牌堆摸到红色牌后，你可以弃置此牌，然后选择一种锦囊牌的牌名，从牌堆或弃牌堆获得一张。",
 

@@ -5051,7 +5051,6 @@ local tianze = fk.CreateTriggerSkill{
     if player:hasSkill(self) and target ~= player and data.card.color == Card.Black then
       if event == fk.FinishJudge then return true end
       return target.phase == Player.Play and player:getMark("tianze_damage-turn") == 0 and not player:isNude()
-      and U.IsUsingHandcard(target, data)
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -5140,7 +5139,7 @@ Fk:loadTranslationTable{
   ["#ty__zhangning"] = "大贤后人",
   ["illustrator:ty__zhangning"] = "君桓文化",
   ["tianze"] = "天则",
-  [":tianze"] = "①每回合限一次，当其他角色于其出牌阶段内使用一张黑色手牌结算结束后，你可以弃置一张黑色牌，对其造成1点伤害；<br>②当其他角色的黑色判定牌生效后，你摸一张牌。",
+  [":tianze"] = "①每回合限一次，当其他角色于其出牌阶段内使用一张黑色牌结算结束后，你可以弃置一张黑色牌，对其造成1点伤害；<br>②当其他角色的黑色判定牌生效后，你摸一张牌。",
   ["difa"] = "地法",
   [":difa"] = "你的回合内限一次，当你从牌堆摸到红色牌后，你可以弃置此牌，然后选择一种锦囊牌的牌名，从牌堆或弃牌堆获得一张。",
 

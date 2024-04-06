@@ -26,21 +26,9 @@ local yuqi = fk.CreateTriggerSkill{
       return false
     end
     local cards = room:getNCards(n1)
-    local result = room:askForCustomDialog(player, self.name,
-    "packages/tenyear/qml/YuqiBox.qml", {
-      cards,
-      target.general, n2,
-      player.general, n3,
-    })
-    local top, bottom
-    if result ~= "" then
-      local d = json.decode(result)
-      top = d[2]
-      bottom = d[3]
-    else
-      top = {cards[1]}
-      bottom = {cards[2]}
-    end
+    local result = U.askForArrangeCards(player, self.name, {cards, "Top", target.general, player.general}, "#yuqi",
+    false, 0, {n1, n2, n3}, {0, 1, 1})
+    local top, bottom = result[2], result[3]
     local moveInfos = {}
     if #top > 0 then
       table.insert(moveInfos, {
@@ -184,7 +172,7 @@ Fk:loadTranslationTable{
   ["yuqi2"] = "观看牌数",
   ["yuqi3"] = "交给受伤角色牌数",
   ["yuqi4"] = "自己获得牌数",
-  ["#yuqi"] = "隅泣：请分配卡牌，余下的牌以原顺序置于牌堆顶",
+  ["#yuqi"] = "隅泣：请分配卡牌，余下的牌置于牌堆顶",
 
   ["$yuqi1"] = "孤影独泣，困于隅角。",
   ["$yuqi2"] = "向隅而泣，黯然伤感。",
@@ -2753,7 +2741,7 @@ local jincui = fk.CreateTriggerSkill{
           skillName = self.name
         })
       end
-      room:askForGuanxing(player, room:getNCards(player.hp))
+      U.askForGuanxing(player, room:getNCards(player.hp))
     end
   end,
 }

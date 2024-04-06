@@ -583,10 +583,8 @@ local ty__shanjia_targetmod = fk.CreateTargetModSkill{
       return 1
     end
   end,
-  distance_limit_func =  function(self, player, skill, card)
-    if player:getMark("ty__shanjia_trick-turn") > 0 then
-      return 999
-    end
+  bypass_distances =  function(self, player, skill, card)
+    return player:getMark("ty__shanjia_trick-turn") > 0
   end,
 }
 Fk:addSkill(ty__shanjia_viewas)
@@ -1738,6 +1736,22 @@ local tianren = fk.CreateTriggerSkill {
     player.room:setPlayerMark(player, "@tianren", 0)
   end,
 }
+
+Fk:addPoxiMethod{
+  name = "jiufa",
+  card_filter = function(to_select, selected, data)
+    if table.contains(data[2], to_select) then return true end
+    local number = Fk:getCardById(to_select).number
+    return table.every(data[2], function (id)
+      return Fk:getCardById(id).number ~= number
+    end) and not table.every(data[1], function (id)
+      return id == to_select or Fk:getCardById(id).number ~= number
+    end)
+  end,
+  feasible = function(selected)
+    return true
+  end,
+}
 local jiufa = fk.CreateTriggerSkill{
   name = "jiufa",
   events = {fk.CardUsing, fk.CardResponding},
@@ -1775,24 +1789,10 @@ local jiufa = fk.CreateTriggerSkill{
         table.insert(throw, id)
       end
     end
-    local patterns = {}
-    for index, value in ipairs(number_table) do
-      if value > 1 then
-        table.insert(patterns, ".|"..index)
-      end
-    end
-
-    local result = room:askForCustomDialog(player, self.name,
-    "packages/tenyear/qml/JiufaBox.qml", {
-      card_ids, patterns, #patterns, #patterns, "#jiufa", "AGCards", "toGetCards"
-    })
-
-    if result ~= "" then
-      local d = json.decode(result)
-      throw = d[1]
-      get = d[2]
-    end
-
+    local result = U.askForArrangeCards(player, self.name, {card_ids},
+    "#jiufa", false, 0, {9, 9}, {0, #get}, ".", "jiufa", {throw, get})
+    throw = result[1]
+    get = result[2]
     if #get > 0 then
       local dummy = Fk:cloneCard("dilu")
       dummy:addSubcards(get)
@@ -3481,10 +3481,8 @@ local zhuilie = fk.CreateTriggerSkill{
 }
 local zhuilie_targetmod = fk.CreateTargetModSkill{
   name = "#zhuilie_targetmod",
-  distance_limit_func =  function(self, player, skill)
-    if player:hasSkill(self) and skill.trueName == "slash_skill" then
-      return 999
-    end
+  bypass_distances =  function(self, player, skill)
+    return player:hasSkill(self) and skill.trueName == "slash_skill"
   end,
 }
 zhuilie:addRelatedSkill(zhuilie_targetmod)

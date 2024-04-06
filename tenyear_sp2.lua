@@ -5805,8 +5805,7 @@ local xingzuo = fk.CreateTriggerSkill{
     --FIXME:从牌堆底获取牌是逆序的……
     local handcards = player:getCardIds(Player.Hand)
     local cardmap = U.askForArrangeCards(player, self.name,
-    {"Bottom", cards, "$Hand", handcards},
-    "#xingzuo-invoke")
+    {cards, handcards, "Bottom", "$Hand"}, "#xingzuo-invoke")
     U.swapCardsWithPile(player, cardmap[1], cardmap[2], self.name, "Bottom")
   end,
 }

@@ -3219,10 +3219,8 @@ local douzhen_trigger = fk.CreateTriggerSkill{
 }
 local douzhen_targetmod = fk.CreateTargetModSkill{
   name = "#douzhen_targetmod",
-  residue_func = function(self, player, skill, scope, card)
-    if card.trueName == "slash" and table.contains(card.skillNames, "douzhen") and scope == Player.HistoryPhase then
-      return 999
-    end
+  bypass_times = function(self, player, skill, scope, card)
+    return card.trueName == "slash" and table.contains(card.skillNames, "douzhen") and scope == Player.HistoryPhase
   end,
 }
 douzhen:addRelatedSkill(douzhen_trigger)

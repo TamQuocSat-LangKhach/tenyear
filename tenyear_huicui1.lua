@@ -5742,10 +5742,8 @@ local suizheng_targetmod = fk.CreateTargetModSkill{
       return 1
     end
   end,
-  distance_limit_func =  function(self, player, skill)
-    if skill.trueName == "slash_skill" and player:getMark("@@suizheng-turn") > 0 and player.phase == Player.Play then
-      return 999
-    end
+  bypass_distances =  function(self, player, skill)
+    return skill.trueName == "slash_skill" and player:getMark("@@suizheng-turn") > 0 and player.phase == Player.Play
   end,
 }
 suizheng:addRelatedSkill(suizheng_targetmod)

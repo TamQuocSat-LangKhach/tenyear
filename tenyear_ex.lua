@@ -1059,10 +1059,10 @@ local ty_ex__xianzhen_trigger = fk.CreateTriggerSkill{
 local ty_ex__xianzhen_targetmod = fk.CreateTargetModSkill{
   name = "#ty_ex__xianzhen_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return player:usedSkillTimes("ty_ex__xianzhen", Player.HistoryTurn) > 0 and to:getMark("@@ty_ex__xianzhen-turn") > 0
+    return player:usedSkillTimes("ty_ex__xianzhen", Player.HistoryTurn) > 0 and to and to:getMark("@@ty_ex__xianzhen-turn") > 0
   end,
   bypass_distances =  function(self, player, skill, card, to)
-    return player:usedSkillTimes("ty_ex__xianzhen", Player.HistoryTurn) > 0 and to:getMark("@@ty_ex__xianzhen-turn") > 0
+    return player:usedSkillTimes("ty_ex__xianzhen", Player.HistoryTurn) > 0 and to and to:getMark("@@ty_ex__xianzhen-turn") > 0
   end,
 }
 local ty_ex__xianzhen_prohibit = fk.CreateProhibitSkill{

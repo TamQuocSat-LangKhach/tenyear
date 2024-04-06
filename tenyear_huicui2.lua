@@ -4993,11 +4993,11 @@ local weiwan_targetmod = fk.CreateTargetModSkill{
   name = "#weiwan_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
     local mark = U.getMark(player, "weiwan_targetmod-turn")
-    return table.contains(mark, to.id)
+    return to and table.contains(mark, to.id)
   end,
   bypass_distances = function(self, player, skill, card, to)
     local mark = U.getMark(player, "weiwan_targetmod-turn")
-    return table.contains(mark, to.id)
+    return to and table.contains(mark, to.id)
   end,
 }
 weiwan:addRelatedSkill(weiwan_targetmod)

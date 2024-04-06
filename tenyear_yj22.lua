@@ -219,7 +219,7 @@ local cibei = fk.CreateTriggerSkill{
     if event == fk.CardUseFinished then
       local c = data.card:getEffectiveId()
       local ids = table.filter(player:getPile("hanlong_ci"), function(id) return Fk:getCardById(id).trueName ~= "slash" end)
-      local piles = U.askForArrangeCards(player, self.name, { "slash", {c}, "hanlong_ci", ids }, "#cibei-exchange")
+      local piles = U.askForArrangeCards(player, self.name, {{c}, ids, "slash", "hanlong_ci"}, "#cibei-cibei")
       local c2 = 0
       if piles[1][1] == c then
         c2 = table.random(ids)
@@ -769,10 +769,8 @@ local bushil = fk.CreateTriggerSkill{
 }
 local bushil_targetmod = fk.CreateTargetModSkill{
   name = "#bushil_targetmod",
-  residue_func = function(self, player, skill, scope, card)
-    if player:hasSkill("bushil") and player:getMark("bushil1") == "log_"..card:getSuitString() and scope == Player.HistoryPhase then
-      return 999
-    end
+  bypass_distances = function(self, player, skill, scope, card)
+    return player:hasSkill(bushil) and player:getMark("bushil1") == "log_"..card:getSuitString()
   end,
 }
 local zhongzhuang = fk.CreateTriggerSkill{

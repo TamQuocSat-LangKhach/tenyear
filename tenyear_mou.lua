@@ -485,8 +485,7 @@ Fk:loadTranslationTable{
   ["#tymou__simayi"] = "韬谋韫势",
   ["illustrator:tymou__simayi"] = "米糊PU",
   ["pingliao"] = "平辽",
-  [":pingliao"] = "锁定技，<font color='red'>当你使用【杀】指定目标时，不公开指定的目标（暂时无法生效）。</font>"..
-  "你攻击范围内的其他角色依次选择是否打出一张红色基本牌。"..
+  [":pingliao"] = "锁定技，当你使用【杀】时，不公开指定的目标，你攻击范围内的角色依次选择是否打出一张红色基本牌，"..
   "若此【杀】的目标未打出基本牌，其本回合无法使用或打出手牌；若有至少一名非目标打出基本牌，你摸两张牌且此阶段使用【杀】的次数上限+1。",
   ["quanmou"] = "权谋",
   [":quanmou"] = "转换技，出牌阶段每名角色限一次，你可以令攻击范围内的一名其他角色交给你一张牌，"..
@@ -820,10 +819,11 @@ local sanshi = fk.CreateTriggerSkill{
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     local cards = U.getMark(player, self.name)
+    local handcards = player:getCardIds(Player.Hand)
     for _, cid in ipairs(cards) do
       local card = Fk:getCardById(cid)
-      if room:getCardArea(cid) == Card.PlayerHand and card:getMark("@@expendables-inhand") == 0 then
-        room:setCardMark(Fk:getCardById(cid), "@@expendables-inhand", 1)
+      if table.contains(handcards, cid) and card:getMark("@@expendables-inhand") == 0 then
+        room:setCardMark(card, "@@expendables-inhand", 1)
       end
     end
   end,
@@ -907,7 +907,7 @@ local chenlue = fk.CreateActiveSkill{
       return table.contains(areas, area) or (area == Card.PlayerHand and room:getCardOwner(id) ~= player)
     end)
     if #cards > 0 then
-      room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, false, player.id)
+      room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
       room:setPlayerMark(player, "chenlue-turn", cards)
     end
   end,
@@ -917,12 +917,11 @@ local chenlue_delay = fk.CreateTriggerSkill{
   events = {fk.TurnEnd},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    local areas = {Card.PlayerHand, Card.PlayerEquip, Card.PlayerJudge}
+    if player.dead or player:getMark("chenlue-turn") == 0 then return false end
+    local areas = {Card.DrawPile, Card.DiscardPile, Card.PlayerHand, Card.PlayerEquip, Card.PlayerJudge}
     local room = player.room
     local cards = table.filter(U.getMark(player, "chenlue-turn"), function (id)
-      local area = room:getCardArea(id)
-      return area == Card.DrawPile or area == Card.DiscardPile or
-      (room:getCardOwner(id) == player and table.contains(areas, area))
+      return table.contains(areas, room:getCardArea(id))
     end)
     if #cards > 0 then
       self.cost_data = cards

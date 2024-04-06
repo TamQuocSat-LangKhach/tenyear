@@ -416,10 +416,8 @@ local catapultSkill = fk.CreateTriggerSkill{
 }
 local catapult_targetmod = fk.CreateTargetModSkill{
   name = "#catapult_targetmod",
-  distance_limit_func =  function(self, player, skill, card)
-    if player:hasSkill(self) and player.phase ~= Player.NotActive and card and card.type == Card.TypeBasic then
-      return 999
-    end
+  bypass_distances =  function(self, player, skill, card)
+    return player:hasSkill(catapultSkill) and player.phase ~= Player.NotActive and card and card.type == Card.TypeBasic
   end,
 }
 catapultSkill:addRelatedSkill(catapult_targetmod)

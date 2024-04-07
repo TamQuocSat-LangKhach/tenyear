@@ -723,11 +723,11 @@ local ty_ex__zhenwei = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self) and not player:isNude() and data.from ~= player.id and data.to ~= player.id and
       (data.card.trueName == "slash" or (data.card.type == Card.TypeTrick and data.card.color == Card.Black)) and
-      #AimGroup:getAllTargets(data.tos) == 1 and player.room:getPlayerById(data.to).hp <= player.hp
+      U.isOnlyTarget (target, data, event) and player.room:getPlayerById(data.to).hp <= player.hp
   end,
   on_cost = function(self, event, target, player, data)
     local cards = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".",
-    "#ty_ex__zhenwei-invoke:" .. data.from .. ":" .. data.to .. ":" .. data.card:toLogString())
+    "#ty_ex__zhenwei-invoke:" .. data.from .. ":" .. data.to .. ":" .. data.card:toLogString(), true)
     if #cards > 0 then
       self.cost_data = cards
       return true

@@ -441,7 +441,7 @@ local xiaowu = fk.CreateActiveSkill{
   max_card_num = 0,
   target_num = 1,
   interaction = function(self)
-    return UI.ComboBox { choices = {"xiaowu_clockwise", "xiaowu_anticlockwise"} }
+    return UI.ComboBox { choices = {"xiaowu_anticlockwise", "xiaowu_clockwise"} }
   end,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1
@@ -458,7 +458,7 @@ local xiaowu = fk.CreateActiveSkill{
     local choice = self.interaction.data
     for i = 1, #players, 1 do
       local real_i = i
-      if choice == "xiaowu_anticlockwise" then
+      if choice == "xiaowu_clockwise" then
         real_i = #players + 1 - real_i
       end
       local temp = players[real_i]
@@ -604,7 +604,7 @@ Fk:loadTranslationTable{
   ["shawu_select"] = "沙舞",
   [":shawu"] = "当你使用【杀】指定目标后，你可以弃置两张手牌或1枚“沙”标记对目标角色造成1点伤害。若你弃置的是“沙”标记，你摸两张牌。",
 
-  ["#xiaowu"] = "发动绡舞，选择按顺时针或逆时针顺序结算，并选择作为终点的目标角色",
+  ["#xiaowu"] = "绡舞：选择按逆时针(行动顺序)或顺时针顺序结算，并选择作为终点的目标角色",
   ["xiaowu_clockwise"] = "顺时针顺序",
   ["xiaowu_anticlockwise"] = "逆时针顺序",
   ["#xiawu_draw"] = "绡舞：选择令%src摸一张牌或自己摸一张牌",

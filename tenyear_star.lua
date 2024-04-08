@@ -371,7 +371,7 @@ local xiaoyan = fk.CreateTriggerSkill{
     for _, p in ipairs(targets) do
       if player.dead then break end
       if not p.dead then
-        local card = room:askForCard(p, 1, 1, false, self.name, true, ".", "#xiaoyan-give:"..player.id)
+        local card = room:askForCard(p, 1, 1, true, self.name, true, ".", "#xiaoyan-give:"..player.id)
         if #card > 0 then
           room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonGive, self.name, nil, false, p.id)
           if not p.dead and p:isWounded() then

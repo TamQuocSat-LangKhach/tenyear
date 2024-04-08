@@ -980,39 +980,11 @@ local xunli = fk.CreateTriggerSkill{
       player:addToPile("jiping_li", dummy, true, self.name)
     else
       local cards = table.filter(player:getCardIds("h"), function(id)
-        return Fk:getCardById(id,true).color == Card.Black and Fk:getCardById(id).color == Card.Black
+        return Fk:getCardById(id, true).color == Card.Black and Fk:getCardById(id).color == Card.Black
       end)
-      local results = U.askForExchange(player, "jiping_li", "$Hand", player:getPile("jiping_li"), cards, self.name, 9)
-      local cards1, cards2 = {}, {}
-      for _, id in ipairs(results) do
-        if room:getCardArea(id) == Player.Hand then
-          table.insert(cards1, id)
-        else
-          table.insert(cards2, id)
-        end
-      end
-      local move1 = {
-        ids = cards2,
-        from = player.id,
-        to = player.id,
-        fromArea = Card.PlayerSpecial,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonExchange,
-        proposer = player.id,
-        skillName = self.name,
-      }
-      local move2 = {
-        ids = cards1,
-        from = player.id,
-        to = player.id,
-        fromArea = Card.PlayerHand,
-        toArea = Card.PlayerSpecial,
-        moveReason = fk.ReasonExchange,
-        proposer = player.id,
-        specialName = "jiping_li",
-        skillName = self.name,
-      }
-      room:moveCards(move1, move2)
+      local piles = U.askForArrangeCards(player, self.name, {player:getPile("jiping_li"), cards, "jiping_li", "$Hand"},
+      "#xunli-exchange", true)
+      U.swapCardsWithPile(player, piles[1], piles[2], self.name, "jiping_li", true)
     end
   end,
 }
@@ -1188,7 +1160,9 @@ Fk:loadTranslationTable{
   ["lieyi"] = "烈医",
   [":lieyi"] = "出牌阶段限一次，你可以展示所有“疠”并选择一名其他角色，依次对其使用所有“疠”（无距离次数限制），不可使用的置入弃牌堆。然后若该角色未"..
   "因此进入濒死状态，你失去1点体力。",
+
   ["jiping_li"] = "疠",
+  ["#xunli-exchange"] = "询疠：用黑色手牌交换等量的“疠”",
   ["#zhishi-choose"] = "指誓：选择一名角色，当其成为【杀】的目标后或进入濒死状态时，你可以移去“疠”令其摸牌",
   ["@@zhishi"] = "指誓",
   ["#zhishi-invoke"] = "指誓：你可以移去任意张“疠”，令 %dest 摸等量的牌",
@@ -2875,12 +2849,12 @@ local quanjian = fk.CreateActiveSkill{
   card_num = 0,
   target_num = 1,
   can_use = function(self, player)
-    return player:getMark("quanjian1-turn") == 0 or player:getMark("quanjian2-turn") == 0
+    return player:getMark("quanjian1-phase") == 0 or player:getMark("quanjian2-phase") == 0
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     if #selected == 0 and to_select ~= Self.id then
-      if Self:getMark("quanjian2-turn") == 0 then
+      if Self:getMark("quanjian2-phase") == 0 then
         return true
       else
         for _, p in ipairs(Fk:currentRoom().alive_players) do
@@ -2901,14 +2875,14 @@ local quanjian = fk.CreateActiveSkill{
       end
     end
     local choices = {}
-    if player:getMark("quanjian1-turn") == 0 and #targets > 0 then
+    if player:getMark("quanjian1-phase") == 0 and #targets > 0 then
       table.insert(choices, "quanjian1")
     end
-    if player:getMark("quanjian2-turn") == 0 then
+    if player:getMark("quanjian2-phase") == 0 then
       table.insert(choices, "quanjian2")
     end
     local choice = room:askForChoice(player, choices, self.name)
-    room:addPlayerMark(player, choice.."-turn", 1)
+    room:addPlayerMark(player, choice.."-phase", 1)
     local to
     if choice == "quanjian1" then
       local tos = room:askForChoosePlayers(player, targets, 1, 1, "#quanjian-choose", self.name)

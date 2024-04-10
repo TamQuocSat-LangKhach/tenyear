@@ -199,7 +199,7 @@ local cibei = fk.CreateTriggerSkill{
     if player:hasSkill(self) and #player:getPile("hanlong_ci") > 0 then
       if event == fk.CardUseFinished then
         if table.find(player:getPile("hanlong_ci"), function(id) return Fk:getCardById(id).trueName ~= "slash" end) then
-          return data.card.trueName == "slash" and (not data.card:isVirtual() or #data.card.subcards == 1) and
+          return data.card.trueName == "slash" and (not data.card:isVirtual() or #data.card.subcards == 1) and data.damageDealt and
           Fk:getCardById(data.card:getEffectiveId(), true).trueName == "slash" and player.room:getCardArea(data.card) == Card.Processing
         end
       else
@@ -360,8 +360,8 @@ Fk:loadTranslationTable{
   ["duwang"] = "独往",
   [":duwang"] = "锁定技，游戏开始时，你将牌堆顶五张不为【杀】的牌置于武将牌上，称为“刺”。若你有“刺”，你与其他角色互相计算距离均+1。",
   ["cibei"] = "刺北",
-  [":cibei"] = "当任意角色使用【杀】结算完毕进入弃牌堆前，你可以将此牌与一张不为【杀】的“刺”交换，然后弃置一名角色区域内的一张牌。"..
-  "一名角色的回合结束时，若所有“刺”均为【杀】，你获得所有“刺”，这些【杀】不能被弃置、不计入手牌上限、使用时无距离次数限制。",
+  [":cibei"] = "当【杀】使用结算结束后，若此【杀】造成过伤害，你可以将此【杀】与一张不为【杀】的“刺”交换，然后弃置一名角色区域内的一张牌。"..
+  "一名角色的回合结束时，若所有“刺”均为【杀】，你获得所有“刺”，这些【杀】不能被弃置、不计入手牌上限、使用时无距离和次数限制。",
   ["hanlong_ci"] = "刺",
   ["#cibei-invoke"] = "刺北：是否将此【杀】和一张“刺”交换？",
   ["#cibei-exchange"] = "刺北：将此【杀】和一张“刺”交换",

@@ -714,6 +714,7 @@ wangling:addRelatedSkill(ty__zifu)
 Fk:loadTranslationTable{
   ["tymou__wangling"] = "谋王凌",
   ["#tymou__wangling"] = "风节格尚",
+  ["illustrator:tymou__wangling"] = "鬼画府",
 
   ["jichouw"] = "集筹",
   [":jichouw"] = "出牌阶段结束时，若你于此阶段内使用过的牌的牌名各不相同，你可以将弃牌堆中的这些牌交给你选择的角色各一张。"..
@@ -940,6 +941,7 @@ simashi:addSkill(chenlue)
 Fk:loadTranslationTable{
   ["tymou__simashi"] = "谋司马师",
   ["#tymou__simashi"] = "唯几成务",
+  ["illustrator:tymou__simashi"] = "鬼画府",
 
   ["sanshi"] = "散士",
   [":sanshi"] = "锁定技，游戏开始时，你将牌堆里每个点数的随机一张牌标记为“死士”牌。"..

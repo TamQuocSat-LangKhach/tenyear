@@ -5314,7 +5314,7 @@ local jujianc = fk.CreateActiveSkill{
   end,
   card_filter = function() return false end,
   target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0 and Fk:currentRoom():getPlayerById(to_select).kingdom == "wei"
+    return #selected == 0 and to_select ~= Self.id and Fk:currentRoom():getPlayerById(to_select).kingdom == "wei"
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -5347,13 +5347,14 @@ caofang:addSkill(jujianc)
 Fk:loadTranslationTable{
   ["caofang"] = "曹芳",
   ["#caofang"] = "迷瞑终觉",
-  --["illustrator:caofang"] = "",
+  ["illustrator:caofang"] = "鬼画府",
+
   ["zhimin"] = "置民",
   [":zhimin"] = "锁定技，每轮开始时，你选择至多X名其他角色（x为你的体力值），获得这些角色点数最小的一张手牌。"..
-  "你于回合外得到牌时，这些牌称为“民”，当你失去“民”后，你将手牌补至体力上限。",
+  "你于回合外得到牌后，这些牌称为“民”。当你失去“民”后，你将手牌补至体力上限。",
   ["jujianc"] = "拒谏",
-  [":jujianc"] = "主公技，出牌阶段限一次，你可以令一名魏势力角色摸一张牌，直到本轮结束，其使用的普通锦囊牌对你无效。",
-  ["#jujianc-active"] = "发动 拒谏，令一名魏势力角色摸一张牌，其本轮内使用普通锦囊牌对你无效",
+  [":jujianc"] = "主公技，出牌阶段限一次，你可以令一名其他魏势力角色摸一张牌，直到本轮结束，其使用的普通锦囊牌对你无效。",
+  ["#jujianc-active"] = "发动 拒谏，令一名其他魏势力角色摸一张牌，其本轮内使用普通锦囊牌对你无效",
   ["#zhimin-choose"] = "置民：选择1-%arg名角色，获得这些角色手牌中点数最小的牌",
   ["@@zhimin-inhand"] = "民",
   ["@@jujianc-round"] = "拒谏",

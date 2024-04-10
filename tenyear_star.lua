@@ -753,7 +753,7 @@ local minghui = fk.CreateTriggerSkill{
     if player:hasSkill(self) then
       local x = player:getHandcardNum()
       if x == 0 then return true end
-      local linghui_max, linghui_min, all_kongcheng = true, true, true
+      local minghui_max, minghui_min, all_kongcheng = true, true, true
       local y = 0
       for _, p in ipairs(player.room.alive_players) do
         if p ~= player then
@@ -762,13 +762,13 @@ local minghui = fk.CreateTriggerSkill{
             all_kongcheng = false
           end
           if x > y then
-            linghui_min = false
+            minghui_min = false
           elseif x < y then
-            linghui_max = false
+            minghui_max = false
           end
         end
       end
-      return (linghui_max and not all_kongcheng) or linghui_min
+      return (minghui_max and not all_kongcheng) or minghui_min
     end
   end,
   on_cost = Util.TrueFunc,

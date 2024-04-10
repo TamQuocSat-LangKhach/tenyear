@@ -2668,9 +2668,9 @@ local tuoyu_trigger = fk.CreateTriggerSkill{
       elseif data.card.name == "peach" or (data.card.name == "analeptic" and data.extra_data and data.extra_data.analepticRecover) then
         data.additionalRecover = (data.additionalRecover or 0) + 1
       end
-      --[[if data.card.trueName == "slash" and data.extra_data and data.extra_data.drankBuff then
+      if data.card.trueName == "slash" and data.extra_data and data.extra_data.drankBuff then
         data.additionalDamage = (data.additionalDamage or 0) + data.extra_data.drankBuff
-      end]]--
+      end
     elseif data.card:getMark("@@tuoyu3-inhand") > 0 then
       data.disresponsiveList = table.map(player.room.alive_players, Util.IdMapper)
     end

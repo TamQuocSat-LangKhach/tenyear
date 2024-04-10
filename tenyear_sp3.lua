@@ -3191,11 +3191,10 @@ local juewu = fk.CreateViewAsSkill{
       table.insertIfNeed(names, "ty__drowning")
       Self:setMark("juewu_names", names)
     end
-    local choices = U.getViewAsCardNames(Self, "juewu", names)
+    local choices = U.getViewAsCardNames(Self, "juewu", names, nil, U.getMark(Self, "juewu-turn"))
     if #choices == 0 then return false end
     return UI.ComboBox { choices = choices, all_choices = names }
   end,
-  enabled_at_play = Util.TrueFunc,
   card_filter = function(self, to_select, selected)
     if self.interaction.data == nil or #selected > 0 then return false end
     local card = Fk:getCardById(to_select)
@@ -3209,6 +3208,34 @@ local juewu = fk.CreateViewAsSkill{
     card:addSubcard(cards[1])
     card.skillName = self.name
     return card
+  end,
+  before_use = function(self, player, use)
+    local mark = U.getMark(player, "juewu-turn")
+    table.insert(mark, use.card.trueName)
+    player.room:setPlayerMark(player, "juewu-turn", mark)
+  end,
+  enabled_at_play = function(self, player)
+    local names = player:getMark("juewu_names")
+    if type(names) ~= "table" then
+      names = {}
+      for _, id in ipairs(Fk:getAllCardIds()) do
+        local card = Fk:getCardById(id)
+        if card.is_damage_card and not card.is_derived then
+          table.insertIfNeed(names, card.name)
+        end
+      end
+      table.insertIfNeed(names, "ty__drowning")
+      player:setMark("juewu_names", names)
+    end
+    local mark = U.getMark(player, "juewu-turn")
+    local choices = {}
+    for _, name in pairs(names) do
+      local to_use = Fk:cloneCard(name)
+      to_use.skillName = self.name
+      if not table.contains(mark, to_use.trueName) and player:canUse(to_use) then
+        return true
+      end
+    end
   end,
   enabled_at_response = function(self, player, response)
     if response then return false end
@@ -3225,10 +3252,12 @@ local juewu = fk.CreateViewAsSkill{
       table.insertIfNeed(names, "ty__drowning")
       player:setMark("juewu_names", names)
     end
+    local mark = U.getMark(player, "juewu-turn")
     local choices = {}
     for _, name in pairs(names) do
       local to_use = Fk:cloneCard(name)
-      if Exppattern:Parse(Fk.currentResponsePattern):match(to_use) then
+      to_use.skillName = self.name
+      if not table.contains(mark, to_use.trueName) and Exppattern:Parse(Fk.currentResponsePattern):match(to_use) then
         return true
       end
     end
@@ -3238,8 +3267,9 @@ local juewu_trigger = fk.CreateTriggerSkill{
   name = "#juewu_trigger",
   events = {fk.AfterCardsMove},
   anim_type = "control",
+  main_skill = juewu,
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self) then return false end
+    if not player:hasSkill(juewu) then return false end
     local cards = {}
     local handcards = player:getCardIds(Player.Hand)
     for _, move in ipairs(data) do
@@ -3276,8 +3306,35 @@ local juewu_filter = fk.CreateFilterSkill{
     return Fk:cloneCard(card.name, card.suit, 2)
   end,
 }
-local lingxian = fk.CreateTriggerSkill{
+
+local lingxian = fk.CreateActiveSkill{
   name = "lingxian",
+  prompt = "#lingxian-active",
+  card_num = 0,
+  target_num = 0,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local card_names = player:getMark("lingxian_names")
+    if type(card_names) ~= "table" then
+      card_names = U.getAllCardNames("bt")
+      room:setPlayerMark(player, "lingxian_names", card_names)
+    end
+    if #card_names == 0 then return end
+    card_names = table.random(card_names, 5)
+    local success, dat = room:askForUseActiveSkill(player, "lingxian_declare",
+    "#lingxian-declare::" .. player.id, false, { interaction_choices = card_names })
+    local id = success and dat.cards[1] or table.random(player:getCardIds(Player.Hand))
+    local card_name = success and dat.interaction or card_names[1]
+    room:setCardMark(Fk:getCardById(id), "@@lingxian-inhand", card_name)
+  end,
+}
+local lingxian_refresh = fk.CreateTriggerSkill{
+  name = "#lingxian_refresh",
 
   refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
   can_refresh = function(self, event, target, player, data)
@@ -3303,7 +3360,7 @@ local lingxian = fk.CreateTriggerSkill{
 local lingxian_active = fk.CreateActiveSkill{
   name = "lingxian&",
   anim_type = "support",
-  prompt = "#lingxian-active",
+  prompt = "#lingxian-other",
   card_num = 1,
   target_num = 1,
   can_use = function(self, player)
@@ -3327,15 +3384,21 @@ local lingxian_active = fk.CreateActiveSkill{
     table.insertIfNeed(targetRecorded, player.id)
     room:setPlayerMark(target, "lingxian_targets-phase", targetRecorded)
     room:moveCardTo(effect.cards, Player.Hand, player, fk.ReasonGive, self.name, nil, false, target.id)
-    if player.dead or player:isNude() or target.dead then return end
+    if player.dead or player:isKongcheng() or target.dead then return end
+    local card_names = player:getMark("lingxian_names")
+    if type(card_names) ~= "table" then
+      card_names = U.getAllCardNames("bt")
+      room:setPlayerMark(player, "lingxian_names", card_names)
+    end
+    if #card_names == 0 then return end
+    card_names = table.random(card_names, 5)
     local success, dat = room:askForUseActiveSkill(player, "lingxian_declare",
-    "#lingxian-declare::" .. target.id, true)
-    if success then
-      local id = dat.cards[1]
-      room:moveCardTo(id, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
-      if room:getCardArea(id) == Player.Hand and room:getCardOwner(id) == target then
-        room:setCardMark(Fk:getCardById(id), "@@lingxian-inhand", dat.interaction)
-      end
+    "#lingxian-declare::" .. target.id, false, { interaction_choices = card_names })
+    local id = success and dat.cards[1] or table.random(player:getCardIds(Player.Hand))
+    local card_name = success and dat.interaction or card_names[1]
+    room:moveCardTo(id, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
+    if room:getCardArea(id) == Player.Hand and room:getCardOwner(id) == target then
+      room:setCardMark(Fk:getCardById(id), "@@lingxian-inhand", card_name)
     end
   end,
 }
@@ -3343,12 +3406,12 @@ local lingxian_declare = fk.CreateActiveSkill{
   name = "lingxian_declare",
   card_num = 1,
   target_num = 0,
-  interaction = function()
-    return UI.ComboBox { choices = U.getAllCardNames("bt")}
+  interaction = function(self)
+    return UI.ComboBox { choices = self.interaction_choices}
   end,
   can_use = Util.FalseFunc,
   card_filter = function(self, to_select, selected)
-    return #selected == 0 and self.interaction.data
+    return #selected == 0 and self.interaction.data and Fk:currentRoom():getCardArea(to_select) == Card.PlayerHand
   end,
 }
 local lingxian_filter = fk.CreateFilterSkill{
@@ -3363,51 +3426,44 @@ local lingxian_filter = fk.CreateFilterSkill{
 local yixian = fk.CreateActiveSkill{
   name = "yixian",
   anim_type = "control",
-  prompt = "#yixian-active",
   card_num = 0,
   target_num = 0,
   frequency = Skill.Limited,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
+  interaction = function()
+    return UI.ComboBox {
+      choices = {"yixian_field", "yixian_discard"}
+    }
+  end,
+  prompt = function(self)
+    return "#yixian-active:::" .. self.interaction.data
+  end,
   card_filter = Util.FalseFunc,
   target_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local yixianmap = {}
-    local cards = {}
-    local equips = {}
-    for _, p in ipairs(room.alive_players) do
-      equips = (p == player) and p:getCardIds{Player.Equip} or p:getCardIds{Player.Hand, Player.Equip}
-      equips = table.filter(equips, function (id)
-        return table.contains({Card.SubtypeWeapon, Card.SubtypeArmor}, Fk:getCardById(id).sub_type)
-      end)
-      if #equips > 0 then
-        yixianmap[p.id] = #equips
-        table.insertTable(cards, equips)
+    if self.interaction.data == "yixian_field" then
+      local yixianmap = {}
+      local cards = {}
+      local equips = {}
+      for _, p in ipairs(room.alive_players) do
+        equips = p:getCardIds{Player.Equip}
+        if #equips > 0 then
+          yixianmap[p.id] = #equips
+          table.insertTable(cards, equips)
+        end
       end
-    end
-    if #cards == 0 then return end
-    room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, false, player.id)
-    if player.dead then return end
-    for _, p in ipairs(room:getAlivePlayers()) do
-      if not p.dead then
-        local n = yixianmap[p.id]
-        if n and n > 0 then
-          local choices = {
-            "yixian_draw::" .. p.id .. ":" .. tostring(n),
-            "yixian_recover::" .. p.id .. ":" .. tostring(n),
-            "Cancel"
-          }
-          local all_choices = table.simpleClone(choices)
-          if not p:isWounded() then
-            table.remove(choices, 2)
-          end
-          local choice = room:askForChoice(player, choices, self.name, nil, false, all_choices)
-          if choice ~= "Cancel" then
-            if choice:startsWith("yixian_draw") then
-              room:drawCards(p, n, self.name)
-            else
+      if #cards == 0 then return end
+      room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, false, player.id)
+      if player.dead then return end
+      for _, p in ipairs(room:getAlivePlayers()) do
+        if not p.dead then
+          local n = yixianmap[p.id]
+          if n and n > 0 and room:askForSkillInvoke(player, self.name, nil, "#yixian-repay::" .. p.id..":"..tostring(n)) then
+            room:drawCards(p, n, self.name)
+            if not p.dead and p:isWounded() then 
               room:recover{
                 who = p,
                 num = n,
@@ -3419,6 +3475,13 @@ local yixian = fk.CreateActiveSkill{
           end
         end
       end
+    elseif self.interaction.data == "yixian_discard" then
+      local equips = table.filter(room.discard_pile, function(id)
+        return Fk:getCardById(id).type == Card.TypeEquip
+      end)
+      if #equips > 0 then
+        room:moveCardTo(equips, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, false, player.id)
+      end
     end
   end,
 }
@@ -3427,6 +3490,7 @@ Fk:addSkill(lingxian_active)
 Fk:addSkill(lingxian_declare)
 juewu:addRelatedSkill(juewu_trigger)
 juewu:addRelatedSkill(juewu_filter)
+lingxian:addRelatedSkill(lingxian_refresh)
 lingxian:addRelatedSkill(lingxian_filter)
 guanyu:addSkill(juewu)
 guanyu:addSkill(lingxian)
@@ -3437,13 +3501,14 @@ Fk:loadTranslationTable{
   --["#wm__guanyu"] = "",
   --["illustrator:wm__guanyu"] = "",
   ["juewu"] = "绝武",
-  [":juewu"] = "你可以将点数为2的牌当伤害牌或【水淹七军】使用；当你得到其他角色的牌后，这些牌的点数视为2。",
+  [":juewu"] = "你可以将点数为2的牌当伤害牌或【水淹七军】使用（每回合每种牌名限一次）。当你得到其他角色的牌后，这些牌的点数视为2。",
   ["lingxian"] = "灵显",
-  [":lingxian"] = "其他角色的出牌阶段限一次，其可以将一张牌交给你，然后你可以将一张牌交给该角色并声明一种基本牌或普通锦囊牌的牌名，"..
+  [":lingxian"] = "出牌阶段限一次，你可以从五个随机的基本牌或普通锦囊牌的牌名中选择一个并选择你的一张手牌，此牌视为你声明的牌。"..
+  "其他角色的出牌阶段限一次，其可以将一张手牌交给你，然后你可以从五个随机的基本牌或普通锦囊牌的牌名中选择一个并将一张手牌交给该角色，"..
   "此牌视为你声明的牌。",
   ["yixian"] = "义贤",
-  [":yixian"] = "限定技，出牌阶段，你可以获得场上和其他角色手牌区中的所有武器牌和防具牌，"..
-  "你对以此法得到牌的角色依次可以选择：1.令其摸等量的牌；2.令其回复1点体力。",
+  [":yixian"] = "限定技，出牌阶段，你可以选择：1.获得场上的所有装备牌，你对以此法被你获得牌的角色依次可以令其摸等量的牌并回复1点体力；"..
+  "2.获得弃牌堆中的所有装备牌。",
 
   ["#juewu-viewas"] = "发动 绝武，将点数为2的牌转化为任意伤害牌使用",
   ["#juewu_trigger"] = "绝武",
@@ -3451,14 +3516,16 @@ Fk:loadTranslationTable{
   ["@@juewu-inhand"] = "绝武",
   ["lingxian&"] = "灵显",
   [":lingxian&"] = "出牌阶段限一次，你可以将一张牌交给武关羽，然后其可以将一张牌交给你并声明一种基本牌或普通锦囊牌的牌名，此牌视为声明的牌。",
-  ["#lingxian-active"] = "发动 灵显，选择一张牌交给一名拥有“灵显”的角色",
-  ["#lingxian-declare"] = "灵显：你可以将一张牌交给%dest并令此牌视为声明的牌名",
+  ["#lingxian-active"] = "发动 灵显，令一张手牌视为你声明的牌（五选一）",
+  ["#lingxian-other"] = "发动 灵显，选择一张牌交给一名拥有“灵显”的角色",
+  ["#lingxian-declare"] = "灵显：将一张手牌交给%dest并令此牌视为声明的牌名",
   ["lingxian_declare"] = "灵显",
   ["#lingxian_filter"] = "灵显",
   ["@@lingxian-inhand"] = "灵显",
-  ["#yixian-active"] = "发动 义贤，获得场上和其他角色手牌区中的所有武器牌和防具牌",
-  ["yixian_draw"] = "令%dest摸%arg张牌",
-  ["yixian_recover"] = "令%dest回复%arg点体力",
+  ["#yixian-active"] = "发动 义贤，%arg",
+  ["yixian_field"] = "获得场上的装备牌",
+  ["yixian_discard"] = "获得弃牌堆里的装备牌",
+  ["#yixian-repay"] = "义贤：是否令%dest摸%arg张牌并回复1点体力",
 
   ["$juewu1"] = "",
   ["$juewu2"] = "",

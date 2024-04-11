@@ -3307,9 +3307,9 @@ local juewu_filter = fk.CreateFilterSkill{
   end,
 }
 
-local lingxian = fk.CreateActiveSkill{
-  name = "lingxian",
-  prompt = "#lingxian-active",
+local wuyou = fk.CreateActiveSkill{
+  name = "wuyou",
+  prompt = "#wuyou-active",
   card_num = 0,
   target_num = 0,
   can_use = function(self, player)
@@ -3319,22 +3319,22 @@ local lingxian = fk.CreateActiveSkill{
   target_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local card_names = player:getMark("lingxian_names")
+    local card_names = player:getMark("wuyou_names")
     if type(card_names) ~= "table" then
       card_names = U.getAllCardNames("bt")
-      room:setPlayerMark(player, "lingxian_names", card_names)
+      room:setPlayerMark(player, "wuyou_names", card_names)
     end
     if #card_names == 0 then return end
     card_names = table.random(card_names, 5)
-    local success, dat = room:askForUseActiveSkill(player, "lingxian_declare",
-    "#lingxian-declare::" .. player.id, false, { interaction_choices = card_names })
+    local success, dat = room:askForUseActiveSkill(player, "wuyou_declare",
+    "#wuyou-declare::" .. player.id, false, { interaction_choices = card_names })
     local id = success and dat.cards[1] or table.random(player:getCardIds(Player.Hand))
     local card_name = success and dat.interaction or card_names[1]
-    room:setCardMark(Fk:getCardById(id), "@@lingxian-inhand", card_name)
+    room:setCardMark(Fk:getCardById(id), "@@wuyou-inhand", card_name)
   end,
 }
-local lingxian_refresh = fk.CreateTriggerSkill{
-  name = "#lingxian_refresh",
+local wuyou_refresh = fk.CreateTriggerSkill{
+  name = "#wuyou_refresh",
 
   refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
   can_refresh = function(self, event, target, player, data)
@@ -3347,63 +3347,63 @@ local lingxian_refresh = fk.CreateTriggerSkill{
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     if table.every(room.alive_players, function(p) return not p:hasSkill(self, true) or p == player end) then
-      if player:hasSkill("lingxian&", true, true) then
-        room:handleAddLoseSkills(player, "-lingxian&", nil, false, true)
+      if player:hasSkill("wuyou&", true, true) then
+        room:handleAddLoseSkills(player, "-wuyou&", nil, false, true)
       end
     else
-      if not player:hasSkill("lingxian&", true, true) then
-        room:handleAddLoseSkills(player, "lingxian&", nil, false, true)
+      if not player:hasSkill("wuyou&", true, true) then
+        room:handleAddLoseSkills(player, "wuyou&", nil, false, true)
       end
     end
   end,
 }
-local lingxian_active = fk.CreateActiveSkill{
-  name = "lingxian&",
+local wuyou_active = fk.CreateActiveSkill{
+  name = "wuyou&",
   anim_type = "support",
-  prompt = "#lingxian-other",
+  prompt = "#wuyou-other",
   card_num = 1,
   target_num = 1,
   can_use = function(self, player)
-    local targetRecorded = U.getMark(player, "lingxian_targets-phase")
+    local targetRecorded = U.getMark(player, "wuyou_targets-phase")
     return table.find(Fk:currentRoom().alive_players, function(p)
-      return p ~= player and p:hasSkill(lingxian) and not table.contains(targetRecorded, p.id)
+      return p ~= player and p:hasSkill(wuyou) and not table.contains(targetRecorded, p.id)
     end)
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0
   end,
   target_filter = function(self, to_select, selected)
-    return #selected == 0 and to_select ~= Self.id and Fk:currentRoom():getPlayerById(to_select):hasSkill(lingxian) and
-    not table.contains(U.getMark(Self, "lingxian_targets-phase"), to_select)
+    return #selected == 0 and to_select ~= Self.id and Fk:currentRoom():getPlayerById(to_select):hasSkill(wuyou) and
+    not table.contains(U.getMark(Self, "wuyou_targets-phase"), to_select)
   end,
   on_use = function(self, room, effect)
     local target = room:getPlayerById(effect.from)
     local player = room:getPlayerById(effect.tos[1])
-    player:broadcastSkillInvoke("lingxian")
-    local targetRecorded = U.getMark(target, "lingxian_targets-phase")
+    player:broadcastSkillInvoke("wuyou")
+    local targetRecorded = U.getMark(target, "wuyou_targets-phase")
     table.insertIfNeed(targetRecorded, player.id)
-    room:setPlayerMark(target, "lingxian_targets-phase", targetRecorded)
+    room:setPlayerMark(target, "wuyou_targets-phase", targetRecorded)
     room:moveCardTo(effect.cards, Player.Hand, player, fk.ReasonGive, self.name, nil, false, target.id)
     if player.dead or player:isKongcheng() or target.dead then return end
-    local card_names = player:getMark("lingxian_names")
+    local card_names = player:getMark("wuyou_names")
     if type(card_names) ~= "table" then
       card_names = U.getAllCardNames("bt")
-      room:setPlayerMark(player, "lingxian_names", card_names)
+      room:setPlayerMark(player, "wuyou_names", card_names)
     end
     if #card_names == 0 then return end
     card_names = table.random(card_names, 5)
-    local success, dat = room:askForUseActiveSkill(player, "lingxian_declare",
-    "#lingxian-declare::" .. target.id, false, { interaction_choices = card_names })
+    local success, dat = room:askForUseActiveSkill(player, "wuyou_declare",
+    "#wuyou-declare::" .. target.id, false, { interaction_choices = card_names })
     local id = success and dat.cards[1] or table.random(player:getCardIds(Player.Hand))
     local card_name = success and dat.interaction or card_names[1]
     room:moveCardTo(id, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
     if room:getCardArea(id) == Player.Hand and room:getCardOwner(id) == target then
-      room:setCardMark(Fk:getCardById(id), "@@lingxian-inhand", card_name)
+      room:setCardMark(Fk:getCardById(id), "@@wuyou-inhand", card_name)
     end
   end,
 }
-local lingxian_declare = fk.CreateActiveSkill{
-  name = "lingxian_declare",
+local wuyou_declare = fk.CreateActiveSkill{
+  name = "wuyou_declare",
   card_num = 1,
   target_num = 0,
   interaction = function(self)
@@ -3414,13 +3414,22 @@ local lingxian_declare = fk.CreateActiveSkill{
     return #selected == 0 and self.interaction.data and Fk:currentRoom():getCardArea(to_select) == Card.PlayerHand
   end,
 }
-local lingxian_filter = fk.CreateFilterSkill{
-  name = "#lingxian_filter",
+local wuyou_filter = fk.CreateFilterSkill{
+  name = "#wuyou_filter",
   card_filter = function(self, card, player, isJudgeEvent)
-    return card:getMark("@@lingxian-inhand") ~= 0 and table.contains(player.player_cards[Player.Hand], card.id)
+    return card:getMark("@@wuyou-inhand") ~= 0 and table.contains(player.player_cards[Player.Hand], card.id)
   end,
   view_as = function(self, card)
-    return Fk:cloneCard(card:getMark("@@lingxian-inhand"), card.suit, card.number)
+    return Fk:cloneCard(card:getMark("@@wuyou-inhand"), card.suit, card.number)
+  end,
+}
+local wuyou_targetmod = fk.CreateTargetModSkill{
+  name = "#wuyou_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    return not card:isVirtual() and card:getMark("@@wuyou-inhand") ~= 0
+  end,
+  bypass_distances =  function(self, player, skill, card, to)
+    return not card:isVirtual() and card:getMark("@@wuyou-inhand") ~= 0
   end,
 }
 local yixian = fk.CreateActiveSkill{
@@ -3486,14 +3495,15 @@ local yixian = fk.CreateActiveSkill{
   end,
 }
 
-Fk:addSkill(lingxian_active)
-Fk:addSkill(lingxian_declare)
+Fk:addSkill(wuyou_active)
+Fk:addSkill(wuyou_declare)
 juewu:addRelatedSkill(juewu_trigger)
 juewu:addRelatedSkill(juewu_filter)
-lingxian:addRelatedSkill(lingxian_refresh)
-lingxian:addRelatedSkill(lingxian_filter)
+wuyou:addRelatedSkill(wuyou_refresh)
+wuyou:addRelatedSkill(wuyou_filter)
+wuyou:addRelatedSkill(wuyou_targetmod)
 guanyu:addSkill(juewu)
-guanyu:addSkill(lingxian)
+guanyu:addSkill(wuyou)
 guanyu:addSkill(yixian)
 
 Fk:loadTranslationTable{
@@ -3502,10 +3512,10 @@ Fk:loadTranslationTable{
   --["illustrator:wm__guanyu"] = "",
   ["juewu"] = "绝武",
   [":juewu"] = "你可以将点数为2的牌当伤害牌或【水淹七军】使用（每回合每种牌名限一次）。当你得到其他角色的牌后，这些牌的点数视为2。",
-  ["lingxian"] = "灵显",
-  [":lingxian"] = "出牌阶段限一次，你可以从五个随机的基本牌或普通锦囊牌的牌名中选择一个并选择你的一张手牌，此牌视为你声明的牌。"..
+  ["wuyou"] = "武佑",
+  [":wuyou"] = "出牌阶段限一次，你可以从五个随机的基本牌或普通锦囊牌的牌名中选择一个并选择你的一张手牌，此牌视为你声明的牌且无距离和次数限制。"..
   "其他角色的出牌阶段限一次，其可以将一张手牌交给你，然后你可以从五个随机的基本牌或普通锦囊牌的牌名中选择一个并将一张手牌交给该角色，"..
-  "此牌视为你声明的牌。",
+  "此牌视为你声明的牌且无距离和次数限制。",
   ["yixian"] = "义贤",
   [":yixian"] = "限定技，出牌阶段，你可以选择：1.获得场上的所有装备牌，你对以此法被你获得牌的角色依次可以令其摸等量的牌并回复1点体力；"..
   "2.获得弃牌堆中的所有装备牌。",
@@ -3514,14 +3524,14 @@ Fk:loadTranslationTable{
   ["#juewu_trigger"] = "绝武",
   ["#juewu_filter"] = "绝武",
   ["@@juewu-inhand"] = "绝武",
-  ["lingxian&"] = "灵显",
-  [":lingxian&"] = "出牌阶段限一次，你可以将一张牌交给武关羽，然后其可以将一张牌交给你并声明一种基本牌或普通锦囊牌的牌名，此牌视为声明的牌。",
-  ["#lingxian-active"] = "发动 灵显，令一张手牌视为你声明的牌（五选一）",
-  ["#lingxian-other"] = "发动 灵显，选择一张牌交给一名拥有“灵显”的角色",
-  ["#lingxian-declare"] = "灵显：将一张手牌交给%dest并令此牌视为声明的牌名",
-  ["lingxian_declare"] = "灵显",
-  ["#lingxian_filter"] = "灵显",
-  ["@@lingxian-inhand"] = "灵显",
+  ["wuyou&"] = "武佑",
+  [":wuyou&"] = "出牌阶段限一次，你可以将一张牌交给武关羽，然后其可以将一张牌交给你并声明一种基本牌或普通锦囊牌的牌名，此牌视为声明的牌。",
+  ["#wuyou-active"] = "发动 武佑，令一张手牌视为你声明的牌（五选一）",
+  ["#wuyou-other"] = "发动 武佑，选择一张牌交给一名拥有“武佑”的角色",
+  ["#wuyou-declare"] = "武佑：将一张手牌交给%dest并令此牌视为声明的牌名",
+  ["wuyou_declare"] = "武佑",
+  ["#wuyou_filter"] = "武佑",
+  ["@@wuyou-inhand"] = "武佑",
   ["#yixian-active"] = "发动 义贤，%arg",
   ["yixian_field"] = "获得场上的装备牌",
   ["yixian_discard"] = "获得弃牌堆里的装备牌",
@@ -3529,8 +3539,8 @@ Fk:loadTranslationTable{
 
   ["$juewu1"] = "",
   ["$juewu2"] = "",
-  ["$lingxian1"] = "",
-  ["$lingxian2"] = "",
+  ["$wuyou1"] = "",
+  ["$wuyou2"] = "",
   ["$yixian1"] = "",
   ["$yixian2"] = "",
   ["~wm__guanyu"] = "",

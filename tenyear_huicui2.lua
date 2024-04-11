@@ -2024,6 +2024,7 @@ miheng:addSkill(shejian)
 Fk:loadTranslationTable{
   ["ty__miheng"] = "祢衡",
   ["#ty__miheng"] = "狂傲奇人",
+  ["cv:ty__miheng"] = "虞晓旭",
   ["illustrator:ty__miheng"] = "鬼画府",
   ["kuangcai"] = "狂才",
   [":kuangcai"] = "①锁定技，你的回合内，你使用牌无距离和次数限制。<br>②弃牌阶段开始时，若你本回合：没有使用过牌，你的手牌上限+1；"..

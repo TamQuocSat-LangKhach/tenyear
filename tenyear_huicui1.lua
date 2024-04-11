@@ -1098,6 +1098,7 @@ Fk:loadTranslationTable{
   ["heyan"] = "何晏",
   ["#heyan"] = "傅粉何郎",
   ["designer:heyan"] = "梦魇狂朝",
+  ["cv:heyan"] = "宋国庆",
   ["illustrator:heyan"] = "MUMU",
 
   ["yachai"] = "崖柴",
@@ -5965,6 +5966,7 @@ Fk:loadTranslationTable{
   ["leibo"] = "雷薄",
   ["#leibo"] = "背仲豺寇",
   ["illustrator:leibo"] = "匠人绘",
+  ["cv:leibo"] = "杨淼",
 
   ["silue"] = "私掠",
   [":silue"] = "游戏开始时，你选择一名其他角色为“私掠”角色。<br>“私掠”角色造成伤害后，你可以获得受伤角色一张牌（每回合每名角色限一次）。<br>"..

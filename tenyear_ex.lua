@@ -85,6 +85,7 @@ caozhi:addSkill(ty_ex__jiushi)
 Fk:loadTranslationTable{
   ["ty_ex__caozhi"] = "界曹植",
   ["#ty_ex__caozhi"] = "八斗之才",
+  ["cv:ty_ex__caozhi"] = "秦且歌",
   ["illustrator:ty_ex__caozhi"] = "黯荧岛工作室",
   ["ty_ex__jiushi"] = "酒诗",
   [":ty_ex__jiushi"] = "①若你的武将牌正面朝上，你可以翻面视为使用一张【酒】。②当你的武将牌背面朝上，你受到伤害时，"..
@@ -3782,6 +3783,7 @@ wuyi:addSkill(benxi)
 Fk:loadTranslationTable{
   ["ty_ex__wuyi"] = "界吴懿",
   ["#ty_ex__wuyi"] = "建兴鞍辔",
+  ["cv:ty_ex__wuyi"] = "宋国庆",
   ["illustrator:ty_ex__wuyi"] = "青岛磐蒲",
   ["ty_ex__benxi"] = "奔袭",
   [":ty_ex__benxi"] = "锁定技，当你于回合内使用牌时，本回合你至其他角色距离-1；你的回合内，若你与所有其他角色的距离均为1，你使用仅指定一个目标的"..

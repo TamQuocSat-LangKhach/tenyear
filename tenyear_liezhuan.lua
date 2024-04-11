@@ -1873,6 +1873,7 @@ haomeng:addSkill(xiongmang)
 Fk:loadTranslationTable{
   ["ty__haomeng"] = "郝萌",
   ["#ty__haomeng"] = "悖虎之伥",
+  ["cv:ty__haomeng"] = "虞晓旭",
   ["illustrator:ty__haomeng"] = "猎枭", -- 夜袭虓虎
   ["xiongmang"] = "雄莽",
   [":xiongmang"] = "你可以将任意张花色不同的手牌当【杀】使用，此【杀】目标数上限等于用于转化的牌数；此【杀】结算后，若没有造成伤害，你减1点体力上限。",

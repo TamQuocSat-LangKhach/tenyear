@@ -699,6 +699,7 @@ duanwei:addSkill(ty__langmie)
 Fk:loadTranslationTable{
   ["duanwei"] = "段煨",
   ["#duanwei"] = "凉国之英",
+  ["cv:duanwei"] = "虞晓旭",
   ["illustrator:duanwei"] = "匠人绘",
   ["ty__langmie"] = "狼灭",
   [":ty__langmie"] = "其他角色出牌阶段结束时，若其本阶段使用过至少两张相同类别的牌，你可以摸一张牌；其他角色的结束阶段，若其本回合造成过至少2点伤害，"..

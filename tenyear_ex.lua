@@ -629,24 +629,20 @@ local ty_ex__xuanfeng = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.AfterCardsMove, fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and table.every(player.room.alive_players, function(p) return not p.dying end) then
+    if player:hasSkill(self) and table.every(player.room.alive_players, function(p) return not p.dying end)
+    and table.find(player.room.alive_players, function(p) return not p:isNude() and p ~= player end) then
       if event == fk.AfterCardsMove then
         for _, move in ipairs(data) do
           if move.from == player.id then
             for _, info in ipairs(move.moveInfo) do
               if info.fromArea == Card.PlayerEquip then
-                return table.find(player.room.alive_players, function (p)
-                  return not p:isNude() and p ~= player
-                end)
+                return true
               end
             end
           end
         end
       elseif event == fk.EventPhaseEnd then
-        if target == player and player.phase == Player.Discard and
-        table.find(player.room.alive_players, function (p)
-          return not p:isNude() and p ~= player
-        end) then
+        if target == player and player.phase == Player.Discard then
           local x = 0
           local logic = player.room.logic
           logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
@@ -684,7 +680,7 @@ local ty_ex__xuanfeng = fk.CreateTriggerSkill{
     if #targets > 0 then
       local tos = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#ty_ex__xuanfeng-choose", self.name, true)
       if #tos > 0 then
-        table.insertIfNeed(targets, tos[1])
+        table.insertIfNeed(victims, tos[1])
         to = room:getPlayerById(tos[1])
         card = room:askForCardChosen(player, to, "he", self.name)
         room:throwCard({card}, self.name, to, player)
@@ -740,7 +736,7 @@ Fk:loadTranslationTable{
   ["#ty_ex__lingtong"] = "豪情烈胆",
   ["illustrator:ty_ex__lingtong"] = "聚一",
   ["ty_ex__xuanfeng"] = "旋风",
-  [":ty_ex__xuanfeng"] = "当你失去装备区里的牌，或于弃牌阶段弃掉两张或更多的牌时，且没有角色处于濒死状态，你可以依次弃置一至两名其他角色的共计两张牌。若此时是你的回合内，则你可以对其中一名角色造成1点伤害。",
+  [":ty_ex__xuanfeng"] = "当你失去装备区里的牌，或于弃牌阶段弃掉两张或更多的牌时，若没有角色处于濒死状态，你可以依次弃置一至两名其他角色的共计两张牌。若此时是你的回合内，则你可以对其中一名角色造成1点伤害。",
   ["#ty_ex__xuanfeng-choose"] = "旋风：你可以依次弃置一至两名其他角色的共计两张牌",
   ["#ty_ex__xuanfeng-damage"] = "旋风：你可以对其中一名角色造成一点伤害。",
   ["ex__yongjin"] = "勇进",

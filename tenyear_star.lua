@@ -62,9 +62,9 @@ local canxi_trigger = fk.CreateTriggerSkill{
         player:getMark("@canxi1-round") == target.kingdom and target:getMark("canxi1-turn") == 0
     elseif event == fk.HpRecover then
       return player:getMark("@canxi2-round") ~= 0 and player:getMark("@canxi2-round") == target.kingdom and not target.dead and
-        target:getMark("canxi21-turn") == 0
+        target:getMark("canxi21-turn") == 0 and target ~= player
     elseif event == fk.PreCardEffect then
-      if player:getMark("@canxi2-round") ~= 0 and player.id == data.to then
+      if player:getMark("@canxi2-round") ~= 0 and player.id == data.to and target ~= player then
         local p = player.room:getPlayerById(data.from)
         return player:getMark("@canxi2-round") == p.kingdom and p:getMark("canxi22-turn") == 0
       end
@@ -150,7 +150,7 @@ Fk:loadTranslationTable{
   ["illustrator:tystar__yuanshu"] = "黯萤岛工作室",
   ["canxi"] = "残玺",
   [":canxi"] = "锁定技，游戏开始时，你获得场上各势力的“玺角”标记。每轮开始时，你选择一个“玺角”势力并选择一个效果生效直到下轮开始：<br>"..
-  "「妄生」：该势力角色每回合首次造成伤害+1，计算与其他角色距离-1；<br>「向死」：该势力角色每回合首次回复体力后失去1点体力，"..
+  "「妄生」：该势力角色每回合首次造成伤害+1，计算与其他角色距离-1；<br>「向死」：该势力其他角色每回合首次回复体力后失去1点体力，"..
   "每回合对你使用的第一张牌无效。",
   ["pizhi"] = "圮秩",
   [":pizhi"] = "锁定技，结束阶段，你摸X张牌；有角色死亡时，若其势力与当前生效的“玺角”势力相同，你失去此“玺角”，然后摸X张牌（X为你已失去的“玺角”数）。",

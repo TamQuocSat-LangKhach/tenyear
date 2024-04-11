@@ -2675,6 +2675,7 @@ local ty_ex__jianyong = General(extension, "ty_ex__jianyong", "shu", 3)
 local ty_ex__qiaoshui = fk.CreateActiveSkill{
   name = "ty_ex__qiaoshui",
   anim_type = "control",
+  prompt = "#ty_ex__qiaoshui-prompt",
   can_use = function(self, player)
     return not player:isKongcheng()
   end,
@@ -2688,8 +2689,9 @@ local ty_ex__qiaoshui = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local to = room:getPlayerById(effect.tos[1])
     local pindian = player:pindian({to}, self.name)
+    if player.dead then return end
     if pindian.results[to.id].winner == player then
-      room:addPlayerMark(player, "@ty_ex__qiaoshui-turn", 1)
+      room:addPlayerMark(player, "@@ty_ex__qiaoshui-turn", 1)
     else
       room:setPlayerMark(player, "ty_ex__qiaoshui_fail-turn", 1)
       player:endPlayPhase()
@@ -2701,37 +2703,27 @@ local ty_ex__qiaoshui_delay = fk.CreateTriggerSkill{
   events = {fk.AfterCardTargetDeclared},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:getMark("@ty_ex__qiaoshui-turn") > 0 and data.card.type ~= Card.TypeEquip and data.card.sub_type ~= Card.SubtypeDelayedTrick
+    return target == player and player:getMark("@@ty_ex__qiaoshui-turn") > 0
+    and data.card.type ~= Card.TypeEquip and data.card.sub_type ~= Card.SubtypeDelayedTrick
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local num = player:getMark("@ty_ex__qiaoshui-turn")
-    room:setPlayerMark(player, "@ty_ex__qiaoshui-turn", 0)
-    local targets = U.getUseExtraTargets(room, data)
-    table.insertTableIfNeed(targets, TargetGroup:getRealTargets(data.tos))
+    room:setPlayerMark(player, "@@ty_ex__qiaoshui-turn", 0)
+    local targets = U.getUseExtraTargets(room, data, true)
+    if #TargetGroup:getRealTargets(data.tos) > 1 then
+      table.insertTable(targets, TargetGroup:getRealTargets(data.tos))
+    end
     if #targets == 0 then return false end
-    local tos = room:askForChoosePlayers(player, targets, 1, num, "#ty_ex__qiaoshui-choose:::"
-    ..data.card:toLogString()..":"..num, ty_ex__qiaoshui.name, true)
-    local add,remove = {},{}
-    for _, to in ipairs(tos) do
-      if TargetGroup:includeRealTargets(data.tos, to) then
-        table.insert(remove, to)
-      else
-        table.insert(add, to)
-      end
-    end
-    if #add > 0 then
-      for _, to in ipairs(add) do
-        table.insert(data.tos, {to})
-      end
-      room:sendLog{ type = "#AddTargetsBySkill", from = target.id, to = add, arg = ty_ex__qiaoshui.name, arg2 = data.card:toLogString() }
-    end
-    if #remove > 0 then
-      for _, to in ipairs(remove) do
-        TargetGroup:removeTarget(data.tos, to)
-      end
-      room:sendLog{ type = "#RemoveTargetsBySkill", from = target.id, to = remove, arg = ty_ex__qiaoshui.name, arg2 = data.card:toLogString() }
+    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__qiaoshui-choose:::"
+    ..data.card:toLogString(), ty_ex__qiaoshui.name, true)
+    if #tos == 0 then return false end
+    if table.contains(TargetGroup:getRealTargets(data.tos), tos[1]) then
+      TargetGroup:removeTarget(data.tos, tos[1])
+      room:sendLog{ type = "#RemoveTargetsBySkill", from = target.id, to = tos, arg = ty_ex__qiaoshui.name, arg2 = data.card:toLogString() }
+    else
+      table.insert(data.tos, tos)
+      room:sendLog{ type = "#AddTargetsBySkill", from = target.id, to = tos, arg = ty_ex__qiaoshui.name, arg2 = data.card:toLogString() }
     end
   end,
 }
@@ -2750,9 +2742,10 @@ Fk:loadTranslationTable{
   ["#ty_ex__jianyong"] = "悠游风议",
   ["illustrator:ty_ex__jianyong"] = "黑羽",
   ["ty_ex__qiaoshui"] = "巧说",
-  [":ty_ex__qiaoshui"] = "出牌阶段，你可以与一名角色拼点。若你赢，本回合你使用下一张基本牌或普通锦囊牌可以多或少选择一个目标；若你没赢，你结束出牌阶段且本回合锦囊牌不计入手牌上限。",
-  ["#ty_ex__qiaoshui-choose"] = "巧说：你可以为%arg增加/减少至多 %arg2 个目标",
-  ["@ty_ex__qiaoshui-turn"] = "巧说",
+  [":ty_ex__qiaoshui"] = "出牌阶段，你可以与一名角色拼点。若你赢，本回合你使用下一张基本牌或普通锦囊牌可以多或少选择一个目标（无距离限制）；若你没赢，你结束出牌阶段且本回合锦囊牌不计入手牌上限。",
+  ["#ty_ex__qiaoshui-choose"] = "巧说：你可以为%arg增加/减少一个目标",
+  ["@@ty_ex__qiaoshui-turn"] = "巧说",
+  ["#ty_ex__qiaoshui-prompt"] = "巧说:与一名角色拼点，若赢，下一张基本牌或普通锦囊牌可增加或取消一个目标",
   ["#AddTargetsBySkill"] = "用于 %arg 的效果，%from 使用的 %arg2 增加了目标 %to",
   ["#RemoveTargetsBySkill"] = "用于 %arg 的效果，%from 使用的 %arg2 取消了目标 %to",
 

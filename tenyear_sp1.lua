@@ -3094,6 +3094,203 @@ Fk:loadTranslationTable{
   ["~godxuchu"] = "猛虎归林晚，不见往来人……",
 }
 
+local godhuatuo = General(extension, "ty__godhuatuo", "god", 3)
+Fk:loadTranslationTable{
+  ["ty__godhuatuo"] = "神华佗",
+  -- ["#ty__godhuatuo"] = "",
+  -- ["~ty__godhuatuo"] = "……",
+}
+
+local jingyu = fk.CreateTriggerSkill{
+  name = "jingyu",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.SkillEffect},
+  can_trigger = function(self, _, target, player, data)
+    return
+      player:hasSkill(self) and
+      data.visible and
+      data ~= self and
+      target and
+      target:hasSkill(data) and
+      not data:isEquipmentSkill() and
+      not table.contains(U.getMark(player, "jingyu_skills-round"), data.name)
+  end,
+  on_use = function(self, _, target, player, data)
+    local room = player.room
+    local skills = U.getMark(player, "jingyu_skills-round")
+    table.insertIfNeed(skills, data.name)
+    room:setPlayerMark(player, "jingyu_skills-round", skills)
+
+    player:drawCards(1, self.name)
+  end,
+}
+Fk:loadTranslationTable{
+  ["jingyu"] = "静域",
+  [":jingyu"] = "锁定技，每项技能每轮限一次，当一名角色发动除“静域”外的技能时，你摸一张牌。" ..
+  "<br/><font color='red'><b>注</b>：请暂不要反馈发动技能不触发静域的问题。</font>",
+}
+
+godhuatuo:addSkill(jingyu)
+
+local lvxin = fk.CreateActiveSkill{
+  name = "lvxin",
+  anim_type = "control",
+  prompt = "#lvxin",
+  card_num = 1,
+  target_num = 1,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) == Player.Hand
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+
+    room:obtainCard(target, effect.cards[1], false, fk.ReasonGive, player.id)
+    local round = math.min(5, room:getTag("RoundCount"))
+    local choice = room:askForChoice(
+      player,
+      { "lvxin_draw:::" .. round, "lvxin_discard:::" .. round },
+      self.name,
+      "#lvxin-choose::" .. target.id
+    )
+    if choice:startsWith("lvxin_discard") then
+      local canDiscard = table.filter(target:getCardIds("h"), function(id) return not target:prohibitDiscard(id) end)
+      if #canDiscard == 0 then
+        return false
+      end
+
+      local toDiscard = canDiscard
+      if #canDiscard > round then
+        toDiscard = table.random(canDiscard, round)
+      end
+
+      local hasSameName = table.find(
+        toDiscard,
+        function(id)
+          return Fk:getCardById(id).trueName == Fk:getCardById(effect.cards[1]).trueName
+        end
+      )
+      room:throwCard(toDiscard, self.name, target, target)
+      if hasSameName then
+        room:setPlayerMark(target, "@lvxinLoseHp", "lvxin_loseHp")
+      end
+    else
+      local idsDrawn = target:drawCards(round, self.name)
+      if table.find(idsDrawn, function(id) return Fk:getCardById(id).trueName == Fk:getCardById(effect.cards[1]).trueName end) then
+        room:setPlayerMark(target, "@lvxinRecover", "lvxin_recover")
+      end
+    end
+  end,
+}
+local lvxinDelayedEffect = fk.CreateTriggerSkill{
+  name = "#lvxin_delayed_effect",
+  mute = true,
+  events = {fk.SkillEffect},
+  can_trigger = function(self, _, target, player, data)
+    return
+      target == player and
+      data.visible and
+      target:hasSkill(data) and
+      (target:getMark("@lvxinLoseHp") ~= 0 or target:getMark("@lvxinRecover") ~= 0)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, _, target, player, data)
+    local room = player.room
+    local lvxinLoseHp = target:getMark("@lvxinLoseHp")
+    local lvxinRecover = target:getMark("@lvxinRecover")
+    room:setPlayerMark(target, "@lvxinLoseHp", 0)
+    room:setPlayerMark(target, "@lvxinRecover", 0)
+    if lvxinRecover ~= 0 then
+      room:recover{
+        who = target,
+        num = 1,
+        skillName = lvxin.name
+      }
+    end
+
+    if lvxinLoseHp ~= 0 then
+      room:loseHp(target, 1, lvxin.name)
+    end
+  end,
+}
+Fk:loadTranslationTable{
+  ["lvxin"] = "滤心",
+  [":lvxin"] = "出牌阶段限一次，你可以交给一名其他角色一张手牌，然后选择一项：1.令其摸X张牌；2.令其随机弃置X张手牌（X为游戏轮数且至多为5）。" ..
+  "若其以此法摸到/弃置与你交给其的牌牌名相同的牌，则其下次发动技能时，其回复1点体力/失去1点体力。",
+  ["#lvxin"] = "滤心：你可交给其他角色手牌，令其摸牌或弃牌",
+  ["#lvxin_delayed_effect"] = "滤心",
+  ["lvxin_draw"] = "令其摸%arg张牌",
+  ["lvxin_discard"] = "令其随机弃置%arg张手牌",
+  ["@lvxinRecover"] = "滤心",
+  ["@lvxinLoseHp"] = "滤心",
+  ["lvxin_loseHp"] = "失去体力",
+  ["lvxin_recover"] = "回复体力",
+}
+
+lvxin:addRelatedSkill(lvxinDelayedEffect)
+godhuatuo:addSkill(lvxin)
+
+local huandao = fk.CreateActiveSkill{
+  name = "huandao",
+  anim_type = "support",
+  prompt = "#huandao",
+  card_num = 0,
+  target_num = 1,
+  frequency = Skill.Limited,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local target = room:getPlayerById(effect.tos[1])
+
+    target:reset()
+    local sameGenerals = Fk:getSameGenerals(target.general)
+    if #sameGenerals == 0 and target.deputyGeneral then
+      table.insertTableIfNeed(sameGenerals, Fk:getSameGenerals(target.deputyGeneral))
+    end
+
+    if #sameGenerals == 0 then
+      return
+    end
+
+    local randomSkill = table.random(Fk.generals[table.random(sameGenerals)]:getSkillNameList())
+    if room:askForSkillInvoke(target, self.name, nil, "#huandao-choose:::" .. randomSkill) then
+      room:handleAddLoseSkills(target, randomSkill)
+      local toLose = {}
+      for _, s in ipairs(target.player_skills) do
+        if not (s.attached_equip or s.name[#s.name] == "&" or s.name == randomSkill) then
+          table.insertIfNeed(toLose, s.name)
+        end
+      end
+
+      if #toLose > 0 then
+        local choice = room:askForChoice(target, toLose, self.name, "#huandao-lose")
+        room:handleAddLoseSkills(target, "-" .. choice)
+      end
+    end
+  end,
+}
+Fk:loadTranslationTable{
+  ["huandao"] = "寰道",
+  [":huandao"] = "限定技，出牌阶段，你可以选择一名其他角色，令其复原武将牌，然后其可随机获得一项同名武将的技能并选择失去一项其他技能。",
+  ["#huandao"] = "寰道：你可令其他角色复原武将牌并获得同名武将技能",
+  ["#huandao-choose"] = "寰道：你可以获得技能“%arg”，然后选择另一项技能失去",
+  ["#huandao-lose"] = "寰道：请选择你要失去的技能",
+}
+
+godhuatuo:addSkill(huandao)
+
 --百战虎贲：兀突骨 文鸯 夏侯霸 皇甫嵩 王双 留赞 黄祖 雷铜 吴兰 陈泰 王濬 杜预 陈武董袭 丁奉（同OL） 胡遵
 local wutugu = General(extension, "ty__wutugu", "qun", 15)
 local ty__ranshang = fk.CreateTriggerSkill{

@@ -5,6 +5,7 @@ local U = require "packages/utility/utility"
 
 Fk:loadTranslationTable{
   ["tenyear_sp2"] = "十周年-限定专属2",
+  ["tysp"] = "新服SP",
 }
 
 --计将安出：程昱 王允 蒋干 赵昂 刘晔 杨弘 郤正 桓范 刘琦
@@ -5298,7 +5299,7 @@ local zhimin = fk.CreateTriggerSkill{
         end
       end
       if #toObtain > 0 then
-        room:moveCardTo(toObtain, Player.Hand, player, fk.ReasonPrey, self.name, "", true, player.id)
+        room:moveCardTo(toObtain, Player.Hand, player, fk.ReasonPrey, self.name, "", false, player.id)
       end
     end
   end,
@@ -5368,17 +5369,179 @@ Fk:loadTranslationTable{
 }
 
 --往者可谏：大乔小乔 SP马超 SP赵云 SP甄姬
+local zhenji = General(extension, "tysp__zhenji", "qun", 3, 3, General.Female)
+local jijiez = fk.CreateTriggerSkill{
+  name = "jijiez",
+  events = {fk.AfterCardsMove, fk.HpRecover},
+  frequency = Skill.Compulsory,
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      if event == fk.AfterCardsMove then
+        if player:getMark("jijiez_draw-turn") > 0 then return false end
+        local ban_players = {player.id}
+        if player.room.current.phase ~= Player.NotActive then
+          table.insert(ban_players, player.room.current.id)
+        end
+        local x = 0
+        for _, move in ipairs(data) do
+          if move.to and not table.contains(ban_players, move.to) and move.toArea == Card.PlayerHand then
+            x = x + #move.moveInfo
+          end
+        end
+        if x > 0 then
+          self.cost_data = x
+          return true
+        end
+      elseif event == fk.HpRecover then
+        return player:getMark("jijiez_recover-turn") == 0 and not player:isWounded() and
+        target ~= player and target.phase == Player.NotActive
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke(self.name)
+    if event == fk.AfterCardsMove then
+      room:notifySkillInvoked(player, self.name, "drawcard")
+      room:setPlayerMark(player, "jijiez_draw-turn", 1)
+      player:drawCards(self.cost_data, self.name)
+    elseif event == fk.HpRecover then
+      room:notifySkillInvoked(player, self.name, "support")
+      room:setPlayerMark(player, "jijiez_recover-turn", 1)
+      room:recover{
+        who = player,
+        num = data.num,
+        recoverBy = player,
+        skillName = self.name,
+      }
+    end
+  end,
+}
+local huiji__amazingGraceSkill = fk.CreateActiveSkill{
+  name = "huiji__amazing_grace_skill",
+  prompt = "#amazing_grace_skill",
+  can_use = Util.GlobalCanUse,
+  on_use = Util.GlobalOnUse,
+  mod_target_filter = Util.TrueFunc,
+  on_action = function(self, room, use, finished)
+    local player = room:getPlayerById(use.from)
+    if not finished then
+      local toDisplay = player:getCardIds(Player.Hand)
+      room:moveCardTo(toDisplay, Card.Processing, nil, fk.ReasonJustMove, "amazing_grace_skill", "", true, player.id)
 
+      table.forEach(room.players, function(p)
+        room:fillAG(p, toDisplay)
+      end)
+
+      use.extra_data = use.extra_data or {}
+      use.extra_data.AGFilled = toDisplay
+    else
+      if use.extra_data and use.extra_data.AGFilled then
+        table.forEach(room.players, function(p)
+          room:closeAG(p)
+        end)
+
+        local toDiscard = table.filter(use.extra_data.AGFilled, function(id)
+          return room:getCardArea(id) == Card.Processing
+        end)
+
+        if #toDiscard > 0 then
+          if player.dead then
+            room:moveCards({
+              ids = toDiscard,
+              toArea = Card.DiscardPile,
+              moveReason = fk.ReasonPutIntoDiscardPile,
+            })
+          else
+            room:moveCardTo(toDiscard, Card.PlayerHand, player, fk.ReasonJustMove, "amazing_grace_skill", "", true, player.id)
+          end
+        end
+      end
+
+      use.extra_data.AGFilled = nil
+    end
+  end,
+  on_effect = function(self, room, effect)
+    local to = room:getPlayerById(effect.to)
+    if not (effect.extra_data and effect.extra_data.AGFilled and #effect.extra_data.AGFilled > 0) then
+      return
+    end
+
+    local chosen = room:askForAG(to, effect.extra_data.AGFilled, false, "amazing_grace_skill")
+    room:takeAG(to, chosen, room.players)
+    room:obtainCard(effect.to, chosen, true, fk.ReasonPrey)
+    table.removeOne(effect.extra_data.AGFilled, chosen)
+  end,
+}
+Fk:addSkill(huiji__amazingGraceSkill)
+local huiji = fk.CreateActiveSkill{
+  name = "huiji",
+  target_num = 1,
+  card_num = 0,
+  prompt = "#huiji-active",
+  anim_type = "control",
+  interaction = function()
+    return UI.ComboBox {
+      choices = {"draw2", "huiji_equip"}
+    }
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    if self.interaction.data == "draw2" then
+      target:drawCards(2, self.name)
+    else
+      local cards = {}
+      for i = 1, #room.draw_pile, 1 do
+        local card = Fk:getCardById(room.draw_pile[i])
+        if card.type == Card.TypeEquip and target:canUseTo(card, target) then
+          table.insertIfNeed(cards, card)
+        end
+      end
+      if #cards > 0 then
+        room:useCard{
+          from = target.id,
+          card = cards[math.random(1, #cards)],
+          tos = {{target.id}},
+        }
+      end
+    end
+    if target.dead or target:getHandcardNum() < #room.alive_players then return end
+    local amazing_grace = Fk:cloneCard("amazing_grace")
+    amazing_grace.skillName = self.name
+    if target:prohibitUse(amazing_grace) or table.every(room.alive_players, function (p)
+      return target:isProhibited(p, amazing_grace)
+    end) then return end
+    amazing_grace.skill = huiji__amazingGraceSkill
+    room:useCard{
+      from = target.id,
+      card = amazing_grace
+    }
+  end,
+}
+zhenji:addSkill(jijiez)
+zhenji:addSkill(huiji)
 Fk:loadTranslationTable{
-  ["sp__zhenji"] = "甄姬",
-  ["#sp__zhenji"] = "",
-  --["illustrator:sp__zhenji"] = "",
+  ["tysp__zhenji"] = "甄姬",
+  ["#tysp__zhenji"] = "静女其娈",
+  --["illustrator:tysp__zhenji"] = "",
 
   ["jijiez"] = "己诫",
-  [":jijiez"] = "锁定技，当其他角色于其回合外得到牌/回复体力后，若你于此回合内未以此法摸过牌/回复过体力，你摸等量的牌/回复等量的体力。",
+  [":jijiez"] = "锁定技，当其他角色于其回合外得到牌/回复体力后，你摸等量的牌/回复等量的体力（每回合各限一次）。",
   ["huiji"] = "惠济",
-  [":huiji"] = "出牌阶段限一次，你可以令一名角色摸两张牌或随机使用牌堆中的一张装备牌。若其手牌数不小于存活角色数"..
-  "其视为使用【五谷丰登】，此【五谷丰登】的作用效果改为：目标角色观看使用者的手牌并获得其中的一张牌。",
+  [":huiji"] = "出牌阶段限一次，你可以令一名角色摸两张牌或使用牌堆中的一张随机装备牌。若其手牌数不小于存活角色数，"..
+  "其视为使用【五谷丰登】（改为从该角色的手牌中挑选）。",
+
+  ["#huiji-active"] = "发动 惠济，选择一名角色",
+  ["huiji_equip"] = "使用装备",
 
   ["$jijiez1"] = "",
   ["$jijiez2"] = "",

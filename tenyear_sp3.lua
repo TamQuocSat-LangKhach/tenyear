@@ -3173,7 +3173,7 @@ Fk:loadTranslationTable{
   ["~wm__luxun"] = "此生清白，不为浊泥所染……",
 }
 
-local guanyu = General(extension, "wm__guanyu", "shu", 4)
+local guanyu = General(extension, "wm__guanyu", "shu", 5)
 local juewu = fk.CreateViewAsSkill{
   name = "juewu",
   prompt = "#juewu-viewas",
@@ -3188,11 +3188,11 @@ local juewu = fk.CreateViewAsSkill{
           table.insertIfNeed(names, card.name)
         end
       end
-      table.insertIfNeed(names, "ty__drowning")
+      table.insertIfNeed(names, "drowning")
       Self:setMark("juewu_names", names)
     end
     local choices = U.getViewAsCardNames(Self, "juewu", names, nil, U.getMark(Self, "juewu-turn"))
-    if #choices == 0 then return false end
+    if #choices == 0 then return end
     return UI.ComboBox { choices = choices, all_choices = names }
   end,
   card_filter = function(self, to_select, selected)
@@ -3224,7 +3224,7 @@ local juewu = fk.CreateViewAsSkill{
           table.insertIfNeed(names, card.name)
         end
       end
-      table.insertIfNeed(names, "ty__drowning")
+      table.insertIfNeed(names, "drowning")
       player:setMark("juewu_names", names)
     end
     local mark = U.getMark(player, "juewu-turn")
@@ -3249,7 +3249,7 @@ local juewu = fk.CreateViewAsSkill{
           table.insertIfNeed(names, card.name)
         end
       end
-      table.insertIfNeed(names, "ty__drowning")
+      table.insertIfNeed(names, "drowning")
       player:setMark("juewu_names", names)
     end
     local mark = U.getMark(player, "juewu-turn")
@@ -3306,7 +3306,6 @@ local juewu_filter = fk.CreateFilterSkill{
     return Fk:cloneCard(card.name, card.suit, 2)
   end,
 }
-
 local wuyou = fk.CreateActiveSkill{
   name = "wuyou",
   prompt = "#wuyou-active",
@@ -3319,16 +3318,35 @@ local wuyou = fk.CreateActiveSkill{
   target_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
+    local target = effect.tos and #effect.tos > 0 and room:getPlayerById(effect.tos[1]) or player
     local card_names = player:getMark("wuyou_names")
     if type(card_names) ~= "table" then
-      card_names = U.getAllCardNames("bt")
+      card_names = {}
+      local tmp_names = {}
+      local card, index
+      for _, id in ipairs(Fk:getAllCardIds()) do
+        card = Fk:getCardById(id)
+        if not card.is_derived and card.type ~= Card.TypeEquip then
+          index = table.indexOf(tmp_names, card.trueName)
+          if index == -1 then
+            table.insert(tmp_names, card.trueName)
+            table.insert(card_names, {card.name})
+          else
+            table.insertIfNeed(card_names[index], card.name)
+          end
+        end
+      end
       room:setPlayerMark(player, "wuyou_names", card_names)
     end
     if #card_names == 0 then return end
-    card_names = table.random(card_names, 5)
+    card_names = table.connect(table.unpack(table.random(card_names, 5)))
     local success, dat = room:askForUseActiveSkill(player, "wuyou_declare",
-    "#wuyou-declare::" .. player.id, false, { interaction_choices = card_names })
+    "#wuyou-declare::" .. target.id, false, { interaction_choices = card_names })
     local id = success and dat.cards[1] or table.random(player:getCardIds(Player.Hand))
+    if target ~= player then
+      room:moveCardTo(id, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
+      if room:getCardArea(id) ~= Player.Hand or room:getCardOwner(id) ~= target then return end
+    end
     local card_name = success and dat.interaction or card_names[1]
     room:setCardMark(Fk:getCardById(id), "@@wuyou-inhand", card_name)
   end,
@@ -3336,23 +3354,40 @@ local wuyou = fk.CreateActiveSkill{
 local wuyou_refresh = fk.CreateTriggerSkill{
   name = "#wuyou_refresh",
 
-  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
+  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim, fk.BeforeCardUseEffect},
   can_refresh = function(self, event, target, player, data)
     if event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
       return data == self
     elseif event == fk.BuryVictim then
       return player:hasSkill(self, true, true)
+    elseif event == fk.BeforeCardUseEffect then
+      --FIXME：锁视延迟锦囊的暂时对策
+      return data.card.sub_type == Card.SubtypeDelayedTrick and player == target and
+      not data.card:isVirtual() and table.contains(data.card.skillNames, "#wuyou_filter")
     end
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if table.every(room.alive_players, function(p) return not p:hasSkill(self, true) or p == player end) then
-      if player:hasSkill("wuyou&", true, true) then
-        room:handleAddLoseSkills(player, "-wuyou&", nil, false, true)
+    if event == fk.BeforeCardUseEffect then
+      --FIXME：锁视延迟锦囊的暂时对策
+      local tos = TargetGroup:getRealTargets(data.tos)
+      if #tos == 0 then return false end
+      local to = room:getPlayerById(tos[1])
+      if not (to.dead or to:hasDelayedTrick(data.card.name)) then
+        local card = Fk:cloneCard(data.card.name)
+        card.skillNames = data.card.skillNames
+        card:addSubcard(data.card.id)
+        to:addVirtualEquip(card)
       end
     else
-      if not player:hasSkill("wuyou&", true, true) then
-        room:handleAddLoseSkills(player, "wuyou&", nil, false, true)
+      if table.every(room.alive_players, function(p) return not p:hasSkill(self, true) or p == player end) then
+        if player:hasSkill("wuyou&", true, true) then
+          room:handleAddLoseSkills(player, "-wuyou&", nil, false, true)
+        end
+      else
+        if not player:hasSkill("wuyou&", true, true) then
+          room:handleAddLoseSkills(player, "wuyou&", nil, false, true)
+        end
       end
     end
   end,
@@ -3385,21 +3420,7 @@ local wuyou_active = fk.CreateActiveSkill{
     room:setPlayerMark(target, "wuyou_targets-phase", targetRecorded)
     room:moveCardTo(effect.cards, Player.Hand, player, fk.ReasonGive, self.name, nil, false, target.id)
     if player.dead or player:isKongcheng() or target.dead then return end
-    local card_names = player:getMark("wuyou_names")
-    if type(card_names) ~= "table" then
-      card_names = U.getAllCardNames("bt")
-      room:setPlayerMark(player, "wuyou_names", card_names)
-    end
-    if #card_names == 0 then return end
-    card_names = table.random(card_names, 5)
-    local success, dat = room:askForUseActiveSkill(player, "wuyou_declare",
-    "#wuyou-declare::" .. target.id, false, { interaction_choices = card_names })
-    local id = success and dat.cards[1] or table.random(player:getCardIds(Player.Hand))
-    local card_name = success and dat.interaction or card_names[1]
-    room:moveCardTo(id, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
-    if room:getCardArea(id) == Player.Hand and room:getCardOwner(id) == target then
-      room:setCardMark(Fk:getCardById(id), "@@wuyou-inhand", card_name)
-    end
+    wuyou:onUse(room, {from = player.id, tos = {target.id}})
   end,
 }
 local wuyou_declare = fk.CreateActiveSkill{
@@ -3416,6 +3437,7 @@ local wuyou_declare = fk.CreateActiveSkill{
 }
 local wuyou_filter = fk.CreateFilterSkill{
   name = "#wuyou_filter",
+  mute = true,
   card_filter = function(self, card, player, isJudgeEvent)
     return card:getMark("@@wuyou-inhand") ~= 0 and table.contains(player.player_cards[Player.Hand], card.id)
   end,
@@ -3494,7 +3516,6 @@ local yixian = fk.CreateActiveSkill{
     end
   end,
 }
-
 Fk:addSkill(wuyou_active)
 Fk:addSkill(wuyou_declare)
 juewu:addRelatedSkill(juewu_trigger)
@@ -3505,7 +3526,6 @@ wuyou:addRelatedSkill(wuyou_targetmod)
 guanyu:addSkill(juewu)
 guanyu:addSkill(wuyou)
 guanyu:addSkill(yixian)
-
 Fk:loadTranslationTable{
   ["wm__guanyu"] = "武关羽",
   --["#wm__guanyu"] = "",
@@ -3513,8 +3533,8 @@ Fk:loadTranslationTable{
   ["juewu"] = "绝武",
   [":juewu"] = "你可以将点数为2的牌当伤害牌或【水淹七军】使用（每回合每种牌名限一次）。当你得到其他角色的牌后，这些牌的点数视为2。",
   ["wuyou"] = "武佑",
-  [":wuyou"] = "出牌阶段限一次，你可以从五个随机的基本牌或普通锦囊牌的牌名中选择一个并选择你的一张手牌，此牌视为你声明的牌且无距离和次数限制。"..
-  "其他角色的出牌阶段限一次，其可以将一张手牌交给你，然后你可以从五个随机的基本牌或普通锦囊牌的牌名中选择一个并将一张手牌交给该角色，"..
+  [":wuyou"] = "出牌阶段限一次，你可以从五个随机的不为装备牌的牌名中选择一个并选择你的一张手牌，此牌视为你声明的牌且无距离和次数限制。"..
+  "其他角色的出牌阶段限一次，其可以将一张手牌交给你，然后你可以从五个随机的不为装备牌的牌名中选择一个并将一张手牌交给该角色，"..
   "此牌视为你声明的牌且无距离和次数限制。",
   ["yixian"] = "义贤",
   [":yixian"] = "限定技，出牌阶段，你可以选择：1.获得场上的所有装备牌，你对以此法被你获得牌的角色依次可以令其摸等量的牌并回复1点体力；"..

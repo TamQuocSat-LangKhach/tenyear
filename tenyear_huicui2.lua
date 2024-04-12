@@ -4612,7 +4612,6 @@ Fk:loadTranslationTable{
 }
 
 local daqiao = General(extension, "mu__daqiao", "wu", 3, 3, General.Female)
-
 local qiqin = fk.CreateTriggerSkill{
   name = "qiqin",
   anim_type = "special",

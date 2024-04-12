@@ -1431,12 +1431,17 @@ Fk:loadTranslationTable{
   [":shiju&"] = "出牌阶段限一次，你可以将一张牌交给蒋济。",
   ["#shiju-active"] = "发动 势举，选择一张牌交给一名拥有“势举”的角色",
   ["#shiju-use"] = "势举：你可以使用%arg，令%src增加攻击范围",
-  ["@shiju-turn"] = "势举范围", 
+  ["@shiju-turn"] = "势举范围",
   ["#yingshij-invoke"] = "是否对%dest发动 应时",
   ["#yingshij-choose"] = "是否发动 应时，选择一名目标角色",
   ["#yingshij-discard"] = "应时：弃置%arg张牌，令【%arg2】对你无效，或者点取消则此牌对你额外结算一次",
   ["#yingshij_delay"] = "应时",
 
+  ["$shiju1"] = "借力为己用，可攀青云直上。",
+  ["$shiju2"] = "应势而动，事半而功倍。",
+  ["$yingshij1"] = "今君失道寡助，何不审时以降？",
+  ["$yingshij2"] = "君既掷刀于地，可保富贵无虞。",
+  ["~tymou__jiangji"] = "",
 }
 
 return extension

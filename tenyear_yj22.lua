@@ -1023,7 +1023,7 @@ local diezhang = fk.CreateTriggerSkill{
   switch_skill_name = "diezhang",
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and data.responseToEvent then
+    if player:hasSkill(self) and data.responseToEvent and data.responseToEvent.from then
       if player:getSwitchSkillState(self.name, false) == fk.SwitchYang then
         if data.responseToEvent.from == player.id and not player:isNude() then
           return target ~= player and not target.dead and not player:isProhibited(target, Fk:cloneCard("slash"))

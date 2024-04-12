@@ -107,26 +107,23 @@ local shanshen = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.Death},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and target ~= player and not player.dead
+    return player:hasSkill(self)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     AddYuqi(player, self.name, 2)
-    if target:getMark(self.name) == 0 and player:isWounded() then
+    if player:isWounded() and #U.getActualDamageEvents(player.room, 1, function(e)
+      local damage = e.data[1]
+      if damage.from == player and damage.to == target then
+        return true
+      end
+    end, nil, 0) == 0 then
       room:recover{
         who = player,
         num = 1,
         skillName = self.name,
       }
     end
-  end,
-
-  refresh_events = {fk.DamageCaused},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and target:hasSkill(self) and data.to:getMark(self.name) == 0
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:setPlayerMark(data.to, self.name, 1)
   end,
 }
 local xianjing = fk.CreateTriggerSkill{
@@ -163,7 +160,7 @@ Fk:loadTranslationTable{
   [":yuqi"] = "每回合限两次，当一名角色受到伤害后，若你与其距离0或者更少，你可以观看牌堆顶的3张牌，将其中至多1张交给受伤角色，"..
   "至多1张自己获得，剩余的牌放回牌堆顶。",
   ["shanshen"] = "善身",
-  [":shanshen"] = "当有角色死亡时，你可令〖隅泣〗中的一个数字+2（单项不能超过5）。然后若你没有对死亡角色造成过伤害，你回复1点体力。",
+  [":shanshen"] = "当一名角色死亡时，你可令〖隅泣〗中的一个数字+2（单项不能超过5）。若你没有对其造成过伤害，你回复1点体力。",
   ["xianjing"] = "娴静",
   [":xianjing"] = "准备阶段，你可令〖隅泣〗中的一个数字+1（单项不能超过5）。若你满体力值，则再令〖隅泣〗中的一个数字+1。",
   ["@yuqi"] = "隅泣",
@@ -1353,51 +1350,52 @@ local ty__gushe = fk.CreateActiveSkill{
   card_num = 0,
   min_target_num = 1,
   max_target_num = 3,
+  prompt = "#ty__gushe-active",
   can_use = function(self, player)
-    return not player:isKongcheng() and player:getMark("ty__gushe-turn") < 7 - player:getMark("@ty__raoshe")
+    return not player:isKongcheng() and player:getMark("@@ty__gushe-turn") == 0
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
-    return #selected < 3 and to_select ~= Self.id and Self:canPindian(Fk:currentRoom():getPlayerById(to_select))
+    return #selected < 3 and Self:canPindian(Fk:currentRoom():getPlayerById(to_select))
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local targets = table.map(effect.tos, function(p) return room:getPlayerById(p) end)
     local pindian = player:pindian(targets, self.name)
-    for _, target in ipairs(targets) do
-      local losers = {}
-      if pindian.results[target.id].winner then
-        if pindian.results[target.id].winner == player then
-          table.insert(losers, target)
-        else
-          table.insert(losers, player)
-        end
-      else
-        table.insert(losers, player)
-        table.insert(losers, target)
+  end,
+}
+local ty__gushe_delay = fk.CreateTriggerSkill{
+  name = "#ty__gushe_delay",
+  events = {fk.PindianResultConfirmed},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return data.reason == "ty__gushe" and data.from == player
+    --王朗死亡后依旧有效
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if not player.dead and data.winner ~= player then
+      room:addPlayerMark(player, "@ty__raoshe", 1)
+      if player:getMark("@ty__raoshe") >= 7 then
+        room:killPlayer({who = player.id,})
       end
-      for _, p in ipairs(losers) do
-        if p == player then
-          room:addPlayerMark(player, "@ty__raoshe", 1)
-          if player:getMark("@ty__raoshe") >= 7 then
-            room:killPlayer({who = player.id,})
-          end
+      if not player.dead then
+        if #room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#ty__gushe-discard:"..player.id) == 0 then
+          player:drawCards(1, self.name)
         end
-        local cancelable = true
-        local prompt = "#ty__gushe-discard:"..player.id
-        if player.dead then
-          cancelable = false
-          prompt = "#ty__gushe2-discard"
-        end
-        if #room:askForDiscard(p, 1, 1, true, self.name, cancelable, ".", prompt) == 0 and not player.dead then
+      end
+    end
+    if not data.to.dead and data.winner ~= data.to then
+      if player.dead then
+        room:askForDiscard(data.to, 1, 1, true, self.name, false, ".", "#ty__gushe2-discard")
+      else
+        if #room:askForDiscard(data.to, 1, 1, true, self.name, true, ".", "#ty__gushe-discard:"..player.id) == 0 then
           player:drawCards(1, self.name)
         end
       end
     end
   end,
-}
-local ty__gushe_record = fk.CreateTriggerSkill{
-  name = "#ty__gushe_record",
 
   refresh_events = {fk.PindianResultConfirmed},
   can_refresh = function(self, event, target, player, data)
@@ -1459,26 +1457,19 @@ local ty__jici = fk.CreateTriggerSkill{
         end
       end
       if #cards > 0 then
-        local dummy = Fk:cloneCard("dilu")
-        dummy:addSubcards(cards)
-        room:obtainCard(player.id, dummy, true, fk.ReasonJustMove)
+        room:moveCardTo(cards, Player.Hand, player, fk.ReasonJustMove, self.name, "", true, player.id)
       end
     elseif event == fk.Death then
       local n = 7 - player:getMark("@ty__raoshe")
-      if n > 0 and not data.damage.from:isNude() then
-        if #data.damage.from:getCardIds{Player.Hand, Player.Equip} <= n then
-          data.damage.from:throwAllCards("he")
-        else
-          room:askForDiscard(data.damage.from, n, n, true, self.name, false)
-        end
+      if n > 0 then
+        room:askForDiscard(data.damage.from, n, n, true, self.name, false)
+        if data.damage.from.dead then return false end
       end
-      if not data.damage.from.dead then
-        room:loseHp(data.damage.from, 1, self.name)
-      end
+      room:loseHp(data.damage.from, 1, self.name)
     end
   end,
 }
-ty__gushe:addRelatedSkill(ty__gushe_record)
+ty__gushe:addRelatedSkill(ty__gushe_delay)
 wanglang:addSkill(ty__gushe)
 wanglang:addSkill(ty__jici)
 Fk:loadTranslationTable{
@@ -1491,8 +1482,10 @@ Fk:loadTranslationTable{
   ["ty__jici"] = "激词",
   [":ty__jici"] = "锁定技，当你的拼点牌亮出后，若此牌点数小于等于X，则点数+X（X为“饶舌”标记的数量）且你获得本次拼点中点数最大的牌。"..
   "你死亡时，杀死你的角色弃置7-X张牌并失去1点体力。",
+  ["#ty__gushe-active"] = "发动 鼓舌，与1-3名角色拼点！",
   ["#ty__gushe-discard"] = "鼓舌：你需弃置一张牌，否则 %src 摸一张牌",
   ["#ty__gushe2-discard"] = "鼓舌：你需弃置一张牌",
+  ["#ty__gushe_delay"] = "鼓舌",
   ["@@ty__gushe-turn"] = "鼓舌失效",
   ["@ty__raoshe"] = "饶舌",
 
@@ -1683,6 +1676,14 @@ local geyuan = fk.CreateTriggerSkill{
     else
       room:setPlayerMark(player, "@[geyuan]", circle_data)
     end
+  end,
+
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == self
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@[geyuan]", 0)
   end,
 }
 local geyuan_start = fk.CreateTriggerSkill{
@@ -2034,46 +2035,42 @@ local ty__luochong = fk.CreateTriggerSkill{
     return player:hasSkill(self) and player:getMark(self.name) < 4 and
       not table.every(player.room.alive_players, function (p) return p:isAllNude() end)
   end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    local targets = table.map(table.filter(room.alive_players, function(p) return not p:isAllNude() end), Util.IdMapper)
-    local to = room:askForChoosePlayers(player, targets, 1, 1,
-      "#ty__luochong-choose:::"..tostring(4 - player:getMark(self.name))..":"..tostring(4 - player:getMark(self.name)), self.name, true)
-    if #to > 0 then
-      self.cost_data = to[1]
-      return true
-    end
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local total = 4 - player:getMark(self.name)
     local n = total
-    local to = room:getPlayerById(self.cost_data)
+    local to, targets, cards
+    local luochong_map = {}
     repeat
-      local cards = room:askForCardsChosen(player, to, 1, n, "hej", self.name)
-      if #cards > 0 then
-        room:throwCard(cards, self.name, to, player)
-        room:addPlayerMark(to, "ty__luochong_target", #cards)
-        n = n - #cards
-        if n <= 0 then break end
-      end
-      local targets = table.map(table.filter(room.alive_players, function(p)
+      targets = table.map(table.filter(room.alive_players, function(p)
         return not p:isAllNude() end), Util.IdMapper)
       if #targets == 0 then break end
-      local tos = room:askForChoosePlayers(player, targets, 1, 1,
+      targets = room:askForChoosePlayers(player, targets, 1, 1,
         "#ty__luochong-choose:::"..tostring(total)..":"..tostring(n), self.name, true)
-      if #tos > 0 then
-        to = room:getPlayerById(tos[1])
-      else
+      if #targets == 0 then break end
+      to = room:getPlayerById(targets[1])
+      cards = room:askForCardsChosen(player, to, 1, n, "hej", self.name)
+      room:throwCard(cards, self.name, to, player)
+      luochong_map[to.id] = luochong_map[to.id] or 0
+      luochong_map[to.id] = luochong_map[to.id] + #cards
+      n = n - #cards
+      if n <= 0 then break end
+    until total == 0 or player.dead
+    for _, value in pairs(luochong_map) do
+      if value > 2 then
+        room:addPlayerMark(player, self.name, 1)
         break
       end
-    until total == 0 or player.dead
-    if table.find(room.players, function(p) return p:getMark("ty__luochong_target") > 2 end) then
-      room:addPlayerMark(player, self.name, 1)
     end
-    for _, p in ipairs(room.players) do
-      room:setPlayerMark(p, "ty__luochong_target", 0)
-    end
+  end,
+
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == self
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, self.name, 0)
   end,
 }
 local ty__aichen = fk.CreateTriggerSkill{
@@ -3267,7 +3264,7 @@ local juewu_trigger = fk.CreateTriggerSkill{
   name = "#juewu_trigger",
   events = {fk.AfterCardsMove},
   anim_type = "control",
-  main_skill = juewu,
+  mute = true,
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(juewu) then return false end
     local cards = {}

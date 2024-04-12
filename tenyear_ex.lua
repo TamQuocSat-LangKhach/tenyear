@@ -253,7 +253,7 @@ local ty_ex__enyuan = fk.CreateTriggerSkill{
           end
         end
       else
-        return target == player and data.from and data.from ~= player and not data.from.dead
+        return target == player and data.from and not data.from.dead
       end
     end
   end,
@@ -268,7 +268,7 @@ local ty_ex__enyuan = fk.CreateTriggerSkill{
       end
     else
       for i = 1, data.damage do
-        if data.from.dead or player.dead then break end
+        if i > 1 and (data.from.dead or not player:hasSkill(self)) then break end
         self:doCost(event, target, player, data)
       end
     end
@@ -291,15 +291,19 @@ local ty_ex__enyuan = fk.CreateTriggerSkill{
       player:broadcastSkillInvoke(self.name)
       room:notifySkillInvoked(player, self.name, "masochism")
       room:doIndicate(player.id, {data.from.id})
-      local card = room:askForCard(data.from, 1, 1, false, self.name, true, ".|.|.|hand|.|.", "#ty_ex__enyuan-give:"..player.id)
-      if #card > 0 then
-        local suit = Fk:getCardById(card[1]).suit
-        room:obtainCard(player, card[1], false, fk.ReasonGive, data.from.id)
-        if suit ~= Card.Heart then
-          player:drawCards(1, self.name)
-        end
+      if player == data.from then
+        room:loseHp(player, 1, self.name)
       else
-        room:loseHp(data.from, 1, self.name)
+        local card = room:askForCard(data.from, 1, 1, false, self.name, true, ".|.|.|hand|.|.", "#ty_ex__enyuan-give:"..player.id)
+        if #card > 0 then
+          local suit = Fk:getCardById(card[1]).suit
+          room:obtainCard(player, card[1], false, fk.ReasonGive, data.from.id)
+          if suit ~= Card.Heart then
+            player:drawCards(1, self.name)
+          end
+        else
+          room:loseHp(data.from, 1, self.name)
+        end
       end
     end
   end,

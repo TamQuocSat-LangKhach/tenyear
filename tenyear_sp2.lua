@@ -6016,33 +6016,7 @@ local xingzuo_delay = fk.CreateTriggerSkill{
     local to = room:getPlayerById(self.cost_data)
     local cards = to:getCardIds(Player.Hand)
     local n = #cards
-    room:moveCards({
-      from = to.id,
-      ids = cards,
-      toArea = Card.Processing,
-      moveReason = fk.ReasonExchange,
-      proposer = player.id,
-      skillName = xingzuo.name,
-      moveVisible = false,
-    })
-    if not to.dead then
-      room:moveCardTo(room:getNCards(3, "bottom"), Card.PlayerHand, to, fk.ReasonExchange, xingzuo.name, nil, false, player.id)
-    end
-    cards = table.filter(cards, function (id)
-      return room:getCardArea(id) == Card.Processing
-    end)
-    if #cards > 0 then
-      cards = table.random(cards, #cards)
-      room:moveCards({
-        ids = cards,
-        fromArea = Card.Processing,
-        toArea = Card.DrawPile,
-        moveReason = fk.ReasonExchange,
-        skillName = xingzuo.name,
-        moveVisible = false,
-        drawPilePosition = -1,
-      })
-    end
+    U.swapCardsWithPile(to, cards, room:getNCards(3, "bottom"), self.name, "Bottom")
     if n > 3 and not player.dead then
       room:loseHp(player, 1, xingzuo.name)
     end

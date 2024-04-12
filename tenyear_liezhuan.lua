@@ -379,19 +379,19 @@ local function getPingjianSkills(player, event)
 
       "yangjie", "hongyi", "m_ex__junxing", "m_ex__yanzhu", "ol_ex__changbiao", "yanxi", "jiwu", "xuanbei", "yushen", "guanxu",
       "ty__jianji", "wencan", "xiangmian", "zhuren", "changqu", "jiuxianc", "caizhuang", "ty__beini", "jichun", "tongwei",
-      "liangyan", "kuizhen"
+      "liangyan", "kuizhen", "huiji"
     },
     [fk.Damaged] = {
       "guixin", "ty__benyu", "ex__fankui", "ex__ganglie", "ex__yiji", "ex__jianxiong", "os_ex__enyuan", "chouce", "ol_ex__jieming",
       "fangzhu", "ty_ex__chengxiang", "huituo", "ty__wangxi", "yuce", "zhichi", "ty_ex__zhiyu", "wanggui", "qianlong", "dingcuo",
       "peiqi",
-      
-      "ty__jilei", "xianchou", "rangjie", "liejie", "os__fupan", "yuqi", "silun", "yashi", "qingxian", "xiace", "fumou",
+
+      "ty__jilei", "xianchou", "liejie", "os__fupan", "yuqi", "silun", "yashi", "qingxian", "xiace", "fumou",
     },
     [fk.EventPhaseStart] = {
       "ty_ex__zhiyan", "ex__biyue", "zuilun", "mozhi", "fujian", "kunfen", "ol_ex__jushou", "os_ex__bingyi", "miji", "zhengu",
       "juece", "sp__youdi", "kuanshi", "ty__jieying", "suizheng", "m_ex__jieyue",
-      
+
       "shenfu", "meihun", "pijing", "zhuihuan", "os__juchen", "os__xingbu", "ty_ex__jingce", "nuanhui", "sangu",
       "js__pianchong", "linghui", "huayi"
     },

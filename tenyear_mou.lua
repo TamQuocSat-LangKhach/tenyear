@@ -1441,7 +1441,7 @@ Fk:loadTranslationTable{
   ["$shiju2"] = "应势而动，事半而功倍。",
   ["$yingshij1"] = "今君失道寡助，何不审时以降？",
   ["$yingshij2"] = "君既掷刀于地，可保富贵无虞。",
-  ["~tymou__jiangji"] = "",
+  ["~tymou__jiangji"] = "大醉解忧，然忧无解，唯忘耳……",
 }
 
 return extension

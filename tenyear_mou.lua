@@ -909,19 +909,19 @@ local chenlue = fk.CreateActiveSkill{
     end)
     if #cards > 0 then
       room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
-      room:setPlayerMark(player, "chenlue-turn", cards)
+      room:setPlayerMark(player, "chenlue-phase", cards)
     end
   end,
 }
 local chenlue_delay = fk.CreateTriggerSkill{
   name = "#chenlue_delay",
-  events = {fk.TurnEnd},
-  frequency = Skill.Compulsory,
+  events = {fk.EventPhaseEnd},
+  anim_type = "negative",
   can_trigger = function(self, event, target, player, data)
-    if player.dead or player:getMark("chenlue-turn") == 0 then return false end
+    if player.dead or player:getMark("chenlue-phase") == 0 then return false end
     local areas = {Card.DrawPile, Card.DiscardPile, Card.PlayerHand, Card.PlayerEquip, Card.PlayerJudge}
     local room = player.room
-    local cards = table.filter(U.getMark(player, "chenlue-turn"), function (id)
+    local cards = table.filter(U.getMark(player, "chenlue-phase"), function (id)
       return table.contains(areas, room:getCardArea(id))
     end)
     if #cards > 0 then
@@ -952,7 +952,7 @@ Fk:loadTranslationTable{
   "你可以选择手牌数大于你的其中一个目标或使用者，对其造成1点伤害。",
   ["chenlue"] = "沉略",
   [":chenlue"] = "限定技，出牌阶段，你可以从牌堆、弃牌堆、场上或其他角色的手牌中获得所有“死士”牌，"..
-  "此回合结束时，将这些牌移出游戏直到你死亡。",
+  "此阶段结束时，将这些牌移出游戏直到你死亡。",
   ["@@expendables-inhand"] = "死士",
   ["#zhenrao-choose"] = "是否发动 震扰，对其中手牌数大于你的1名角色造成1点伤害",
   ["#zhenrao-invoke"] = "是否发动 震扰，对%dest造成1点伤害",

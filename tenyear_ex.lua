@@ -4341,7 +4341,7 @@ Fk:loadTranslationTable{
   ["#ty_ex__xianzhou-choose"] = "献州：对 %dest 攻击范围内至多 %arg 名角色各造成1点伤害",
 
   ["$ty_ex__qieting1"] = "谋略未定，窃听以察先机。",
-  ["$ty_ex__qieting2"] = "所见相同，何必谓我？",
+  ["$ty_ex__qieting2"] = "所见相同，何必畏我？",
   ["$ty_ex__xianzhou1"] = "举州请降，高枕无忧。",
   ["$ty_ex__xianzhou2"] = "州固可贵，然不及我儿安危。",
   ["~ty_ex__caifuren"] = "枉费妾身机关算尽……",

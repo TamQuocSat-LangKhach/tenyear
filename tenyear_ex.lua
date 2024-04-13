@@ -3099,7 +3099,7 @@ local ty_ex__panzhangmazhong = General(extension, "ty_ex__panzhangmazhong", "wu"
 local ty_ex__duodao = fk.CreateTriggerSkill{
   name = "ty_ex__duodao",
   anim_type = "control",
-  events = {fk.TargetConfirming},
+  events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and data.card.trueName == "slash" and not player:isNude() and data.from then
       local from = player.room:getPlayerById(data.from)

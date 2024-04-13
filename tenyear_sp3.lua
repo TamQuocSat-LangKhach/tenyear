@@ -1359,9 +1359,9 @@ local ty__gushe = fk.CreateActiveSkill{
     return #selected < 3 and Self:canPindian(Fk:currentRoom():getPlayerById(to_select))
   end,
   on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local targets = table.map(effect.tos, function(p) return room:getPlayerById(p) end)
-    local pindian = player:pindian(targets, self.name)
+    local tos = table.simpleClone(effect.tos)
+    room:sortPlayersByAction(tos)
+    room:getPlayerById(effect.from):pindian(table.map(tos, function(p) return room:getPlayerById(p) end), self.name)
   end,
 }
 local ty__gushe_delay = fk.CreateTriggerSkill{
@@ -1371,6 +1371,7 @@ local ty__gushe_delay = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return data.reason == "ty__gushe" and data.from == player
     --王朗死亡后依旧有效
+    --FIXME:多人拼点并不会按顺序结算→_→
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)

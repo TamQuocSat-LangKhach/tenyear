@@ -1794,9 +1794,7 @@ local jiufa = fk.CreateTriggerSkill{
     throw = result[1]
     get = result[2]
     if #get > 0 then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(get)
-      room:obtainCard(player.id, dummy, true, fk.ReasonJustMove)
+      room:moveCardTo(get, Player.Hand, player, fk.ReasonJustMove, self.name, "", true, player.id)
     end
     if #throw > 0 then
       room:moveCards({
@@ -1886,7 +1884,9 @@ local godmachao = General(extension, "godmachao", "god", 4)
 local shouli = fk.CreateViewAsSkill{
   name = "shouli",
   pattern = "slash,jink",
-  prompt = "#shouli-active",
+  prompt = function(self, card, selected_targets)
+    return "#shouli-" .. self.interaction.data
+  end,
   interaction = function()
     local names = {}
     local pat = Fk.currentResponsePattern
@@ -2064,7 +2064,8 @@ Fk:loadTranslationTable{
   ["hengwu"] = "横骛",
   [":hengwu"] = "当你使用或打出牌时，若你没有该花色的手牌，你可以摸X张牌（X为场上与此牌花色相同的装备数量）。",
 
-  ["#shouli-active"] = "发动狩骊，将场上的一张进攻马当【杀】、防御马当【闪】使用或打出",
+  ["#shouli-slash"] = "发动狩骊，将场上的一张进攻马当【杀】使用或打出，选择【杀】的目标角色",
+  ["#shouli-jink"] = "发动狩骊，将场上的一张防御马当【闪】使用或打出",
   ["@@shouli-turn"] = "狩骊",
   ["#shouli-horse"] = "狩骊：选择一名装备着 %arg 的角色",
   ["#shouli_trigger"] = "狩骊",

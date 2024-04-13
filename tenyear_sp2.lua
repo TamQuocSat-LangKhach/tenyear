@@ -3574,21 +3574,18 @@ local qianlong = fk.CreateTriggerSkill{
       toArea = Card.Processing,
       moveReason = fk.ReasonJustMove,
     })
-    local result = room:askForGuanxing(player, cards, {0, player:getLostHp()}, {}, self.name, true, {"qianlong_get", "qianlong_bottom"})
-    if #result.top > 0 then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(result.top)
-      room:obtainCard(player.id, dummy, true, fk.ReasonJustMove)
-    end
+    local result = U.askForGuanxing(player, cards, {0, 3}, {0, player:getLostHp()}, self.name, nil, true, {"Bottom", "toObtain"})
     if #result.bottom > 0 then
-      for _, id in ipairs(result.bottom) do
-        table.insert(room.draw_pile, id)
-      end
-      room:sendLog{
-        type = "#GuanxingResult",
-        from = player.id,
-        arg = #result.top,
-        arg2 = #result.bottom,
+      room:moveCardTo(result.bottom, Player.Hand, player, fk.ReasonJustMove, self.name, "", true, player.id)
+    end
+    if #result.top > 0 then
+      room:moveCards{
+        ids = result.top,
+        toArea = Card.DrawPile,
+        moveReason = fk.ReasonJustMove,
+        skillName = self.name,
+        drawPilePosition = -1,
+        moveVisible = true,
       }
     end
   end,
@@ -5394,7 +5391,7 @@ local jijiez = fk.CreateTriggerSkill{
           return true
         end
       elseif event == fk.HpRecover then
-        return player:getMark("jijiez_recover-turn") == 0 and not player:isWounded() and
+        return player:getMark("jijiez_recover-turn") == 0 and player:isWounded() and
         target ~= player and target.phase == Player.NotActive
       end
     end

@@ -406,8 +406,8 @@ local midu = fk.CreateActiveSkill{
       local choices = table.simpleClone(player.sealedSlots)
       local choice = room:askForChoice(player, choices, self.name, "#midu-resume")
       room:resumePlayerArea(player, {choice})
-      if not player:hasSkill("huomo", true) then
-        room:handleAddLoseSkills(player, "huomo", nil, true, false)
+      if not player:hasSkill("ty_ex__huomo", true) then
+        room:handleAddLoseSkills(player, "ty_ex__huomo", nil, true, false)
         room:setPlayerMark(player, self.name, 1)
       end
     end
@@ -423,7 +423,7 @@ local midu_trigger = fk.CreateTriggerSkill{
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "midu", 0)
-    room:handleAddLoseSkills(player, "-huomo", nil, true, false)
+    room:handleAddLoseSkills(player, "-ty_ex__huomo", nil, true, false)
   end,
 }
 local xianwang = fk.CreateDistanceSkill{
@@ -452,7 +452,7 @@ local xianwang = fk.CreateDistanceSkill{
 midu:addRelatedSkill(midu_trigger)
 huzhao:addSkill(midu)
 huzhao:addSkill(xianwang)
-huzhao:addRelatedSkill("huomo")
+huzhao:addRelatedSkill("ty_ex__huomo")
 Fk:loadTranslationTable{
   ["huzhao"] = "胡昭",
   ["#huzhao"] = "阖门守静",
@@ -474,8 +474,8 @@ Fk:loadTranslationTable{
   ["$midu2"] = "竹简册书，百读不厌。",
   ["$xianwang1"] = "浩气长存，以正压邪。",
   ["$xianwang2"] = "名彰千里，盗无敢侵。",
-  ["$huomo_huzhao1"] = "行文挥毫，得心应手。",
-  ["$huomo_huzhao2"] = "泼墨走笔，挥洒自如。",
+  ["$ty_ex__huomo_huzhao1"] = "行文挥毫，得心应手。",
+  ["$ty_ex__huomo_huzhao2"] = "泼墨走笔，挥洒自如。",
   ["~huzhao"] = "纵有清名，无益于世也。",
 }
 
@@ -4214,7 +4214,9 @@ Fk:loadTranslationTable{
   ["#mengyou"] = "蛮杰陷谋",
   ["illustrator:mengyou"] = "韩少侠&错落宇宙",
   ["manzhi"] = "蛮智",
-  [":manzhi"] = "准备阶段，你可以选择一名其他角色，然后选择一项：1.令其交给你两张牌，然后其视为使用一张无距离限制的【杀】；2.获得其区域内的至多两张牌，然后交给其等量牌并摸一张牌。结束阶段，若你的体力值与此回合准备阶段开始时相等，你可以执行此回合未选择过的一项。",
+  [":manzhi"] = "准备阶段，你可以选择一名其他角色，然后选择一项：1.令其交给你两张牌，然后其视为使用一张无距离限制的【杀】；"..
+  "2.获得其区域内的至多两张牌，然后交给其等量牌并摸一张牌。"..
+  "结束阶段，若你的体力值与此回合准备阶段开始时相等，你可以执行此回合未选择过的一项。",
 
   ["manzhi_active"] = "蛮智",
   ["#manzhi-ask"] = "你可对一名其他角色发动“蛮智”",
@@ -4325,7 +4327,7 @@ gongsunxiu:addSkill(kuizhen)
 Fk:loadTranslationTable{
   ["gongsunxiu"] = "公孙修",
   ["#gongsunxiu"] = "寸莛击钟",
-  ["illustrator:mengyou"] = "鬼画府",
+  ["illustrator:gongsunxiu"] = "鬼画府",
   ["gangu"] = "干蛊",
   [":gangu"] = "锁定技，当一名角色失去体力后，若你于当前回合内未发动过此技能，你摸两张牌，失去1点体力。",
   ["kuizhen"] = "溃阵",

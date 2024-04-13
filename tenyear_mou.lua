@@ -300,10 +300,10 @@ local pingliao = fk.CreateTriggerSkill{
   name = "pingliao",
   anim_type = "control",
   events = {fk.CardUsing},
+  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     return player == target and player:hasSkill(self) and data.card.trueName == "slash"
   end,
-  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local targets = table.filter(room:getAlivePlayers(), function (p)
@@ -1417,7 +1417,7 @@ jiangji:addSkill(yingshij)
 Fk:loadTranslationTable{
   ["tymou__jiangji"] = "谋蒋济",
   ["#tymou__jiangji"] = "策论万机",
-  --["illustrator:tymou__jiangji"] = "",
+  ["illustrator:tymou__jiangji"] = "错落宇宙",
   --["designer:tymou__jiangji"] = "",
 
   ["shiju"] = "势举",

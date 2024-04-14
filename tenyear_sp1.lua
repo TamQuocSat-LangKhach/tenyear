@@ -3258,8 +3258,27 @@ local huandao = fk.CreateActiveSkill{
 
     target:reset()
     local sameGenerals = Fk:getSameGenerals(target.general)
-    if #sameGenerals == 0 and target.deputyGeneral then
+    local trueName = Fk.generals[target.general].trueName
+    if trueName:startsWith("god") then
+      table.insertTableIfNeed(sameGenerals, Fk:getSameGenerals(string.sub(trueName, 4)))
+    else
+      table.insertTableIfNeed(sameGenerals, Fk:getSameGenerals("god" .. trueName))
+      if Fk.generals["god" .. trueName] then
+        table.insertIfNeed(sameGenerals, "god" .. trueName)
+      end
+    end
+    
+    if target.deputyGeneral and target.deputyGeneral ~= "" then
       table.insertTableIfNeed(sameGenerals, Fk:getSameGenerals(target.deputyGeneral))
+      trueName = Fk.generals[target.deputyGeneral].trueName
+      if trueName:startsWith("god") then
+        table.insertTableIfNeed(sameGenerals, Fk:getSameGenerals(string.sub(trueName, 4)))
+      else
+        table.insertTableIfNeed(sameGenerals, Fk:getSameGenerals("god" .. trueName))
+        if Fk.generals["god" .. trueName] then
+          table.insertIfNeed(sameGenerals, "god" .. trueName)
+        end
+      end
     end
 
     if #sameGenerals == 0 then

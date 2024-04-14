@@ -2649,7 +2649,7 @@ Fk:loadTranslationTable{
   ["#deshao-invoke"] = "德劭：你可以摸一张牌，然后若 %dest 手牌数不少于你，你弃置其一张牌",
   ["#mingfa-choose"] = "明伐：将%arg置为“明伐”，选择一名角色，其结束阶段视为对其使用其手牌张数次“明伐”牌",
   ["@@mingfa"] = "明伐",
-  
+
   ["$deshao1"] = "名德远播，朝野俱瞻。",
   ["$deshao2"] = "增修德信，以诚服人。",
   ["$mingfa1"] = "煌煌大势，无须诈取。",
@@ -2677,11 +2677,7 @@ local ty__zhubi = fk.CreateTriggerSkill{
     end
   end,
   on_cost = function(self, event, target, player, data)
-    local room = player.room
-    if table.find(room.draw_pile, function(id) return Fk:getCardById(id).name == "ex_nihilo" end) or
-      table.find(room.discard_pile, function(id) return Fk:getCardById(id).name == "ex_nihilo" end) then
-      return room:askForSkillInvoke(player, self.name, nil, "#ty__zhubi-invoke")
-    end
+    return player.room:askForSkillInvoke(player, self.name, nil, "#ty__zhubi-invoke")
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -2706,118 +2702,96 @@ local ty__zhubi = fk.CreateTriggerSkill{
 }
 local liuzhuan = fk.CreateTriggerSkill{
   name = "liuzhuan",
-  anim_type = "drawcard",
+  anim_type = "defensive",
   frequency = Skill.Compulsory,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self) then return false end
     local room = player.room
     local current = room.current
-    if current == nil or current == player or current.phase == Player.NotActive then return false end
+    if current == player or current.phase == Player.NotActive then return false end
+    local toMarked, toObtain = {}, {}
+    local id
     for _, move in ipairs(data) do
       if current.phase ~= Player.Draw and move.to == current.id and move.toArea == Card.PlayerHand then
         for _, info in ipairs(move.moveInfo) do
-          local id = info.cardId
+          id = info.cardId
           if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == current then
-            return true
+            table.insert(toMarked, id)
           end
         end
       end
-      local mark = player:getMark("liuzhuan_record")
-      if move.toArea == Card.DiscardPile and type(mark) == "table" then
+      local mark = U.getMark(player, "liuzhuan_record-turn")
+      if move.toArea == Card.DiscardPile and #mark > 0 then
         for _, info in ipairs(move.moveInfo) do
+          id = info.cardId
           --for stupid manjuan
-          if info.fromArea ~= Card.DiscardPile and table.contains(mark, info.cardId) and room:getCardArea(info.cardId) == Card.DiscardPile then
-            return true
+          if info.fromArea ~= Card.DiscardPile and table.removeOne(mark, id) and room:getCardArea(id) == Card.DiscardPile then
+            table.insert(toObtain, id)
           end
         end
+      end
+      toObtain = U.moveCardsHoldingAreaCheck(room, toObtain)
+      if #toMarked > 0 or #toObtain > 0 then
+        self.cost_data = {toMarked, toObtain}
+        return true
       end
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local mark = player:getMark("liuzhuan_record")
-    if mark == 0 then mark = {} end
-    local current = room.current
-    local toObtain = {}
-    for _, move in ipairs(data) do
-      if current and current.phase ~= Player.Draw and move.to == current.id and move.toArea == Card.PlayerHand then
-        for _, info in ipairs(move.moveInfo) do
-          local id = info.cardId
-          if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == current then
-            table.insertIfNeed(mark, id)
-            room:setCardMark(Fk:getCardById(id), "@@liuzhuan", 1)
-          end
-        end
-      end
-      if move.toArea == Card.DiscardPile then
-        for _, info in ipairs(move.moveInfo) do
-          local id = info.cardId
-          --for stupid manjuan
-          if info.fromArea ~= Card.DiscardPile and table.contains(mark, info.cardId) and room:getCardArea(info.cardId) == Card.DiscardPile then
-            table.insertIfNeed(toObtain, id)
-          end
-        end
-      end
+    local toMarked = table.simpleClone(self.cost_data[1])
+    local toObtain = table.simpleClone(self.cost_data[2])
+    local mark = U.getMark(player, "liuzhuan_record-turn")
+    table.insertTableIfNeed(mark, toMarked)
+    room:setPlayerMark(player, "liuzhuan_record-turn", mark)
+    for _, id in ipairs(toMarked) do
+      room:setCardMark(Fk:getCardById(id), "@@liuzhuan-inhand-turn", 1)
     end
-    room:setPlayerMark(player, "liuzhuan_record", mark)
-
     if #toObtain > 0 then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(toObtain)
-      room:obtainCard(player, dummy, true, fk.ReasonJustMove)
+      room:moveCardTo(toObtain, Player.Hand, player, fk.ReasonJustMove, self.name, "", true, player.id)
     end
   end,
 
-  refresh_events = {fk.AfterCardsMove, fk.AfterTurnEnd, fk.Death},
+  refresh_events = {fk.AfterCardsMove, fk.Death},
   can_refresh = function(self, event, target, player, data)
     if event == fk.Death and player ~= target then return false end
-    return type(player:getMark("liuzhuan_record")) == "table"
+    return #U.getMark(player, "liuzhuan_record-turn") > 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    local mark = player:getMark("liuzhuan_record")
+    local mark = U.getMark(player, "liuzhuan_record-turn")
     if event == fk.AfterCardsMove then
       for _, move in ipairs(data) do
-        if room.current and move.to ~= room.current.id and (move.toArea == Card.PlayerHand or move.toArea == Card.PlayerEquip) then
+        if move.to ~= room.current.id and (move.toArea == Card.PlayerHand or move.toArea == Card.PlayerEquip) then
           for _, info in ipairs(move.moveInfo) do
             table.removeOne(mark, info.cardId)
-            room:setCardMark(Fk:getCardById(info.cardId), "@@liuzhuan", 0)
           end
         end
       end
-      room:setPlayerMark(player, "liuzhuan_record", mark)
-    elseif event == fk.AfterTurnEnd then
-      for _, id in ipairs(mark) do
-        room:setCardMark(Fk:getCardById(id), "@@liuzhuan", 0)
-      end
-      room:setPlayerMark(player, "liuzhuan_record", 0)
+      room:setPlayerMark(player, "liuzhuan_record-turn", mark)
     elseif event == fk.Death then
+      local card
       for _, id in ipairs(mark) do
-        if table.every(room.alive_players, function (p)
-          local p_mark = p:getMark("liuzhuan_record")
-          return not (type(p_mark) == "table" and table.contains(p_mark, id))
+        card = Fk:getCardById(id)
+        if card:getMark("@@liuzhuan-inhand-turn") > 0 and table.every(room.alive_players, function (p)
+          return not table.contains(U.getMark(p, "liuzhuan_record-turn"), id)
         end) then
-        room:setCardMark(Fk:getCardById(id), "@@liuzhuan", 0)
+          room:setCardMark(card, "@@liuzhuan-inhand-turn", 0)
         end
       end
-      room:setPlayerMark(player, "liuzhuan_record", 0)
     end
   end,
 }
 local liuzhuan_prohibit = fk.CreateProhibitSkill{
   name = "#liuzhuan_prohibit",
   is_prohibited = function(self, from, to, card)
-    if to:hasSkill(liuzhuan.name) and to:getMark("liuzhuan_record") ~= 0 and #to:getMark("liuzhuan_record") > 0 then
-      if table.contains(to:getMark("liuzhuan_record"), card:getEffectiveId()) then
+    if not to:hasSkill(liuzhuan) then return false end
+    local mark = U.getMark(to, "liuzhuan_record-turn")
+    if #mark == 0 then return false end
+    for _, id in ipairs(Card:getIdList(card)) do
+      if table.contains(mark, id) and table.contains(from:getCardIds("he"), id) then
         return true
-      end
-      if #card.subcards > 0 then
-        for _, id in ipairs(card.subcards) do
-          if table.contains(to:getMark("liuzhuan_record"), id) then
-            return true
-          end
-        end
       end
     end
   end,
@@ -2834,7 +2808,7 @@ Fk:loadTranslationTable{
   ["liuzhuan"] = "流转",
   [":liuzhuan"] = "锁定技，其他角色的回合内，其于摸牌阶段外获得的牌无法对你使用，这些牌本回合进入弃牌堆后，你获得之。",
   ["#ty__zhubi-invoke"] = "铸币：是否将一张【无中生有】置于牌堆顶？",
-  ["@@liuzhuan"] = "流转",
+  ["@@liuzhuan-inhand-turn"] = "流转",
 
   ["$ty__zhubi1"] = "铸币平市，百货可居。",
   ["$ty__zhubi2"] = "做钱直百，府库皆实。",

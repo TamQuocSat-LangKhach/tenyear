@@ -5658,6 +5658,7 @@ local tianji = fk.CreateTriggerSkill{
   name = "tianji",
   events = {fk.AfterCardsMove},
   frequency = Skill.Compulsory,
+  anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
       local cards = {}

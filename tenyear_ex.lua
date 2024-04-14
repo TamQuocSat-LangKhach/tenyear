@@ -101,34 +101,40 @@ Fk:loadTranslationTable{
 }
 
 local zhangchunhua = General(extension, "ty_ex__zhangchunhua", "wei", 3, 3, General.Female)
-local ty_ex__jueqing_trigger = fk.CreateTriggerSkill{
-  name = "#ty_ex__jueqing_trigger",
-  anim_type = "offensive",
-  events = {fk.DamageCaused},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and not data.chain
-  end,
-  on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#jueqing-invoke::"..data.to.id..":"..data.damage..":"..data.damage)
-  end,
-  on_use = function(self, event, target, player, data)
-     player.room:loseHp(player, data.damage, self.name)
-    data.damage = data.damage * 2
-  end,
-}
 local ty_ex__jueqing = fk.CreateTriggerSkill{
   name = "ty_ex__jueqing",
   anim_type = "offensive",
-  frequency = Skill.Compulsory,
-  events = {fk.PreDamage},
+  events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player:usedSkillTimes("#ty_ex__jueqing_trigger", Player.HistoryGame) >0
+    return target == player and player:hasSkill(self) and not data.chain and
+    player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#jueqing-invoke::"..data.to.id..":"..data.damage)
   end,
   on_use = function(self, event, target, player, data)
-    player.room:loseHp(data.to, data.damage, self.name)
-    return true
+    player.room:loseHp(player, data.damage, self.name)
+    data.damage = data.damage * 2
+    data.extra_data = data.extra_data or {}
+    data.extra_data.ty_ex__jueqing = data.extra_data.ty_ex__jueqing or {}
+    table.insert(data.extra_data.ty_ex__jueqing, player.id)
   end,
 }
+local ty_ex__jueqing_delay = fk.CreateTriggerSkill{
+  name = "#ty_ex__jueqing_delay",
+  events = {fk.DamageFinished},
+  anim_type = "negative",
+  can_trigger = function(self, event, target, player, data)
+    return not player.dead and player:hasSkill(ty_ex__jueqing, true) and data.extra_data and data.extra_data.ty_ex__jueqing and
+    table.contains(data.extra_data.ty_ex__jueqing, player.id)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    player:broadcastSkillInvoke("ty_ex__jueqing")
+    player.room:handleAddLoseSkills(player, "-ty_ex__jueqing|jueqing", nil, true, false)
+  end,
+}
+--[[
 local ty_ex__shangshi_discard = fk.CreateTriggerSkill{
   name = "#ty_ex__shangshi_discard",
   anim_type = "negative",
@@ -167,27 +173,32 @@ local ty_ex__shangshi = fk.CreateTriggerSkill{
     player:drawCards(player:getLostHp() - player:getHandcardNum(), self.name)
   end,
 }
-ty_ex__jueqing:addRelatedSkill(ty_ex__jueqing_trigger)
 ty_ex__shangshi:addRelatedSkill(ty_ex__shangshi_discard)
+]]
+ty_ex__jueqing:addRelatedSkill(ty_ex__jueqing_delay)
 zhangchunhua:addSkill(ty_ex__jueqing)
-zhangchunhua:addSkill(ty_ex__shangshi)
+zhangchunhua:addSkill("shangshi")
+zhangchunhua:addRelatedSkill("jueqing")
 Fk:loadTranslationTable{
   ["ty_ex__zhangchunhua"] = "界张春华",
   ["#ty_ex__zhangchunhua"] = "冷血皇后",
   ["illustrator:ty_ex__zhangchunhua"] = "磐浦",
   ["ty_ex__jueqing"] = "绝情",
-  ["#ty_ex__jueqing_trigger"] = "绝情",
-  [":ty_ex__jueqing"] = "①每局限一次，当你造成伤害时，你可以失去同于伤害值点体力令此伤害翻倍。②锁定技，若你已发动过绝情①，你造成的伤害均视为体力流失。",
+  [":ty_ex__jueqing"] = "当你造成伤害时，若不为连环伤害且你未发动过此技能，你可以失去等量的体力，令伤害值翻倍，"..
+  "此伤害结算结束后，你失去此技能，获得〖绝情〗。",
   ["ty_ex__shangshi"] = "伤逝",
   ["#ty_ex__shangshi_discard"] = "伤逝",
   [":ty_ex__shangshi"] = "①当你受到伤害时，你可以弃置一张手牌；②每当你的手牌数小于你已损失的体力值时，可立即将手牌数补至等同于你已损失的体力值。",
-  ["#shangshi-invoke"] = "伤逝:是否弃置一张手牌？",
-  ["#jueqing-invoke"] = "绝情:是否令即将对%dest造成的%arg点伤害翻倍？然后你失去%arg2点体力",
+  ["#shangshi-invoke"] = "伤逝：是否弃置一张手牌？",
+  ["#jueqing-invoke"] = "绝情：是否失去%arg点体力令即将对%dest造成的伤害翻倍",
+  ["#ty_ex__jueqing_delay"] = "绝情",
 
   ["$ty_ex__jueqing1"] = "不知情之所起，亦不知情之所终。",
   ["$ty_ex__jueqing2"] = "唯有情字最伤人！",
-  ["$ty_ex__shangshi1"] = "半生韶华随流水，思君不见撷落花。",
-  ["$ty_ex__shangshi2"] = "西风知我意，送我三尺秋。",
+  ["$jueqing_ty_ex__zhangchunhua1"] = "不知情之所起，亦不知情之所终。",
+  ["$jueqing_ty_ex__zhangchunhua2"] = "唯有情字最伤人！",
+  ["$shangshi_ty_ex__zhangchunhua1"] = "半生韶华随流水，思君不见撷落花。",
+  ["$shangshi_ty_ex__zhangchunhua2"] = "西风知我意，送我三尺秋。",
   ["~ty_ex__zhangchunhua"] = "仲达负我！",
 }
 
@@ -2441,10 +2452,11 @@ Fk:loadTranslationTable{
   ["#ty_ex__guohuai"] = "垂问秦雍",
   ["illustrator:ty_ex__guohuai"] = "心中一凛",
   ["ty_ex__jingce"] = "精策",
-  [":ty_ex__jingce"] = "结束阶段，若你本回合已使用的牌数大于或等于你的体力值，你可以选择一项:1，执行一个额外的摸牌阶段。2，执行一个额外的出牌阶段。;若你本回合使用的牌花色也大于或等于你的体力值，则改为两项均执行。",
+  [":ty_ex__jingce"] = "结束阶段，若你本回合已使用的牌数大于或等于你的体力值，你可以选择："..
+  "1.获得一个额外摸牌阶段；2.获得一个额外出牌阶段。若你本回合使用的牌花色也大于或等于你的体力值，则改为两项均执行。",
   ["jingce_draw"] = "执行一个摸牌阶段",
   ["jingce_play"] = "执行一个出牌阶段",
-  ["#ty_ex__jingce-active"] = "精策:选择执行一个额外的摸牌阶段或者出牌阶段",
+  ["#ty_ex__jingce-active"] = "精策：选择执行一个额外的摸牌阶段或者出牌阶段",
 
   ["$ty_ex__jingce1"] = "精细入微，策敌制胜。",
   ["$ty_ex__jingce2"] = "妙策如神，精兵强将，安有不胜之理？",
@@ -2967,13 +2979,13 @@ Fk:loadTranslationTable{
   ["#ty_ex__mieji-prompt"] = "焚城：选择一名角色，从该角色开始按座位顺序结算“焚城”",
   ["#ty_ex__fencheng-discard"] = "焚城：弃置至少%arg张牌，否则受到2点火焰伤害",
 
-  ["$juece_ty_ex__liru1"] = "所谓智斗，便是以兑子入局取势，而后成杀。",
-  ["$juece_ty_ex__liru2"] = "欲成大事，当弃则弃，怎可优柔寡断？",
-  ["$ty_ex__mieji1"] = "乏谋少计，别做无谓挣扎了！",
-  ["$ty_ex__mieji2"] = "缺兵少粮，看你还能如何应对？",
+  ["$juece_ty_ex__liru1"] = "乏谋少计，别做无谓挣扎了！",
+  ["$juece_ty_ex__liru2"] = "缺兵少粮，看你还能如何应对？",
+  ["$ty_ex__mieji1"] = "所谓智斗，便是以兑子入局取势，而后成杀。",
+  ["$ty_ex__mieji2"] = "欲成大事，当弃则弃，怎可优柔寡断？",
   ["$ty_ex__fencheng1"] = "堆薪聚垛，以燃焚天之焰！",
   ["$ty_ex__fencheng2"] = "就让这熊熊烈焰，为尔等送葬！",
-  ["~ty_ex__liru"] = "多行不义，必自毙。",
+  ["~ty_ex__liru"] = "多行不义，必自毙……",
 }
 
 local fuhuanghou = General(extension, "ty_ex__fuhuanghou", "qun", 3, 3, General.Female)
@@ -3217,16 +3229,18 @@ local ty_ex__zongxuan = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
       local cards = {}
+      local room = player.room
       for _, move in ipairs(data) do
         if move.from == player.id and move.toArea == Card.DiscardPile and move.moveReason == fk.ReasonDiscard then
           for _, info in ipairs(move.moveInfo) do
-            if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+            if (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip) and
+            room:getCardArea(info.cardId) == Card.DiscardPile then
               table.insertIfNeed(cards, info.cardId)
             end
           end
         end
       end
-      cards = U.moveCardsHoldingAreaCheck(player.room, cards)
+      cards = U.moveCardsHoldingAreaCheck(room, cards)
       if #cards > 0 then
         self.cost_data = cards
         return true
@@ -3243,7 +3257,9 @@ local ty_ex__zongxuan = fk.CreateTriggerSkill{
       U.askForDistribution(player, trick, room:getOtherPlayers(player, false), self.name, 0, 1,
       "#ty_ex__zongxuan-choose", trick, false)
       if player.dead then return false end
-      cards = U.moveCardsHoldingAreaCheck(room, cards)
+      cards = U.moveCardsHoldingAreaCheck(room, table.filter(cards, function (id)
+        return room:getCardArea(id) == Card.DiscardPile
+      end))
       if #cards == 0 then return false end
     end
     local top = U.askForArrangeCards(player, self.name, {cards, "pile_discard", "Top"},
@@ -3387,10 +3403,13 @@ local ty_ex__faen = fk.CreateTriggerSkill{
     end
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#ty_ex__faen-invoke::"..target.id)
+    local room = player.room
+    if room:askForSkillInvoke(player, self.name, nil, "#ty_ex__faen-invoke::"..target.id) then
+      room:doIndicate(player.id, {target.id})
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:doIndicate(player.id, {target.id})
     target:drawCards(1, self.name)
   end,
 }

@@ -2253,8 +2253,10 @@ local ty_ex__zili = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeMaxHp(player, -1)
-    player:drawCards(2, self.name)
-    if player:isWounded() then
+    if not player.dead then
+      player:drawCards(2, self.name)
+    end
+    if not player.dead and player:isWounded() then
       room:recover({
         who = player,
         num = 1,
@@ -2303,7 +2305,6 @@ local ty_ex__paiyi = fk.CreateActiveSkill{
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
     room:moveCards({
       from = player.id,
       ids = effect.cards,
@@ -2313,9 +2314,14 @@ local ty_ex__paiyi = fk.CreateActiveSkill{
     })
     room:setPlayerMark(player, self.interaction.data.."-phase", 1)
     if self.interaction.data == "ty_ex__paiyi_draw" then
-      target:drawCards(math.max(#player:getPile("zhonghui_quan"),1), self.name)
+      local target = room:getPlayerById(effect.tos[1])
+      if not target.dead then
+        target:drawCards(math.max(#player:getPile("zhonghui_quan"),1), self.name)
+      end
     else
-      for _, id in ipairs(effect.tos) do
+      local tos = table.simpleClone(effect.tos)
+      room:sortPlayersByAction(tos)
+      for _, id in ipairs(tos) do
         local p = room:getPlayerById(id)
         if not p.dead then
           room:damage{

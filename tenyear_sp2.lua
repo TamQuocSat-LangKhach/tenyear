@@ -1490,6 +1490,7 @@ local jingzao = fk.CreateActiveSkill{
       toArea = Card.Processing,
       moveReason = fk.ReasonJustMove,
       skillName = self.name,
+      proposer = player.id,
     })
 
     local pattern = table.concat(table.map(cards, function(id) return Fk:getCardById(id).trueName end), ",")
@@ -3200,6 +3201,7 @@ local xiaoyin = fk.CreateTriggerSkill{
       toArea = Card.Processing,
       moveReason = fk.ReasonJustMove,
       skillName = self.name,
+      proposer = player.id,
     }
     room:delay(2000)
     local dummy = Fk:cloneCard("dilu")
@@ -3573,6 +3575,8 @@ local qianlong = fk.CreateTriggerSkill{
       ids = cards,
       toArea = Card.Processing,
       moveReason = fk.ReasonJustMove,
+      skillName = self.name,
+      proposer = player.id,
     })
     local result = U.askForGuanxing(player, cards, {0, 3}, {0, player:getLostHp()}, self.name, nil, true, {"Bottom", "toObtain"})
     if #result.bottom > 0 then
@@ -3645,6 +3649,7 @@ local juetao = fk.CreateTriggerSkill{
         toArea = Card.Processing,
         moveReason = fk.ReasonJustMove,
         skillName = self.name,
+        proposer = player.id,
       })
       local card = Fk:getCardById(id, true)
       room:setPlayerMark(player, MarkEnum.BypassTimesLimit.."-tmp", 1)

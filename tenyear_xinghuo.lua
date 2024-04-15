@@ -563,6 +563,8 @@ local denglou = fk.CreateTriggerSkill{
       ids = cards,
       toArea = Card.Processing,
       moveReason = fk.ReasonPut,
+      skillName = self.name,
+      proposer = player.id,
     })
     room:delay(500)
     local get = {}

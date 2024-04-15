@@ -433,6 +433,7 @@ local ty__jiqiao = fk.CreateTriggerSkill{
       toArea = Card.Processing,
       moveReason = fk.ReasonJustMove,
       skillName = self.name,
+      proposer = player.id,
     }
     local get = {}
     for i = #cards, 1, -1 do

@@ -1035,6 +1035,7 @@ local hanying = fk.CreateTriggerSkill{
       ids = {card.id},
       toArea = Card.Processing,
       skillName = self.name,
+      proposer = player.id,
       moveReason = fk.ReasonJustMove,
     })
     --room:delay(1000)
@@ -1047,6 +1048,7 @@ local hanying = fk.CreateTriggerSkill{
         toArea = Card.DiscardPile,
         moveReason = fk.ReasonJustMove,
         skillName = self.name,
+        proposer = player.id,
       }
       return false
     end

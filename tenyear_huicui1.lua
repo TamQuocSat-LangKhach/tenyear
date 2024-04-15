@@ -1598,6 +1598,7 @@ local chenjian = fk.CreateTriggerSkill{
       toArea = Card.Processing,
       moveReason = fk.ReasonJustMove,
       skillName = self.name,
+      proposer = player.id,
     })
     local confirmed = {}
     local n = 0

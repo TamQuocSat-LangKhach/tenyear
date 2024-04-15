@@ -1815,6 +1815,7 @@ local yanjiao = fk.CreateActiveSkill{
       toArea = Card.Processing,
       moveReason = fk.ReasonJustMove,
       skillName = self.name,
+      proposer = player.id,
     })
     local result = room:askForCustomDialog(target, self.name, "packages/tenyear/qml/YanjiaoBox.qml", {
         cards,
@@ -2079,6 +2080,7 @@ local sibian = fk.CreateTriggerSkill{
       toArea = Card.Processing,
       moveReason = fk.ReasonJustMove,
       skillName = self.name,
+      proposer = player.id,
     })
     local min, max = 13, 1
     for _, id in ipairs(cards) do

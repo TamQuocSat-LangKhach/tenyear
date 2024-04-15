@@ -2380,6 +2380,8 @@ local ty_ex__chengxiang = fk.CreateTriggerSkill{
       ids = cards,
       toArea = Card.Processing,
       moveReason = fk.ReasonPut,
+      skillName = self.name,
+      proposer = player.id,
     })
     local get = U.askForArrangeCards(player, self.name, {cards},
     "#chengxiang-choose", false, 0, {4, 4}, {0, 1}, ".", "chengxiang_count", {{}, {cards[1]}})[2]

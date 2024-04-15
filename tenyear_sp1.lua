@@ -1794,6 +1794,8 @@ local jiufa = fk.CreateTriggerSkill{
       ids = card_ids,
       toArea = Card.Processing,
       moveReason = fk.ReasonJustMove,
+      skillName = self.name,
+      proposer = player.id,
     })
 
     local number_table = {}
@@ -2360,6 +2362,7 @@ local sanshou = fk.CreateTriggerSkill{
       toArea = Card.Processing,
       moveReason = fk.ReasonJustMove,
       skillName = self.name,
+      proposer = player.id,
     })
     local mark = U.getMark(player, "sanshou-turn")
     if #mark ~= 3 then
@@ -5582,6 +5585,7 @@ local fanyin = fk.CreateTriggerSkill{
         ids = cards,
         toArea = Card.Processing,
         skillName = self.name,
+        proposer = player.id,
         moveReason = fk.ReasonJustMove,
       })
       if U.askForUseRealCard(room, player, cards, ".", self.name, "#fanyin-ask:::"..Fk:getCardById(cards[1]):toLogString(),

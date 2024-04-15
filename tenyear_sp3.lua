@@ -2240,7 +2240,7 @@ local jijiao_record = fk.CreateTriggerSkill{
 
   refresh_events = {fk.AfterDrawPileShuffle, fk.Deathed},
   can_refresh = function(self, event, target, player, data)
-    return player:usedSkillTimes("jijiao", Player.HistoryGame) > 0
+    return player:getMark(self.name) == 0 and player:usedSkillTimes("jijiao", Player.HistoryGame) > 0
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, self.name, 1)
@@ -2253,7 +2253,7 @@ local jijiao_trigger = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:getMark("jijiao_cards") ~= 0 and #player:getMark("jijiao_cards") > 0 then
       if event == fk.CardUsing then
-        return target == player and data.card:isCommonTrick() and not data.card:isVirtual()
+        return target == player and data.card:isCommonTrick() and U.isPureCard(data.card)
       else
         return true
       end

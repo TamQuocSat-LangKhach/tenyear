@@ -2265,7 +2265,7 @@ local jijiao_trigger = fk.CreateTriggerSkill{
     if event == fk.CardUsing then  --TODO: 这也弄个全局记录！
       local mark = player:getMark("jijiao_cards")
       if table.contains(mark, data.card.id) then
-        data.prohibitedCardNames = {"nullification"}
+        data.unoffsetableList = table.map(room.alive_players, Util.IdMapper)
         table.removeOne(mark, data.card.id)
         room:setPlayerMark(player, "jijiao_cards", mark)
       end
@@ -2298,7 +2298,7 @@ Fk:loadTranslationTable{
   ["huizhi"] = "蕙质",
   [":huizhi"] = "准备阶段，你可以弃置任意张手牌（可不弃），然后将手牌摸至与全场手牌最多的角色相同（至少摸一张，最多摸五张）。",
   ["jijiao"] = "继椒",
-  [":jijiao"] = "限定技，出牌阶段，你可以令一名角色获得弃牌堆中本局游戏你使用和弃置的所有普通锦囊牌，这些牌不能被【无懈可击】响应。"..
+  [":jijiao"] = "限定技，出牌阶段，你可以令一名角色获得弃牌堆中本局游戏你使用和弃置的所有普通锦囊牌，这些牌不能被抵消。"..
   "每回合结束后，若此回合内牌堆洗过牌或有角色死亡，复原此技能。",
   ["#huizhi-invoke"] = "蕙质：你可以弃置任意张手牌，然后将手牌摸至与全场手牌最多的角色相同（最多摸五张）",
   ["#jijiao_record"] = "继椒",

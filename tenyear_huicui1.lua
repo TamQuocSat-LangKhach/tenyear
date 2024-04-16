@@ -1495,6 +1495,8 @@ local jinhui = fk.CreateActiveSkill{
       ids = card_ids,
       toArea = Card.Processing,
       moveReason = fk.ReasonJustMove,
+      skillName = self.name,
+      proposer = player.id
     })
     local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
     local tos = room:askForChoosePlayers(player, targets, 1, 1, "#jinhui-choose", self.name, false)
@@ -1514,7 +1516,7 @@ local jinhui = fk.CreateActiveSkill{
           card_data = {
             { self.name, to_use }
           }
-        }, self.name)
+        }, self.name, cancelable and "#jinhui2-use::" .. playerB.id or "#jinhui-use:" .. playerB.id)
       if #ids == 0 then return false end
       local card = Fk:getCardById(ids[1])
       room:useCard({
@@ -1542,7 +1544,6 @@ local jinhui = fk.CreateActiveSkill{
     end
   end
 }
-
 local qingman = fk.CreateTriggerSkill{
   name = "qingman",
   anim_type = "drawcard",
@@ -1562,7 +1563,6 @@ Fk:loadTranslationTable{
   ["#zhaoyanw"] = "霞蔚青歇",
   ["designer:zhaoyanw"] = "七哀",
   ["illustrator:zhaoyanw"] = "游漫美绘",
-
   ["jinhui"] = "锦绘",
   [":jinhui"] = "出牌阶段限一次，你可以将牌堆中随机三张不同名且目标数为一的非伤害牌置于你的武将牌上，然后选择一名其他角色，该角色使用其中一张，"..
   "然后你可以依次使用其余两张（必须选择你或其为目标，无距离和次数限制）。",
@@ -1572,7 +1572,7 @@ Fk:loadTranslationTable{
   ["#jinhui-active"] = "发动 锦绘，亮出牌堆顶三张牌，令其他角色使用其中一张，你使用其余两张",
   ["#jinhui-choose"] = "锦绘：令一名其他角色使用其中一张牌，然后你可以使用其余两张",
   ["#jinhui-use"] = "锦绘：使用其中一张牌（必须指定你或 %src 为目标），然后其可以使用其余两张",
-  ["#jinhui2-use"] = "锦绘：你可以使用剩余的牌（必须指定你或 %dest 为目标）",
+  ["#jinhui2-use"] = "锦绘：使用其中一张牌（必须指定你或 %dest 为目标）",
   ["jinhui_viewas"] = "锦绘",
 
   ["$jinhui1"] = "大则盈尺，小则方寸。",

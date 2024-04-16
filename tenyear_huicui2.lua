@@ -4649,7 +4649,7 @@ Fk:addQmlMark{
       if card then
         return Fk:translate(card.name .. "_short")
       end
-        return ""
+        return "？"
     end), " ")
   end,
   qml_path = "packages/tenyear/qml/ZixiBox"

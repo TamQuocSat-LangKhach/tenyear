@@ -3350,6 +3350,20 @@ local kanji = fk.CreateActiveSkill{
   anim_type = "drawcard",
   card_num = 0,
   target_num = 0,
+  prompt = function()
+    local suits = {}
+    for _, id in ipairs(Self.player_cards[Player.Hand]) do
+      local suit = Fk:getCardById(id).suit
+      if suit ~= Card.NoSuit then
+        if table.contains(suits, suit) then
+          return "#kanji-active"
+        else
+          table.insert(suits, suit)
+        end
+      end
+    end
+    return "#kanji-active:::kanji_draw"
+  end,
   can_use = function(self, player)
     return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) < 2
   end,
@@ -3380,6 +3394,7 @@ local kanji = fk.CreateActiveSkill{
       end
     end
     if #suits == 4 then
+      room:setPlayerMark(player, "@@kanji-turn", 1)
       player:skip(Player.Discard)
     end
   end,
@@ -3441,6 +3456,10 @@ Fk:loadTranslationTable{
   ["qianzheng"] = "愆正",
   [":qianzheng"] = "每回合限两次，当你成为其他角色使用普通锦囊牌或【杀】的目标时，你可以重铸两张牌，若这两张牌与使用牌类型均不同，"..
   "此牌结算后进入弃牌堆时你可以获得之。",
+
+  ["#kanji-active"] = "发动 勘集，展示所有手牌%arg",
+  ["kanji_draw"] = "，然后摸两张牌",
+  ["@@kanji-turn"] = "勘集",
   ["#qianzheng1-card"] = "愆正：你可以重铸两张牌，若均不为%arg，结算后获得%arg2",
   ["#qianzheng2-card"] = "愆正：你可以重铸两张牌",
   ["#qianzheng-invoke"] = "愆正：你可以获得此%arg",

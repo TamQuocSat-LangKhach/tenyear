@@ -5,7 +5,7 @@ local U = require "packages/utility/utility"
 
 Fk:loadTranslationTable{
   ["tenyear_sp2"] = "十周年-限定专属2",
-  ["tysp"] = "新服SP",
+  ["ty_sp"] = "新服SP",
 }
 
 --计将安出：程昱 王允 蒋干 赵昂 刘晔 杨弘 郤正 桓范 刘琦
@@ -5371,7 +5371,7 @@ Fk:loadTranslationTable{
 }
 
 --往者可谏：大乔小乔 SP马超 SP赵云 SP甄姬
-local zhenji = General(extension, "tysp__zhenji", "qun", 3, 3, General.Female)
+local zhenji = General(extension, "ty_sp__zhenji", "qun", 3, 3, General.Female)
 local jijiez = fk.CreateTriggerSkill{
   name = "jijiez",
   events = {fk.AfterCardsMove, fk.HpRecover},
@@ -5532,12 +5532,12 @@ local huiji = fk.CreateActiveSkill{
 zhenji:addSkill(jijiez)
 zhenji:addSkill(huiji)
 Fk:loadTranslationTable{
-  ["tysp__zhenji"] = "甄姬",
-  ["#tysp__zhenji"] = "静女其娈",
-  --["illustrator:tysp__zhenji"] = "",
+  ["ty_sp__zhenji"] = "甄姬",
+  ["#ty_sp__zhenji"] = "善言贤女",
+  ["illustrator:ty_sp__zhenji"] = "匠人绘",
 
   ["jijiez"] = "己诫",
-  [":jijiez"] = "锁定技，当其他角色于其回合外得到牌/回复体力后，你摸等量的牌/回复等量的体力（每回合各限一次）。",
+  [":jijiez"] = "锁定技，当其他角色于其回合外得到牌后/回复体力后，你摸等量的牌/回复等量的体力（每回合各限一次）。",
   ["huiji"] = "惠济",
   [":huiji"] = "出牌阶段限一次，你可以令一名角色摸两张牌或使用牌堆中的一张随机装备牌。若其手牌数不小于存活角色数，"..
   "其视为使用【五谷丰登】（改为从该角色的手牌中挑选）。",
@@ -5545,11 +5545,11 @@ Fk:loadTranslationTable{
   ["#huiji-active"] = "发动 惠济，选择一名角色",
   ["huiji_equip"] = "使用装备",
 
-  ["$jijiez1"] = "",
-  ["$jijiez2"] = "",
-  ["$huiji1"] = "",
-  ["$huiji2"] = "",
-  ["~sp__zhenji"] = "",
+  ["$jijiez1"] = "闻古贤女，未有不学前世成败者。",
+  ["$jijiez2"] = "不知书，何由见之。",
+  ["$huiji1"] = "云鬓释远，彩衣婀娜。",
+  ["$huiji2"] = "明眸善睐，瑰姿艳逸。",
+  ["~ty_sp__zhenji"] = "自古英雄迟暮，谁见佳人白头？",
 }
 
 --章台春望：郭照 樊玉凤 阮瑀 杨婉 潘淑

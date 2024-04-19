@@ -806,7 +806,7 @@ local jinjing = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local to = room:getPlayerById(effect.tos[1])
-    U.viewCards(player, to.player_cards[Player.Hand], self.name)
+    U.viewCards(player, to.player_cards[Player.Hand], self.name, "$ViewCardsFrom:"..to.id)
   end,
 }
 local jinjing_trigger = fk.CreateTriggerSkill{
@@ -841,9 +841,9 @@ local ruyi = fk.CreateActiveSkill{
 }
 local ruyi_attackrange = fk.CreateAttackRangeSkill{
   name = "#ruyi_attackrange",
-  correct_func = function (self, player)
+  fixed_func = function (self, player)
     if player:hasSkill(ruyi) and player:getMark("@ruyi") ~= 0 then
-      return player:getMark("@ruyi") - 1
+      return player:getMark("@ruyi")
     end
   end,
 }
@@ -867,9 +867,14 @@ local ruyi_targetmod = fk.CreateTargetModSkill{
 local ruyi_trigger = fk.CreateTriggerSkill{
   name = "#ruyi_trigger",
   mute = true,
-  events = {fk.AfterCardUseDeclared, fk.AfterCardTargetDeclared},
+  events = {fk.AfterCardUseDeclared, fk.AfterCardTargetDeclared, fk.EventAcquireSkill, fk.GameStart},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
+    if event == fk.EventAcquireSkill then
+      return data == ruyi and target == player and player.room:getTag("RoundCount")
+    elseif event == fk.GameStart then
+      return player:hasShownSkill(ruyi, true)
+    end
     if player == target and player:hasSkill(ruyi) and data.card.trueName == "slash" then
       if event == fk.AfterCardUseDeclared then
         return player:getMark("@ruyi") == 2 or player:getMark("@ruyi") == 3
@@ -879,15 +884,23 @@ local ruyi_trigger = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    if player:getMark("@ruyi") == 2 then
-      data.additionalDamage = (data.additionalDamage or 0) + 1
-    elseif player:getMark("@ruyi") == 3 then
-      data.disresponsiveList = table.map(player.room.alive_players, Util.IdMapper)
+    local room = player.room
+    if event == fk.EventAcquireSkill or event == fk.GameStart then
+      room:setPlayerMark(player, "@ruyi", 3)
+      if table.contains(player:getAvailableEquipSlots(), Player.WeaponSlot) then
+        room:abortPlayerArea(player, Player.WeaponSlot)
+      end
     else
-      local to = player.room:askForChoosePlayers(player, U.getUseExtraTargets(player.room, data),
-      1, 1, "#ruyi-choose:::"..data.card:toLogString(), ruyi.name, true)
-      if #to > 0 then
-        table.insert(data.tos, to)
+      if player:getMark("@ruyi") == 2 then
+        data.additionalDamage = (data.additionalDamage or 0) + 1
+      elseif player:getMark("@ruyi") == 3 then
+        data.disresponsiveList = table.map(room.alive_players, Util.IdMapper)
+      else
+        local to = room:askForChoosePlayers(player, U.getUseExtraTargets(room, data),
+        1, 1, "#ruyi-choose:::"..data.card:toLogString(), ruyi.name, true)
+        if #to > 0 then
+          table.insert(data.tos, to)
+        end
       end
     end
   end,
@@ -923,7 +936,7 @@ Fk:loadTranslationTable{
   ["jinjing"] = "金睛",
   [":jinjing"] = "锁定技，出牌阶段，你可以观看一名其他角色的手牌。",
   ["ruyi"] = "如意",
-  [":ruyi"] = "锁定技，你手牌中的武器牌均视为【杀】。出牌阶段限一次，你可以调整攻击范围（1~4），若你的攻击范围基数为：1，使用【杀】无次数限制；2，使用【杀】伤害+1；3，使用【杀】无法响应；4，使用【杀】可额外选择一个目标。",
+  [":ruyi"] = "锁定技，你手牌中的武器牌均视为【杀】，你废除武器栏。你的攻击范围基数为3，出牌阶段限一次，你可以调整攻击范围（1~4）。若你的攻击范围基数为：1，使用【杀】无次数限制；2，使用【杀】伤害+1；3，使用【杀】无法响应；4，使用【杀】可额外选择一个目标。",
   ["@ruyi"] = "如意",
   ["#ruyi"] = "如意：选择你的攻击范围",
   ["#ruyi_filter"] = "如意",

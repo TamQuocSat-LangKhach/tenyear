@@ -13,7 +13,7 @@ GraphicsBox {
   property var areaNames: []
   property int padding: 25
 
-  title.text: Backend.translate(prompt !== "" ? prompt : "Please arrange cards")
+  title.text: luatr(prompt !== "" ? prompt : "Please arrange cards")
   width: body.width + padding * 2
   height: title.height + body.height + padding * 2
 
@@ -186,10 +186,10 @@ GraphicsBox {
     prompt = "#yanjiao-distribute";
 
     cards = d[0].map(cid => {
-      return JSON.parse(Backend.callLuaFunction("GetCardData", [cid]));
+      return lcall("GetCardData", cid);
     });
 
-    areaNames = [Backend.translate("Top"), Backend.translate(d[1]), Backend.translate(d[2])];
+    areaNames = [luatr("Top"), luatr(d[1]), luatr(d[2])];
     
     arrangeCards();
 

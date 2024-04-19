@@ -17,7 +17,7 @@ GraphicsBox {
   property int padding: 25
   property int itemHeight: 170
 
-  title.text: Backend.translate(prompt !== "" ? prompt : "Please arrange cards")
+  title.text: luatr(prompt !== "" ? prompt : "Please arrange cards")
   width: body.width + padding * 2
   height: title.height + body.height + padding * 2
   scale: 0.9
@@ -264,7 +264,7 @@ GraphicsBox {
     prompt = "#tuoyu";
 
     cards = d[0].map(cid => {
-      return JSON.parse(Backend.callLuaFunction("GetCardData", [cid]));
+      return lcall("GetCardData", cid);
     });
 
     areaCards = [d[1], d[3], d[5]];

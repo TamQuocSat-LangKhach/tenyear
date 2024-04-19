@@ -5986,8 +5986,6 @@ local xingzuo = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = room:getNCards(3, "bottom")
-    cards = table.reverse(cards)
-    --FIXME:从牌堆底获取牌是逆序的……
     local handcards = player:getCardIds(Player.Hand)
     local cardmap = U.askForArrangeCards(player, self.name,
     {cards, handcards, "Bottom", "$Hand"}, "#xingzuo-invoke")

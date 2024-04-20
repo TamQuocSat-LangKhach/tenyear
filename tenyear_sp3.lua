@@ -1354,7 +1354,7 @@ local ty__gushe = fk.CreateActiveSkill{
   max_target_num = 3,
   prompt = "#ty__gushe-active",
   can_use = function(self, player)
-    return not player:isKongcheng() and player:getMark("@@ty__gushe-turn") == 0
+    return not player:isKongcheng() and #U.getMark(player, "@ty__gushe-turn") == 2
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
@@ -1373,13 +1373,16 @@ local ty__gushe_delay = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return data.reason == "ty__gushe" and data.from == player
     --王朗死亡后依旧有效
-    --FIXME:多人拼点并不会按顺序结算→_→
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if not player.dead and data.winner ~= player then
       room:addPlayerMark(player, "@ty__raoshe", 1)
+      local mark = U.getMark(player, "@ty__gushe-turn")
+      if #mark == 2 and mark[2] > 1 then
+        room:setPlayerMark(player, "@ty__gushe-turn", {"times_left", mark[2] - 1})
+      end
       if player:getMark("@ty__raoshe") >= 7 then
         room:killPlayer({who = player.id,})
       end
@@ -1400,15 +1403,35 @@ local ty__gushe_delay = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.PindianResultConfirmed},
+  refresh_events = {fk.PindianResultConfirmed, fk.TurnStart, fk.EventAcquireSkill, fk.EventLoseSkill},
   can_refresh = function(self, event, target, player, data)
-    return data.winner and data.winner == player
+    if event == fk.TurnStart then
+      return player == target and player:hasSkill(ty__gushe, true)
+    elseif event == fk.PindianResultConfirmed then
+      return data.winner and data.winner == player and player:hasSkill(ty__gushe, true)
+    elseif event == fk.EventAcquireSkill then
+      return player == target and data == ty__gushe and player.phase ~= Player.NotActive
+    elseif event == fk.EventLoseSkill then
+      return player == target and data == ty__gushe
+    end
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    room:addPlayerMark(player, "ty__gushe-turn", 1)
-    if player:getMark("ty__gushe-turn") >= (7 - player:getMark("@ty__raoshe")) and player:hasSkill("ty__gushe", true) then
-      room:setPlayerMark(player, "@@ty__gushe-turn", 1)
+    if event == fk.TurnStart then
+      local x = 7 - player:getMark("@ty__raoshe")
+      room:setPlayerMark(player, "@ty__gushe-turn", x > 0 and {"times_left", x} or "invalidity")
+    elseif event == fk.PindianResultConfirmed then
+      local mark = U.getMark(player, "@ty__gushe-turn")
+      if #mark == 2 then
+        local x = mark[2] - 1
+        room:setPlayerMark(player, "@ty__gushe-turn", x > 0 and {"times_left", x} or "invalidity")
+      end
+    elseif event == fk.EventAcquireSkill then
+      room:setPlayerMark(player, "@ty__raoshe", 0)
+      room:setPlayerMark(player, "@ty__gushe-turn", {"times_left", 7})
+    elseif event == fk.EventLoseSkill then
+      room:setPlayerMark(player, "@ty__raoshe", 0)
+      room:setPlayerMark(player, "@ty__gushe-turn", 0)
     end
   end,
 }
@@ -1489,8 +1512,10 @@ Fk:loadTranslationTable{
   ["#ty__gushe-discard"] = "鼓舌：你需弃置一张牌，否则 %src 摸一张牌",
   ["#ty__gushe2-discard"] = "鼓舌：你需弃置一张牌",
   ["#ty__gushe_delay"] = "鼓舌",
-  ["@@ty__gushe-turn"] = "鼓舌失效",
+  ["@ty__gushe-turn"] = "鼓舌",
   ["@ty__raoshe"] = "饶舌",
+  ["times_left"] = "剩余",
+  ["invalidity"] = "失效",
 
   ["$ty__gushe1"] = "承寇贼之要，相时而后动，择地而后行，一举更无余事。",
   ["$ty__gushe2"] = "春秋之义，求诸侯莫如勤王。今天王在魏都，宜遣使奉承王命。",

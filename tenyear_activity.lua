@@ -1817,19 +1817,20 @@ local yanjiao = fk.CreateActiveSkill{
       skillName = self.name,
       proposer = player.id,
     })
-    local result = room:askForCustomDialog(target, self.name, "packages/tenyear/qml/YanjiaoBox.qml", {
+    local data_table = {}
+    for _, p in ipairs(room.players) do
+      data_table[p.id] = {
         cards,
         player.general,
         target.general,
-      })
-    local rest, pile1, pile2 = {}, {}, {}
-    if result ~= "" then
-      local d = json.decode(result)
-      rest = d[1]
-      pile1 = d[2]
-      pile2 = d[3]
-    else
-      rest = cards
+        p == target
+      }
+    end
+    room:askForMiniGame(room.players, self.name, "yanjiao", data_table)
+    local cardmap = json.decode(target.client_reply)
+    local rest, pile1, pile2 = cards, {}, {}
+    if #cardmap == 3 then
+      rest, pile1, pile2 = cardmap[1], cardmap[2], cardmap[3]
     end
     local moveInfos = {}
     if #pile1 > 0 then
@@ -1869,6 +1870,28 @@ local yanjiao = fk.CreateActiveSkill{
     room:moveCards(table.unpack(moveInfos))
   end,
 }
+
+Fk:addMiniGame{
+  name = "yanjiao",
+  qml_path = "packages/tenyear/qml/YanjiaoBox",
+  default_choice = function(player, data)
+    return {}
+  end,
+  update_func = function(player, data)
+    local room = player.room
+    if #data == 1 and data[1] == "confirm" then
+      for _, p in ipairs(room:getOtherPlayers(player, false)) do
+        p:doNotify("UpdateMiniGame", "")
+      end
+    else
+      local dat = table.concat(data, ",")
+      for _, p in ipairs(room:getOtherPlayers(player, false)) do
+        p:doNotify("UpdateMiniGame", dat)
+      end
+    end
+  end,
+}
+
 local xingshen = fk.CreateTriggerSkill{
   name = "xingshen",
   anim_type = "masochism",

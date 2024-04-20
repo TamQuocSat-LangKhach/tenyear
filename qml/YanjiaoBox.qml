@@ -11,7 +11,10 @@ GraphicsBox {
   property var cards: []
   property var result: []
   property var areaNames: []
+  property var sums: []
+  property bool operable : false
   property int padding: 25
+  scale: 0.8
 
   title.text: luatr(prompt !== "" ? prompt : "Please arrange cards")
   width: body.width + padding * 2
@@ -32,6 +35,7 @@ GraphicsBox {
 
         property int areaCapacity: modelData
         property string areaName: index < areaNames.length ? qsTr(areaNames[index]) : ""
+        property string sum: index < sums.length ? sums[index].toString() : "0"
 
         Rectangle {
           anchors.verticalCenter: parent.verticalCenter
@@ -44,7 +48,7 @@ GraphicsBox {
             anchors.fill: parent
             width: 20
             height: 100
-            text: areaName
+            text: areaName + sum
             color: "white"
             font.family: fontLibian.name
             font.pixelSize: 18
@@ -77,18 +81,41 @@ GraphicsBox {
       }
     }
 
-    MetroButton {
-      Layout.alignment: Qt.AlignHCenter
-      id: buttonConfirm
-      text: Backend.translate("OK")
-      width: 120
-      height: 35
+    Row {
+      anchors.bottom: parent.bottom
+      anchors.horizontalCenter: parent.horizontalCenter
+      spacing: 32
 
-      onClicked: {
-        close();
-        roomScene.state = "notactive";
-        const reply = JSON.stringify(getResult());
-        ClientInstance.replyToServer("", reply);
+      MetroButton {
+        Layout.alignment: Qt.AlignHCenter
+        id: buttonConfirm
+        text: Backend.translate("OK")
+        width: 120
+        height: 35
+        visible: root.operable
+
+        onClicked: {
+          close();
+          roomScene.state = "notactive";
+          const reply = JSON.stringify(getResult());
+          ClientInstance.replyToServer("", reply);
+          ClientInstance.notifyServer("PushRequest", "updatemini,confirm");
+        }
+      }
+
+      MetroButton {
+        Layout.alignment: Qt.AlignHCenter
+        text: Backend.translate("Cancel")
+        width: 120
+        height: 35
+        visible: root.operable
+
+        onClicked: {
+          close();
+          roomScene.state = "notactive";
+          ClientInstance.replyToServer("", "");
+          ClientInstance.notifyServer("PushRequest", "updatemini,confirm");
+        }
       }
     }
   }
@@ -104,8 +131,12 @@ GraphicsBox {
       name: modelData.name
       suit: modelData.suit
       number: modelData.number
-      draggable: true
-      onReleased: arrangeCards();
+      draggable: root.operable
+      onReleased: {
+        arrangeCards();
+        if (root.operable)
+          ClientInstance.notifyServer("PushRequest", "updatemini," + JSON.stringify(getResult()));
+      }
     }
   }
 
@@ -142,7 +173,7 @@ GraphicsBox {
       result[i].sort((a, b) => a.x - b.x);
 
 
-
+    let line_sums = [0, 0, 0];
     let box, pos, pile;
     for (j = 0; j < areaRepeater.count; j++) {
       pile = areaRepeater.itemAt(j);
@@ -156,9 +187,11 @@ GraphicsBox {
         card.origX = pos.x;
         card.origY = pos.y;
         card.goBack(true);
+        line_sums[j] = line_sums[j] + card.number
       }
     }
-
+    sums = line_sums;
+    
     var n1 = 0;
     var n2 = 0;
     for (i = 0; i < result[1].length; i++) {
@@ -190,8 +223,54 @@ GraphicsBox {
     });
 
     areaNames = [luatr("Top"), luatr(d[1]), luatr(d[2])];
+
+    operable = d[3];
     
     arrangeCards();
 
+  }
+  
+  function updateData(data) {
+    const d = data;
+    if (d.length == 0) {
+      close();
+      roomScene.state = "notactive";
+      ClientInstance.replyToServer("", "");
+    }
+    let i, j, k, card;
+    result = new Array(3);
+    for (i = 0; i < result.length; i++){
+      result[i] = [];
+    }
+    for (j = 0; j < d.length; j++){
+      for (i = 0; i < d[j].length; i++) {
+        for (k = 0; k < cardItem.count; k++) {
+          card = cardItem.itemAt(k);
+          if (card.cid == d[j][i]) {
+            result[j].push(card);
+            break;
+          }
+        }
+      }
+    }
+
+    let box, pos, pile;
+    let line_sums = [0, 0, 0];
+    for (j = 0; j < areaRepeater.count; j++) {
+      pile = areaRepeater.itemAt(j);
+      if (pile.y === 0){
+        pile.y = j * 150
+      }
+      for (i = 0; i < result[j].length; i++) {
+        box = pile.cardRepeater.itemAt(i);
+        pos = mapFromItem(pile, box.x, box.y);
+        card = result[j][i];
+        card.origX = pos.x;
+        card.origY = pos.y;
+        card.goBack(true);
+        line_sums[j] = line_sums[j] + card.number
+      }
+    }
+    sums = line_sums;
   }
 }

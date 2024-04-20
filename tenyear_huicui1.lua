@@ -2828,15 +2828,7 @@ local zhuning = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     room:addPlayerMark(player, "zhuning-phase", 2)
-    room:moveCards({
-      ids = effect.cards,
-      from = player.id,
-      to = target.id,
-      toArea = Card.PlayerHand,
-      moveReason = fk.ReasonGive,
-      proposer = player.id,
-      skillName = self.name,
-    })
+    room:moveCardTo(effect.cards, Card.PlayerHand, target, fk.ReasonGive, self.naame, "", false, player.id, "@@zhuning-inhand")
     if not player.dead then
       local success, data = room:askForUseActiveSkill(player, "zhuning_viewas", "#zhuning-choice", true)
       if success then
@@ -2940,43 +2932,25 @@ local fengxiang = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.BeforeCardsMove, fk.AfterCardsMove},
+  refresh_events = {fk.BeforeCardsMove},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.BeforeCardsMove then
-      if player:hasSkill(self, true) then
-        for _, move in ipairs(data) do
-          for _, info in ipairs(move.moveInfo) do
-            if info.fromArea == Card.PlayerHand then
-              return true
-            end
-          end
-          if move.toArea == Card.PlayerHand then
+    if player:hasSkill(self, true) then
+      for _, move in ipairs(data) do
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand then
             return true
           end
         end
-      end
-    else
-      for _, move in ipairs(data) do
-        if move.skillName == "zhuning" then
+        if move.toArea == Card.PlayerHand then
           return true
         end
       end
     end
   end,
   on_refresh = function(self, event, target, player, data)
-    if event == fk.BeforeCardsMove then
-      for _, move in ipairs(data) do
-        move.extra_data = move.extra_data or {}
-        move.extra_data.fengxiang = getFengxiangPlayer(player.room)
-      end
-    else
-      for _, move in ipairs(data) do
-        if move.skillName == "zhuning" then
-          for _, info in ipairs(move.moveInfo) do
-            player.room:setCardMark(Fk:getCardById(info.cardId, true), "@@zhuning-inhand", 1)
-          end
-        end
-      end
+    for _, move in ipairs(data) do
+      move.extra_data = move.extra_data or {}
+      move.extra_data.fengxiang = getFengxiangPlayer(player.room)
     end
   end,
 }
@@ -6097,12 +6071,7 @@ local aishou = fk.CreateTriggerSkill{
     if event == fk.EventPhaseStart then
       if player.phase == Player.Finish then
         room:notifySkillInvoked(player, self.name, "drawcard")
-        local cards = player:drawCards(player.maxHp, self.name)
-        for _, id in ipairs(cards) do
-          if room:getCardOwner(id) == player and room:getCardArea(id) == Card.PlayerHand then
-            room:setCardMark(Fk:getCardById(id), "@@aishou-inhand", 1)
-          end
-        end
+        player:drawCards(player.maxHp, self.name, nil, "@@aishou-inhand")
       else
         room:notifySkillInvoked(player, self.name, "special")
         local cards = table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@aishou-inhand") > 0 end)

@@ -144,13 +144,7 @@ local kangli = fk.CreateTriggerSkill{
       local ids = table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@kangli-inhand") > 0 end)
       room:throwCard(ids, self.name, player, player)
     else
-      local cards = player:drawCards(2, self.name)
-      cards = table.filter(cards, function(id) return room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player end)
-      if #cards > 0 then
-        for _, id in ipairs(cards) do
-          room:setCardMark(Fk:getCardById(id), "@@kangli-inhand", 1)
-        end
-      end
+      local cards = player:drawCards(2, self.name, nil, "@@kangli-inhand")
     end
   end,
 }

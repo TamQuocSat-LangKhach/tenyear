@@ -4457,35 +4457,13 @@ local jiexing = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self)
   end,
   on_use = function(self, event, target, player, data)
-    player:drawCards(1, self.name)
-  end,
-
-  refresh_events = {fk.AfterCardsMove, fk.AfterTurnEnd},
-  can_refresh = Util.TrueFunc,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.AfterCardsMove then
-      for _, move in ipairs(data) do
-        if move.to == player.id and move.toArea == Card.PlayerHand and move.skillName == self.name then
-          for _, info in ipairs(move.moveInfo) do
-            local id = info.cardId
-            if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player then
-              room:setCardMark(Fk:getCardById(id), "@@jiexing-inhand", 1)
-            end
-          end
-        end
-      end
-    elseif event == fk.AfterTurnEnd then
-      for _, id in ipairs(player:getCardIds(Player.Hand)) do
-        room:setCardMark(Fk:getCardById(id), "@@jiexing-inhand", 0)
-      end
-    end
+    player:drawCards(1, self.name, nil, "@@jiexing-inhand-turn")
   end,
 }
 local jiexing_maxcards = fk.CreateMaxCardsSkill{
   name = "#jiexing_maxcards",
   exclude_from = function(self, player, card)
-    return card:getMark("@@jiexing-inhand") > 0
+    return card:getMark("@@jiexing-inhand-turn") > 0
   end,
 }
 jiexing:addRelatedSkill(jiexing_maxcards)
@@ -4499,10 +4477,10 @@ Fk:loadTranslationTable{
   ["fangdu"] = "芳妒",
   [":fangdu"] = "锁定技，你的回合外，你每回合第一次受到普通伤害后回复1点体力，你每回合第一次受到属性伤害后随机获得伤害来源一张手牌。",
   ["jiexing"] = "节行",
-  [":jiexing"] = "当你的体力值变化后，你可以摸一张牌，此牌不计入你本回合的手牌上限。",
+  [":jiexing"] = "当你的体力值变化后，你可以摸一张牌，此牌于本回合内不计入手牌上限。",
 
   ["#jiexing-invoke"] = "节行：你可以摸一张牌，此牌本回合不计入手牌上限",
-  ["@@jiexing-inhand"] = "节行",
+  ["@@jiexing-inhand-turn"] = "节行",
 
   ["$fangdu1"] = "浮萍却红尘，何意染是非？",
   ["$fangdu2"] = "我本无意争春，奈何群芳相妒。",

@@ -3005,10 +3005,7 @@ local youzhan = fk.CreateTriggerSkill{
         if yes then
           player:broadcastSkillInvoke(self.name)
           room:notifySkillInvoked(player, self.name, "drawcard")
-          local card = player:drawCards(1, self.name)
-          if table.contains(player:getCardIds("h"), card[1]) then
-            room:setCardMark(Fk:getCardById(card[1]), "@@youzhan-inhand", 1)
-          end
+          player:drawCards(1, self.name, nil, "@@youzhan-inhand-turn")
           local to = room:getPlayerById(move.from)
           if not to.dead then
             room:addPlayerMark(to, "@youzhan-turn", 1)
@@ -3016,16 +3013,6 @@ local youzhan = fk.CreateTriggerSkill{
           end
         end
       end
-    end
-  end,
-
-  refresh_events = {fk.TurnEnd},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and not player:isKongcheng()
-  end,
-  on_refresh = function(self, event, target, player, data)
-    for _, id in ipairs(player:getCardIds("h")) do
-      player.room:setCardMark(Fk:getCardById(id), "@@youzhan-inhand", 0)
     end
   end,
 }
@@ -3073,7 +3060,7 @@ local youzhan_trigger = fk.CreateTriggerSkill{
 local youzhan_maxcards = fk.CreateMaxCardsSkill{
   name = "#youzhan_maxcards",
   exclude_from = function(self, player, card)
-    return card:getMark("@@youzhan-inhand") > 0
+    return card:getMark("@@youzhan-inhand-turn") > 0
   end,
 }
 youzhan:addRelatedSkill(youzhan_trigger)
@@ -3087,7 +3074,7 @@ Fk:loadTranslationTable{
   [":youzhan"] = "锁定技，其他角色在你的回合失去牌后，你摸一张牌且此牌本回合不计入手牌上限，其本回合下次受到的伤害+1。结束阶段，若这些角色本回合"..
   "未受到过伤害，其摸X张牌（X为其本回合失去牌的次数，至多为3）。",
   ["@youzhan-turn"] = "诱战",
-  ["@@youzhan-inhand"] = "诱战",
+  ["@@youzhan-inhand-turn"] = "诱战",
 
   ["$youzhan1"] = "本将军在此！贼仲达何在？",
   ["$youzhan2"] = "以身为饵，诱老贼出营。",
@@ -4282,28 +4269,9 @@ local kuizhen = fk.CreateActiveSkill{
         return Fk:getCardById(id).trueName == "slash"
       end)
       if #cards == 0 then return end
-      room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, false, player.id)
+      room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, false, player.id, "@@kuizhen-inhand")
     else
       room:loseHp(target, 1, self.name)
-    end
-  end,
-}
-local kuizhen_refresh = fk.CreateTriggerSkill{
-  name = "#kuizhen_refresh",
-
-  refresh_events = {fk.AfterCardsMove},
-  can_refresh = Util.TrueFunc,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    for _, move in ipairs(data) do
-      if move.to == player.id and move.toArea == Card.PlayerHand and move.skillName == "kuizhen" then
-        for _, info in ipairs(move.moveInfo) do
-          local id = info.cardId
-          if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player then
-            room:setCardMark(Fk:getCardById(id), "@@kuizhen-inhand", 1)
-          end
-        end
-      end
     end
   end,
 }
@@ -4314,7 +4282,6 @@ local kuizhen_targetmod = fk.CreateTargetModSkill{
   end,
 }
 kuizhen:addRelatedSkill(kuizhen_targetmod)
-kuizhen:addRelatedSkill(kuizhen_refresh)
 gongsunxiu:addSkill(gangu)
 gongsunxiu:addSkill(kuizhen)
 Fk:loadTranslationTable{

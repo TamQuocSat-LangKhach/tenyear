@@ -67,11 +67,9 @@ local biejun = fk.CreateTriggerSkill{
     return true
   end,
 
-  refresh_events = {fk.AfterCardsMove, fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
+  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.AfterCardsMove then
-      return true
-    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
+    if event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
       return data == self
     elseif event == fk.BuryVictim then
       return player:hasSkill(self, true, true)
@@ -79,26 +77,13 @@ local biejun = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.AfterCardsMove then
-      for _, move in ipairs(data) do
-        if move.to == player.id and move.toArea == Card.PlayerHand and move.skillName == "biejun" then
-          for _, info in ipairs(move.moveInfo) do
-            local id = info.cardId
-            if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player then
-              room:setCardMark(Fk:getCardById(id), "@@biejun-inhand-turn", 1)
-            end
-          end
-        end
+    if table.every(room.alive_players, function(p) return not p:hasSkill(self, true) or p == player end) then
+      if player:hasSkill("biejun&", true, true) then
+        room:handleAddLoseSkills(player, "-biejun&", nil, false, true)
       end
     else
-      if table.every(room.alive_players, function(p) return not p:hasSkill(self, true) or p == player end) then
-        if player:hasSkill("biejun&", true, true) then
-          room:handleAddLoseSkills(player, "-biejun&", nil, false, true)
-        end
-      else
-        if not player:hasSkill("biejun&", true, true) then
-          room:handleAddLoseSkills(player, "biejun&", nil, false, true)
-        end
+      if not player:hasSkill("biejun&", true, true) then
+        room:handleAddLoseSkills(player, "biejun&", nil, false, true)
       end
     end
   end,
@@ -129,7 +114,7 @@ local biejun_active = fk.CreateActiveSkill{
     local targetRecorded = U.getMark(player, "biejun_targets-phase")
     table.insert(targetRecorded, target.id)
     room:setPlayerMark(player, "biejun_targets-phase", targetRecorded)
-    room:moveCardTo(effect.cards[1], Card.PlayerHand, target, fk.ReasonGive, "biejun", nil, false, player.id)
+    room:moveCardTo(effect.cards[1], Card.PlayerHand, target, fk.ReasonGive, "biejun", nil, false, player.id, "@@biejun-inhand-turn")
   end,
 }
 Fk:addSkill(biejun_active)
@@ -253,7 +238,7 @@ local cibei = fk.CreateTriggerSkill{
         end
       end
     else
-      room:moveCardTo(player:getPile("hanlong_ci"), Card.PlayerHand, player, fk.ReasonPrey, self.name)
+      room:moveCardTo(player:getPile("hanlong_ci"), Card.PlayerHand, player, fk.ReasonPrey, self.name, "", true, player.id, "@@cibei-inhand")
     end
   end,
 }
@@ -263,23 +248,11 @@ local cibei_delay = fk.CreateTriggerSkill{
   events = {fk.BeforeCardsMove, fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player.dead then return end
-    if event == fk.BeforeCardsMove then
-      for _, move in ipairs(data) do
-        if move.from == player.id and move.moveReason == fk.ReasonDiscard then
-          for _, info in ipairs(move.moveInfo) do
-            if Fk:getCardById(info.cardId):getMark("@@cibei-inhand") > 0 then
-              return true
-            end
-          end
-        end
-      end
-    else
-      for _, move in ipairs(data) do
-        if move.to == player.id and move.moveReason == fk.ReasonPrey and move.skillName == "cibei" then
-          for _, info in ipairs(move.moveInfo) do
-            if table.contains(player.player_cards[Player.Hand], info.cardId) then
-              return true
-            end
+    for _, move in ipairs(data) do
+      if move.from == player.id and move.moveReason == fk.ReasonDiscard then
+        for _, info in ipairs(move.moveInfo) do
+          if Fk:getCardById(info.cardId):getMark("@@cibei-inhand") > 0 then
+            return true
           end
         end
       end
@@ -288,38 +261,28 @@ local cibei_delay = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.BeforeCardsMove then
-      local ids = {}
-      for _, move in ipairs(data) do
-        if move.from == player.id and move.moveReason == fk.ReasonDiscard then
-          local move_info = {}
-          for _, info in ipairs(move.moveInfo) do
-            if Fk:getCardById(info.cardId):getMark("@@cibei-inhand") > 0 then
-              table.insert(ids, info.cardId)
-            else
-              table.insert(move_info, info)
-            end
-          end
-          if #ids > 0 then
-            move.moveInfo = move_info
+    local ids = {}
+    for _, move in ipairs(data) do
+      if move.from == player.id and move.moveReason == fk.ReasonDiscard then
+        local move_info = {}
+        for _, info in ipairs(move.moveInfo) do
+          if Fk:getCardById(info.cardId):getMark("@@cibei-inhand") > 0 then
+            table.insert(ids, info.cardId)
+          else
+            table.insert(move_info, info)
           end
         end
-      end
-      if #ids > 0 then
-        player.room:sendLog{
-          type = "#cancelDismantle",
-          card = ids,
-          arg = "cibei",
-        }
-      end
-    else
-      for _, move in ipairs(data) do
-        if move.to == player.id and move.moveReason == fk.ReasonPrey and move.skillName == "cibei" then
-          for _, info in ipairs(move.moveInfo) do
-            room:setCardMark(Fk:getCardById(info.cardId), "@@cibei-inhand", 1)
-          end
+        if #ids > 0 then
+          move.moveInfo = move_info
         end
       end
+    end
+    if #ids > 0 then
+      player.room:sendLog{
+        type = "#cancelDismantle",
+        card = ids,
+        arg = "cibei",
+      }
     end
   end,
 }

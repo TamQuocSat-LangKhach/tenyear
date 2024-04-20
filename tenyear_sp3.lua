@@ -3063,7 +3063,8 @@ local xiongmu = fk.CreateTriggerSkill{
           toArea = Card.PlayerHand,
           moveReason = fk.ReasonPrey,
           proposer = player.id,
-          skillName = "xiongmu_get",
+          skillName = self.name,
+          moveMark = "@@xiongmu-inhand-round",
         })
       end
     else
@@ -3074,32 +3075,11 @@ local xiongmu = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.AfterCardsMove, fk.RoundEnd},
-  can_refresh = Util.TrueFunc,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.AfterCardsMove then
-      for _, move in ipairs(data) do
-        if move.to == player.id and move.toArea == Card.PlayerHand and move.skillName == "xiongmu_get" then
-          for _, info in ipairs(move.moveInfo) do
-            local id = info.cardId
-            if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player then
-              room:setCardMark(Fk:getCardById(id), "@@xiongmu-inhand", 1)
-            end
-          end
-        end
-      end
-    elseif event == fk.RoundEnd then
-      for _, id in ipairs(player:getCardIds(Player.Hand)) do
-        room:setCardMark(Fk:getCardById(id), "@@xiongmu-inhand", 0)
-      end
-    end
-  end,
 }
 local xiongmu_maxcards = fk.CreateMaxCardsSkill{
   name = "#xiongmu_maxcards",
   exclude_from = function(self, player, card)
-    return card:getMark("@@xiongmu-inhand") > 0
+    return card:getMark("@@xiongmu-inhand-round") > 0
   end,
 }
 local zhangcai = fk.CreateTriggerSkill{
@@ -3160,7 +3140,7 @@ Fk:loadTranslationTable{
 
   ["#xiongmu-draw"] = "雄幕：是否将手牌补至体力上限（摸%arg张牌）",
   ["#xiongmu-cards"] = "雄幕：你可将任意张牌随机置入牌堆，然后获得等量张点数为8的牌",
-  ["@@xiongmu-inhand"] = "雄幕",
+  ["@@xiongmu-inhand-round"] = "雄幕",
   ["#ruxian-active"] = "发动 儒贤，令你发动〖彰才〗没有点数的限制直到你的下个回合开始",
   ["@@ruxian"] = "儒贤",
 
@@ -3343,12 +3323,12 @@ local wuyou = fk.CreateActiveSkill{
     local success, dat = room:askForUseActiveSkill(player, "wuyou_declare",
     "#wuyou-declare::" .. target.id, false, { interaction_choices = card_names })
     local id = success and dat.cards[1] or table.random(player:getCardIds(Player.Hand))
-    if target ~= player then
-      room:moveCardTo(id, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
-      if room:getCardArea(id) ~= Player.Hand or room:getCardOwner(id) ~= target then return end
-    end
     local card_name = success and dat.interaction or card_names[1]
-    room:setCardMark(Fk:getCardById(id), "@@wuyou-inhand", card_name)
+    if target == player then
+      room:setCardMark(Fk:getCardById(id), "@@wuyou-inhand", card_name)
+    else
+      room:moveCardTo(id, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id, {"@@wuyou-inhand", card_name})
+    end
   end,
 }
 local wuyou_refresh = fk.CreateTriggerSkill{
@@ -3533,8 +3513,8 @@ Fk:loadTranslationTable{
   ["juewu"] = "绝武",
   [":juewu"] = "你可以将点数为2的牌当伤害牌或【水淹七军】使用（每回合每种牌名限一次）。当你得到其他角色的牌后，这些牌的点数视为2。",
   ["wuyou"] = "武佑",
-  [":wuyou"] = "出牌阶段限一次，你可以从五个随机的不为装备牌的牌名中选择一个并选择你的一张手牌，此牌视为你声明的牌且无距离和次数限制。"..
-  "其他角色的出牌阶段限一次，其可以将一张手牌交给你，然后你可以从五个随机的不为装备牌的牌名中选择一个并将一张手牌交给该角色，"..
+  [":wuyou"] = "出牌阶段限一次，你可以从五个随机的不为装备牌的牌名中声明一个并选择你的一张手牌，此牌视为你声明的牌且无距离和次数限制。"..
+  "其他角色的出牌阶段限一次，其可以将一张手牌交给你，然后你可以从五个随机的不为装备牌的牌名中声明一个并将一张手牌交给该角色，"..
   "此牌视为你声明的牌且无距离和次数限制。",
   ["yixian"] = "义贤",
   [":yixian"] = "限定技，出牌阶段，你可以选择：1.获得场上的所有装备牌，你对以此法被你获得牌的角色依次可以令其摸等量的牌并回复1点体力；"..

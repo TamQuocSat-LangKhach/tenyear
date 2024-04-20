@@ -687,38 +687,19 @@ local minsi = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     room:throwCard(effect.cards, self.name, player, player)
     if player.dead then return end
-    local cards = player:drawCards(2 * #effect.cards, self.name)
-    if player.dead then return end
-    cards = table.filter(cards, function(id) return room:getCardOwner(id) == player and room:getCardArea(id) == Card.PlayerHand end)
-    if #cards == 0 then return end
-    for _, id in ipairs(cards) do
-      room:setCardMark(Fk:getCardById(id), "@@minsi-inhand", 1)
-    end
-  end,
-}
-local minsi_record = fk.CreateTriggerSkill{
-  name = "#minsi_record",
-
-  refresh_events = {fk.TurnEnd},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player:usedSkillTimes("minsi", Player.HistoryTurn) > 0
-  end,
-  on_refresh = function(self, event, target, player, data)
-    for _, id in ipairs(player:getCardIds("h")) do
-      player.room:setCardMark(Fk:getCardById(id), "@@minsi-inhand", 0)
-    end
+    player:drawCards(2 * #effect.cards, self.name, nil, "@@minsi-inhand-turn")
   end,
 }
 local minsi_targetmod = fk.CreateTargetModSkill{
   name = "#minsi_targetmod",
   bypass_distances =  function(self, player, skill, card, to)
-    return card and card:getMark("@@minsi-inhand") > 0 and card.color == Card.Black
+    return card and card:getMark("@@minsi-inhand-turn") > 0 and card.color == Card.Black
   end,
 }
 local minsi_maxcards = fk.CreateMaxCardsSkill{
   name = "#minsi_maxcards",
   exclude_from = function(self, player, card)
-    return card:getMark("@@minsi-inhand") > 0 and card.color == Card.Red
+    return card:getMark("@@minsi-inhand-turn") > 0 and card.color == Card.Red
   end,
 }
 local jijing = fk.CreateTriggerSkill{
@@ -811,7 +792,6 @@ local zhuide = fk.CreateTriggerSkill{
     end
   end,
 }
-minsi:addRelatedSkill(minsi_record)
 minsi:addRelatedSkill(minsi_targetmod)
 minsi:addRelatedSkill(minsi_maxcards)
 Fk:addSkill(jijing_active)
@@ -829,7 +809,7 @@ Fk:loadTranslationTable{
   ["zhuide"] = "追德",
   [":zhuide"] = "当你死亡时，你可以令一名其他角色摸四张不同牌名的基本牌。",
   ["#minsi"] = "敏思：弃置任意张点数之和为13的牌，摸两倍的牌",
-  ["@@minsi-inhand"] = "敏思",
+  ["@@minsi-inhand-turn"] = "敏思",
   ["jijing_active"] = "吉境",
   ["#jijing-discard"] = "吉境：你可以弃置任意张点数之和为%arg的牌，回复1点体力",
   ["#zhuide-choose"] = "追德：你可以令一名角色摸四张不同牌名的基本牌",

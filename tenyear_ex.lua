@@ -5170,7 +5170,8 @@ local ty_ex__zhanjue = fk.CreateViewAsSkill{
     end
   end,
   enabled_at_play = function(self, player)
-    return player:getMark("ty_ex__zhanjue-phase") < 3 and table.find(player:getCardIds("h"), function (id) return Fk:getCardById(id):getMark("@@ty_ex__qinwang-inhand") == 0 end)
+    return player:getMark("ty_ex__zhanjue-phase") < 3 and table.find(player:getCardIds("h"), function (id)
+      return Fk:getCardById(id):getMark("@@ty_ex__qinwang-inhand") == 0 end)
   end
 }
 ty_ex__liuchen:addSkill(ty_ex__zhanjue)
@@ -5192,19 +5193,7 @@ local ty_ex__qinwang = fk.CreateActiveSkill{
         local cards = room:askForCard(p, 1, 1, false, self.name, true, "slash", "#ty_ex__qinwang-ask:"..player.id)
         if #cards > 0 then
           table.insert(loyal, p)
-          room:moveCards({
-            ids = cards,
-            from = p.id,
-            to = player.id,
-            toArea = Card.PlayerHand,
-            moveReason = fk.ReasonGive,
-            proposer = p.id,
-            skillName = self.name,
-            moveVisible = false,
-          })
-          if table.contains(player:getCardIds("h"), cards[1]) then
-            room:setCardMark(Fk:getCardById(cards[1]), "@@ty_ex__qinwang-inhand-turn", 1)
-          end
+          room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonGive, self.name, "", true, p.id, "@@ty_ex__qinwang-inhand-turn")
         end
       end
     end

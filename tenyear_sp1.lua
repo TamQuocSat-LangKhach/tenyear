@@ -1168,24 +1168,9 @@ local fuxue = fk.CreateTriggerSkill{
           { self.name, cards }
         }
       }, self.name)
-      room:moveCardTo(get, Player.Hand, player, fk.ReasonJustMove, "fuxue_recycle", "", true, player.id)
+      room:moveCardTo(get, Player.Hand, player, fk.ReasonJustMove, "fuxue_recycle", "", true, player.id, "@@fuxue-inhand-turn")
     else
       player:drawCards(player.hp, self.name)
-    end
-  end,
-
-  refresh_events = {fk.AfterCardsMove},
-  can_refresh = Util.TrueFunc,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    for _, move in ipairs(data) do
-      if move.to == player.id and move.toArea == Card.PlayerHand and move.skillName == "fuxue_recycle" then
-        for _, info in ipairs(move.moveInfo) do
-          if table.contains(player.player_cards[Player.Hand], info.cardId) then
-            room:setCardMark(Fk:getCardById(info.cardId), "@@fuxue-inhand-turn", 1)
-          end
-        end
-      end
     end
   end,
 }

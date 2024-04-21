@@ -153,13 +153,14 @@ local liushi = fk.CreateActiveSkill{
   card_num = 1,
   target_num = 1,
   can_use = function(self, player)
-    return not player:isNude()
+    return not player:prohibitUse(Fk:cloneCard("slash"))
   end,
   card_filter = function(self, to_select, selected, targets)
     return #selected == 0 and Fk:getCardById(to_select).suit == Card.Heart
   end,
   target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0 and to_select ~= Self.id and not Self:isProhibited(Fk:currentRoom():getPlayerById(to_select), Fk:cloneCard("slash"))
+    return #selected == 0 and to_select ~= Self.id
+    and not Self:isProhibited(Fk:currentRoom():getPlayerById(to_select), Fk:cloneCard("slash"))
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -168,15 +169,16 @@ local liushi = fk.CreateActiveSkill{
       ids = effect.cards,
       from = player.id,
       toArea = Card.DrawPile,
-      moveReason = fk.ReasonJustMove,
+      moveReason = fk.ReasonPut,
       skillName = self.name,
       moveVisible = true
     })
+    local slash = Fk:cloneCard("slash")
+    slash.skillName = self.name
     local use = {
       from = player.id,
       tos = {{target.id}},
-      card = Fk:cloneCard("slash"),
-      skillName = self.name,
+      card = slash,
       extraUse = true,
     }
     room:useCard(use)

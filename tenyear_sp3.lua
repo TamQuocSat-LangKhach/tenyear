@@ -3359,40 +3359,23 @@ local wuyou = fk.CreateActiveSkill{
 local wuyou_refresh = fk.CreateTriggerSkill{
   name = "#wuyou_refresh",
 
-  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim, fk.BeforeCardUseEffect},
+  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
   can_refresh = function(self, event, target, player, data)
     if event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
       return data == self
     elseif event == fk.BuryVictim then
       return player:hasSkill(self, true, true)
-    elseif event == fk.BeforeCardUseEffect then
-      --FIXME：锁视延迟锦囊的暂时对策
-      return data.card.sub_type == Card.SubtypeDelayedTrick and player == target and
-      not data.card:isVirtual() and table.contains(data.card.skillNames, "#wuyou_filter")
     end
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.BeforeCardUseEffect then
-      --FIXME：锁视延迟锦囊的暂时对策
-      local tos = TargetGroup:getRealTargets(data.tos)
-      if #tos == 0 then return false end
-      local to = room:getPlayerById(tos[1])
-      if not (to.dead or to:hasDelayedTrick(data.card.name)) then
-        local card = Fk:cloneCard(data.card.name)
-        card.skillNames = data.card.skillNames
-        card:addSubcard(data.card.id)
-        to:addVirtualEquip(card)
+    if table.every(room.alive_players, function(p) return not p:hasSkill(self, true) or p == player end) then
+      if player:hasSkill("wuyou&", true, true) then
+        room:handleAddLoseSkills(player, "-wuyou&", nil, false, true)
       end
     else
-      if table.every(room.alive_players, function(p) return not p:hasSkill(self, true) or p == player end) then
-        if player:hasSkill("wuyou&", true, true) then
-          room:handleAddLoseSkills(player, "-wuyou&", nil, false, true)
-        end
-      else
-        if not player:hasSkill("wuyou&", true, true) then
-          room:handleAddLoseSkills(player, "wuyou&", nil, false, true)
-        end
+      if not player:hasSkill("wuyou&", true, true) then
+        room:handleAddLoseSkills(player, "wuyou&", nil, false, true)
       end
     end
   end,

@@ -5311,9 +5311,9 @@ local busuan_trigger = fk.CreateTriggerSkill {
         table.removeOne(card_names_copy, card_names[i])
       end
     end
-    
+
     room:setPlayerMark(player, busuan.name, (#card_names_copy > 0) and card_names_copy or 0)
-    
+
     data.num = data.num - #to_get
 
     if #to_get > 0 then

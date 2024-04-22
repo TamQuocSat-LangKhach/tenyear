@@ -2502,9 +2502,7 @@ local xiyan = fk.CreateTriggerSkill{
       end
     end
     room:setPlayerMark(player, "yuanyu_targets", 0)
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(player:getPile("#yuanyu_resent"))
-    room:obtainCard(player, dummy, false, fk.ReasonJustMove)
+    room:moveCardTo(player:getPile("#yuanyu_resent"), Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
     if room.current and not room.current.dead and room.current.phase ~= Player.NotActive then
       if room.current == player then
         room:addPlayerMark(player, MarkEnum.AddMaxCardsInTurn, 4)

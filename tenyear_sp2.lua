@@ -2447,9 +2447,9 @@ local anzhi = fk.CreateActiveSkill{
         if #ids > 2 then
           get = room:askForCardsChosen(player, player, 2, 2, {
             card_data = {
-              { self.name, ids }
+              { "pile_discard", ids }
             }
-          }, self.name)
+          }, self.name, "#anzhi-cards::" .. to[1])
         else
           get = ids
         end
@@ -2458,9 +2458,11 @@ local anzhi = fk.CreateActiveSkill{
             ids = get,
             to = to[1],
             toArea = Card.PlayerHand,
-            moveReason = fk.ReasonPrey,
+            moveReason = fk.ReasonJustMove,
             proposer = player.id,
             skillName = self.name,
+            moveVisible = false,
+            visiblePlayers = player.id,
           })
         end
       end
@@ -2507,6 +2509,7 @@ Fk:loadTranslationTable{
   ["#anzhi-active"] = "发动暗织，进行判定",
   ["#anzhi-invoke"] = "是否使用暗织，进行判定",
   ["#anzhi-choose"] = "暗织：你可以令一名非当前回合角色获得本回合进入弃牌堆的两张牌",
+  ["#anzhi-cards"] = "暗织：选择2张卡牌令%dest获得",
 
   ["$xialei1"] = "采霞揾晶泪，沾我青衫湿。",
   ["$xialei2"] = "登车入宫墙，垂泪凝如瑙。",

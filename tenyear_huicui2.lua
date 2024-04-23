@@ -4601,9 +4601,7 @@ local qiqin = fk.CreateTriggerSkill{
         room:setCardMark(Fk:getCardById(id), "qiqin", 1)
       end
     else
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(self.cost_data)
-      room:obtainCard(player, dummy, true, fk.ReasonPrey)
+      room:moveCardTo(self.cost_data, Player.Hand, player, fk.ReasonJustMove, self.name, "", false, player.id)
     end
   end,
 
@@ -4907,9 +4905,7 @@ local weiwan = fk.CreateActiveSkill{
       table.insert(get, table.random(value))
     end
     if #get > 0 then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(get)
-      room:obtainCard(player, dummy, true, fk.ReasonPrey)
+      room:moveCardTo(get, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
       if to.dead then return end
       if #get == 1 then
         room:loseHp(to, 1, self.name)

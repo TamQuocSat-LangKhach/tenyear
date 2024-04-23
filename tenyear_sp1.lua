@@ -1165,10 +1165,10 @@ local fuxue = fk.CreateTriggerSkill{
       end)
       local get = room:askForCardsChosen(player, player, 1, player.hp, {
         card_data = {
-          { self.name, cards }
+          { "pile_discard", cards }
         }
-      }, self.name)
-      room:moveCardTo(get, Player.Hand, player, fk.ReasonJustMove, "fuxue_recycle", "", true, player.id, "@@fuxue-inhand-turn")
+      }, self.name, "#fuxue-choose:::" .. tostring(player.hp))
+      room:moveCardTo(get, Player.Hand, player, fk.ReasonJustMove, self.name, "", false, player.id, "@@fuxue-inhand-turn")
     else
       player:drawCards(player.hp, self.name)
     end
@@ -1312,6 +1312,7 @@ Fk:loadTranslationTable{
   ["shoutan"] = "手谈",
   [":shoutan"] = "转换技，出牌阶段限一次，你可以弃置一张：阳：非黑色手牌；阴：黑色手牌。",
   ["#fuxue-invoke"] = "复学：你可以获得弃牌堆中至多%arg张不因使用而进入弃牌堆的牌",
+  ["#fuxue-choose"] = "复学：从弃牌堆中挑选至多%arg张卡牌获得",
   ["@@fuxue-inhand-turn"] = "复学",
   ["#shoutan-active"] = "发动 手谈，%arg将此技能转换为%arg2状态",
   ["shoutan_yin"] = "弃置一张黑色手牌，",

@@ -3677,20 +3677,7 @@ Fk:loadTranslationTable{
 }
 
 local ty__jiangwanfeiyi = General(extension, "ty__jiangwanfeiyi", "shu", 3)
-local shengxi = fk.CreateTriggerSkill{
-  name = "ty__shengxi",
-  anim_type = "drawcard",
-  events = {fk.EventPhaseStart},
-  can_trigger = function(self, event, target, player, data)
-    return player == target and player:hasSkill(self) and player.phase == Player.Finish and
-    #U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == player end) == 0
-  end,
-  on_use = function(self, event, target, player, data)
-    player:broadcastSkillInvoke("ld__shengxi")
-    player:drawCards(2, self.name)
-  end,
-}
-ty__jiangwanfeiyi:addSkill(shengxi)
+ty__jiangwanfeiyi:addSkill("ld__shengxi")
 local shoucheng = fk.CreateTriggerSkill{
   name = "ty__shoucheng",
   anim_type = "support",
@@ -3700,7 +3687,7 @@ local shoucheng = fk.CreateTriggerSkill{
     for _, move in ipairs(data) do
       if move.from then
         local from = player.room:getPlayerById(move.from)
-        if from:isKongcheng() and from.phase == Player.NotActive then
+        if from:isKongcheng() and from.phase == Player.NotActive and not from.dead then
           for _, info in ipairs(move.moveInfo) do
             if info.fromArea == Card.PlayerHand then
               return true
@@ -3710,13 +3697,13 @@ local shoucheng = fk.CreateTriggerSkill{
       end
     end
   end,
-  on_trigger = function(self, event, target, player, data)
+  on_cost = function(self, event, target, player, data)
     local targets = {}
     local room = player.room
     for _, move in ipairs(data) do
       if move.from then
         local from = room:getPlayerById(move.from)
-        if from:isKongcheng() and from.phase == Player.NotActive then
+        if from:isKongcheng() and from.phase == Player.NotActive and not from.dead then
           for _, info in ipairs(move.moveInfo) do
             if info.fromArea == Card.PlayerHand then
               table.insertIfNeed(targets, from.id)
@@ -3726,18 +3713,16 @@ local shoucheng = fk.CreateTriggerSkill{
         end
       end
     end
-    self:doCost(event, nil, player, targets)
-  end,
-  on_cost = function(self, event, target, player, data)
-    if #data > 1 then
-      local tos = player.room:askForChoosePlayers(player, data, 1, 1, "#ty__shoucheng-choose", self.name, true)
+    if #targets == 0 then return end
+    if #targets > 1 then
+      local tos = player.room:askForChoosePlayers(player, targets, 1, 1, "#ty__shoucheng-choose", self.name, true)
       if #tos > 0 then
         self.cost_data = tos[1]
         return true
       end
     else
-      self.cost_data = data[1]
-      return player.room:askForSkillInvoke(player, self.name, nil, "#ty__shoucheng-draw::" .. data[1])
+      self.cost_data = targets[1]
+      return player.room:askForSkillInvoke(player, self.name, nil, "#ty__shoucheng-draw::" .. targets[1])
     end
   end,
   on_use = function(self, event, target, player, data)
@@ -3755,8 +3740,6 @@ Fk:loadTranslationTable{
   ["designer:ty__jiangwanfeiyi"] = "淬毒",
   --["illustrator:ty__jiangwanfeiyi"] = "",
 
-  ["ty__shengxi"] = "生息",
-  [":ty__shengxi"] = "结束阶段，若你本回合未造成过伤害，你可以摸两张牌。",
   ["ty__shoucheng"] = "守成",
   [":ty__shoucheng"] = "当一名角色于其回合外失去手牌后，若其没有手牌且你于当前回合内未发动过此技能，你可令其摸两张牌。",
 

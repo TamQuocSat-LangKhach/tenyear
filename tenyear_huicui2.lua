@@ -2657,7 +2657,7 @@ Fk:loadTranslationTable{
   ["~ty__yanghu"] = "臣死之后，杜元凯可继之……",
 }
 
---匡鼎炎汉：刘巴 黄权 吴班 霍峻 傅肜傅佥 向朗 高翔
+--匡鼎炎汉：刘巴 黄权 吴班 霍峻 傅肜傅佥 向朗 高翔 杨仪 蒋琬费祎
 local liuba = General(extension, "ty__liuba", "shu", 3)
 local ty__zhubi = fk.CreateTriggerSkill{
   name = "ty__zhubi",
@@ -3506,6 +3506,174 @@ Fk:loadTranslationTable{
   ["$chiying1"] = "今诱老贼来此，必折其父子于上方谷。",
   ["$chiying2"] = "列柳城既失，当下唯死守阳平关。",
   ["~gaoxiang"] = "老贼不死，实天意也……",
+}
+
+local yangyi = General(extension, "ty__yangyi", "shu", 3)
+local ty__juanxia_active = fk.CreateActiveSkill{
+  name = "ty__juanxia_active",
+  expand_pile = function(self)
+    return self.ty__juanxia_names or {}
+  end,
+  card_num = 1,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and table.contains(self.ty__juanxia_names or {}, to_select)
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if #selected_cards == 0 then return false end
+    local to = self.ty__juanxia_target
+    if #selected == 0 then
+      return to_select == to
+    elseif #selected == 1 then
+      local card = Fk:cloneCard(Fk:getCardById(selected_cards[1]).name)
+      card.skillName = "ty__juanxia"
+      if card.skill:getMinTargetNum() == 2 and selected[1] == to then
+        return card.skill:targetFilter(to_select, selected, {}, card)
+      end
+    end
+  end,
+  feasible = function(self, selected, selected_cards)
+    if #selected_cards == 0 then return false end
+    local to_use = Fk:cloneCard(Fk:getCardById(selected_cards[1]).name)
+    to_use.skillName = "ty__juanxia"
+    local selected_copy = table.simpleClone(selected)
+    if #selected_copy == 0 then
+      table.insert(selected_copy, self.ty__juanxia_target)
+    end
+    return to_use.skill:feasible(selected_copy, {}, Self, to_use)
+  end,
+}
+local ty__juanxia = fk.CreateTriggerSkill{
+  name = "ty__juanxia",
+  anim_type = "offensive",
+  events = {fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Finish
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#ty__juanxia-choose", self.name, true)
+    if #tos > 0 then
+      self.cost_data = tos[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local x = 0
+    local all = table.filter(U.getUniversalCards(room, "t"), function(id)
+      local trick = Fk:getCardById(id)
+      return not trick.multiple_targets and trick.skill:getMinTargetNum() > 0
+    end)
+    for i = 1, 3 do
+      local names = table.filter(all, function (id)
+        local card = Fk:cloneCard(Fk:getCardById(id).name)
+        card.skillName = self.name
+        return player:canUseTo(card, to, {bypass_distances = true})
+      end)
+      if #names == 0 then break end
+      local _, dat = room:askForUseActiveSkill(player, "ty__juanxia_active", "#ty__juanxia-invoke::" .. to.id..":"..i, true,
+      {ty__juanxia_names = names, ty__juanxia_target = to.id})
+      if not dat then break end
+      table.removeOne(all, dat.cards[1])
+      local card = Fk:cloneCard(Fk:getCardById(dat.cards[1]).name)
+      x = x + 1
+      card.skillName = self.name
+      local tos = dat.targets
+      if #tos == 0 then table.insert(tos, to.id) end
+      room:useCard{
+        from = player.id,
+        tos = table.map(dat.targets, function(id) return {id} end),
+        card = card,
+      }
+      if player.dead or to.dead then return end
+    end
+    if x == 0 then return end
+    room:setPlayerMark(to, "@ty__juanxia", x)
+    room:setPlayerMark(to, "ty__juanxia_src", player.id)
+  end,
+
+  refresh_events = {fk.AfterTurnEnd},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and (player:getMark("@ty__juanxia") > 0 or player:getMark("ty__juanxia_src") > 0)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "@ty__juanxia", 0)
+    room:setPlayerMark(player, "ty__juanxia_src", 0)
+  end,
+}
+local ty__juanxia_delay = fk.CreateTriggerSkill{
+  name = "#ty__juanxia_delay",
+  events = {fk.TurnEnd},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return not player.dead and not target.dead and target:getMark("@ty__juanxia") > 0 and
+    target:getMark("ty__juanxia_src") == player.id
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local n = target:getMark("@ty__juanxia")
+    for i = 1, n, 1 do
+      local slash = Fk:cloneCard("slash")
+      slash.skillName = "ty__juanxia"
+      if U.canUseCardTo(room, target, player, slash, false, false) and
+      room:askForSkillInvoke(target, self.name, nil, "#ty__juanxia-slash:"..player.id.."::"..n..":"..i) then
+        room:useCard{
+          from = target.id,
+          tos = {{player.id}},
+          card = slash,
+          extraUse = true,
+        }
+      else
+        break
+      end
+      if player.dead or target.dead then break end
+    end
+  end
+}
+local ty__dingcuo = fk.CreateTriggerSkill{
+  name = "ty__dingcuo",
+  anim_type = "drawcard",
+  events = {fk.Damage, fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
+    and not (data.to == player and data.from == player)
+  end,
+  on_use = function(self, event, target, player, data)
+    local cards = player:drawCards(2, self.name)
+    if Fk:getCardById(cards[1]).color ~= Fk:getCardById(cards[2]).color and not player.dead then
+      player.room:askForDiscard(player, 1, 1, false, self.name, false)
+    end
+  end
+}
+Fk:addSkill(ty__juanxia_active)
+ty__juanxia:addRelatedSkill(ty__juanxia_delay)
+yangyi:addSkill(ty__juanxia)
+yangyi:addSkill(ty__dingcuo)
+Fk:loadTranslationTable{
+  ["ty__yangyi"] = "杨仪",
+  ["#ty__yangyi"] = "武侯长史",
+  ["designer:ty__yangyi"] = "步穗",
+  ["illustrator:ty__yangyi"] = "鬼画府", -- 驭雷伏乱
+
+  ["ty__juanxia"] = "狷狭",
+  [":ty__juanxia"] = "结束阶段，你可以选择一名其他角色，视为依次使用至多三张牌名各不相同的仅指定唯一目标的普通锦囊牌（无距离限制）。若如此做，该角色的下一个结束阶段开始时，其可以视为对你使用等量张【杀】。",
+  ["ty__dingcuo"] = "定措",
+  [":ty__dingcuo"] = "当你造成伤害后，或当你受到伤害后，若你于当前回合内未发动过此技能，且受伤角色和伤害来源均不为你，你可摸两张牌，若这两张牌颜色不同，你弃置一张手牌。",
+  ["ty__juanxia_active"] = "狷狭",
+  ["#ty__juanxia-choose"] = "狷狭：选择一名其他角色，视为对其使用至多三张仅指定唯一目标的普通锦囊",
+  ["#ty__juanxia-invoke"] = "狷狭：你可以视为对 %dest 使用一张锦囊（第%arg张，至多3张）",
+  ["#ty__juanxia_delay"] = "狷狭",
+  ["#ty__juanxia-slash"] = "狷狭：你可以视为对 %src 使用【杀】（第%arg2张，至多%arg张）",
+  ["@ty__juanxia"] = "狷狭",
+
+  ["$ty__juanxia1"] = "放之海内，知我者少、同我者无，可谓高处胜寒。",
+  ["$ty__juanxia2"] = "满堂朱紫，能文者不武，为将者少谋，唯吾兼备。",
+  ["$ty__dingcuo1"] = "奋笔墨为锄，茁大汉以壮、慷国士以慨。",
+  ["$ty__dingcuo2"] = "执金戈为尺，定国之方圆、立人之规矩。",
+  ["~ty__yangyi"] = "幼主昏聩，群臣无谋，国将亡。",
 }
 
 --太平甲子：管亥 张闿 刘辟 裴元绍 张楚 张曼成

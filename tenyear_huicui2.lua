@@ -3661,7 +3661,7 @@ Fk:loadTranslationTable{
   ["ty__juanxia"] = "狷狭",
   [":ty__juanxia"] = "结束阶段，你可以选择一名其他角色，视为依次使用至多三张牌名各不相同的仅指定唯一目标的普通锦囊牌（无距离限制）。若如此做，该角色的下一个结束阶段开始时，其可以视为对你使用等量张【杀】。",
   ["ty__dingcuo"] = "定措",
-  [":ty__dingcuo"] = "当你造成伤害后，或当你受到伤害后，若你于当前回合内未发动过此技能，且受伤角色和伤害来源均不为你，你可摸两张牌，若这两张牌颜色不同，你弃置一张手牌。",
+  [":ty__dingcuo"] = "当你对其他角色造成伤害后，或当你受到其他角色造成的伤害后，若你于当前回合内未发动过此技能，你可摸两张牌，然后若这两张牌颜色不同，你须弃置一张手牌。",
   ["ty__juanxia_active"] = "狷狭",
   ["#ty__juanxia-choose"] = "狷狭：选择一名其他角色，视为对其使用至多三张仅指定唯一目标的普通锦囊",
   ["#ty__juanxia-invoke"] = "狷狭：你可以视为对 %dest 使用一张锦囊（第%arg张，至多3张）",
@@ -3674,6 +3674,94 @@ Fk:loadTranslationTable{
   ["$ty__dingcuo1"] = "奋笔墨为锄，茁大汉以壮、慷国士以慨。",
   ["$ty__dingcuo2"] = "执金戈为尺，定国之方圆、立人之规矩。",
   ["~ty__yangyi"] = "幼主昏聩，群臣无谋，国将亡。",
+}
+
+local ty__jiangwanfeiyi = General(extension, "ty__jiangwanfeiyi", "shu", 3)
+local shengxi = fk.CreateTriggerSkill{
+  name = "ty__shengxi",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player == target and player:hasSkill(self) and player.phase == Player.Finish and
+    #U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == player end) == 0
+  end,
+  on_use = function(self, event, target, player, data)
+    player:broadcastSkillInvoke("ld__shengxi")
+    player:drawCards(2, self.name)
+  end,
+}
+ty__jiangwanfeiyi:addSkill(shengxi)
+local shoucheng = fk.CreateTriggerSkill{
+  name = "ty__shoucheng",
+  anim_type = "support",
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) or player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then return end
+    for _, move in ipairs(data) do
+      if move.from then
+        local from = player.room:getPlayerById(move.from)
+        if from:isKongcheng() and from.phase == Player.NotActive then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_trigger = function(self, event, target, player, data)
+    local targets = {}
+    local room = player.room
+    for _, move in ipairs(data) do
+      if move.from then
+        local from = room:getPlayerById(move.from)
+        if from:isKongcheng() and from.phase == Player.NotActive then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand then
+              table.insertIfNeed(targets, from.id)
+              break
+            end
+          end
+        end
+      end
+    end
+    self:doCost(event, nil, player, targets)
+  end,
+  on_cost = function(self, event, target, player, data)
+    if #data > 1 then
+      local tos = player.room:askForChoosePlayers(player, data, 1, 1, "#ty__shoucheng-choose", self.name, true)
+      if #tos > 0 then
+        self.cost_data = tos[1]
+        return true
+      end
+    else
+      self.cost_data = data[1]
+      return player.room:askForSkillInvoke(player, self.name, nil, "#ty__shoucheng-draw::" .. data[1])
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    room:doIndicate(player.id, {to.id})
+    player:broadcastSkillInvoke("shoucheng")
+    to:drawCards(2, self.name)
+  end,
+}
+ty__jiangwanfeiyi:addSkill(shoucheng)
+Fk:loadTranslationTable{
+  ["ty__jiangwanfeiyi"] = "蒋琬费祎",
+  ["#ty__jiangwanfeiyi"] = "社稷股肱",
+  ["designer:ty__jiangwanfeiyi"] = "淬毒",
+  --["illustrator:ty__jiangwanfeiyi"] = "",
+
+  ["ty__shengxi"] = "生息",
+  [":ty__shengxi"] = "结束阶段，若你本回合未造成过伤害，你可以摸两张牌。",
+  ["ty__shoucheng"] = "守成",
+  [":ty__shoucheng"] = "当一名角色于其回合外失去手牌后，若其没有手牌且你于当前回合内未发动过此技能，你可令其摸两张牌。",
+
+  ["#ty__shoucheng-draw"] = "守成：你可令 %dest 摸两张牌",
+  ["#ty__shoucheng-choose"] = "守成：你可令一名失去最后手牌的角色摸两张牌",
 }
 
 --太平甲子：管亥 张闿 刘辟 裴元绍 张楚 张曼成

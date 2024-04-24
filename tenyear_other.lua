@@ -790,36 +790,19 @@ Fk:loadTranslationTable{
 }
 
 local sunwukong = General(extension, "sunwukong", "god", 3)
-local jinjing = fk.CreateActiveSkill{
+local jinjing = fk.CreateTriggerSkill{
   name = "jinjing",
-  mute = true,
   frequency = Skill.Compulsory,
-  card_num = 0,
-  card_filter = Util.FalseFunc,
-  target_num = 1,
-  target_filter = function (self, to_select, selected)
-    return #selected == 0 and Self.id ~= to_select and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
-  end,
-  can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local to = room:getPlayerById(effect.tos[1])
-    U.viewCards(player, to.player_cards[Player.Hand], self.name, "$ViewCardsFrom:"..to.id)
-  end,
-}
-local jinjing_trigger = fk.CreateTriggerSkill{
-  name = "#jinjing_trigger",
-  refresh_events = {fk.AfterCardsMove},
+  refresh_events = {fk.EventAcquireSkill},
   can_refresh = function (self, event, target, player, data)
-    return player:hasSkill(jinjing) and player:usedSkillTimes(jinjing.name, Player.HistoryPhase) > 0
+    return data == self and player == target
   end,
   on_refresh = function (self, event, target, player, data)
-    player:setSkillUseHistory(jinjing.name, 0, Player.HistoryPhase)
+    for _, p in ipairs(player.room:getOtherPlayers(player)) do
+      player:addBuddy(p)
+    end
   end,
 }
-jinjing:addRelatedSkill(jinjing_trigger)
 sunwukong:addSkill(jinjing)
 local ruyi = fk.CreateActiveSkill{
   name = "ruyi",
@@ -934,7 +917,7 @@ sunwukong:addSkill(cibeis)
 Fk:loadTranslationTable{
   ["sunwukong"] = "孙悟空",
   ["jinjing"] = "金睛",
-  [":jinjing"] = "锁定技，出牌阶段，你可以观看一名其他角色的手牌。",
+  [":jinjing"] = "锁定技，其他角色的手牌对你可见（此技能失效或失去后仍生效）。",
   ["ruyi"] = "如意",
   [":ruyi"] = "锁定技，你手牌中的武器牌均视为【杀】，你废除武器栏。你的攻击范围基数为3，出牌阶段限一次，你可以调整攻击范围（1~4）。若你的攻击范围基数为：1，使用【杀】无次数限制；2，使用【杀】伤害+1；3，使用【杀】无法响应；4，使用【杀】可额外选择一个目标。",
   ["@ruyi"] = "如意",

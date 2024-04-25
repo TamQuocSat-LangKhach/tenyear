@@ -4039,6 +4039,7 @@ leitong:addSkill(kuiji)
 Fk:loadTranslationTable{
   ["leitong"] = "雷铜",
   ["#leitong"] = "石铠之鼋",
+  ["designer:leitong"] = "梦魇狂朝",
   ["illustrator:leitong"] = "M云涯",
   ["kuiji"] = "溃击",
   [":kuiji"] = "出牌阶段限一次，你可以将一张黑色基本牌当作【兵粮寸断】对你使用，然后摸一张牌。若如此做，你可以对体力值最多的一名其他角色造成2点伤害。"..
@@ -4133,6 +4134,7 @@ wulan:addSkill(cuoruiw)
 Fk:loadTranslationTable{
   ["wulan"] = "吴兰",
   ["#wulan"] = "剑齿之鼍",
+  ["designer:wulan"] = "梦魇狂朝",
   ["illustrator:wulan"] = "alien",
   ["cuoruiw"] = "挫锐",
   [":cuoruiw"] = "出牌阶段开始时，你可以弃置一名你计算与其距离不大于1的角色区域里的一张牌。若如此做，你选择一项："..

@@ -132,6 +132,7 @@ xingdaorong:addSkill(xuhe)
 Fk:loadTranslationTable{
   ["xingdaorong"] = "邢道荣",
   ["#xingdaorong"] = "零陵上将",
+  ["designer:xingdaorong"] = "梦魇狂朝",
   ["illustrator:xingdaorong"] = "尼乐小丑&三道纹",
   
   ["xuhe"] = "虚猲",

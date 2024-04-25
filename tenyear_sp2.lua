@@ -2137,6 +2137,7 @@ huaman:addRelatedSkill(xili)
 Fk:loadTranslationTable{
   ["ty__huaman"] = "花鬘",
   ["#ty__huaman"] = "芳踪载馨",
+  ["designer:ty__huaman"] = "梦魇狂朝",
   ["illustrator:ty__huaman"] = "木美人",
   ["manyi"] = "蛮裔",
   [":manyi"] = "锁定技，【南蛮入侵】对你无效。",

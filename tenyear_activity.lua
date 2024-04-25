@@ -1927,6 +1927,7 @@ Fk:loadTranslationTable{
   ["#yanjiao"]= "严教：对一名其他角色发动“严教”",
   ["#yanjiao-distribute"] = "严教：请分成点数之和相等的两组",
   ["@yanjiao"] = "严教",
+  ["Only Watch"] = "仅观看",
 
   ["$yanjiao1"] = "会虽童稚，勤见规诲。",
   ["$yanjiao2"] = "性矜严教，明于教训。",
@@ -2491,6 +2492,7 @@ fengfang:addSkill(bihuo)
 Fk:loadTranslationTable{
   ["fengfang"] = "冯方",
   ["#fengfang"] = "监彻京师",
+  ["designer:fengfang"] = "梦魇狂朝",
   ["illustrator:fengfang"] = "游漫美绘",
   ["diting"] = "谛听",
   [":diting"] = "其他角色出牌阶段开始时，若你在其攻击范围内，你可以观看其X张手牌（X为你的体力值），然后秘密选择其中一张。若如此做，本阶段"..

@@ -16,7 +16,7 @@ GraphicsBox {
   property int padding: 25
   scale: 0.8
 
-  title.text: luatr(prompt !== "" ? prompt : "Please arrange cards")
+  title.text: luatr(operable == true ? prompt : "Only Watch")
   width: body.width + padding * 2
   height: title.height + body.height + padding * 2
 
@@ -191,15 +191,7 @@ GraphicsBox {
     }
     sums = line_sums;
     
-    var n1 = 0;
-    var n2 = 0;
-    for (i = 0; i < result[1].length; i++) {
-      n1 = n1 + result[1][i].number;
-    }
-    for (i = 0; i < result[2].length; i++) {
-      n2 = n2 + result[2][i].number;
-    }
-    buttonConfirm.enabled = n1 == n2;
+    buttonConfirm.enabled = (line_sums[1] == line_sums[2] && line_sums[1] > 0);
   }
 
   function getResult() {

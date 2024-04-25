@@ -1689,6 +1689,9 @@ yangbiao:addSkill(jue)
 Fk:loadTranslationTable{
   ["ty__yangbiao"] = "杨彪",
   ["#ty__yangbiao"] = "德彰海内",
+  ["cv:ty__yangbiao"] = "袁国庆",
+	["illustrator:ty__yangbiao"] = "DH", -- 忧心国事
+
   ["ty__zhaohan"] = "昭汉",
   [":ty__zhaohan"] = "摸牌阶段，你可以多摸两张牌，然后选择一项：1.交给一名没有手牌的角色两张手牌；2.弃置两张手牌。",
   ["jinjie"] = "尽节",

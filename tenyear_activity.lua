@@ -2526,6 +2526,7 @@ local yangzhong = fk.CreateTriggerSkill{
     local cards = room:askForDiscard(data.from, 2, 2, true, self.name, true, ".", "#yangzhong-invoke::"..data.to.id, true)
     if #cards > 0 then
       self.cost_data = cards
+      return true
     end
   end,
   on_use = function(self, event, target, player, data)
@@ -3789,18 +3790,23 @@ local ty__danji = fk.CreateTriggerSkill{
       player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   can_wake = function(self, event, target, player, data)
-    return player:getHandcardNum() > player.hp
+    return #player:getCardIds("hej") > player.hp
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeMaxHp(player, -1)
-    if player:isWounded() then
+    if player.dead then return false end
+    local x = player:getLostHp()
+    if x > 0 then
       room:recover({
         who = player,
-        num = player:getLostHp(),
+        num = x,
         recoverBy = player,
         skillName = self.name
       })
+      if player.dead then return false end
+      player:drawCards(x, self.name)
+      if player.dead then return false end
     end
     room:handleAddLoseSkills(player, "mashu|nuchen", nil, true, false)
   end,
@@ -3810,6 +3816,7 @@ local nuchen = fk.CreateActiveSkill{
   anim_type = "offensive",
   card_num = 0,
   target_num = 1,
+  prompt = "#nuchen-active",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
@@ -3842,6 +3849,7 @@ local nuchen = fk.CreateActiveSkill{
 }
 guanyu:addSkill("ex__wusheng")
 guanyu:addSkill(ty__danji)
+guanyu:addRelatedSkill("mashu")
 guanyu:addRelatedSkill(nuchen)
 Fk:loadTranslationTable{
   ["ty__guanyu"] = "关羽",
@@ -3849,10 +3857,12 @@ Fk:loadTranslationTable{
   ["designer:ty__guanyu"] = "韩旭",
   ["illustrator:ty__guanyu"] = "写之火工作室",
   ["ty__danji"] = "单骑",
-  [":ty__danji"] = "觉醒技，准备阶段，若你的手牌数大于体力值，你减1点体力上限，回复体力至体力上限，然后获得〖马术〗和〖怒嗔〗。",
+  [":ty__danji"] = "觉醒技，准备阶段，若你区域里的牌数大于体力值，你减1点体力上限，回复体力至体力上限，摸X张牌（X为你以此法回复的体力值），"..
+  "获得〖马术〗和〖怒嗔〗。",
   ["nuchen"] = "怒嗔",
   [":nuchen"] = "出牌阶段限一次，你可以展示一名其他角色的一张手牌，然后你选择一项：1.弃置任意张相同花色的牌，对其造成等量的伤害；"..
   "2.获得其手牌中所有此花色的牌。",
+  ["#nuchen-active"] = "发动 怒嗔，选择一名其他角色，展示其一张手牌",
   ["#nuchen-card"] = "怒嗔：你可以弃置任意张%arg牌对 %dest 造成等量伤害，或获得其全部此花色手牌",
 
   ["$ex__wusheng_ty__guanyu1"] = "以义传魂，以武入圣！",
@@ -4303,14 +4313,41 @@ local chongyi = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.CardUsing, fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and target.phase == Player.Play and player.tag[self.name] and #player.tag[self.name] > 0 then
-      local tag = player.tag[self.name]
+    if player:hasSkill(self) and target.phase == Player.Play and not target.dead then
       if event == fk.CardUsing then
-        return #tag == 1 and tag[1] == "slash"
+        if data.card.trueName ~= "slash" then return false end
+        local room = player.room
+        local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
+        if use_event == nil then return false end
+        local x = target:getMark("chongyi_record-turn")
+        if x == 0 then
+          room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+            local use = e.data[1]
+            if use.from == target.id then
+              x = e.id
+              room:setPlayerMark(target, "chongyi_record-turn", x)
+              return true
+            end
+          end, Player.HistoryPhase)
+        end
+        return x == use_event.id
       else
-        local name = tag[#tag]
-        player.tag[self.name] = {}
-        return name == "slash"
+        local logic = player.room.logic
+        local phase_event = logic:getCurrentEvent():findParent(GameEvent.Phase, true)
+        if phase_event == nil then return false end
+        local use_events = logic.event_recorder[GameEvent.UseCard] or Util.DummyTable
+        for i = #use_events, 1, -1 do
+          if use_events[i].id < phase_event.id then return false end
+          local use = use_events[i].data[1]
+          if use.from == target.id then
+            if use.card.trueName == "slash" then
+              self.cost_data = Card:getIdList(use.card)
+              return true
+            else
+              return false
+            end
+          end
+        end
       end
     end
   end,
@@ -4321,36 +4358,29 @@ local chongyi = fk.CreateTriggerSkill{
     else
       prompt = "#chongyi-maxcards::"
     end
-    return player.room:askForSkillInvoke(player, self.name, nil, prompt..target.id)
+    local room = player.room
+    if room:askForSkillInvoke(player, self.name, nil, prompt .. target.id) then
+      room:doIndicate(player.id, {target.id})
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.CardUsing then
       target:drawCards(2, self.name)
-      room:addPlayerMark(target, "chongyi-turn", 1)
+      room:addPlayerMark(player, MarkEnum.SlashResidue .. "-phase")
     else
       room:addPlayerMark(target, MarkEnum.AddMaxCardsInTurn, 1)
+      local cards = table.filter(self.cost_data, function (id)
+        return room:getCardArea(id) == Card.DiscardPile
+      end)
+      if #cards > 0 then
+        room:obtainCard(player, cards, true)
+      end
     end
   end,
+}
 
-  refresh_events = {fk.AfterCardUseDeclared},
-  can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self, true) and target.phase == Player.Play
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.tag[self.name] = player.tag[self.name] or {}
-    table.insert(player.tag[self.name], data.card.trueName)
-  end,
-}
-local chongyi_targetmod = fk.CreateTargetModSkill{
-  name = "#chongyi_targetmod",
-  residue_func = function(self, player, skill, scope)
-    if skill.trueName == "slash_skill" and player:getMark("chongyi-turn") > 0 and scope == Player.HistoryPhase then
-      return 1
-    end
-  end,
-}
-chongyi:addRelatedSkill(chongyi_targetmod)
 huban:addSkill(chongyi)
 Fk:loadTranslationTable{
   ["ty__huban"] = "胡班",
@@ -4358,8 +4388,8 @@ Fk:loadTranslationTable{
   ["designer:ty__huban"] = "世外高v狼",
   ["illustrator:ty__huban"] = "君桓文化",
   ["chongyi"] = "崇义",
-  [":chongyi"] = "一名角色出牌阶段内使用的第一张牌若为【杀】，你可令其摸两张牌且此阶段使用【杀】次数上限+1；一名角色出牌阶段结束时，"..
-  "若其此阶段使用的最后一张牌为【杀】，你可令其本回合手牌上限+1。",
+  [":chongyi"] = "一名角色于出牌阶段内使用的第一张牌若为【杀】，你可令其摸两张牌且于此阶段使用【杀】的次数上限+1；"..
+  "一名角色的出牌阶段结束时，若其于此阶段使用过的最后一张牌为【杀】，你可令其于此回合内手牌上限+1，然后你获得弃牌堆中的此【杀】。",
   ["#chongyi-draw"] = "崇义：你可以令 %dest 摸两张牌且此阶段使用【杀】次数上限+1",
   ["#chongyi-maxcards"] = "崇义：你可以令 %dest 本回合手牌上限+1",
 

@@ -1609,36 +1609,39 @@ local jinjie = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.EnterDying},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and not target.dead
+    return player:hasSkill(self) and not target.dead and player:usedSkillTimes(self.name, Player.HistoryRound) < 1
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    if room:askForSkillInvoke(player, self.name, nil, "#jinjie-invoke::"..target.id) then
+    local choice = room:askForChoice(player, {"draw0", "draw1", "draw2", "draw3", "Cancel"},
+    self.name, "#jinjie-invoke::"..target.id)
+    if choice ~= "Cancel" then
       room:doIndicate(player.id, {target.id})
+      self.cost_data = tonumber(string.sub(choice, 5, 5))
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
-    target:drawCards(1, self.name)
-    if player.dead or target.dead or not target:isWounded() or
-    player:getMark("jinjie-round") > 0 then return false end
-    local x = player:usedSkillTimes(self.name, Player.HistoryRound)
-    if x > player:getHandcardNum() then return false end
+    local x = self.cost_data
+    if x > 0 then
+      target:drawCards(x, self.name)
+      if player.dead or target.dead or not target:isWounded() or #player:getCardIds("he") < x then return false end
+    end
     local room = player.room
-    local round_event = room.logic:getCurrentEvent():findParent(GameEvent.Round)
-    if round_event == nil then return false end
-    local end_id = round_event.id
-    local can_invoke = true
-    U.getEventsByRule(room, GameEvent.Turn, 1, function (e)
-      local current_player = e.data[1]
-      if current_player == player then
-        can_invoke = false
-        room:setPlayerMark(player, "jinjie-round", 1)
-        return true
+    local discard_data = {
+      num = x,
+      min_num = x,
+      include_equip = true,
+      skillName = self.name,
+      pattern = ".",
+    }
+    local success, ret = room:askForUseActiveSkill(player, "discard_skill",
+    "#jinjie-discard::"..target.id..":"..tostring(x), true, discard_data)
+    if success then
+      if #ret.cards > 0 then
+        room:throwCard(ret.cards, self.name, player, player)
+        if target.dead or not target:isWounded() then return false end
       end
-    end, end_id)
-    if can_invoke and #room:askForDiscard(player, x, x, false, self.name, true, ".",
-    "#jinjie-discard::"..target.id..":"..x) > 0 and not target.dead and target:isWounded() then
       room:recover{
         who = target,
         num = 1,
@@ -1653,33 +1656,73 @@ local jue = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self) and player.phase == Player.Start then
-      local slash = Fk:cloneCard("slash")
-      slash.skillName = self.name
-      return not player:prohibitUse(slash) and table.find(player.room.alive_players, function (p)
-        return (p.hp > player.hp or p:getHandcardNum() > player:getHandcardNum()) and not player:isProhibited(p, slash)
+    if player:hasSkill(self) and not target.dead and target.phase == Player.Finish and
+    player:usedSkillTimes(self.name, Player.HistoryRound) < 1 then
+      local room = player.room
+      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
+      if turn_event == nil then return false end
+      local end_id = turn_event.id
+      local cards = {}
+      U.getEventsByRule(room, GameEvent.MoveCards, 1, function (e)
+        for _, move in ipairs(e.data) do
+          if move.toArea == Card.DiscardPile and move.moveReason == fk.ReasonDiscard then
+            for _, info in ipairs(move.moveInfo) do
+              table.insertIfNeed(cards, info.cardId)
+            end
+          end
+        end
+        return false
+      end, end_id)
+      cards = table.filter(cards, function (id)
+        return room:getCardArea(id) == Card.DiscardPile
       end)
+      if #cards > 0 then
+        self.cost_data = #cards
+        return true
+      end
     end
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local targets = {}
-    local slash = Fk:cloneCard("slash")
-    slash.skillName = self.name
-    for _, p in ipairs(room:getOtherPlayers(player)) do
-      if (p.hp > player.hp or p:getHandcardNum() > player:getHandcardNum()) and not player:isProhibited(p, slash) then
-        table.insert(targets, p.id)
+    local x = self.cost_data
+    if target == player then
+      local targets = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper),
+      1, 1, "#jue-choose:::" .. tostring(x), self.name, true)
+      if #targets > 0 then
+        self.cost_data = {targets[1], x}
+        return true
       end
-    end
-    if #targets == 0 then return end
-    local to = room:askForChoosePlayers(player, targets, 1, 1, "#jue-choose", self.name, true)
-    if #to > 0 then
-      self.cost_data = to[1]
-      return true
+    else
+      x = math.min(x, target.maxHp)
+      if room:askForSkillInvoke(player, self.name, nil, "#jue-invoke::" .. target.id .. ":" .. tostring(x)) then
+        room:doIndicate(player.id, {target.id})
+        self.cost_data = {target.id, x}
+        return true
+      end
     end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:useVirtualCard("slash", nil, player, player.room:getPlayerById(self.cost_data), self.name, true)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data[1])
+    local x = math.min(self.cost_data[2], to.maxHp)
+    for i = 1, x, 1 do
+      local cards = {}
+      for _, name in ipairs({"slash", "dismantlement", "amazing_grace"}) do
+        local card = Fk:cloneCard(name)
+        card.skillName = self.name
+        if player:canUseTo(card, to, {bypass_distances = true, bypass_times = true}) then
+          table.insert(cards, card)
+        end
+      end
+      if #cards == 0 then break end
+      room:useCard{
+        from = player.id,
+        tos = {{to.id}},
+        card = table.random(cards),
+        extraUse = true
+      }
+      if player.dead or to.dead then break end
+    end
   end,
 }
 ty__zhaohan:addRelatedSkill(ty__zhaohan_delay)
@@ -1695,16 +1738,22 @@ Fk:loadTranslationTable{
   ["ty__zhaohan"] = "昭汉",
   [":ty__zhaohan"] = "摸牌阶段，你可以多摸两张牌，然后选择一项：1.交给一名没有手牌的角色两张手牌；2.弃置两张手牌。",
   ["jinjie"] = "尽节",
-  [":jinjie"] = "一名角色进入濒死状态时，你可以令其摸一张牌，然后若本轮你还没有进行回合，你可以弃置X张手牌令其回复1点体力（X为本轮此技能的发动次数）。",
+  [":jinjie"] = "一名角色进入濒死状态时，若你于此轮内未发动过此技能，你可以令其摸0-3张牌，"..
+  "然后你可以弃置等量的牌令其回复1点体力。",
   ["jue"] = "举讹",
-  [":jue"] = "准备阶段，你可以视为对一名体力值或手牌数大于你的角色使用一张【杀】。",
+  [":jue"] = "一名角色的结束阶段，若你于此轮内未发动过此技能，你可以视为随机对其使用【过河拆桥】、【杀】或【五谷丰登】共计X次"..
+  "（X为弃牌堆里于此回合内因弃置而移至此区域的牌数且至多为其体力上限，若其为你，改为你选择一名其他角色）。",
+
   ["#ty__zhaohan_delay"] = "昭汉",
   ["#zhaohan-choose"] = "昭汉：选择一名没有手牌的角色交给其两张手牌，或点“取消”则你弃置两张牌",
   ["#zhaohan-discard"] = "昭汉：弃置两张手牌",
   ["#zhaohan-give"] = "昭汉：选择两张手牌交给 %dest",
-  ["#jinjie-invoke"] = "你可以发动 尽节，令 %dest 摸一张牌",
+  ["draw0"] = "摸零张牌",
+  ["draw3"] = "摸三张牌",
+  ["#jinjie-invoke"] = "你可以发动 尽节，令 %dest 摸0-3张牌，然后你可以弃等量的牌令其回复体力",
   ["#jinjie-discard"] = "尽节：你可以弃置%arg张手牌，令 %dest 回复1点体力",
-  ["#jue-choose"] = "你可以发动 举讹，视为对一名体力值或手牌数大于你的角色使用一张【杀】",
+  ["#jue-choose"] = "你可以发动 举讹，选择一名其他角色，视为对其随机使用%arg张牌（【过河拆桥】、【杀】或【五谷丰登】）",
+  ["#jue-invoke"] = "你可以发动 举讹，视为对 %dest 随机使用%arg张牌（【过河拆桥】、【杀】或【五谷丰登】）",
 
   ["$ty__zhaohan1"] = "此心昭昭，惟愿汉明。",
   ["$ty__zhaohan2"] = "天曰昭德！天曰昭汉！",

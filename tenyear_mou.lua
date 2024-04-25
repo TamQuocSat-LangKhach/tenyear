@@ -469,6 +469,15 @@ local quanmou_delay = fk.CreateTriggerSkill{
       end
     end
   end,
+
+  refresh_events = {fk.EventAcquireSkill},
+  can_refresh = function (self, event, target, player, data)
+    return data == self and player == target and (player.general == "tymou2__simayi" or player.deputyGeneral == "tymou2__simayi")
+  end,
+  on_refresh = function (self, event, target, player, data)
+    player.room:setPlayerMark(player, MarkEnum.SwithSkillPreName.."quanmou", fk.SwitchYin)
+    player:setSkillUseHistory("quanmou", 0, Player.HistoryGame)
+  end,
 }
 pingliao:addRelatedSkill(pingliao_prohibit)
 quanmou:addRelatedSkill(quanmou_delay)
@@ -476,7 +485,6 @@ tymou__simayi:addSkill(pingliao)
 tymou__simayi:addSkill(quanmou)
 
 local tymou2__simayi = General(extension, "tymou2__simayi", "wei", 3)
-tymou2__simayi.hidden = true
 tymou2__simayi:addSkill("pingliao")
 tymou2__simayi:addSkill("quanmou")
 

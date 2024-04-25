@@ -2161,14 +2161,17 @@ local ty__fenglue = fk.CreateActiveSkill{
       if to:isAllNude() or player.dead then return end
       local cards = to:getCardIds("hej")
       if #cards > 2 then
-        cards = room:askForCardsChosen(to, to, 2, 2, "hej", self.name, "#ty__fenglue-give:"..player.id)
+        cards = room:askForCardsChosen(player, to, 2, 2, "hej", self.name)
       end
-      room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonGive, self.name, nil, false, to.id)
+      room:obtainCard(player, cards, false, fk.ReasonPrey)
     elseif winner == to then
       if room:getCardArea(pindian.fromCard) == Card.DiscardPile and not to.dead then
         room:obtainCard(to, pindian.fromCard, true, fk.ReasonPrey)
       end
-    else
+    elseif not player.dead then
+      if room:getCardArea(pindian.fromCard) == Card.DiscardPile then
+        room:obtainCard(player, pindian.fromCard, true, fk.ReasonPrey)
+      end
       player:setSkillUseHistory(self.name, 0, Player.HistoryPhase)
     end
   end,
@@ -2178,14 +2181,16 @@ local anyong = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and not player:isNude() and target and target == player.room.current and data.to ~= target and not data.to.dead and data.damage == 1 then
-      local dat = U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == target and e.data[1].to ~= target end)
+    if player:hasSkill(self) and not player:isNude() and target and target == player.room.current and not data.to.dead and data.damage == 1 then
+      local dat = U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == target end)
       return #dat > 0 and dat[1].data[1] == data
     end
   end,
   on_cost = function(self, event, target, player, data)
-    local card = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#anyong-invoke::"..data.to.id, true)
+    local room = player.room
+    local card = room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#anyong-invoke::"..data.to.id, true)
     if #card > 0 then
+      room:doIndicate(player.id, {data.to.id})
       self.cost_data = card
       return true
     end
@@ -2193,7 +2198,7 @@ local anyong = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:throwCard(self.cost_data, self.name, player, player)
-    room:doIndicate(player.id, {data.to.id})
+    if data.to.dead then return false end
     room:damage{
       from = player,
       to = data.to,
@@ -2210,12 +2215,13 @@ Fk:loadTranslationTable{
   ["illustrator:ty__xunchen"] = "凝聚永恒",
 
   ["ty__fenglue"] = "锋略",
-  [":ty__fenglue"] = "出牌阶段限一次，你可以和一名角色拼点。若：你赢，其交给你其区域内的两张牌；你与其均没赢，此技能视为未发动过；其赢，其获得你拼点的牌。",
+  [":ty__fenglue"] = "出牌阶段限一次，你可以和一名角色拼点。若：你赢，你获得其区域里的两张牌；"..
+  "你与其均没赢，你获得你的拼点牌且此技能视为未发动过；其赢，其获得你拼点的牌。",
   ["#ty__fenglue-give"] = "锋略：请选择你区域内的两张牌交给 %src",
   ["anyong"] = "暗涌",
-  [":anyong"] = "当一名角色于其回合内第一次对另一名角色造成伤害后，若此伤害值为1，你可以弃置一张牌对受到伤害的角色造成1点伤害。",
+  [":anyong"] = "当一名角色于其回合内第一次造成伤害后，若此伤害值为1，你可以弃置一张牌对受到伤害的角色造成1点伤害。",
   ["#anyong-invoke"] = "暗涌：你可以弃置一张牌，对 %dest 造成1点伤害",
-  
+
   ["$ty__fenglue1"] = "当今敢称贤者，唯袁氏本初一人！",
   ["$ty__fenglue2"] = "冀州宝地，本当贤者居之！",
   ["$anyong1"] = "殿上太守且相看，殿下几人还拥韩？",
@@ -3968,28 +3974,40 @@ local moyu = fk.CreateActiveSkill{
   anim_type = "offensive",
   card_num = 0,
   target_num = 1,
+  prompt = function()
+    return "#moyu-active:::" .. tostring((Self:getMark("@@moyu1-phase") > 0) and 2 or 1)
+  end,
   can_use = function(self, player)
-    return player:getMark("@@moyu-turn") == 0
+    return player:getMark("@@moyu2-turn") == 0
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
-    local target = Fk:currentRoom():getPlayerById(to_select)
-    return #selected == 0 and target ~= Self and target:getMark("moyu-turn") == 0 and not target:isAllNude()
+    return #selected == 0 and to_select ~= Self.id and not table.contains(U.getMark(Self, "moyu_targets-phase"), to_select) and
+    #Fk:currentRoom():getPlayerById(to_select):getCardIds("hej") > Self:getMark("@@moyu1-phase")
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local id = room:askForCardChosen(player, target, "hej", self.name)
-    room:obtainCard(player.id, id, false, fk.ReasonPrey)
+    local mark = U.getMark(player, "moyu_targets-phase")
+    table.insert(mark, target.id)
+    room:setPlayerMark(player, "moyu_targets-phase", mark)
+    local x = 1
+    if player:getMark("@@moyu1-phase") > 0 then
+      x = 2
+      room:setPlayerMark(player, "@@moyu1-phase", 0)
+    end
+    local ids = room:askForCardsChosen(player, target, x, x, "hej", self.name)
+    room:obtainCard(player.id, ids, false, fk.ReasonPrey)
     if target.dead then return end
-    room:setPlayerMark(target, "moyu-turn", 1)
-    local use = room:askForUseCard(target, "slash", "slash", "#moyu-slash::"..player.id..":"..player:usedSkillTimes(self.name), true,
+    local use = room:askForUseCard(target, "slash", "slash", "#moyu-slash::"..player.id, true,
       {must_targets = {player.id}, bypass_distances = true, bypass_times = true})
     if use then
-      use.additionalDamage = (use.additionalDamage or 0) + player:usedSkillTimes(self.name) - 1
       room:useCard(use)
-      if not player.dead and use.damageDealt and use.damageDealt[player.id] then
-        room:setPlayerMark(player, "@@moyu-turn", 1)
+      if player.dead then return end
+      if use.damageDealt and use.damageDealt[player.id] then
+        room:setPlayerMark(player, "@@moyu2-turn", 1)
+      else
+        room:setPlayerMark(player, "@@moyu1-phase", 1)
       end
     end
   end,
@@ -4001,10 +4019,12 @@ Fk:loadTranslationTable{
   ["designer:peiyuanshao"] = "步穗",
   ["illustrator:peiyuanshao"] = "匠人绘",
   ["moyu"] = "没欲",
-  [":moyu"] = "出牌阶段每名角色限一次，你可以获得一名其他角色区域内的一张牌，然后该角色可以对你使用一张无距离限制且伤害值为X的【杀】"..
-  "（X为本回合本技能发动次数），若此【杀】对你造成了伤害，本技能于本回合失效。",
-  ["#moyu-slash"] = "没欲：你可以对 %dest 使用一张【杀】，伤害基数为%arg",
-  ["@@moyu-turn"] = "没欲失效",
+  [":moyu"] = "出牌阶段，你可以获得一名此阶段内未选择过的一名其他角色区域里的一张牌，然后该角色可以对你使用一张【杀】（无距离限制），"..
+  "若此【杀】：未对你造成过伤害，你于此阶段内下次发动此技能改为获得两张牌；对你造成过伤害，此技能于此回合内无效。",
+  ["#moyu-active"] = "发动 没欲，选择1名角色，获得其区域里的%arg张牌",
+  ["#moyu-slash"] = "没欲：你可以对 %dest 使用一张【杀】",
+  ["@@moyu1-phase"] = "没欲强化",
+  ["@@moyu2-turn"] = "没欲失效",
 
   ["$moyu1"] = "人之所有，我之所欲。",
   ["$moyu2"] = "胸有欲壑千丈，自当饥不择食。",

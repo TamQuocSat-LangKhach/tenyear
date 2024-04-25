@@ -379,7 +379,7 @@ local function getPingjianSkills(player, event)
 
       "yangjie", "hongyi", "m_ex__junxing", "m_ex__yanzhu", "ol_ex__changbiao", "yanxi", "jiwu", "xuanbei", "yushen", "guanxu",
       "ty__jianji", "wencan", "xiangmian", "zhuren", "changqu", "jiuxianc", "caizhuang", "ty__beini", "jichun", "tongwei",
-      "liangyan", "kuizhen", "huiji"
+      "liangyan", "kuizhen", "huiji",
     },
     [fk.Damaged] = {
       "guixin", "ty__benyu", "ex__fankui", "ex__ganglie", "ex__yiji", "ex__jianxiong", "os_ex__enyuan", "chouce", "ol_ex__jieming",
@@ -393,7 +393,7 @@ local function getPingjianSkills(player, event)
       "juece", "sp__youdi", "kuanshi", "ty__jieying", "suizheng", "m_ex__jieyue",
 
       "shenfu", "meihun", "pijing", "zhuihuan", "os__juchen", "os__xingbu", "ty_ex__jingce", "nuanhui", "sangu",
-      "js__pianchong", "linghui", "huayi"
+      "js__pianchong", "linghui", "huayi", "jue",
     },
   }
   local used_skills = U.getMark(player, "ty__pingjian_used_skills")
@@ -408,11 +408,12 @@ local ty__pingjian = fk.CreateActiveSkill{
   card_num = 0,
   target_num = 0,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+    return player:getMark("ty__pingjian_used-phase") == 0
   end,
   card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
+    room:setPlayerMark(player, "ty__pingjian_used-phase", 1)
     local skills = getPingjianSkills(player, "play")
     if #skills == 0 then return false end
     local choices = table.random(skills, 3)
@@ -435,7 +436,7 @@ local ty__pingjian_trigger = fk.CreateTriggerSkill{
   main_skill = ty__pingjian,
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(ty__pingjian.name) or player ~= target then return false end
+    if not player:hasSkill(ty__pingjian) or player ~= target then return false end
     if event == fk.Damaged then
       return true
     elseif event == fk.EventPhaseStart then
@@ -478,11 +479,9 @@ local ty__pingjian_invalidity = fk.CreateInvaliditySkill {
     end)
   end
 }
-
 ty__pingjian:addRelatedSkill(ty__pingjian_trigger)
 ty__pingjian:addRelatedSkill(ty__pingjian_invalidity)
 xushao:addSkill(ty__pingjian)
-
 Fk:loadTranslationTable{
   ["ty__xushao"] = "许劭",
   ["#ty__xushao"] = "识人读心",
@@ -491,7 +490,8 @@ Fk:loadTranslationTable{
   ["ty__pingjian"] = "评荐",
   ["#ty__pingjian_trigger"] = "评荐",
   [":ty__pingjian"] = "出牌阶段，或结束阶段，或当你受到伤害后，你可以从对应时机的技能池中随机抽取三个技能，"..
-    "然后你选择并视为拥有其中一个技能直到时机结束（每个技能限发动一次）。",
+  "然后你选择并视为拥有其中一个技能直到时机结束（每个技能限发动一次）。",
+
   ["#ty__pingjian-active"] = "发动 评荐，从三个出牌阶段的技能中选择一个学习",
   ["#ty__pingjian-choice"] = "评荐：选择要学习的技能",
 

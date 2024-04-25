@@ -601,7 +601,7 @@ Fk:loadTranslationTable{
   ["shawu_select"] = "沙舞",
   [":shawu"] = "当你使用【杀】指定目标后，你可以弃置两张手牌或1枚“沙”标记对目标角色造成1点伤害。若你弃置的是“沙”标记，你摸两张牌。",
 
-  ["#xiaowu"] = "绡舞：选择按逆时针(行动顺序)或顺时针顺序结算，并选择作为终点的目标角色",
+  ["#xiaowu"] = "发动 绡舞，选择按逆时针（行动顺序）或顺时针顺序结算，并选择作为终点的目标角色",
   ["xiaowu_clockwise"] = "顺时针顺序",
   ["xiaowu_anticlockwise"] = "逆时针顺序",
   ["#xiawu_draw"] = "绡舞：选择令%src摸一张牌或自己摸一张牌",
@@ -1800,7 +1800,7 @@ Fk:loadTranslationTable{
   ["~liuhui"] = "算学如海，穷我一生，只得杯水……",
 }
 
---钟灵毓秀：董贵人 滕芳兰 张瑾云 周不疑
+--钟灵毓秀：董贵人 滕芳兰 张瑾云 周不疑 许靖 关樾
 local dongguiren = General(extension, "dongguiren", "qun", 3, 3, General.Female)
 local lianzhi = fk.CreateTriggerSkill{
   name = "lianzhi",
@@ -2553,7 +2553,6 @@ Fk:loadTranslationTable{
 }
 
 local xujing = General(extension, "ty__xujing", "shu", 3)
-
 local shangyu = fk.CreateTriggerSkill{
   name = "shangyu",
   events = {fk.AfterCardsMove, fk.Damage, fk.GameStart},
@@ -2721,6 +2720,271 @@ Fk:loadTranslationTable{
   ["$caixia2"] = "玉有十色五光，微瑕难掩其瑜。",
   ["~ty__xujing"] = "时人如江鲫，所逐者功利尔……",
 }
+
+local guanyueg = General(extension, "guanyueg", "shu", 4)
+local shouzhi = fk.CreateTriggerSkill{
+  name = "shouzhi",
+  events = {fk.TurnEnd},
+  frequency = Skill.Compulsory,
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      local x = player:getMark("@shouzhi-turn")
+      if x == 0 then return false end
+      if type(x) == "string" then x = 0 end
+      return x ~= player:getHandcardNum()
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local x = player:getMark("@shouzhi-turn")
+    if x == 0 then return false end
+    if type(x) == "string" then x = 0 end
+    x = x - player:getHandcardNum()
+    player:broadcastSkillInvoke(self.name)
+    if x > 0 then
+      room:notifySkillInvoked(player, self.name, "drawcard")
+      player:drawCards(2, self.name)
+    elseif x < 0 then
+      room:notifySkillInvoked(player, self.name, "negative")
+      room:askForDiscard(player, 1, 1, true, self.name, false)
+    end
+  end,
+
+  refresh_events = {fk.TurnStart},
+  can_refresh = function (self, event, target, player, data)
+    return player:hasSkill(self, true)
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local x = player:getHandcardNum()
+    player.room:setPlayerMark(player, "@shouzhi-turn", x > 0 and x or "0")
+  end,
+}
+local shouzhiEX = fk.CreateTriggerSkill{
+  name = "shouzhiEX",
+  events = {fk.TurnEnd},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      local x = player:getMark("@shouzhi-turn")
+      if x == 0 then return false end
+      if type(x) == "string" then x = 0 end
+      return x ~= player:getHandcardNum()
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local x = player:getMark("@shouzhi-turn")
+    if x == 0 then return false end
+    if type(x) == "string" then x = 0 end
+    x = x - player:getHandcardNum()
+    if x > 0 then
+      if player.room:askForSkillInvoke(player, "shouzhi", nil, "#shouzhi-draw") then
+        self.cost_data = {}
+        return true
+      end
+    else
+      local cards = player.room:askForDiscard(player, 1, 1, true, "shouzhi", true, ".", "#shouzhi-discard", true)
+      if #cards > 0 then
+        self.cost_data = cards
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke("shouzhi")
+    if #self.cost_data > 0 then
+      room:notifySkillInvoked(player, "shouzhi", "negative")
+      room:throwCard(self.cost_data, "shouzhi", player, player)
+    else
+      room:notifySkillInvoked(player, "shouzhi", "drawcard")
+      player:drawCards(2, "shouzhi")
+    end
+  end,
+
+  refresh_events = {fk.TurnStart},
+  can_refresh = function (self, event, target, player, data)
+    return player:hasSkill(self, true)
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local x = player:getHandcardNum()
+    player.room:setPlayerMark(player, "@shouzhi-turn", x > 0 and x or "0")
+  end,
+}
+local fenhui = fk.CreateActiveSkill{
+  name = "fenhui",
+  anim_type = "offensive",
+  frequency = Skill.Limited,
+  prompt = "#fenhui-active",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+    and Fk:currentRoom():getPlayerById(to_select):getMark("@fenhui-turn") > 0
+  end,
+  target_num = 1,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    room:setPlayerMark(target, "@fenhui_hatred", target:getMark("@fenhui-turn"))
+    room:setPlayerMark(player, "fenhui_target", target.id)
+    for _, p in ipairs(room.alive_players) do
+      room:setPlayerMark(p, "@fenhui-turn", 0)
+    end
+  end,
+}
+local fenhui_delay = fk.CreateTriggerSkill{
+  name = "#fenhui_delay",
+  mute = true,
+  events = {fk.DamageCaused, fk.Death},
+  can_trigger = function(self, event, target, player, data)
+    if player.dead then return false end
+    if event == fk.DamageCaused then
+      return player == target and player:getMark("fenhui_target") == data.to.id and not data.to.dead and
+      data.to:getMark("@fenhui_hatred") > 0
+    elseif event == fk.Death then
+      return player:getMark("fenhui_target") == target.id and target:getMark("@fenhui_hatred") > 0
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    if event == fk.DamageCaused then
+      player.room:removePlayerMark(data.to, "@fenhui_hatred")
+      data.damage = data.damage + 1
+    elseif event == fk.Death then
+      local room = player.room
+      room:changeMaxHp(player, -1)
+      if player.dead then return false end
+      local skills = "xingmen"
+      if player:hasSkill(shouzhi) then
+        skills = "-shouzhi|shouzhiEX|" .. skills
+      end
+      room:handleAddLoseSkills(player, skills, nil, true, false)
+    end
+  end,
+
+  refresh_events = {fk.TargetSpecified, fk.BuryVictim},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.TargetSpecified then
+      return player == target and data.card.color == Card.Black and player.phase ~= Player.NotActive and
+      player.id ~= data.to and player:hasSkill(fenhui, true) and player:usedSkillTimes("fenhui", Player.HistoryGame) == 0
+    elseif event == fk.BuryVictim then
+      return player:getMark("@fenhui_hatred") > 0 and table.every(player.room.alive_players, function (p)
+        return p:getMark("fenhui_target") ~= player.id
+      end)
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.TargetSpecified then
+      local to = room:getPlayerById(data.to)
+      if not to.dead then
+        room:addPlayerMark(to, "@fenhui-turn")
+      end
+    else
+      room:setPlayerMark(player, "@fenhui_hatred", 0)
+    end
+  end,
+}
+local xingmen = fk.CreateTriggerSkill{
+  name = "xingmen",
+  anim_type = "support",
+  events = {fk.AfterCardsMove},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      local cards = {}
+      local recover = false
+      for _, move in ipairs(data) do
+        if move.to == player.id and move.toArea == Player.Hand and move.moveReason == fk.ReasonDraw then
+          for _, info in ipairs(move.moveInfo) do
+            table.insertIfNeed(cards, info.cardId)
+          end
+        end
+        if move.from == player.id and move.moveReason == fk.ReasonDiscard and
+        move.skillName == shouzhi.name and #move.moveInfo > 0 and player:isWounded() then
+          recover = true
+        end
+      end
+      if #cards < 2 or not table.every(cards, function (id)
+        return Fk:getCardById(id).color == Card.Red
+      end) then
+        cards = {}
+      end
+      if #cards > 0 or recover then
+        self.cost_data = {cards, recover}
+        return true
+      end
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = player:getCardIds(Player.Hand)
+    for _, id in ipairs(self.cost_data[1]) do
+      if table.contains(cards, id) then
+        room:setCardMark(Fk:getCardById(id), "@@xingmen-inhand", 1)
+      end
+    end
+    if self.cost_data[2] and room:askForSkillInvoke(player, self.name) then
+      room:notifySkillInvoked(player, self.name)
+      player:broadcastSkillInvoke(self.name)
+      room:recover{
+        who = player,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      }
+    end
+  end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) and
+      not data.card:isVirtual() and data.card:getMark("@@xingmen-inhand") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.disresponsiveList = table.map(player.room.players, Util.IdMapper)
+  end,
+}
+fenhui:addRelatedSkill(fenhui_delay)
+guanyueg:addSkill(shouzhi)
+guanyueg:addSkill(fenhui)
+guanyueg:addRelatedSkill(shouzhiEX)
+guanyueg:addRelatedSkill(xingmen)
+Fk:loadTranslationTable{
+  ["guanyueg"] = "关樾",
+  --["#guanyueg"] = "",
+  --["designer:guanyueg"] = "",
+  --["illustrator:guanyueg"] = "",
+  ["shouzhi"] = "守执",
+  [":shouzhi"] = "锁定技，一名角色的回合结束时，若你的手牌数：大于此回合开始时的手牌数，你弃置一张牌；"..
+  "小于此回合开始时的手牌数，你摸两张牌。",
+  ["shouzhiEX"] = "守执",
+  [":shouzhiEX"] = "一名角色的回合结束时，若你的手牌数：大于此回合开始时的手牌数，你可以弃置一张牌；"..
+  "小于此回合开始时的手牌数，你可以摸两张牌。",
+  ["fenhui"] = "奋恚",
+  [":fenhui"] = "限定技，出牌阶段，你可以令一名其他角色获得X枚“恨”（X为你于此回合内对其使用过黑色牌的次数）。"..
+  "当你对其造成伤害时，你令其弃1枚“恨”且伤害值+1；当其死亡时，若其有“恨”，你减1点体力上限，失去〖守执〗，获得〖守执〗和〖兴门〗。",
+  ["xingmen"] = "兴门",
+  [":xingmen"] = "当你因执行〖守执〗的效果而弃置手牌后，你可以回复1点体力。当你因摸牌而得到牌后，"..
+  "若这些牌数大于1且均为红色，你使用其中的牌不能被响应。",
+
+  ["@shouzhi-turn"] = "守执",
+  ["#shouzhi-draw"] = "是否发动 守执，摸两张牌",
+  ["#shouzhi-discard"] = "是否发动 守执，弃置一张牌",
+  ["#fenhui-active"] = "发动 奋恚，令一名角色获得“恨”标记",
+  ["#fenhui_delay"] = "奋恚",
+  ["@fenhui-turn"] = "奋恚",
+  ["@fenhui_hatred"] = "恨",
+  ["@@xingmen-inhand"] = "兴门",
+
+
+
+}
+
 
 --武庙：诸葛亮、陆逊
 local zhugeliang = General(extension, "wm__zhugeliang", "shu", 4, 7)

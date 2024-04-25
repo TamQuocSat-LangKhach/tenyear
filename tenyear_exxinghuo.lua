@@ -31,7 +31,7 @@ local ty_ex__kuangbi = fk.CreateTriggerSkill {
     local to = room:getPlayerById(self.cost_data)
     local cards = room:askForCard(to, 1, 3, true, self.name, false, ".", "#ty_ex__kuangbi-card:"..player.id)
     room:setPlayerMark(player, self.name, to.id)
-    player:addToPile(self.name, cards, false, self.name, to.id)
+    player:addToPile(self.name, cards, true, self.name, to.id)
   end,
 }
 local ty_ex__kuangbi_trigger = fk.CreateTriggerSkill {

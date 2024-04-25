@@ -1145,4 +1145,122 @@ Fk:loadTranslationTable{
   ["shuangbi_viewas"] = "双璧",
 }
 
+local wuyi = General(extension, "tycl__wuyi", "shu", 4)
+local benxiPool = {
+  {"mou__mingren", 1},
+  {"longyuan", 1},
+  {"os__fenwang", 1},
+  {"shuyong", 1},
+  {"dengli", 1},
+  {"ty__zhengnan", 2},
+  {"qingbei", 2},
+  {"wuxin", 2},
+  {"ld__qice", 1},
+  {"duorui", 2},
+  {"jixian", 2},
+  {"sijun", 2},
+  {"zongfan", 2},
+  {"chanshuang", 1},
+  {"sp__youdi", 1},
+  {"jishan", 1},
+  {"ld__huaiyi", 1},
+  {"qice", 1},
+  {"ty_ex__yonglue", 2},
+  {"pizhi", 1},
+  {"quanmou", 1},
+  {"fuxun", 1},
+  {"os_ex__yuzhang", 1},
+  {"minze", 1},
+  {"porui", 2},
+  {"qingtan", 1},
+  {"choulue", 2},
+  {"qizhi", 2},
+  {"fujian", 2},
+  {"xiuwen", 2},
+  {"zhaoluan", 1},
+  {"yisuan", 1},
+  {"xiaowu", 1},
+  {"fangdu", 2},
+  {"ty__shefu", 1},
+  {"os__juexing", 1},
+  {"weiwu", 2},
+  {"daigong", 2},
+  {"zhaohan", 1},
+  {"ld__lordsunquan_shelie", 1},
+  {"ol__wuji", 1},
+  {"ol__hongyuan", 1},
+  {"daiyan", 2},
+  {"xiantu", 2},
+}
+local benxi = fk.CreateTriggerSkill{
+  name = "tycl__benxi",
+  anim_type = "switch",
+  switch_skill_name = "tycl__benxi",
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) then return end
+    for _, move in ipairs(data) do
+      if move.from == player.id then
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand then
+            return true
+          end
+        end
+      end
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local isYang = player:getSwitchSkillState(self.name, true) == fk.SwitchYang
+
+    if isYang then
+      local sData = table.random(benxiPool)
+      player:chat(string.format("$%s:%d", sData[1], sData[2]))
+      room:setPlayerMark(player, "@tycl__benxi", sData[1])
+    else
+      local skill = player:getMark("@tycl__benxi")
+      if not Fk.skills[skill] then return end
+      if player:hasSkill(skill, true) then
+        local targets = table.map(room.alive_players, Util.IdMapper)
+        local tgt = room:askForChoosePlayers(player, targets, 1, 1,
+          "#tycl__benxi:::" .. skill, self.name, false)[1]
+        room:damage{
+          from = player,
+          to = room:getPlayerById(tgt),
+          damage = 1,
+          skillName = self.name,
+        }
+      else
+        room:handleAddLoseSkills(player, skill)
+        local skills = U.getMark(player, self.name)
+        table.insert(skills, skill)
+        room:setPlayerMark(player, self.name, skills)
+      end
+    end
+  end,
+
+  refresh_events = {fk.TurnStart},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark(self.name) ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:handleAddLoseSkills(player, table.concat(
+      table.map(player:getMark(self.name), function(str)
+        return "-" .. str
+      end), "|"))
+    room:setPlayerMark(player, self.name, 0)
+  end,
+}
+wuyi:addSkill(benxi)
+Fk:loadTranslationTable{
+  ["tycl__wuyi"] = "名将吴懿",
+  ["tycl__benxi"] = "奔袭",
+  [":tycl__benxi"] = "转换技，当你失去手牌后，阳：随机念一句含有wuyi的技能台词；" ..
+    "阴：获得你上次以此法念出台词的技能直到你下回合开始，若已拥有则改为对一名角色造成一点伤害。",
+  ["@tycl__benxi"] = "奔袭",
+  ["#tycl__benxi"] = "奔袭: 抽到了已经拥有的技能 %arg，改为对一名角色造成一点伤害",
+}
+
 return extension

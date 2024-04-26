@@ -1193,6 +1193,7 @@ local benxiPool = {
 local benxi = fk.CreateTriggerSkill{
   name = "tycl__benxi",
   anim_type = "switch",
+  frequency = Skill.Compulsory,
   switch_skill_name = "tycl__benxi",
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
@@ -1207,7 +1208,6 @@ local benxi = fk.CreateTriggerSkill{
       end
     end
   end,
-  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local isYang = player:getSwitchSkillState(self.name, true) == fk.SwitchYang
@@ -1255,7 +1255,7 @@ wuyi:addSkill(benxi)
 Fk:loadTranslationTable{
   ["tycl__wuyi"] = "名将吴懿",
   ["tycl__benxi"] = "奔袭",
-  [":tycl__benxi"] = "转换技，当你失去手牌后，阳：随机念一句含有wuyi的技能台词；" ..
+  [":tycl__benxi"] = "锁定技，转换技，当你失去手牌后，阳：随机念一句含有wuyi的技能台词；" ..
     "阴：获得你上次以此法念出台词的技能直到你下回合开始，若已拥有则改为对一名角色造成一点伤害。",
   ["@tycl__benxi"] = "奔袭",
   ["#tycl__benxi"] = "奔袭: 抽到了已经拥有的技能 %arg，改为对一名角色造成一点伤害",

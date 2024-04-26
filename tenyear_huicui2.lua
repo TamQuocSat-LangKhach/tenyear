@@ -145,6 +145,7 @@ guanning:addSkill(dunshi)
 Fk:loadTranslationTable{
   ["guanning"] = "管宁",
   ["#guanning"] = "辟境归元",
+	["designer:guanning"] = "七哀",
   ["illustrator:guanning"] = "游漫美绘",
   ["dunshi"] = "遁世",
   [":dunshi"] = "每回合限一次，你可视为使用或打出一张【杀】，【闪】，【桃】或【酒】。然后当前回合角色本回合下次造成伤害时，你选择两项：<br>"..
@@ -335,6 +336,7 @@ huangchengyan:addSkill(yinshih)
 Fk:loadTranslationTable{
   ["ty__huangchengyan"] = "黄承彦",
   ["#ty__huangchengyan"] = "捧月共明",
+	["designer:ty__huangchengyan"] = "七哀",
   ["illustrator:ty__huangchengyan"] = "凡果",
   ["jiezhen"] = "解阵",
   ["#jiezhen_trigger"] = "解阵",
@@ -651,6 +653,7 @@ wanglie:addSkill(huagui)
 Fk:loadTranslationTable{
   ["wanglie"] = "王烈",
   ["#wanglie"] = "通识达道",
+	["designer:wanglie"] = "七哀",
   ["illustrator:wanglie"] = "青岛君桓",
   ["chongwang"] = "崇望",
   [":chongwang"] = "其他角色使用一张基本牌或普通锦囊牌时，若你为上一张牌的使用者，你可令其获得其使用的牌或令该牌无效。",
@@ -2808,6 +2811,7 @@ liuba:addSkill(liuzhuan)
 Fk:loadTranslationTable{
   ["ty__liuba"] = "刘巴",
   ["#ty__liuba"] = "清尚之节",
+	["designer:ty__liuba"] = "七哀",
   ["illustrator:ty__liuba"] = "匠人绘",
   ["ty__zhubi"] = "铸币",
   [":ty__zhubi"] = "当<font color='red'>♦</font>牌因弃置而进入弃牌堆后，你可从牌堆或弃牌堆将一张【无中生有】置于牌堆顶。",
@@ -3075,6 +3079,7 @@ wuban:addSkill(youzhan)
 Fk:loadTranslationTable{
   ["ty__wuban"] = "吴班",
   ["#ty__wuban"] = "激东奋北",
+	["designer:ty__wuban"] = "七哀",
   ["illustrator:ty__wuban"] = "君桓文化",
   ["youzhan"] = "诱战",
   [":youzhan"] = "锁定技，其他角色在你的回合失去牌后，你摸一张牌且此牌本回合不计入手牌上限，其本回合下次受到的伤害+1。结束阶段，若这些角色本回合"..
@@ -4451,6 +4456,7 @@ mengyou:addSkill(manzhi)
 Fk:loadTranslationTable{
   ["mengyou"] = "孟优",
   ["#mengyou"] = "蛮杰陷谋",
+	["designer:mengyou"] = "残昼厄夜",
   ["illustrator:mengyou"] = "韩少侠&错落宇宙",
   ["manzhi"] = "蛮智",
   [":manzhi"] = "准备阶段，你可以选择一名其他角色，然后选择一项：1.令其交给你两张牌，然后其视为使用一张无距离限制的【杀】；"..

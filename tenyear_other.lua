@@ -722,6 +722,8 @@ local tycl__rende = fk.CreateActiveSkill{
 cl__liubei:addSkill(tycl__rende)
 Fk:loadTranslationTable{
   ["tycl__liubei"] = "经典刘备",
+  ["#tycl__liubei"] = "乱世的枭雄",
+	["illustrator:tycl__liubei"] = "Kayak",
   ["tycl__rende"] = "章武",
   [":tycl__rende"] = "出牌阶段每名其他角色限一次，你可以获得一名其他角色两张手牌，然后视为使用一张基本牌。",
   ["#tycl__rende"] = "章武：获得一名其他角色两张手牌，然后视为使用一张基本牌",

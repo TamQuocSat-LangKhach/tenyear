@@ -445,6 +445,7 @@ zhaoang:addSkill(sushou)
 Fk:loadTranslationTable{
   ["zhaoang"] = "赵昂",
   ["#zhaoang"] = "剜心筑城",
+	["designer:zhaoang"] = "残昼厄夜",
   ["illustrator:zhaoang"] = "君桓文化",
   ["zhongjie"] = "忠节",
   [":zhongjie"] = "每轮限一次，当一名角色因失去体力而进入濒死状态时，你可以令其回复1点体力并摸一张牌。",
@@ -3207,7 +3208,7 @@ bailingyun:addSkill(yuxin)
 Fk:loadTranslationTable{
   ["bailingyun"] = "柏灵筠",
   ["#bailingyun"] = "玲珑心窍",
-  --["designer:bailingyun"] = "",
+  ["designer:bailingyun"] = "残昼厄夜",
   ["illustrator:bailingyun"] = "君桓文化",
   ["linghui"] = "灵慧",
   [":linghui"] = "一名角色的结束阶段，若其为你或有角色于本回合内进入过濒死状态，"..
@@ -4040,6 +4041,7 @@ liuyu:addRelatedSkill(zimu)
 Fk:loadTranslationTable{
   ["ty__liuyu"] = "刘虞",
   ["#ty__liuyu"] = "维城燕北",
+	["designer:ty__liuyu"] = "七哀",
   ["illustrator:ty__liuyu"] = "君桓文化",
   ["suifu"] = "绥抚",
   [":suifu"] = "其他角色的结束阶段，若本回合你和一号位共计至少受到两点伤害，你可将当前回合角色的所有手牌置于牌堆顶，视为使用一张【五谷丰登】。",

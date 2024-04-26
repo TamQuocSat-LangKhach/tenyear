@@ -3258,6 +3258,7 @@ liyixiejing:addSkill(douzhen)
 Fk:loadTranslationTable{
   ["liyixiejing"] = "李异谢旌",
   ["#liyixiejing"] = "踵蹑袭进",
+	["designer:liyixiejing"] = "七哀",
   ["illustrator:liyixiejing"] = "匠人绘",
   ["douzhen"] = "斗阵",
   [":douzhen"] = "转换技，锁定技，你的回合内，阳：你的黑色基本牌视为【决斗】，且使用时获得目标一张牌；阴：你的红色基本牌视为【杀】，且使用时无次数限制。",
@@ -3763,6 +3764,7 @@ sunlang:addSkill(benshi)
 Fk:loadTranslationTable{
   ["sunlang"] = "孙狼",
   ["#sunlang"] = "恶惮远役",
+	["designer:sunlang"] = "残昼厄夜",
   ["illustrator:sunlang"] = "六道目",
   ["tingxian"] = "铤险",
   [":tingxian"] = "每回合限一次，你使用【杀】指定目标后，你可以摸X张牌，然后令此【杀】对其中至多X个目标无效（X为你装备区的牌数+1）。",

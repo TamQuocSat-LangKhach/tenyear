@@ -4382,6 +4382,7 @@ xizhen:addRelatedSkill(xizhen_trigger)
 gaolan:addSkill(xizhen)
 Fk:loadTranslationTable{
   ["ty__gaolan"] = "高览",
+  ["#ty__gaolan"] = "诽殇之柱",
   ["designer:ty__gaolan"] = "七哀",
   ["illustrator:ty__gaolan"] = "君桓文化",
 
@@ -5298,6 +5299,7 @@ Fk:addSkill(weidang_active)
 Fk:loadTranslationTable{
   ["ty__sunziliufang"] = "孙资刘放",
   ["#ty__sunziliufang"] = "谄陷负讥",
+	["designer:ty__sunziliufang"] = "七哀",
   ["illustrator:ty__sunziliufang"] = "君桓文化",
 
   ["qinshen"] = "勤慎",

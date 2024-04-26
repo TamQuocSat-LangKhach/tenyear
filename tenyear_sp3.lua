@@ -38,6 +38,7 @@ local yuqi = fk.CreateTriggerSkill{
         moveReason = fk.ReasonGive,
         proposer = player.id,
         skillName = self.name,
+        visiblePlayers = player.id,
       })
       for _, id in ipairs(top) do
         table.removeOne(cards, id)
@@ -2749,7 +2750,7 @@ local shouzhi = fk.CreateTriggerSkill{
       player:drawCards(2, self.name)
     elseif x < 0 then
       room:notifySkillInvoked(player, self.name, "negative")
-      room:askForDiscard(player, 1, 1, true, self.name, false)
+      room:askForDiscard(player, 1, 1, false, self.name, false)
     end
   end,
 
@@ -2785,7 +2786,7 @@ local shouzhiEX = fk.CreateTriggerSkill{
         return true
       end
     else
-      local cards = player.room:askForDiscard(player, 1, 1, true, "shouzhi", true, ".", "#shouzhi-discard", true)
+      local cards = player.room:askForDiscard(player, 1, 1, false, "shouzhi", true, ".", "#shouzhi-discard", true)
       if #cards > 0 then
         self.cost_data = cards
         return true
@@ -2818,22 +2819,37 @@ local fenhui = fk.CreateActiveSkill{
   anim_type = "offensive",
   frequency = Skill.Limited,
   prompt = "#fenhui-active",
+  interaction = function()
+    local choices = {"fenhui_count"}
+    local all_choices = {"fenhui_count"}
+    local x
+    for _, p in ipairs(Fk:currentRoom().alive_players) do
+      if p ~= Self then
+        x = math.min(p:getMark("fenhui_count"), 5)
+        table.insert(all_choices, "fenhui_target::" .. p.id .. ":".. tostring(x))
+        if x > 0 then
+          table.insert(choices, "fenhui_target::" .. p.id .. ":".. tostring(x))
+        end
+      end
+    end
+    return UI.ComboBox { choices = choices, all_choices = all_choices }
+  end,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     return #selected == 0 and to_select ~= Self.id
-    and Fk:currentRoom():getPlayerById(to_select):getMark("@fenhui-turn") > 0
+    and Fk:currentRoom():getPlayerById(to_select):getMark("fenhui_count") > 0
   end,
   target_num = 1,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    room:setPlayerMark(target, "@fenhui_hatred", target:getMark("@fenhui-turn"))
+    room:setPlayerMark(target, "@fenhui_hatred", math.min(target:getMark("fenhui_count"), 5))
     room:setPlayerMark(player, "fenhui_target", target.id)
     for _, p in ipairs(room.alive_players) do
-      room:setPlayerMark(p, "@fenhui-turn", 0)
+      room:setPlayerMark(p, "fenhui_count", 0)
     end
   end,
 }
@@ -2860,7 +2876,7 @@ local fenhui_delay = fk.CreateTriggerSkill{
       room:changeMaxHp(player, -1)
       if player.dead then return false end
       local skills = "xingmen"
-      if player:hasSkill(shouzhi) then
+      if player:hasSkill(shouzhi, true) then
         skills = "-shouzhi|shouzhiEX|" .. skills
       end
       room:handleAddLoseSkills(player, skills, nil, true, false)
@@ -2870,7 +2886,7 @@ local fenhui_delay = fk.CreateTriggerSkill{
   refresh_events = {fk.TargetSpecified, fk.BuryVictim},
   can_refresh = function(self, event, target, player, data)
     if event == fk.TargetSpecified then
-      return player == target and data.card.color == Card.Black and player.phase ~= Player.NotActive and
+      return player == target and data.card.color == Card.Black and
       player.id ~= data.to and player:hasSkill(fenhui, true) and player:usedSkillTimes("fenhui", Player.HistoryGame) == 0
     elseif event == fk.BuryVictim then
       return player:getMark("@fenhui_hatred") > 0 and table.every(player.room.alive_players, function (p)
@@ -2883,7 +2899,7 @@ local fenhui_delay = fk.CreateTriggerSkill{
     if event == fk.TargetSpecified then
       local to = room:getPlayerById(data.to)
       if not to.dead then
-        room:addPlayerMark(to, "@fenhui-turn")
+        room:addPlayerMark(to, "fenhui_count")
       end
     else
       room:setPlayerMark(player, "@fenhui_hatred", 0)
@@ -2962,13 +2978,13 @@ Fk:loadTranslationTable{
   --["designer:guanyueg"] = "",
   --["illustrator:guanyueg"] = "",
   ["shouzhi"] = "守执",
-  [":shouzhi"] = "锁定技，一名角色的回合结束时，若你的手牌数：大于此回合开始时的手牌数，你弃置一张牌；"..
+  [":shouzhi"] = "锁定技，一名角色的回合结束时，若你的手牌数：大于此回合开始时的手牌数，你弃置一张手牌；"..
   "小于此回合开始时的手牌数，你摸两张牌。",
   ["shouzhiEX"] = "守执",
-  [":shouzhiEX"] = "一名角色的回合结束时，若你的手牌数：大于此回合开始时的手牌数，你可以弃置一张牌；"..
+  [":shouzhiEX"] = "一名角色的回合结束时，若你的手牌数：大于此回合开始时的手牌数，你可以弃置一张手牌；"..
   "小于此回合开始时的手牌数，你可以摸两张牌。",
   ["fenhui"] = "奋恚",
-  [":fenhui"] = "限定技，出牌阶段，你可以令一名其他角色获得X枚“恨”（X为你于此回合内对其使用过黑色牌的次数）。"..
+  [":fenhui"] = "限定技，出牌阶段，你可以令一名其他角色获得X枚“恨”（X为你对其使用过黑色牌的次数且至多为5），你摸等量的牌。"..
   "当你对其造成伤害时，你令其弃1枚“恨”且伤害值+1；当其死亡时，若其有“恨”，你减1点体力上限，失去〖守执〗，获得〖守执〗和〖兴门〗。",
   ["xingmen"] = "兴门",
   [":xingmen"] = "当你因执行〖守执〗的效果而弃置手牌后，你可以回复1点体力。当你因摸牌而得到牌后，"..
@@ -2978,8 +2994,9 @@ Fk:loadTranslationTable{
   ["#shouzhi-draw"] = "是否发动 守执，摸两张牌",
   ["#shouzhi-discard"] = "是否发动 守执，弃置一张牌",
   ["#fenhui-active"] = "发动 奋恚，令一名角色获得“恨”标记",
+  ["fenhui_count"] = "查看数值",
+  ["fenhui_target"] = "%dest[%arg]",
   ["#fenhui_delay"] = "奋恚",
-  ["@fenhui-turn"] = "奋恚",
   ["@fenhui_hatred"] = "恨",
   ["@@xingmen-inhand"] = "兴门",
 

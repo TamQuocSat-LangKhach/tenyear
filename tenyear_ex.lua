@@ -2911,6 +2911,7 @@ local ty_ex__mieji = fk.CreateActiveSkill{
       toArea = Card.DrawPile,
       moveReason = fk.ReasonPut,
       skillName = self.name,
+      moveVisible = true,
     })
     local ids = room:askForDiscard(target, 1, 1, true, self.name, false, ".", "#ty_ex__mieji-discard1")
     if #ids > 0 and Fk:getCardById(ids[1]).type ~= Card.TypeTrick then

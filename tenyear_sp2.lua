@@ -1623,33 +1623,20 @@ local jinjie = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
+    local room = player.room
     local x = self.cost_data
     if x > 0 then
-      target:drawCards(x, self.name)
-      if player.dead or target.dead or not target:isWounded() or #player:getCardIds("he") < x then return false end
+      room:drawCards(target, x, self.name)
+      if player.dead or #player:getCardIds("he") < x or
+      #room:askForDiscard(player, x, x, true, self.name, true, ".", "#jinjie-discard::"..target.id..":"..tostring(x)) == 0 or
+      target.dead or not target:isWounded() then return false end
     end
-    local room = player.room
-    local discard_data = {
-      num = x,
-      min_num = x,
-      include_equip = true,
-      skillName = self.name,
-      pattern = ".",
+    room:recover{
+      who = target,
+      num = 1,
+      recoverBy = player,
+      skillName = self.name
     }
-    local success, ret = room:askForUseActiveSkill(player, "discard_skill",
-    "#jinjie-discard::"..target.id..":"..tostring(x), true, discard_data)
-    if success then
-      if #ret.cards > 0 then
-        room:throwCard(ret.cards, self.name, player, player)
-        if target.dead or not target:isWounded() then return false end
-      end
-      room:recover{
-        who = target,
-        num = 1,
-        recoverBy = player,
-        skillName = self.name
-      }
-    end
   end,
 }
 local jue = fk.CreateTriggerSkill{
@@ -1716,10 +1703,15 @@ local jue = fk.CreateTriggerSkill{
         end
       end
       if #cards == 0 then break end
+      local tos = {{to.id}}
+      local card = table.random(cards)
+      if card.trueName == "amazing_grace" and not player:isProhibited(player, card) then
+        table.insert(tos, {player.id})
+      end
       room:useCard{
         from = player.id,
-        tos = {{to.id}},
-        card = table.random(cards),
+        tos = tos,
+        card = card,
         extraUse = true
       }
       if player.dead or to.dead then break end

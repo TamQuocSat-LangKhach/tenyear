@@ -2531,7 +2531,7 @@ local yangzhong = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:throwCard(self.cost_data, self.name, player, player)
+    room:throwCard(self.cost_data, self.name, data.from, data.from)
     if not data.to.dead then
       room:loseHp(data.to, 1, self.name)
     end

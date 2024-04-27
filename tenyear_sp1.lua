@@ -2689,7 +2689,7 @@ local tuoyu_trigger = fk.CreateTriggerSkill{
 
   refresh_events = {fk.PreCardUse},
   can_refresh = function(self, event, target, player, data)
-    return target == player and not data.card:isVirtual()
+    return target == player and not data.card:isVirtual() and
     (data.card:getMark("@@tuoyu1-inhand") > 0 or data.card:getMark("@@tuoyu2-inhand") > 0 or data.card:getMark("@@tuoyu3-inhand") > 0)
   end,
   on_refresh = function(self, event, target, player, data)

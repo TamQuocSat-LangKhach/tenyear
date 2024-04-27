@@ -1133,59 +1133,58 @@ local chengong = General(extension, "ty_ex__chengong", "qun", 3)
 local ty_ex__mingce = fk.CreateActiveSkill{
   name = "ty_ex__mingce",
   anim_type = "support",
+  prompt = "#ty_ex__mingce-active",
   card_num = 1,
-  target_num = 1,
+  target_num = 2,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0 and (Fk:getCardById(to_select).trueName == "slash" or Fk:getCardById(to_select).type == Card.TypeEquip)
   end,
   target_filter = function(self, to_select, selected)
-    return #selected == 0 and to_select ~= Self.id
+    if #selected > 1 then return false end
+    if #selected == 0 then
+      return to_select ~= Self.id
+    elseif selected[1] ~= Self.id then
+      local slash = Fk:cloneCard("slash")
+      slash.skillName = self.name
+      return Fk:currentRoom():getPlayerById(selected[1]):canUseTo(
+        slash, Fk:currentRoom():getPlayerById(to_select), { bypass_distances = true, bypass_times = true })
+    end
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    room:obtainCard(target, Fk:getCardById(effect.cards[1]), false, fk.ReasonGive, player.id)
-    local targets = {}
-    for _, p in ipairs(room:getOtherPlayers(target)) do
-      if target:inMyAttackRange(p) then
-        table.insert(targets, p.id)
-      end
-    end
-    if #targets == 0 then
-      player:drawCards(1, self.name)
-      target:drawCards(1, self.name)
-    else
-      local tos = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__mingce-choose::"..target.id, self.name, false)
-      local to
-      if #tos > 0 then
-        to = tos[1]
-      else
-        to = table.random(targets)
-      end
-      room:doIndicate(target.id, {to})
-      local choice = room:askForChoice(target, {"ty_ex__mingce_slash", "draw1"}, self.name)
-      if choice == "ty_ex__mingce_slash" then
-        local use = {
-          from = target.id,
-          tos = {{to}},
-          card = Fk:cloneCard("slash"),
-          skillName = self.name,
-          extraUse = true,
-        }
-        room:useCard(use)
-        if use.damageDealt then
-          if not player.dead then
-            player:drawCards(1, self.name)
-          end
-          if not target.dead then
-            target:drawCards(1, self.name)
-          end
+    local to = room:getPlayerById(effect.tos[2])
+    room:obtainCard(target, effect.cards, true, fk.ReasonGive, player.id)
+    if target.dead then return end
+    local choice = room:askForChoice(target, {"ty_ex__mingce_slash", "draw1"}, self.name,
+    "#ty_ex__mingce-choose:" .. effect.from .. ":" .. effect.tos[2])
+    if choice == "ty_ex__mingce_slash" then
+      local slash = Fk:cloneCard("slash")
+      slash.skillName = self.name
+      local use = {
+        from = target.id,
+        tos = {{effect.tos[2]}},
+        card = slash,
+        skillName = self.name,
+        extraUse = true,
+      }
+      room:useCard(use)
+      if use.damageDealt then
+        if not player.dead then
+          player:drawCards(1, self.name)
         end
-      else
+        if not target.dead then
+          target:drawCards(1, self.name)
+        end
+      end
+    else
+      if not player.dead then
         player:drawCards(1, self.name)
+      end
+      if not target.dead then
         target:drawCards(1, self.name)
       end
     end
@@ -1198,9 +1197,10 @@ Fk:loadTranslationTable{
   ["#ty_ex__chengong"] = "刚直壮烈",
   ["illustrator:ty_ex__chengong"] = "君桓文化",
   ["ty_ex__mingce"] = "明策",
-  [":ty_ex__mingce"] = "出牌阶段限一次，你可以交给一名其他角色一张装备牌或【杀】，其选择一项：1.视为对其攻击范围内的另一名由你指定的角色使用【杀】，"..
-  "若此【杀】造成伤害则执行选项2；2.你与其各摸一张牌。",
-  ["#ty_ex__mingce-choose"] = "明策：选择 %dest 视为使用【杀】的目标",
+  [":ty_ex__mingce"] = "出牌阶段限一次，你可以交给一名其他角色一张装备牌或【杀】，其选择一项：1.视为对另一名由你指定的角色使用【杀】，"..
+  "若此【杀】造成伤害，你与其各摸一张牌；2.你与其各摸一张牌。",
+  ["#ty_ex__mingce-active"] = "发动 明策，选择一张装备牌或【杀】，选择一名其他角色和出【杀】的目标角色",
+  ["#ty_ex__mingce-choose"] = "明策：选择视为对%dest使用【杀】，或与%src各摸一张牌",
   ["ty_ex__mingce_slash"] = "视为使用【杀】",
 
   ["$ty_ex__mingce1"] = "阁下若纳此谋，则大业可成也！",

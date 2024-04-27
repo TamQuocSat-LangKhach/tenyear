@@ -103,22 +103,35 @@ local tanbei = fk.CreateActiveSkill{
     end
   end,
 }
+local tanbei_refresh = fk.CreateTriggerSkill{
+  name = "#tanbei_refresh",
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    if player == target then
+      local mark = U.getMark(player, "tanbei2-turn")
+      return #mark > 0 and table.find(TargetGroup:getRealTargets(data.tos), function (pid)
+        return table.contains(mark, pid)
+      end)
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.extraUse = true
+  end,
+}
 local tanbei_prohibit = fk.CreateProhibitSkill{
   name = "#tanbei_prohibit",
   is_prohibited = function(self, from, to, card)
-    local targetRecorded = from:getMark("tanbei1-turn")
-    return type(targetRecorded) == "table" and table.contains(targetRecorded, to.id)
+    return table.contains(U.getMark(from, "tanbei1-turn"), to.id)
   end,
 }
 local tanbei_targetmod = fk.CreateTargetModSkill{
   name = "#tanbei_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    local targetRecorded = player:getMark("tanbei2-turn")
-    return type(targetRecorded) == "table" and to and table.contains(targetRecorded, to.id)
+    return to and table.contains(U.getMark(player, "tanbei2-turn"), to.id)
   end,
   bypass_distances =  function(self, player, skill, card, to)
-    local targetRecorded = player:getMark("tanbei2-turn")
-    return type(targetRecorded) == "table" and to and table.contains(targetRecorded, to.id)
+    return to and table.contains(U.getMark(player, "tanbei2-turn"), to.id)
   end,
 }
 local sidao = fk.CreateTriggerSkill{
@@ -165,6 +178,7 @@ local sidao = fk.CreateTriggerSkill{
     player.room:setPlayerMark(player, "sidao-phase", mark)
   end,
 }
+tanbei:addRelatedSkill(tanbei_refresh)
 tanbei:addRelatedSkill(tanbei_prohibit)
 tanbei:addRelatedSkill(tanbei_targetmod)
 guosi:addSkill(tanbei)
@@ -175,11 +189,11 @@ Fk:loadTranslationTable{
   ["illustrator:guosi"] = "秋呆呆",
   ["tanbei"] = "贪狈",
   [":tanbei"] = "出牌阶段限一次，你可以令一名其他角色选择一项：1.令你随机获得其区域内的一张牌，此回合不能再对其使用牌；"..
-  "2.令你此回合对其使用牌没有次数和距离限制。",
+  "2.令你此回合对其使用牌无距离和次数限制。",
   ["sidao"] = "伺盗",
   [":sidao"] = "出牌阶段限一次，当你对一名其他角色连续使用两张牌后，你可将一张手牌当【顺手牵羊】对其使用（目标须合法）。",
   ["tanbei1"] = "其随机获得你区域内的一张牌，此回合不能再对你使用牌",
-  ["tanbei2"] = "此回合对你使用牌无次数和距离限制",
+  ["tanbei2"] = "此回合对你使用牌无距离和次数限制",
   ["#sidao-cost"] = "伺盗：你可将一张手牌当【顺手牵羊】对相同的目标使用",
 
   ["$tanbei1"] = "此机，我怎么会错失。",
@@ -931,6 +945,19 @@ local jiaoxia = fk.CreateTriggerSkill{
       room:setPlayerMark(player, "@@jiaoxia-phase", 1)
       player:filterHandcards()
     end
+  end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    if player == target and data.card.trueName == "slash" and player.phase == Player.Play and player:hasSkill(self) then
+      local mark = U.getMark(player, "jiaoxia_target-phase")
+      return table.find(TargetGroup:getRealTargets(data.tos), function (pid)
+        return not table.contains(mark, pid)
+      end)
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.extraUse = true
   end,
 }
 local jiaoxia_filter = fk.CreateFilterSkill{
@@ -3237,11 +3264,14 @@ local douzhen_trigger = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.AfterCardUseDeclared, fk.PreCardRespond},
+  refresh_events = {fk.PreCardUse, fk.PreCardRespond},
   can_refresh = function(self, event, target, player, data)
     return target == player and table.contains(data.card.skillNames, "douzhen")
   end,
   on_refresh = function(self, event, target, player, data)
+    if event == fk.PreCardUse then
+      data.extraUse = true
+    end
     player.room:setPlayerMark(player, MarkEnum.SwithSkillPreName .. "douzhen", player:getSwitchSkillState("douzhen", true))
     player:addSkillUseHistory("douzhen")
   end,
@@ -5324,7 +5354,7 @@ Fk:loadTranslationTable{
   ["designer:ty__pangdegong"] = "步穗",
   ["illustrator:ty__pangdegong"] = "君桓文化",
   ["heqia"] = "和洽",
-  [":heqia"] = "出牌阶段开始时，你可以选择一项：1.你交给一名其他角色至少一张牌；2.令一名有手牌的其他角色交给你至少一张牌。然后获得牌的角色可以将一张手牌当任意基本牌使用（无距离次数限制），且此牌目标上限改为X（X为其本次获得的牌数）。",
+  [":heqia"] = "出牌阶段开始时，你可以选择一项：1.你交给一名其他角色至少一张牌；2.令一名有手牌的其他角色交给你至少一张牌。然后获得牌的角色可以将一张手牌当任意基本牌使用（无距离限制），且此牌目标上限改为X（X为其本次获得的牌数）。",
   ["yinyi"] = "隐逸",
   [":yinyi"] = "锁定技，每回合限一次，当你受到非属性伤害时，若伤害来源的手牌数与体力值均与你不同，防止此伤害。",
   ["heqia_active"] = "和洽",

@@ -1950,6 +1950,7 @@ local fengying = fk.CreateViewAsSkill{
     end
   end,
   before_use = function(self, player, useData)
+    useData.extraUse = true
     local names = U.getMark(player, "@$fengying")
     if table.removeOne(names, useData.card.name) then
       player.room:setPlayerMark(player, "@$fengying", names)
@@ -2037,8 +2038,8 @@ Fk:loadTranslationTable{
   [":lingfang"] = "锁定技，准备阶段或当其他角色对你使用或你对其他角色使用的黑色牌结算后，你获得一枚“绞”标记。",
   ["fengying"] = "风影",
   ["#fengying_trigger"] = "风影",
-  [":fengying"] = "每个回合开始时，记录此时弃牌堆中的黑色基本牌和黑色普通锦囊牌牌名。"..
-  "每回合每种牌名限一次，你可以将一张点数不大于“绞”标记数的手牌当一张记录的牌使用，且无距离和次数限制。",
+  [":fengying"] = "一名角色的回合开始时，你记录弃牌堆中的黑色基本牌和黑色普通锦囊牌牌名。"..
+  "你可以将一张点数不大于“绞”标记数的手牌当一张记录的本回合未以此法使用过的牌使用（无距离和次数限制）。",
   ["shouze"] = "受责",
   [":shouze"] = "锁定技，结束阶段，你弃置一枚“绞”，然后随机获得弃牌堆一张黑色牌并失去1点体力。",
   ["@lianzhi"] = "连枝",
@@ -3643,15 +3644,21 @@ local wuyou = fk.CreateActiveSkill{
 local wuyou_refresh = fk.CreateTriggerSkill{
   name = "#wuyou_refresh",
 
-  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
+  refresh_events = {fk.PreCardUse, fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
+    if event == fk.PreCardUse then
+      return player == target and not data.card:isVirtual() and data.card:getMark("@@wuyou-inhand") ~= 0
+    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
       return data == self
     elseif event == fk.BuryVictim then
       return player:hasSkill(self, true, true)
     end
   end,
   on_refresh = function(self, event, target, player, data)
+    if event == fk.PreCardUse then
+      data.extraUse = true
+      return false
+    end
     local room = player.room
     if table.every(room.alive_players, function(p) return not p:hasSkill(self, true) or p == player end) then
       if player:hasSkill("wuyou&", true, true) then

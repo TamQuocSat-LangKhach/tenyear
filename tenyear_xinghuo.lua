@@ -326,6 +326,19 @@ local limu = fk.CreateActiveSkill{
     end
   end,
 }
+local limu_refresh = fk.CreateTriggerSkill{
+  name = "#limu_refresh",
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill(limu) and #player:getCardIds(Player.Judge) > 0 and table.find(TargetGroup:getRealTargets(data.tos), function (pid)
+      return player:inMyAttackRange(player.room:getPlayerById(pid))
+    end)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.extraUse = true
+  end,
+}
 local limu_targetmod = fk.CreateTargetModSkill{
   name = "#limu_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
@@ -335,6 +348,7 @@ local limu_targetmod = fk.CreateTargetModSkill{
     return player:hasSkill(limu) and #player:getCardIds(Player.Judge) > 0 and to and player:inMyAttackRange(to)
   end,
 }
+limu:addRelatedSkill(limu_refresh)
 limu:addRelatedSkill(limu_targetmod)
 liuyan:addSkill(tushe)
 liuyan:addSkill(limu)
@@ -1000,7 +1014,7 @@ Fk:loadTranslationTable{
   ["#lvdai"] = "清身奉公",
   ["illustrator:lvdai"] = "biou09",
   ["qinguo"] = "勤国",
-  [":qinguo"] = "当你于回合内使用装备牌结算结束后，你可视为使用一张不计入次数限制的【杀】；当你的装备区里的牌数变化后，"..
+  [":qinguo"] = "当你于回合内使用装备牌结算结束后，你可视为使用【杀】；当你的装备区里的牌数变化后，"..
   "若你装备区里的牌数与你的体力值相等，你回复1点体力。",
   ["qinguo_viewas"] = "勤国",
   ["#qinguo-ask"] = "勤国：你可以视为使用一张【杀】",

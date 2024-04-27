@@ -241,6 +241,15 @@ local cibei = fk.CreateTriggerSkill{
       room:moveCardTo(player:getPile("hanlong_ci"), Card.PlayerHand, player, fk.ReasonPrey, self.name, "", true, player.id, "@@cibei-inhand")
     end
   end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and
+    data.card.trueName == "slash" and not data.card:isVirtual() and data.card:getMark("@@cibei-inhand") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.extraUse = true
+  end,
 }
 local cibei_delay = fk.CreateTriggerSkill{
   name = "#cibei_delay",
@@ -701,19 +710,19 @@ local bushil = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill},
+  refresh_events = {fk.PreCardUse, fk.EventAcquireSkill, fk.EventLoseSkill},
   can_refresh = function(self, event, target, player, data)
-    if player:hasSkill(self, true) then
-      if event == fk.GameStart then
-        return true
-      else
-        return target == player and data == self
-      end
+    if event == fk.PreCardUse then
+      return player:hasSkill(self) and player:getMark("bushil1") == "log_"..data.card:getSuitString()
+    else
+      return target == player and data == self
     end
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.GameStart or event == fk.EventAcquireSkill then
+    if event == fk.PreCardUse then
+      data.extraUse = true
+    elseif event == fk.EventAcquireSkill then
       room:setPlayerMark(player, "bushil1", "log_spade")
       room:setPlayerMark(player, "bushil2", "log_heart")
       room:setPlayerMark(player, "bushil3", "log_club")

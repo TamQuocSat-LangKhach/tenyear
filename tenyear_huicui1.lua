@@ -134,7 +134,7 @@ Fk:loadTranslationTable{
   ["#xingdaorong"] = "零陵上将",
   ["designer:xingdaorong"] = "梦魇狂朝",
   ["illustrator:xingdaorong"] = "尼乐小丑&三道纹",
-  
+
   ["xuhe"] = "虚猲",
   [":xuhe"] = "出牌阶段开始时，你可以减1点体力上限，然后你弃置距离1以内的每名角色各一张牌或令这些角色各摸一张牌。出牌阶段结束时，"..
   "若你体力上限不为全场最高，你加1点体力上限，然后回复1点体力或摸两张牌。",
@@ -1568,7 +1568,7 @@ Fk:loadTranslationTable{
   ["illustrator:zhaoyanw"] = "游漫美绘",
   ["jinhui"] = "锦绘",
   [":jinhui"] = "出牌阶段限一次，你可以将牌堆中随机三张不同名且目标数为一的非伤害牌置于你的武将牌上，然后选择一名其他角色，该角色使用其中一张，"..
-  "然后你可以依次使用其余两张（必须选择你或其为目标，无距离和次数限制）。",
+  "然后你可以依次使用其余两张（必须选择你或其为目标，无距离限制）。",
   ["qingman"] = "轻幔",
   [":qingman"] = "锁定技，每个回合结束时，你将手牌摸至X张（X为当前回合角色装备区内的空位数）。",
 
@@ -2354,19 +2354,18 @@ Fk:loadTranslationTable{
 
 local zhangyao = General(extension, "zhangyao", "wu", 3, 3, General.Female)
 Fk:addQmlMark{
-  name = "yuanyu",
+  name = "yuanyu_resent",
   how_to_show = function(name, value, p)
     if type(value) ~= "table" then return " " end
     local suits = {}
     for _, id in ipairs(value) do
       table.insertIfNeed(suits, Fk:getCardById(id).suit)
     end
-    value = {value = table.simpleClone(value)}
     return table.concat(table.map(suits, function(suit)
       return Fk:translate(Card.getSuitString({ suit = suit }, true))
     end), " ")
   end,
-  qml_path = "packages/tenyear/qml/ZixiBox"
+  qml_path = "packages/utility/qml/ViewPile"
 }
 local yuanyu = fk.CreateActiveSkill{
   name = "yuanyu",
@@ -2447,9 +2446,9 @@ local yuanyu_trigger = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventLoseSkill, fk.Death, fk.AfterCardsMove},
+  refresh_events = {fk.AfterCardsMove, fk.EventLoseSkill, fk.Death},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.AfterCardsMove then return true end
+    if event == fk.AfterCardsMove then return #U.getMark(player, "@[yuanyu_resent]") ~= #player:getPile("#yuanyu_resent") end
     if event == fk.EventLoseSkill and data ~= yuanyu then return false end
     return player == target and type(player:getMark("yuanyu_targets")) == "table"
   end,
@@ -2457,14 +2456,7 @@ local yuanyu_trigger = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.AfterCardsMove then
       local cards = player:getPile("#yuanyu_resent")
-      if #cards == 0 then
-        if player:getMark("@[yuanyu]") ~= 0 then
-          room:setPlayerMark(player, "@[yuanyu]", 0)
-        end
-        return false
-      end
-      --FIXME:待优化
-      room:setPlayerMark(player, "@[yuanyu]", cards)
+      room:setPlayerMark(player, "@[yuanyu_resent]", #cards > 0 and cards or 0)
       return false
     end
     local targets = player:getMark("yuanyu_targets")
@@ -2551,7 +2543,7 @@ Fk:loadTranslationTable{
 
   ["#yuanyu_resent"] = "怨",
   ["@@yuanyu"] = "怨语",
-  ["@[yuanyu]"] = "怨",
+  ["@[yuanyu_resent]"] = "怨",
   ["#yuanyu"] = "怨语：你可以摸一张牌，然后放置一张手牌作为“怨”",
   ["#yuanyu-choose"] = "怨语：选择作为“怨”的一张手牌以及作为目标的一名其他角色",
   ["#yuanyu-push"] = "怨语：选择一张手牌作为%src的“怨”",

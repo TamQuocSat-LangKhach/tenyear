@@ -597,7 +597,7 @@ Fk:loadTranslationTable{
   ["illustrator:ty__caochun"] = "凡果_Make", -- 虎啸龙渊
   ["ty__shanjia"] = "缮甲",
   [":ty__shanjia"] = "出牌阶段开始时，你可以摸三张牌，然后弃置三张牌（你每不因使用而失去过一张装备牌，便少弃置一张），若你本次没有弃置过："..
-  "基本牌，你此阶段使用【杀】次数上限+1；锦囊牌，你此阶段使用牌无距离限制；都满足，你可以视为使用一张不计入次数限制的【杀】。",
+  "基本牌，你此阶段使用【杀】次数上限+1；锦囊牌，你此阶段使用牌无距离限制；都满足，你可以视为使用【杀】。",
   ["#ty__shanjia-discard"] = "缮甲：你需弃置%arg张牌",
   ["#ty__shanjia-choose"] = "缮甲：你可以视为使用【杀】",
   ["ty__shanjia_viewas"] = "缮甲",
@@ -1036,16 +1036,27 @@ local yuyun = fk.CreateTriggerSkill{
       end
     end
   end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    if player == target and data.card.trueName == "slash" then
+      local mark = U.getMark(player, "yuyun2-turn")
+      return #mark > 0 and table.find(TargetGroup:getRealTargets(data.tos), function (pid)
+        return table.contains(mark, pid)
+      end)
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.extraUse = true
+  end,
 }
 local yuyun_targetmod = fk.CreateTargetModSkill{
   name = "#yuyun_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    local targetRecorded = player:getMark("yuyun2-turn")
-    return type(targetRecorded) == "table" and to and table.contains(targetRecorded, to.id)
+    return card.trueName == "slash" and to and table.contains(U.getMark(player, "yuyun2-turn"), to.id)
   end,
   bypass_distances =  function(self, player, skill, card, to)
-    local targetRecorded = player:getMark("yuyun2-turn")
-    return type(targetRecorded) == "table" and to and table.contains(targetRecorded, to.id)
+    return card.trueName == "slash" and to and table.contains(U.getMark(player, "yuyun2-turn"), to.id)
   end,
 }
 local yuyun_maxcards = fk.CreateMaxCardsSkill{
@@ -2069,7 +2080,7 @@ Fk:loadTranslationTable{
 	["designer:godmachao"] = "七哀",
   ["illustrator:godmachao"] = "君桓文化",
   ["shouli"] = "狩骊",
-  [":shouli"] = "游戏开始时，从下家开始所有角色随机使用牌堆中的一张坐骑。你可以将场上的一张进攻马当【杀】（不计入限制的次数且无次数限制）、"..
+  [":shouli"] = "游戏开始时，从下家开始所有角色随机使用牌堆中的一张坐骑。你可以将场上的一张进攻马当【杀】（无次数限制）、"..
   "防御马当【闪】使用或打出，以此法失去坐骑的其他角色本回合非锁定技失效，你与其本回合受到的伤害+1且改为雷电伤害。",
   ["hengwu"] = "横骛",
   [":hengwu"] = "当你使用或打出牌时，若你没有该花色的手牌，你可以摸X张牌（X为场上与此牌花色相同的装备数量）。",
@@ -2244,14 +2255,22 @@ local xunshi_trigger = fk.CreateTriggerSkill{
       end)
     end
   end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data.card.color == Card.NoColor and player:hasSkill(xunshi)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.extraUse = true
+  end,
 }
 local xunshi_targetmod = fk.CreateTargetModSkill{
   name = "#xunshi_targetmod",
   bypass_times = function(self, player, skill, scope, card)
-    return player:hasSkill(xunshi) and card and card.color == Card.NoColor
+    return card and card.color == Card.NoColor and player:hasSkill(xunshi)
   end,
   bypass_distances =  function(self, player, skill, card)
-    return player:hasSkill(xunshi) and card and card.color == Card.NoColor
+    return card and card.color == Card.NoColor and player:hasSkill(xunshi)
   end,
 }
 shencai:addRelatedSkill(shencai_delay)
@@ -2670,7 +2689,8 @@ local tuoyu_trigger = fk.CreateTriggerSkill{
 
   refresh_events = {fk.PreCardUse},
   can_refresh = function(self, event, target, player, data)
-    return target == player and (data.card:getMark("@@tuoyu1-inhand") > 0 or data.card:getMark("@@tuoyu3-inhand") > 0)
+    return target == player and not data.card:isVirtual()
+    (data.card:getMark("@@tuoyu1-inhand") > 0 or data.card:getMark("@@tuoyu2-inhand") > 0 or data.card:getMark("@@tuoyu3-inhand") > 0)
   end,
   on_refresh = function(self, event, target, player, data)
     if data.card:getMark("@@tuoyu1-inhand") > 0 then
@@ -2684,6 +2704,8 @@ local tuoyu_trigger = fk.CreateTriggerSkill{
         data.additionalDamage = (data.additionalDamage or 0) + data.extra_data.drankBuff
       end
       ]]
+    elseif data.card:getMark("@@tuoyu2-inhand") > 0 then
+      data.extraUse = true
     elseif data.card:getMark("@@tuoyu3-inhand") > 0 then
       data.disresponsiveList = table.map(player.room.alive_players, Util.IdMapper)
     end
@@ -5662,6 +5684,7 @@ Fk:loadTranslationTable{
   ["#fanyin-ask"] = "泛音：使用%arg，或点取消则令你本回合使用的下一张牌可多选目标",
   ["@fanyin-turn"] = "泛音",
   ["#peiqi-choose"] = "配器：你可以移动场上的一张牌",
+  ["#fanyin_delay"] = "泛音",
   ["#fanyin-choose"] = "泛音：你可以为%arg额外指定至多%arg2个目标",
 
   ["$fanyin1"] = "此音可协，此律可振。",

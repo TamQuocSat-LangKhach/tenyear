@@ -1955,6 +1955,18 @@ local ty_ex__gongqi = fk.CreateActiveSkill{
     end
   end,
 }
+local ty_ex__gongqi_refresh = fk.CreateTriggerSkill{
+  name = "#ty_ex__gongqi_refresh",
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data.card.trueName == "slash" and not data.card:isVirtual() and
+    data.card:getSuitString(true) == player:getMark("@ty_ex__gongqi-turn")
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.extraUse = true
+  end,
+}
 local ty_ex__gongqi_attackrange = fk.CreateAttackRangeSkill{
   name = "#ty_ex__gongqi_attackrange",
   correct_func = function (self, from, to)
@@ -2005,6 +2017,7 @@ local ty_ex__jiefan_trigger = fk.CreateTriggerSkill{
     player:setSkillUseHistory("ty_ex__jiefan", 0, Player.HistoryGame)
   end,
 }
+ty_ex__gongqi:addRelatedSkill(ty_ex__gongqi_refresh)
 ty_ex__gongqi:addRelatedSkill(ty_ex__gongqi_attackrange)
 ty_ex__gongqi:addRelatedSkill(ty_ex__gongqi_targetmod)
 ty_ex__jiefan:addRelatedSkill(ty_ex__jiefan_trigger)

@@ -1161,7 +1161,7 @@ Fk:loadTranslationTable{
   ["zhishi"] = "指誓",
   [":zhishi"] = "结束阶段，你可以选择一名角色，直到你下回合开始，该角色成为【杀】的目标后或进入濒死状态时，你可以移去任意张“疠”，令其摸等量的牌。",
   ["lieyi"] = "烈医",
-  [":lieyi"] = "出牌阶段限一次，你可以展示所有“疠”并选择一名其他角色，依次对其使用所有“疠”（无距离次数限制），不可使用的置入弃牌堆。然后若该角色未"..
+  [":lieyi"] = "出牌阶段限一次，你可以展示所有“疠”并选择一名其他角色，依次对其使用所有“疠”（无距离限制），不可使用的置入弃牌堆。然后若该角色未"..
   "因此进入濒死状态，你失去1点体力。",
 
   ["jiping_li"] = "疠",
@@ -4184,7 +4184,7 @@ local luecheng = fk.CreateActiveSkill{
     for _, id in ipairs(player:getCardIds(Player.Hand)) do
       card = Fk:getCardById(id)
       if card.trueName == "slash" then
-        room:setCardMark(card, "@@luecheng-inhand", 1)
+        room:setCardMark(card, "@@luecheng-inhand-phase", 1)
       end
     end
   end,
@@ -4192,7 +4192,7 @@ local luecheng = fk.CreateActiveSkill{
 local luecheng_targetmod = fk.CreateTargetModSkill{
   name = "#luecheng_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return to and to:getMark("@@luecheng-turn") ~= 0 and card.trueName == "slash" and card:getMark("@@luecheng-inhand") ~= 0
+    return to and to:getMark("@@luecheng-turn") ~= 0 and card.trueName == "slash" and card:getMark("@@luecheng-inhand-phase") ~= 0
   end,
 }
 local luecheng_delay = fk.CreateTriggerSkill{
@@ -4228,13 +4228,15 @@ local luecheng_delay = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.AfterPhaseEnd},
-  can_refresh = Util.TrueFunc,
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data.card.trueName == "slash" and data.card:getMark("@@luecheng-inhand-phase") ~= 0 and
+    table.find(TargetGroup:getRealTargets(data.tos), function (pid)
+      return player.room:getPlayerById(pid):getMark("@@luecheng-turn") > 0
+    end)
+  end,
   on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    for _, id in ipairs(player:getCardIds(Player.Hand)) do
-      room:setCardMark(Fk:getCardById(id), "@@luecheng-inhand", 0)
-    end
+    data.extraUse = true
   end,
 }
 local zhongji = fk.CreateTriggerSkill{
@@ -4270,7 +4272,7 @@ Fk:loadTranslationTable{
   [":zhongji"] = "当你使用牌时，若你没有该花色的手牌且手牌数小于体力上限，你可将手牌摸至体力上限并弃置X张牌（X为本回合发动此技能的次数）。",
 
   ["@@luecheng-turn"] = "掠城",
-  ["@@luecheng-inhand"] = "掠城",
+  ["@@luecheng-inhand-phase"] = "掠城",
   ["#luecheng_delay"] = "掠城",
   ["#luecheng-slash"] = "掠城：你可以依次对 %dest 使用手牌中所有【杀】！",
 
@@ -4539,6 +4541,15 @@ local kuizhen = fk.CreateActiveSkill{
       room:loseHp(target, 1, self.name)
     end
   end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and
+    data.card.trueName == "slash" and not data.card:isVirtual() and data.card:getMark("@@kuizhen-inhand") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.extraUse = true
+  end,
 }
 local kuizhen_targetmod = fk.CreateTargetModSkill{
   name = "#kuizhen_targetmod",
@@ -4689,6 +4700,15 @@ local beifen = fk.CreateTriggerSkill{
         skillName = self.name,
       })
     end
+  end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and player:hasSkill(self) and player:usedSkillTimes("shuangjia", Player.HistoryGame) > 0 and
+    player:getHandcardNum() > 2 * player:getMark("@shuangjia")
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.extraUse = true
   end,
 }
 local beifen_targetmod = fk.CreateTargetModSkill{
@@ -4893,12 +4913,8 @@ Fk:addQmlMark{
   name = "zixi",
   how_to_show = function(name, value, p)
     if type(value) ~= "table" then return " " end
-    return table.concat(table.map(value, function(id)
-      local card = p:getVirualEquip(id)
-      if card then
-        return Fk:translate(card.name .. "_short")
-      end
-        return "？"
+    return table.concat(table.map(value, function(zixi_pair)
+      return Fk:translate(zixi_pair[2] .. "_short")
     end), " ")
   end,
   qml_path = "packages/tenyear/qml/ZixiBox"
@@ -5001,7 +5017,7 @@ local zixi = fk.CreateTriggerSkill{
     for _, id in ipairs(player:getCardIds(Player.Judge)) do
       local zixi_card = player:getVirualEquip(id)
       if zixi_card and table.contains(zixi_card.skillNames, "zixi") then
-        table.insert(mark, id)
+        table.insert(mark, {id, zixi_card.trueName})
       end
     end
     local old_mark = player:getMark("@[zixi]")
@@ -5011,9 +5027,7 @@ local zixi = fk.CreateTriggerSkill{
       end
       return false
     end
-    if type(old_mark) ~= "table" or #mark ~= #old_mark or table.find(mark, function (id)
-      return not table.contains(old_mark, id)
-    end) then
+    if type(old_mark) ~= "table" or #mark ~= #old_mark then
       room:setPlayerMark(player, "@[zixi]", mark)
     end
   end,
@@ -5186,25 +5200,39 @@ local weiwan = fk.CreateActiveSkill{
     end
   end,
 }
+local weiwan_refresh = fk.CreateTriggerSkill{
+  name = "#weiwan_refresh",
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    if player == target then
+      local mark = U.getMark(player, "weiwan_targetmod-turn")
+      return #mark > 0 and table.find(TargetGroup:getRealTargets(data.tos), function (pid)
+        return table.contains(mark, pid)
+      end)
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.extraUse = true
+  end,
+}
 local weiwan_targetmod = fk.CreateTargetModSkill{
   name = "#weiwan_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    local mark = U.getMark(player, "weiwan_targetmod-turn")
-    return to and table.contains(mark, to.id)
+    return to and table.contains(U.getMark(player, "weiwan_targetmod-turn"), to.id)
   end,
   bypass_distances = function(self, player, skill, card, to)
-    local mark = U.getMark(player, "weiwan_targetmod-turn")
-    return to and table.contains(mark, to.id)
+    return to and table.contains(U.getMark(player, "weiwan_targetmod-turn"), to.id)
   end,
 }
-weiwan:addRelatedSkill(weiwan_targetmod)
 local weiwan_prohibit = fk.CreateProhibitSkill{
   name = "#weiwan_prohibit",
   is_prohibited = function(self, player, to, card)
-    local mark = U.getMark(player, "weiwan_prohibit-turn")
-    return table.contains(mark, to.id)
+    return table.contains(U.getMark(player, "weiwan_prohibit-turn"), to.id)
   end,
 }
+weiwan:addRelatedSkill(weiwan_refresh)
+weiwan:addRelatedSkill(weiwan_targetmod)
 weiwan:addRelatedSkill(weiwan_prohibit)
 xiaoqiao:addSkill("qiqin")
 xiaoqiao:addSkill(weiwan)
@@ -5214,7 +5242,8 @@ Fk:loadTranslationTable{
   ["designer:mu__xiaoqiao"] = "星移",
 
   ["weiwan"] = "媦婉",
-  [":weiwan"] = "出牌阶段限一次，你可以弃置一张“琴”并选择一名其他角色，随机获得其区域内与此“琴”不同花色的牌各一张。若你获得的牌数为：1，其失去1点体力；2，你本回合对其使用牌无距离与次数限制；3，你本回合不能对其使用牌。",
+  [":weiwan"] = "出牌阶段限一次，你可以弃置一张“琴”并选择一名其他角色，随机获得其区域内与此“琴”不同花色的牌各一张。"..
+  "若你获得的牌数为：1，其失去1点体力；2，你本回合对其使用牌无距离与次数限制；3，你本回合不能对其使用牌。",
   ["#weiwan-active"] = "发动 媦婉，选择一张“琴”弃置并选择一名其他角色",
 
   ["$qiqin_mu__xiaoqiao1"] = "渔歌唱晚落山月，素琴薄暮声。",

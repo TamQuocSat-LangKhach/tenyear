@@ -154,16 +154,16 @@ local duwang = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local dummy = Fk:cloneCard("dilu")
+    local cards = {}
     local n = 0
     for _, id in ipairs(room.draw_pile) do
       if Fk:getCardById(id).trueName ~= "slash" then
-        dummy:addSubcard(id)
+        table.insert(cards, id)
         n = n + 1
       end
       if n >= 5 then break end
     end
-    player:addToPile("hanlong_ci", dummy, true, self.name)
+    player:addToPile("hanlong_ci", cards, true, self.name)
   end,
 }
 local duwang_distance = fk.CreateDistanceSkill{

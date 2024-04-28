@@ -706,9 +706,7 @@ local tycl__rende = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     room:setPlayerMark(target, "tycl__rende-phase", 1)
     local cards = room:askForCardsChosen(player, target, 2, 2, "h", self.name)
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(cards)
-    room:obtainCard(player.id, dummy, false, fk.ReasonPrey)
+    room:obtainCard(player.id, cards, false, fk.ReasonPrey)
     if player.dead then return end
     local mark = player:getMark("tycl__rende")
     if mark == 0 then

@@ -7,7 +7,7 @@ import Fk.RoomElement
 ColumnLayout {
   id: root
   anchors.fill: parent
-  property var extra_data: ({ name: "", data: {}, owner: 0 })
+  property var extra_data: ({ name: "", data: {}})
   signal finish()
 
   BigGlowText {
@@ -31,7 +31,8 @@ ColumnLayout {
       id: cardItem
       autoBack: false
       Component.onCompleted: {
-        let data = lcall("GetCardData", modelData, extra_data.owner);
+        let data = lcall("GetCardData", modelData[0]);
+        data.virt_name = modelData[1]
         setData(data);
       }
     }

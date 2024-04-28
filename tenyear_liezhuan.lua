@@ -239,20 +239,15 @@ local gongjian = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    for _, id in ipairs(self.cost_data) do
-      local cards = room:askForCardsChosen(player, room:getPlayerById(id), 1, 2, "he", self.name)
-      local dummy = Fk:cloneCard("dilu")
-      for i = #cards, 1, -1 do
-        if Fk:getCardById(cards[i]).trueName == "slash" then
-          dummy:addSubcard(cards[i])
-          table.removeOne(cards, cards[i])
-        end
-      end
-      if #dummy.subcards > 0 then
-        room:obtainCard(player, dummy, false, fk.ReasonPrey)
-      end
+    for _, pid in ipairs(self.cost_data) do
+      local to = room:getPlayerById(pid)
+      local cards = room:askForCardsChosen(player, to, 1, 2, "he", self.name)
+      room:throwCard(cards, self.name, to, player)
+      cards = table.filter(cards, function (id)
+        return room:getCardArea(id) == Card.DiscardPile and Fk:getCardById(id).trueName == "slash"
+      end)
       if #cards > 0 then
-        room:throwCard(cards, self.name, room:getPlayerById(id), player)
+        room:obtainCard(player, cards, false, fk.ReasonPrey)
       end
     end
   end,
@@ -1203,9 +1198,7 @@ local zongfan = fk.CreateTriggerSkill{
     if not player:isNude() then
       local success, dat = room:askForUseActiveSkill(player, "zongfan_active", "#zongfan-give", false)
       if success then
-        local dummy = Fk:cloneCard("dilu")
-        dummy:addSubcards(dat.cards)
-        room:moveCardTo(dummy, Card.PlayerHand, room:getPlayerById(dat.targets[1]), fk.ReasonGive, self.name, nil, false, player.id)
+        room:moveCardTo(dat.cards, Card.PlayerHand, room:getPlayerById(dat.targets[1]), fk.ReasonGive, self.name, nil, false, player.id)
         local n = math.min(#dat.cards, 5)
         if not player.dead then
           room:changeMaxHp(player, n)
@@ -1244,15 +1237,15 @@ local zhangu = fk.CreateTriggerSkill{
     local room = player.room
     room:changeMaxHp(player, -1)
     if player.dead then return end
-    local dummy = Fk:cloneCard("dilu")
     local types = {"basic", "trick", "equip"}
+    local cards = {}
     while #types > 0 do
       local pattern = table.random(types)
       table.removeOne(types, pattern)
-      dummy:addSubcards(room:getCardsFromPileByRule(".|.|.|.|.|"..pattern))
+      table.insert(cards, room:getCardsFromPileByRule(".|.|.|.|.|"..pattern))
     end
-    if #dummy.subcards > 0 then
-      room:obtainCard(player.id, dummy, false, fk.ReasonJustMove)
+    if #cards > 0 then
+      room:obtainCard(player.id, cards, false, fk.ReasonJustMove)
     end
   end,
 }
@@ -1307,9 +1300,7 @@ local koulue = fk.CreateTriggerSkill{
     local get = table.filter(cards, function(id)
       return Fk:getCardById(id).is_damage_card and room:getCardOwner(id) == data.to and room:getCardArea(id) == Card.PlayerHand end)
     if #get > 0 then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(get)
-      room:moveCardTo(dummy, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
+      room:moveCardTo(get, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
     end
     if not player.dead and table.find(cards, function(id) return Fk:getCardById(id).color == Card.Red end) then
       if player:isWounded() then
@@ -1343,9 +1334,8 @@ local suirenq = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id).is_damage_card end))
-    room:moveCardTo(dummy, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
+    local cards = table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id).is_damage_card end)
+    room:moveCardTo(cards, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
   end,
 }
 qiuliju:addSkill(koulue)

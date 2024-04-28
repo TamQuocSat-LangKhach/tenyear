@@ -183,9 +183,7 @@ local andong = fk.CreateTriggerSkill{
       U.viewCards(player, data.from:getCardIds("h"), self.name)
       local cards = table.filter(data.from:getCardIds("h"), function(id) return Fk:getCardById(id).suit == Card.Heart end)
       if #cards > 0 then
-        local dummy = Fk:cloneCard("dilu")
-        dummy:addSubcards(cards)
-        room:moveCardTo(dummy, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
+        room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
       end
     end
   end,
@@ -222,13 +220,10 @@ local yingshi = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.EventPhaseStart then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(table.filter(player:getCardIds("he"), function(id) return Fk:getCardById(id).suit == Card.Heart end))
-      room:getPlayerById(self.cost_data):addToPile("duji_chou", dummy, true, self.name)
+      local cards = table.filter(player:getCardIds("he"), function(id) return Fk:getCardById(id).suit == Card.Heart end)
+      room:getPlayerById(self.cost_data):addToPile("duji_chou", cards, true, self.name)
     else
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(target:getPile("duji_chou"))
-      room:moveCardTo(dummy, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
+      room:moveCardTo(target:getPile("duji_chou"), Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
     end
   end,
 }

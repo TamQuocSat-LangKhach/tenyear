@@ -2583,11 +2583,9 @@ local cuijian = fk.CreateActiveSkill{
     else
       table.insertTable(cards, table.filter(target:getCardIds("he"), function(id) return Fk:getCardById(id).sub_type == Card.SubtypeArmor end))
       local x = #cards
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(cards)
-      room:obtainCard(player, dummy, true, fk.ReasonGive)
+      room:obtainCard(player, cards, true, fk.ReasonGive)
       if player.dead or player:isNude() or player:getMark("tongyuan2") ~= 0 or target.dead then return end
-      local cards = player:getCardIds({Player.Hand, Player.Equip})
+      cards = player:getCardIds({Player.Hand, Player.Equip})
       if #cards > x then
         cards = room:askForCard(player, x, x, true, self.name, false, ".", "#cuijian-card::" .. target.id .. ":" .. tostring(x))
       end
@@ -4155,9 +4153,7 @@ local yingshui = fk.CreateActiveSkill{
     else
       local cards = room:askForCard(target, 2, 999, true, self.name, true, ".|.|.|.|.|equip", "#yingshui-give:"..player.id)
       if #cards > 1 then
-        local dummy = Fk:cloneCard("dilu")
-        dummy:addSubcards(cards)
-        room:moveCardTo(dummy, Card.PlayerHand, player, fk.ReasonGive, self.name, nil, true, target.id)
+        room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonGive, self.name, nil, true, target.id)
       else
         room:damage{
           from = player,
@@ -4450,15 +4446,14 @@ local yongbi = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(player.player_cards[Player.Hand])
-    room:obtainCard(target.id, dummy, false, fk.ReasonGive)
+    local cards = player:getCardIds(Player.Hand)
     local suits = {}
-    for _, id in ipairs(dummy.subcards) do
+    for _, id in ipairs(cards) do
       if Fk:getCardById(id, true).suit ~= Card.NoSuit then
         table.insertIfNeed(suits, Fk:getCardById(id, true).suit)
       end
     end
+    room:obtainCard(target.id, cards, false, fk.ReasonGive)
     if #suits > 1 then
       room:addPlayerMark(player, MarkEnum.AddMaxCards, 2)
       room:addPlayerMark(target, MarkEnum.AddMaxCards, 2)

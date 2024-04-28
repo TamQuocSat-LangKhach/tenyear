@@ -1240,9 +1240,7 @@ local lingxi = fk.CreateTriggerSkill{
       end
     else
       room:notifySkillInvoked(player, self.name, "special")
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(self.cost_data)
-      player:addToPile("lingxi_wing", dummy, true, self.name)
+      player:addToPile("lingxi_wing", self.cost_data, true, self.name)
     end
   end,
 }
@@ -2201,12 +2199,13 @@ local huizhi = fk.CreateTriggerSkill{
 }
 local jijiao = fk.CreateActiveSkill{
   name = "jijiao",
+  prompt = "#jijiao-active",
   anim_type = "support",
   card_num = 0,
   target_num = 1,
   frequency = Skill.Limited,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and #Fk:currentRoom().discard_pile > 0
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected, selected_cards)
@@ -2249,76 +2248,45 @@ local jijiao = fk.CreateActiveSkill{
     end
 
     if #ids > 0 then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(ids)
-      room:setPlayerMark(player, "jijiao_cards", dummy.subcards)
-      room:obtainCard(target.id, dummy, true, fk.ReasonJustMove)
+      room:obtainCard(target.id, ids, true, fk.ReasonJustMove, target.id, self.name, "@@jijiao-inhand")
     end
   end,
 }
-local jijiao_record = fk.CreateTriggerSkill{
-  name = "#jijiao_record",
+local jijiao_delay = fk.CreateTriggerSkill{
+  name = "#jijiao_delay",
   anim_type = "special",
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and player:getMark(self.name) > 0
+    if player:hasSkill(jijiao, true) and player:usedSkillTimes("jijiao", Player.HistoryGame) > 0 then
+      if player:getMark("jijiao-turn") > 0 then return true end
+      local logic = player.room.logic
+      local deathevents = logic.event_recorder[GameEvent.Death] or Util.DummyTable
+      local turnevents = logic.event_recorder[GameEvent.Turn] or Util.DummyTable
+      return #deathevents > 0 and #turnevents > 0 and deathevents[#deathevents].id > turnevents[#turnevents].id
+    end
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    player.room:setPlayerMark(player, self.name, 0)
     player:setSkillUseHistory("jijiao", 0, Player.HistoryGame)
   end,
 
-  refresh_events = {fk.AfterDrawPileShuffle, fk.Deathed},
+  refresh_events = {fk.AfterDrawPileShuffle, fk.PreCardUse},
   can_refresh = function(self, event, target, player, data)
-    return player:getMark(self.name) == 0 and player:usedSkillTimes("jijiao", Player.HistoryGame) > 0
+    if event == fk.PreCardUse then
+      return player == target and not data.card:isVirtual() and data.card:getMark("@@jijiao-inhand") > 0
+    else
+      return player:getMark("jijiao-turn") == 0
+    end
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:setPlayerMark(player, self.name, 1)
-  end,
-}
-local jijiao_trigger = fk.CreateTriggerSkill{
-  name = "#jijiao_trigger",
-  mute = true,
-  events = {fk.CardUsing, fk.AfterCardsMove},
-  can_trigger = function(self, event, target, player, data)
-    if player:getMark("jijiao_cards") ~= 0 and #player:getMark("jijiao_cards") > 0 then
-      if event == fk.CardUsing then
-        return target == player and data.card:isCommonTrick() and U.isPureCard(data.card)
-      else
-        return true
-      end
-    end
-  end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.CardUsing then  --TODO: 这也弄个全局记录！
-      local mark = player:getMark("jijiao_cards")
-      if table.contains(mark, data.card.id) then
-        data.unoffsetableList = table.map(room.alive_players, Util.IdMapper)
-        table.removeOne(mark, data.card.id)
-        room:setPlayerMark(player, "jijiao_cards", mark)
-      end
+    if event == fk.PreCardUse then
+      data.unoffsetableList = table.map(player.room.alive_players, Util.IdMapper)
     else
-      for _, move in ipairs(data) do
-        if move.from == player.id and move.moveReason ~= fk.ReasonUse then
-          for _, info in ipairs(move.moveInfo) do
-            if info.fromArea == Card.PlayerHand then
-              local mark = player:getMark("jijiao_cards")
-              if table.contains(mark, info.cardId) then
-                table.removeOne(mark, info.cardId)
-                room:setPlayerMark(player, "jijiao_cards", mark)
-              end
-            end
-          end
-        end
-      end
+      player.room:setPlayerMark(player, "jijiao-turn", 1)
     end
   end,
 }
-jijiao:addRelatedSkill(jijiao_record)
-jijiao:addRelatedSkill(jijiao_trigger)
+jijiao:addRelatedSkill(jijiao_delay)
 zhangjinyun:addSkill(huizhi)
 zhangjinyun:addSkill(jijiao)
 Fk:loadTranslationTable{
@@ -2332,7 +2300,9 @@ Fk:loadTranslationTable{
   [":jijiao"] = "限定技，出牌阶段，你可以令一名角色获得弃牌堆中本局游戏你使用和弃置的所有普通锦囊牌，这些牌不能被抵消。"..
   "每回合结束后，若此回合内牌堆洗过牌或有角色死亡，复原此技能。",
   ["#huizhi-invoke"] = "蕙质：你可以弃置任意张手牌，然后将手牌摸至与全场手牌最多的角色相同（最多摸五张）",
-  ["#jijiao_record"] = "继椒",
+  ["#jijiao-active"] = "发动 继椒，令一名角色获得弃牌堆中你使用或弃置的所有普通锦囊牌",
+  ["#jijiao_delay"] = "继椒",
+  ["@@jijiao-inhand"] = "继椒",
 
   ["$huizhi1"] = "妾有一席幽梦，予君三千暗香。",
   ["$huizhi2"] = "我有玲珑之心，其情唯衷陛下。",

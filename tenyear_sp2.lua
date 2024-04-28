@@ -2708,9 +2708,7 @@ local lingyin_trigger = fk.CreateTriggerSkill{
       local room = player.room
       player:broadcastSkillInvoke("lingyin")
       room:notifySkillInvoked(player, "lingyin", "drawcard")
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(self.cost_data)
-      room:obtainCard(player, dummy, false, fk.ReasonJustMove)
+      room:obtainCard(player, self.cost_data, false, fk.ReasonJustMove)
       if #player:getPile("ruiji_wang") == 0 or table.every(player:getPile("ruiji_wang"), function(id)
         return Fk:getCardById(id).color == Fk:getCardById(player:getPile("ruiji_wang")[1]).color end) then
         room:setPlayerMark(player, "lingyin-turn", 1)
@@ -2757,9 +2755,7 @@ local liying = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local ret = self.cost_data
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(ret.cards)
-    room:obtainCard(room:getPlayerById(ret.targets[1]), dummy, false, fk.ReasonGive, player.id)
+    room:obtainCard(room:getPlayerById(ret.targets[1]), ret.cards, false, fk.ReasonGive, player.id)
     if not player.dead then
       player:drawCards(1, self.name)
       if not player.dead and player.phase ~= Player.NotActive and #player:getPile("ruiji_wang") < #room.players then
@@ -3309,15 +3305,15 @@ local xiaoyin = fk.CreateTriggerSkill{
       proposer = player.id,
     }
     room:delay(2000)
-    local dummy = Fk:cloneCard("dilu")
+    local to_get = {}
     for i = #ids, 1, -1 do
       if Fk:getCardById(ids[i]).color == Card.Red then
-        dummy:addSubcard(ids[i])
-        table.removeOne(ids, ids[i])
+        table.insert(to_get, ids[i])
+        table.remove(ids, i)
       end
     end
-    if #dummy.subcards > 0 then
-      room:obtainCard(player.id, dummy, true, fk.ReasonJustMove)
+    if #to_get > 0 then
+      room:obtainCard(player.id, to_get, true, fk.ReasonJustMove)
     end
     local targets = {}
     while #ids > 0 and not player.dead do
@@ -5896,14 +5892,10 @@ local bazhan = fk.CreateActiveSkill{
     local to_check = {}
     if isYang and #effect.cards > 0 then
       table.insertTable(to_check, effect.cards)
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(to_check)
-      room:obtainCard(target.id, dummy, false, fk.ReasonGive, player.id)
+      room:obtainCard(target.id, to_check, false, fk.ReasonGive, player.id)
     elseif not isYang and not target:isKongcheng() then
       to_check = room:askForCardsChosen(player, target, 1, 2, "h", self.name)
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(to_check)
-      room:obtainCard(player, dummy, false, fk.ReasonPrey)
+      room:obtainCard(player, to_check, false, fk.ReasonPrey)
       target = player
     end
     if not player.dead and not target.dead and table.find(to_check, function (id)

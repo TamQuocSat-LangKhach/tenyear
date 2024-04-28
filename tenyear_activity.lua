@@ -413,9 +413,7 @@ local lulue = fk.CreateTriggerSkill{
     local to = room:getPlayerById(self.cost_data)
     local choice = room:askForChoice(to, {"lulue_give", "lulue_slash"}, self.name, "#lulue-choice:"..player.id)
     if choice == "lulue_give" then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(to:getCardIds(Player.Hand))
-      room:obtainCard(player.id, dummy, false, fk.ReasonGive, to.id)
+      room:obtainCard(player.id, to:getCardIds(Player.Hand), false, fk.ReasonGive, to.id)
       player:turnOver()
     else
       to:turnOver()
@@ -444,7 +442,7 @@ Fk:loadTranslationTable{
   ["cv:liangxing"] = "虞晓旭",
   ["illustrator:liangxing"] = "匠人绘",
   ["lulue"] = "掳掠",
-  [":lulue"] = "出牌阶段开始时，你可以令一名有手牌且手牌数小于你的其他角色选择一项：1.将所有手牌交给你，然后你翻面；2.翻面，然后视为对你使用一张【杀】。",
+  [":lulue"] = "出牌阶段开始时，你可以令一名有手牌且手牌数小于你的其他角色选择：1.将所有手牌交给你，你翻面；2.翻面，视为对你使用【杀】。",
   ["zhuixi"] = "追袭",
   [":zhuixi"] = "锁定技，当你对其他角色造成伤害时，或当你受到其他角色造成的伤害时，若你与其翻面状态不同，此伤害+1。",
   ["#lulue-choose"] = "掳掠：你可以令一名有手牌且手牌数小于你的其他角色选择一项",
@@ -835,9 +833,7 @@ local xiaoxi = fk.CreateTriggerSkill{
     local choice = room:askForChoice(player, choices, self.name, "#xiaoxi2-choice::"..to.id..":"..n)
     if choice == "xiaoxi_prey" then
       local cards = room:askForCardsChosen(player, to, n, n, "he", self.name)
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(cards)
-      room:obtainCard(player, dummy, false, fk.ReasonPrey)
+      room:obtainCard(player, cards, false, fk.ReasonPrey)
     else
       for i = 1, n, 1 do
         if player.dead or to.dead then return end
@@ -2150,9 +2146,7 @@ local sibian = fk.CreateTriggerSkill{
       end
     end
     room:delay(1000)
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(get)
-    room:obtainCard(player, dummy, false, fk.ReasonJustMove)
+    room:obtainCard(player, get, false, fk.ReasonJustMove)
     if #cards > 0 then
       local n = #player.player_cards[Player.Hand]
       for _, p in ipairs(room:getOtherPlayers(player)) do
@@ -2168,9 +2162,7 @@ local sibian = fk.CreateTriggerSkill{
       end
       local to = room:askForChoosePlayers(player, targets, 1, 1, "#sibian-choose", self.name, true)
       if #to > 0 then
-        local dummy2 = Fk:cloneCard("dilu")
-        dummy2:addSubcards(cards)
-        room:obtainCard(room:getPlayerById(to[1]), dummy2, false, fk.ReasonGive, player.id)
+        room:obtainCard(to[1], cards, false, fk.ReasonGive, player.id)
       else
         room:moveCards({
           ids = cards,
@@ -2286,9 +2278,7 @@ local kuizhul = fk.CreateTriggerSkill{
     if to.dead or player.dead then return end
     local to_get = table.filter(results, function(id) return table.contains(player:getCardIds("h"), id) end)
     if #to_get == 0 then return end
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(to_get)
-    room:moveCardTo(dummy, Card.PlayerHand, to, fk.ReasonPrey, self.name, nil, false, to.id)
+    room:moveCardTo(to_get, Card.PlayerHand, to, fk.ReasonPrey, self.name, nil, false, to.id)
     if player.dead or #to_get < 2 then return end
     local targets = table.map(table.filter(room.alive_players, function(p) return to:inMyAttackRange(p) end), Util.IdMapper)
     if #targets > 0 then
@@ -3138,9 +3128,7 @@ local shilie = fk.CreateActiveSkill{
       end
       if not player:isNude() then
         local cards = room:askForCard(player, math.min(#player:getCardIds("he"), 2), 2, true, self.name, false, ".", "#shilie-put")
-        local dummy = Fk:cloneCard("dilu")
-        dummy:addSubcards(cards)
-        player:addToPile(self.name, dummy, false, self.name)
+        player:addToPile(self.name, cards, false, self.name)
         local n = #player:getPile(self.name) - #room.players
         if n > 0 then
           local dummy2 = Fk:cloneCard("dilu")
@@ -3155,9 +3143,7 @@ local shilie = fk.CreateActiveSkill{
       if player.dead then return end
       local cards = room:askForCard(player, math.min(#player:getPile(self.name), 2), 2, false, self.name, false,
         ".|.|.|shilie", "#shilie-get", self.name)
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(cards)
-      room:moveCardTo(dummy, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, false, player.id)
+      room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, false, player.id)
     end
   end,
 }

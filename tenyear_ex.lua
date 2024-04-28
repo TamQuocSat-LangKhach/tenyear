@@ -972,10 +972,7 @@ local ty_ex__pojun_delay = fk.CreateTriggerSkill{
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    local dummy = Fk:cloneCard("zixing")
-    dummy:addSubcards(player:getPile("ty_ex__pojun"))
-    local room = player.room
-    room:obtainCard(player.id, dummy, false)
+    player.room:obtainCard(player.id, player:getPile("ty_ex__pojun"), false)
   end,
 }
 

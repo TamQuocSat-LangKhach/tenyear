@@ -1032,11 +1032,10 @@ local zhishi = fk.CreateTriggerSkill{
       room:setPlayerMark(player, self.name, to.id)
     else
       room:doIndicate(player.id, {target.id})
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(self.cost_data)
-      room:moveCardTo(dummy, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
+      local cards = table.simpleClone(self.cost_data)
+      room:moveCardTo(cards, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
       if not target.dead then
-        target:drawCards(#dummy.subcards, self.name)
+        target:drawCards(#cards, self.name)
       end
     end
   end,
@@ -1116,9 +1115,7 @@ local lieyi = fk.CreateActiveSkill{
       end
     end
     if #player:getPile("jiping_li") > 0 then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(player:getPile("jiping_li"))
-      room:moveCardTo(dummy, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
+      room:moveCardTo(player:getPile("jiping_li"), Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
     end
     room:setPlayerMark(player, "lieyi_using-phase", 0)
     if yes and not player.dead then
@@ -1632,9 +1629,7 @@ local minze = fk.CreateActiveSkill{
     end
     room:setPlayerMark(player, "@$minze-turn", mark)
     room:setPlayerMark(target, "minze-phase", 1)
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(effect.cards)
-    room:obtainCard(target, dummy, false, fk.ReasonGive, player.id)
+    room:obtainCard(target, effect.cards, false, fk.ReasonGive, player.id)
   end,
 }
 local minze_trigger = fk.CreateTriggerSkill{
@@ -2376,9 +2371,7 @@ local weimeng = fk.CreateActiveSkill{
     for _, id in ipairs(cards) do
       n1 = n1 + Fk:getCardById(id).number
     end
-    local dummy1 = Fk:cloneCard("dilu")
-    dummy1:addSubcards(cards)
-    room:obtainCard(player, dummy1, false, fk.ReasonPrey)
+    room:obtainCard(player, cards, false, fk.ReasonPrey)
     if player.dead or player:isNude() or target.dead then return end
     local cards2
     if #player:getCardIds("he") <= #cards then
@@ -2394,9 +2387,7 @@ local weimeng = fk.CreateActiveSkill{
     for _, id in ipairs(cards2) do
       n2 = n2 + Fk:getCardById(id).number
     end
-    local dummy2 = Fk:cloneCard("dilu")
-    dummy2:addSubcards(cards2)
-    room:obtainCard(target, dummy2, false, fk.ReasonGive, player.id)
+    room:obtainCard(target, cards2, false, fk.ReasonGive, player.id)
     if n1 < n2 then
       if not player.dead then
         player:drawCards(1, self.name)
@@ -3498,9 +3489,7 @@ local chiying = fk.CreateActiveSkill{
     if #ids == 0 or target.dead then return end
     ids = table.filter(ids, function(id) return room:getCardArea(id) == Card.DiscardPile end)
     if #ids == 0 then return end
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(ids)
-    room:obtainCard(target, dummy, true, fk.ReasonJustMove)
+    room:obtainCard(target, ids, true, fk.ReasonJustMove)
   end,
 }
 gaoxiang:addSkill(chiying)
@@ -3775,14 +3764,12 @@ local suoliang = fk.CreateTriggerSkill{
     local room = player.room
     local cards = room:askForCardsChosen(player, data.to, 1, math.min(data.to.maxHp, 5), "he", self.name)
     if #cards > 0 then
-      local dummy = Fk:cloneCard("dilu")
-      for _, id in ipairs(cards) do
-        if Fk:getCardById(id).suit == Card.Heart or Fk:getCardById(id).suit == Card.Club then
-          dummy:addSubcard(id)
-        end
-      end
-      if #dummy.subcards > 0 then
-        room:obtainCard(player, dummy, true, fk.ReasonPrey)
+      local suits = {Card.Heart, Card.Club}
+      local to_get = table.filter(cards, function (id)
+        return table.contains(suits, Fk:getCardById(id).suit)
+      end)
+      if #to_get > 0 then
+        room:obtainCard(player, to_get, true, fk.ReasonPrey)
       else
         room:throwCard(cards, self.name, data.to, player)
       end
@@ -3822,7 +3809,7 @@ Fk:loadTranslationTable{
   ["qinbao"] = "侵暴",
   [":qinbao"] = "锁定技，手牌数大于等于你的其他角色不能响应你使用的【杀】或普通锦囊牌。",
   ["#suoliang-invoke"] = "索粮：你可以选择 %dest 最多其体力上限张牌，获得其中的<font color='red'>♥</font>和♣牌，若没有则弃置这些牌",
-  
+
   ["$suoliang1"] = "奉上万石粮草，吾便退兵！",
   ["$suoliang2"] = "听闻北海富庶，特来借粮。",
   ["$qinbao1"] = "赤箓护身，神鬼莫当。",

@@ -3220,14 +3220,47 @@ Fk:loadTranslationTable{
 }
 
 local liyixiejing = General(extension, "liyixiejing", "wu", 4)
-local douzhen = fk.CreateFilterSkill{
+local douzhen = fk.CreateTriggerSkill{
   name = "douzhen",
   anim_type = "switch",
   switch_skill_name = "douzhen",
+  events = {fk.CardUsing, fk.CardResponding},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and
+    not data.card:isVirtual() and table.contains(data.card.skillNames, "douzhen")
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if data.card.trueName == "duel" then
+      local targets = TargetGroup:getRealTargets(data.tos)
+      room:doIndicate(player.id, targets)
+      for _, id in ipairs(targets) do
+        local p = room:getPlayerById(id)
+        if not (p.dead or p:isNude()) then
+          local c = room:askForCardChosen(player, p, "he", "douzhen")
+          room:obtainCard(player, c, false, fk.ReasonPrey)
+        end
+        if player.dead then return end
+      end
+    end
+  end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and data.card.trueName == "slash" and not data.card:isVirtual() and table.contains(data.card.skillNames, "douzhen")
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.extraUse = true
+  end,
+}
+local douzhen_filter = fk.CreateFilterSkill{
+  name = "#douzhen_filter",
+  anim_type = "offensive",
   card_filter = function(self, card, player)
-    if player:hasSkill(self) and player.phase ~= Player.NotActive and card.type == Card.TypeBasic and
+    if player:hasSkill(douzhen) and player.phase ~= Player.NotActive and card.type == Card.TypeBasic and
     table.contains(player.player_cards[Player.Hand], card.id) then
-      if player:getSwitchSkillState(self.name, false) == fk.SwitchYang then
+      if player:getSwitchSkillState("douzhen", false) == fk.SwitchYang then
         return card.color == Card.Black
       else
         return card.color == Card.Red
@@ -3235,45 +3268,13 @@ local douzhen = fk.CreateFilterSkill{
     end
   end,
   view_as = function(self, card, player)
-    if player:getSwitchSkillState(self.name, false) == fk.SwitchYang then
-      return Fk:cloneCard("duel", card.suit, card.number)
-    else
-      return Fk:cloneCard("slash", card.suit, card.number)
+    local name = "slash"
+    if player:getSwitchSkillState("douzhen", false) == fk.SwitchYang then
+      name = "duel"
     end
-  end,
-}
-local douzhen_trigger = fk.CreateTriggerSkill{
-  name = "#douzhen_trigger",
-  mute = true,
-  events = {fk.CardUsing},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and table.contains(data.card.skillNames, "douzhen") and data.tos and
-      player:getSwitchSkillState("douzhen", true) == fk.SwitchYang and
-      table.find(TargetGroup:getRealTargets(data.tos), function(id) return not player.room:getPlayerById(id):isNude() end)
-  end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    for _, id in ipairs(TargetGroup:getRealTargets(data.tos)) do
-      if player.dead then return end
-      local p = room:getPlayerById(id)
-      if not p.dead then
-        local c = room:askForCardChosen(player, p, "he", "douzhen")
-        room:obtainCard(player, c, false, fk.ReasonPrey)
-      end
-    end
-  end,
-
-  refresh_events = {fk.PreCardUse, fk.PreCardRespond},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and table.contains(data.card.skillNames, "douzhen")
-  end,
-  on_refresh = function(self, event, target, player, data)
-    if event == fk.PreCardUse then
-      data.extraUse = true
-    end
-    player.room:setPlayerMark(player, MarkEnum.SwithSkillPreName .. "douzhen", player:getSwitchSkillState("douzhen", true))
-    player:addSkillUseHistory("douzhen")
+    local c = Fk:cloneCard(name, card.suit, card.number)
+    c.skillName = "douzhen"
+    return c
   end,
 }
 local douzhen_targetmod = fk.CreateTargetModSkill{
@@ -3282,7 +3283,7 @@ local douzhen_targetmod = fk.CreateTargetModSkill{
     return card.trueName == "slash" and table.contains(card.skillNames, "douzhen") and scope == Player.HistoryPhase
   end,
 }
-douzhen:addRelatedSkill(douzhen_trigger)
+douzhen:addRelatedSkill(douzhen_filter)
 douzhen:addRelatedSkill(douzhen_targetmod)
 liyixiejing:addSkill(douzhen)
 Fk:loadTranslationTable{
@@ -3292,6 +3293,8 @@ Fk:loadTranslationTable{
   ["illustrator:liyixiejing"] = "匠人绘",
   ["douzhen"] = "斗阵",
   [":douzhen"] = "转换技，锁定技，你的回合内，阳：你的黑色基本牌视为【决斗】，且使用时获得目标一张牌；阴：你的红色基本牌视为【杀】，且使用时无次数限制。",
+
+  ["#douzhen_filter"] = "斗阵",
 
   ["$douzhen1"] = "擂鼓击柝，庆我兄弟凯旋。",
   ["$douzhen2"] = "匹夫欺我江东无人乎。",

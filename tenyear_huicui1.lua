@@ -1037,7 +1037,7 @@ local qingtan = fk.CreateActiveSkill{
       reason = self.name,
     }
     for _, p in ipairs(targets) do
-      p.request_data = json.encode({"choose_cards_skill", "#qingtan-card", true, extraData})
+      p.request_data = json.encode({"choose_cards_skill", "#qingtan-card", false, extraData})
     end
     room:notifyMoveFocus(room.alive_players, self.name)
     room:doBroadcastRequest("AskForUseActiveSkill", targets)

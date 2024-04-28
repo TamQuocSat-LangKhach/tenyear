@@ -863,9 +863,7 @@ local ty_ex__ganlu = fk.CreateActiveSkill{
       return room:getCardArea(id) == Card.Processing
     end)
     if #dis_cards > 0 then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(dis_cards)
-      room:moveCardTo(dummy, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name)
+      room:moveCardTo(dis_cards, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name)
     end
      local player =room:getPlayerById(effect.from)
     if math.abs(#target1:getCardIds("e") - #target2:getCardIds("e")) > player:getLostHp() then
@@ -3934,9 +3932,7 @@ local ty_ex__xiantu = fk.CreateTriggerSkill{
     else
       cards = room:askForCard(player, 2, 2, true, self.name, false, ".", "#ty_ex__xiantu-give::"..target.id)
     end
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(cards)
-    room:obtainCard(target.id, dummy, false, fk.ReasonGive, player.id)
+    room:obtainCard(target.id, cards, false, fk.ReasonGive, player.id)
   end,
 }
 local ty_ex__xiantu_trigger = fk.CreateTriggerSkill{
@@ -4245,9 +4241,7 @@ local ty_ex__jiaojin_delay = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local ids = room:getSubcardsByRule(data.card, {Card.Processing})
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(ids)
-    room:obtainCard(player, dummy, true, fk.ReasonJustMove)
+    room:obtainCard(player, ids, true, fk.ReasonJustMove)
   end,
 }
 ty_ex__jiaojin:addRelatedSkill(ty_ex__jiaojin_delay)
@@ -4336,9 +4330,7 @@ local ty_ex__xianzhou = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     local n = #player:getCardIds("e")
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(player.player_cards[Player.Equip])
-    room:obtainCard(target, dummy, false, fk.ReasonGive, player.id)
+    room:obtainCard(target, player:getCardIds(Player.Equip), false, fk.ReasonGive, player.id)
     if not player.dead and player:isWounded() then
       room:recover({
         who = player,
@@ -4958,9 +4950,7 @@ local ty_ex__yanzhu = fk.CreateActiveSkill{
        room:setPlayerMark(target, "@@yanzhudamage", 1)
        room:askForDiscard(target, 1, 1, true, self.name, false)
     elseif choice == "ty_ex__yanzhu_choice2" then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(target:getCardIds("e"))
-      room:obtainCard(player.id, dummy, true, fk.ReasonGive, target.id)
+      room:obtainCard(player.id, target:getCardIds(Player.Equip), true, fk.ReasonGive, target.id)
       room:setPlayerMark(player, self.name, 1)
     end
   end,

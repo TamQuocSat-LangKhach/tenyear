@@ -975,12 +975,11 @@ local xunli = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.AfterCardsMove then
       local ids = self.cost_data
-      local n = math.min(#ids, 9 - #player:getPile("jiping_li"))
-      local dummy = Fk:cloneCard("dilu")
-      for i = 1, n, 1 do
-        dummy:addSubcard(ids[i])
+      local n = 9 - #player:getPile("jiping_li")
+      if n < #ids then
+        ids = table.slice(ids, 1, n + 1)
       end
-      player:addToPile("jiping_li", dummy, true, self.name)
+      player:addToPile("jiping_li", ids, true, self.name)
     else
       local cards = table.filter(player:getCardIds("h"), function(id)
         return Fk:getCardById(id, true).color == Card.Black and Fk:getCardById(id).color == Card.Black

@@ -116,9 +116,7 @@ local ty_ex__andong = fk.CreateTriggerSkill{
       U.viewCards(player, data.from:getCardIds("h"), self.name)
       local cards = table.filter(data.from:getCardIds("h"), function(id) return Fk:getCardById(id).suit == Card.Heart end)
       if #cards > 0 then
-        local dummy = Fk:cloneCard("dilu")
-        dummy:addSubcards(cards)
-        room:moveCardTo(dummy, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
+        room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
       end
     end
   end,
@@ -442,9 +440,7 @@ local ty__jiqiao = fk.CreateTriggerSkill{
     end
     if #get > 0 then
       room:delay(1000)
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(get)
-      room:obtainCard(player.id, dummy, true, fk.ReasonJustMove)
+      room:obtainCard(player.id, get, true, fk.ReasonJustMove)
     end
     if #cards > 0 then
       room:delay(1000)
@@ -987,17 +983,14 @@ local ty_ex__junbing = fk.CreateTriggerSkill{
     local room = player.room
     room:drawCards(target, 1, self.name)
     if target == player or target.dead or player.dead or target:isKongcheng() then return false end
-    local dummy1 = Fk:cloneCard("dilu")
-    dummy1:addSubcards(target.player_cards[Player.Hand])
-    room:obtainCard(player.id, dummy1, false, fk.ReasonGive)
-    local n = #dummy1.subcards
+    local cards = target:getCardIds(Player.Hand)
+    room:obtainCard(player.id, cards, false, fk.ReasonGive)
+    local n = #cards
     if target.dead or player.dead or #player:getCardIds("he") < n then return end
-    local cards = room:askForCard(player, n, n, true, self.name, true, ".",
+    cards = room:askForCard(player, n, n, true, self.name, true, ".",
     "#ty_ex__junbing-give::"..target.id..":"..n)
     if #cards == n then
-      local dummy2 = Fk:cloneCard("dilu")
-      dummy2:addSubcards(cards)
-      room:obtainCard(target.id, dummy2, false, fk.ReasonGive)
+      room:obtainCard(target.id, cards, false, fk.ReasonGive)
     end
   end,
 }

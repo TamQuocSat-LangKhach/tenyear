@@ -1242,7 +1242,7 @@ local zhangu = fk.CreateTriggerSkill{
     while #types > 0 do
       local pattern = table.random(types)
       table.removeOne(types, pattern)
-      table.insert(cards, room:getCardsFromPileByRule(".|.|.|.|.|"..pattern))
+      table.insertTable(cards, room:getCardsFromPileByRule(".|.|.|.|.|"..pattern))
     end
     if #cards > 0 then
       room:obtainCard(player.id, cards, false, fk.ReasonJustMove)

@@ -1003,9 +1003,8 @@ local yachai = fk.CreateTriggerSkill{
       end
       if #ids == 0 then return end
       choice = room:askForChoice(data.from, suits, self.name, "#yachai-give:"..player.id)
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(table.filter(ids, function(id) return Fk:getCardById(id):getSuitString(true) == choice end))
-      room:obtainCard(player.id, dummy, true, fk.ReasonGive)
+      local cards = table.filter(ids, function(id) return Fk:getCardById(id):getSuitString(true) == choice end)
+      room:obtainCard(player.id, cards, true, fk.ReasonGive)
     end
   end,
 }
@@ -1189,9 +1188,7 @@ local ty__meibu = fk.CreateTriggerSkill{
           end
         end
       end
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(ids)
-      room:moveCardTo(dummy, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
+      room:moveCardTo(ids, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
     end
   end,
 }
@@ -1632,15 +1629,15 @@ local chenjian = fk.CreateTriggerSkill{
           if #to > 0 and card then
             local suit = Fk:getCardById(card).suit
             room:throwCard({card}, self.name, player, player)
-            local dummy = Fk:cloneCard("dilu")
+            local to_get = {}
             for i = #ids, 1, -1 do
               if Fk:getCardById(ids[i]).suit == suit then
-                dummy:addSubcard(ids[i])
+                table.insert(to_get, ids[i])
                 table.remove(ids, i)
               end
             end
             if not room:getPlayerById(to[1]).dead then
-              room:obtainCard(to[1], dummy, true, fk.ReasonPrey)
+              room:obtainCard(to[1], to_get, true, fk.ReasonPrey)
             end
           end
         elseif choice == "chenjian2" then
@@ -5903,21 +5900,20 @@ local shuaijie = fk.CreateActiveSkill{
       table.insert(choices, 1, "shuaijie1::"..to.id)
     end
     local choice = room:askForChoice(player, choices, self.name)
-    local dummy = Fk:cloneCard("dilu")
+    local to_get = {}
     if choice[9] == "1" then
       room:doIndicate(player.id, {to.id})
-      local cards = room:askForCardsChosen(player, to, 1, 3, "he", self.name)
-      dummy:addSubcards(cards)
+      to_get = room:askForCardsChosen(player, to, 1, 3, "he", self.name)
     else
       local types = {"basic", "trick", "equip"}
       while #types > 0 do
         local pattern = table.random(types)
         table.removeOne(types, pattern)
-        dummy:addSubcards(room:getCardsFromPileByRule(".|.|.|.|.|"..pattern))
+        table.insertTable(to_get, room:getCardsFromPileByRule(".|.|.|.|.|"..pattern))
       end
     end
-    if #dummy.subcards > 0 then
-      room:obtainCard(player.id, dummy, false, fk.ReasonPrey)
+    if #to_get > 0 then
+      room:obtainCard(player.id, to_get, false, fk.ReasonPrey)
     end
     if not player.dead then
       room:setPlayerMark(player, "silue", player.id)

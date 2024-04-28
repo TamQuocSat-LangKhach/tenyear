@@ -3127,15 +3127,15 @@ local shilie = fk.CreateActiveSkill{
         }
       end
       if not player:isNude() then
-        local cards = room:askForCard(player, math.min(#player:getCardIds("he"), 2), 2, true, self.name, false, ".", "#shilie-put")
+        local cards = player:getCardIds("he")
+        if #cards > 2 then
+          cards = room:askForCard(player, 2, 2, true, self.name, false, ".", "#shilie-put")
+        end
         player:addToPile(self.name, cards, false, self.name)
         local n = #player:getPile(self.name) - #room.players
         if n > 0 then
-          local dummy2 = Fk:cloneCard("dilu")
-          for i = 1, n, 1 do
-            dummy2:addSubcard(player:getPile(self.name)[i])
-          end
-          room:moveCardTo(dummy2, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
+          local to_remove = table.slice(player:getPile(self.name), 1, n + 1)
+          room:moveCardTo(to_remove, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
         end
       end
     else
@@ -3172,9 +3172,7 @@ local shilie_trigger = fk.CreateTriggerSkill{
     player:broadcastSkillInvoke("shilie")
     room:notifySkillInvoked(player, "shilie", "support")
     local to = room:getPlayerById(self.cost_data)
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(player:getPile("shilie"))
-    room:moveCardTo(dummy, Card.PlayerHand, to, fk.ReasonJustMove, "shilie", nil, false, player.id)
+    room:moveCardTo(player:getPile("shilie"), Card.PlayerHand, to, fk.ReasonJustMove, "shilie", nil, false, player.id)
   end,
 }
 shilie:addRelatedSkill(shilie_trigger)
@@ -3410,9 +3408,7 @@ local libang_delay = fk.CreateTriggerSkill{
       else
         local _,dat = room:askForUseActiveSkill(player, "libang_active", "#libang-card", true, {targets = targets})
         if dat then
-          local dummy = Fk:cloneCard("dilu")
-          dummy:addSubcards(dat.cards)
-          room:obtainCard(dat.targets[1], dummy, false, fk.ReasonGive, player.id)
+          room:obtainCard(dat.targets[1], dat.cards, false, fk.ReasonGive, player.id)
         else
           room:loseHp(player, 1, "libang")
         end
@@ -4117,19 +4113,19 @@ local tuoxian = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
-    local dummy = Fk:cloneCard("dilu")
+    local to_get = {}
     for _, move in ipairs(data) do
       if move.skillName == "piaoping" and move.moveReason == fk.ReasonDiscard and move.from == player.id then
         for _, info in ipairs(move.moveInfo) do
           if room:getCardArea(info.cardId) == Card.DiscardPile then
-            dummy:addSubcard(info.cardId)
+            table.insert(to_get, info.cardId)
           end
         end
       end
     end
-    room:moveCardTo(dummy, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
+    room:moveCardTo(to_get, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
     local choices = {}
-    local n = #dummy.subcards
+    local n = #to_get
     if not to.dead and #to:getCardIds("hej") >= n then
       table.insert(choices, "tuoxian1:::"..n)
     end
@@ -5235,20 +5231,20 @@ local heqia = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = player
-    local dummy = Fk:cloneCard("dilu")
+    local to
+    local to_get
     if #self.cost_data.cards > 0 then
       to = room:getPlayerById(self.cost_data.targets[1])
-      dummy:addSubcards(self.cost_data.cards)
+      to_get = self.cost_data.cards
     else
+      to = player
       local src = room:getPlayerById(self.cost_data.targets[1])
-      local cards = room:askForCard(src, 1, 999, true, self.name, false, ".", "#heqia-give:"..player.id)
-      dummy:addSubcards(cards)
+      to_get = room:askForCard(src, 1, 999, true, self.name, false, ".", "#heqia-give:"..player.id)
     end
-    room:moveCardTo(dummy, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
+    room:moveCardTo(to_get, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
     if to.dead or to:isKongcheng() then return end
-    room:setPlayerMark(to, "heqia-tmp", #dummy.subcards)
-    local success, dat = room:askForUseActiveSkill(to, "heqia_viewas", "#heqia-use:::"..#dummy.subcards, true)
+    room:setPlayerMark(to, "heqia-tmp", #to_get)
+    local success, dat = room:askForUseActiveSkill(to, "heqia_viewas", "#heqia-use:::"..#to_get, true)
     if success and dat then
       local card = Fk:cloneCard(dat.interaction)
       card:addSubcards(dat.cards)

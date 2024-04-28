@@ -4403,7 +4403,7 @@ local chongyi = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.CardUsing then
       target:drawCards(2, self.name)
-      room:addPlayerMark(player, MarkEnum.SlashResidue .. "-phase")
+      room:addPlayerMark(target, MarkEnum.SlashResidue .. "-phase")
     else
       room:addPlayerMark(target, MarkEnum.AddMaxCardsInTurn, 1)
       local cards = table.filter(self.cost_data, function (id)

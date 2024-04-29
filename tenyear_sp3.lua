@@ -2519,7 +2519,7 @@ Fk:loadTranslationTable{
   ["#silun-card"] = "四论：将一张牌置于场上、牌堆顶或牌堆底（第%arg张/共4张）",
   ["Field"] = "场上",
 
-  ["$shijiz1"] = "区区十丈之城，何须丞相图画。",
+  ["$shijiz1"] = "哼~区区十丈之城，何须丞相图画。",
   ["$shijiz2"] = "顽垒在前，可依不疑之计施为。",
   ["$silun1"] = "习守静之术，行务时之风。",
   ["$silun2"] = "纵笔瑞白雀，满座尽高朋。",
@@ -3429,6 +3429,7 @@ local guanyu = General(extension, "wm__guanyu", "shu", 5)
 local juewu = fk.CreateViewAsSkill{
   name = "juewu",
   prompt = "#juewu-viewas",
+  anim_type = "offensive",
   pattern = ".",
   interaction = function()
     local names = Self:getMark("juewu_names")
@@ -3440,7 +3441,7 @@ local juewu = fk.CreateViewAsSkill{
           table.insertIfNeed(names, card.name)
         end
       end
-      table.insertIfNeed(names, "drowning")
+      table.insertIfNeed(names, "ty__drowning")
       Self:setMark("juewu_names", names)
     end
     local choices = U.getViewAsCardNames(Self, "juewu", names, nil, U.getMark(Self, "juewu-turn"))
@@ -3476,7 +3477,7 @@ local juewu = fk.CreateViewAsSkill{
           table.insertIfNeed(names, card.name)
         end
       end
-      table.insertIfNeed(names, "drowning")
+      table.insertIfNeed(names, "ty__drowning")
       player:setMark("juewu_names", names)
     end
     local mark = U.getMark(player, "juewu-turn")
@@ -3501,7 +3502,7 @@ local juewu = fk.CreateViewAsSkill{
           table.insertIfNeed(names, card.name)
         end
       end
-      table.insertIfNeed(names, "drowning")
+      table.insertIfNeed(names, "ty__drowning")
       player:setMark("juewu_names", names)
     end
     local mark = U.getMark(player, "juewu-turn")
@@ -3518,7 +3519,6 @@ local juewu = fk.CreateViewAsSkill{
 local juewu_trigger = fk.CreateTriggerSkill{
   name = "#juewu_trigger",
   events = {fk.AfterCardsMove},
-  anim_type = "control",
   mute = true,
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(juewu) then return false end
@@ -3593,9 +3593,10 @@ local wuyou = fk.CreateActiveSkill{
     if #card_names == 0 then return end
     card_names = table.connect(table.unpack(table.random(card_names, 5)))
     local success, dat = room:askForUseActiveSkill(player, "wuyou_declare",
-    "#wuyou-declare::" .. target.id, false, { interaction_choices = card_names })
-    local id = success and dat.cards[1] or table.random(player:getCardIds(Player.Hand))
-    local card_name = success and dat.interaction or card_names[1]
+    "#wuyou-declare::" .. target.id, true, { interaction_choices = card_names })
+    if not success then return end
+    local id = dat.cards[1]
+    local card_name = dat.interaction
     if target == player then
       room:setCardMark(Fk:getCardById(id), "@@wuyou-inhand", card_name)
     else
@@ -3769,8 +3770,8 @@ guanyu:addSkill(wuyou)
 guanyu:addSkill(yixian)
 Fk:loadTranslationTable{
   ["wm__guanyu"] = "武关羽",
-  --["#wm__guanyu"] = "",
-  --["illustrator:wm__guanyu"] = "",
+  ["#wm__guanyu"] = "义武千秋",
+  ["illustrator:wm__guanyu"] = "黯荧岛_小董",
   ["juewu"] = "绝武",
   [":juewu"] = "你可以将点数为2的牌当伤害牌或【水淹七军】使用（每回合每种牌名限一次）。当你得到其他角色的牌后，这些牌的点数视为2。",
   ["wuyou"] = "武佑",
@@ -3798,13 +3799,13 @@ Fk:loadTranslationTable{
   ["yixian_discard"] = "获得弃牌堆里的装备牌",
   ["#yixian-repay"] = "义贤：是否令%dest摸%arg张牌并回复1点体力",
 
-  ["$juewu1"] = "",
-  ["$juewu2"] = "",
-  ["$wuyou1"] = "",
-  ["$wuyou2"] = "",
-  ["$yixian1"] = "",
-  ["$yixian2"] = "",
-  ["~wm__guanyu"] = "",
+  ["$juewu1"] = "可惜我这青龙偃月刀，竟要斩你这鼠辈。",
+  ["$juewu2"] = "我自山峰而下，犹未见来人。",
+  ["$wuyou1"] = "人惧则威，人信则义。",
+  ["$wuyou2"] = "尚义之人，天必予惠。",
+  ["$yixian1"] = "春秋一万八千字，其以义为先。",
+  ["$yixian2"] = "义驱千里长路，风起桃园芳菲。",
+  ["~wm__guanyu"] = "寻了兄长三弟一辈子，今日，便等兄弟来寻了……",
 }
 
 

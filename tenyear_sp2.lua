@@ -16,7 +16,12 @@ Fk:addQmlMark{
     if type(value) ~= "table" then return " " end
     return tostring(#value)
   end,
-  qml_path = "packages/tenyear/qml/ZixiBox"
+  qml_path = function(name, value, p)
+    if Self:isBuddy(p) then
+      return "packages/tenyear/qml/ZixiBox"
+    end
+    return ""
+  end,
 }
 local ty__shefu_active = fk.CreateActiveSkill{
   name = "ty__shefu_active",

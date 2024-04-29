@@ -941,7 +941,7 @@ Fk:loadTranslationTable{
   ["~mengjie"] = "蛮人无知，请丞相教之……",
 }
 
---悬壶济世：吉平 孙寒华 郑浑 刘宠骆俊
+--悬壶济世：吉平 孙寒华 郑浑 刘宠骆俊 吴普
 local jiping = General(extension, "jiping", "qun", 3)
 local xunli = fk.CreateTriggerSkill{
   name = "xunli",
@@ -1722,6 +1722,111 @@ Fk:loadTranslationTable{
   ["$jini1"] = "备劲弩强刃，待恶客上门。",
   ["$jini2"] = "逆贼犯境，诸君当共击之。",
   ["~liuchongluojun"] = "袁术贼子，折我大汉基业……",
+}
+
+local wupu = General(extension, "wupu", "qun", 4)
+local duanti = fk.CreateTriggerSkill{
+  name = "duanti",
+  events = {fk.CardUseFinished, fk.CardRespondFinished},
+  frequency = Skill.Compulsory,
+  anim_type = "support",
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if player:getMark("@duanti") < 4 then
+      room:addPlayerMark(player, "@duanti")
+      return false
+    else
+      room:setPlayerMark(player, "@duanti", 0)
+    end
+    if player:isWounded() then
+      room:recover{
+        who = player,
+        recoverBy = player,
+        num = 1,
+        skillName = self.name
+      }
+      if player.dead then return false end
+    end
+    if player:getMark("duanti_addmaxhp") < 5 then
+      room:addPlayerMark(player, "duanti_addmaxhp")
+      room:changeMaxHp(player, 1)
+    end
+  end,
+
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == self
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@duanti", 0)
+    player.room:setPlayerMark(player, "duanti_addmaxhp", 0)
+  end,
+}
+
+local shicao = fk.CreateActiveSkill{
+  name = "shicao",
+  anim_type = "drawcard",
+  card_num = 0,
+  target_num = 0,
+  prompt = "#shicao-active",
+  can_use = function(self, player)
+    return player:getMark("@@shicao-turn") == 0
+  end,
+  interaction = function()
+    return UI.ComboBox {choices = {
+      "shicao_type:::basic:Top", "shicao_type:::basic:Bottom",
+      "shicao_type:::trick:Top", "shicao_type:::trick:Bottom",
+      "shicao_type:::equip:Top", "shicao_type:::equip:Bottom",
+    } }
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local shicao_type = self.interaction.data:split(":")
+    local from_place = shicao_type[5]:lower()
+    local ids = room:drawCards(player, 1, self.name, from_place)
+    if #ids == 0 or player.dead then return end
+    if Fk:getCardById(ids[1]):getTypeString() ~= shicao_type[4] then
+      if from_place == "top" then
+        ids = room:getNCards(2, "bottom")
+        table.insertTable(room.draw_pile, ids)
+      else
+        ids = room:getNCards(2)
+        table.insert(room.draw_pile, 1, ids[2])
+        table.insert(room.draw_pile, 1, ids[1])
+      end
+      U.viewCards(player, ids, self.name)
+      room:setPlayerMark(player, "@@shicao-turn", 1)
+    end
+  end,
+}
+wupu:addSkill(duanti)
+wupu:addSkill(shicao)
+
+Fk:loadTranslationTable{
+  ["wupu"] = "吴普",
+  ["#wupu"] = "健体养魄",
+  --["designer:wupu"] = "",
+  --["illustrator:wupu"] = "",
+  ["duanti"] = "锻体",
+  [":duanti"] = "锁定技，当你每使用或打出五张牌结算结束后，你回复1点体力，你加1点体力上限（最多加5）。",
+  ["shicao"] = "识草",
+  [":shicao"] = "出牌阶段，你可以声明一种类别，从牌堆顶/牌堆底摸一张牌，"..
+  "若此牌不为你声明的类别，你观看牌堆底/牌堆顶的两张牌，此技能于此回合内无效。",
+
+  ["@duanti"] = "锻体",
+  ["#shicao-active"] = "发动 识草，选择牌的类别和摸牌的位置",
+  ["shicao_type"] = "%arg | %arg2",
+  ["@@shicao-turn"] = "识草 无效",
+
+  ["$duanti1"] = "流水不腐，户枢不蠹。",
+  ["$duanti2"] = "五禽锻体，百病不侵。",
+  ["$shicao1"] = "药长于草木，然草木非皆可入药。",
+  ["$shicao2"] = "掌中非药，乃活人之根本。",
+  ["~wupu"] = "医者，不可使人长生……",
 }
 
 --纵横捭阖：陆郁生 祢衡 华歆 荀谌 冯熙 邓芝 宗预 羊祜

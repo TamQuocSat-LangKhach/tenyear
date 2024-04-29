@@ -9,6 +9,41 @@ Fk:loadTranslationTable{
   ["tymou2"] = "新服谋",
 }
 
+local function setTYMouSwitchSkillState(player, generalName, skillName, isYang)
+  if isYang == nil then
+    isYang = player:getSwitchSkillState(skillName, true) == fk.SwitchYang
+  else
+    local switch_state = isYang and fk.SwitchYin or fk.SwitchYang
+    if player:getSwitchSkillState(skillName, true) == switch_state then
+      player.room:setPlayerMark(player, MarkEnum.SwithSkillPreName .. skillName, switch_state)
+      player:setSkillUseHistory(skillName, 0, Player.HistoryGame)
+    end
+  end
+
+  if Fk.generals["tymou2__" .. generalName] == nil then return end
+
+  local from_name = "tymou__" .. generalName
+  local to_name = "tymou__" .. generalName
+  if isYang then
+    to_name = "tymou2__" .. generalName
+  else
+    from_name = "tymou2__" .. generalName
+  end
+  if player.general == from_name then
+    player.general = to_name
+    player.room:broadcastProperty(player, "general")
+  end
+  if player.deputyGeneral == from_name then
+    player.deputyGeneral = to_name
+    player.room:broadcastProperty(player, "deputyGeneral")
+  end
+end
+
+Fk:loadTranslationTable{
+  ["tymou_switch"] = "%arg · %arg2",
+  ["#tymou_switch-transer"] = "请选择 %arg 的阴阳状态",
+}
+
 --谋定天下：周瑜、鲁肃、司马懿
 local tymou__zhouyu = General(extension, "tymou__zhouyu", "wu", 4)
 local ronghuo = fk.CreateTriggerSkill{
@@ -63,6 +98,7 @@ local yingmou = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    setTYMouSwitchSkillState(player, "zhouyu", self.name)
     local to = room:getPlayerById(self.cost_data)
     if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
       if player:getHandcardNum() < to:getHandcardNum() then
@@ -113,8 +149,28 @@ local yingmou = fk.CreateTriggerSkill{
     end
   end,
 }
+local yingmou_switch = fk.CreateTriggerSkill{
+  name = "#yingmou_switch",
+  events = {fk.GameStart},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    setTYMouSwitchSkillState(player, "zhouyu", "yingmou",
+    player.room:askForChoice(player, { "tymou_switch:::yingmou:yang", "tymou_switch:::yingmou:yin" },
+    "yingmou", "#tymou_switch-transer:::yingmou") == "tymou_switch:::yingmou:yin")
+  end,
+}
+yingmou:addRelatedSkill(yingmou_switch)
 tymou__zhouyu:addSkill(ronghuo)
 tymou__zhouyu:addSkill(yingmou)
+
+local tymou2__zhouyu = General(extension, "tymou2__zhouyu", "wu", 4)
+tymou2__zhouyu:addSkill("ronghuo")
+tymou2__zhouyu:addSkill("yingmou")
+
 Fk:loadTranslationTable{
   ["tymou__zhouyu"] = "谋周瑜",
   ["#tymou__zhouyu"] = "炽谋英隽",
@@ -127,12 +183,24 @@ Fk:loadTranslationTable{
   ["#yingmou_yang-invoke"] = "英谋：选择一名角色，你将手牌补至与其相同，然后视为对其使用【火攻】",
   ["#yingmou_yin-invoke"] = "英谋：选择一名角色，然后令手牌最多的角色对其使用手牌中所有【杀】和伤害锦囊牌",
   ["#yingmou-choose"] = "英谋：选择手牌数最多的一名角色，其对 %dest 使用手牌中所有【杀】和伤害锦囊牌",
+  ["#yingmou_switch"] = "英谋",
 
+  --阳形态
   ["$ronghuo1"] = "火莲绽江矶，炎映三千弱水。",
   ["$ronghuo2"] = "奇志吞樯橹，潮平百万寇贼。",
   ["$yingmou1"] = "行计以险，纵略以奇，敌虽百万亦戏之如犬豕。",
   ["$yingmou2"] = "若生铸剑为犁之心，须有纵钺止戈之力。",
   ["~tymou__zhouyu"] = "人生之艰难，犹如不息之长河……",
+
+  --阴形态
+  ["tymou2__zhouyu"] = "谋周瑜",
+  ["#tymou2__zhouyu"] = "炽谋英隽",
+  --["illustrator:tymou2__zhouyu"] = "",
+  ["$ronghuo_tymou2__zhouyu1"] = "江东多锦绣，离火起曹贼毕，九州同忾。",
+  ["$ronghuo_tymou2__zhouyu2"] = "星火乘风，风助火势，其必成燎原之姿。",
+  ["$yingmou_tymou2__zhouyu1"] = "既遇知己之明主，当福祸共之，荣辱共之。",
+  ["$yingmou_tymou2__zhouyu2"] = "将者，贵在知敌虚实，而后避实而击虚。",
+  ["~tymou2__zhouyu"] = "大业未成，奈何身赴黄泉……",
 }
 
 local tymou__lusu = General(extension, "tymou__lusu", "wu", 3)
@@ -217,6 +285,7 @@ local mengmou = fk.CreateTriggerSkill{
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
     room:doIndicate(player.id, {to.id})
+    setTYMouSwitchSkillState(player, "lusu", self.name)
     local n = player.maxHp
     if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
       local count = 0
@@ -266,8 +335,21 @@ local mengmou = fk.CreateTriggerSkill{
     end
   end,
 }
-
-mingshil:addRelatedSkill(mingshil_trigger)
+local mengmou_switch = fk.CreateTriggerSkill{
+  name = "#mengmou_switch",
+  events = {fk.GameStart},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    setTYMouSwitchSkillState(player, "lusu", "mengmou",
+    player.room:askForChoice(player, { "tymou_switch:::mengmou:yang", "tymou_switch:::mengmou:yin" },
+    "mengmou", "#tymou_switch-transer:::mengmou") == "tymou_switch:::mengmou:yin")
+  end,
+}
+mengmou:addRelatedSkill(mengmou_switch)
 tymou__lusu:addSkill(mingshil)
 tymou__lusu:addSkill(mengmou)
 Fk:loadTranslationTable{
@@ -287,6 +369,7 @@ Fk:loadTranslationTable{
   ["#mengmou-yin-choose"] = "你可以发动 盟谋（阴），令一名角色打出%arg张【杀】，每少打出一张其失去1点体力",
   ["#mengmou-slash"] = "盟谋：你可以连续使用【杀】，造成伤害后你回复体力（第%arg张，共%arg2张）",
   ["#mengmou-ask"] = "盟谋：你需连续打出【杀】，每少打出一张你失去1点体力（第%arg张，共%arg2张）",
+  ["#mengmou_switch"] = "盟谋",
 
   ["$mingshil1"] = "联刘以抗曹，此可行之大势。",
   ["$mingshil2"] = "强敌在北，唯协力可御之。",
@@ -388,31 +471,31 @@ local quanmou = fk.CreateActiveSkill{
     table.insert(mark, target.id)
     room:setPlayerMark(player, "quanmou_targets-phase", mark)
 
-    local isYang = player:getSwitchSkillState(self.name, true) == fk.SwitchYang
-    local from_name = "tymou__simayi"
-    local to_name = "tymou__simayi"
-    if isYang then
-      to_name = "tymou2__simayi"
-    else
-      from_name = "tymou2__simayi"
-    end
-    if player.general == from_name then
-      player.general = to_name
-      room:broadcastProperty(player, "general")
-    end
-    if player.deputyGeneral == from_name then
-      player.deputyGeneral = to_name
-      room:broadcastProperty(player, "deputyGeneral")
-    end
+    setTYMouSwitchSkillState(player, "simayi", self.name)
+    local switch_state = player:getSwitchSkillState(self.name, true, true)
 
     local card = room:askForCard(target, 1, 1, true, self.name, false, ".", "#quanmou-give::"..player.id)
     room:obtainCard(player.id, card[1], false, fk.ReasonGive, target.id)
     if player.dead or target.dead then return false end
-    room:setPlayerMark(target, "@quanmou-phase", isYang and "yang" or "yin")
-    local mark_name = "quanmou_" .. (isYang and "yang" or "yin") .. "-phase"
+    room:setPlayerMark(target, "@quanmou-phase", switch_state)
+    local mark_name = "quanmou_" .. switch_state .. "-phase"
     mark = U.getMark(player, mark_name)
     table.insert(mark, target.id)
     room:setPlayerMark(player, mark_name, mark)
+  end,
+}
+local quanmou_switch = fk.CreateTriggerSkill{
+  name = "#quanmou_switch",
+  events = {fk.GameStart},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    setTYMouSwitchSkillState(player, "simayi", "quanmou",
+    player.room:askForChoice(player, { "tymou_switch:::quanmou:yang", "tymou_switch:::quanmou:yin" },
+    "quanmou", "#tymou_switch-transer:::quanmou") == "tymou_switch:::quanmou:yin")
   end,
 }
 local quanmou_delay = fk.CreateTriggerSkill{
@@ -469,22 +552,15 @@ local quanmou_delay = fk.CreateTriggerSkill{
       end
     end
   end,
-
-  refresh_events = {fk.EventAcquireSkill},
-  can_refresh = function (self, event, target, player, data)
-    return data == self and player == target and (player.general == "tymou2__simayi" or player.deputyGeneral == "tymou2__simayi")
-  end,
-  on_refresh = function (self, event, target, player, data)
-    player.room:setPlayerMark(player, MarkEnum.SwithSkillPreName.."quanmou", fk.SwitchYin)
-    player:setSkillUseHistory("quanmou", 0, Player.HistoryGame)
-  end,
 }
 pingliao:addRelatedSkill(pingliao_prohibit)
 quanmou:addRelatedSkill(quanmou_delay)
+quanmou:addRelatedSkill(quanmou_switch)
 tymou__simayi:addSkill(pingliao)
 tymou__simayi:addSkill(quanmou)
 
 local tymou2__simayi = General(extension, "tymou2__simayi", "wei", 3)
+tymou2__simayi.hidden = true
 tymou2__simayi:addSkill("pingliao")
 tymou2__simayi:addSkill("quanmou")
 
@@ -505,6 +581,7 @@ Fk:loadTranslationTable{
   ["#quanmou-Yin"] = "发动 权谋（阴），选择攻击范围内的一名角色",
   ["#quanmou-give"] = "权谋：选择一张牌交给 %dest ",
   ["@quanmou-phase"] = "权谋",
+  ["#quanmou_switch"] = "权谋",
   ["#quanmou_delay"] = "权谋",
   ["#quanmou-damage"] = "权谋：你可以选择1-3名角色，对这些角色各造成1点伤害",
 

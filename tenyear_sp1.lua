@@ -3132,8 +3132,9 @@ Fk:loadTranslationTable{
 local godhuatuo = General(extension, "ty__godhuatuo", "god", 3)
 Fk:loadTranslationTable{
   ["ty__godhuatuo"] = "神华佗",
-  -- ["#ty__godhuatuo"] = "",
-  -- ["~ty__godhuatuo"] = "……",
+  ["#ty__godhuatuo"] = "灵魂的医者",
+  ["illustrator:ty__godhuatuo"] = "君桓文化",
+  ["~ty__godhuatuo"] = "世无良医，枉死者半……",
 }
 
 local jingyu = fk.CreateTriggerSkill{
@@ -3164,6 +3165,8 @@ Fk:loadTranslationTable{
   ["jingyu"] = "静域",
   [":jingyu"] = "锁定技，每项技能每轮限一次，当一名角色发动除“静域”外的技能时，你摸一张牌。" ..
   "<br/><font color='red'><b>注</b>：请暂不要反馈发动技能不触发静域的问题。</font>",
+  ["$jingyu1"] = "人身疾苦，与我无异。",
+  ["$jingyu2"] = "医以济世，其术贵在精诚。",
 }
 
 godhuatuo:addSkill(jingyu)
@@ -3267,6 +3270,8 @@ Fk:loadTranslationTable{
   ["@lvxinLoseHp"] = "滤心",
   ["lvxin_loseHp"] = "失去体力",
   ["lvxin_recover"] = "回复体力",
+  ["$lvxin1"] = "放下执念，将心寄与沧海。",
+  ["$lvxin2"] = "医病非难，难在医人之心。",
 }
 
 lvxin:addRelatedSkill(lvxinDelayedEffect)
@@ -3341,6 +3346,8 @@ Fk:loadTranslationTable{
   ["#huandao"] = "寰道：你可令其他角色复原武将牌并获得同名武将技能",
   ["#huandao-choose"] = "寰道：你可以获得技能“%arg”，然后选择另一项技能失去",
   ["#huandao-lose"] = "寰道：请选择你要失去的技能",
+  ["$huandao1"] = "一语一默，道尽医者慈悲。",
+  ["$huandao2"] = "亦疾亦缓，抚平世间苦难。",
 }
 
 godhuatuo:addSkill(huandao)

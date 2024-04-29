@@ -436,7 +436,6 @@ Fk:loadTranslationTable{
   "你回合外使用或打出基本牌时摸一张牌。离开装备区时销毁。",
 }
 
---[[
 local ty__drowningSkill = fk.CreateActiveSkill{
   name = "ty__drowning_skill",
   prompt = "#ty__drowning_skill",
@@ -490,7 +489,7 @@ Fk:loadTranslationTable{
   "第一名角色受到1点雷电伤害并弃置一张牌，其他角色受到1点雷电伤害并摸一张牌",
   ["#ty__drowning_skill"] = "选择1-2名目标角色，第一名角色受到1点雷电伤害并摸牌，第二名角色受到1点雷电伤害并弃牌",
 }
-]]
+
 
 
 return extension

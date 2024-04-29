@@ -713,7 +713,7 @@ local bushil = fk.CreateTriggerSkill{
   refresh_events = {fk.PreCardUse, fk.EventAcquireSkill, fk.EventLoseSkill},
   can_refresh = function(self, event, target, player, data)
     if event == fk.PreCardUse then
-      return player:hasSkill(self) and player:getMark("bushil1") == "log_"..data.card:getSuitString()
+      return player:hasSkill(self) and player == target and player:getMark("bushil1") == "log_"..data.card:getSuitString()
     else
       return target == player and data == self
     end

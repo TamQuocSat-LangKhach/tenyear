@@ -4149,14 +4149,7 @@ local huishu = fk.CreateTriggerSkill{
       local cards = room:getCardsFromPileByRule(".|.|.|.|.|^basic", player:getMark("huishu3") + 2, "discardPile")
       if #cards > 0 then
         room:setPlayerMark(player, "_huishu-turn", 1)
-        room:moveCards({
-          ids = cards,
-          to = player.id,
-          toArea = Card.PlayerHand,
-          moveReason = fk.ReasonJustMove,
-          proposer = player.id,
-          skillName = self.name,
-        })
+        room:obtainCard(player, cards, false, fk.ReasonJustMove, player.id, self.name)
       end
     end
   end,

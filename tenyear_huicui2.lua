@@ -4375,7 +4375,7 @@ local manzhi = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local _, dat = room:askForUseActiveSkill(player, "manzhi_active", "#manzhi-ask", true)
+    local _, dat = room:askForUseActiveSkill(player, "manzhi_active", "#manzhi-ask", true, nil, false)
     if dat then
       local choice = dat.interaction
       local record = U.getMark(player, "_manzhi-turn")

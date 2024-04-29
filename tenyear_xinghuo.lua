@@ -326,7 +326,8 @@ local limu_refresh = fk.CreateTriggerSkill{
 
   refresh_events = {fk.PreCardUse},
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(limu) and #player:getCardIds(Player.Judge) > 0 and table.find(TargetGroup:getRealTargets(data.tos), function (pid)
+    return player == target and #player:getCardIds(Player.Judge) > 0 and player:hasSkill(limu) and
+    table.find(TargetGroup:getRealTargets(data.tos), function (pid)
       return player:inMyAttackRange(player.room:getPlayerById(pid))
     end)
   end,

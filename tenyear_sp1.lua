@@ -4619,7 +4619,7 @@ local zhantao = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local n = 13
-    local pattern = "."
+    local pattern = ".|0"
     if data.card and data.card.number > 0 and data.card.number < 13 then
       n = data.card.number
       pattern = ".|" .. tostring(n) .. "~13"

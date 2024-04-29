@@ -2248,7 +2248,7 @@ local jijiao = fk.CreateActiveSkill{
     end
 
     if #ids > 0 then
-      room:obtainCard(target.id, ids, true, fk.ReasonJustMove, target.id, self.name, "@@jijiao-inhand")
+      room:obtainCard(target.id, ids, false, fk.ReasonJustMove, target.id, self.name, "@@jijiao-inhand")
     end
   end,
 }
@@ -3177,15 +3177,7 @@ local zhizhe_delay = fk.CreateTriggerSkill{
     local room = player.room
     room:notifySkillInvoked(player, self.name)
     player:broadcastSkillInvoke(zhizhe.name)
-    room:moveCards({
-      ids = self.cost_data,
-      to = player.id,
-      toArea = Card.PlayerHand,
-      moveReason = fk.ReasonPrey,
-      proposer = player.id,
-      skillName = zhizhe.name,
-      moveVisible = false,
-    })
+    room:obtainCard(player, self.cost_data, true, fk.ReasonJustMove, player.id, "zhizhe")
   end,
 
   refresh_events = {fk.AfterCardsMove},

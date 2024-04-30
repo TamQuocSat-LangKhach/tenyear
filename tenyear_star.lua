@@ -849,7 +849,7 @@ Fk:loadTranslationTable{
 local sunjian = General(extension, "tystar__sunjian", "qun", 4, 5)
 local ruijun = fk.CreateTriggerSkill{
   name = "ruijun",
-  anim_type = "offensive",
+  anim_type = "drawcard",
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
     if target == player and player.phase == Player.Play and player:hasSkill(self) and data.firstTarget then
@@ -918,8 +918,8 @@ local ruijun_delay = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke("ruijun")
-    room:notifySkillInvoked(player, "ruijun")
-    data.damage = data.damage + math.min(player:usedSkillTimes(self.name, Player.HistoryPhase), 5)
+    room:notifySkillInvoked(player, "ruijun", "offensive")
+    data.damage = data.damage + math.min(player:usedSkillTimes(self.name, Player.HistoryPhase), 5) - 1
   end,
 }
 local gangyi = fk.CreateTriggerSkill{
@@ -977,13 +977,13 @@ sunjian:addSkill(ruijun)
 sunjian:addSkill(gangyi)
 Fk:loadTranslationTable{
   ["tystar__sunjian"] = "星孙坚",
-  --["#tystar__sunjian"] = "",
-  --["illustrator:tystar__sunjian"] = "",
+  ["#tystar__sunjian"] = "破虏将军",
+  ["illustrator:tystar__sunjian"] = "鬼画府",
 
   ["ruijun"] = "锐军",
   [":ruijun"] = "当你于出牌阶段内第一次使用牌指定其他角色为目标后，你可以摸X张牌（X为你已损失的体力值+1），"..
   "此阶段内：<font color='red'>除其外的其他角色视为不在你的攻击范围内（暂时无法实现，改为这些角色不计入座次）</font>；"..
-  "当你对其造成伤害时，伤害值比上次增加1（至多+5）。",
+  "当你对其造成伤害时，伤害值比上次增加1（至多为5）。",
   ["gangyi"] = "刚毅",
   [":gangyi"] = "锁定技，若你于回合内未造成过伤害，你于此回合内不能使用【桃】。"..
   "当你因执行【桃】或【酒】的作用效果而回复体力时，若你处于濒死状态，你令回复值+1。",

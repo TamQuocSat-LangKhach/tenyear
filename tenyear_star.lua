@@ -846,4 +846,158 @@ Fk:loadTranslationTable{
   ["~tystar__zhangchunhua"] = "我何为也？竟称可憎之老物……",
 }
 
+local sunjian = General(extension, "tystar__sunjian", "qun", 4, 5)
+local ruijun = fk.CreateTriggerSkill{
+  name = "ruijun",
+  anim_type = "offensive",
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player.phase == Player.Play and player:hasSkill(self) and data.firstTarget then
+      local room = player.room
+      local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
+      if use_event == nil then return false end
+      local mark = player:getMark("ruijun_record-phase")
+      if mark == 0 then
+        room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+          local use = e.data[1]
+          if use.from == player.id and table.find(TargetGroup:getRealTargets(use.tos), function (pid)
+            return pid ~= player.id
+          end) then
+            mark = e.id
+            room:setPlayerMark(player, "ruijun_record-phase", mark)
+            return true
+          end
+        end, Player.HistoryPhase)
+      end
+      return mark == use_event.id
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.filter(AimGroup:getAllTargets(data.tos), function (id)
+      return not room:getPlayerById(id).dead and id ~= player.id
+    end)
+    if #targets == 1 then
+      if room:askForSkillInvoke(player, self.name, nil, "#ruijun-invoke::" .. targets[1]) then
+        room:doIndicate(player.id, targets)
+        self.cost_data = targets
+        return true
+      end
+    else
+      targets = room:askForChoosePlayers(player, targets, 1, 1, "#ruijun-choose", self.name, true)
+      if #targets > 0 then
+        self.cost_data = targets
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data[1])
+    player:drawCards(player:getLostHp() + 1, self.name)
+    if player.dead or to.dead then return false end
+    room:setPlayerMark(to, "@@ruijun-phase", 1)
+    local mark = U.getMark(player, "ruijun_targets-phase")
+    table.insert(mark, to.id)
+    room:setPlayerMark(player, "ruijun_targets-phase", mark)
+    for _, p in ipairs(room.alive_players) do
+      if p ~= to and p ~= player then
+        room:addPlayerMark(p, MarkEnum.PlayerRemoved .. "-phase", 1)
+      end
+    end
+  end,
+}
+local ruijun_delay = fk.CreateTriggerSkill{
+  name = "#ruijun_delay",
+  mute = true,
+  events = {fk.DamageCaused},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and not player.dead and table.contains(U.getMark(player, "ruijun_targets-phase"), data.to.id)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke("ruijun")
+    room:notifySkillInvoked(player, "ruijun")
+    data.damage = data.damage + math.min(player:usedSkillTimes(self.name, Player.HistoryPhase), 5)
+  end,
+}
+local gangyi = fk.CreateTriggerSkill{
+  name = "gangyi",
+  anim_type = "support",
+  frequency = Skill.Compulsory,
+  events = {fk.PreHpRecover},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player.dying and player:hasSkill(self) and
+    data.card and table.contains({"peach", "analeptic"}, data.card.trueName)
+  end,
+  on_use = function(self, event, target, player, data)
+    data.num = data.num + 1
+  end,
+
+  refresh_events = {fk.AskForPeaches, fk.HpChanged, fk.EventAcquireSkill},
+  can_refresh = function(self, event, target, player, data)
+    if player.phase == Player.NotActive then return false end
+    if event == fk.AskForPeaches then
+      return player == target and player:hasSkill(self) and player:getMark("gangyi-turn") == 0
+    elseif event == fk.HpChanged then
+      return data.damageEvent and player == data.damageEvent.from and
+      player:hasSkill(self, true) and player:getMark("gangyi-turn") == 0
+    elseif event == fk.EventAcquireSkill then
+      if player == target and data == self and player:getMark("gangyi-turn") == 0 then
+        local turn_event = player.room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
+        if turn_event == nil then return false end
+        return #U.getActualDamageEvents(player.room, 1, function(e)
+          return e.data[1].from == player
+        end, nil, turn_event.id) > 0
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    if event == fk.AskForPeaches then
+      player.room:notifySkillInvoked(player, self.name, "negative")
+      player:broadcastSkillInvoke(self.name)
+    elseif event == fk.HpChanged then
+      player.room:setPlayerMark(player, "gangyi-turn", 1)
+    elseif event == fk.EventAcquireSkill then
+      player.room:setPlayerMark(player, "gangyi-turn", 1)
+    end
+  end,
+}
+local gangyi_prohibit = fk.CreateProhibitSkill{
+  name = "#gangyi_prohibit",
+  prohibit_use = function(self, player, card)
+    return card.name == "peach" and player.phase ~= Player.NotActive and
+    player:hasSkill(gangyi) and player:getMark("gangyi-turn") == 0
+  end,
+}
+ruijun:addRelatedSkill(ruijun_delay)
+gangyi:addRelatedSkill(gangyi_prohibit)
+sunjian:addSkill(ruijun)
+sunjian:addSkill(gangyi)
+Fk:loadTranslationTable{
+  ["tystar__sunjian"] = "星孙坚",
+  --["#tystar__sunjian"] = "",
+  --["illustrator:tystar__sunjian"] = "",
+
+  ["ruijun"] = "锐军",
+  [":ruijun"] = "当你于出牌阶段内第一次使用牌指定其他角色为目标后，你可以摸X张牌（X为你已损失的体力值+1），"..
+  "此阶段内：<font color='red'>除其外的其他角色视为不在你的攻击范围内（暂时无法实现，改为这些角色不计入座次）</font>；"..
+  "当你对其造成伤害时，伤害值比上次增加1（至多+5）。",
+  ["gangyi"] = "刚毅",
+  [":gangyi"] = "锁定技，若你于回合内未造成过伤害，你于此回合内不能使用【桃】。"..
+  "当你因执行【桃】或【酒】的作用效果而回复体力时，若你处于濒死状态，你令回复值+1。",
+
+  ["#ruijun-choose"] = "是否发动 锐军，选择一名角色作为目标",
+  ["#ruijun-invoke"] = "是否对%dest发动 锐军",
+  ["@@ruijun-phase"] = "锐军",
+  ["#ruijun_delay"] = "锐军",
+
+  ["$ruijun1"] = "",
+  ["$ruijun2"] = "",
+  ["$gangyi1"] = "",
+  ["$gangyi2"] = "",
+  ["~tystar__sunjian"] = "",
+}
+
 return extension

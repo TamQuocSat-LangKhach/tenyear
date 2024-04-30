@@ -1724,6 +1724,7 @@ local geyuan_start = fk.CreateTriggerSkill{
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
+    player:broadcastSkillInvoke("geyuan")
     local points = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}
     startCircle(player, points)
   end

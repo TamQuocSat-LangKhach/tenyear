@@ -3624,8 +3624,8 @@ Fk:loadTranslationTable{
   ["ty__baobian"] = "豹变",
   [":ty__baobian"] = "锁定技，当你受到伤害后，你依次获得以下一个技能：〖挑衅〗、〖咆哮〗、〖神速〗。",
 
-  ["$ty__baobian1"] = "穷通须豹变，撄搏笑狼狞！",
-  ["$ty__baobian2"] = "豹变分奇略，虎视肃戎威！",
+  ["$ty__baobian1"] = "豹变分奇略，虎视肃戎威！",
+  ["$ty__baobian2"] = "穷通须豹变，撄搏笑狼狞！",
   ["$tiaoxin_ty__xiahouba1"] = "本将军不与无名之辈相战！",
   ["$tiaoxin_ty__xiahouba2"] = "尔等无名小辈，怎入本将军法眼？",
   ["$os_ex__paoxiao_ty__xiahouba1"] = "吾岂容尔等小觑？",

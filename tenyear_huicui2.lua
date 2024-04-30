@@ -488,7 +488,22 @@ local chongwang = fk.CreateTriggerSkill{
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and target ~= player and (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) then
-      return data.extra_data and data.extra_data.chongwang_user == player.id
+      local logic = player.room.logic
+      local use_event = logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
+      if use_event == nil then return false end
+      local events = logic.event_recorder[GameEvent.UseCard] or Util.DummyTable
+      local last_find = false
+      for i = #events, 1, -1 do
+        local e = events[i]
+        if e.id == use_event.id then
+          last_find = true
+        elseif last_find then
+          if e.data[1].from == player.id then
+            return true
+          end
+          return false
+        end
+      end
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -496,7 +511,8 @@ local chongwang = fk.CreateTriggerSkill{
     if player.room:getCardArea(data.card) == Card.Processing then
       table.insert(choices, 2, "chongwang1")
     end
-    local choice = player.room:askForChoice(player, choices, self.name, "#chongwang-invoke::"..target.id)
+    local choice = player.room:askForChoice(player, choices, self.name,
+    "#chongwang-invoke::"..target.id .. ":" .. data.card:toLogString(), false, {"chongwang1", "chongwang2", "Cancel"})
     if choice ~= "Cancel" then
       self.cost_data = choice
       return true
@@ -514,41 +530,27 @@ local chongwang = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.CardUsing, fk.EventAcquireSkill},
+  refresh_events = {fk.CardUsing, fk.EventAcquireSkill, fk.EventLoseSkill},
   can_refresh = function(self, event, target, player, data)
     if event == fk.CardUsing then
       return player:hasSkill(self, true)
     else
-      return data == self and target == player and player.room:getTag("RoundCount")
+      return data == self and target == player
     end
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.CardUsing then
-      if player:getMark("@@chongwang") > 0 then
-        data.extra_data = data.extra_data or {}
-        data.extra_data.chongwang_user = player.id
-      end
-      if target == player then
-        room:setPlayerMark(player, "@@chongwang", 1)
-      else
-        room:setPlayerMark(player, "@@chongwang", 0)
-      end
-    else
-      local cur_event = player.room.logic:getCurrentEvent()
+    local x = 0
+    if event == fk.CardUsing and target == player then
+      x = 1
+    elseif event == fk.EventAcquireSkill then
       local events = player.room.logic.event_recorder[GameEvent.UseCard] or Util.DummyTable
-      local last_find = false
-      for i = #events, 1, -1 do
-        local e = events[i]
-        if e.id < cur_event.id then
-          if e.data[1].from == player.id then
-            room:setPlayerMark(player, "@@chongwang", 1)
-          else
-            room:setPlayerMark(player, "@@chongwang", 0)
-          end
-          break
-        end
+      if #events > 0 and events[#events].data[1].from == player.id then
+        x = 1
       end
+    end
+    if player:getMark("@@chongwang") ~= x then
+      player.room:setPlayerMark(player, "@@chongwang", x)
     end
   end,
 }
@@ -584,7 +586,8 @@ local huagui = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local tos = table.map(self.cost_data, function(id) return room:getPlayerById(id) end)
-
+    local other_players = room:getOtherPlayers(player, false)
+    --FIXME:用activeskill整合成一个读条
     local extraData = {
       num = 1,
       min_num = 1,
@@ -595,7 +598,7 @@ local huagui = fk.CreateTriggerSkill{
     for _, p in ipairs(tos) do
       p.request_data = json.encode({ "choose_cards_skill", "#huagui-card:"..player.id, false, extraData })
     end
-    room:notifyMoveFocus(room.alive_players, self.name)
+    room:notifyMoveFocus(other_players, self.name)
     room:doBroadcastRequest("AskForUseActiveSkill", tos)
     for _, p in ipairs(tos) do
       local id
@@ -617,7 +620,7 @@ local huagui = fk.CreateTriggerSkill{
       local card = Fk:getCardById(id)
       p.request_data = json.encode({ choices, choices, self.name, "#huagui-choice:"..player.id.."::"..card:toLogString() })
     end
-    room:notifyMoveFocus(room.alive_players, self.name)
+    room:notifyMoveFocus(other_players, self.name)
     room:doBroadcastRequest("AskForChoice", tos)
     local get = true
     for _, p in ipairs(tos) do
@@ -658,8 +661,8 @@ Fk:loadTranslationTable{
   ["chongwang"] = "崇望",
   [":chongwang"] = "其他角色使用一张基本牌或普通锦囊牌时，若你为上一张牌的使用者，你可令其获得其使用的牌或令该牌无效。",
   ["huagui"] = "化归",
-  [":huagui"] = "出牌阶段开始时，你可秘密选择至多X名其他角色（X为最大阵营存活人数），这些角色同时选择一项：交给你一张牌；或展示一张牌。"..
-  "若均选择展示牌，你获得这些牌。",
+  [":huagui"] = "出牌阶段开始时，你可秘密选择至多X名其他角色（X为最大阵营存活人数），这些角色同时选择："..
+  "若1.将一张牌交给你；2.展示一张牌。均选择展示牌，你获得这些牌。",
   ["@@chongwang"] = "崇望",
   ["#chongwang-invoke"] = "崇望：你可以令 %dest 对%arg执行的一项",
   ["chongwang1"] = "其获得此牌",
@@ -1766,7 +1769,6 @@ local duanti = fk.CreateTriggerSkill{
     player.room:setPlayerMark(player, "duanti_addmaxhp", 0)
   end,
 }
-
 local shicao = fk.CreateActiveSkill{
   name = "shicao",
   anim_type = "drawcard",
@@ -1774,7 +1776,7 @@ local shicao = fk.CreateActiveSkill{
   target_num = 0,
   prompt = "#shicao-active",
   can_use = function(self, player)
-    return player:getMark("@@shicao-turn") == 0
+    return player:getMark("@@shicao-turn") == 0 and player:usedSkillTimes(self.name) < 20
   end,
   interaction = function()
     return UI.ComboBox {choices = {
@@ -1783,6 +1785,7 @@ local shicao = fk.CreateActiveSkill{
       "shicao_type:::equip:Top", "shicao_type:::equip:Bottom",
     } }
   end,
+  card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local shicao_type = self.interaction.data:split(":")
@@ -1812,7 +1815,7 @@ Fk:loadTranslationTable{
   --["designer:wupu"] = "",
   --["illustrator:wupu"] = "",
   ["duanti"] = "锻体",
-  [":duanti"] = "锁定技，当你每使用或打出五张牌结算结束后，你回复1点体力，你加1点体力上限（最多加5）。",
+  [":duanti"] = "锁定技，当你每使用或打出五张牌结算结束后，你回复1点体力，加1点体力上限（最多加5）。",
   ["shicao"] = "识草",
   [":shicao"] = "出牌阶段，你可以声明一种类别，从牌堆顶/牌堆底摸一张牌，"..
   "若此牌不为你声明的类别，你观看牌堆底/牌堆顶的两张牌，此技能于此回合内无效。",

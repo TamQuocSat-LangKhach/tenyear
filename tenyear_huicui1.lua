@@ -4110,7 +4110,7 @@ local wangzu = fk.CreateTriggerSkill{
       local cards = table.filter(player:getCardIds("h"), function(id) return not player:prohibitDiscard(Fk:getCardById(id)) end)
       if #cards == 0 then return end
       if room:askForSkillInvoke(player, self.name, nil, "#wangzu2-invoke") then
-        self.cost_data = {table.random(cards)}
+        self.cost_data = table.random(cards, 1)
         return true
       end
     end
@@ -4169,10 +4169,12 @@ local fuyuan = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and data.card.trueName == "slash" and not target.dead then
       local room = player.room
-      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
+      local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
+      if use_event == nil then return false end
+      local turn_event = use_event:findParent(GameEvent.Turn, false)
       if turn_event == nil then return false end
       return #U.getEventsByRule(room, GameEvent.UseCard, 1, function(e)
-        if e.id <= room.logic:getCurrentEvent().id then
+        if e.id < use_event.id then
           local use = e.data[1]
           if use.card.color == Card.Red and use.tos and table.contains(TargetGroup:getRealTargets(use.tos), target.id) then
             return true
@@ -4200,9 +4202,9 @@ Fk:loadTranslationTable{
   ["wangzu"] = "望族",
   [":wangzu"] = "每回合限一次，当你受到其他角色造成的伤害时，你可以随机弃置一张手牌令此伤害-1，若你所在的阵营存活人数全场最多，则改为选择一张手牌弃置。",
   ["yingshui"] = "营说",
-  [":yingshui"] = "出牌阶段限一次，你可以交给你攻击范围内的一名其他角色一张牌，然后令其选择一项：1.你对其造成1点伤害；2.交给你至少两张装备牌。",
+  [":yingshui"] = "出牌阶段限一次，你可以将一张牌交给你攻击范围内的一名角色，其选择：1.你对其造成1点伤害；2.将至少两张装备牌交给你。",
   ["fuyuan"] = "扶援",
-  [":fuyuan"] = "当一名角色成为【杀】的目标后，若其本回合没有成为过红色牌的目标，你可令其摸一张牌。",
+  [":fuyuan"] = "当一名角色成为【杀】的目标后，若其于此【杀】被使用之前的当前回合内未成为过红色牌的目标，你可以令其摸一张牌。",
   ["#wangzu1-invoke"] = "望族：你可以弃置一张手牌，令此伤害-1",
   ["#wangzu2-invoke"] = "望族：你可以随机弃置一张手牌，令此伤害-1",
   ["#yingshui"] = "营说：交给一名角色一张牌，其选择交给你两张装备牌或你对其造成伤害",

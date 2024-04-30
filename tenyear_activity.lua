@@ -4674,7 +4674,7 @@ local jinghe = fk.CreateActiveSkill{
     player:showCards(effect.cards)
     local skills = table.random(
       {"ex__leiji", "yinbingn", "huoqi", "guizhu", "xianshou", "lundao", "guanyue", "yanzhengn",
-      "ex__biyue", "ex__tuxi", "mingce", "zhiyan"
+      "ex__biyue", "ex__tuxi", "ty_ex__mingce", "ty_ex__zhiyan"
     }, 4)
     local selected = {}
     for _, id in ipairs(effect.tos) do
@@ -4892,7 +4892,7 @@ local guanyue = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local result = room:askForGuanxing(player, room:getNCards(2), {1, 1}, {1, 1}, self.name, true, {"Top", "prey"})
+    local result = U.askForGuanxing(player, room:getNCards(2), {1, 2}, {1, 1}, self.name, nil, true, {"Top", "prey"})
     if #result.top > 0 then
       table.insert(room.draw_pile, 1, result.top[1])
       room:sendLog{
@@ -4952,8 +4952,8 @@ nanhualaoxian:addRelatedSkill(guanyue)
 nanhualaoxian:addRelatedSkill(yanzhengn)
 nanhualaoxian:addRelatedSkill("ex__biyue")
 nanhualaoxian:addRelatedSkill("ex__tuxi")
-nanhualaoxian:addRelatedSkill("mingce")
-nanhualaoxian:addRelatedSkill("zhiyan")
+nanhualaoxian:addRelatedSkill("ty_ex__mingce")
+nanhualaoxian:addRelatedSkill("ty_ex__zhiyan")
 Fk:loadTranslationTable{
   ["ty__nanhualaoxian"] = "南华老仙",
   ["#ty__nanhualaoxian"] = "仙人指路",

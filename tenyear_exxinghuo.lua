@@ -836,21 +836,22 @@ local ty_ex__yicong = fk.CreateDistanceSkill{
   name = "ty_ex__yicong",
   frequency = Skill.Compulsory,
   correct_func = function(self, from, to)
+    local n = 0
     if from:hasSkill(self) then
-      return -1
+      n = -1
     end
-    if to:hasSkill(self) and to.hp < 3 then
-      return 1
+    if to:hasSkill(self) and to:getLostHp() >= 2 then
+      n = n + 1
     end
-    return 0
+    return n
   end,
 }
 local ty_ex__yicong_audio = fk.CreateTriggerSkill{
   name = "#ty_ex__yicong_audio",
   refresh_events = {fk.HpChanged},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill("ty_ex__yicong") and not player:isFakeSkill("ty_ex__yicong")
-    and player.hp < 3 and data.num < 0 and player.hp - data.num > 2
+    return target == player and player:hasShownSkill(ty_ex__yicong)
+    and player:getLostHp() >= 2 and data.num < 0 and player:getLostHp() + data.num < 2
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:notifySkillInvoked(player, "ty_ex__yicong", "defensive")

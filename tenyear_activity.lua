@@ -1500,6 +1500,7 @@ weiwenzhugezhi:addSkill(fuhaiw)
 Fk:loadTranslationTable{
   ["weiwenzhugezhi"] = "卫温诸葛直",
   ["#weiwenzhugezhi"] = "帆至夷洲",
+	["designer:weiwenzhugezhi"] = "桃花僧",
   ["illustrator:weiwenzhugezhi"] = "秋呆呆",
   ["fuhaiw"] = "浮海",
   [":fuhaiw"] = "出牌阶段对每名角色限一次，你可以展示一张手牌并选择上家或下家，该角色展示一张手牌。若你的牌点数：不小于其，你弃置你展示的牌，然后对其"..

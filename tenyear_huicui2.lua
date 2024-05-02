@@ -1074,7 +1074,7 @@ local lieyi = fk.CreateActiveSkill{
     room:setPlayerMark(player, "lieyi_using-phase", 1)
     player:showCards(player:getPile("jiping_li"))
     local yes = true
-    while #player:getPile("jiping_li") > 0 and not player.dead do
+    while #player:getPile("jiping_li") > 0 and not player.dead and not target.dead do
       if target.dead then break end
       local id = room:askForCard(player, 1, 1, false, self.name, false, ".|.|.|jiping_li", "#lieyi-use::"..target.id, "jiping_li")
       if #id > 0 then
@@ -1083,10 +1083,12 @@ local lieyi = fk.CreateActiveSkill{
         id = table.random(player:getPile("jiping_li"))
       end
       local card = Fk:getCardById(id)
-      local canUse = U.canUseCardTo(room, player, target, card, false, false)
+      local canUse = player:canUseTo(card, target, {bypass_distances = true, bypass_times = true}) and not
+      (card.skill:getMinTargetNum() == 0 and not card.multiple_targets)
       local tos = {{target.id}}
       if canUse and card.skill:getMinTargetNum() == 2 then
         local seconds = {}
+        Self = player
         for _, second in ipairs(room:getOtherPlayers(target)) do
           if card.skill:targetFilter(second.id, {target.id}, {}, card) then
             table.insert(seconds, second.id)
@@ -1160,8 +1162,7 @@ Fk:loadTranslationTable{
   ["zhishi"] = "指誓",
   [":zhishi"] = "结束阶段，你可以选择一名角色，直到你下回合开始，该角色成为【杀】的目标后或进入濒死状态时，你可以移去任意张“疠”，令其摸等量的牌。",
   ["lieyi"] = "烈医",
-  [":lieyi"] = "出牌阶段限一次，你可以展示所有“疠”并选择一名其他角色，依次对其使用所有“疠”（无距离限制），不可使用的置入弃牌堆。然后若该角色未"..
-  "因此进入濒死状态，你失去1点体力。",
+  [":lieyi"] = "出牌阶段限一次，你可以展示所有“疠”并选择一名其他角色，并依次对其使用可使用的“疠”（无距离与次数限制且不计入次数），不可使用的置入弃牌堆。然后若该角色未因此进入濒死状态，你失去1点体力。",
 
   ["jiping_li"] = "疠",
   ["#xunli-exchange"] = "询疠：用黑色手牌交换等量的“疠”",

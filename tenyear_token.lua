@@ -441,9 +441,7 @@ local ty__drowningSkill = fk.CreateActiveSkill{
   prompt = "#ty__drowning_skill",
   min_target_num = 1,
   max_target_num = 2,
-  mod_target_filter = function(self, to_select, selected, user, card, distance_limited)
-    return to_select ~= user
-  end,
+  mod_target_filter = Util.TrueFunc,
   target_filter = function (self, to_select, selected, selected_cards, card)
     if #selected < self:getMaxTargetNum(Self, card) then
       return self:modTargetFilter(to_select, selected, Self.id, card)
@@ -485,8 +483,8 @@ extension:addCard(ty__drowning)
 Fk:loadTranslationTable{
   ["ty__drowning"] = "水淹七军",
   ["ty__drowning_skill"] = "水淹七军",
-  [":ty__drowning"] = "锦囊牌<br/><b>时机</b>：出牌阶段<br/><b>目标</b>：一至两名其他角色<br /><b>效果</b>："..
-  "第一名角色受到1点雷电伤害并弃置一张牌，其他角色受到1点雷电伤害并摸一张牌",
+  [":ty__drowning"] = "锦囊牌<br/><b>时机</b>：出牌阶段<br/><b>目标</b>：一至两名角色<br /><b>效果</b>："..
+  "第一名角色受到1点雷电伤害并弃置一张牌，该角色以外的角色受到1点雷电伤害并摸一张牌",
   ["#ty__drowning_skill"] = "选择1-2名目标角色，第一名角色受到1点雷电伤害并摸牌，第二名角色受到1点雷电伤害并弃牌",
 }
 

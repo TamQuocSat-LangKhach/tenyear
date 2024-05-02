@@ -900,11 +900,6 @@ local ruijun = fk.CreateTriggerSkill{
     local mark = U.getMark(player, "ruijun_targets-phase")
     table.insert(mark, to.id)
     room:setPlayerMark(player, "ruijun_targets-phase", mark)
-    for _, p in ipairs(room.alive_players) do
-      if p ~= to and p ~= player then
-        room:addPlayerMark(p, MarkEnum.PlayerRemoved .. "-phase", 1)
-      end
-    end
   end,
 }
 local ruijun_delay = fk.CreateTriggerSkill{
@@ -920,6 +915,13 @@ local ruijun_delay = fk.CreateTriggerSkill{
     player:broadcastSkillInvoke("ruijun")
     room:notifySkillInvoked(player, "ruijun", "offensive")
     data.damage = data.damage + math.min(player:usedSkillTimes(self.name, Player.HistoryPhase), 5) - 1
+  end,
+}
+local ruijun_attackrange = fk.CreateAttackRangeSkill{
+  name = "#ruijun_attackrange",
+  without_func = function (self, from, to)
+    local mark = U.getMark(from, "ruijun_targets-phase")
+    return #mark > 0 and not table.contains(mark, to.id)
   end,
 }
 local gangyi = fk.CreateTriggerSkill{
@@ -972,6 +974,7 @@ local gangyi_prohibit = fk.CreateProhibitSkill{
   end,
 }
 ruijun:addRelatedSkill(ruijun_delay)
+ruijun:addRelatedSkill(ruijun_attackrange)
 gangyi:addRelatedSkill(gangyi_prohibit)
 sunjian:addSkill(ruijun)
 sunjian:addSkill(gangyi)
@@ -979,11 +982,9 @@ Fk:loadTranslationTable{
   ["tystar__sunjian"] = "星孙坚",
   ["#tystar__sunjian"] = "破虏将军",
   ["illustrator:tystar__sunjian"] = "鬼画府",
-
   ["ruijun"] = "锐军",
   [":ruijun"] = "当你于出牌阶段内第一次使用牌指定其他角色为目标后，你可以摸X张牌（X为你已损失的体力值+1），"..
-  "此阶段内：<font color='red'>除其外的其他角色视为不在你的攻击范围内（暂时无法实现，改为这些角色不计入座次）</font>；"..
-  "当你对其造成伤害时，伤害值比上次增加1（至多为5）。",
+  "此阶段内：除其外的其他角色视为不在你的攻击范围内；当你对其造成伤害时，伤害值比上次增加1（至多为5）。",
   ["gangyi"] = "刚毅",
   [":gangyi"] = "锁定技，若你于回合内未造成过伤害，你于此回合内不能使用【桃】。"..
   "当你因执行【桃】或【酒】的作用效果而回复体力时，若你处于濒死状态，你令回复值+1。",

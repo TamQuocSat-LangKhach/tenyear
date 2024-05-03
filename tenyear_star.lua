@@ -12,112 +12,122 @@ Fk:loadTranslationTable{
 local yuanshu = General(extension, "tystar__yuanshu", "qun", 4)
 local canxi = fk.CreateTriggerSkill{
   name = "canxi",
-  anim_type = "special",
   frequency = Skill.Compulsory,
-  events = {fk.GameStart, fk.RoundStart},
+  events = {fk.DamageCaused, fk.HpRecover, fk.TargetConfirmed, fk.GameStart, fk.RoundStart},
+  mute = true,
   can_trigger = function (self, event, target, player, data)
-    if player:hasSkill(self) then
-      if event == fk.GameStart then
-        return true
-      elseif event == fk.RoundStart then
-        return #U.getMark(player, "canxi_exist_kingdoms") > 0
+    if not player:hasSkill(self) then return false end
+    if event == fk.DamageCaused then
+      return target and player:getMark("@canxi1-round") == target.kingdom and
+      not table.contains(U.getMark(player, "canxi1-turn"), target.id)
+    elseif event == fk.HpRecover then
+      return player:getMark("@canxi2-round") == target.kingdom and
+      not target.dead and target ~= player and not table.contains(U.getMark(player, "canxi21-turn"), target.id)
+    elseif event == fk.TargetConfirmed then
+      if player == target and data.from ~= player.id then
+        local p = player.room:getPlayerById(data.from)
+        return player:getMark("@canxi2-round") == p.kingdom and not table.contains(U.getMark(player, "canxi22-turn"), p.id)
       end
+    elseif event == fk.RoundStart then
+      return #U.getMark(player, "@canxi_exist_kingdoms") > 0
+    elseif event == fk.GameStart then
+      return true
     end
   end,
   on_use = function (self, event, target, player, data)
     local room = player.room
-    if event == fk.GameStart then
+    player:broadcastSkillInvoke("canxi")
+    if event == fk.DamageCaused then
+      room:notifySkillInvoked(player, "canxi", "offensive")
+      local mark = U.getMark(player, "canxi1-turn")
+      table.insert(mark, target.id)
+      room:setPlayerMark(player, "canxi1-turn", mark)
+      data.damage = data.damage + 1
+    elseif event == fk.HpRecover then
+      room:notifySkillInvoked(player, "canxi", "control")
+      local mark = U.getMark(player, "canxi21-turn")
+      table.insert(mark, target.id)
+      room:setPlayerMark(player, "canxi21-turn", mark)
+      room:loseHp(target, 1, "canxi")
+    elseif event == fk.TargetConfirmed then
+      room:notifySkillInvoked(player, "canxi", "defensive")
+      local mark = U.getMark(player, "canxi22-turn")
+      table.insert(mark, data.from)
+      room:setPlayerMark(player, "canxi22-turn", mark)
+      table.insertIfNeed(data.nullifiedTargets, player.id)
+
+      --FIXME: 姑且如此
+      if data.card.sub_type == Card.SubtypeDelayedTrick then
+        room:moveCards({
+          ids = room:getSubcardsByRule(data.card, { Card.Processing }),
+          toArea = Card.DiscardPile,
+          moveReason = fk.ReasonPutIntoDiscardPile,
+        })
+      end
+    elseif event == fk.RoundStart then
+      local choice1 = room:askForChoice(player, player:getMark("@canxi_exist_kingdoms"), self.name, "#canxi-choice1")
+      local choice2 = room:askForChoice(player, {"canxi1", "canxi2"}, self.name, "#canxi-choice2:::"..choice1, true)
+      room:setPlayerMark(player, "@"..choice2.."-round", choice1)
+    elseif event == fk.GameStart then
       local kingdoms = {}
       for _, p in ipairs(room.alive_players) do
         table.insertIfNeed(kingdoms, p.kingdom)
       end
-      room:setPlayerMark(player, "canxi_exist_kingdoms", kingdoms)
-    elseif event == fk.RoundStart then
-      local choice1 = room:askForChoice(player, player:getMark("canxi_exist_kingdoms"), self.name, "#canxi-choice1")
-      local choice2 = room:askForChoice(player, {"canxi1", "canxi2"}, self.name, "#canxi-choice2:::"..choice1, true)
-      room:setPlayerMark(player, "@"..choice2.."-round", choice1)
+      room:setPlayerMark(player, "@canxi_exist_kingdoms", kingdoms)
     end
+  end,
+
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == self
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "@canxi_exist_kingdoms", 0)
+    room:setPlayerMark(player, "@canxi1-round", 0)
+    room:setPlayerMark(player, "@canxi2-round", 0)
   end,
 }
 local canxi_distance = fk.CreateDistanceSkill{
   name = "#canxi_distance",
   frequency = Skill.Compulsory,
   correct_func = function(self, from, to)
-    local n = 0
-    for _, p in ipairs(Fk:currentRoom().alive_players) do
-      if p:getMark("@canxi1-round") == from.kingdom then
-        n = n + 1
-      end
-    end
-    return -n
-  end,
-}
-local canxi_trigger = fk.CreateTriggerSkill{
-  name = "#canxi_trigger",
-  mute = true,
-  events = {fk.DamageCaused, fk.HpRecover, fk.PreCardEffect},
-  can_trigger = function (self, event, target, player, data)
-    if event == fk.DamageCaused then
-      return player:getMark("@canxi1-round") ~= 0 and target and
-        player:getMark("@canxi1-round") == target.kingdom and target:getMark("canxi1-turn") == 0
-    elseif event == fk.HpRecover then
-      return player:getMark("@canxi2-round") ~= 0 and player:getMark("@canxi2-round") == target.kingdom and not target.dead and
-        target:getMark("canxi21-turn") == 0 and target ~= player
-    elseif event == fk.PreCardEffect then
-      if player:getMark("@canxi2-round") ~= 0 and player.id == data.to and target ~= player then
-        local p = player.room:getPlayerById(data.from)
-        return player:getMark("@canxi2-round") == p.kingdom and p:getMark("canxi22-turn") == 0
-      end
-    end
-  end,
-  on_cost = Util.TrueFunc,
-  on_use = function (self, event, target, player, data)
-    local room = player.room
-    player:broadcastSkillInvoke("canxi")
-    if event == fk.DamageCaused then
-      room:setPlayerMark(target, "canxi1-turn", 1)
-      room:notifySkillInvoked(player, "canxi", "offensive")
-      data.damage = data.damage + 1
-    elseif event == fk.HpRecover then
-      room:setPlayerMark(target, "canxi21-turn", 1)
-      room:notifySkillInvoked(player, "canxi", "control")
-      room:doIndicate(player.id, {target.id})
-      room:loseHp(target, 1, "canxi")
-    elseif event == fk.PreCardEffect then
-      room:setPlayerMark(room:getPlayerById(data.from), "canxi22-turn", 1)
-      room:notifySkillInvoked(player, "canxi", "defensive")
-      return true
-    end
+    return -#table.filter(Fk:currentRoom().alive_players, function (p)
+      return p:hasSkill(canxi) and p:getMark("@canxi1-round") == from.kingdom
+    end)
   end,
 }
 local pizhi = fk.CreateTriggerSkill{
   name = "pizhi",
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
-  events = {fk.EventPhaseEnd, fk.BeforeGameOverJudge},
+  events = {fk.EventPhaseEnd, fk.Death},
   can_trigger = function (self, event, target, player, data)
     if player:hasSkill(self) then
       if event == fk.EventPhaseEnd then
-        return target == player and player.phase == Player.Finish and player:getMark("canxi_removed_kingdoms") ~= 0
-      elseif event == fk.BeforeGameOverJudge then
-        return (player:getMark("@canxi1-round") == target.kingdom or player:getMark("@canxi2-round") == target.kingdom) and
-          player:getMark("canxi_exist_kingdoms") ~= 0 and table.contains(player:getMark("canxi_exist_kingdoms"), target.kingdom)
+        return target == player and player.phase == Player.Finish and player:getMark("canxi_removed_kingdoms") > 0
+      elseif event == fk.Death then
+        return player:getMark("@canxi1-round") == target.kingdom or player:getMark("@canxi2-round") == target.kingdom
       end
     end
   end,
   on_use = function (self, event, target, player, data)
-    if event == fk.BeforeGameOverJudge then
+    if event == fk.Death then
       local room = player.room
-      local mark = player:getMark("canxi_exist_kingdoms")
-      table.removeOne(mark, target.kingdom)
+      if player:getMark("@canxi1-round") == target.kingdom then
+        room:setPlayerMark(player, "@canxi1-round", 0)
+      end
+      if player:getMark("@canxi2-round") == target.kingdom then
+        room:setPlayerMark(player, "@canxi2-round", 0)
+      end
+      local mark = player:getMark("@canxi_exist_kingdoms")
+      if table.removeOne(mark, target.kingdom) then
+        room:setPlayerMark(player, "@canxi_exist_kingdoms", #mark > 0 and mark or 0)
+        room:addPlayerMark(player, "canxi_removed_kingdoms")
+      end
       if #mark == 0 then mark = 0 end
-      room:setPlayerMark(player, "canxi_exist_kingdoms", mark)
-      mark = player:getMark("canxi_removed_kingdoms")
-      if mark == 0 then mark = {} end
-      table.insert(mark, target.kingdom)
-      room:setPlayerMark(player, "canxi_removed_kingdoms", mark)
     end
-    player:drawCards(#player:getMark("canxi_removed_kingdoms"), self.name)
+    player:drawCards(player:getMark("canxi_removed_kingdoms"), self.name)
   end,
 }
 local zhonggu = fk.CreateTriggerSkill{
@@ -139,7 +149,6 @@ local zhonggu = fk.CreateTriggerSkill{
   end,
 }
 canxi:addRelatedSkill(canxi_distance)
-canxi:addRelatedSkill(canxi_trigger)
 yuanshu:addSkill(canxi)
 yuanshu:addSkill(pizhi)
 yuanshu:addSkill(zhonggu)
@@ -156,6 +165,8 @@ Fk:loadTranslationTable{
   [":pizhi"] = "锁定技，结束阶段，你摸X张牌；有角色死亡时，若其势力与当前生效的“玺角”势力相同，你失去此“玺角”，然后摸X张牌（X为你已失去的“玺角”数）。",
   ["zhonggu"] = "冢骨",
   [":zhonggu"] = "主公技，锁定技，若游戏轮数不小于群势力角色数，你摸牌阶段摸牌数+2，否则-1。",
+
+  ["@canxi_exist_kingdoms"] = "",
   ["#canxi-choice1"] = "残玺：选择本轮生效的“玺角”势力",
   ["#canxi-choice2"] = "残玺：选择本轮对 %arg 势力角色生效的效果",
   ["canxi1"] = "「妄生」",

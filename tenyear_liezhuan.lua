@@ -372,7 +372,7 @@ local function getPingjianSkills(player, event)
       "m_ex__anxu", "ty_ex__mingce", "ziyuan", "mou__lijian", "mingjian", "ex__rende", "mizhao", "yanjiao", "ol_ex__dimeng",
       "quhu", "tunan", "nuchen", "feijun", "yingshui", "qiongying", "zigu", "weiwu", "chiying",
 
-      "yangjie", "hongyi", "m_ex__junxing", "m_ex__yanzhu", "ol_ex__changbiao", "yanxi", "jiwu", "xuanbei", "yushen", "guanxu",
+      "yangjie", "hongyi", "m_ex__junxing", "m_ex__yanzhu", "ol_ex__changbiao", "yanxi", "xuanbei", "yushen", "guanxu",
       "ty__jianji", "wencan", "xiangmian", "zhuren", "changqu", "jiuxianc", "caizhuang", "ty__beini", "jichun", "tongwei",
       "liangyan", "kuizhen", "huiji",
     },

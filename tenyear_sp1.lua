@@ -1745,7 +1745,7 @@ local tianren = fk.CreateTriggerSkill {
       if player.dead then return false end
     end
   end,
-  
+
   refresh_events = {fk.EventLoseSkill},
   can_refresh = function(self, event, target, player, data)
     return player == target and data == self and player:getMark("@tianren") ~= 0
@@ -1754,7 +1754,6 @@ local tianren = fk.CreateTriggerSkill {
     player.room:setPlayerMark(player, "@tianren", 0)
   end,
 }
-
 Fk:addPoxiMethod{
   name = "jiufa",
   card_filter = function(to_select, selected, data)
@@ -2764,7 +2763,7 @@ local qijing = fk.CreateTriggerSkill{
       --无视被调虎吧……
     end)
     if #tos > 0 then
-      local to = room:askForChoosePlayers(player, table.map(tos, Util.IdMapper), 1, 1, "#qijing-choose", self.name, false, true)
+      local to = room:askForChoosePlayers(player, table.map(tos, Util.IdMapper), 1, 1, "#qijing-choose", self.name, true, true)
       if #to > 0 then
         to = room:getPlayerById(to[1])
         local players = table.simpleClone(room.players)

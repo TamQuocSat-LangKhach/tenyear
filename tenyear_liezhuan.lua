@@ -769,21 +769,18 @@ local zhuide = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local names = {}
+    local cardMap = {}
     for _, id in ipairs(room.draw_pile) do
       local card = Fk:getCardById(id)
-      if card.type == Card.TypeBasic and not table.find(names, function(name) return Fk:cloneCard(name).trueName == card.trueName end) then
-        table.insert(names, card.name)
+      if card.type == Card.TypeBasic then
+        local list = cardMap[card.trueName] or {}
+        table.insert(list, id)
+        cardMap[tostring(card.trueName)] = list
       end
     end
-    if #names == 0 then return end
-    names = table.random(names, 4)
-    local dummy = Fk:cloneCard("slash")
-    for _, name in ipairs(names) do
-      dummy:addSubcards(room:getCardsFromPileByRule(name))
-    end
-    if #dummy.subcards > 0 then
-      room:obtainCard(room:getPlayerById(self.cost_data), dummy, false, fk.ReasonDraw)
+    local cards = U.getRandomCards(cardMap, 4)
+    if #cards > 0 then
+      room:obtainCard(room:getPlayerById(self.cost_data), cards, true, fk.ReasonJudge)
     end
   end,
 }

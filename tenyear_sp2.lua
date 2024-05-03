@@ -2650,22 +2650,22 @@ local wangyuan = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local names = {}
-    for _, id in ipairs(room.draw_pile) do
-      local card = Fk:getCardById(id, true)
-      if card.type ~= Card.TypeEquip and not table.find(player:getPile("ruiji_wang"), function(c)
-        return card.trueName == Fk:getCardById(c, true).trueName end) then
-        table.insertIfNeed(names, card.trueName)
-      end
+    for _, id in ipairs(player:getPile("ruiji_wang")) do
+      table.insertIfNeed(names, Fk:getCardById(id, true).trueName)
     end
-    if #names > 0 then
-      local card = room:getCardsFromPileByRule(table.random(names))
-      player:addToPile("ruiji_wang", card[1], true, self.name)
+    local cards = table.filter(room.draw_pile, function(id)
+      local card = Fk:getCardById(id)
+      return card.type ~= Card.TypeEquip and not table.contains(names, card.trueName)
+    end)
+    if #cards > 0 then
+      player:addToPile("ruiji_wang", table.random(cards), true, self.name)
     end
   end,
 }
 local lingyin = fk.CreateViewAsSkill{
   name = "lingyin",
   anim_type = "offensive",
+  prompt = "#lingyin-viewas",
   pattern = "duel",
   card_filter = function(self, to_select, selected)
     local card = Fk:getCardById(to_select)
@@ -2678,20 +2678,21 @@ local lingyin = fk.CreateViewAsSkill{
     return card
   end,
   enabled_at_play = function(self, player)
-    return player:getMark("lingyin-turn") > 0
+    return player:getMark("@@lingyin-turn") > 0
   end,
 }
 local lingyin_trigger = fk.CreateTriggerSkill{
   name = "#lingyin_trigger",
   mute = true,
   expand_pile = "ruiji_wang",
+  main_skill = lingyin,
   events = {fk.EventPhaseStart, fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    if target == player then
+    if target == player and player:hasSkill(self) then
       if event == fk.EventPhaseStart then
-        return player:hasSkill(self) and player.phase == Player.Play and #player:getPile("ruiji_wang") > 0
+        return player.phase == Player.Play and #player:getPile("ruiji_wang") > 0
       else
-        return player:getMark("lingyin-turn") > 0 and not data.chain and data.to ~= player
+        return player:getMark("@@lingyin-turn") > 0 and not data.chain and data.to ~= player
       end
     end
   end,
@@ -2713,11 +2714,17 @@ local lingyin_trigger = fk.CreateTriggerSkill{
       local room = player.room
       player:broadcastSkillInvoke("lingyin")
       room:notifySkillInvoked(player, "lingyin", "drawcard")
-      room:obtainCard(player, self.cost_data, false, fk.ReasonJustMove)
-      if #player:getPile("ruiji_wang") == 0 or table.every(player:getPile("ruiji_wang"), function(id)
-        return Fk:getCardById(id).color == Fk:getCardById(player:getPile("ruiji_wang")[1]).color end) then
-        room:setPlayerMark(player, "lingyin-turn", 1)
+      local cards = table.simpleClone(self.cost_data)
+      local colors = {}
+      for _, id in ipairs(player:getPile("ruiji_wang")) do
+        if not table.contains(cards, id) then
+          table.insertIfNeed(colors, Fk:getCardById(id).color)
+        end
       end
+      if #colors < 2 then
+        room:setPlayerMark(player, "@@lingyin-turn", 1)
+      end
+      room:obtainCard(player, cards, true, fk.ReasonJustMove)
     else
       data.damage = data.damage + 1
     end
@@ -2738,29 +2745,30 @@ local liying = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local mark = {}
+    local ids = {}
     for _, move in ipairs(data) do
       if move.to == player.id and move.toArea == Player.Hand then
         for _, info in ipairs(move.moveInfo) do
-          table.insertIfNeed(mark, info.cardId)
+          table.insertIfNeed(ids, info.cardId)
         end
       end
     end
-    room:setPlayerMark(player, "liying-phase", mark)
     local prompt = "#liying1-invoke"
     if player.phase ~= Player.NotActive and #player:getPile("ruiji_wang") < #room.players then
       prompt = "#liying2-invoke"
     end
-    local _, ret = player.room:askForUseActiveSkill(player, "liying_active", prompt, true)
-    if ret then
-      self.cost_data = ret
+    local tos, cards = U.askForChooseCardsAndPlayers(room, player, 1, 999,
+    table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, tostring(Exppattern{ id = ids }),
+    prompt, self.name, true, false)
+    if #tos > 0 and #cards > 0 then
+      self.cost_data = {tos, cards}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local ret = self.cost_data
-    room:obtainCard(room:getPlayerById(ret.targets[1]), ret.cards, false, fk.ReasonGive, player.id)
+    room:obtainCard(ret[1][1], ret[2], false, fk.ReasonGive, player.id)
     if not player.dead then
       player:drawCards(1, self.name)
       if not player.dead and player.phase ~= Player.NotActive and #player:getPile("ruiji_wang") < #room.players then
@@ -2770,20 +2778,7 @@ local liying = fk.CreateTriggerSkill{
     end
   end,
 }
-local liying_active = fk.CreateActiveSkill{
-  name = "liying_active",
-  mute = true,
-  min_card_num = 1,
-  target_num = 1,
-  card_filter = function(self, to_select, selected, targets)
-    return Self:getMark("liying-phase") ~= 0 and table.contains(Self:getMark("liying-phase"), to_select)
-  end,
-  target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0 and to_select ~= Self.id
-  end,
-}
 lingyin:addRelatedSkill(lingyin_trigger)
-Fk:addSkill(liying_active)
 ruiji:addSkill(wangyuan)
 ruiji:addSkill(lingyin)
 ruiji:addSkill(liying)
@@ -2801,7 +2796,9 @@ Fk:loadTranslationTable{
   [":liying"] = "每回合限一次，当你于摸牌阶段外获得牌后，你可以将其中任意张牌交给一名其他角色，然后你摸一张牌。若此时是你的回合内，再增加一张“妄”。",
   ["#wangyuan-invoke"] = "妄缘：是否增加一张“妄”？",
   ["ruiji_wang"] = "妄",
-  ["#lingyin-invoke"] = "铃音：获得至多%arg张“妄”，然后若“妄”颜色相同，你本回合伤害+1且可以将武器、防具当【决斗】使用",
+  ["#lingyin-invoke"] = "铃音：获得至多%arg张“妄”，然后若剩余“妄”颜色相同，你本回合伤害+1且可以将武器、防具当【决斗】使用",
+  ["#lingyin-viewas"] = "发动 铃音，将一张武器牌或防具牌当【决斗】使用",
+  ["@@lingyin-turn"] = "铃音",
   ["liying_active"] = "俐影",
   ["#liying1-invoke"] = "俐影：你可以将其中任意张牌交给一名其他角色，然后摸一张牌",
   ["#liying2-invoke"] = "俐影：你可以将其中任意张牌交给一名其他角色，然后摸一张牌并增加一张“妄”",

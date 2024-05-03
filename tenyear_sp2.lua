@@ -2107,19 +2107,19 @@ local souying = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and data.tos and data.firstTarget and #AimGroup:getAllTargets(data.tos) == 1 and
-      not player:isNude() and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 then
+    if player:hasSkill(self) and not player:isNude() and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and
+    (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) and #AimGroup:getAllTargets(data.tos) == 1 then
       local room = player.room
       local events = {}
       if target == player then
-        if TargetGroup:getRealTargets(data.tos)[1] == player.id or room:getCardArea(data.card) ~= Card.Processing then return end
-          events = room.logic:getEventsOfScope(GameEvent.UseCard, 2, function(e)
+        if data.to == player.id or room:getCardArea(data.card) ~= Card.Processing then return false end
+        events = room.logic:getEventsOfScope(GameEvent.UseCard, 2, function(e)
           local use = e.data[1]
-          return use.from == player.id and table.contains(TargetGroup:getRealTargets(use.tos), TargetGroup:getRealTargets(data.tos)[1])
+          return use.from == player.id and table.contains(TargetGroup:getRealTargets(use.tos), data.to)
         end, Player.HistoryTurn)
       else
-        if TargetGroup:getRealTargets(data.tos)[1] ~= player.id then return end
-          events = room.logic:getEventsOfScope(GameEvent.UseCard, 2, function(e)
+        if TargetGroup:getRealTargets(data.tos)[1] ~= player.id then return false end
+        events = room.logic:getEventsOfScope(GameEvent.UseCard, 2, function(e)
           local use = e.data[1]
           return use.from == target.id and table.contains(TargetGroup:getRealTargets(use.tos), player.id)
         end, Player.HistoryTurn)
@@ -2151,11 +2151,7 @@ local souying = fk.CreateTriggerSkill{
       end
     else
       room:notifySkillInvoked(player, self.name, "defensive")
-      if data.card.sub_type == Card.SubtypeDelayedTrick then
-        AimGroup:cancelTarget(data, player.id)
-      else
-        table.insertIfNeed(data.nullifiedTargets, player.id)
-      end
+      table.insertIfNeed(data.nullifiedTargets, player.id)
     end
   end,
 }
@@ -2251,14 +2247,14 @@ Fk:loadTranslationTable{
   ["#zhanyuan-choose"] = "战缘：你可以与一名男性角色获得技能〖系力〗",
   ["#xili-invoke"] = "系力：你可以弃置一张牌，令 %src 对 %dest 造成的伤害+1，你与 %src 各摸两张牌",
 
-  ["$manyi1"] = "蛮族的力量，你可不要小瞧！",
-  ["$manyi2"] = "南蛮女子，该当英勇善战！",
-  ["$mansi1"] = "多谢父母怜爱。",
-  ["$mansi2"] = "承父母庇护，得此福气。",
-  ["$souying1"] = "真薮影移，险战不惧！",
-  ["$souying2"] = "幽薮影单，只身勇斗！",
-  ["$zhanyuan1"] = "势不同，情相随。",
-  ["$zhanyuan2"] = "战中结缘，虽苦亦甜。",
+  ["$manyi1"] = "南蛮女子，该当英勇善战！",
+  ["$manyi2"] = "蛮族的力量，你可不要小瞧！",
+  ["$mansi1"] = "承父母庇护，得此福气。",
+  ["$mansi2"] = "多谢父母怜爱。",
+  ["$souying1"] = "幽薮影单，只身勇斗！",
+  ["$souying2"] = "真薮影移，险战不惧！",
+  ["$zhanyuan1"] = "战中结缘，虽苦亦甜。",
+  ["$zhanyuan2"] = "势不同，情相随。",
   ["$xili1"] = "系力而为，助君得胜。",
   ["$xili2"] = "有我在，将军此战必能一举拿下！",
   ["~ty__huaman"] = "南蛮之地的花，还在开吗……",

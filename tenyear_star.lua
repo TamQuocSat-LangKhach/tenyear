@@ -925,7 +925,16 @@ local ruijun_delay = fk.CreateTriggerSkill{
     local room = player.room
     player:broadcastSkillInvoke("ruijun")
     room:notifySkillInvoked(player, "ruijun", "offensive")
-    data.damage = data.damage + math.min(player:usedSkillTimes(self.name, Player.HistoryPhase), 5) - 1
+    local x = player:getMark("ruijun_count-phase")
+    if x == 0 then
+      room:setPlayerMark(player, "ruijun_count-phase", data.damage)
+    else
+      if x < 5 then
+        x = x + 1
+        room:setPlayerMark(player, "ruijun_count-phase", x)
+      end
+      data.damage = x
+    end
   end,
 }
 local ruijun_attackrange = fk.CreateAttackRangeSkill{

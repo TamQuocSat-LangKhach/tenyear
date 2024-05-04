@@ -2127,9 +2127,9 @@ local ty__aichen = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.AfterCardsMove then
-      player:drawCards(2, self.name)
       player:broadcastSkillInvoke(self.name, 1)
       room:notifySkillInvoked(player, self.name, "drawcard")
+      player:drawCards(2, self.name)
     elseif event == fk.EventPhaseChanging then
       player:broadcastSkillInvoke(self.name, 1)
       room:notifySkillInvoked(player, self.name, "defensive")
@@ -2818,11 +2818,13 @@ local fenhui = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    room:setPlayerMark(target, "@fenhui_hatred", math.min(target:getMark("fenhui_count"), 5))
+    local n = math.min(target:getMark("fenhui_count"), 5)
+    room:setPlayerMark(target, "@fenhui_hatred", n)
     room:setPlayerMark(player, "fenhui_target", target.id)
     for _, p in ipairs(room.alive_players) do
       room:setPlayerMark(p, "fenhui_count", 0)
     end
+    player:drawCards(n, self.name)
   end,
 }
 local fenhui_delay = fk.CreateTriggerSkill{

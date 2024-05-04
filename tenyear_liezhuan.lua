@@ -209,7 +209,7 @@ Fk:loadTranslationTable{
   ["@@tuxing_damage"] = "图兴加伤",
   ["zhihu"] = "执笏",
   [":zhihu"] = "锁定技，每回合限两次，当你对其他角色造成伤害后，你摸两张牌。",
-  
+
   ["$yujue1"] = "国库空虚，鬻爵可解。",
   ["$yujue2"] = "卖官鬻爵，酣歌畅饮。",
   ["$tuxing1"] = "国之兴亡，休戚相关。",
@@ -225,51 +225,60 @@ local gongjian = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and data.card.trueName == "slash" and data.firstTarget and
       player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 then
-      return self.gongjian_to and #self.gongjian_to > 0
-    end
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    local targets = table.filter(self.gongjian_to, function(id) return not room:getPlayerById(id):isNude() end)
-    local tos = room:askForChoosePlayers(player, targets, 1, 10, "#gongjian-choose", self.name, true)
-    if #tos > 0 then
-      self.cost_data = tos
-      return true
+      local logic = player.room.logic
+      local use_event = logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
+      if use_event == nil then return false end
+      local events = logic.event_recorder[GameEvent.UseCard] or Util.DummyTable
+      local last_find = false
+      local use, e
+      for i = #events, 1, -1 do
+        e = events[i]
+        if e.id == use_event.id then
+          last_find = true
+        elseif last_find then
+          use = e.data[1]
+          if use.card.trueName == "slash" then
+            local tos1 = AimGroup:getAllTargets(data.tos)
+            local tos2 = TargetGroup:getRealTargets(use.tos)
+            local tos = {}
+            local can_invoked = false
+            for _, p in ipairs(player.room.alive_players) do
+              if table.contains(tos1, p.id) and table.contains(tos2, p.id) then
+                table.insert(tos, p.id)
+                if not p:isNude() then
+                  can_invoked = true
+                end
+              end
+            end
+            if can_invoked then
+              self.cost_data = tos
+              return true
+            end
+            return false
+          end
+        end
+      end
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    for _, pid in ipairs(self.cost_data) do
+    local tos = table.simpleClone(self.cost_data)
+    room:sortPlayersByAction(tos)
+    room:doIndicate(player.id, tos)
+    for _, pid in ipairs(tos) do
       local to = room:getPlayerById(pid)
-      local cards = room:askForCardsChosen(player, to, 1, 2, "he", self.name)
-      room:throwCard(cards, self.name, to, player)
-      cards = table.filter(cards, function (id)
-        return room:getCardArea(id) == Card.DiscardPile and Fk:getCardById(id).trueName == "slash"
-      end)
-      if #cards > 0 then
-        room:obtainCard(player, cards, false, fk.ReasonPrey)
-      end
-    end
-  end,
-
-  refresh_events = {fk.TargetSpecified},
-  can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self) and data.card.trueName == "slash" and data.firstTarget
-  end,
-  on_refresh = function(self, event, target, player, data)
-    self.gongjian_to = {}
-    player.tag[self.name] = player.tag[self.name] or {}
-    if #AimGroup:getAllTargets(data.tos) > 0 then
-      for _, id in ipairs(AimGroup:getAllTargets(data.tos)) do
-        if table.contains(player.tag[self.name], id) then
-          table.insert(self.gongjian_to, id)
+      if not (to.dead or to:isNude()) then
+        local cards = room:askForCardsChosen(player, to, 1, 2, "he", self.name)
+        room:throwCard(cards, self.name, to, player)
+        if player.dead then break end
+        cards = table.filter(cards, function (id)
+          return room:getCardArea(id) == Card.DiscardPile and Fk:getCardById(id, true).trueName == "slash"
+        end)
+        if #cards > 0 then
+          room:obtainCard(player, cards, false, fk.ReasonPrey)
+          if player.dead then break end
         end
       end
-    end
-    if #AimGroup:getAllTargets(data.tos) > 0 then
-      player.tag[self.name] = AimGroup:getAllTargets(data.tos)
-    else
-      player.tag[self.name] = {}
     end
   end,
 }
@@ -279,20 +288,17 @@ local kuimang = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.Death},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and player.tag[self.name] and table.contains(player.tag[self.name], target.id)
+    return player:hasSkill(self) and #U.getActualDamageEvents(player.room, 1, function(e)
+      local damage = e.data[1]
+      if damage.from == player and damage.to == target then
+        return true
+      end
+    end, nil, 0) > 0
   end,
   on_use = function(self, event, target, player, data)
     player:drawCards(2, self.name)
   end,
 
-  refresh_events = {fk.Damage},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.tag[self.name] = player.tag[self.name] or {}
-    table.insertIfNeed(player.tag[self.name], data.to.id)
-  end,
 }
 zhujun:addSkill(gongjian)
 zhujun:addSkill(kuimang)
@@ -301,11 +307,10 @@ Fk:loadTranslationTable{
   ["#ty__zhujun"] = "征无疑虑",
   ["illustrator:ty__zhujun"] = "凝聚永恒",
   ["gongjian"] = "攻坚",
-  [":gongjian"] = "每回合限一次，当一名角色使用【杀】指定目标后，若此【杀】与上一张【杀】有相同的目标，则你可以弃置其中相同目标角色各至多两张牌，"..
-  "你获得其中的【杀】。",
+  [":gongjian"] = "每回合限一次，当一名角色使用【杀】指定目标后，若此【杀】与上一张【杀】有相同的目标，"..
+  "则你可以弃置其中相同目标角色各至多两张牌，你获得其中的【杀】。",
   ["kuimang"] = "溃蟒",
   [":kuimang"] = "锁定技，当一名角色死亡时，若你对其造成过伤害，你摸两张牌。",
-  ["#gongjian-choose"] = "攻坚：你可以选择其中相同的目标角色，弃置每名角色各至多两张牌，你获得其中的【杀】",
 
   ["$gongjian1"] = "善攻者，敌不知其所守。",
   ["$gongjian2"] = "围解自出，势必意散。",

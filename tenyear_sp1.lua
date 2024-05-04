@@ -3641,7 +3641,7 @@ local ty__fenyue = fk.CreateActiveSkill{
   card_num = 0,
   target_num = 1,
   can_use = function(self, player)
-    return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) < player:getMark(self.name)
+    return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) < player:getMark("ty__fenyue-phase")
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
@@ -3680,18 +3680,14 @@ local ty__fenyue = fk.CreateActiveSkill{
 local ty__fenyue_record = fk.CreateTriggerSkill{
   name = "#ty__fenyue_record",
 
-  refresh_events = {fk.GameStart, fk.BeforeGameOverJudge, fk.EventAcquireSkill},
+  refresh_events = {fk.StartPlayCard},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.EventAcquireSkill then
-      return target == player and data == self and player.room:getTag("RoundCount")
-    end
-    return player:hasSkill(self)
+    return player == target and player:hasSkill(self, true)
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     local friends = U.GetFriends(room, player, true, false)
-    local nonfriends = table.filter(room.alive_players, function(p) return not table.contains(friends, p) end)
-    room:setPlayerMark(player, "ty__fenyue", #nonfriends)
+    room:setPlayerMark(player, "ty__fenyue-phase", #room.alive_players - #friends)
   end,
 }
 ty__fenyue:addRelatedSkill(ty__fenyue_record)

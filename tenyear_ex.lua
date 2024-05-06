@@ -2126,28 +2126,14 @@ local ty_ex__zongshi = fk.CreateTriggerSkill{
   name = "ty_ex__zongshi",
   anim_type = "defensive",
   frequency = Skill.Compulsory,
-  events = {fk.PreCardEffect, fk.TargetConfirmed},
+  events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
-    if event == fk.PreCardEffect then
-      return player:hasSkill(self) and player.phase == Player.NotActive and player.id == data.to and
-      data.card.color == Card.NoColor and player:getHandcardNum() >= player:getMaxCards()
-    else
-      return player:hasSkill(self) and player.phase == Player.NotActive and player == target and
-      data.card.sub_type == Card.SubtypeDelayedTrick and player:getHandcardNum() >= player:getMaxCards()
-    end
+    return player == target and player.phase == Player.NotActive and player:hasSkill(self) and
+    (data.card.color == Card.NoColor or data.card.sub_type == Card.SubtypeDelayedTrick) and
+    player:getHandcardNum() >= player:getMaxCards()
   end,
   on_use = function (self, event, target, player, data)
-    local room = player.room
-    if event == fk.PreCardEffect then
-      return true
-    else
-      local cardIds = room:getSubcardsByRule(data.card, {Card.Processing})
-      room:moveCards({
-        ids = cardIds,
-        toArea = Card.DiscardPile,
-        moveReason = fk.ReasonUse,
-      })
-    end
+    table.insertIfNeed(data.nullifiedTargets, player.id)
   end
 }
 local ty_ex__zongshi_maxcards = fk.CreateMaxCardsSkill{
@@ -4806,6 +4792,7 @@ local ty_ex__huomo = fk.CreateViewAsSkill{
         moveReason = fk.ReasonPut,
         skillName = self.name,
         proposer = player.id,
+        moveVisible = true,
       })
     end
   end,

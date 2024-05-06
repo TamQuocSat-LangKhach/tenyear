@@ -380,6 +380,7 @@ local xionghuo = fk.CreateActiveSkill{
   anim_type = "offensive",
   card_num = 0,
   target_num = 1,
+  prompt = "#xionghuo-active",
   can_use = function(self, player)
     return player:getMark("@baoli") > 0
   end,
@@ -444,6 +445,27 @@ local xionghuo_record = fk.CreateTriggerSkill{
       end
     end
   end,
+
+  refresh_events = {fk.BuryVictim, fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.BuryVictim then
+      return player == target and player:hasSkill(xionghuo, true, true) and table.every(player.room.alive_players, function (p)
+        return not p:hasSkill(xionghuo, true)
+      end)
+    elseif event == fk.EventLoseSkill then
+      return player == target and data == xionghuo and table.every(player.room.alive_players, function (p)
+        return not p:hasSkill(xionghuo, true)
+      end)
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    for _, p in ipairs(room.alive_players) do
+      if p:getMark("@baoli") > 0 then
+        room:setPlayerMark(p, "@baoli", 0)
+      end
+    end
+  end,
 }
 local xionghuo_prohibit = fk.CreateProhibitSkill{
   name = "#xionghuo_prohibit",
@@ -491,6 +513,7 @@ Fk:loadTranslationTable{
   "若其需要超过一张【桃】或【酒】救回，你获得使其进入濒死状态的牌。",
   ["#xionghuo_record"] = "凶镬",
   ["@baoli"] = "暴戾",
+  ["#xionghuo-active"] = "发动 凶镬，将“暴戾”交给其他角色",
 
   ["$xionghuo1"] = "此镬加之于你，定有所伤！",
   ["$xionghuo2"] = "凶镬沿袭，怎会轻易无伤？",

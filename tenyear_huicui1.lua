@@ -6164,23 +6164,17 @@ local dongwan = General(extension, "dongwan", "qun", 3, 3, General.Female)
 local shengdu = fk.CreateTriggerSkill{
   name = "shengdu",
   anim_type = "drawcard",
-  events = {fk.TurnStart, fk.AfterCardsMove},
+  events = {fk.TurnStart, fk.AfterDrawNCards},
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self) then return false end
-    if event == fk.AfterCardsMove then
-      local to = player.room.current
-      if to == nil or to.phase ~= Player.Draw or to:getMark("@shengdu") == 0 then return false end
-      for _, move in ipairs(data) do
-        if move.to == to.id and move.moveReason == fk.ReasonDraw then
-          return true
-        end
-      end
+    if event == fk.AfterDrawNCards then
+      return target:getMark("@shengdu") > 0 and data.n > 0
     else
       return target == player
     end
   end,
   on_cost = function(self, event, target, player, data)
-    if event == fk.AfterCardsMove then
+    if event == fk.AfterDrawNCards then
       return true
     else
       local room = player.room
@@ -6195,18 +6189,9 @@ local shengdu = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.AfterCardsMove then
-      local x = 0
-      local to = room.current
-      for _, move in ipairs(data) do
-        if move.to == to.id and move.moveReason == fk.ReasonDraw then
-          x = x + #move.moveInfo
-        end
-      end
-      if x > 0 then
-        player:drawCards(x * to:getMark("@shengdu"), "shengdu")
-      end
-      room:setPlayerMark(to, "@shengdu", 0)
+    if event == fk.AfterDrawNCards then
+      player:drawCards(data.n * target:getMark("@shengdu"), "shengdu")
+      room:setPlayerMark(target, "@shengdu", 0)
     else
       room:addPlayerMark(room:getPlayerById(self.cost_data), "@shengdu")
     end
@@ -6332,7 +6317,7 @@ Fk:loadTranslationTable{
   ["illustrator:dongwan"] = "游漫美绘",
 
   ["shengdu"] = "生妒",
-  [":shengdu"] = "回合开始时，你可以选择一名角色，该角色获得“生妒”标记；"..
+  [":shengdu"] = "回合开始时，你可以选择一名没有“生妒”标记的其他角色，该角色获得“生妒”标记。"..
   "有“生妒”标记的角色摸牌阶段摸牌后，每有一个“生妒”你摸等量的牌，然后移去“生妒”标记。",
   ["jieling"] = "介绫",
   [":jieling"] = "出牌阶段每种花色限一次，你可以将两张花色不同的手牌当无距离和次数限制的【杀】使用。"..

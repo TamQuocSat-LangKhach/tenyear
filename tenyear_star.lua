@@ -55,15 +55,6 @@ local canxi = fk.CreateTriggerSkill{
       table.insert(mark, data.from)
       room:setPlayerMark(player, "canxi22-turn", mark)
       table.insertIfNeed(data.nullifiedTargets, player.id)
-
-      --FIXME: 姑且如此
-      if data.card.sub_type == Card.SubtypeDelayedTrick then
-        room:moveCards({
-          ids = room:getSubcardsByRule(data.card, { Card.Processing }),
-          toArea = Card.DiscardPile,
-          moveReason = fk.ReasonPutIntoDiscardPile,
-        })
-      end
     elseif event == fk.RoundStart then
       local choice1 = room:askForChoice(player, player:getMark("@canxi_exist_kingdoms"), self.name, "#canxi-choice1")
       local choice2 = room:askForChoice(player, {"canxi1", "canxi2"}, self.name, "#canxi-choice2:::"..choice1, true)

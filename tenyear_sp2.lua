@@ -1351,56 +1351,43 @@ local renzheng = fk.CreateTriggerSkill{
 local jinjian = fk.CreateTriggerSkill{
   name = "jinjian",
   mute = true,
-  events = {fk.DamageCaused},
+  events = {fk.DamageCaused, fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self)
   end,
   on_cost = function(self, event, target, player, data)
-    if player:usedSkillTimes(self.name, Player.HistoryTurn) % 2 == 0 then
-      return player.room:askForSkillInvoke(player, self.name, nil, "#jinjian1-invoke::"..data.to.id)
+    if event == fk.DamageCaused then
+      return player:getMark("@@jinjian_plus-turn") > 0 or player.room:askForSkillInvoke(player, self.name, nil, "#jinjian1-invoke::"..data.to.id)
     else
-      return true
+      return player:getMark("@@jinjian_minus-turn") > 0 or player.room:askForSkillInvoke(player, self.name, nil, "#jinjian2-invoke")
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(self.name)
-    if player:usedSkillTimes(self.name, Player.HistoryTurn) % 2 == 1 then
-      room:notifySkillInvoked(player, self.name, "offensive")
-      data.damage = data.damage + 1
+    if event == fk.DamageCaused then
+      if player:getMark("@@jinjian_plus-turn") > 0 then
+        room:notifySkillInvoked(player, self.name, "negative")
+        room:setPlayerMark(player, "@@jinjian_plus-turn", 0)
+        data.damage = data.damage - 1
+      else
+        room:notifySkillInvoked(player, self.name, "offensive")
+        room:setPlayerMark(player, "@@jinjian_plus-turn", 1)
+        data.damage = data.damage + 1
+      end
     else
-      room:notifySkillInvoked(player, self.name, "negative")
-      data.damage = data.damage - 1
+      if player:getMark("@@jinjian_minus-turn") > 0 then
+        room:notifySkillInvoked(player, self.name, "negative")
+        room:setPlayerMark(player, "@@jinjian_minus-turn", 0)
+        data.damage = data.damage + 1
+      else
+        room:notifySkillInvoked(player, self.name, "defensive")
+        room:setPlayerMark(player, "@@jinjian_minus-turn", 1)
+        data.damage = data.damage - 1
+      end
     end
   end,
 }
-local jinjian_trigger = fk.CreateTriggerSkill{
-  name = "#jinjian_trigger",
-  mute = true,
-  events = {fk.DamageInflicted},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
-  on_cost = function(self, event, target, player, data)
-    if player:usedSkillTimes(self.name, Player.HistoryTurn) % 2 == 0 then
-      return player.room:askForSkillInvoke(player, "jinjian", nil, "#jinjian2-invoke")
-    else
-      return true
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    player:broadcastSkillInvoke("jinjian")
-    if player:usedSkillTimes(self.name, Player.HistoryTurn) % 2 == 1 then
-      room:notifySkillInvoked(player, "jinjian", "defensive")
-      data.damage = data.damage - 1
-    else
-      room:notifySkillInvoked(player, "jinjian", "negative")
-      data.damage = data.damage + 1
-    end
-  end,
-}
-jinjian:addRelatedSkill(jinjian_trigger)
 luotong:addSkill(renzheng)
 luotong:addSkill(jinjian)
 Fk:loadTranslationTable{
@@ -1414,6 +1401,9 @@ Fk:loadTranslationTable{
   "若如此做，你此回合下次受到的伤害+1且不能发动〖进谏〗。",
   ["#jinjian1-invoke"] = "进谏：你可以令对 %dest 造成的伤害+1",
   ["#jinjian2-invoke"] = "进谏：你可以令受到的伤害-1",
+  ["@@jinjian_plus-turn"] = "进谏+",
+  ["@@jinjian_minus-turn"] = "进谏-",
+
 
   ["$renzheng1"] = "仁政如水，可润万物。",
   ["$renzheng2"] = "为官一任，当造福一方。",

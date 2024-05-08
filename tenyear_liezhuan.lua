@@ -1372,39 +1372,39 @@ local xuezhao = fk.CreateActiveSkill{
     return Self.maxHp
   end,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
-  card_filter = function(self, to_select, selected, targets)
-    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and table.contains(Self.player_cards[Player.Hand], to_select)
+    and not Self:prohibitDiscard(Fk:getCardById(to_select))
   end,
   target_filter = function(self, to_select, selected, cards)
-    return #selected < Self.maxHp and to_select ~= Self.id
+    return #selected < Self.maxHp and to_select ~= Self.id and #cards == 1
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
+    room:sortPlayersByAction(effect.tos)
     room:throwCard(effect.cards, self.name, player, player)
     for _, to in ipairs(effect.tos) do
+      if player.dead then break end
       local p = room:getPlayerById(to)
-      if p:isNude() then
-        room:addPlayerMark(p, "xuezhao-phase", 1)
-      else
-        local card = room:askForCard(p, 1, 1, true, self.name, true, ".", "#xuezhao-give:"..player.id)
-        if #card > 0 then
-          room:obtainCard(player, Fk:getCardById(card[1]), false, fk.ReasonGive)
-          p:drawCards(1, self.name)
-          room:addPlayerMark(player, "xuezhao_add-turn", 1)
+      if not p.dead then
+        local cards = {}
+        if not p:isNude() then
+          cards = room:askForCard(p, 1, 1, true, self.name, true, ".", "#xuezhao-give:"..player.id)
+        end
+        if #cards > 0 then
+          room:obtainCard(player, cards, false, fk.ReasonGive, p.id, self.name)
+          if not p.dead then
+            p:drawCards(1, self.name)
+          end
+          room:addPlayerMark(player, MarkEnum.SlashResidue.."-phase", 1)
         else
-          room:addPlayerMark(p, "xuezhao-phase", 1)
+          local mark = U.getMark(player, "xuezhao-phase")
+          table.insert(mark, p.id)
+          room:setPlayerMark(player, "xuezhao-phase", mark)
         end
       end
-    end
-  end,
-}
-local xuezhao_targetmod = fk.CreateTargetModSkill{
-  name = "#xuezhao_targetmod",
-  residue_func = function(self, player, skill, scope)
-    if player:getMark("xuezhao_add-turn") > 0 and skill.trueName == "slash_skill" and scope == Player.HistoryPhase then
-      return player:getMark("xuezhao_add-turn")
     end
   end,
 }
@@ -1413,18 +1413,13 @@ local xuezhao_record = fk.CreateTriggerSkill{
 
   refresh_events = {fk.CardUsing},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:usedSkillTimes("xuezhao", Player.HistoryPhase) > 0
+    return target == player and #U.getMark(player, "xuezhao-phase") > 0
   end,
   on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    local targets = table.filter(room:getOtherPlayers(player), function(p) return p:getMark("xuezhao-phase") > 0 end)
     data.disresponsiveList = data.disresponsiveList or {}
-    for _, p in ipairs(targets) do
-      table.insertIfNeed(data.disresponsiveList, p.id)
-    end
+    table.insertTableIfNeed(data.disresponsiveList, U.getMark(player, "xuezhao-phase"))
   end,
 }
-xuezhao:addRelatedSkill(xuezhao_targetmod)
 xuezhao:addRelatedSkill(xuezhao_record)
 dongcheng:addSkill(xuezhao)
 Fk:loadTranslationTable{

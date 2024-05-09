@@ -848,6 +848,7 @@ Fk:loadTranslationTable{
   ["~tystar__zhangchunhua"] = "我何为也？竟称可憎之老物……",
 }
 
+--开阳：孙坚
 local sunjian = General(extension, "tystar__sunjian", "qun", 4, 5)
 local ruijun = fk.CreateTriggerSkill{
   name = "ruijun",
@@ -1005,11 +1006,11 @@ Fk:loadTranslationTable{
   ["@@ruijun-phase"] = "锐军",
   ["#ruijun_delay"] = "锐军",
 
-  ["$ruijun1"] = "",
-  ["$ruijun2"] = "",
-  ["$gangyi1"] = "",
-  ["$gangyi2"] = "",
-  ["~tystar__sunjian"] = "",
+  ["$ruijun1"] = "三军夺锐，势不可挡。",
+  ["$ruijun2"] = "士如钢锋，可破三属之甲。",
+  ["$gangyi1"] = "不见狼居胥，何妨马革裹尸。",
+  ["$gangyi2"] = "既无功，不受禄。",
+  ["~tystar__sunjian"] = "身怀宝器，必受群狼觊觎……",
 }
 
 return extension

@@ -3594,7 +3594,9 @@ local wuyou = fk.CreateActiveSkill{
       room:setPlayerMark(player, "wuyou_names", card_names)
     end
     if #card_names == 0 then return end
-    card_names = table.connect(table.unpack(table.random(card_names, 5)))
+    card_names = table.map(table.random(card_names, 5), function (card_list)
+      return table.random(card_list)
+    end)
     local success, dat = room:askForUseActiveSkill(player, "wuyou_declare",
     "#wuyou-declare::" .. target.id, true, { interaction_choices = card_names })
     if not success then return end

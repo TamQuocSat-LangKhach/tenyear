@@ -4524,30 +4524,53 @@ local xiuwen = fk.CreateTriggerSkill{
     player:drawCards(1, self.name)
   end,
 }
+local longsong_skills = {
+  "qiangwu", "ol_ex__qiangxi", "ol_ex__luanji", "ty_ex__sanyao", "ol__xuehen", "ex__yijue", "daoshu", "m_ex__xianzhen",
+  "tianyi", "mansi", "ty__lianji", "ty_ex__wurong", "xuezhao", "hs__kurou", "m_ex__mieji",
+  "ex__zhiheng", "ex__guose", "guolun", "duliang", "os__gongxin", "lueming", "jijie", "busuan", "minsi", "ty__lianzhu",
+  "ex__fanjian", "tanbei", "ty__qingcheng", "jinhui", "weimeng", "ty__songshu", "poxi", "m_ex__ganlu", "ty__kuangfu", "qice",
+  "ty_ex__gongqi", "ty_ex__huaiyi", "shanxi", "cuijian", "ol_ex__tiaoxin", "qingnang", "quji", "ty_ex__anguo", "ex__jieyin",
+  "m_ex__anxu", "ty_ex__mingce", "ziyuan", "mou__lijian", "mingjian", "ex__rende", "mizhao", "yanjiao", "ol_ex__dimeng",
+  "quhu", "tunan", "nuchen", "feijun", "yingshui", "qiongying", "zigu", "weiwu", "chiying", "qiangzhiz", "ty__jianji",
+  "jieling", "xinyou", "jianzheng", "humei", "jianguo", "jiuxianc", "tongli",
+
+  "yangjie", "hongyi", "m_ex__junxing", "m_ex__yanzhu", "ol_ex__changbiao", "yanxi", "xuanbei", "yushen", "guanxu",
+  "wencan", "xiangmian", "zhuren", "changqu", "caizhuang", "ty__beini", "jichun", "tongwei",
+  "liangyan", "kuizhen", "huiji",
+}
 local longsong = fk.CreateTriggerSkill{
   name = "longsong",
   anim_type = "special",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Play and not player:isNude()
+    return target == player and player:hasSkill(self) and player.phase == Player.Play
   end,
   on_cost = function(self, event, target, player, data)
-    local tos, cid = player.room:askForChooseCardAndPlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper),
+    local tos, cards = U.askForChooseCardsAndPlayers(player.room, player, 0, 1,
+    table.map(player.room:getOtherPlayers(player), Util.IdMapper),
     1, 1, ".|.|heart,diamond", "#longsong-invoke", self.name, true)
-    if cid then
-      self.cost_data = {tos[1], cid}
+    if #tos == 1 then
+      self.cost_data = {tos[1], cards}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data[1])
-    room:moveCardTo(Fk:getCardById(self.cost_data[2]), Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
+    local cards = self.cost_data[2]
+    if #cards > 0 then
+      room:moveCardTo(cards, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
+    else
+      cards = table.filter(to:getCardIds("he"), function(id) return Fk:getCardById(id).color == Card.Red end)
+      if #cards > 0 then
+        room:moveCardTo(table.random(cards), Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, false, player.id)
+      end
+    end
     if player.dead then return end
     local skills = {}
-    for _, s in ipairs(to.player_skills) do  --实际是许劭技能池。这不加强没法玩
+    for _, s in ipairs(to.player_skills) do
       if not (s.attached_equip or s.name[#s.name] == "&") and not player:hasSkill(s, true) and s.frequency < 4 then
-        if s:isInstanceOf(ActiveSkill) or s:isInstanceOf(ViewAsSkill) then
+        if table.contains(longsong_skills, s.name) or s:isInstanceOf(ActiveSkill) then
           table.insertIfNeed(skills, s.name)
         elseif s:isInstanceOf(TriggerSkill) then
           local str = Fk:translate(":"..s.name)
@@ -4557,11 +4580,17 @@ local longsong = fk.CreateTriggerSkill{
         end
       end
     end
+    if #skills == 0 then
+      skills = table.filter(longsong_skills, function (skill_name)
+        return Fk.skills[skill_name] and not player:hasSkill(skill_name, true)
+      end)
+    end
     if #skills > 0 then
-      room:setPlayerMark(player, "longsong-phase", skills)
-      room:handleAddLoseSkills(player, table.concat(skills, "|"), nil, true, false)
+      local skill = table.random(skills)
+      room:setPlayerMark(player, "longsong-phase", skill)
+      room:handleAddLoseSkills(player, skill, nil, true, false)
       room.logic:getCurrentEvent():findParent(GameEvent.Phase):addCleaner(function()
-        room:handleAddLoseSkills(player, "-"..table.concat(skills, "|-"))
+        room:handleAddLoseSkills(player, "-"..skill)
       end)
     end
   end,
@@ -4569,7 +4598,7 @@ local longsong = fk.CreateTriggerSkill{
 local longsong_invalidity = fk.CreateInvaliditySkill {
   name = "#longsong_invalidity",
   invalidity_func = function(self, from, skill)
-    return from:getMark("longsong-phase") ~= 0 and table.contains(from:getMark("longsong-phase"), skill.name) and
+    return from:getMark("longsong-phase") ~= 0 and from:getMark("longsong-phase") == skill.name and
       from:usedSkillTimes(skill.name, Player.HistoryPhase) > 0
   end
 }
@@ -4584,10 +4613,8 @@ Fk:loadTranslationTable{
   ["xiuwen"] = "修文",
   [":xiuwen"] = "你使用一张牌时，若此牌名是你本局游戏第一次使用，你摸一张牌。",
   ["longsong"] = "龙诵",
-  [":longsong"] = "出牌阶段开始时，你可以交给一名其他角色一张红色牌，然后你此阶段获得其拥有的“出牌阶段”的技能（每回合限发动一次）。<br>"..
-  "<font color='grey'>可以获得的技能包括：<br>非限定技的转化技、主动技，和技能描述前四个字为“出牌阶段”且五~六字不为“开始”和“结束”的触发技<br/>",
-  ["#longsong-invoke"] = "龙诵：你可以交给一名其他角色一张红色牌，本阶段获得其拥有的“出牌阶段”技能",
-  ["longsong_active"] = "龙诵",
+  [":longsong"] = "出牌阶段开始时，你可以交给或随机获得一名其他角色一张红色牌，然后你本阶段视为拥有该角色的一个“出牌阶段”的技能直到你发动之（若未获得其的技能则改为随机获得一个技能池中的技能）。",
+  ["#longsong-invoke"] = "龙诵：你可以交给或获得一名其他角色一张红色牌，本阶段获得其拥有的一个“出牌阶段”技能",
 
   ["$xiuwen1"] = "书生笔下三尺剑，毫锋可杀人。",
   ["$xiuwen2"] = "吾以书执剑，可斩世间魍魉。",

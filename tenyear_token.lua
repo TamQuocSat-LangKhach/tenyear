@@ -264,20 +264,13 @@ Fk:addSkill(siege_engine_slash)
 local siegeEngineSkill = fk.CreateTriggerSkill{
   name = "#siege_engine_skill",
   attached_equip = "siege_engine",
-  events = {fk.EventPhaseStart, fk.Damage, fk.BeforeCardsMove, fk.TargetSpecified},
+  events = {fk.EventPhaseStart, fk.Damage, fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
     if event == fk.EventPhaseStart then
       return target == player and player:hasSkill(self) and player.phase == Player.Play
     elseif event == fk.Damage then
       return target == player and player:hasSkill(self) and data.card and table.contains(data.card.skillNames, self.name) and
       U.damageByCardEffect(player.room) and not data.to.dead and not data.to:isNude()
-    elseif event == fk.BeforeCardsMove then
-      if player:getEquipment(Card.SubtypeTreasure) and Fk:getCardById(player:getEquipment(Card.SubtypeTreasure)).name == "siege_engine" and
-        (player:getMark("xianzhu1") == 0 and player:getMark("xianzhu2") == 0 and player:getMark("xianzhu3") == 0) then
-        for _, move in ipairs(data) do
-          return move.from == player.id
-        end
-      end
     elseif event == fk.TargetSpecified then
       return target == player and player:hasSkill(self) and data.card and table.contains(data.card.skillNames, self.name)
       and player:getMark("xianzhu1") > 0
@@ -308,41 +301,73 @@ local siegeEngineSkill = fk.CreateTriggerSkill{
     elseif event == fk.Damage then
       local cards = room:askForCardsChosen(player, data.to, 1, 1 + player:getMark("xianzhu3"), "he", self.name)
       room:throwCard(cards, self.name, data.to, player)
-    elseif event == fk.BeforeCardsMove then
-      for _, move in ipairs(data) do
-        if move.from == player.id and move.toArea ~= Card.Void then
-          for _, info in ipairs(move.moveInfo) do
-            if info.fromArea == Card.PlayerEquip and move.moveReason == fk.ReasonDiscard then
-              if Fk:getCardById(info.cardId, true).name == "siege_engine" then
-                room:notifySkillInvoked(player, self.name, "defensive")
-                return true
-              end
-            end
-          end
-        end
-      end
     elseif event == fk.TargetSpecified then
       room:addPlayerMark(room:getPlayerById(data.to), fk.MarkArmorNullified)
-
       data.extra_data = data.extra_data or {}
       data.extra_data.siege_engineNullified = data.extra_data.siege_engineNullified or {}
       data.extra_data.siege_engineNullified[tostring(data.to)] = (data.extra_data.siege_engineNullified[tostring(data.to)] or 0) + 1
     end
   end,
 
-  refresh_events = {fk.CardUseFinished},
+  refresh_events = {fk.CardUseFinished, fk.BeforeCardsMove},
   can_refresh = function(self, event, target, player, data)
-    return data.extra_data and data.extra_data.siege_engineNullified
+    if event == fk.BeforeCardsMove then
+      return table.find(player:getCardIds("e"), function (id)
+        return Fk:getCardById(id).name == "siege_engine"
+      end)
+    else
+      return data.extra_data and data.extra_data.siege_engineNullified
+    end
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    for key, num in pairs(data.extra_data.siege_engineNullified) do
-      local p = room:getPlayerById(tonumber(key))
-      if p:getMark(fk.MarkArmorNullified) > 0 then
-        room:removePlayerMark(p, fk.MarkArmorNullified, num)
+    if event == fk.BeforeCardsMove then
+      local mirror_moves = {}
+      local to_void, cancel_move = {},{}
+      local no_updata = (player:getMark("xianzhu1") + player:getMark("xianzhu2") + player:getMark("xianzhu3")) == 0
+      for _, move in ipairs(data) do
+        if move.from == player.id and move.toArea ~= Card.Void then
+          local move_info = {}
+          local mirror_info = {}
+          for _, info in ipairs(move.moveInfo) do
+            local id = info.cardId
+            if Fk:getCardById(id).name == "siege_engine" and info.fromArea == Card.PlayerEquip then
+              if not player.dead and no_updata and move.moveReason == fk.ReasonDiscard then
+                table.insert(cancel_move, id)
+              else
+                table.insert(mirror_info, info)
+                table.insert(to_void, id)
+              end
+            else
+              table.insert(move_info, info)
+            end
+          end
+          move.moveInfo = move_info
+          if #mirror_info > 0 then
+            local mirror_move = table.clone(move)
+            mirror_move.to = nil
+            mirror_move.toArea = Card.Void
+            mirror_move.moveInfo = mirror_info
+            table.insert(mirror_moves, mirror_move)
+          end
+        end
       end
+      if #cancel_move > 0 then
+        player.room:sendLog{ type = "#cancelDismantle", card = cancel_move, arg = "#siege_engine_skill"  }
+      end
+      if #to_void > 0 then
+        table.insertTable(data, mirror_moves)
+        player.room:sendLog{ type = "#destructDerivedCards", card = to_void, }
+      end
+    else
+      for key, num in pairs(data.extra_data.siege_engineNullified) do
+        local p = room:getPlayerById(tonumber(key))
+        if p:getMark(fk.MarkArmorNullified) > 0 then
+          room:removePlayerMark(p, fk.MarkArmorNullified, num)
+        end
+      end
+      data.siege_engineNullified = nil
     end
-    data.siege_engineNullified = nil
   end,
 }
 local siege_engine_targetmod = fk.CreateTargetModSkill{

@@ -886,48 +886,6 @@ local chaixie = fk.CreateTriggerSkill{
     end
     player:drawCards(n, self.name)
   end,
-
-  refresh_events = {fk.BeforeCardsMove},
-  can_refresh = Util.TrueFunc,
-  on_refresh = function(self, event, target, player, data)
-    local mirror_moves = {}
-    local to_void, cancel_move = {},{}
-    local no_updata = (player:getMark("xianzhu1") + player:getMark("xianzhu2") + player:getMark("xianzhu3")) == 0
-    for _, move in ipairs(data) do
-      if move.from == player.id and move.toArea ~= Card.Void then
-        local move_info = {}
-        local mirror_info = {}
-        for _, info in ipairs(move.moveInfo) do
-          local id = info.cardId
-          if Fk:getCardById(id, true).name == "siege_engine" and info.fromArea == Card.PlayerEquip then
-            if no_updata and move.moveReason == fk.ReasonDiscard then
-              table.insert(cancel_move, id)
-            else
-              table.insert(mirror_info, info)
-              table.insert(to_void, id)
-            end
-          else
-            table.insert(move_info, info)
-          end
-        end
-        move.moveInfo = move_info
-        if #mirror_info > 0 then
-          local mirror_move = table.clone(move)
-          mirror_move.to = nil
-          mirror_move.toArea = Card.Void
-          mirror_move.moveInfo = mirror_info
-          table.insert(mirror_moves, mirror_move)
-        end
-      end
-    end
-    if #cancel_move > 0 then
-      player.room:sendLog{ type = "#cancelDismantle", card = cancel_move, arg = "#siege_engine_skill"  }
-    end
-    if #to_void > 0 then
-      table.insertTable(data, mirror_moves)
-      player.room:sendLog{ type = "#destructDerivedCards", card = to_void, }
-    end
-  end,
 }
 zhangfen:addSkill(wanglu)
 zhangfen:addSkill(xianzhu)

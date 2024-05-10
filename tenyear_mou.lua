@@ -154,7 +154,7 @@ local yingmou_switch = fk.CreateTriggerSkill{
   events = {fk.GameStart},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self)
+    return player:hasSkill(yingmou)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
@@ -204,7 +204,6 @@ Fk:loadTranslationTable{
 }
 
 local tymou__lusu = General(extension, "tymou__lusu", "wu", 3)
-
 local mingshil = fk.CreateTriggerSkill{
   name = "mingshil",
   events = {fk.EventPhaseEnd},
@@ -340,7 +339,7 @@ local mengmou_switch = fk.CreateTriggerSkill{
   events = {fk.GameStart},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self)
+    return player:hasSkill(mengmou)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
@@ -489,7 +488,7 @@ local quanmou_switch = fk.CreateTriggerSkill{
   events = {fk.GameStart},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self)
+    return player:hasSkill(quanmou)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
@@ -602,6 +601,195 @@ Fk:loadTranslationTable{
   ["$quanmou_tymou2__simayi2"] = "昔藏青锋于沧海，今潮落，可现兵！",
   ["~tymou2__simayi"] = "人立中流，非已力可向，实大势所迫……",
 }
+
+local jiaxu = General(extension, "tymou__jiaxu", "qun", 3)
+local fumouj = fk.CreateActiveSkill{
+  name = "fumouj",
+  anim_type = "switch",
+  switch_skill_name = "fumouj",
+  card_num = 0,
+  target_num = 1,
+  prompt = function ()
+    return Self:getSwitchSkillState("fumouj", false) == fk.SwitchYang and "#fumouj-Yang" or "#fumouj-Yin"
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+
+    setTYMouSwitchSkillState(player, "jiaxu", self.name)
+    local switch_state = player:getSwitchSkillState(self.name, true)
+
+    local cids = target:getCardIds(Player.Hand)
+    local x = (#cids +1)//2
+    cids = room:askForCardsChosen(player, target, 1, x, {
+      card_data = {
+        { "$Hand", cids }
+      }
+    }, self.name, "#fumouj-show::".. target.id.. ":".. x)
+    target:showCards(cids)
+    room:delay(1000)
+    if switch_state == fk.SwitchYang then
+      local tos = {}
+      for _, p in ipairs(room.alive_players) do
+        if p ~= player and p ~= target then
+          table.insert(tos, p.id)
+        end
+      end
+      if #tos == 0 then return end
+      tos = room:askForChoosePlayers(player, tos, 1, 1, "#fumouj-choose::".. target.id, self.name, false, true)
+      if #tos == 0 then return end
+      room:obtainCard(tos[1], cids, true, fk.ReasonPrey, tos[1], self.name)
+      x = #cids
+      if not player.dead then
+        player:drawCards(x, self.name)
+      end
+      if not target.dead then
+        target:drawCards(x, self.name)
+      end
+    else
+      local card
+      local extra_data = {bypass_times = true, bypass_distances = true}
+      local disresponsive_list = table.map(room.players, Util.IdMapper)
+      for _, id in ipairs(cids) do
+        if target.dead then break end
+        if table.contains(target:getCardIds(Player.Hand), id) then
+          card = Fk:getCardById(id)
+          if U.getDefaultTargets(target, card, true, true) then
+            local use = U.askForUseRealCard(room, target, {id}, nil, self.name,
+            "#fumouj-use:::"..card:toLogString(), extra_data, true, false)
+            if use then
+              use.disresponsiveList = disresponsive_list
+              room:useCard(use)
+            end
+          end
+        end
+      end
+    end
+  end,
+}
+local fumouj_switch = fk.CreateTriggerSkill{
+  name = "#fumouj_switch",
+  events = {fk.GameStart},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(fumouj)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    setTYMouSwitchSkillState(player, "jiaxu", "fumouj",
+    player.room:askForChoice(player, { "tymou_switch:::fumouj:yang", "tymou_switch:::fumouj:yin" },
+    "fumouj", "#tymou_switch-transer:::fumouj") == "tymou_switch:::fumouj:yin")
+  end,
+}
+local sushen = fk.CreateActiveSkill{
+  name = "sushen",
+  anim_type = "control",
+  prompt = "#sushen-active",
+  card_num = 0,
+  target_num = 0,
+  frequency = Skill.Limited,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:setPlayerMark(player, "sushen_hp", player.hp)
+    room:setPlayerMark(player, "sushen_handcardnum", player:getHandcardNum())
+    if player:hasSkill(fumouj, true) then
+      room:setPlayerMark(player, "sushen_state", player:getSwitchSkillState("fumouj", false, true))
+    end
+    room:handleAddLoseSkills(player, "rushi", nil, true, false)
+  end,
+}
+local rushi = fk.CreateActiveSkill{
+  name = "rushi",
+  anim_type = "control",
+  prompt = function ()
+    return "#rushi-active:::" .. Self:getMark("sushen_hp") .. ":" .. Self:getMark("sushen_handcardnum")
+    --..":" .. Self:getMark("sushen_state")
+  end,
+  card_num = 0,
+  target_num = 0,
+  frequency = Skill.Limited,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local n = player.hp - player:getMark("sushen_hp")
+    if n > 0 then
+      room:loseHp(player, n, self.name)
+    elseif n < 0 and player:isWounded() then
+      room:recover({
+        who = player,
+        num = math.min(-n, player:getLostHp()),
+        recoverBy = player,
+        skillName = self.name
+      })
+    end
+    if player.dead then return end
+    n = player:getHandcardNum() - player:getMark("sushen_handcardnum")
+    if n > 0 then
+      room:askForDiscard(player, n, n, false, self.name, false)
+    elseif n < 0 then
+      player:drawCards(-n, self.name)
+    end
+    if player:hasSkill(fumouj, true) then
+      setTYMouSwitchSkillState(player, "jiaxu", "fumouj", player:getMark("sushen_state") == "yang")
+      if player:usedSkillTimes("fumouj", Player.HistoryPhase) > 0 then
+        player:setSkillUseHistory("fumouj", 0, Player.HistoryPhase)
+      end
+    end
+  end,
+}
+jiaxu:addSkill(sushen)
+fumouj:addRelatedSkill(fumouj_switch)
+jiaxu:addSkill(fumouj)
+jiaxu:addRelatedSkill(rushi)
+Fk:loadTranslationTable{
+  ["tymou__jiaxu"] = "谋贾诩",
+  --["#tymou__jiaxu"] = "",
+  --["illustrator:tymou__jiaxu"] = "",
+  ["sushen"] = "肃身",
+  [":sushen"] = "限定技，出牌阶段，你可以记录你的体力值、手牌数和〖覆谋〗的阴阳状态，然后获得〖入世〗。",
+  ["rushi"] = "入世",
+  [":rushi"] = "限定技，出牌阶段，你可以将体力值、手牌数和〖覆谋〗的阴阳状态依次调整为〖肃身〗记录值且视为于此阶段内未发动过〖覆谋〗。",
+  ["fumouj"] = "覆谋",
+  [":fumouj"] = "转换技，游戏开始时可自选阴阳状态，出牌阶段限一次，你可以观看一名其他角色的所有手牌，"..
+  "展示其中至多一半的牌（向上取整），阳：令另一名其他角色获得这些牌（正面朝上移动），你与失去牌的角色各摸等量张牌。"..
+  "阴：令其按你选择的顺序依次使用这些牌（无距离限制且不能被响应）。",
+
+  ["#sushen-active"] = "发动 肃身，记录你的体力值、手牌数和〖覆谋〗的阴阳状态",
+  ["#rushi-active"] = "发动 入世，将体力值调整为%arg；将手牌数调整为%arg2",--；将〖覆谋〗调整为%arg3状态（FIXME:不支持arg3）
+  ["#fumouj-Yang"] = "发动 覆谋（阳），观看1名其他角色的手牌，并将其中一半的牌交给另一名其他角色",
+  ["#fumouj-Yin"] = "发动 覆谋（阴），观看1名其他角色的手牌，令其依次使用其中一半的牌",
+  ["#fumouj-show"] = "覆谋：展示%dest的至多%arg张手牌",
+  ["#fumouj-choose"] = "覆谋：选择1名其他角色，令其获得%dest展示的这些卡牌",
+  ["#fumouj-use"] = "覆谋：使用 %arg（无距离限制且不能被响应）",
+  ["#fumouj_switch"] = "覆谋",
+}
+
+
+
+
+
+
+
+
+
+
+
 
 --冢虎狼顾：王凌、司马师、曹爽
 
@@ -791,7 +979,6 @@ local ty__zifu = fk.CreateTriggerSkill{
     end
   end,
 }
-
 wangling:addSkill(jichouw)
 wangling:addSkill(ty__mouli)
 wangling:addRelatedSkill(ty__zifu)

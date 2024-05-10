@@ -46,6 +46,10 @@ local ty__sitian = fk.CreateActiveSkill{
     return player:getHandcardNum() > 1
   end,
   card_filter = function(self, to_select, selected)
+    if Self:prohibitDiscard(Fk:getCardById(to_select)) then
+      return false
+    end
+
     if Fk:currentRoom():getCardArea(to_select) == Player.Hand and #selected < 2 then
       if #selected == 1 then
         return Fk:getCardById(to_select).suit ~= Fk:getCardById(selected[1]).suit

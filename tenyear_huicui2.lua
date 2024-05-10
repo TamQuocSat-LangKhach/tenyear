@@ -2765,7 +2765,7 @@ Fk:loadTranslationTable{
   ["~ty__yanghu"] = "臣死之后，杜元凯可继之……",
 }
 
---匡鼎炎汉：刘巴 黄权 吴班 霍峻 傅肜傅佥 向朗 高翔 杨仪 蒋琬费祎
+--匡鼎炎汉：刘巴 黄权 吴班 霍峻 傅肜傅佥 向朗 高翔 杨仪 蒋琬费祎 李丰
 local liuba = General(extension, "ty__liuba", "shu", 3)
 local ty__zhubi = fk.CreateTriggerSkill{
   name = "ty__zhubi",
@@ -3854,6 +3854,220 @@ Fk:loadTranslationTable{
   ["#ty__shoucheng-draw"] = "守成：你可令 %dest 摸两张牌",
   ["#ty__shoucheng-choose"] = "守成：你可令一名失去最后手牌的角色摸两张牌",
 }
+
+local lifeng = General(extension, "ty__lifeng", "shu", 3)
+Fk:loadTranslationTable{
+  ["ty__lifeng"] = "李丰",
+  ["#ty__lifeng"] = "继责尽任",
+  ["designer:ty__lifeng"] = "步穗",
+  ["illustrator:ty__lifeng"] = "君桓文化",
+  ["~ty__lifeng"] = "北伐缺粮，此皆丰父子之罪。",
+}
+
+local tunchu = fk.CreateTriggerSkill{
+  name = "ty__tunchu",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.GameStart, fk.BeforeCardsMove, fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) then
+      return false
+    end
+
+    if event == fk.GameStart then
+      return (#player.room.players * 4 - player:getHandcardNum()) > 0
+    elseif event == fk.BeforeCardsMove then
+      return
+        table.find(
+          data,
+          function(info)
+            return
+              info.from == player.id and
+              info.moveReason == fk.ReasonDiscard and
+              table.find(info.moveInfo, function(moveInfo) return moveInfo.fromArea == Card.PlayerHand end)
+          end
+        )
+    else
+      return target == player and player.phase == Player.Start and player:getHandcardNum() > player.hp
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.GameStart then
+      player:drawCards(#room.players * 4 - player:getHandcardNum(), self.name)
+    elseif event == fk.BeforeCardsMove then
+      local ids = {}
+      for _, move in ipairs(data) do
+        if move.from == player.id and move.moveReason == fk.ReasonDiscard then
+          local moveInfos = {}
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand then
+              table.insert(ids, info.cardId)
+            else
+              table.insert(moveInfos, info)
+            end
+          end
+          if #ids > 0 then
+            move.moveInfo = moveInfos
+          end
+        end
+      end
+      if #ids > 0 then
+        player.room:sendLog{
+          type = "#cancelDismantle",
+          card = ids,
+          arg = self.name,
+        }
+      end
+    else
+      room:setPlayerMark(player, "@ty__tunchu-turn", 3)
+    end
+  end,
+
+  refresh_events = {fk.AfterCardUseDeclared},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark("@ty__tunchu-turn") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local tunchuMark = player:getMark("@ty__tunchu-turn")
+    tunchuMark = tunchuMark - 1
+    if tunchuMark == 0 then
+      room:addPlayerMark(player, "@@ty__tunchu_prohibit-turn")
+    end
+
+    room:setPlayerMark(player, "@ty__tunchu-turn", tunchuMark)
+  end,
+}
+local tunchuProhibit = fk.CreateProhibitSkill{
+  name = "#ty__tunchu_prohibit",
+  prohibit_use = function(self, player, card)
+    return player:getMark("@@ty__tunchu_prohibit-turn") > 0
+  end,
+  prohibit_discard = function(self, player, card)
+    return player:hasSkill(tunchu) and Fk:currentRoom():getCardArea(card.id) == Card.PlayerHand
+  end,
+}
+local tunchuBreak = fk.CreateTriggerSkill{
+  name = "#ty__tunchu_break",
+  mute = true,
+  priority = 100,
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    return data[1].skillName == tunchu.name and data[1].moveReason == fk.ReasonDraw
+  end,
+  on_trigger = function(self, event, target, player, data)
+    return true
+  end,
+}
+Fk:loadTranslationTable{
+  ["ty__tunchu"] = "囤储",
+  [":ty__tunchu"] = "锁定技，游戏开始时，你将手牌摸至等同于游戏人数四倍数量张（以此法摸牌不生成牌移动后时机）；你不能弃置你的手牌；" ..
+  "当你因其他角色弃置而失去手牌前，防止这些牌移动；准备阶段开始时，若你的手牌数大于体力值，则你于本回合内只能使用三张牌。" ..
+  "<br><font color=\"gray\">（以上描述为十周年实际结算）</font>",
+  ["@ty__tunchu-turn"] = "囤储",
+  ["@@ty__tunchu_prohibit-turn"] = "囤储 不能出牌",
+
+  ["$ty__tunchu1"] = "仓临城而建，无储则不成国。",
+  ["$ty__tunchu2"] = "积谷防饥，积财防虞，囤为国本。",
+}
+
+tunchu:addRelatedSkill(tunchuProhibit)
+tunchu:addRelatedSkill(tunchuBreak)
+lifeng:addSkill(tunchu)
+
+local shuliang = fk.CreateTriggerSkill{
+  name = "ty__shuliang",
+  anim_type = "support",
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    return
+      target == player and
+      player:hasSkill(self) and
+      not player:isNude() and
+      table.find(player.room.alive_players, function(p) return p:isKongcheng() end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local availableTargets = table.filter(room.alive_players, function(p) return p ~= player and p:isKongcheng() end)
+    if #availableTargets > 0 then
+      local tos, cid = room:askForChooseCardAndPlayers(
+        player,
+        table.map(availableTargets, Util.IdMapper),
+        1,
+        1,
+        nil,
+        "#ty__shuliang-choose",
+        self.name,
+        true
+      )
+
+      if #tos > 0 and cid then
+        self.cost_data = {tos[1], cid}
+        return true
+      end
+    end
+
+    return false
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:moveCardTo(self.cost_data[2], Player.Hand, room:getPlayerById(self.cost_data[1]), fk.ReasonGive, self.name, nil, false, player.id)
+
+    local GivenMap = { [self.cost_data[1]] = self.cost_data[2] }
+    local targetsGiven = { self.cost_data[1] }
+    local availableTargets = table.filter(
+      room.alive_players,
+      function(p) return p ~= player and not player:isKongcheng() and not GivenMap[p.id] end
+    )
+
+    while #availableTargets > 0 and not player:isNude() do
+      local tos, cid = room:askForChooseCardAndPlayers(
+        player,
+        table.map(availableTargets, Util.IdMapper),
+        1,
+        1,
+        nil,
+        "#ty__shuliang-choose",
+        self.name,
+        true
+      )
+
+      if #tos > 0 and cid then
+        GivenMap[tos[1]] = cid
+        table.insert(targetsGiven, tos[1])
+        room:moveCardTo(cid, Player.Hand, room:getPlayerById(tos[1]), fk.ReasonGive, self.name, nil, false, player.id)
+      else
+        break
+      end
+
+      availableTargets = table.filter(
+        room.alive_players,
+        function(p) return p ~= player and not p:isKongcheng() and not GivenMap[p.id] end
+      )
+    end
+
+    room:sortPlayersByAction(targetsGiven)
+    for _, pid in ipairs(targetsGiven) do
+      local p = room:getPlayerById(pid)
+      local cardToUse = Fk:getCardById(GivenMap[pid])
+      if p:isAlive() and room:getCardArea(cardToUse.id) == Card.PlayerHand and U.canUseCardTo(room, p, p, cardToUse, true, false) then
+        U.askForPlayCard(room, p, { cardToUse.id }, nil, self.name, "#ty__shuliang-use")
+      end
+    end
+  end,
+}
+Fk:loadTranslationTable{
+  ["ty__shuliang"] = "输粮",
+  [":ty__shuliang"] = "每个回合结束时，你可以交给至少一名没有手牌的其他角色各一张牌。若此牌可指定该角色自己为目标，则其可使用此牌。",
+  ["#ty__shuliang-choose"] = "输粮：你可选择一张牌和一名没有手牌的其他角色，交给其此牌",
+  ["#ty__shuliang-use"] = "输粮：你可以使用此牌",
+
+  ["$ty__shuliang1"] = "父以粮获罪，丰万不敢再蹈覆辙。",
+  ["$ty__shuliang2"] = "运粮效力，身可死而粮不可误。",
+}
+
+lifeng:addSkill(shuliang)
 
 --太平甲子：管亥 张闿 刘辟 裴元绍 张楚 张曼成
 local guanhai = General(extension, "guanhai", "qun", 4)

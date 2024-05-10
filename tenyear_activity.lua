@@ -4651,14 +4651,14 @@ local gongxiu = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if self.cost_data[10] == "r" then
-      for _, p in ipairs(room.alive_players) do
+      for _, p in ipairs(room:getAlivePlayers()) do
         if p:getMark("jinghe-turn") ~= 0 and not p.dead then
           room:doIndicate(player.id, {p.id})
           p:drawCards(1, self.name)
         end
       end
     else
-      for _, p in ipairs(room.alive_players) do
+      for _, p in ipairs(room:getAlivePlayers()) do
         if p:getMark("jinghe-turn") == 0 and not p.dead then
           room:doIndicate(player.id, {p.id})
           if not p:isKongcheng() then
@@ -4676,7 +4676,7 @@ local jinghe = fk.CreateActiveSkill{
   min_target_num = 1,
   prompt = "#jinghe",
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   card_filter = function(self, to_select, selected)
     if #selected < 4 and Fk:currentRoom():getCardArea(to_select) == Player.Hand then

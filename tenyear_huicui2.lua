@@ -4041,7 +4041,7 @@ local shuliang = fk.CreateTriggerSkill{
 
       availableTargets = table.filter(
         room.alive_players,
-        function(p) return p ~= player and not p:isKongcheng() and not GivenMap[p.id] end
+        function(p) return p ~= player and p:isKongcheng() and not GivenMap[p.id] end
       )
     end
 

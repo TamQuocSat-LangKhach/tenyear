@@ -3860,8 +3860,8 @@ Fk:loadTranslationTable{
   ["ty__lifeng"] = "李丰",
   ["#ty__lifeng"] = "继责尽任",
   ["designer:ty__lifeng"] = "步穗",
-  ["illustrator:ty__lifeng"] = "君桓文化",
-  ["~ty__lifeng"] = "北伐缺粮，此皆丰父子之罪。",
+  ["illustrator:ty__lifeng"] = "君桓文化", --五谷丰盈*李丰
+  ["~ty__lifeng"] = "蜀穗重丰，不见丞相还……",
 }
 
 local tunchu = fk.CreateTriggerSkill{
@@ -3963,13 +3963,12 @@ local tunchuBreak = fk.CreateTriggerSkill{
 Fk:loadTranslationTable{
   ["ty__tunchu"] = "囤储",
   [":ty__tunchu"] = "锁定技，游戏开始时，你将手牌摸至等同于游戏人数四倍数量张（以此法摸牌不生成牌移动后时机）；你不能弃置你的手牌；" ..
-  "当你因其他角色弃置而失去手牌前，防止这些牌移动；准备阶段开始时，若你的手牌数大于体力值，则你于本回合内只能使用三张牌。" ..
-  "<br><font color=\"gray\">（以上描述为十周年实际结算）</font>",
+  "当你因其他角色弃置而失去手牌前，防止这些牌移动；准备阶段开始时，若你的手牌数大于体力值，则你于本回合内只能使用三张牌。",
   ["@ty__tunchu-turn"] = "囤储",
   ["@@ty__tunchu_prohibit-turn"] = "囤储 不能出牌",
 
-  ["$ty__tunchu1"] = "仓临城而建，无储则不成国。",
-  ["$ty__tunchu2"] = "积谷防饥，积财防虞，囤为国本。",
+  ["$ty__tunchu1"] = "秋收冬藏，此四时之理，亘古不变。",
+  ["$ty__tunchu2"] = "囤粮之家，必无饥馑之虞。",
 }
 
 tunchu:addRelatedSkill(tunchuProhibit)
@@ -3982,10 +3981,9 @@ local shuliang = fk.CreateTriggerSkill{
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
     return
-      target == player and
       player:hasSkill(self) and
       not player:isNude() and
-      table.find(player.room.alive_players, function(p) return p:isKongcheng() end)
+      table.find(player.room.alive_players, function(p) return p ~= player and p:isKongcheng() end)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -4063,8 +4061,8 @@ Fk:loadTranslationTable{
   ["#ty__shuliang-choose"] = "输粮：你可选择一张牌和一名没有手牌的其他角色，交给其此牌",
   ["#ty__shuliang-use"] = "输粮：你可以使用此牌",
 
-  ["$ty__shuliang1"] = "父以粮获罪，丰万不敢再蹈覆辙。",
-  ["$ty__shuliang2"] = "运粮效力，身可死而粮不可误。",
+  ["$ty__shuliang1"] = "北伐鏖战正酣，此正需粮之时。",
+  ["$ty__shuliang2"] = "粮草先于兵马而动，此军心之本。",
 }
 
 lifeng:addSkill(shuliang)

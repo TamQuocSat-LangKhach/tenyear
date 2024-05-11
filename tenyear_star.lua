@@ -36,30 +36,32 @@ local canxi = fk.CreateTriggerSkill{
   end,
   on_use = function (self, event, target, player, data)
     local room = player.room
-    player:broadcastSkillInvoke("canxi")
+    player:broadcastSkillInvoke(self.name)
     if event == fk.DamageCaused then
-      room:notifySkillInvoked(player, "canxi", "offensive")
+      room:notifySkillInvoked(player, self.name, "offensive")
       local mark = U.getMark(player, "canxi1-turn")
       table.insert(mark, target.id)
       room:setPlayerMark(player, "canxi1-turn", mark)
       data.damage = data.damage + 1
     elseif event == fk.HpRecover then
-      room:notifySkillInvoked(player, "canxi", "control")
+      room:notifySkillInvoked(player, self.name, "control")
       local mark = U.getMark(player, "canxi21-turn")
       table.insert(mark, target.id)
       room:setPlayerMark(player, "canxi21-turn", mark)
-      room:loseHp(target, 1, "canxi")
+      room:loseHp(target, 1, self.name)
     elseif event == fk.TargetConfirmed then
-      room:notifySkillInvoked(player, "canxi", "defensive")
+      room:notifySkillInvoked(player, self.name, "defensive")
       local mark = U.getMark(player, "canxi22-turn")
       table.insert(mark, data.from)
       room:setPlayerMark(player, "canxi22-turn", mark)
       table.insertIfNeed(data.nullifiedTargets, player.id)
     elseif event == fk.RoundStart then
+      room:notifySkillInvoked(player, self.name, "special")
       local choice1 = room:askForChoice(player, player:getMark("@canxi_exist_kingdoms"), self.name, "#canxi-choice1")
       local choice2 = room:askForChoice(player, {"canxi1", "canxi2"}, self.name, "#canxi-choice2:::"..choice1, true)
       room:setPlayerMark(player, "@"..choice2.."-round", choice1)
     elseif event == fk.GameStart then
+      room:notifySkillInvoked(player, self.name, "special")
       local kingdoms = {}
       for _, p in ipairs(room.alive_players) do
         table.insertIfNeed(kingdoms, p.kingdom)

@@ -6009,6 +6009,9 @@ yuejiu:addSkill(ty__cuijin)
 
 Fk:loadTranslationTable{
   ["ty__yuejiu"] = "乐就",
+  ["#ty__yuejiu"] = "仲家军督",
+  ["designer:ty__yuejiu"] = "老萌",
+  ["illustrator:ty__yuejiu"] = "匠人绘",
   ["ty__cuijin"] = "催进",
   [":ty__cuijin"] = "当你或攻击范围内的角色使用【杀】或【决斗】时，你可弃置一张牌，令此【杀】伤害值基数+1。"..
   "当此牌结算结束后，若此牌未造成伤害，你摸两张牌，对使用者造成1点伤害。",

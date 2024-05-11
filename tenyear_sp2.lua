@@ -132,28 +132,21 @@ local ty__benyu = fk.CreateTriggerSkill{
   events = {fk.Damaged},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.from and not data.from.dead
+    and (player:getHandcardNum() < math.min(data.from:getHandcardNum(), 5) or #player:getCardIds("he") > data.from:getHandcardNum())
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    if #player:getCardIds("he") > data.from:getHandcardNum() then
-      local num = data.from:getHandcardNum() + 1
-      local discard = room:askForDiscard(player, num, 9999, true, self.name, true, ".", "#ty__benyu-discard::"..data.from.id..":"..num,true)
-      if #discard >= num then
-        room:doIndicate(player.id, {data.from.id})
-        self.cost_data = {"discard", discard}
-        return true
-      end
-    end
-    local x = math.min(data.from:getHandcardNum(), 5)
-    if player:getHandcardNum() < x and room:askForSkillInvoke(player, self.name, nil, "#ty__benyu-draw:::"..x) then
+    local success, dat = room:askForUseActiveSkill(player, "ty__benyu_active", nil, true,
+    {ty__benyu_data = {data.from.id, data.from:getHandcardNum()}})
+    if success and dat then
       room:doIndicate(player.id, {data.from.id})
-      self.cost_data = {"draw"}
+      self.cost_data = dat
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
-    if self.cost_data[1] == "discard" then
-      player.room:throwCard(self.cost_data[2], self.name, player, player)
+    if self.cost_data.interaction == "ty__benyu_damage" then
+      player.room:throwCard(self.cost_data.cards, self.name, player, player)
       player.room:damage{
         from = player,
         to = data.from,
@@ -166,22 +159,64 @@ local ty__benyu = fk.CreateTriggerSkill{
   end,
 }
 ty__chengyu:addSkill(ty__benyu)
+local ty__benyu_active = fk.CreateActiveSkill{
+  name = "ty__benyu_active",
+  prompt = function (self)
+    local to = self.ty__benyu_data[1]
+    local x = self.ty__benyu_data[2]
+    if self.interaction.data == "ty__benyu_damage" then
+      return "#ty__benyu-discard::"..to..":"..(x+1)
+    else
+      return "#ty__benyu-draw:::"..math.min(5, x)
+    end
+  end,
+  interaction = function(self)
+    local all_choices = {"ty__benyu_draw", "ty__benyu_damage"}
+    local choices = {}
+    if Self:getHandcardNum() < math.min(self.ty__benyu_data[2], 5) then
+      table.insert(choices, all_choices[1])
+    end
+    if #Self:getCardIds("he") > self.ty__benyu_data[2] then
+      table.insert(choices, all_choices[2])
+    end
+    if #choices > 0 then
+      return UI.ComboBox { choices = choices, all_choices = all_choices }
+    end
+  end,
+  target_num = 0,
+  card_filter = function(self, to_select, selected)
+    return self.interaction.data == "ty__benyu_damage" and not Self:prohibitDiscard(Fk:getCardById(to_select))
+  end,
+  feasible = function(self, selected, selected_cards)
+    if self.interaction.data == "ty__benyu_damage" then
+      return #selected_cards > self.ty__benyu_data[2]
+    end
+    return #selected_cards == 0
+  end,
+}
+Fk:addSkill(ty__benyu_active)
 Fk:loadTranslationTable{
   ["ty__chengyu"] = "程昱",
   ["#ty__chengyu"] = "泰山捧日",
+	["illustrator:ty__chengyu"] = "凝聚永恒",
 
   ["ty__shefu"] = "设伏",
   [":ty__shefu"] = "①结束阶段，你可以记录一个未被记录的基本牌或锦囊牌的牌名并扣置一张牌，称为“伏兵”；<br>"..
   "②当其他角色于你回合外使用手牌时，你可以移去一张记录牌名相同的“伏兵”，令此牌无效（若此牌有目标角色则改为取消所有目标），然后若此时是该角色的回合内，其本回合所有技能失效。",
   ["ty__benyu"] = "贲育",
   [":ty__benyu"] = "当你受到伤害后，你可以选择一项：1.将手牌摸至X张（最多摸至5张）；2.弃置至少X+1张牌，然后对伤害来源造成1点伤害（X为伤害来源的手牌数）。",
+
+  ["ty__shefu_active"] = "设伏",
   ["#ty__shefu-cost"] = "设伏：你可以将一张牌扣置为“伏兵”",
-  ["#ty__benyu-discard"] = "贲育：你可以弃置至少%arg牌，对 %dest 造成1点伤害",
-  ["#ty__benyu-draw"] = "贲育：你可以摸至 %arg 张牌",
   ["@[ty__shefu]"] = "伏兵",
   ["@@ty__shefu-turn"] = "设伏封技",
   ["#ty__shefu-invoke"] = "设伏：可以令 %dest 使用的 %arg 无效",
   ["#CardNullifiedBySkill"] = "由于 %arg 的效果，%from 使用的 %arg2 无效",
+  ["ty__benyu_active"] = "贲育",
+  ["#ty__benyu-discard"] = "贲育：你可以弃置至少%arg牌，对 %dest 造成1点伤害",
+  ["#ty__benyu-draw"] = "贲育：你可以摸至 %arg 张牌",
+  ["ty__benyu_draw"] = "摸牌",
+  ["ty__benyu_damage"] = "弃牌并造成伤害",
 
   ["$ty__shefu1"] = "吾已埋下伏兵，敌兵一来，管教他瓮中捉鳖。",
   ["$ty__shefu2"] = "我已设下重重圈套，就等敌军入彀矣。",

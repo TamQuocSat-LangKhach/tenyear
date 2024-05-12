@@ -1042,7 +1042,7 @@ local zhishi = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.TurnStart},
+  refresh_events = {fk.TurnStart, fk.Death},
   can_refresh = function(self, event, target, player, data)
     return target == player and player:getMark(self.name) ~= 0
   end,

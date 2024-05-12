@@ -4016,7 +4016,7 @@ local shuliang = fk.CreateTriggerSkill{
     local targetsGiven = { self.cost_data[1] }
     local availableTargets = table.filter(
       room.alive_players,
-      function(p) return p ~= player and player:isKongcheng() and not GivenMap[p.id] end
+      function(p) return p ~= player and p:isKongcheng() and not GivenMap[p.id] end
     )
 
     while #availableTargets > 0 and not player:isNude() do

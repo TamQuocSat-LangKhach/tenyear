@@ -1575,21 +1575,21 @@ local miyi = fk.CreateTriggerSkill{
     for _, id in ipairs(targets) do
       local p = room:getPlayerById(id)
       if not p.dead then
-        room:setPlayerMark(p, choice.."-turn", 1)
-        if choice == "miyi1" and p:isWounded() then
-          room:recover({
-            who = p,
-            num = 1,
-            recoverBy = player,
-            skillName = self.name
-          })
-        elseif choice == "miyi2" then
+        room:setPlayerMark(p, "@@"..choice.."-turn", 1)
+        if choice == "miyi2"  then
           room:damage{
             from = player,
             to = p,
             damage = 1,
             skillName = self.name,
           }
+        elseif p:isWounded() then
+          room:recover({
+            who = p,
+            num = 1,
+            recoverBy = player,
+            skillName = self.name
+          })
         end
       end
     end
@@ -1601,21 +1601,23 @@ local miyi_delay = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and not player.dead and player.phase == Player.Finish
-    and player:usedSkillTimes("miyi", Player.HistoryTurn) > 0
+    and table.find(player.room.alive_players, function (p)
+      return p:getMark("@@miyi1-turn") > 0 or p:getMark("@@miyi2-turn") > 0
+    end)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     for _, p in ipairs(room:getAlivePlayers()) do
       if not p.dead then
-        if p:getMark("miyi2-turn") > 0 and p:isWounded() then
+        if p:getMark("@@miyi2-turn") > 0 and p:isWounded() then
           room:recover({
             who = p,
             num = 1,
             recoverBy = player,
             skillName = "miyi",
           })
-        elseif p:getMark("miyi1-turn") > 0 then
+        elseif p:getMark("@@miyi1-turn") > 0 then
           room:damage{
             from = player,
             to = p,
@@ -1716,6 +1718,8 @@ Fk:loadTranslationTable{
   ["#miyi-invoke"] = "蜜饴：你可以令任意名角色执行你选择的效果，本回合结束阶段执行另一项",
   ["miyi1"] = "各回复1点体力",
   ["miyi2"] = "各受到你的1点伤害",
+  ["@@miyi1-turn"] = "蜜饴:伤害",
+  ["@@miyi2-turn"] = "蜜饴:回复",
   ["#yinjun-invoke"] = "寅君：你可以视为对 %dest 使用【杀】",
 
   ["$miyi1"] = "百战黄沙苦，舒颜红袖甜。",

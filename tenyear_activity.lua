@@ -3313,9 +3313,9 @@ local niji = fk.CreateTriggerSkill{
       if player:hasSkill(self) then
         U.askForUseRealCard(room, player, cards, ".", self.name, "#niji-use")
       end
-      if not player.dead then
+      cards = table.filter(cards, function(id) return table.contains(player.player_cards[Player.Hand], id) end)
+      if #cards > 0 then
         room:delay(800)
-        cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji-inhand-turn") > 0 end)
         room:throwCard(cards, self.name, player, player)
       end
     end

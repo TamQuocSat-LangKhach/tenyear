@@ -746,7 +746,7 @@ local rushi = fk.CreateActiveSkill{
       player:drawCards(-n, self.name)
     end
     if player:hasSkill(fumouj, true) then
-      setTYMouSwitchSkillState(player, "jiaxu", "fumouj", player:getMark("sushen_state") == "yang")
+      setTYMouSwitchSkillState(player, "jiaxu", "fumouj", player:getMark("sushen_state") == "yin")
       if player:usedSkillTimes("fumouj", Player.HistoryPhase) > 0 then
         player:setSkillUseHistory("fumouj", 0, Player.HistoryPhase)
       end

@@ -3702,7 +3702,7 @@ local yixian = fk.CreateActiveSkill{
             if not p.dead and p:isWounded() then 
               room:recover{
                 who = p,
-                num = n,
+                num = 1,
                 recoverBy = player,
                 skillName = self.name,
               }

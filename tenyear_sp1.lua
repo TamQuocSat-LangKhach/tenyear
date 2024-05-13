@@ -4651,7 +4651,7 @@ local zhantao = fk.CreateTriggerSkill{
     local pattern = ".|0"
     if data.card and data.card.number > 0 and data.card.number < 13 then
       n = data.card.number
-      pattern = ".|" .. tostring(n) .. "~13"
+      pattern = ".|" .. tostring(n+1) .. "~13"
     end
     local judge = {
       who = player,

@@ -1943,15 +1943,20 @@ local nifu = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
   events = {fk.EventPhaseStart},
+  mute = true,
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self) and target.phase == Player.Finish and player:getHandcardNum() ~= 3
   end,
   on_use = function(self, event, target, player, data)
+    player:broadcastSkillInvoke(self.name)
+    local room = player.room
     local n = player:getHandcardNum() - 3
     if n < 0 then
+      room:notifySkillInvoked(player, self.name, "drawcard")
       player:drawCards(-n, self.name)
     else
-      player.room:askForDiscard(player, n, n, false, self.name, false)
+      room:notifySkillInvoked(player, self.name, "negative")
+      room:askForDiscard(player, n, n, false, self.name, false)
     end
   end,
 }

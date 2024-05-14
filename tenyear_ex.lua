@@ -3396,28 +3396,8 @@ local ty_ex__pindi = fk.CreateActiveSkill{
     end
   end,
 }
-local ty_ex__faen = fk.CreateTriggerSkill{
-  name = "ty_ex__faen",
-  anim_type = "drawcard",
-  events = {fk.TurnedOver, fk.ChainStateChanged},
-  can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and not target.dead then
-      return (event == fk.TurnedOver and target.faceup) or (event == fk.ChainStateChanged and target.chained)
-    end
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    if room:askForSkillInvoke(player, self.name, nil, "#ty_ex__faen-invoke::"..target.id) then
-      room:doIndicate(player.id, {target.id})
-      return true
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    target:drawCards(1, self.name)
-  end,
-}
 chenqun:addSkill(ty_ex__pindi)
-chenqun:addSkill(ty_ex__faen)
+chenqun:addSkill("faen")
 Fk:loadTranslationTable{
   ["ty_ex__chenqun"] = "界陈群",
   ["#ty_ex__chenqun"] = "万世臣表",
@@ -3425,17 +3405,14 @@ Fk:loadTranslationTable{
   ["ty_ex__pindi"] = "品第",
   [":ty_ex__pindi"] = "出牌阶段每名角色限一次，你可以弃置一张本阶段未以此法弃置类型的牌并选择一名角色，令其摸X张牌或弃置X张牌"..
   "（X为本回合此技能发动次数）。若其已受伤，横置或重置你的武将牌。",
-  ["ty_ex__faen"] = "法恩",
-  [":ty_ex__faen"] = "当一名角色翻至正面或横置后，你可以令其摸一张牌。",
   ["#ty_ex__pindi"] = "品第：弃置一张未弃置过类别的牌，令一名角色摸牌或弃牌（%arg张）",
   ["ty_ex__pindi_draw"] = "摸牌",
   ["ty_ex__pindi_discard"] = "弃牌",
-  ["#ty_ex__faen-invoke"] = "法恩：你可以令 %dest 摸一张牌",
 
   ["$ty_ex__pindi1"] = "以九品论才，正是栋梁之谋。",
   ["$ty_ex__pindi2"] = "置州郡中正，可为百年之政。",
-  ["$ty_ex__faen1"] = "国法虽严，然不外乎于情。",
-  ["$ty_ex__faen2"] = "律令如铁，亦有可商榷之处。",
+  ["$faen_ty_ex__chenqun1"] = "国法虽严，然不外乎于情。",
+  ["$faen_ty_ex__chenqun2"] = "律令如铁，亦有可商榷之处。",
   ["~ty_ex__chenqun"] = "吾身虽亡，然吾志当遗百年……",
 }
 

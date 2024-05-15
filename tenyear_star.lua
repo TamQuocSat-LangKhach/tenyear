@@ -213,15 +213,12 @@ local zhangrong = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player.phase == Player.Start and player:hasSkill(self)
+    return target == player and player.phase == Player.Start and player:hasSkill(self) and player.hp > 0
   end,
   on_cost = function(self, event, target, player, data)
-    local command = "AskForUseActiveSkill"
-    player.room:notifyMoveFocus(player, "zhangrong_active")
-    local dat = {"zhangrong_active", "#zhangrong-invoke", true, {}}
-    local result = player.room:doRequest(player, command, json.encode(dat))
-    if result ~= "" then
-      self.cost_data = json.decode(result)
+    local _, dat = player.room:askForUseActiveSkill(player, "zhangrong_active", "#zhangrong-invoke", true)
+    if dat then
+      self.cost_data = dat
       return true
     end
   end,
@@ -231,7 +228,8 @@ local zhangrong = fk.CreateTriggerSkill{
     room:sortPlayersByAction(targets)
     room:setPlayerMark(player, "zhangrong-turn", targets)
     room:doIndicate(player.id, targets)
-    local choice = self.cost_data.interaction_data
+    local choice = self.cost_data.interaction
+    player:drawCards(#targets, self.name)
     for _, id in ipairs(targets) do
       local p = room:getPlayerById(id)
       if not p.dead then
@@ -242,9 +240,6 @@ local zhangrong = fk.CreateTriggerSkill{
         end
       end
     end
-    if not player.dead then
-      player:drawCards(#targets, self.name)
-    end
   end,
 }
 local zhangrong_delay = fk.CreateTriggerSkill{
@@ -252,16 +247,15 @@ local zhangrong_delay = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    if target == player and not player.dead and player:usedSkillTimes("zhangrong", Player.HistoryTurn) > 0 then
-      local room = player.room
-      local playerIds = {}
-      room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function(e)
-        local damage = e.data[5]
-        if damage then
-          table.insertIfNeed(playerIds, damage.to.id)
-        end
-      end, Player.HistoryTurn)
-      return table.find(player:getMark("zhangrong-turn"), function(id) return not table.contains(playerIds, id) end)
+    if target == player and not player.dead and player:getMark("zhangrong-turn") ~= 0 then
+      local playerIds = table.filter(player:getMark("zhangrong-turn"), function (pid)
+        return not player.room:getPlayerById(pid).dead
+      end)
+      U.getActualDamageEvents(player.room, 1, function(e)
+        table.removeOne(playerIds, e.data[1].to.id)
+        return #playerIds == 0
+      end)
+      return #playerIds > 0
     end
   end,
   on_cost = Util.TrueFunc,
@@ -329,7 +323,7 @@ Fk:loadTranslationTable{
   [":weilin"] = "锁定技，你于回合内对一名角色造成伤害时，若其本回合没有受到过伤害且你本回合已使用牌数不小于其体力值，则此伤害+1。",
   ["zhangrong"] = "掌戎",
   [":zhangrong"] = "准备阶段，你可以选择一项：1.令至多X名体力值不小于你的角色各失去1点体力；2.令至多X名手牌数不小于你的角色各弃置一张手牌"..
-  "（X为你的体力值）。选择完成后，你摸选择角色数量的牌。回合结束时，若这些角色中有角色本回合未受到伤害，你失去1点体力",
+  "（X为你的体力值）。这些角色执行你选择的选项前，你摸选择角色数量的牌。本回合结束时，若这些角色中有存活且本回合未受到伤害的角色，你失去1点体力",
   ["haoshou"] = "豪首",
   [":haoshou"] = "主公技，其他群雄势力角色使用【酒】后，可令你回复1点体力。",
   ["#zhangrong-invoke"] = "掌戎：选择角色各失去1点体力或各弃置一张手牌",

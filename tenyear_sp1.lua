@@ -3174,8 +3174,9 @@ local jingyu = fk.CreateTriggerSkill{
       data.visible and
       data ~= self and
       target and
-      target:hasSkill(data) and
+      target:hasSkill(data, true, true) and
       not data:isEquipmentSkill() and
+      not table.contains({ "m_feiyang", "m_bahu" }, data.name) and
       not table.contains(U.getMark(player, "jingyu_skills-round"), data.name)
   end,
   on_use = function(self, _, target, player, data)
@@ -3261,7 +3262,8 @@ local lvxinDelayedEffect = fk.CreateTriggerSkill{
     return
       target == player and
       data.visible and
-      target:hasSkill(data) and
+      target:hasSkill(data, true, true) and
+      not table.contains({ "m_feiyang", "m_bahu" }, data.name) and
       (target:getMark("@lvxinLoseHp") ~= 0 or target:getMark("@lvxinRecover") ~= 0)
   end,
   on_cost = Util.TrueFunc,

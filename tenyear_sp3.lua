@@ -301,7 +301,7 @@ sunyi:addRelatedSkill("yinghun")
 Fk:loadTranslationTable{
   ["ty__sunyi"] = "孙翊",
   ["#ty__sunyi"] = "虓风快意",
-	["designer:ty__sunyi"] = "七哀",
+  ["designer:ty__sunyi"] = "七哀",
   ["illustrator:ty__sunyi"] = "君桓文化",
   ["jiqiaos"] = "激峭",
   [":jiqiaos"] = "出牌阶段开始时，你可以将牌堆顶的X张牌至于武将牌上（X为你的体力上限）；当你使用一张牌结算结束后，若你的武将牌上有“激峭”牌，"..
@@ -893,7 +893,7 @@ zhangfen:addSkill(chaixie)
 Fk:loadTranslationTable{
   ["zhangfen"] = "张奋",
   ["#zhangfen"] = "御驰大攻",
-	["designer:zhangfen"] = "七哀",
+  ["designer:zhangfen"] = "七哀",
   ["illustrator:zhangfen"] = "杨李ping",
   ["wanglu"] = "望橹",
   [":wanglu"] = "锁定技，准备阶段，你将【大攻车】置入你的装备区，若你的装备区内已有【大攻车】，则你执行一个额外的出牌阶段。<br>"..
@@ -3198,7 +3198,7 @@ zhugeliang:addSkill(zhizhe)
 Fk:loadTranslationTable{
   ["wm__zhugeliang"] = "武诸葛亮",
   ["#wm__zhugeliang"] = "忠武良弼",
-	["designer:wm__zhugeliang"] = "韩旭",
+  ["designer:wm__zhugeliang"] = "韩旭",
   ["illustrator:wm__zhugeliang"] = "梦回唐朝",
   ["jincui"] = "尽瘁",
   [":jincui"] = "锁定技，游戏开始时，你将手牌补至7张。准备阶段，你的体力值调整为与牌堆中点数为7的游戏牌数量相等（至少为1）。"..

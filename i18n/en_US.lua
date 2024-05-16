@@ -53,7 +53,7 @@ return {
   ["liuyan"] = "Liu Yan",
   ["#liuyan"] = "裂土之宗",
   ["cv:liuyan"] = "金垚",
-	["illustrator:liuyan"] = "明暗交界", -- 传说皮 雄踞益州
+  ["illustrator:liuyan"] = "明暗交界", -- 传说皮 雄踞益州
   ["tushe"] = "Attempt to Secede",
   [":tushe"] = "After you target a hero using a non-equipment card, " ..
     "if you have no basic cards, you can draw X (X = # targets of this card).",

@@ -5285,7 +5285,7 @@ Fk:addSkill(weidang_active)
 Fk:loadTranslationTable{
   ["ty__sunziliufang"] = "孙资刘放",
   ["#ty__sunziliufang"] = "谄陷负讥",
-	["designer:ty__sunziliufang"] = "七哀",
+  ["designer:ty__sunziliufang"] = "七哀",
   ["illustrator:ty__sunziliufang"] = "君桓文化",
 
   ["qinshen"] = "勤慎",

@@ -1500,7 +1500,7 @@ weiwenzhugezhi:addSkill(fuhaiw)
 Fk:loadTranslationTable{
   ["weiwenzhugezhi"] = "卫温诸葛直",
   ["#weiwenzhugezhi"] = "帆至夷洲",
-	["designer:weiwenzhugezhi"] = "桃花僧",
+  ["designer:weiwenzhugezhi"] = "桃花僧",
   ["illustrator:weiwenzhugezhi"] = "秋呆呆",
   ["fuhaiw"] = "浮海",
   [":fuhaiw"] = "出牌阶段对每名角色限一次，你可以展示一张手牌并选择上家或下家，该角色展示一张手牌。若你的牌点数：不小于其，你弃置你展示的牌，然后对其"..
@@ -3272,7 +3272,7 @@ liyixiejing:addSkill(douzhen)
 Fk:loadTranslationTable{
   ["liyixiejing"] = "李异谢旌",
   ["#liyixiejing"] = "踵蹑袭进",
-	["designer:liyixiejing"] = "七哀",
+  ["designer:liyixiejing"] = "七哀",
   ["illustrator:liyixiejing"] = "匠人绘",
   ["douzhen"] = "斗阵",
   [":douzhen"] = "转换技，锁定技，你的回合内，阳：你的黑色基本牌视为【决斗】，且使用时获得目标一张牌；阴：你的红色基本牌视为【杀】，且使用时无次数限制。",
@@ -3778,7 +3778,7 @@ sunlang:addSkill(benshi)
 Fk:loadTranslationTable{
   ["sunlang"] = "孙狼",
   ["#sunlang"] = "恶惮远役",
-	["designer:sunlang"] = "残昼厄夜",
+  ["designer:sunlang"] = "残昼厄夜",
   ["illustrator:sunlang"] = "六道目",
   ["tingxian"] = "铤险",
   [":tingxian"] = "每回合限一次，你使用【杀】指定目标后，你可以摸X张牌，然后令此【杀】对其中至多X个目标无效（X为你装备区的牌数+1）。",

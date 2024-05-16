@@ -198,7 +198,7 @@ Fk:addSkill(ty__benyu_active)
 Fk:loadTranslationTable{
   ["ty__chengyu"] = "程昱",
   ["#ty__chengyu"] = "泰山捧日",
-	["illustrator:ty__chengyu"] = "凝聚永恒",
+  ["illustrator:ty__chengyu"] = "凝聚永恒",
 
   ["ty__shefu"] = "设伏",
   [":ty__shefu"] = "①结束阶段，你可以记录一个未被记录的基本牌或锦囊牌的牌名并扣置一张牌，称为“伏兵”；<br>"..
@@ -512,7 +512,7 @@ zhaoang:addSkill(sushou)
 Fk:loadTranslationTable{
   ["zhaoang"] = "赵昂",
   ["#zhaoang"] = "剜心筑城",
-	["designer:zhaoang"] = "残昼厄夜",
+  ["designer:zhaoang"] = "残昼厄夜",
   ["illustrator:zhaoang"] = "君桓文化",
   ["zhongjie"] = "忠节",
   [":zhongjie"] = "每轮限一次，当一名角色因失去体力而进入濒死状态时，你可以令其回复1点体力并摸一张牌。",
@@ -1799,7 +1799,7 @@ Fk:loadTranslationTable{
   ["ty__yangbiao"] = "杨彪",
   ["#ty__yangbiao"] = "德彰海内",
   ["cv:ty__yangbiao"] = "袁国庆",
-	["illustrator:ty__yangbiao"] = "DH", -- 忧心国事
+  ["illustrator:ty__yangbiao"] = "DH", -- 忧心国事
 
   ["ty__zhaohan"] = "昭汉",
   [":ty__zhaohan"] = "摸牌阶段，你可以多摸两张牌，然后选择一项：1.交给一名没有手牌的角色两张手牌；2.弃置两张手牌。",
@@ -4095,7 +4095,7 @@ liuyu:addRelatedSkill(zimu)
 Fk:loadTranslationTable{
   ["ty__liuyu"] = "刘虞",
   ["#ty__liuyu"] = "维城燕北",
-	["designer:ty__liuyu"] = "七哀",
+  ["designer:ty__liuyu"] = "七哀",
   ["illustrator:ty__liuyu"] = "君桓文化",
   ["suifu"] = "绥抚",
   [":suifu"] = "其他角色的结束阶段，若本回合你和一号位共计至少受到两点伤害，你可将当前回合角色的所有手牌置于牌堆顶，视为使用一张【五谷丰登】。",

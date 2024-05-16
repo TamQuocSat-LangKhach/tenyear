@@ -500,7 +500,7 @@ Fk:loadTranslationTable{
   ["xurong"] = "徐荣",
   ["#xurong"] = "玄菟战魔",
   ["cv:xurong"] = "曹真",
-	["designer:xurong"] = "Loun老萌",
+  ["designer:xurong"] = "Loun老萌",
   ["illustrator:xurong"] = "zoo",
   ["xionghuo"] = "凶镬",
   [":xionghuo"] = "游戏开始时，你获得3个“暴戾”标记（标记上限为3）。出牌阶段，你可以交给一名其他角色一个“暴戾”标记，"..
@@ -2103,7 +2103,7 @@ Fk:loadTranslationTable{
   ["godmachao"] = "神马超",
   ["#godmachao"] = "神威天将军",
   ["cv:godmachao"] = "张桐铭",
-	["designer:godmachao"] = "七哀",
+  ["designer:godmachao"] = "七哀",
   ["illustrator:godmachao"] = "君桓文化",
   ["shouli"] = "狩骊",
   [":shouli"] = "游戏开始时，从下家开始所有角色随机使用牌堆中的一张坐骑。你可以将场上的一张进攻马当【杀】（无次数限制）、"..
@@ -4283,7 +4283,7 @@ chentai:addSkill(chenyong)
 Fk:loadTranslationTable{
   ["chentai"] = "陈泰",
   ["#chentai"] = "岳峙渊渟",
-	["designer:chentai"] = "朔方的雪",
+  ["designer:chentai"] = "朔方的雪",
   ["illustrator:chentai"] = "画画的闻玉",
   ["jiuxianc"] = "救陷",
   [":jiuxianc"] = "出牌阶段限一次，你可以重铸一半手牌（向上取整），然后视为使用一张【决斗】。此牌对目标角色造成伤害后，"..
@@ -5698,7 +5698,7 @@ dukui:addSkill(peiqi)
 Fk:loadTranslationTable{
   ["dukui"] = "杜夔",
   ["#dukui"] = "律吕调阳",
-	["designer:dukui"] = "七哀",
+  ["designer:dukui"] = "七哀",
   ["illustrator:dukui"] = "游漫美绘",
   ["fanyin"] = "泛音",
   [":fanyin"] = "出牌阶段开始时，你可以亮出牌堆中点数最小的一张牌并选择一项：1.使用之（无距离限制）；"..

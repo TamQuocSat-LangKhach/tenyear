@@ -581,14 +581,18 @@ local jiangxi = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
       local room = player.room
+      local seatOne = table.find(room.alive_players, function (p)
+        return p.seat == 1
+      end)
+      if seatOne == nil  then return true end
       local events = room.logic:getEventsOfScope(GameEvent.Dying, 1, function(e)
         local dying = e.data[1]
-        return room:getPlayerById(dying.who).seat == 1
+        return dying.who == seatOne.id
       end, Player.HistoryTurn)
       if #events > 0 then return true end
       events = room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function(e)
         local damage = e.data[5]
-        return damage and damage.to.seat == 1
+        return damage and damage.to == seatOne
       end, Player.HistoryTurn)
       return #events == 0
     end
@@ -602,7 +606,8 @@ local jiangxi = fk.CreateTriggerSkill{
     local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
     if turn_event == nil then return false end
     if #U.getEventsByRule(room, GameEvent.ChangeHp, 1, function (e)
-      return e.data[5]
+      local damage = e.data[5]
+      return damage and not damage.to.dead
     end, turn_event.id) == 0 and room:askForSkillInvoke(player, self.name, nil, "#jiangxi-invoke::" .. target.id) then
       player:drawCards(1, self.name)
       if not target.dead then

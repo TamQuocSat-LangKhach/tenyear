@@ -286,9 +286,9 @@ local ty_ex__enyuan = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     if event == fk.AfterCardsMove then
-      return player.room:askForSkillInvoke(player, self.name, nil, "#ty_ex__enyuan-invoke::"..data[1])
+      return player.room:askForSkillInvoke(player, self.name, nil, "#ty_ex__enyuan-en-invoke::"..data[1])
     else
-      return true
+      return player.room:askForSkillInvoke(player, self.name, nil, "#ty_ex__enyuan-yuan-invoke::"..data.from.id)
     end
   end,
   on_use = function(self, event, target, player, data)
@@ -392,12 +392,13 @@ Fk:loadTranslationTable{
   ["#ty_ex__fazheng"] = "蜀汉的辅翼",
   ["illustrator:ty_ex__fazheng"] = "君桓文化",
   ["ty_ex__enyuan"] = "恩怨",
-  [":ty_ex__enyuan"] = "当你获得一名其他角色至少两张牌后，你可以令其摸一张牌；当你受到1点伤害后，伤害来源需选择一项：1.交给你一张手牌，"..
-  "若不为<font color='red'>♥</font>，你摸一张牌；2.其失去1点体力。",
+  [":ty_ex__enyuan"] = "当你得到一名其他角色的牌后，若这些牌数大于1，你可以令其摸一张牌；"..
+  "当你受到1点伤害后，你可以令来源选择：1.将一张手牌交给你，若不为<font color='red'>♥</font>，你摸一张牌；2.失去1点体力。",
   ["ty_ex__xuanhuo"] = "眩惑",
   [":ty_ex__xuanhuo"] = "摸牌阶段结束时，你可以交给一名其他角色两张手牌，然后该角色选择一项：1.你选择另一名是【杀】或【决斗】合法目标的其他角色，"..
   "其视为对该角色使用任意一种【杀】或【决斗】；2.交给你所有手牌。",
-  ["#ty_ex__enyuan-invoke"] = "恩怨：你可以令 %dest 摸一张牌",
+  ["#ty_ex__enyuan-en-invoke"] = "恩怨：你可以令 %dest 摸一张牌",
+  ["#ty_ex__enyuan-yuan-invoke"] = "是否对 %dest 发动 恩怨",
   ["#ty_ex__enyuan-give"] = "恩怨：你需交给 %src 一张手牌，否则失去1点体力",
   ["ty_ex__xuanhuo_choose"] = "眩惑",
   ["#ty_ex__xuanhuo-invoke"] = "眩惑：交给第一名角色两张手牌，令其选择视为对第二名角色使用杀或决斗或交给你所有手牌",

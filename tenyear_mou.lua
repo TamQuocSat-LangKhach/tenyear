@@ -44,7 +44,7 @@ Fk:loadTranslationTable{
   ["#tymou_switch-transer"] = "请选择 %arg 的阴阳状态",
 }
 
---谋定天下：周瑜、鲁肃、司马懿
+--谋定天下：周瑜、鲁肃、司马懿、贾诩
 local tymou__zhouyu = General(extension, "tymou__zhouyu", "wu", 4)
 local ronghuo = fk.CreateTriggerSkill{
   name = "ronghuo",
@@ -130,7 +130,7 @@ local yingmou = fk.CreateTriggerSkill{
           end
           if table.contains(src:getCardIds("h"), cards[i]) then
             local card = Fk:getCardById(cards[i])
-            if not src:isProhibited(to, card) then
+            if src:canUseTo(card, to, { bypass_distances = true, bypass_times = true}) then
               room:useCard({
                 from = src.id,
                 tos = {{to.id}},
@@ -1715,5 +1715,214 @@ Fk:loadTranslationTable{
   ["$yingshij2"] = "君既掷刀于地，可保富贵无虞。",
   ["~tymou__jiangji"] = "大醉解忧，然忧无解，唯忘耳……",
 }
+
+--子敬邀刀：诸葛瑾
+
+local zhugejin = General(extension, "tymou__zhugejin", "wu", 3)
+local zijin = fk.CreateTriggerSkill{
+  name = "zijin",
+  events = {fk.CardUseFinished},
+  anim_type = "negative",
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return player == target and player:hasSkill(self) and not data.damageDealt
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if #room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#zijin-discard") == 0 then
+      room:loseHp(player, 1, self.name)
+    end
+  end,
+}
+local taozhou = fk.CreateActiveSkill{
+  name = "taozhou",
+  anim_type = "control",
+  prompt = "#taozhou-active",
+  card_num = 0,
+  target_num = 1,
+  interaction = function()
+    return UI.Spin {
+      from = 1,
+      to = 3,
+    }
+  end,
+  can_use = function(self, player)
+    return player:getMark(self.name) == 0
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if #selected == 0 and to_select ~= Self.id then
+      local target = Fk:currentRoom():getPlayerById(to_select)
+      return target:getMark("@taozhou_damage") == 0 and not (target:isKongcheng() or target:hasSkill(zijin))
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local n = self.interaction.data
+    room:setPlayerMark(player, self.name, n)
+    local cards = room:askForCard(target, 1, 3, false, self.name, true, ".|.|.|hand", "#taozhou-give:"..player.id)
+    if #cards > 0 then
+      room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonGive, self.name, nil, false, player.id)
+    end
+    if #cards < n then
+      if target.dead then return end
+      n = n - #cards
+      room:setPlayerMark(target, "@taozhou_damage", n)
+      if n > 1 then
+        room:handleAddLoseSkills(target, "zijin", nil)
+        if not player.dead then
+          room:useVirtualCard("slash", {}, target, player, self.name, true)
+        end
+      end
+    else
+      if not player.dead then
+        player:drawCards(1, self.name)
+      end
+      if not target.dead then
+        target:drawCards(1, self.name)
+      end
+    end
+  end,
+}
+local taozhou_trigger = fk.CreateTriggerSkill{
+  name = "#taozhou_trigger",
+  mute = true,
+  events = {fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    return player == target and player:getMark("@taozhou_damage") == 1
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@taozhou_damage", 0)
+    data.damage = data.damage + 1
+  end,
+
+  refresh_events = {fk.RoundEnd, fk.HpChanged},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.HpChanged then
+      return player == target and player:getMark("@taozhou_damage") > 1 and data.damageEvent and data.damageEvent.to == player
+    else
+      return player:getMark("taozhou") ~= 0
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    if event == fk.HpChanged then
+      player.room:removePlayerMark(player, "@taozhou_damage", 1)
+    else
+      player.room:removePlayerMark(player, "taozhou", 1)
+    end
+  end,
+}
+local houde = fk.CreateTriggerSkill{
+  name = "houde",
+  anim_type = "defensive",
+  frequency = Skill.Compulsory,
+  events = {fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) then
+      local room = player.room
+      if room.current == player or room.current.phase ~= Player.Play then return false end
+      if data.card.trueName == "slash" then
+        if data.card.color ~= Card.Red then return false end
+        local mark = player:getMark("houde_slash-phase")
+        local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
+        if use_event == nil then return false end
+        if mark == 0 then
+          room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+            local use = e.data[1]
+            if use.card.trueName == "slash" and use.card.color == Card.Red and
+            table.contains(TargetGroup:getRealTargets(use.tos), player.id) then
+              mark = e.id
+              room:setPlayerMark(player, "houde_slash-phase", mark)
+              return true
+            end
+          end, Player.HistoryPhase)
+        end
+        return mark == use_event.id
+      elseif data.card:isCommonTrick() then
+        if data.card.color ~= Card.Black or room.current.dead or room.current:isNude() then return false end
+        local mark = player:getMark("houde_trick-phase")
+        local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
+        if use_event == nil then return false end
+        if mark == 0 then
+          room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+            local use = e.data[1]
+            if use.card:isCommonTrick() and use.card.color == Card.Black and
+            table.contains(TargetGroup:getRealTargets(use.tos), player.id) then
+              mark = e.id
+              room:setPlayerMark(player, "houde_trick-phase", mark)
+              return true
+            end
+          end, Player.HistoryPhase)
+        end
+        return mark == use_event.id
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if data.card.trueName == "slash" then
+      local card = player.room:askForDiscard(player, 1, 1, false, self.name, true, ".",
+      "#houde-slash-invoke::" .. data.from .. ":" .. data.card:toLogString(), true)
+      if #card > 0 then
+        self.cost_data = card
+        return true
+      end
+    else
+      local room = player.room
+      if room:askForSkillInvoke(player, self.name, nil,
+      "#houde-trick-invoke:".. room.current.id ..":" .. data.from .. ":" .. data.card:toLogString()) then
+        room:doIndicate(player.id, {room.current.id})
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    if data.card.trueName == "slash" then
+      player.room:throwCard(self.cost_data, self.name, player, player)
+    else
+      local room = player.room
+      local id = room:askForCardChosen(player, room.current, "he", self.name)
+      room:throwCard({id}, self.name, room.current, player)
+    end
+    table.insertIfNeed(data.nullifiedTargets, player.id)
+  end,
+}
+taozhou:addRelatedSkill(taozhou_trigger)
+zhugejin:addSkill(taozhou)
+zhugejin:addSkill(houde)
+zhugejin:addRelatedSkill(zijin)
+
+Fk:loadTranslationTable{
+  ["tymou__zhugejin"] = "谋诸葛瑾",
+  ["#tymou__zhugejin"] = "清雅德纯",
+  ["illustrator:tymou__zhugejin"] = "君桓文化",
+  --["designer:tymou__zhugejin"] = "",
+
+  ["taozhou"] = "讨州",
+  [":taozhou"] = "出牌阶段，你可以从1-3中秘密选择一个数字并选择一名有手牌且没有〖自矜〗的其他角色，此技能失效至对应轮数后恢复，"..
+  "其可以将至多三张牌交给你，若其以此法交给你的牌数：大于等于你选择的数字，你与其各摸一张牌；"..
+  "小于你选择的数字，其下X次受到的伤害+1（X为两者差值），若X大于1，则其获得〖自矜〗，视为对你使用【杀】。",
+  ["houde"] = "厚德",
+  [":houde"] = "当你于其他角色的出牌阶段内第一次成为红色【杀】/黑色普通锦囊牌的目标后，你可以弃置一张牌/弃置其一张牌，"..
+  "此【杀】/锦囊牌对你无效。",
+  ["zijin"] = "自矜",
+  [":zijin"] = "锁定技，当牌使用结算结束后，若使用者为你且此牌未造成过伤害，除非你弃置一张牌，否则你失去1点体力。",
+
+  ["#taozhou-active"] = "发动 讨州，从1-3中选择一个数字并选择一名有手牌的其他角色",
+  ["#taozhou-give"] = "讨州：你可以选择1-3张手牌交给 %src",
+  ["#taozhou_trigger"] = "讨州",
+  ["@taozhou_damage"] = "讨州",
+  ["#houde-slash-invoke"] = "是否发动 厚德，弃置一张牌，令%dest使用的%arg对你无效",
+  ["#houde-trick-invoke"] = "是否发动 厚德，弃置%dest的一张牌，令%dest使用的%arg对你无效",
+  ["#zijin-discard"] = "自矜：你需要弃置一张牌，否则你失去1点体力",
+
+
+  ["$taozhou1"] = "皇叔借荆州久矣，谨特来讨要。",
+  ["$taozhou2"] = "荆州弹丸之地，诸君其可食言而肥？",
+  ["$houde1"] = "君子有德，可以载天下之重。",
+  ["$houde2"] = "南山有松，任尔风雨雷霆。",
+  ["~tymou__zhugejin"] = "吾数梦，琅琊旧园……",
+}
+
 
 return extension

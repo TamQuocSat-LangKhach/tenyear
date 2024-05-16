@@ -4049,8 +4049,19 @@ local shuliang = fk.CreateTriggerSkill{
     for _, pid in ipairs(targetsGiven) do
       local p = room:getPlayerById(pid)
       local cardToUse = Fk:getCardById(GivenMap[pid])
-      if p:isAlive() and room:getCardArea(cardToUse.id) == Card.PlayerHand and U.canUseCardTo(room, p, p, cardToUse, true, false) then
-        U.askForPlayCard(room, p, { cardToUse.id }, nil, self.name, "#ty__shuliang-use")
+      if p:isAlive() and room:getCardArea(cardToUse.id) == Card.PlayerHand and
+      U.canUseCardTo(room, p, p, cardToUse, true, false) and
+      room:askForSkillInvoke(p, self.name, nil, "#ty__shuliang-use:::"..cardToUse:toLogString()) then
+        local use = {
+          from = p.id,
+          card = cardToUse,
+          extraUse = true,
+        }
+        --FIXME: 目前没有对自己使用且必须指定两个以上目标的卡牌，暂不作处理
+        if cardToUse.skill:getMinTargetNum() == 1 then
+          use.tos = {{p.id}}
+        end
+        room:useCard(use)
       end
     end
   end,
@@ -4059,7 +4070,7 @@ Fk:loadTranslationTable{
   ["ty__shuliang"] = "输粮",
   [":ty__shuliang"] = "每个回合结束时，你可以交给至少一名没有手牌的其他角色各一张牌。若此牌可指定该角色自己为目标，则其可使用此牌。",
   ["#ty__shuliang-choose"] = "输粮：你可选择一张牌和一名没有手牌的其他角色，交给其此牌",
-  ["#ty__shuliang-use"] = "输粮：你可以使用此牌",
+  ["#ty__shuliang-use"] = "输粮：是否对自己使用%arg",
 
   ["$ty__shuliang1"] = "北伐鏖战正酣，此正需粮之时。",
   ["$ty__shuliang2"] = "粮草先于兵马而动，此军心之本。",

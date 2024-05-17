@@ -1601,17 +1601,16 @@ local chenjian = fk.CreateTriggerSkill{
       proposer = player.id,
     })
     local confirmed = {}
-    local n = 0
-    while not player.dead and #ids > 0 do
+    while not player.dead and #ids > 0 and #confirmed < 2 do
       local choices = {}
-      ids = table.filter(ids, function(id) return room:getCardArea(id) == Card.Processing end)
-      for _, id in ipairs(player:getCardIds("he")) do
-        if not player:prohibitDiscard(Fk:getCardById(id)) and
-        table.find(ids, function(i) return Fk:getCardById(id).suit == Fk:getCardById(i).suit end) then
-          table.insert(choices, "chenjian1")
-        end
+      local canDiscardIds = table.filter(player:getCardIds("he"), function (id)
+        return not player:prohibitDiscard(Fk:getCardById(id))
+      end)
+      if not table.contains(confirmed, "chenjian1") and #canDiscardIds > 0 then
+        table.insert(choices, "chenjian1")
       end
-      if table.find(ids, function(id) return U.getDefaultTargets(player, Fk:getCardById(id), true, false) end) then
+      if not table.contains(confirmed, "chenjian2") and 
+      table.find(ids, function(id) return U.getDefaultTargets(player, Fk:getCardById(id), true, false) end) then
         table.insert(choices, "chenjian2")
       end
       table.insert(choices, "Cancel")
@@ -1623,9 +1622,10 @@ local chenjian = fk.CreateTriggerSkill{
         if choice == "chenjian1" then
           local suits = {}
           for _, id in ipairs(ids) do
-            table.insertIfNeed(suits, Fk:getCardById(id):getSuitString())
+            table.insertIfNeed(suits, Fk:translate(Fk:getCardById(id):getSuitString(true)))
           end
-          local to, card =  room:askForChooseCardAndPlayers(player, table.map(player.room.alive_players, Util.IdMapper), 1, 1, ".|.|"..table.concat(suits, ","), "#chenjian-choose", self.name, false)
+          local to, card =  room:askForChooseCardAndPlayers(player, table.map(player.room.alive_players, Util.IdMapper), 1, 1,
+          tostring(Exppattern{ id = canDiscardIds }), "#chenjian-choose:::"..table.concat(suits, ","), self.name, false)
           if #to > 0 and card then
             local suit = Fk:getCardById(card).suit
             room:throwCard({card}, self.name, player, player)
@@ -1636,16 +1636,16 @@ local chenjian = fk.CreateTriggerSkill{
                 table.remove(ids, i)
               end
             end
-            if not room:getPlayerById(to[1]).dead then
-              room:obtainCard(to[1], to_get, true, fk.ReasonPrey)
+            if #to_get > 0 and not room:getPlayerById(to[1]).dead then
+              room:obtainCard(to[1], to_get, true, fk.ReasonPrey, to[1], self.name)
             end
           end
         elseif choice == "chenjian2" then
           U.askForUseRealCard(room, player, ids, ".", self.name, "#chenjian-use", {expand_pile = ids}, false, false)
         end
       end
+      ids = table.filter(ids, function(id) return room:getCardArea(id) == Card.Processing end)
     end
-    ids = table.filter(ids, function(id) return room:getCardArea(id) == Card.Processing end)
     if #ids > 0 then
       room:moveCards({
         ids = ids,
@@ -1715,14 +1715,14 @@ Fk:loadTranslationTable{
   ["illustrator:tengyin"] = "猎枭",
 
   ["chenjian"] = "陈见",
-  [":chenjian"] = "准备阶段，你可以亮出牌堆顶的三张牌并可以执行：1.弃置一张牌，令一名角色获得其中此牌花色的牌；2.使用其中一张牌。"..
+  [":chenjian"] = "准备阶段，你可以亮出牌堆顶的三张牌，执行任意项：1.弃置一张牌，令一名角色获得其中此牌花色的牌；2.使用其中一张牌。"..
   "若两项均执行，则本局游戏你发动〖陈见〗亮出牌数+1（最多五张），然后你重铸所有手牌。",
   ["xixiu"] = "皙秀",
   [":xixiu"] = "锁定技，当你成为其他角色使用牌的目标后，若你装备区内有与此牌花色相同的牌，你摸一张牌；其他角色不能弃置你装备区内的最后一张牌。",
   ["@chenjian"] = "陈见",
   ["chenjian1"] = "弃一张牌，令一名角色获得此花色的牌",
   ["chenjian2"] = "使用其中一张牌",
-  ["#chenjian-choose"] = "陈见：弃置一张牌并选择一名角色，令其获得与之相同花色的牌",
+  ["#chenjian-choose"] = "陈见：弃置一张牌并选择一名角色，令其获得与之相同花色的牌（可获得的花色:%arg）",
   ["chenjian_viewas"] = "陈见",
   ["#chenjian-use"] = "陈见：使用其中一张牌",
 

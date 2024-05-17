@@ -1752,7 +1752,7 @@ local taozhou = fk.CreateActiveSkill{
   target_filter = function(self, to_select, selected, selected_cards)
     if #selected == 0 and to_select ~= Self.id then
       local target = Fk:currentRoom():getPlayerById(to_select)
-      return target:getMark("@taozhou_damage") == 0 and not (target:isKongcheng() or target:hasSkill(zijin))
+      return not (target:isKongcheng() or target:hasSkill(zijin))
     end
   end,
   on_use = function(self, room, effect)
@@ -1767,7 +1767,7 @@ local taozhou = fk.CreateActiveSkill{
     if #cards < n then
       if target.dead then return end
       n = n - #cards
-      room:setPlayerMark(target, "@taozhou_damage", n)
+      room:addPlayerMark(target, "@taozhou_damage", n)
       if n > 1 then
         room:handleAddLoseSkills(target, "zijin", nil)
         if not player.dead then
@@ -1789,28 +1789,20 @@ local taozhou_trigger = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
-    return player == target and player:getMark("@taozhou_damage") == 1
+    return player == target and player:getMark("@taozhou_damage") > 0
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    player.room:setPlayerMark(player, "@taozhou_damage", 0)
+    player.room:removePlayerMark(player, "@taozhou_damage", 1)
     data.damage = data.damage + 1
   end,
 
-  refresh_events = {fk.RoundEnd, fk.HpChanged},
+  refresh_events = {fk.RoundEnd},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.HpChanged then
-      return player == target and player:getMark("@taozhou_damage") > 1 and data.damageEvent and data.damageEvent.to == player
-    else
-      return player:getMark("taozhou") ~= 0
-    end
+    return player:getMark("taozhou") ~= 0
   end,
   on_refresh = function(self, event, target, player, data)
-    if event == fk.HpChanged then
-      player.room:removePlayerMark(player, "@taozhou_damage", 1)
-    else
-      player.room:removePlayerMark(player, "taozhou", 1)
-    end
+    player.room:removePlayerMark(player, "taozhou", 1)
   end,
 }
 local houde = fk.CreateTriggerSkill{
@@ -1900,7 +1892,7 @@ Fk:loadTranslationTable{
 
   ["taozhou"] = "讨州",
   [":taozhou"] = "出牌阶段，你可以从1-3中秘密选择一个数字并选择一名有手牌且没有〖自矜〗的其他角色，此技能失效至对应轮数后恢复，"..
-  "其可以将至多三张牌交给你，若其以此法交给你的牌数：大于等于你选择的数字，你与其各摸一张牌；"..
+  "其可以将至多三张手牌交给你，若其以此法交给你的牌数：大于等于你选择的数字，你与其各摸一张牌；"..
   "小于你选择的数字，其下X次受到的伤害+1（X为两者差值），若X大于1，则其获得〖自矜〗，视为对你使用【杀】。",
   ["houde"] = "厚德",
   [":houde"] = "当你于其他角色的出牌阶段内第一次成为红色【杀】/黑色普通锦囊牌的目标后，你可以弃置一张牌/弃置其一张牌，"..

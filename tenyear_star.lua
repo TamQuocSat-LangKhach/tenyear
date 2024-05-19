@@ -414,7 +414,17 @@ local getZongshiTargets = function (room, player, card)
 end
 local zongshiy = fk.CreateActiveSkill{
   name = "zongshiy",
-  prompt = "#zongshiy-active",
+  prompt = function (self, cards, selected_targets)
+    if #cards == 0 then
+      return "#zongshiy-active"
+    else
+      local card = Fk:getCardById(cards[1])
+      local i = #table.filter(Self:getCardIds(Player.Hand), function (id)
+        return id ~= cards[1] and Fk:getCardById(id).suit == card.suit
+      end)
+      return "#zongshiy-use:::" .. card.trueName .. ":" .. tostring(i)
+    end
+  end,
   anim_type = "special",
   card_num = 1,
   target_num = 0,
@@ -577,6 +587,7 @@ Fk:loadTranslationTable{
 
   ["#xiaoyan-give"] = "硝焰：你可以选择一张牌交给%src来回复1点体力",
   ["#zongshiy-active"] = "发动 纵势，选择展示一张基本牌或普通锦囊牌",
+  ["#zongshiy-use"] = "发动 纵势，将手牌中其他所有同花色的牌当【%arg】使用，并可指定至多%arg2个目标",
   ["#zongshiy-target"] = "纵势：为即将使用的%arg指定至多%arg2个目标（无距离限制）",
   ["#aoshi-active"] = "发动 傲势，选择一张手牌交给一名拥有“傲势”的角色",
 

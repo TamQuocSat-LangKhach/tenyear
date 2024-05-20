@@ -4516,7 +4516,6 @@ local xiuwen = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and not table.contains(U.getMark(player, self.name), data.card.trueName)
   end,
-  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local mark = U.getMark(player, self.name)
     table.insert(mark, data.card.trueName)

@@ -3191,7 +3191,7 @@ local jingyu = fk.CreateTriggerSkill{
 Fk:loadTranslationTable{
   ["jingyu"] = "静域",
   [":jingyu"] = "锁定技，每项技能每轮限一次，当一名角色发动除“静域”外的技能时，你摸一张牌。" ..
-  "<br/><font color='red'><b>注</b>：请暂不要反馈发动技能不触发静域的问题。</font>",
+  "<br/><font color='red'><b>注</b>：请不要反馈此技能相关的任何问题。</font>",
   ["$jingyu1"] = "人身疾苦，与我无异。",
   ["$jingyu2"] = "医以济世，其术贵在精诚。",
 }
@@ -3289,7 +3289,8 @@ local lvxinDelayedEffect = fk.CreateTriggerSkill{
 Fk:loadTranslationTable{
   ["lvxin"] = "滤心",
   [":lvxin"] = "出牌阶段限一次，你可以交给一名其他角色一张手牌，然后选择一项：1.令其摸X张牌；2.令其随机弃置X张手牌（X为游戏轮数且至多为5）。" ..
-  "若其以此法摸到/弃置与你交给其的牌牌名相同的牌，则其下次发动技能时，其回复1点体力/失去1点体力。",
+  "若其以此法摸到/弃置与你交给其的牌牌名相同的牌，则其下次发动技能时，其回复1点体力/失去1点体力。"..
+  "<br/><font color='red'><b>注</b>：请不要反馈此技能相关的任何问题。</font>",
   ["#lvxin"] = "滤心：你可交给其他角色手牌，令其摸牌或弃牌",
   ["#lvxin_delayed_effect"] = "滤心",
   ["lvxin_draw"] = "令其摸%arg张牌",
@@ -3298,8 +3299,8 @@ Fk:loadTranslationTable{
   ["@lvxinLoseHp"] = "滤心",
   ["lvxin_loseHp"] = "失去体力",
   ["lvxin_recover"] = "回复体力",
-  ["$lvxin1"] = "放下执念，将心寄与沧海。",
-  ["$lvxin2"] = "医病非难，难在医人之心。",
+  ["$lvxin1"] = "医病非难，难在医人之心。",
+  ["$lvxin2"] = "知人者有验于天，知天者有验于人。",
 }
 
 lvxin:addRelatedSkill(lvxinDelayedEffect)
@@ -5990,12 +5991,15 @@ local yuyan_delay = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     player:broadcastSkillInvoke(yuyan.name)
-    player.room:addPlayerMark(target, "@@yuyan-round")
+    local room = player.room
+    if not target.dead then
+      room:addPlayerMark(target, "@@yuyan-round")
+    end
     if event == fk.AfterDying then
-      player.room:addPlayerMark(player, "yuyan_dying_effected-round")
+      room:addPlayerMark(player, "yuyan_dying_effected-round")
       if not player:hasSkill("ty__fenyin", true) then
-        player.room:addPlayerMark(player, "yuyan_tmpfenyin")
-        player.room:handleAddLoseSkills(player, "ty__fenyin", nil, true, false)
+        room:addPlayerMark(player, "yuyan_tmpfenyin")
+        room:handleAddLoseSkills(player, "ty__fenyin", nil, true, false)
       end
     elseif event == fk.Damage then
       player:drawCards(2, yuyan.name)
@@ -6007,7 +6011,9 @@ local yuyan_delay = fk.CreateTriggerSkill{
     return player == target and player:getMark("yuyan_tmpfenyin") > 0
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:handleAddLoseSkills(player, "-ty__fenyin", nil, true, false)
+    local room = player.room
+    room:setPlayerMark(player, "yuyan_tmpfenyin", 0)
+    room:handleAddLoseSkills(player, "-ty__fenyin", nil, true, false)
   end,
 }
 

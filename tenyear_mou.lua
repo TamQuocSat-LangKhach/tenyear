@@ -1769,9 +1769,11 @@ local taozhou = fk.CreateActiveSkill{
       n = n - #cards
       room:addPlayerMark(target, "@taozhou_damage", n)
       if n > 1 then
-        room:handleAddLoseSkills(target, "zijin", nil)
         if not player.dead then
           room:useVirtualCard("slash", {}, target, player, self.name, true)
+        end
+        if not target.dead then
+          room:handleAddLoseSkills(target, "zijin", nil)
         end
       end
     else
@@ -1815,7 +1817,7 @@ local houde = fk.CreateTriggerSkill{
       local room = player.room
       if room.current == player or room.current.phase ~= Player.Play then return false end
       if data.card.trueName == "slash" then
-        if data.card.color ~= Card.Red then return false end
+        if data.card.color ~= Card.Red or player:isNude() then return false end
         local mark = player:getMark("houde_slash-phase")
         local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
         if use_event == nil then return false end
@@ -1853,7 +1855,7 @@ local houde = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     if data.card.trueName == "slash" then
-      local card = player.room:askForDiscard(player, 1, 1, false, self.name, true, ".",
+      local card = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".",
       "#houde-slash-invoke::" .. data.from .. ":" .. data.card:toLogString(), true)
       if #card > 0 then
         self.cost_data = card
@@ -1893,7 +1895,7 @@ Fk:loadTranslationTable{
   ["taozhou"] = "讨州",
   [":taozhou"] = "出牌阶段，你可以从1-3中秘密选择一个数字并选择一名有手牌且没有〖自矜〗的其他角色，此技能失效至对应轮数后恢复，"..
   "其可以将至多三张手牌交给你，若其以此法交给你的牌数：大于等于你选择的数字，你与其各摸一张牌；"..
-  "小于你选择的数字，其下X次受到的伤害+1（X为两者差值），若X大于1，则其获得〖自矜〗，视为对你使用【杀】。",
+  "小于你选择的数字，其下X次受到的伤害+1（X为两者差值），若X大于1，则其视为对你使用【杀】，其获得〖自矜〗。",
   ["houde"] = "厚德",
   [":houde"] = "当你于其他角色的出牌阶段内第一次成为红色【杀】/黑色普通锦囊牌的目标后，你可以弃置一张牌/弃置其一张牌，"..
   "此【杀】/锦囊牌对你无效。",

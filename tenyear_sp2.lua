@@ -121,7 +121,7 @@ local ty__shefu = fk.CreateTriggerSkill{
 local ty__shefu_invalidity = fk.CreateInvaliditySkill {
   name = "#ty__shefu_invalidity",
   invalidity_func = function(self, from, skill)
-    return from:getMark("@@ty__shefu-turn") > 0 and not skill.attached_equip and not skill.name:endsWith("&")
+    return from:getMark("@@ty__shefu-turn") > 0 and skill:isPlayerSkill(from)
   end
 }
 ty__shefu:addRelatedSkill(ty__shefu_invalidity)

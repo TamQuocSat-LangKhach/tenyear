@@ -235,7 +235,7 @@ local jiezhen_invalidity = fk.CreateInvaliditySkill {
   invalidity_func = function(self, from, skill)
     if from:getMark("@@jiezhen") > 0 then
       return not (table.contains({Skill.Compulsory, Skill.Limited, Skill.Wake}, skill.frequency) or
-        skill.name:endsWith("&") or skill:isEquipmentSkill() or skill.lordSkill)
+        not skill:isPlayerSkill(from) or skill.lordSkill)
     end
   end
 }

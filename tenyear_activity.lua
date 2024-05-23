@@ -871,7 +871,7 @@ local xiongrao_invalidity = fk.CreateInvaliditySkill {
   invalidity_func = function(self, from, skill)
     return from:getMark("@@xiongrao-turn") > 0 and
       skill.frequency ~= Skill.Compulsory and skill.frequency ~= Skill.Limited and skill.frequency ~= Skill.Wake and
-      not (skill:isEquipmentSkill() or skill.name:endsWith("&"))
+      skill:isPlayerSkill(from)
   end
 }
 xiongrao:addRelatedSkill(xiongrao_invalidity)
@@ -3765,7 +3765,7 @@ local benshi_attackrange = fk.CreateAttackRangeSkill{
     if from:hasSkill(self) then
       local fix = 1
       if from:getEquipment(Card.SubtypeWeapon) then
-        fix = fix + 1 - Fk:getCardById(from:getEquipment(Card.SubtypeWeapon)).attack_range
+        fix = fix + 1 - Fk:getCardById(from:getEquipment(Card.SubtypeWeapon)):getAttackRange(from)
       end
       return fix
     end
@@ -4568,7 +4568,7 @@ local longsong = fk.CreateTriggerSkill{
     if player.dead then return end
     local skills = {}
     for _, s in ipairs(to.player_skills) do
-      if not (s.attached_equip or s.name[#s.name] == "&") and not player:hasSkill(s, true) and s.frequency < 4 then
+      if s:isPlayerSkill(to) and not player:hasSkill(s, true) and s.frequency < 4 then
         if table.contains(longsong_skills, s.name) or s:isInstanceOf(ActiveSkill) then
           table.insertIfNeed(skills, s.name)
         elseif s:isInstanceOf(TriggerSkill) then

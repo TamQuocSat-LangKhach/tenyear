@@ -521,7 +521,7 @@ local huaping = fk.CreateTriggerSkill{
     else
       local skills = {}
       for _, s in ipairs(target.player_skills) do
-        if not (s.attached_equip or s.name[#s.name] == "&") then
+        if s:isPlayerSkill(target) then
           table.insertIfNeed(skills, s.name)
         end
       end

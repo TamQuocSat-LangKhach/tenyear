@@ -3175,7 +3175,7 @@ local jingyu = fk.CreateTriggerSkill{
       data ~= self and
       target and
       target:hasSkill(data, true, true) and
-      not data:isEquipmentSkill() and
+      not data:isEquipmentSkill(player) and
       not table.contains({ "m_feiyang", "m_bahu" }, data.name) and
       not table.contains(U.getMark(player, "jingyu_skills-round"), data.name)
   end,
@@ -3357,7 +3357,7 @@ local huandao = fk.CreateActiveSkill{
       room:handleAddLoseSkills(target, randomSkill)
       local toLose = {}
       for _, s in ipairs(target.player_skills) do
-        if not (s.attached_equip or s.name[#s.name] == "&" or s.name == randomSkill) then
+        if s:isPlayerSkill(target) and s.name ~= randomSkill then
           table.insertIfNeed(toLose, s.name)
         end
       end

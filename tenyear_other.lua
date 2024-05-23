@@ -1263,4 +1263,294 @@ Fk:loadTranslationTable{
   ["#tycl__benxi"] = "奔袭: 抽到了已经拥有的技能 %arg，改为对一名角色造成一点伤害",
 }
 
+local goddianwei = General(extension, "goddianwei", "god", 4)
+Fk:loadTranslationTable{
+  ["goddianwei"] = "神典韦",
+  ["#goddianwei"] = "袒裼暴虎",
+  ["~goddianwei"] = "战死沙场，快哉快哉！",
+}
+
+local juanjia = fk.CreateTriggerSkill{
+  name = "juanjia",
+  frequency = Skill.Compulsory,
+  events = {fk.GameStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:abortPlayerArea(player, { Player.ArmorSlot })
+    room:addPlayerEquipSlots(player, { Player.WeaponSlot })
+  end,
+}
+Fk:loadTranslationTable{
+  ["juanjia"] = "捐甲",
+  [":juanjia"] = "锁定技，游戏开始时，你废除防具栏，然后获得一个额外的武器栏。<br>" ..
+  "<font color='gray'>注：UI未适配多武器栏，需要等待游戏软件版本更新，请勿反馈显示问题。</font>",
+
+  ["$juanjia1"] = "尚攻者弃守，其提双刃、斩万敌。",
+  ["$juanjia2"] = "舍衣释力，提兵趋敌。",
+}
+
+goddianwei:addSkill(juanjia)
+
+local getArm = function(room, armName)
+  local arm
+  for _, id in ipairs(room.void) do
+    if Fk:getCardById(id).name == armName then
+      room:setCardMark(Fk:getCardById(id), MarkEnum.DestructOutMyEquip, 1)
+      arm = id
+      break
+    end
+  end
+  if not arm then
+    local card = room:printCard(armName, Card.NoSuit, 0)
+    room:setCardMark(card, MarkEnum.DestructOutMyEquip, 1)
+    arm = card.id
+  end
+  return arm
+end
+
+local qiexie = fk.CreateTriggerSkill{
+  name = "qiexie",
+  frequency = Skill.Compulsory,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return
+      target == player and
+      player:hasSkill(self) and
+      player.phase == Player.Start and
+      player:hasEmptyEquipSlot(Card.SubtypeWeapon)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local availableGenerals = room:getTag("qiexieGenerals") or {}
+    if #availableGenerals == 0 then
+      for _, general in ipairs(room.general_pile) do
+        if
+          table.find(
+            Fk.generals[general]:getSkillNameList(),
+            function(skillName)
+              local skill = Fk.skills[skillName]
+              return
+                table.contains({ Skill.Compulsory, Skill.Frequent, Skill.NotFrequent }, skill.frequency) and
+                not skill:isSwitchSkill() and
+                not skill.lordSkill and
+                not skill.isHiddenSkill and
+                string.find(Fk:translate(":" .. skill.name), "【杀】")
+            end
+          )
+        then
+          table.insert(availableGenerals, general)
+        end
+      end
+
+      if #availableGenerals == 0 then
+        return false
+      end
+
+      room:setTag("qiexieGenerals", availableGenerals)
+    end
+
+    availableGenerals = table.filter(
+      room:getTag("qiexieGenerals") or {},
+      function(general) return table.contains(room.general_pile, general) end
+    )
+
+    if #availableGenerals > 0 then
+      availableGenerals = table.random(availableGenerals, 5)
+      local weaponEmpty = #player:getAvailableEquipSlots(Card.SubtypeWeapon) - #player:getEquipments(Card.SubtypeWeapon)
+      local hasLeftArm = table.find(
+        player:getCardIds("e"),
+        function(id) return Fk:getCardById(id).name == "goddianwei_left_arm" end
+      )
+      local hasRightArm = table.find(
+        player:getCardIds("e"),
+        function(id) return Fk:getCardById(id).name == "goddianwei_right_arm" end
+      )
+
+      if weaponEmpty < 1 and not (hasLeftArm and hasRightArm) then
+        return false
+      end
+
+      if hasLeftArm or hasRightArm then
+        weaponEmpty = 1
+      else
+        weaponEmpty = 2
+      end
+
+      local result = player.room:askForCustomDialog(
+        player,
+        self.name,
+        "packages/utility/qml/ChooseGeneralsAndChoiceBox.qml",
+        {
+          availableGenerals,
+          {"OK"},
+          "#qiexie-choose",
+          {},
+          1,
+          weaponEmpty,
+        }
+      )
+
+      local names
+      if result == "" then
+        names = { cards = math.random(availableGenerals) }
+      else
+        names = json.decode(result).cards
+      end
+
+      if #names > 0 then
+        for i = 1, #names do
+          local generalName = names[i]
+          hasLeftArm = table.find(
+            player:getCardIds("e"),
+            function(id) return Fk:getCardById(id).name == "goddianwei_left_arm" end
+          )
+          hasRightArm = table.find(
+            player:getCardIds("e"),
+            function(id) return Fk:getCardById(id).name == "goddianwei_right_arm" end
+          )
+          if hasLeftArm and hasRightArm then
+            break
+          elseif hasLeftArm then
+            room:setPlayerMark(player, "@qiexie_right", { generalName, Fk.generals[generalName].maxHp })
+            table.removeOne(room.general_pile, generalName)
+            local skillList = {}
+            for _, skillName in ipairs(Fk.generals[generalName]:getSkillNameList()) do
+              local skill = Fk.skills[skillName]
+              if
+                table.contains({ Skill.Compulsory, Skill.Frequent, Skill.NotFrequent }, skill.frequency) and
+                not skill:isSwitchSkill() and
+                not skill.lordSkill and
+                not skill.isHiddenSkill and
+                string.find(Fk:translate(":" .. skill.name), "【杀】")
+              then
+                table.insert(skillList, skillName)
+              end
+            end
+            if #skillList > 0 then
+              room:setPlayerMark(player, "qiexie_right_skills", skillList)
+            end
+
+            local rightArm = getArm(room, "goddianwei_right_arm")
+            room:moveCardIntoEquip(player, rightArm, self.name, false)
+          else
+            room:setPlayerMark(player, "@qiexie_left", { generalName, Fk.generals[generalName].maxHp })
+            table.removeOne(room.general_pile, generalName)
+            local skillList = {}
+            for _, skillName in ipairs(Fk.generals[generalName]:getSkillNameList()) do
+              local skill = Fk.skills[skillName]
+              if
+                table.contains({ Skill.Compulsory, Skill.Frequent, Skill.NotFrequent }, skill.frequency) and
+                not skill:isSwitchSkill() and
+                not skill.lordSkill and
+                not skill.isHiddenSkill and
+                string.find(Fk:translate(":" .. skill.name), "【杀】")
+              then
+                table.insert(skillList, skillName)
+              end
+            end
+            if #skillList > 0 then
+              room:setPlayerMark(player, "qiexie_left_skills", skillList)
+            end
+
+            local leftArm = getArm(room, "goddianwei_left_arm")
+            room:moveCardIntoEquip(player, leftArm, self.name, false)
+          end
+        end
+      end
+    end
+  end,
+}
+local qiexieFilter = fk.CreateFilterSkill{
+  name = "#qiexie_filter",
+  equip_skill_filter = function(self, skill, player)
+    if player then
+      local leftSkills = U.getMark(player, "qiexie_left_skills")
+      local rightSkills = U.getMark(player, "qiexie_right_skills")
+      if table.contains(leftSkills, skill.name) then
+        return "goddianwei_left_arm"
+      elseif table.contains(rightSkills, skill.name) then
+        return "goddianwei_right_arm"
+      end
+    end
+  end,
+}
+Fk:loadTranslationTable{
+  ["qiexie"] = "絜挟",
+  [":qiexie"] = "锁定技，准备阶段开始时，若你有空置的武器栏，则你随机观看武将牌堆中五张武将牌" ..
+  "（须带有描述中含有“【杀】”且不具有除锁定技以外标签的技能），将其中至少一张当武器牌置入装备区" ..
+  "（称为【左膀】和【右臂】，无花色点数，攻击范围为对应武将牌的体力上限，效果为其符合上述条件的技能，" ..
+  "离开你的装备区时销毁）。",
+  ["#qiexie-choose"] = "请选择武将牌作为你的装备牌（右键或长按查看技能）",
+  ["@qiexie_left"] = "左膀",
+  ["@qiexie_right"] = "右臂",
+
+  ["$qiexie1"] = "今挟双戟搏战，定护主公太平。",
+  ["$qiexie2"] = "吾乃典韦是也，谁敢向前？谁敢向前！",
+}
+
+qiexie:addRelatedSkill(qiexieFilter)
+goddianwei:addSkill(qiexie)
+
+local cuijue = fk.CreateActiveSkill{
+  name = "cuijue",
+  anim_type = "offensive",
+  card_num = 1,
+  target_num = 0,
+  prompt = "#cuijue",
+  can_use = function(self, player)
+    return not player:isNude() and player:usedSkillTimes(self.name, Player.HistoryPhase) < 20
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and not Self:prohibitDiscard(Fk:getCardById(to_select))
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:throwCard(effect.cards, self.name, player, player)
+
+    local farest = 0
+    local targets = {}
+    for _, p in ipairs(room.alive_players) do
+      if player ~= p and player:inMyAttackRange(p) then
+        local distance = player:distanceTo(p)
+        if distance > farest then
+          farest = distance
+          targets = { p.id }
+        elseif distance == farest then
+          table.insert(targets, p.id)
+        end
+      end
+    end
+
+    targets = table.filter(targets, function(pId) return not table.contains(U.getMark(player, "cuijue_targeted-turn"), pId) end)
+
+    if #targets == 0 then
+      return
+    end
+    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#cuijue-choose", self.name, false)
+    local cuijueTargeted = U.getMark(player, "cuijue_targeted-turn")
+    table.insertIfNeed(cuijueTargeted, tos[1])
+    room:setPlayerMark(player, "cuijue_targeted-turn", cuijueTargeted)
+    room:damage{
+      from = player,
+      to = room:getPlayerById(tos[1]),
+      damage = 1,
+      skillName = self.name,
+    }
+  end,
+}
+Fk:loadTranslationTable{
+  ["cuijue"] = "摧决",
+  [":cuijue"] = "出牌阶段，你可以弃置一张牌，然后对攻击范围内距离最远且本回合未以此法选择过的一名其他角色造成1点伤害。",
+  ["#cuijue"] = "摧决：你可弃置一张牌，然后对攻击范围内距离最远且本回合未指定过的角色造成伤害",
+  ["#cuijue-choose"] = "摧决：选择其中一名角色对其造成1点伤害",
+
+  ["$cuijue1"] = "当锋摧决，贯遐洞坚。",
+  ["$cuijue2"] = "殒身不恤，死战成仁。",
+}
+
+goddianwei:addSkill(cuijue)
+
 return extension

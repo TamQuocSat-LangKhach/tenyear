@@ -3153,13 +3153,9 @@ local youzhan_trigger = fk.CreateTriggerSkill{
     else
       player:broadcastSkillInvoke("youzhan")
       room:notifySkillInvoked(player, "youzhan", "drawcard")
-      for _, p in ipairs(room.alive_players) do
-        if #room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function(e)
-          local damage = e.data[5]
-          if damage and damage.to == p then
-            return true
-          end
-        end, Player.HistoryTurn) == 0 then
+      for _, p in ipairs(room:getAlivePlayers()) do
+        if p:getMark("youzhan-turn") > 0 and
+        #U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].to == player end) == 0 then
           room:doIndicate(player.id, {p.id})
           p:drawCards(math.min(p:getMark("youzhan-turn"), 3), "youzhan")
         end

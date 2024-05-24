@@ -2630,6 +2630,7 @@ Fk:loadTranslationTable{
   ["ty__xujing"] = "许靖",
   ["#ty__xujing"] = "璞玉有瑕",
   ["designer:ty__xujing"] = "步穗",
+  ["cv:ty__xujing"] = "虞晓旭",
   ["illustrator:ty__xujing"] = "黯荧岛工作室",
   ["shangyu"] = "赏誉",
   [":shangyu"] = "锁定技，游戏开始时，你获得一张【杀】并标记之，然后可以将其交给一名角色。此【杀】：造成伤害后，你和使用者各摸一张牌；"..

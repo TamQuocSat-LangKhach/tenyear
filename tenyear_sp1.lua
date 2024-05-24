@@ -6471,6 +6471,7 @@ Fk:loadTranslationTable{
   ["zhouxuan"] = "周宣",
   ["#zhouxuan"] = "夜华青乌",
   ["designer:zhouxuan"] = "世外高v狼",
+  ["cv:zhouxuan"] = "虞晓旭",
   ["illustrator:zhouxuan"] = "匠人绘",
 
   ["wumei"] = "寤寐",

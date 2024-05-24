@@ -5140,6 +5140,7 @@ huanghao:addSkill(cunwei)
 Fk:loadTranslationTable{
   ["ty__huanghao"] = "黄皓",
   ["#ty__huanghao"] = "便辟佞慧",
+  ["cv:ty__huanghao"] = "虞晓旭",
   ["illustrator:ty__huanghao"] = "游漫美绘",
 
   ["ty__qinqing"] = "寝情",

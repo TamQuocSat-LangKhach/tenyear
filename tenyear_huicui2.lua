@@ -657,6 +657,7 @@ Fk:loadTranslationTable{
   ["wanglie"] = "王烈",
   ["#wanglie"] = "通识达道",
   ["designer:wanglie"] = "七哀",
+  ["cv:wanglie"] = "虞晓旭",
   ["illustrator:wanglie"] = "青岛君桓",
   ["chongwang"] = "崇望",
   [":chongwang"] = "其他角色使用一张基本牌或普通锦囊牌时，若你为上一张牌的使用者，你可令其获得其使用的牌或令该牌无效。",

@@ -635,6 +635,7 @@ liuye:addSkill(huace)
 Fk:loadTranslationTable{
   ["ty__liuye"] = "刘晔",
   ["#ty__liuye"] = "佐世之才",
+  ["cv:ty__liuye"] = "瀚涛",
   ["illustrator:ty__liuye"] = "一意动漫",
   ["poyuan"] = "破垣",
   [":poyuan"] = "游戏开始时或回合开始时，若你的装备区里没有【霹雳车】，你可以将【霹雳车】置于装备区；若有，你可以弃置一名其他角色至多两张牌。<br>"..
@@ -5445,6 +5446,7 @@ caofang:addSkill(jujianc)
 Fk:loadTranslationTable{
   ["caofang"] = "曹芳",
   ["#caofang"] = "迷瞑终觉",
+  ["cv:caofang"] = "陆泊云",
   ["illustrator:caofang"] = "鬼画府",
 
   ["zhimin"] = "置民",

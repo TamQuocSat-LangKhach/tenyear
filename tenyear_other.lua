@@ -1354,7 +1354,11 @@ local qiexie = fk.CreateTriggerSkill{
 
     availableGenerals = table.filter(
       room:getTag("qiexieGenerals") or {},
-      function(general) return table.contains(room.general_pile, general) end
+      function(general)
+        return
+          table.contains(room.general_pile, general) and
+          not table.contains({ player.general, player.deputyGeneral }, general)
+      end
     )
 
     if #availableGenerals > 0 then
@@ -1478,7 +1482,7 @@ local qiexieFilter = fk.CreateFilterSkill{
   end,
 }
 Fk:loadTranslationTable{
-  ["qiexie"] = "絜挟",
+  ["qiexie"] = "挈挟",
   [":qiexie"] = "锁定技，准备阶段开始时，若你有空置的武器栏，则你随机观看武将牌堆中五张武将牌" ..
   "（须带有描述中含有“【杀】”且不具有除锁定技以外标签的技能），将其中至少一张当武器牌置入装备区" ..
   "（称为【左膀】和【右臂】，无花色点数，攻击范围为对应武将牌的体力上限，效果为其符合上述条件的技能，" ..

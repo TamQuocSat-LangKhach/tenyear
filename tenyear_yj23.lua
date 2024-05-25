@@ -245,7 +245,7 @@ local zhenfengf = fk.CreateTriggerSkill{
         room:useVirtualCard("slash", nil, player, target, self.name, true)
       end
     else
-      room:addPlayerMark(player, "@zhenfengf", 0)
+      room:setPlayerMark(player, "@zhenfengf", 0)
       if math.abs(tonumber(choice) - n) > 1 then
         room:useVirtualCard("slash", nil, target, player, self.name, true)
       end

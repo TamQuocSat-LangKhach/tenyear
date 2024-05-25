@@ -1337,6 +1337,7 @@ local qiexie = fk.CreateTriggerSkill{
                 not skill:isSwitchSkill() and
                 not skill.lordSkill and
                 not skill.isHiddenSkill and
+                #skill.attachedKingdom == 0 and
                 string.find(Fk:translate(":" .. skill.name), "【杀】")
             end
           )
@@ -1428,6 +1429,7 @@ local qiexie = fk.CreateTriggerSkill{
                 not skill:isSwitchSkill() and
                 not skill.lordSkill and
                 not skill.isHiddenSkill and
+                #skill.attachedKingdom == 0 and
                 string.find(Fk:translate(":" .. skill.name), "【杀】")
               then
                 table.insert(skillList, skillName)
@@ -1450,6 +1452,7 @@ local qiexie = fk.CreateTriggerSkill{
                 not skill:isSwitchSkill() and
                 not skill.lordSkill and
                 not skill.isHiddenSkill and
+                #skill.attachedKingdom == 0 and
                 string.find(Fk:translate(":" .. skill.name), "【杀】")
               then
                 table.insert(skillList, skillName)

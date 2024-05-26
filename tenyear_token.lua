@@ -542,7 +542,7 @@ local leftArm = fk.CreateWeapon{
 }
 Fk:loadTranslationTable{
   ["goddianwei_left_arm"] = "左膀",
-  [":goddianwei_left_arm"] = "这是神典韦的左膀。",
+  [":goddianwei_left_arm"] = "这是神典韦的左膀，蕴含着【杀】之力。",
 }
 
 extension:addCard(leftArm)
@@ -576,7 +576,7 @@ local rightArm = fk.CreateWeapon{
 }
 Fk:loadTranslationTable{
   ["goddianwei_right_arm"] = "右臂",
-  [":goddianwei_right_arm"] = "这是神典韦的右臂。",
+  [":goddianwei_right_arm"] = "这是神典韦的右臂，蕴含着【杀】之力。",
 }
 
 extension:addCard(rightArm)

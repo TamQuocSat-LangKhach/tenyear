@@ -168,6 +168,7 @@ tymou__zhouyu:addSkill(ronghuo)
 tymou__zhouyu:addSkill(yingmou)
 
 local tymou2__zhouyu = General(extension, "tymou2__zhouyu", "wu", 4)
+tymou2__zhouyu.hidden = true
 tymou2__zhouyu:addSkill("ronghuo")
 tymou2__zhouyu:addSkill("yingmou")
 

@@ -4391,7 +4391,7 @@ local yingyu = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and
-      (player.phase == Player.Play or (player.phase == Player.Finish and player:usedSkillTimes("yongbi", Player.HistoryGame) > 0))
+      (player.phase == Player.Start or (player.phase == Player.Finish and player:usedSkillTimes("yongbi", Player.HistoryGame) > 0))
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -4435,6 +4435,8 @@ local yongbi = fk.CreateActiveSkill{
   anim_type = "support",
   card_num = 0,
   target_num = 1,
+  prompt = "#yongbi-prompt",
+  frequency = Skill.Limited,
   can_use = function(self, player)
     return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
@@ -4492,6 +4494,7 @@ Fk:loadTranslationTable{
   ["#yingyu2-choose"] = "媵予：选择一名角色，其获得另一名角色的展示牌",
   ["@@yongbi"] = "拥嬖",
   ["#yingyu_trigger"] = "拥嬖",
+  ["#yongbi-prompt"] = "拥嬖：你可将所有手牌交给一名男性角色，且〖媵予〗改为结束阶段也可发动",
 
   ["$yingyu1"] = "妾身蒲柳，幸蒙将军不弃。",
   ["$yingyu2"] = "妾之所有，愿尽予君。",

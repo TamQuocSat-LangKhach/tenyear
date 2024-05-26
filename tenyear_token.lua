@@ -428,11 +428,15 @@ local catapultSkill = fk.CreateTriggerSkill{
     if event == fk.CardUsing and player.phase ~= Player.NotActive then
       if data.card.is_damage_card then
         data.additionalDamage = (data.additionalDamage or 0) + 1
-      elseif data.card.name == "peach" or (data.card.name == "analeptic" and data.extra_data and data.extra_data.analepticRecover) then
+      elseif data.card.name == "peach" then
         data.additionalRecover = (data.additionalRecover or 0) + 1
-      end
-      if data.card.trueName == "slash" and data.extra_data and data.extra_data.drankBuff then
-        data.additionalDamage = (data.additionalDamage or 0) + data.extra_data.drankBuff
+      elseif data.card.name == "analeptic" then
+        if data.extra_data and data.extra_data.analepticRecover then
+          data.additionalRecover = (data.additionalRecover or 0) + 1
+        else
+          data.extra_data = data.extra_data or {}
+          data.extra_data.additionalDrank = (data.extra_data.additionalDrank or 0) + 1
+        end
       end
     elseif player.phase == Player.NotActive then
       player:drawCards(1, self.name)

@@ -2064,13 +2064,21 @@ local ty__zhanyi_trigger = fk.CreateTriggerSkill{
           player:broadcastSkillInvoke("ty__zhanyi")
           room:notifySkillInvoked(player, "ty__zhanyi", "offensive")
           data.additionalDamage = (data.additionalDamage or 0) + 1
-        elseif data.card.name == "peach" or (data.card.name == "analeptic" and data.extra_data and data.extra_data.analepticRecover) then
+        elseif data.card.name == "peach" then
           player:broadcastSkillInvoke("ty__zhanyi")
           room:notifySkillInvoked(player, "ty__zhanyi", "support")
           data.additionalRecover = (data.additionalRecover or 0) + 1
-        end
-        if data.card.trueName == "slash" and data.extra_data and data.extra_data.drankBuff then
-          data.additionalDamage = (data.additionalDamage or 0) + data.extra_data.drankBuff
+        elseif data.card.name == "analeptic" then
+          if data.extra_data and data.extra_data.analepticRecover then
+            player:broadcastSkillInvoke("ty__zhanyi")
+            room:notifySkillInvoked(player, "ty__zhanyi", "support")
+            data.additionalRecover = (data.additionalRecover or 0) + 1
+          else
+            player:broadcastSkillInvoke("ty__zhanyi")
+            room:notifySkillInvoked(player, "ty__zhanyi", "offensive")
+            data.extra_data = data.extra_data or {}
+            data.extra_data.additionalDrank = (data.extra_data.additionalDrank or 0) + 1
+          end
         end
       elseif data.card.type == Card.TypeTrick then
         player:broadcastSkillInvoke("ty__zhanyi")

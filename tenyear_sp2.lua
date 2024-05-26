@@ -2016,7 +2016,7 @@ local jiudun__analepticSkill = fk.CreateActiveSkill{
         card = effect.card,
       })
     else
-      room:addPlayerMark(to, "@jiudun_drank")
+      room:addPlayerMark(to, "@jiudun_drank", 1 + ((effect.extra_data or {}).additionalDrank or 0))
     end
   end,
 }

@@ -85,7 +85,7 @@ GraphicsBox {
             id: skill_buttons
 
             SkillButton {
-              skill: Backend.translate(modelData)
+              skill: luatr(modelData)
               type: "active"
               enabled: true
               orig: modelData

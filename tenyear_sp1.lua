@@ -3036,7 +3036,7 @@ local zhuangpo = fk.CreateViewAsSkill{
       #selected == 0 and
       (
         Fk:getCardById(to_select).trueName == "slash" or
-        string.find(Fk:translate(":" .. Fk:getCardById(to_select).name), "【杀】")
+        string.find(Fk:translate(":" .. Fk:getCardById(to_select).name, "zh_CN"), "【杀】")
       )
   end,
   view_as = function(self, cards)

@@ -5212,7 +5212,7 @@ local weidang_active = fk.CreateActiveSkill{
           n = n + 1
         end
       end
-      return #Fk:translate(Fk:getCardById(to_select).trueName) / 3 == n
+      return Fk:translate(Fk:getCardById(to_select).trueName, "zh_CN"):len() == n
     end
   end,
   on_use = function(self, room, effect)

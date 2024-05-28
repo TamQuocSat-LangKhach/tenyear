@@ -43,7 +43,7 @@ GraphicsBox {
             anchors.topMargin: 145
             width: 20
             height: 100
-            text: qsTr(Backend.translate("tuoyu1") + "：" + Backend.translate(":tuoyu1"))
+            text: qsTr(luatr("tuoyu1") + "：" + luatr(":tuoyu1"))
             color: "white"
             font.family: fontLibian.name
             font.pixelSize: 18
@@ -65,7 +65,7 @@ GraphicsBox {
             anchors.topMargin: 145
             width: 20
             height: 100
-            text: qsTr(Backend.translate("tuoyu2") + "：" + Backend.translate(":tuoyu2"))
+            text: qsTr(luatr("tuoyu2") + "：" + luatr(":tuoyu2"))
             color: "white"
             font.family: fontLibian.name
             font.pixelSize: 18
@@ -87,7 +87,7 @@ GraphicsBox {
             anchors.topMargin: 145
             width: 20
             height: 100
-            text: qsTr(Backend.translate("tuoyu3") + "：" + Backend.translate(":tuoyu3"))
+            text: qsTr(luatr("tuoyu3") + "：" + luatr(":tuoyu3"))
             color: "white"
             font.family: fontLibian.name
             font.pixelSize: 18
@@ -110,7 +110,7 @@ GraphicsBox {
     MetroButton {
       Layout.alignment: Qt.AlignHCenter
       id: buttonConfirm
-      text: Backend.translate("OK")
+      text: luatr("OK")
       width: 120
       height: 35
 

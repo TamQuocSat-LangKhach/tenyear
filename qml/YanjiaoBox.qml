@@ -88,7 +88,7 @@ GraphicsBox {
       MetroButton {
         Layout.alignment: Qt.AlignHCenter
         id: buttonConfirm
-        text: Backend.translate("OK")
+        text: luatr("OK")
         width: 120
         height: 35
         visible: root.operable
@@ -104,7 +104,7 @@ GraphicsBox {
 
       MetroButton {
         Layout.alignment: Qt.AlignHCenter
-        text: Backend.translate("Cancel")
+        text: luatr("Cancel")
         width: 120
         height: 35
         visible: root.operable

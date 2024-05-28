@@ -98,14 +98,14 @@ local feibaic = fk.CreateTriggerSkill{
         if event_record == 0 then
           event_record = e.id
         end
-        n = n + #Fk:translate(use.card.trueName) / 3
+        n = n + Fk:translate(use.card.trueName, "zh_CN"):len()
       end
     end, end_id)
     room:setPlayerMark(player, "feibaic-turn", event_record)  --记录上次发动技能的事件id
     local cards = {}
     for _, id in ipairs(room.draw_pile) do
       local card = Fk:getCardById(id)
-      if #Fk:translate(card.trueName) / 3 == n then
+      if Fk:translate(card.trueName, "zh_CN"):len() == n then
         table.insertIfNeed(cards, id)
       end
     end

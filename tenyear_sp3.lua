@@ -934,7 +934,7 @@ local jichun = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local card = Fk:getCardById(effect.cards[1])
-    local n = Fk:translate(card.trueName):len() -- FIXME: depends on config language, catastrophe!
+    local n = Fk:translate(card.trueName, "zh_CN"):len()
     player:showCards(effect.cards)
     --room:delay(1000)
     local targets = table.map(table.filter(room.alive_players, function (p)

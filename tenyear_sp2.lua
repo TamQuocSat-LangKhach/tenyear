@@ -6399,7 +6399,7 @@ local zhiren = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local n = Fk:translate(data.card.trueName):len() -- FIXME: depends on config language, catastrophe!
+    local n = Fk:translate(data.card.trueName, "zh_CN"):len()
     room:askForGuanxing(player, room:getNCards(n), nil, nil, "", false)
     if n > 1 then
       local targets = table.map(table.filter(room.alive_players, function(p)

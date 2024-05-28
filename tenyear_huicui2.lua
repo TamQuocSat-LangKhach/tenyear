@@ -87,7 +87,7 @@ local dunshi_record = fk.CreateTriggerSkill{
         local skills = {}
         for _, general in ipairs(Fk:getAllGenerals()) do
           for _, skill in ipairs(general.skills) do
-            local str = Fk:translate(skill.name)
+            local str = Fk:translate(skill.name, "zh_CN")
             if not target:hasSkill(skill,true) and
               (string.find(str, "仁") or string.find(str, "义") or string.find(str, "礼") or string.find(str, "智") or string.find(str, "信")) then
               table.insertIfNeed(skills, skill.name)

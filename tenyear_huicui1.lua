@@ -3790,19 +3790,23 @@ local liuliFuli = fk.CreateActiveSkill{
 
       from:drawCards(math.min(maxHandCardsNum, cardNameLength), self.name)
 
-      if hasDMGCard then
-        local toIds = room:askForChoosePlayers(
-          from, 
-          table.map(room.alive_players, function(p) return p.id end), 
-          1, 
-          1, 
-          "#liuli__fuli-choose", 
-          self.name, 
-          true
-        )
+      local toIds = room:askForChoosePlayers(
+        from, 
+        table.map(room.alive_players, function(p) return p.id end), 
+        1, 
+        1, 
+        hasDMGCard and "#liuli__fuli_ex-choose" or "#liuli__fuli-choose", 
+        self.name, 
+        true
+      )
 
-        if #toIds > 0 then
-          local to = room:getPlayerById(toIds[1])
+      if #toIds > 0 then
+        local to = room:getPlayerById(toIds[1])
+        if hasDMGCard then
+          local users = U.getMark(to, "@@liuli__fuli_ex")
+          table.insertIfNeed(users, from.id)
+          room:setPlayerMark(to, "@@liuli__fuli_ex", users)
+        else
           room:setPlayerMark(to, "@liuli__fuli", to:getMark("@liuli__fuli") - 1)
           from.tag["liuliFuliPlayers"] = from.tag["liuliFuliPlayers"] or {}
           from.tag["liuliFuliPlayers"][to.id] = (from.tag["liuliFuliPlayers"][to.id] or 0) + 1
@@ -3815,17 +3819,33 @@ local liuliFuliRemove = fk.CreateTriggerSkill{
   name = "#liuli__fuli_remove",
   refresh_events = {fk.TurnStart, fk.Death},
   can_refresh = function(self, event, target, player, data)
+    local room = player.room
     return
       target == player and
-      player.tag["liuliFuliPlayers"] and
-      table.find(player.room.alive_players, function(p) return p:getMark("@liuli__fuli") ~= 0 end)
+      (
+        (
+          player.tag["liuliFuliPlayers"] and
+          table.find(room.alive_players, function(p) return p:getMark("@liuli__fuli") ~= 0 end)
+        ) or
+        table.find(room.alive_players, function(p) return table.contains(U.getMark(p, "@@liuli__fuli_ex"), player.id) end)
+      )
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    for playerId, num in pairs(player.tag["liuliFuliPlayers"]) do
-      local player = room:getPlayerById(playerId)
-      if player:getMark("@liuli__fuli") ~= 0 then
-        room:setPlayerMark(player, "@liuli__fuli", math.min(player:getMark("@liuli__fuli") + num, 0))
+    if player.tag["liuliFuliPlayers"] then
+      for playerId, num in pairs(player.tag["liuliFuliPlayers"]) do
+        local player = room:getPlayerById(playerId)
+        if player:getMark("@liuli__fuli") ~= 0 then
+          room:setPlayerMark(player, "@liuli__fuli", math.min(player:getMark("@liuli__fuli") + num, 0))
+        end
+      end
+    end
+
+    for _, p in ipairs(room.alive_players) do
+      local mark = U.getMark(p, "@@liuli__fuli_ex")
+      if table.contains(mark, player.id) then
+        table.removeOne(mark, player.id)
+        room:setPlayerMark(p, "@@liuli__fuli_ex", #mark == 0 and 0 or mark)
       end
     end
 
@@ -3835,15 +3855,22 @@ local liuliFuliRemove = fk.CreateTriggerSkill{
 local liuliFuliDebuff = fk.CreateAttackRangeSkill{
   name = "#liuli__fuli_debuff",
   correct_func = function (self, from, to)
+    if from:getMark("@@liuli__fuli_ex") ~= 0 then
+      return -100
+    end
+
     return from:getMark("@liuli__fuli")
   end,
 }
 Fk:loadTranslationTable{
   ["liuli__fuli"] = "抚黎",
   [":liuli__fuli"] = "出牌阶段限一次，你可以展示所有手牌，选择其中有的一种类别的所有牌弃置，然后摸X张牌（X为以此法弃置的牌的牌名字数之合，" ..
-  "且至多为场上手牌最多的角色的手牌数），若你因此弃置了伤害牌，则你可令一名角色的攻击范围-1直到你的下个回合开始。",
+  "且至多为场上手牌最多的角色的手牌数），且你可令一名角色的攻击范围-1直到你的下个回合开始。若以此法弃置了伤害牌，" ..
+  "则改为其攻击范围视为0直至你的下个回合开始。",
   ["@liuli__fuli"] = "抚黎",
+  ["@@liuli__fuli_ex"] = "抚黎 视为0",
   ["#liuli__fuli-choose"] = "抚黎：你可以选择一名角色，令其攻击范围-1直到你的下个回合开始",
+  ["#liuli__fuli_ex-choose"] = "抚黎：你可以选择一名角色，令其攻击范围视为0直到你的下个回合开始",
 
   ["$liuli__fuli1"] = "民为贵，社稷次之，君为轻。",
   ["$liuli__fuli2"] = "民之所欲，天必从之。",
@@ -3907,6 +3934,7 @@ local dehua = fk.CreateTriggerSkill{
 
       if #U.getMark(player, "@$dehua") == 0 then
         room:handleAddLoseSkills(player, "-" .. self.name)
+        room:setPlayerMark(player, "dehua_keep_damage", 1)
       else
         local namesChosen = U.getMark(player, "dehuaChosen")
         table.insertIfNeed(namesChosen, use.card.trueName)
@@ -3944,6 +3972,9 @@ local dehuaBuff = fk.CreateMaxCardsSkill{
   correct_func = function(self, player)
     return player:hasSkill("dehua") and #U.getMark(player, "dehuaChosen") or 0
   end,
+  exclude_from = function(self, player, card)
+    return player:getMark("dehua_keep_damage") > 0 and card.is_damage_card
+  end,
 }
 local dehuaProhibited = fk.CreateProhibitSkill{
   name = "#dehua_prohibited",
@@ -3965,8 +3996,8 @@ local dehuaProhibited = fk.CreateProhibitSkill{
 Fk:loadTranslationTable{
   ["dehua"] = "德化",
   ["#dehua_prohibited"] = "德化",
-  [":dehua"] = "锁定技，每轮开始时，你选择一种你可使用的伤害牌牌名，视为使用此牌，然后若所有伤害牌均被选择过，则你失去本技能；" ..
-  "你不能使用与以此法选择过的牌名相同的手牌，且你的手牌上限增加以此法选择过的牌名数量。",
+  [":dehua"] = "锁定技，每轮开始时，你选择一种你可使用的伤害牌牌名，视为使用此牌，然后若所有伤害牌均被选择过，则你失去本技能，" ..
+  "且本局游戏内伤害牌不计入你的手牌上限；你不能使用与以此法选择过的牌名相同的手牌，且你的手牌上限增加以此法选择过的牌名数量。",
   ["@$dehua"] = "德化",
   ["#dehua-use"] = "德化：请选择一种伤害牌使用，然后你不能再使用同名手牌",
 

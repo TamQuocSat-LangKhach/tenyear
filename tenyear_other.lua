@@ -1381,7 +1381,7 @@ local qiexie = fk.CreateTriggerSkill{
       if hasLeftArm or hasRightArm then
         weaponEmpty = 1
       else
-        weaponEmpty = 2
+        weaponEmpty = math.min(2, weaponEmpty)
       end
 
       local result = player.room:askForCustomDialog(

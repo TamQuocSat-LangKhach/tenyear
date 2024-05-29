@@ -345,7 +345,7 @@ local ty_ex__xuanhuo = fk.CreateTriggerSkill{
       for _, id in ipairs(U.prepareUniversalCards(room)) do
         local card = Fk:getCardById(id)
         if card.trueName == "slash" or card.trueName == "duel" then
-          if to:canUseTo(card, victim, {bypass_times = true}) then
+          if to:canUseTo(card, victim, {bypass_times = true, bypass_distances = true}) then
             table.insertIfNeed(cards, id)
           end
         end

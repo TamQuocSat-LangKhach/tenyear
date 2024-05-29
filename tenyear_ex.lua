@@ -341,19 +341,20 @@ local ty_ex__xuanhuo = fk.CreateTriggerSkill{
     if to.dead then return end
     local victim = room:getPlayerById(self.cost_data.targets[2])
     local cards = {}
-    for _, id in ipairs(U.prepareUniversalCards(room)) do
-      local card = Fk:getCardById(id)
-      if card.trueName == "slash" or card.trueName == "duel" then
-        if to:canUseTo(card, victim, {bypass_times = true}) then
-          table.insertIfNeed(cards, id)
+    if not victim.dead then
+      for _, id in ipairs(U.prepareUniversalCards(room)) do
+        local card = Fk:getCardById(id)
+        if card.trueName == "slash" or card.trueName == "duel" then
+          if to:canUseTo(card, victim, {bypass_times = true}) then
+            table.insertIfNeed(cards, id)
+          end
         end
       end
     end
     local name
     if #cards > 0 then
-      local cancel = to:isKongcheng() and {} or {"ty_ex__xuanhuo_give"}
       local choices,_ = U.askforChooseCardsAndChoice(to, cards, {"ty_ex__xuanhuo_use"}, self.name,
-      "#ty_ex__xuanhuo-choice:"..player.id..":"..victim.id, cancel, 1, 1)
+      "#ty_ex__xuanhuo-choice:"..player.id..":"..victim.id, {"ty_ex__xuanhuo_give"}, 1, 1)
       if #choices > 0 then
         name = Fk:getCardById(choices[1]).name
       end
@@ -361,7 +362,10 @@ local ty_ex__xuanhuo = fk.CreateTriggerSkill{
     if name then
       room:useVirtualCard(name, nil, to, victim, self.name, true)
     else
-      room:moveCardTo(to.player_cards[Player.Hand], Card.PlayerHand, player, fk.ReasonGive, self.name, nil, false, to.id)
+      cards = to:getCardIds(Player.Hand)
+      if #cards > 0 and not player.dead then
+        room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonGive, self.name, nil, false, to.id)
+      end
     end
   end,
 }
@@ -373,15 +377,7 @@ local ty_ex__xuanhuo_choose = fk.CreateActiveSkill{
     return #selected < 2 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
   end,
   target_filter = function(self, to_select, selected, cards)
-    if to_select == Self.id or #selected == 2 or #cards ~= 2 then return false end
-    local first = Fk:currentRoom():getPlayerById(selected[1])
-    local victim = Fk:currentRoom():getPlayerById(to_select)
-    if #selected == 0 then
-      return true
-    else
-      return first:canUseTo(Fk:cloneCard("slash"), victim, {bypass_times = true})
-      or first:canUseTo(Fk:cloneCard("duel"), victim, {bypass_times = true})
-    end
+    return to_select ~= Self.id and #selected < 2 and #cards == 2
   end,
 }
 Fk:addSkill(ty_ex__xuanhuo_choose)
@@ -395,8 +391,8 @@ Fk:loadTranslationTable{
   [":ty_ex__enyuan"] = "当你得到一名其他角色的牌后，若这些牌数大于1，你可以令其摸一张牌；"..
   "当你受到1点伤害后，你可以令来源选择：1.将一张手牌交给你，若不为<font color='red'>♥</font>，你摸一张牌；2.失去1点体力。",
   ["ty_ex__xuanhuo"] = "眩惑",
-  [":ty_ex__xuanhuo"] = "摸牌阶段结束时，你可以交给一名其他角色两张手牌，然后该角色选择一项：1.你选择另一名是【杀】或【决斗】合法目标的其他角色，"..
-  "其视为对该角色使用任意一种【杀】或【决斗】；2.交给你所有手牌。",
+  [":ty_ex__xuanhuo"] = "摸牌阶段结束时，你可以将两张手牌交给一名其他角色A并选择另一名其他角色B，"..
+  "除非A视为对B使用任意一种【杀】或【决斗】，否则A将所有手牌交给你。",
   ["#ty_ex__enyuan-en-invoke"] = "恩怨：你可以令 %dest 摸一张牌",
   ["#ty_ex__enyuan-yuan-invoke"] = "是否对 %dest 发动 恩怨",
   ["#ty_ex__enyuan-give"] = "恩怨：你需交给 %src 一张手牌，否则失去1点体力",

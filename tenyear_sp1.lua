@@ -6091,7 +6091,7 @@ local mengjiez = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     local mark = target:getMark("@[:]tongguan")
     local room = player.room
-    if player:hasSkill(self, true) and mark ~= 0 then
+    if player:hasSkill(self) and mark ~= 0 then
       if mark == "tg_wuyong" then
         return #U.getActualDamageEvents(room, 1, function(e) return e.data[1].from == target end) > 0
       elseif mark == "tg_gangying" then
@@ -6129,8 +6129,12 @@ local mengjiez = fk.CreateTriggerSkill{
       elseif mark == "tg_guojue" then
         local _event = room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
           for _, move in ipairs(e.data) do
-            if move.from ~= target.id and (move.proposer == target or move.proposer == target.id)
-            and (move.moveReason == fk.ReasonDiscard or move.moveReason == fk.ReasonPrey) then
+            if move.from ~= target.id and move.proposer == target.id
+            and (move.moveReason == fk.ReasonDiscard or move.moveReason == fk.ReasonPrey)
+            and table.find(move.moveInfo, function(info)
+              return info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip
+            end)
+            then
               return true
             end
           end

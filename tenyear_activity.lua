@@ -3762,12 +3762,8 @@ local benshi_attackrange = fk.CreateAttackRangeSkill{
   name = "#benshi_attackrange",
   frequency = Skill.Compulsory,
   correct_func = function (self, from, to)
-    if from:hasSkill(self) then
-      local fix = 1
-      if from:getEquipment(Card.SubtypeWeapon) then
-        fix = fix + 1 - Fk:getCardById(from:getEquipment(Card.SubtypeWeapon)):getAttackRange(from)
-      end
-      return fix
+    if from:hasSkill(benshi) and #from:getEquipments(Card.SubtypeWeapon) == 0 then
+      return 1
     end
     return 0
   end,
@@ -3781,9 +3777,9 @@ Fk:loadTranslationTable{
   ["designer:sunlang"] = "残昼厄夜",
   ["illustrator:sunlang"] = "六道目",
   ["tingxian"] = "铤险",
-  [":tingxian"] = "每回合限一次，你使用【杀】指定目标后，你可以摸X张牌，然后令此【杀】对其中至多X个目标无效（X为你装备区的牌数+1）。",
+  [":tingxian"] = "每回合限一次，你使用【杀】指定目标后，你可以摸X张牌，然后可以令此【杀】对其中至多X个目标无效（X为你装备区的牌数+1）。",
   ["benshi"] = "奔矢",
-  [":benshi"] = "锁定技，你装备区内的武器牌不提供攻击范围，你的攻击范围+1，你使用【杀】须指定攻击范围内所有角色为目标。",
+  [":benshi"] = "锁定技，你使用【杀】须指定攻击范围内所有角色为目标。若你的装备区里没有武器牌，你的攻击范围+1。",
   ["#tingxian-invoke"] = "铤险：你可以摸%arg张牌，然后可以令此【杀】对至多等量的目标无效",
   ["#tingxian-choose"] = "铤险：你可以令此【杀】对至多%arg名目标无效",
 

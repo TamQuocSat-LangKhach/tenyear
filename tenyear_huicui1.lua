@@ -2170,13 +2170,7 @@ local liangxiu = fk.CreateActiveSkill{
     room:setPlayerMark(player, "liangxiu_"..types[1].."-phase", 1)
     local cards = room:getCardsFromPileByRule(".|.|.|.|.|"..types[1], 2)
     if #cards > 0 then
-      local card = room:askForCardsChosen(player, player, 1, 1, {card_data = {{self.name, cards}}}, self.name, "#liangxiu-get")
-      if #card > 0 then
-        card = card[1]
-      else
-        card = cards[1]
-      end
-      room:obtainCard(player.id, card, true, fk.ReasonJustMove)
+      U.askForDistribution(player, cards, nil, self.name, #cards, #cards, nil, cards)
     end
   end
 }
@@ -2246,7 +2240,7 @@ Fk:loadTranslationTable{
   ["designer:kuaiqi"] = "星移",
 
   ["liangxiu"] = "良秀",
-  [":liangxiu"] = "出牌阶段，你可以弃置两张不同类型的牌，然后从两张与你弃置牌类型均不同的牌中选择一张获得（每种类别限一次）。",
+  [":liangxiu"] = "出牌阶段，你可以弃置两张不同类型的牌，然后将两张与你弃置牌类型均不同的牌交给任意角色（每种类别限一次）。",
   ["xunjie"] = "殉节",
   [":xunjie"] = "每轮各限一次，每个回合结束时，若你本回合获得过手牌（摸牌阶段除外），你可以令一名角色将手牌/体力值调整至其体力值/手牌数。",
   ["#liangxiu"] = "良秀：你可以弃置两张类别不同的牌，获得一张另一类别的牌",
@@ -2270,11 +2264,11 @@ local caisi = fk.CreateTriggerSkill{
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.card.type == Card.TypeBasic
-    and player:usedSkillTimes(self.name) < player.maxHp
+    and player:usedSkillTimes(self.name) <= player.maxHp
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local x = player:usedSkillTimes(self.name)
+    local x = 2 ^ (player:usedSkillTimes(self.name) - 1)
     local cards = {}
     if player.phase == Player.NotActive then
       cards = room:getCardsFromPileByRule(".|.|.|.|.|^basic", x, "discardPile")
@@ -2337,7 +2331,7 @@ Fk:loadTranslationTable{
 
   ["caisi"] = "才思",
   [":caisi"] = "当你于回合内/回合外使用基本牌后，你可以从牌堆/弃牌堆随机获得一张非基本牌。每次发动该技能后，若发动次数："..
-  "小于体力上限：本回合下次获得牌张数+1；大于等于体力上限：本回合此技能失效。",
+  "小于等于体力上限：本回合下次获得牌张数翻倍；大于体力上限：本回合此技能失效。",
   ["zhuoli"] = "擢吏",
   [":zhuoli"] = "锁定技，每个回合结束时，若你本回合使用牌或获得牌的张数大于体力值，你加1点体力上限并回复1点体力"..
   "（体力上限不能超过角色数）。",
@@ -3268,14 +3262,48 @@ local yiyong = fk.CreateTriggerSkill{
       proposer = data.to.id,
     })
     if n1 <= n2 and #to_cards > 0 and not player.dead then
-      player:drawCards(#to_cards, self.name)
+      player:drawCards(#to_cards + 1, self.name)
     end
     if n1 >= n2 then
       data.damage = data.damage + 1
     end
   end,
 }
+local suchou = fk.CreateTriggerSkill{
+  name = "suchou",
+  anim_type = "offensive",
+  frequency = Skill.Compulsory,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Play
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local choice = room:askForChoice(player, {"loseMaxHp", "loseHp", "loseSuchou"}, self.name)
+    if choice == "loseSuchou" then
+      room:handleAddLoseSkills(player, "-suchou", nil, true, false)
+      return false
+    end
+    if choice == "loseMaxHp" then
+      room:changeMaxHp(player, -1)
+    else
+      room:loseHp(player, 1, self.name)
+    end
+    if player.dead then return false end
+    room:setPlayerMark(player, "@@suchou-phase", 1)
+  end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) and
+    player:getMark("@@suchou-phase") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.disresponsiveList = table.map(player.room.alive_players, Util.IdMapper)
+  end,
+}
 panghui:addSkill(yiyong)
+panghui:addSkill(suchou)
 Fk:loadTranslationTable{
   ["panghui"] = "庞会",
   ["#panghui"] = "临渭亭侯",
@@ -3283,9 +3311,14 @@ Fk:loadTranslationTable{
   ["illustrator:panghui"] = "秋呆呆",
 
   ["yiyong"] = "异勇",
-  [":yiyong"] = "每当你对其他角色造成伤害时，你可以和该角色同时弃置至少一张牌（该角色没牌则不弃）。若你弃置的牌的点数之和：不大于其，你摸X张牌（X为该角色弃置的牌数）；不小于其，此伤害+1。",
+  [":yiyong"] = "每当你对其他角色造成伤害时，你可以和该角色同时弃置至少一张牌（该角色没牌则不弃）。"..
+  "若你弃置的牌的点数之和：不大于其，你摸X张牌（X为该角色弃置的牌数+1）；不小于其，此伤害+1。",
+  ["suchou"] = "夙仇",
+  [":suchou"] = "锁定技，出牌阶段开始时，你选择：1.减1点体力上限或失去1点体力，你于此阶段内使用牌不能被响应；2.失去此技能。",
   ["#yiyong-invoke"] = "异勇：你可以弃置任意张牌，令 %dest 弃置任意张牌，根据双方弃牌点数之和执行效果",
   ["#yiyong-discard"] = "异勇：弃置至少一张牌",
+  ["loseSuchou"] = "失去〖夙仇〗",
+  ["@@suchou-phase"] = "夙仇",
 
   ["$yiyong1"] = "关氏鼠辈，庞令明之子来邪！",
   ["$yiyong2"] = "凭一腔勇力，父仇定可报还。",
@@ -5023,14 +5056,22 @@ local ty__xingzhao = fk.CreateTriggerSkill{
   name = "ty__xingzhao",
   mute = true,
   frequency = Skill.Compulsory,
-  events = {fk.HpChanged, fk.MaxHpChanged, fk.CardUsing, fk.EventPhaseChanging, fk.DamageCaused},
+  events = {fk.HpChanged, fk.MaxHpChanged, fk.AfterCardsMove, fk.EventPhaseChanging, fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
       local n = #table.filter(player.room.alive_players, function(p) return p:isWounded() end)
       if event == fk.HpChanged or event == fk.MaxHpChanged then
         return (player:hasSkill("xunxun", true) and n == 0) or (not player:hasSkill("xunxun", true) and n > 0)
-      elseif event == fk.CardUsing then
-        return target == player and data.card.type == Card.TypeEquip and n > 1
+      elseif event == fk.AfterCardsMove then
+        if n > 1 then
+          for _, move in ipairs(data) do
+            if (move.from == player.id and table.find(move.moveInfo, function(info)
+                return info.fromArea == Card.PlayerEquip
+              end)) or (move.to == player.id and move.toArea == Card.PlayerEquip and #move.moveInfo > 0) then
+                return true
+            end
+          end
+        end
       elseif event == fk.EventPhaseChanging then
         return target == player and (data.to == Player.Judge or data.to == Player.Discard) and n > 2
       elseif event == fk.DamageCaused then
@@ -5046,7 +5087,7 @@ local ty__xingzhao = fk.CreateTriggerSkill{
       else
         room:handleAddLoseSkills(player, "xunxun", self.name, true, false)
       end
-    elseif event == fk.CardUsing then
+    elseif event == fk.AfterCardsMove then
       player:broadcastSkillInvoke(self.name)
       room:notifySkillInvoked(player, self.name, "drawcard")
       player:drawCards(1, self.name)
@@ -5070,7 +5111,7 @@ Fk:loadTranslationTable{
   ["illustrator:ty__tangzi"] = "六道目",
 
   ["ty__xingzhao"] = "兴棹",
-  [":ty__xingzhao"] = "锁定技，场上受伤的角色为1个或以上，你拥有技能〖恂恂〗；2个或以上，你使用装备牌时摸一张牌；"..
+  [":ty__xingzhao"] = "锁定技，场上受伤的角色为1个或以上，你拥有技能〖恂恂〗；2个或以上，你装备区进入或离开牌时摸一张牌；"..
   "3个或以上，你跳过判定和弃牌阶段；0个、4个或以上，你使用牌对目标角色造成的伤害+1。",
 
   ["$ty__xingzhao1"] = "野棹出浅滩，借风当显威。",

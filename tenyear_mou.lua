@@ -1920,4 +1920,125 @@ Fk:loadTranslationTable{
 }
 
 
+--毒士鸩计：张绣
+
+local zhangxiu = General(extension, "tymou__zhangxiu", "qun", 4)
+local fuxi = fk.CreateTriggerSkill{
+  name = "fuxi",
+  mute = true,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target.phase == Player.Play and not target.dead and player ~= target and
+    table.every(player.room.alive_players, function (p)
+      return p == target or p:getHandcardNum() <= target:getHandcardNum()
+    end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local choices = {"Cancel", "fuxi_discard"}
+    if not player:isNude() then
+      table.insert(choices, "fuxi_give")
+    end
+    local choice = room:askForChoice(player, choices, self.name, "#fuxi-choice::" .. target.id, false,
+    {"fuxi_give", "fuxi_discard", "Cancel"})
+    if choice == "Cancel" then return false end
+    room:doIndicate(player.id, {target.id})
+    self.cost_data = choice
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+      player:broadcastSkillInvoke(self.name)
+    if self.cost_data == "fuxi_give" then
+      room:notifySkillInvoked(player, self.name, "support")
+      local cards = room:askForCard(player, 1, 1, true, self.name, false, ".", "#fuxi-give::" .. target.id)
+      room:obtainCard(target, cards, false, fk.ReasonGive, player.id, self.name)
+      if not player.dead then
+        player:drawCards(2, self.name)
+      end
+    else
+      room:notifySkillInvoked(player, self.name, "offensive")
+      if not target:isNude() then
+        local card = room:askForCardChosen(player, target, "he", self.name)
+        room:throwCard({card}, self.name, target, player)
+        if player.dead or target.dead then return false end
+      end
+      room:useVirtualCard("slash", nil, player, target, self.name, true)
+    end
+  end,
+}
+local haoyi = fk.CreateTriggerSkill{
+  name = "haoyi",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and player.phase == Player.Finish then
+      local room = player.room
+      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
+      if turn_event == nil then return false end
+      local end_id = turn_event.id
+      local cards = {}
+      U.getEventsByRule(room, GameEvent.MoveCards, 1, function (e)
+        for _, move in ipairs(e.data) do
+          if move.toArea == Card.DiscardPile then
+            for _, info in ipairs(move.moveInfo) do
+              if room:getCardArea(info.cardId) == Card.DiscardPile and Fk:getCardById(info.cardId, true).is_damage_card then
+                table.insertIfNeed(cards, info.cardId)
+              end
+            end
+          end
+        end
+        return false
+      end, end_id)
+      if #cards == 0 then return false end
+      local damage
+      U.getActualDamageEvents(room, 1, function (e)
+        damage = e.data[1]
+        if damage.card then
+          for _, id in ipairs(Card:getIdList(damage.card)) do
+            if table.removeOne(cards, id) and #cards == 0 then
+              return true
+            end
+          end
+        end
+      end, nil, end_id)
+      if #cards > 0 then
+        self.cost_data = cards
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = table.simpleClone(self.cost_data)
+    room:obtainCard(player, cards, true, fk.ReasonJustMove, player.id, self.name)
+    if player.dead then return false end
+    cards = table.filter(player:getCardIds(Player.Hand), function (id)
+      return table.contains(cards, id)
+    end)
+    if #cards > 0 then
+      U.askForDistribution(player, cards, room:getOtherPlayers(player), self.name)
+    end
+  end,
+}
+zhangxiu:addSkill(fuxi)
+zhangxiu:addSkill(haoyi)
+Fk:loadTranslationTable{
+  ["tymou__zhangxiu"] = "谋张绣",
+  ["#tymou__zhangxiu"] = "凌枪破宛",
+  --["designer:tymou__zhangxiu"] = "",
+
+  ["fuxi"] = "附袭",
+  [":fuxi"] = "其他角色的出牌阶段开始时，若其为手牌数最多的角色，你可以选择："..
+  "1.将一张牌交给其，你摸两张牌；2.弃置其一张牌，视为对其使用【杀】。",
+  ["haoyi"] = "豪义",
+  [":haoyi"] = "结束阶段，你可以获得弃牌堆里于此回合内移至此区域的未造成过伤害的所有伤害类牌，然后你可以将这些牌中的任意张交给其他角色。",
+
+  ["#fuxi-choice"] = "是否对 %dest 发动 附袭，选择一项操作",
+  ["fuxi_give"] = "将一张牌交给该角色，你摸两张牌",
+  ["fuxi_discard"] = "弃置其一张牌，视为对其使用【杀】",
+  ["#fuxi-give"] = "附袭：选择一张牌，交给 %dest",
+
+}
+
 return extension

@@ -2264,7 +2264,7 @@ local caisi = fk.CreateTriggerSkill{
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.card.type == Card.TypeBasic
-    and player:usedSkillTimes(self.name) <= player.maxHp
+    and player:usedSkillTimes(self.name) < player.maxHp + 1
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -5065,20 +5065,29 @@ local ty__xingzhao = fk.CreateTriggerSkill{
   name = "ty__xingzhao",
   mute = true,
   frequency = Skill.Compulsory,
-  events = {fk.HpChanged, fk.MaxHpChanged, fk.AfterCardsMove, fk.EventPhaseChanging, fk.DamageCaused},
+  events = {fk.EventPhaseStart, fk.AfterCardsMove, fk.EventPhaseChanging, fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
       local n = #table.filter(player.room.alive_players, function(p) return p:isWounded() end)
-      if event == fk.HpChanged or event == fk.MaxHpChanged then
-        return (player:hasSkill("xunxun", true) and n == 0) or (not player:hasSkill("xunxun", true) and n > 0)
+      if event == fk.EventPhaseStart then
+        return target == player and player.phase == Player.Draw and not player:hasSkill("xunxun", true) and n > 0
       elseif event == fk.AfterCardsMove then
         if n > 1 then
+          n = 0
           for _, move in ipairs(data) do
-            if (move.from == player.id and table.find(move.moveInfo, function(info)
-                return info.fromArea == Card.PlayerEquip
-              end)) or (move.to == player.id and move.toArea == Card.PlayerEquip and #move.moveInfo > 0) then
-                return true
+            if move.from == player.id then
+              for _, info in ipairs(move.moveInfo) do
+                if info.fromArea == Card.PlayerEquip then
+                  n = n + 1
+                end
+              end
+            elseif move.to == player.id and move.toArea == Card.PlayerEquip then
+              n = n + #move.moveInfo
             end
+          end
+          if n > 0 then
+            self.cost_data = n
+            return true
           end
         end
       elseif event == fk.EventPhaseChanging then
@@ -5090,16 +5099,12 @@ local ty__xingzhao = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.HpChanged or event == fk.MaxHpChanged then
-      if player:hasSkill("xunxun", true) then
-        room:handleAddLoseSkills(player, "-xunxun", self.name, true, false)
-      else
-        room:handleAddLoseSkills(player, "xunxun", self.name, true, false)
-      end
+    if event == fk.EventPhaseStart then
+      room:handleAddLoseSkills(player, "xunxun", self.name, true, false)
     elseif event == fk.AfterCardsMove then
       player:broadcastSkillInvoke(self.name)
       room:notifySkillInvoked(player, self.name, "drawcard")
-      player:drawCards(1, self.name)
+      player:drawCards(self.cost_data, self.name)
     elseif event == fk.EventPhaseChanging then
       player:broadcastSkillInvoke(self.name)
       room:notifySkillInvoked(player, self.name, "defensive")
@@ -5120,7 +5125,7 @@ Fk:loadTranslationTable{
   ["illustrator:ty__tangzi"] = "六道目",
 
   ["ty__xingzhao"] = "兴棹",
-  [":ty__xingzhao"] = "锁定技，场上受伤的角色为1个或以上，你拥有技能〖恂恂〗；2个或以上，你装备区进入或离开牌时摸一张牌；"..
+  [":ty__xingzhao"] = "锁定技，场上受伤的角色为1个或以上，你获得〖恂恂〗；2个或以上，你装备区进入或离开牌时摸一张牌；"..
   "3个或以上，你跳过判定和弃牌阶段；0个、4个或以上，你使用牌对目标角色造成的伤害+1。",
 
   ["$ty__xingzhao1"] = "野棹出浅滩，借风当显威。",

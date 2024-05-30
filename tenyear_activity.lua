@@ -905,6 +905,7 @@ Fk:loadTranslationTable{
 local dongxie = General(extension, "dongxie", "qun", 4, 4, General.Female)
 local jiaoxia = fk.CreateTriggerSkill{
   name = "jiaoxia",
+  anim_type = "offensive",
   events = {fk.EventPhaseStart, fk.CardUseFinished, fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
     if target ~= player or not player:hasSkill(self) then return false end

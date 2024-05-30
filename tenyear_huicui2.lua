@@ -5173,6 +5173,112 @@ Fk:loadTranslationTable{
   ["~mu__zhoufei"] = "红颜薄命，望君珍重……",
 }
 
+local mu__miheng = General(extension, "mu__miheng", "qun", 3)
+local jigu = fk.CreateTriggerSkill{
+  name = "jigu",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.GameStart, fk.Damage, fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) then return false end
+    local handcards = player:getCardIds(Player.Hand)
+    if event == fk.GameStart then
+      return #handcards > 0
+    elseif player == target then
+      if player:getMark("jiguused-turn") < #player.room.alive_players then
+        local x = #player:getCardIds(Player.Equip)
+        if x == #table.filter(handcards, function (id)
+          return Fk:getCardById(id):getMark("@@jigu-inhand") > 0
+        end) then
+          x = #player:getAvailableEquipSlots() - x
+          if x > 0 then
+            self.cost_data = x
+            return true
+          end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.GameStart then
+      for _, id in ipairs(player.player_cards[Player.Hand]) do
+        room:setCardMark(Fk:getCardById(id), "@@jigu-inhand", 1)
+      end
+    else
+      room:addPlayerMark(player, "jiguused-turn")
+      player:drawCards(self.cost_data, self.name)
+    end
+  end,
+}
+local jigu_maxcards = fk.CreateMaxCardsSkill{
+  name = "#jigu_maxcards",
+  exclude_from = function(self, player, card)
+    return card:getMark("@@jigu-inhand") > 0
+  end,
+}
+local sirui = fk.CreateViewAsSkill{
+  name = "sirui",
+  prompt = "#sirui-viewas",
+  pattern = ".",
+  interaction = function()
+    local all_names = U.getAllCardNames("bt")
+    local names = U.getViewAsCardNames(Self, "sirui", all_names)
+    if #names > 0 then
+      return UI.ComboBox { choices = names, all_choices = all_names }
+    end
+  end,
+  card_filter = function(self, to_select, selected)
+    if #selected > 0 or not self.interaction.data then return false end
+    local card = Fk:cloneCard(self.interaction.data)
+    return Fk:translate(card.trueName, "zh_CN"):len() == Fk:translate(Fk:getCardById(to_select).trueName, "zh_CN"):len()
+  end,
+  view_as = function(self, cards)
+    if #cards == 0 or not self.interaction.data then return end
+    local card = Fk:cloneCard(self.interaction.data)
+    card:addSubcards(cards)
+    card.skillName = self.name
+    return card
+  end,
+  before_use = function(self, player, use)
+    use.extraUse = true
+  end,
+  enabled_at_play = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  enabled_at_response = function(self, player, response)
+    return false
+  end,
+}
+local sirui_targetmod = fk.CreateTargetModSkill{
+  name = "#sirui_targetmod",
+  bypass_times = function(self, player, skill, scope, card)
+    return card and table.contains(card.skillNames, sirui.name)
+  end,
+  bypass_distances = function(self, player, skill, card)
+    return card and table.contains(card.skillNames, sirui.name)
+  end,
+}
+jigu:addRelatedSkill(jigu_maxcards)
+sirui:addRelatedSkill(sirui_targetmod)
+mu__miheng:addSkill(jigu)
+mu__miheng:addSkill(sirui)
+Fk:loadTranslationTable{
+  ["mu__miheng"] = "乐祢衡",
+  ["#mu__miheng"] = "喧鼓振音",
+  --["designer:mu__miheng"] = "",
+
+  ["jigu"] = "激鼓",
+  [":jigu"] = "锁定技，游戏开始时，你的初始手牌增加“激鼓”标记且不计入手牌上限。当你造成或受到伤害后，"..
+  "若你于当前回合内发动过此技能的次数小于存活角色数且你装备区里的牌数等于你手牌区里的“激鼓”牌数，你摸X张牌（X为你空置的装备栏数）。",
+  ["sirui"] = "思锐",
+  [":sirui"] = "出牌阶段限一次，你可以将一张牌当牌名字数相等的基本牌或普通锦囊牌使用（无距离和次数限制）。",
+
+  ["@@jigu-inhand"] = "激鼓",
+  ["#sirui-viewas"] = "发动 思锐，将一张牌转化为牌名字数相等的牌使用（无距离和次数限制）",
+
+}
+
 local daqiao = General(extension, "mu__daqiao", "wu", 3, 3, General.Female)
 local qiqin = fk.CreateTriggerSkill{
   name = "qiqin",
@@ -5567,5 +5673,98 @@ Fk:loadTranslationTable{
   ["$weiwan2"] = "群胥泛舟，共载佳期若瑶梦。",
   ["~mu__xiaoqiao"] = "独寄人间白首，曲误周郎难顾……",
 }
+
+local zoushi = General(extension, "mu__zoushi", "qun", 3, 3, General.Female)
+local yunzheng = fk.CreateTriggerSkill{
+  name = "yunzheng",
+  anim_type = "negative",
+  frequency = Skill.Compulsory,
+  events = {fk.GameStart},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and not player:isKongcheng()
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = player:getCardIds(Player.Hand)
+    for _, id in ipairs(cards) do
+      room:setCardMark(Fk:getCardById(id), "@@yunzheng-inhand", 1)
+    end
+    room:setPlayerMark(player, "@@yunzheng", 1)
+  end,
+
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    return player:getMark("@@yunzheng") > 0 and table.every(player:getCardIds(Player.Hand), function (id)
+      return Fk:getCardById(id):getMark("@@yunzheng-inhand") == 0
+    end)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@@yunzheng", 0)
+  end,
+}
+local yunzheng_maxcards = fk.CreateMaxCardsSkill{
+  name = "#yunzheng_maxcards",
+  exclude_from = function(self, player, card)
+    return card:getMark("@@yunzheng-inhand") > 0
+  end,
+}
+local yunzheng_invalidity = fk.CreateInvaliditySkill {
+  name = "#yunzheng_invalidity",
+  invalidity_func = function(self, from, skill)
+    if from:getMark("@@yunzheng") > 0 and table.contains(from.player_skills, skill)
+    and skill.frequency ~= Skill.Compulsory and skill.frequency ~= Skill.Wake and skill:isPlayerSkill(from) then
+      return table.find(Fk:currentRoom().alive_players, function(p)
+        return p:hasSkill(yunzheng)
+      end)
+    end
+  end,
+}
+local huoxin = fk.CreateTriggerSkill{
+  name = "mu__huoxin",
+  anim_type = "control",
+  frequency = Skill.Compulsory,
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    if not (target == player and player:hasSkill(self) and U.IsUsingHandcard(player, data)) or data.to == player.id then return false end
+    local to = player.room:getPlayerById(data.to)
+    return not (to.dead or to:isKongcheng())
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {data.to})
+    local to = player.room:getPlayerById(data.to)
+    local id = room:askForCardChosen(player, to, "h", self.name)
+    to:showCards({id})
+    local card = Fk:getCardById(id)
+    if (card.suit == data.card.suit and card.suit ~= Card.NoSuit) or card:getMark("@@yunzheng-inhand") > 0 then
+      room:obtainCard(player, id, true, fk.ReasonPrey, player.id, self.name)
+      --存疑：通过惑心得到的牌是否拥有“筝”标记
+    else
+      room:setCardMark(card, "@@yunzheng-inhand", 1)
+      if to:getMark("@@yunzheng-inhand") == 0 then
+        room:setPlayerMark(to, "@@yunzheng", 1)
+      end
+    end
+  end,
+}
+yunzheng:addRelatedSkill(yunzheng_maxcards)
+yunzheng:addRelatedSkill(yunzheng_invalidity)
+zoushi:addSkill(yunzheng)
+zoushi:addSkill(huoxin)
+Fk:loadTranslationTable{
+  ["mu__zoushi"] = "乐邹氏",
+  --["#mu__zoushi"] = "",
+  --["designer:mu__zoushi"] = "",
+
+  ["yunzheng"] = "韵筝",
+  [":yunzheng"] = "锁定技，游戏开始时，你的初始手牌增加“筝”标记且不计入手牌上限。手牌区里有“筝”的角色的不带“锁定技”标签的技能无效。",
+  ["mu__huoxin"] = "惑心",
+  [":mu__huoxin"] = "锁定技，当你使用手牌指定一名其他角色为目标后，你展示其一张手牌并标记为“筝”，"..
+  "若此牌与你使用的牌花色相同或已被标记，则改为你获得之。",
+
+  ["@@yunzheng"] = "韵筝",
+  ["@@yunzheng-inhand"] = "筝",
+}
+
 
 return extension

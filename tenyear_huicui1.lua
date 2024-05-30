@@ -3802,14 +3802,12 @@ local liuliFuli = fk.CreateActiveSkill{
 
       if #toIds > 0 then
         local to = room:getPlayerById(toIds[1])
-        if hasDMGCard then
-          local users = U.getMark(to, "@@liuli__fuli_ex")
-          table.insertIfNeed(users, from.id)
-          room:setPlayerMark(to, "@@liuli__fuli_ex", users)
-        else
-          room:setPlayerMark(to, "@liuli__fuli", to:getMark("@liuli__fuli") - 1)
+        local num = hasDMGCard and to:getAttackRange() or 1
+
+        if num > 0 then
+          room:setPlayerMark(to, "@liuli__fuli", to:getMark("@liuli__fuli") - num)
           from.tag["liuliFuliPlayers"] = from.tag["liuliFuliPlayers"] or {}
-          from.tag["liuliFuliPlayers"][to.id] = (from.tag["liuliFuliPlayers"][to.id] or 0) + 1
+          from.tag["liuliFuliPlayers"][to.id] = (from.tag["liuliFuliPlayers"][to.id] or 0) + num
         end
       end
     end
@@ -3822,30 +3820,15 @@ local liuliFuliRemove = fk.CreateTriggerSkill{
     local room = player.room
     return
       target == player and
-      (
-        (
-          player.tag["liuliFuliPlayers"] and
-          table.find(room.alive_players, function(p) return p:getMark("@liuli__fuli") ~= 0 end)
-        ) or
-        table.find(room.alive_players, function(p) return table.contains(U.getMark(p, "@@liuli__fuli_ex"), player.id) end)
-      )
+      player.tag["liuliFuliPlayers"] and
+      table.find(room.alive_players, function(p) return p:getMark("@liuli__fuli") ~= 0 end)
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if player.tag["liuliFuliPlayers"] then
-      for playerId, num in pairs(player.tag["liuliFuliPlayers"]) do
-        local player = room:getPlayerById(playerId)
-        if player:getMark("@liuli__fuli") ~= 0 then
-          room:setPlayerMark(player, "@liuli__fuli", math.min(player:getMark("@liuli__fuli") + num, 0))
-        end
-      end
-    end
-
-    for _, p in ipairs(room.alive_players) do
-      local mark = U.getMark(p, "@@liuli__fuli_ex")
-      if table.contains(mark, player.id) then
-        table.removeOne(mark, player.id)
-        room:setPlayerMark(p, "@@liuli__fuli_ex", #mark == 0 and 0 or mark)
+    for playerId, num in pairs(player.tag["liuliFuliPlayers"]) do
+      local player = room:getPlayerById(playerId)
+      if player:getMark("@liuli__fuli") ~= 0 then
+        room:setPlayerMark(player, "@liuli__fuli", math.min(player:getMark("@liuli__fuli") + num, 0))
       end
     end
 
@@ -3855,10 +3838,6 @@ local liuliFuliRemove = fk.CreateTriggerSkill{
 local liuliFuliDebuff = fk.CreateAttackRangeSkill{
   name = "#liuli__fuli_debuff",
   correct_func = function (self, from, to)
-    if from:getMark("@@liuli__fuli_ex") ~= 0 then
-      return -100
-    end
-
     return from:getMark("@liuli__fuli")
   end,
 }
@@ -3866,11 +3845,10 @@ Fk:loadTranslationTable{
   ["liuli__fuli"] = "抚黎",
   [":liuli__fuli"] = "出牌阶段限一次，你可以展示所有手牌，选择其中有的一种类别的所有牌弃置，然后摸X张牌（X为以此法弃置的牌的牌名字数之合，" ..
   "且至多为场上手牌最多的角色的手牌数），且你可令一名角色的攻击范围-1直到你的下个回合开始。若以此法弃置了伤害牌，" ..
-  "则改为其攻击范围视为0直至你的下个回合开始。",
+  "则改为其攻击范围减至0直至你的下个回合开始。",
   ["@liuli__fuli"] = "抚黎",
-  ["@@liuli__fuli_ex"] = "抚黎 视为0",
   ["#liuli__fuli-choose"] = "抚黎：你可以选择一名角色，令其攻击范围-1直到你的下个回合开始",
-  ["#liuli__fuli_ex-choose"] = "抚黎：你可以选择一名角色，令其攻击范围视为0直到你的下个回合开始",
+  ["#liuli__fuli_ex-choose"] = "抚黎：你可以选择一名角色，令其攻击范围减至0直到你的下个回合开始",
 
   ["$liuli__fuli1"] = "民为贵，社稷次之，君为轻。",
   ["$liuli__fuli2"] = "民之所欲，天必从之。",

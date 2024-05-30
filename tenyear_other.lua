@@ -7,6 +7,7 @@ local U = require "packages/utility/utility"
 Fk:loadTranslationTable{
   ["tenyear_other"] = "十周年-其他",
   ["tycl"] = "典",
+  ["child"] = "儿童节",
 }
 
 local longwang = General(extension, "longwang", "god", 3)
@@ -1559,5 +1560,245 @@ Fk:loadTranslationTable{
 }
 
 goddianwei:addSkill(cuijue)
+
+local xiaosunquan = General(extension, "child__sunquan", "wu", 3)
+Fk:loadTranslationTable{
+  ["child__sunquan"] = "小孙权",
+  ["#child__sunquan"] = "未知",
+  ["~child__sunquan"] = "",
+}
+
+local huiwan = fk.CreateTriggerSkill {
+  name = "huiwan",
+  anim_type = "drawcard",
+  events = {fk.BeforeDrawCard},
+  can_trigger = function(self, event, target, player, data)
+    return
+      player == target and
+      player:hasSkill(self) and
+      data.num > 0 and
+      table.find(
+        player.room:getTag("huiwanAllCardNames") or {},
+        function(name)
+          return not table.contains(U.getMark(player, "@$huiwan_card_names-turn"), name)
+        end
+      )
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local allCardNames = table.filter(
+      room:getTag("huiwanAllCardNames") or {},
+      function(name)
+          return not table.contains(U.getMark(player, "@$huiwan_card_names-turn"), name)
+        end
+      )
+    local choices = room:askForChoices(player, allCardNames, 1, data.num, self.name, "#huiwan-choice:::" .. data.num)
+    if #choices > 0 then
+      self.cost_data = choices
+      return true
+    end
+
+    return false
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local namesChosen = table.simpleClone(self.cost_data)
+    local cardNamesRecord = U.getMark(player, "@$huiwan_card_names-turn")
+    table.insertTableIfNeed(cardNamesRecord, table.map(namesChosen, function(name) return name end))
+    room:setPlayerMark(player, "@$huiwan_card_names-turn", cardNamesRecord)
+
+    local toDraw = {}
+    for i = #room.draw_pile, 1, -1 do
+      local card = Fk:getCardById(room.draw_pile[i])
+      if table.contains(namesChosen, card.name) then
+        table.removeOne(namesChosen, card.name)
+        table.insert(toDraw, card.id)
+      end
+    end
+
+    if #toDraw > 0 then
+      room:moveCards{
+        ids = toDraw,
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveVisible = true,
+        moveReason = fk.ReasonPrey,
+        skillName = self.name,
+      }
+    end
+
+    data.num = data.num - #toDraw
+    return data.num < 1
+  end,
+
+  refresh_events = {fk.EventAcquireSkill},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and data == self and not player.room:getTag("huiwanAllCardNames")
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local allCardNames = {}
+    for _, id in ipairs(Fk:getAllCardIds()) do
+      local card = Fk:getCardById(id)
+      if (card.type == Card.TypeBasic or card.type == Card.TypeTrick) and not card.is_derived then
+        table.insertIfNeed(allCardNames, card.name)
+      end
+    end
+
+    player.room:setTag("huiwanAllCardNames", allCardNames)
+  end,
+}
+Fk:loadTranslationTable{
+  ["huiwan"] = "会玩",
+  [":huiwan"] = "每回合每种牌名限一次，当你摸牌时，你可以选择至多等量的基本牌或锦囊牌牌名，然后改为从牌堆中获得你选择的牌。",
+  ["@$huiwan_card_names-turn"] = "会玩",
+  ["#huiwan-choice"] = "会玩：你可选择至多 %arg 个牌名，本次改为摸所选牌名的牌",
+}
+
+xiaosunquan:addSkill(huiwan)
+
+local huanli = fk.CreateTriggerSkill {
+  name = "huanli",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if not (target == player and player:hasSkill(self) and player.phase == Player.Finish) then
+      return false
+    end
+
+    local aimedList = {}
+    local canTrigger = false
+    player.room.logic:getEventsOfScope(
+      GameEvent.UseCard,
+      1,
+      function(e)
+        local targets = TargetGroup:getRealTargets(e.data[1].tos)
+        for _, pId in ipairs(targets) do
+          aimedList[pId] = (aimedList[pId] or 0) + 1
+          canTrigger = aimedList[pId] > 2
+        end
+        return false
+      end,
+      Player.HistoryTurn
+    )
+
+    if canTrigger then
+      self.cost_data = aimedList
+      return true
+    end
+
+    return false
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local aimedList = self.cost_data
+    local usedTimes = 0
+    if aimedList[player.id] > 2 then
+      local tos = room:askForChoosePlayers(
+        player,
+        table.map(room:getOtherPlayers(player), Util.IdMapper),
+        1,
+        1,
+        "#huanli_zhangzhao-choose",
+        self.name
+      )
+
+      if #tos > 0 then
+        usedTimes = usedTimes + 1
+        local to = room:getPlayerById(tos[1])
+        local zhangzhao = table.filter({ "zhijian", "guzheng" }, function(skill) return not to:hasSkill(skill, true, true) end)
+        local skillsExist = U.getMark(to, "@@huanli")
+        table.insertTableIfNeed(skillsExist, zhangzhao)
+        room:setPlayerMark(to, "@@huanli", zhangzhao)
+
+        if #zhangzhao > 0 then
+          room:handleAddLoseSkills(to, table.concat(zhangzhao, "|"))
+        end
+      end
+    end
+
+    local availableTargets = {}
+    for pId, num in pairs(aimedList) do
+      if pId ~= player.id and num > 2 then
+        table.insert(availableTargets, pId)
+      end
+    end
+
+    if #availableTargets == 0 then
+      return false
+    end
+
+    local tos = room:askForChoosePlayers(player, availableTargets, 1, 1, "#huanli_zhouyu-choose", self.name)
+    if #tos > 0 then
+      usedTimes = usedTimes + 1
+      local to = room:getPlayerById(tos[1])
+      local zhouyu = table.filter({ "yingzi", "fanjian" }, function(skill) return not to:hasSkill(skill, true, true) end)
+      local skillsExist = U.getMark(to, "@@huanli")
+      table.insertTableIfNeed(skillsExist, zhouyu)
+      room:setPlayerMark(to, "@@huanli", zhouyu)
+
+      if #zhouyu > 0 then
+        room:handleAddLoseSkills(to, table.concat(zhouyu, "|"))
+      end
+    end
+
+    if usedTimes > 1 and not player:hasSkill("zhiheng") then
+      room:setPlayerMark(player, "huanli_sunquan-turn", 1)
+      player.tag["huanli_sunquan"] = true
+      room:handleAddLoseSkills(player, "zhiheng")
+    end
+  end,
+}
+local huanliLose = fk.CreateTriggerSkill {
+  name = "#huanli_lose",
+  mute = true,
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    return
+      target == player and
+      (
+        player:getMark("@@huanli") ~= 0 or
+        (player:getMark("huanli_sunquan-turn") == 0 and player.tag["huanli_sunquan"])
+      )
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if player:getMark("@@huanli") ~= 0 then
+      local huanliSkills = table.simpleClone(U.getMark(player, "@@huanli"))
+      room:setPlayerMark(player, "@@huanli", 0)
+      if #huanliSkills > 0 then
+        room:handleAddLoseSkills(player, table.concat(table.map(huanliSkills, function(skill) return "-" .. skill end), "|"))
+      end
+    end
+
+    if player:getMark("huanli_sunquan-turn") == 0 and player.tag["huanli_sunquan"] then
+      player.tag["huanli_sunquan"] = nil
+      room:handleAddLoseSkills(player, "-zhiheng")
+    end
+  end,
+}
+local huanliNullify = fk.CreateInvaliditySkill {
+  name = "#huanli_nullify",
+  invalidity_func = function(self, from, skill)
+    return
+      from:getMark("@@huanli") ~= 0 and
+      not table.contains(U.getMark(from, "@@huanli"), skill.name) and
+      skill:isPlayerSkill(from)
+  end
+}
+Fk:loadTranslationTable{
+  ["huanli"] = "唤理",
+  [":huanli"] = "结束阶段开始时，若你于本回合内使用牌指定自己为目标至少三次，你可以令一名其他角色所有技能失效（因本技能而获得的技能除外），" ..
+  "且其获得“直谏”和“固政”直到其下回合结束。若你于本回合内使用牌指定同一名其他角色为目标至少三次，你可选择这些角色中的一名，" ..
+  "令其所有技能失效（因本技能而获得的技能除外），且其获得“英姿”和“反间”直到其下回合结束。若你两项均执行，则你获得“制衡”直到你下回合结束。",
+  ["@@huanli"] = "唤理",
+  ["#huanli_zhangzhao-choose"] = "唤理：你可令一名其他角色技能失效且获得“直谏”“固政”直到其下回合结束",
+  ["#huanli_zhouyu-choose"] = "唤理：你可令其中一名角色技能失效且获得“英姿”“反间”直到其下回合结束",
+}
+
+huanli:addRelatedSkill(huanliLose)
+huanli:addRelatedSkill(huanliNullify)
+xiaosunquan:addSkill(huanli)
 
 return extension

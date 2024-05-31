@@ -4807,20 +4807,21 @@ local ty_ex__yaoming = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.Damage, fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player:getMark("ty_ex__yaoming_"..event.."-turn") == 0
+    return target == player and player:hasSkill(self) and (player:getMark("ty_ex__yaoming_throw-turn") == 0
+    or player:getMark("ty_ex__yaoming_draw-turn") == 0 or player:getMark("ty_ex__yaoming_recast-turn") == 0)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local _, dat = room:askForUseActiveSkill(player, "ty_ex__yaoming_active", "#ty_ex__yaoming-invoke", true)
     if dat then
-      self.cost_data = {player:getMark(self.name), dat.targets[1]}
+      self.cost_data = {dat.interaction, dat.targets[1]}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:setPlayerMark(player, "ty_ex__yaoming_"..event.."-turn", 1)
     local choice = self.cost_data[1]
+    room:setPlayerMark(player, choice.."-turn", 1)
     local to = room:getPlayerById(self.cost_data[2])
     if choice == "ty_ex__yaoming_throw" then
       local cid = room:askForCardChosen(player, to, "h", self.name)
@@ -4840,7 +4841,11 @@ local ty_ex__yaoming_active = fk.CreateActiveSkill{
   card_num = 0,
   target_num = 1,
   interaction = function()
-    return UI.ComboBox {choices = {"ty_ex__yaoming_throw", "ty_ex__yaoming_draw", "ty_ex__yaoming_recast" } }
+    local all_choices = {"ty_ex__yaoming_throw", "ty_ex__yaoming_draw", "ty_ex__yaoming_recast" }
+    local choices = table.filter(all_choices, function (c)
+      return Self:getMark(c.."-turn") == 0
+    end)
+    return UI.ComboBox {choices = choices, all_choices = all_choices }
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected, selected_cards)
@@ -4851,12 +4856,8 @@ local ty_ex__yaoming_active = fk.CreateActiveSkill{
     elseif self.interaction.data == "ty_ex__yaoming_draw" then
       return Self.id ~= to_select
     else
-      return true
+      return not to:isNude()
     end
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    room:setPlayerMark(player, "ty_ex__yaoming", self.interaction.data)
   end,
 }
 Fk:addSkill(ty_ex__yaoming_active)
@@ -4867,7 +4868,7 @@ Fk:loadTranslationTable{
   ["illustrator:ty_ex__quancong"] = "YanBai",
   ["ty_ex__yaoming"] = "邀名",
   [":ty_ex__yaoming"] = "每回合每项限一次，当你造成或受到伤害后，你可以选择一项：1.弃置一名其他角色的一张手牌；2.令一名其他角色摸一张牌；3.令一名角色弃置至多两张牌再摸等量的牌。",
-  ["#ty_ex__yaoming-invoke"] = "可以发动“邀名”",
+  ["#ty_ex__yaoming-invoke"] = "邀名：你可以执行本回合未选择的一项",
   ["ty_ex__yaoming_throw"] = "弃置一名其他角色的一张手牌",
   ["ty_ex__yaoming_draw"] = "令一名其他角色摸一张牌",
   ["ty_ex__yaoming_recast"] = "令一名角色弃置至多两张牌再摸等量的牌",
@@ -4890,7 +4891,7 @@ local ty_ex__yanzhu = fk.CreateActiveSkill{
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected, selected_cards)
     if Self:getMark(self.name) > 0 then
-      return #selected == 0 and to_select ~= Self.id 
+      return #selected == 0 and to_select ~= Self.id
     else
       return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isNude()
     end

@@ -352,6 +352,10 @@ local mengmou_switch = fk.CreateTriggerSkill{
 mengmou:addRelatedSkill(mengmou_switch)
 tymou__lusu:addSkill(mingshil)
 tymou__lusu:addSkill(mengmou)
+local tymou2__lusu = General(extension, "tymou2__lusu", "wu", 3)
+tymou2__lusu.hidden = true
+tymou2__lusu:addSkill("mingshil")
+tymou2__lusu:addSkill("mengmou")
 Fk:loadTranslationTable{
   ["tymou__lusu"] = "谋鲁肃",
   ["#tymou__lusu"] = "鸿谋翼远",
@@ -371,11 +375,22 @@ Fk:loadTranslationTable{
   ["#mengmou-ask"] = "盟谋：你需连续打出【杀】，每少打出一张你失去1点体力（第%arg张，共%arg2张）",
   ["#mengmou_switch"] = "盟谋",
 
+  --阳形态
   ["$mingshil1"] = "联刘以抗曹，此可行之大势。",
   ["$mingshil2"] = "强敌在北，唯协力可御之。",
-  ["$mengmou1"] = "合左抑右，定两家之盟。",
-  ["$mengmou2"] = "求同存异，邀英雄问鼎。",
+  ["$mengmou1"] = "南北同仇，请皇叔移驾江东，共观花火。",
+  ["$mengmou2"] = "孙刘一家，慕英雄之意，忾窃汉之敌。",
   ["~tymou__lusu"] = "虎可为之用，亦可为之伤……",
+
+  --阴形态
+  ["tymou2__lusu"] = "谋鲁肃",
+  ["#tymou2__lusu"] = "鸿谋翼远",
+  --["illustrator:tymou2__lusu"] = "",
+  ["$mingshil_tymou2__lusu1"] = "今天下春秋已定，君不见南北沟壑乎？",
+  ["$mingshil_tymou2__lusu2"] = "善谋者借势而为，其化万物为己用。",
+  ["$mengmou_tymou2__lusu1"] = "合左抑右，定两家之盟。",
+  ["$mengmou_tymou2__lusu2"] = "求同存异，邀英雄问鼎。",
+  ["~tymou2__lusu"] = "青龙已巢，以何驱之……",
 }
 
 local tymou__simayi = General(extension, "tymou__simayi", "wei", 3)

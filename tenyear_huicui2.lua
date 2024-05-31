@@ -5265,8 +5265,9 @@ mu__miheng:addSkill(jigu)
 mu__miheng:addSkill(sirui)
 Fk:loadTranslationTable{
   ["mu__miheng"] = "乐祢衡",
-  ["#mu__miheng"] = "喧鼓振音",
+  ["#mu__miheng"] = "鹗立鸷群",
   --["designer:mu__miheng"] = "",
+  ["illustrator:mu__miheng"] = "君桓文化",
 
   ["jigu"] = "激鼓",
   [":jigu"] = "锁定技，游戏开始时，你的初始手牌增加“激鼓”标记且不计入手牌上限。当你造成或受到伤害后，"..
@@ -5277,6 +5278,11 @@ Fk:loadTranslationTable{
   ["@@jigu-inhand"] = "激鼓",
   ["#sirui-viewas"] = "发动 思锐，将一张牌转化为牌名字数相等的牌使用（无距离和次数限制）",
 
+  ["$jigu1"] = "我接着奏乐，诸公接着舞！",
+  ["$jigu2"] = "这不是鼓，而是曹公的脸面。",
+  ["$sirui1"] = "暑气可借酒气消，此间艳阳最佐酒！",
+  ["$sirui2"] = "诸君饮泥而醉，举世唯我独醒！",
+  ["~mu__miheng"] = "映日荷花今尤在，不见当年采荷人……",
 }
 
 local daqiao = General(extension, "mu__daqiao", "wu", 3, 3, General.Female)
@@ -5705,7 +5711,7 @@ local yunzheng = fk.CreateTriggerSkill{
 local yunzheng_maxcards = fk.CreateMaxCardsSkill{
   name = "#yunzheng_maxcards",
   exclude_from = function(self, player, card)
-    return card:getMark("@@yunzheng-inhand") > 0
+    return player:hasSkill(yunzheng) and card:getMark("@@yunzheng-inhand") > 0
   end,
 }
 local yunzheng_invalidity = fk.CreateInvaliditySkill {
@@ -5766,5 +5772,116 @@ Fk:loadTranslationTable{
   ["@@yunzheng-inhand"] = "筝",
 }
 
+local zhugeguo = General(extension, "mu__zhugeguo", "shu", 3, 3, General.Female)
+local xidi = fk.CreateTriggerSkill{
+  name = "xidi",
+  anim_type = "control",
+  frequency = Skill.Compulsory,
+  events = {fk.GameStart, fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) then return false end
+    local handcards = player:getCardIds(Player.Hand)
+    if event == fk.GameStart then
+      return #handcards > 0
+    elseif player == target and player.phase == Player.Start then
+      local x = #table.filter(handcards, function (id)
+        return Fk:getCardById(id):getMark("@@xidi-inhand") > 0
+      end)
+        if x > 0 then
+          self.cost_data = math.min(x, 5)
+          return true
+        end
+      end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.GameStart then
+      for _, id in ipairs(player.player_cards[Player.Hand]) do
+        room:setCardMark(Fk:getCardById(id), "@@xidi-inhand", 1)
+      end
+    else
+      U.askForGuanxing(player, room:getNCards(self.cost_data))
+    end
+  end,
+}
+local xidi_maxcards = fk.CreateMaxCardsSkill{
+  name = "#xidi_maxcards",
+  exclude_from = function(self, player, card)
+    return card:getMark("@@xidi-inhand") > 0
+  end,
+}
+local chengyan = fk.CreateTriggerSkill{
+  name = "chengyan",
+  anim_type = "offensive",
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Play and data.firstTarget and
+    (data.card.trueName == "slash" or data.card:isCommonTrick()) and
+    not table.contains(AimGroup:getAllTargets(data.tos), player.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = room:getNCards(1)
+    room:moveCards{
+      ids = cards,
+      toArea = Card.Processing,
+      moveReason = fk.ReasonJustMove,
+      skillName = self.name,
+      proposer = player.id,
+    }
+    room:delay(1000)
+    local card = Fk:getCardById(cards[1])
+    if card.trueName == "slash" or card:isCommonTrick() then
+      if not card.is_passive and card.skill:getMinTargetNum() < 2 and card.name ~= data.card.name then
+        local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
+        if use_event ~= nil then
+            local new_card = Fk:cloneCard(data.card.name, data.card.suit, data.card.number)
+          for k, v in pairs(data.card) do
+            if new_card[k] == nil then
+              new_card[k] = v
+            end
+          end
+          if data.card:isVirtual() then
+            new_card.subcards = data.card.subcards
+          else
+            new_card.id = data.card.id
+          end
+          new_card.skillNames = data.card.skillNames
+          new_card.skill = card.skill
+          data.card = new_card
+          use_event.data[1].card = new_card
+          --FIXME：对单体目标的data.card的修改不会同步给使用事件
+          local useCardIds = new_card:isVirtual() and new_card.subcards or { new_card.id }
+          if #useCardIds > 0 then
+            room:sendCardVirtName(useCardIds, card.name)
+          end
+        end
+      end
+      U.clearRemainCards(room, cards, self.name)
+    else
+      room:moveCardTo(cards, Player.Hand, player, fk.ReasonJustMove, self.name, nil, true, player.id, "@@xidi-inhand")
+    end
+  end,
+}
+
+xidi:addRelatedSkill(xidi_maxcards)
+zhugeguo:addSkill(xidi)
+zhugeguo:addSkill(chengyan)
+
+Fk:loadTranslationTable{
+  ["mu__zhugeguo"] = "乐诸葛果",
+  --["#mu__zhugeguo"] = "",
+  --["designer:mu__zhugeguo"] = "",
+
+  ["xidi"] = "羲笛",
+  [":xidi"] = "锁定技，游戏开始时，你的初始手牌增加“笛”标记且不计入手牌上限。"..
+  "准备阶段，你观看牌堆顶的X张牌（X为你手牌区里的“笛”数且至多为5），然后将这些牌以任意顺序置于牌堆顶或牌堆底。",
+  ["chengyan"] = "乘烟",
+  [":chengyan"] = "当你于出牌阶段内使用【杀】或普通锦囊牌指定第一个目标后，若你不是此牌的目标，你可以亮出牌堆顶的一张牌，"..
+  "若亮出的牌：为【杀】或普通锦囊牌（【无懈可击】、【借刀杀人】除外），你令使用的牌的作用效果变成与亮出的牌的作用效果相同；"..
+  "不为【杀】且不为普通锦囊牌，你获得亮出的牌并标记为“笛”。",
+
+  ["@@xidi-inhand"] = "笛",
+}
 
 return extension

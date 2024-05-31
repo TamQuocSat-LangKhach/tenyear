@@ -1573,28 +1573,46 @@ local huiwan = fk.CreateTriggerSkill {
   anim_type = "drawcard",
   events = {fk.BeforeDrawCard},
   can_trigger = function(self, event, target, player, data)
-    return
-      player == target and
-      player:hasSkill(self) and
-      data.num > 0 and
-      table.find(
-        player.room:getTag("huiwanAllCardNames") or {},
-        function(name)
-          return not table.contains(U.getMark(player, "@$huiwan_card_names-turn"), name)
-        end
-      )
+    if not (player == target and player:hasSkill(self) and data.num > 0) then
+      return false
+    end
+
+    local availableNames = table.filter(
+      player.room:getTag("huiwanAllCardNames") or {},
+      function(name)
+        return not table.contains(U.getMark(player, "huiwan_card_names-turn"), name)
+      end
+    )
+
+    if #availableNames > 0 then
+      return 
+        table.find(
+          player.room.draw_pile,
+          function(id) return table.contains(availableNames, Fk:getCardById(id).trueName) end
+        )
+    end
+
+    return false
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local allCardNames = table.filter(
       room:getTag("huiwanAllCardNames") or {},
       function(name)
-          return not table.contains(U.getMark(player, "@$huiwan_card_names-turn"), name)
-        end
-      )
-    local choices = room:askForChoices(player, allCardNames, 1, data.num, self.name, "#huiwan-choice:::" .. data.num)
-    if #choices > 0 then
-      self.cost_data = choices
+        return not table.contains(U.getMark(player, "huiwan_card_names-turn"), name)
+      end
+    )
+
+    local chioces = {}
+    for _, name in ipairs(allCardNames) do
+      if table.find(room.draw_pile, function(id) return Fk:getCardById(id).trueName == name end) then
+        table.insert(chioces, name)
+      end
+    end
+
+    local result = room:askForChoices(player, chioces, 1, data.num, self.name, "#huiwan-choice:::" .. data.num)
+    if #result > 0 then
+      self.cost_data = result
       return true
     end
 
@@ -1603,28 +1621,21 @@ local huiwan = fk.CreateTriggerSkill {
   on_use = function(self, event, target, player, data)
     local room = player.room
     local namesChosen = table.simpleClone(self.cost_data)
-    local cardNamesRecord = U.getMark(player, "@$huiwan_card_names-turn")
+    local cardNamesRecord = U.getMark(player, "huiwan_card_names-turn")
     table.insertTableIfNeed(cardNamesRecord, table.map(namesChosen, function(name) return name end))
-    room:setPlayerMark(player, "@$huiwan_card_names-turn", cardNamesRecord)
+    room:setPlayerMark(player, "huiwan_card_names-turn", cardNamesRecord)
 
     local toDraw = {}
     for i = #room.draw_pile, 1, -1 do
       local card = Fk:getCardById(room.draw_pile[i])
-      if table.contains(namesChosen, card.name) then
-        table.removeOne(namesChosen, card.name)
+      if table.contains(namesChosen, card.trueName) then
+        table.removeOne(namesChosen, card.trueName)
         table.insert(toDraw, card.id)
       end
     end
 
     if #toDraw > 0 then
-      room:moveCards{
-        ids = toDraw,
-        to = player.id,
-        toArea = Card.PlayerHand,
-        moveVisible = true,
-        moveReason = fk.ReasonPrey,
-        skillName = self.name,
-      }
+      room:obtainCard(player, toDraw, false, fk.ReasonPrey, player.id, self.name)
     end
 
     data.num = data.num - #toDraw
@@ -1640,7 +1651,7 @@ local huiwan = fk.CreateTriggerSkill {
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
       if (card.type == Card.TypeBasic or card.type == Card.TypeTrick) and not card.is_derived then
-        table.insertIfNeed(allCardNames, card.name)
+        table.insertIfNeed(allCardNames, card.trueName)
       end
     end
 
@@ -1649,8 +1660,7 @@ local huiwan = fk.CreateTriggerSkill {
 }
 Fk:loadTranslationTable{
   ["huiwan"] = "会玩",
-  [":huiwan"] = "每回合每种牌名限一次，当你摸牌时，你可以选择至多等量的基本牌或锦囊牌牌名，然后改为从牌堆中获得你选择的牌。",
-  ["@$huiwan_card_names-turn"] = "会玩",
+  [":huiwan"] = "每回合每种牌名限一次，当你摸牌时，你可以选择至多等量牌堆中有的基本牌或锦囊牌牌名，然后改为从牌堆中获得你选择的牌。",
   ["#huiwan-choice"] = "会玩：你可选择至多 %arg 个牌名，本次改为摸所选牌名的牌",
 }
 
@@ -1674,7 +1684,7 @@ local huanli = fk.CreateTriggerSkill {
         local targets = TargetGroup:getRealTargets(e.data[1].tos)
         for _, pId in ipairs(targets) do
           aimedList[pId] = (aimedList[pId] or 0) + 1
-          canTrigger = aimedList[pId] > 2
+          canTrigger = canTrigger or aimedList[pId] > 2
         end
         return false
       end,
@@ -1693,7 +1703,7 @@ local huanli = fk.CreateTriggerSkill {
     local room = player.room
     local aimedList = self.cost_data
     local usedTimes = 0
-    if aimedList[player.id] > 2 then
+    if (aimedList[player.id] or 0) > 2 then
       local tos = room:askForChoosePlayers(
         player,
         table.map(room:getOtherPlayers(player), Util.IdMapper),
@@ -1709,7 +1719,7 @@ local huanli = fk.CreateTriggerSkill {
         local zhangzhao = table.filter({ "zhijian", "guzheng" }, function(skill) return not to:hasSkill(skill, true, true) end)
         local skillsExist = U.getMark(to, "@@huanli")
         table.insertTableIfNeed(skillsExist, zhangzhao)
-        room:setPlayerMark(to, "@@huanli", zhangzhao)
+        room:setPlayerMark(to, "@@huanli", skillsExist)
 
         if #zhangzhao > 0 then
           room:handleAddLoseSkills(to, table.concat(zhangzhao, "|"))
@@ -1732,20 +1742,20 @@ local huanli = fk.CreateTriggerSkill {
     if #tos > 0 then
       usedTimes = usedTimes + 1
       local to = room:getPlayerById(tos[1])
-      local zhouyu = table.filter({ "yingzi", "fanjian" }, function(skill) return not to:hasSkill(skill, true, true) end)
+      local zhouyu = table.filter({ "ex__yingzi", "ex__fanjian" }, function(skill) return not to:hasSkill(skill, true, true) end)
       local skillsExist = U.getMark(to, "@@huanli")
       table.insertTableIfNeed(skillsExist, zhouyu)
-      room:setPlayerMark(to, "@@huanli", zhouyu)
+      room:setPlayerMark(to, "@@huanli", skillsExist)
 
       if #zhouyu > 0 then
         room:handleAddLoseSkills(to, table.concat(zhouyu, "|"))
       end
     end
 
-    if usedTimes > 1 and not player:hasSkill("zhiheng") then
+    if usedTimes > 1 and not player:hasSkill("ex__zhiheng") then
       room:setPlayerMark(player, "huanli_sunquan-turn", 1)
       player.tag["huanli_sunquan"] = true
-      room:handleAddLoseSkills(player, "zhiheng")
+      room:handleAddLoseSkills(player, "ex__zhiheng")
     end
   end,
 }
@@ -1774,7 +1784,7 @@ local huanliLose = fk.CreateTriggerSkill {
 
     if player:getMark("huanli_sunquan-turn") == 0 and player.tag["huanli_sunquan"] then
       player.tag["huanli_sunquan"] = nil
-      room:handleAddLoseSkills(player, "-zhiheng")
+      room:handleAddLoseSkills(player, "-ex__zhiheng")
     end
   end,
 }
@@ -1793,6 +1803,7 @@ Fk:loadTranslationTable{
   "且其获得“直谏”和“固政”直到其下回合结束。若你于本回合内使用牌指定同一名其他角色为目标至少三次，你可选择这些角色中的一名，" ..
   "令其所有技能失效（因本技能而获得的技能除外），且其获得“英姿”和“反间”直到其下回合结束。若你两项均执行，则你获得“制衡”直到你下回合结束。",
   ["@@huanli"] = "唤理",
+  ["#huanli_lose"] = "唤理",
   ["#huanli_zhangzhao-choose"] = "唤理：你可令一名其他角色技能失效且获得“直谏”“固政”直到其下回合结束",
   ["#huanli_zhouyu-choose"] = "唤理：你可令其中一名角色技能失效且获得“英姿”“反间”直到其下回合结束",
 }

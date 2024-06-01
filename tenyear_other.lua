@@ -1650,7 +1650,7 @@ local huiwan = fk.CreateTriggerSkill {
     local allCardNames = {}
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
-      if (card.type == Card.TypeBasic or card.type == Card.TypeTrick) and not card.is_derived then
+      if (card.type == Card.TypeBasic or card:isCommonTrick()) then
         table.insertIfNeed(allCardNames, card.trueName)
       end
     end
@@ -1660,7 +1660,7 @@ local huiwan = fk.CreateTriggerSkill {
 }
 Fk:loadTranslationTable{
   ["huiwan"] = "会玩",
-  [":huiwan"] = "每回合每种牌名限一次，当你摸牌时，你可以选择至多等量牌堆中有的基本牌或锦囊牌牌名，然后改为从牌堆中获得你选择的牌。",
+  [":huiwan"] = "每回合每种牌名限一次，当你摸牌时，你可以选择至多等量牌堆中有的基本牌或普通锦囊牌牌名，然后改为从牌堆中获得你选择的牌。",
   ["#huiwan-choice"] = "会玩：你可选择至多 %arg 个牌名，本次改为摸所选牌名的牌",
 }
 
@@ -1703,6 +1703,7 @@ local huanli = fk.CreateTriggerSkill {
     local room = player.room
     local aimedList = self.cost_data
     local usedTimes = 0
+    local lastTarget
     if (aimedList[player.id] or 0) > 2 then
       local tos = room:askForChoosePlayers(
         player,
@@ -1715,6 +1716,8 @@ local huanli = fk.CreateTriggerSkill {
 
       if #tos > 0 then
         usedTimes = usedTimes + 1
+        lastTarget = tos[1]
+
         local to = room:getPlayerById(tos[1])
         local zhangzhao = table.filter({ "zhijian", "guzheng" }, function(skill) return not to:hasSkill(skill, true, true) end)
         local skillsExist = U.getMark(to, "@@huanli")
@@ -1729,7 +1732,7 @@ local huanli = fk.CreateTriggerSkill {
 
     local availableTargets = {}
     for pId, num in pairs(aimedList) do
-      if pId ~= player.id and num > 2 then
+      if pId ~= player.id and pId ~= lastTarget and num > 2 then
         table.insert(availableTargets, pId)
       end
     end
@@ -1800,7 +1803,7 @@ local huanliNullify = fk.CreateInvaliditySkill {
 Fk:loadTranslationTable{
   ["huanli"] = "唤理",
   [":huanli"] = "结束阶段开始时，若你于本回合内使用牌指定自己为目标至少三次，你可以令一名其他角色所有技能失效（因本技能而获得的技能除外），" ..
-  "且其获得“直谏”和“固政”直到其下回合结束。若你于本回合内使用牌指定同一名其他角色为目标至少三次，你可选择这些角色中的一名，" ..
+  "且其获得“直谏”和“固政”直到其下回合结束。若你于本回合内使用牌指定同一名其他角色为目标至少三次，你可选择这些角色中的一名（不能选择前者选择的角色），" ..
   "令其所有技能失效（因本技能而获得的技能除外），且其获得“英姿”和“反间”直到其下回合结束。若你两项均执行，则你获得“制衡”直到你下回合结束。",
   ["@@huanli"] = "唤理",
   ["#huanli_lose"] = "唤理",

@@ -1647,31 +1647,8 @@ local yinjun = fk.CreateTriggerSkill{
     if target == player and player:hasSkill(self) and data.tos and
       (data.card.trueName == "slash" or data.card.type == Card.TypeTrick) and
       #TargetGroup:getRealTargets(data.tos) == 1 and TargetGroup:getRealTargets(data.tos)[1] ~= player.id and
-      player:usedSkillTimes(self.name, Player.HistoryTurn) <= player.hp then
-      local cards = data.card:isVirtual() and data.card.subcards or {data.card.id}
-      if #cards == 0 then return end
-      local yes = false
-      local use = player.room.logic:getCurrentEvent()
-      use:searchEvents(GameEvent.MoveCards, 1, function(e)
-        if e.parent and e.parent.id == use.id then
-          local subcheck = table.simpleClone(cards)
-          for _, move in ipairs(e.data) do
-            if move.from == player.id and move.moveReason == fk.ReasonUse then
-              for _, info in ipairs(move.moveInfo) do
-                if table.removeOne(subcheck, info.cardId) and info.fromArea == Card.PlayerHand then
-                  --continue
-                else
-                  break
-                end
-              end
-            end
-          end
-          if #subcheck == 0 then
-            yes = true
-          end
-        end
-      end)
-      if yes then
+      player:getMark("yinjun_fail-turn") == 0 then
+      if U.IsUsingHandcard(player, data) then
         local to = player.room:getPlayerById(TargetGroup:getRealTargets(data.tos)[1])
         local card = Fk:cloneCard("slash")
         card.skillName = self.name
@@ -1691,6 +1668,9 @@ local yinjun = fk.CreateTriggerSkill{
     }
     use.card.skillName = self.name
     player.room:useCard(use)
+    if not player.dead and player:usedSkillTimes(self.name, Player.HistoryTurn) > player.hp then
+      player.room:setPlayerMark(player, "yinjun_fail-turn", 1)
+    end
   end,
 
   refresh_events = {fk.PreDamage},

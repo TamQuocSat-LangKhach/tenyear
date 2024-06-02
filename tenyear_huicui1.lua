@@ -608,7 +608,7 @@ local miyun = fk.CreateTriggerSkill{
     if event == fk.RoundStart then
       return not table.every(player.room.alive_players, function (p) return p == player or p:isNude() end)
     elseif event == fk.RoundEnd then
-      return table.contains(player.player_cards[player.Hand], player:getMark(self.name))
+      return table.contains(player.player_cards[player.Hand], player:getMark(self.name)) and #player.room.alive_players > 1
     elseif event == fk.AfterCardsMove then
       local miyun_losehp = (data.extra_data or {}).miyun_losehp or {}
       return table.contains(miyun_losehp, player.id)
@@ -644,19 +644,20 @@ local miyun = fk.CreateTriggerSkill{
 
       local _, ret = room:askForUseActiveSkill(player, "miyun_active", "#miyun-give:::" .. card:toLogString(), false)
       local to_give = {cid}
-      local target = room:getOtherPlayers(to_give)[1].id
+      local to = room:getOtherPlayers(to_give)[1].id
       if ret and #ret.cards > 0 and #ret.targets == 1 then
         to_give = ret.cards
-        target = ret.targets[1]
+        to = ret.targets[1]
       end
       local move = {
         from = player.id,
         ids = to_give,
-        to = target,
+        to = to,
         toArea = Card.PlayerHand,
         moveReason = fk.ReasonGive,
         proposer = player.id,
         skillName = "miyun_give",
+        moveVisible = true,
       }
       room:moveCards(move)
       if not player.dead then
@@ -3279,7 +3280,7 @@ local suchou = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local choice = room:askForChoice(player, {"loseMaxHp", "loseHp", "loseSuchou"}, self.name)
+    local choice = room:askForChoice(player, {"loseHp", "loseMaxHp", "loseSuchou"}, self.name)
     if choice == "loseSuchou" then
       room:handleAddLoseSkills(player, "-suchou", nil, true, false)
       return false
@@ -3322,6 +3323,8 @@ Fk:loadTranslationTable{
 
   ["$yiyong1"] = "关氏鼠辈，庞令明之子来邪！",
   ["$yiyong2"] = "凭一腔勇力，父仇定可报还。",
+  ["$suchou1"] = "关家人我杀定了，谁也保不住！",
+  ["$suchou2"] = "身陷仇海，谁知道我是怎么过的！",
   ["~panghui"] = "大仇虽报，奈何心有余创。",
 }
 
@@ -6072,7 +6075,7 @@ Fk:loadTranslationTable{
   ["designer:ty__yuejiu"] = "老萌",
   ["illustrator:ty__yuejiu"] = "匠人绘",
   ["ty__cuijin"] = "催进",
-  [":ty__cuijin"] = "当你或攻击范围内的角色使用【杀】或【决斗】时，你可弃置一张牌，令此【杀】伤害值基数+1。"..
+  [":ty__cuijin"] = "当你或攻击范围内的角色使用【杀】或【决斗】时，你可弃置一张牌，令此【杀】或【决斗】的伤害值基数+1。"..
   "当此牌结算结束后，若此牌未造成伤害，你摸两张牌，对使用者造成1点伤害。",
   --FIXME:实际上是对每个目标的{被抵消后、被防止的伤害的结算结束后、被无效的对此目标的结算结束后}都要处理后续效果
 

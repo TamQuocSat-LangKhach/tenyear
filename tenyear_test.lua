@@ -151,20 +151,213 @@ Fk:loadTranslationTable{
   ["chezhou"] = "车胄",
   ["tmp_illustrate"] = "看画",
   [":tmp_illustrate"] = "这个武将还没上线，你可以看看插画。不会出现在选将框。",
+
+  ["shefuc"] = "慑伏",
+  [":shefuc"] = "锁定技，你的牌造成的伤害、其他角色的牌对你造成的伤害均改为X。（X为此牌在手牌中的轮次数）",
+  ["pigua"] = "披挂",
+  [":pigua"] = "当你对其他角色造成伤害后，若伤害值大于1，你可以获得其至多X张牌（X为轮次数），这些牌于当前回合内不计入手牌上限。",
 }
 
 local matie = General(extension, "matie", "qun", 4)
-matie:addSkill("tmp_illustrate")
-matie.hidden = true
+local quxian = fk.CreateTriggerSkill{
+  name = "quxian",
+  anim_type = "offensive",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Play
+  end,
+  on_cost = function(self, event, target, player, data)
+    local to = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper), 1, 1,
+    "#quxian-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local tar = room:getPlayerById(self.cost_data)
+    local tos = table.filter(room:getAlivePlayers(), function (p)
+      return p ~= player and p:inMyAttackRange(tar)
+    end)
+    if #tos == 0 then return false end
+    local to_loseHp = {}
+    local no_damage = true
+    for _, to in ipairs(tos) do
+      if not to.dead then
+        local use = room:askForUseCard(to, "slash", "slash", "#quxian-use::"..tar.id, true,
+        {exclusive_targets = {tar.id}, bypass_times = true})
+        if use then
+          room:useCard(use)
+          if use.damageDealt and use.damageDealt[tar.id] then
+            no_damage = false
+          end
+        else
+          table.insert(to_loseHp, to)
+        end
+      end
+    end
+    if no_damage then
+      local x = #tos - #to_loseHp
+      if x > 0 then
+        for _, to in ipairs(to_loseHp) do
+          if not to.dead then
+            room:loseHp(to, x, self.name)
+          end
+        end
+      end
+    end
+  end,
+}
+matie:addSkill("sp__zhuiji")
+matie:addSkill(quxian)
 Fk:loadTranslationTable{
   ["matie"] = "马铁",
+
+  ["quxian"] = "驱险",
+  [":quxian"] = "出牌阶段开始时，你可以选择一名角色，攻击范围内有其的其他角色均可以对其使用【杀】。"..
+  "若其未以此法受到过伤害，未以此法使用过【杀】的角色各失去X点体力（X为以此法使用过【杀】的角色数）。",
+
+  ["#quxian-choose"] = "是否发动 驱险，选择一名角色，攻击范围含有其的角色各可以对其使用【杀】",
+  ["#quxian-use"] = "驱险：你可以对%dest使用【杀】",
 }
 
-local hansong = General(extension, "hansong", "wei", 3)
-hansong:addSkill("tmp_illustrate")
-hansong.hidden = true
+local hansong = General(extension, "hansong", "qun", 3)
+local yinbi = fk.CreateTriggerSkill{
+  name = "yinbi",
+  anim_type = "defensive",
+  events = {fk.EventPhaseStart},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) and player.phase == Player.Discard then
+      local x = 0
+      for _, p in ipairs(player.room.alive_players) do
+        x = math.max(x, p:getMaxCards())
+      end
+      if x > player:getMaxCards() then
+        self.cost_data = x
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "yinbi-phase", self.cost_data)
+  end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    if player == target and player:hasSkill(self) then
+      local x = player:getHandcardNum()
+      return table.every(player.room.alive_players, function (p)
+        return p == player or p:getHandcardNum() ~= x
+      end)
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.extraUse = true
+  end,
+}
+local yinbi_maxcards = fk.CreateMaxCardsSkill{
+  name = "#yinbi_maxcards",
+  fixed_func = function (self, player)
+    if player:hasSkill(yinbi) and player:getMark("yinbi-phase") > 0 then
+      return player:getMark("yinbi-phase")
+    end
+  end,
+}
+local yinbi_targetmod = fk.CreateTargetModSkill{
+  name = "#yinbi_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    if player:hasSkill(yinbi) then
+      local x = player:getHandcardNum()
+      return table.every(Fk:currentRoom().alive_players, function (p)
+        return p == player or p:getHandcardNum() ~= x
+      end)
+    end
+  end,
+  bypass_distances =  function(self, player, skill, card, to)
+    if player:hasSkill(yinbi) then
+      local x = player:getHandcardNum()
+      return table.every(Fk:currentRoom().alive_players, function (p)
+        return p == player or p:getHandcardNum() ~= x
+      end)
+    end
+  end,
+}
+local shuaiyan = fk.CreateTriggerSkill{
+  name = "shuaiyan",
+  anim_type = "control",
+  events = {fk.AfterCardsMove},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      local tos = {}
+      for _, move in ipairs(data) do
+        if move.from and move.from ~= player.id and not table.contains(tos, move.from) then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand then
+              table.insert(tos, move.from)
+              break
+            end
+          end
+        end
+        if move.to and move.to ~= player.id and not table.contains(tos, move.to) and
+        move.toArea == Player.Hand and #move.moveInfo > 0 then
+          table.insert(tos, move.to)
+        end
+      end
+      if #tos == 0 then return false end
+      local room = player.room
+      room:sortPlayersByAction(tos)
+      while true do
+        local to = room:getPlayerById(tos[1])
+        if to.dead or to:getHandcardNum() ~= player:getHandcardNum() then
+          table.remove(tos, 1)
+          if #tos == 0 then break end
+        else
+          self.cost_data = tos
+          return true
+        end
+      end
+    end
+  end,
+  on_trigger = function(self, event, target, player, data)
+    local room = player.room
+    for _, target_id in ipairs(self.cost_data) do
+      if not player:hasSkill(self) then break end
+      local skill_target = room:getPlayerById(target_id)
+      if skill_target and not skill_target.dead and player:getHandcardNum() == skill_target:getHandcardNum() then
+        self:doCost(event, skill_target, player, data)
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {target.id})
+    local choices = {"draw1"}
+    if target:isNude() or room:askForChoice(player,
+    {"draw1", "shuaiyan_discard::"..target.id}, self.trueName) == "draw1" then
+      player:drawCards(1, self.name)
+    else
+      local id = room:askForCardChosen(player, target, "he", self.name)
+      room:throwCard({id}, self.name, target, player)
+    end
+  end,
+}
+yinbi:addRelatedSkill(yinbi_maxcards)
+yinbi:addRelatedSkill(yinbi_targetmod)
+hansong:addSkill(yinbi)
+hansong:addSkill(shuaiyan)
 Fk:loadTranslationTable{
   ["hansong"] = "韩嵩",
+
+  ["yinbi"] = "隐避",
+  [":yinbi"] = "锁定技，若其他角色的手牌数均不与你相等，你使用牌无距离和次数限制。"..
+  "弃牌阶段开始时，若你不是手牌上限最大的角色，你令你的手牌上限的初值于此阶段内改为X（X为其他角色的手牌上限的最大值）。",
+  ["shuaiyan"] = "率言",
+  [":shuaiyan"] = "锁定技，当其他角色得到/失去手牌后，若其手牌数与你相等，你选择：1.弃置其一张牌；2.摸一张牌。",
+
+  ["shuaiyan_discard"] = "弃置%dest的一张牌",
 }
 
 

@@ -264,8 +264,6 @@ Fk:loadTranslationTable{
   ["@zhenfengf"] = "镇锋",
 }
 
-local xuangongzhu1 = General(extension, "ty__xuangongzhu1", "wei", 3, 3, General.Female)
-local xuangongzhu2 = General(extension, "ty__xuangongzhu2", "wei", 3, 3, General.Female)
 local xuangongzhu = General(extension, "ty__xuangongzhu", "wei", 3, 3, General.Female)
 local ty__qimei = fk.CreateActiveSkill{
   name = "ty__qimei",

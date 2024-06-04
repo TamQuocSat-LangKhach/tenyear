@@ -1565,7 +1565,7 @@ local xiaosunquan = General(extension, "child__sunquan", "wu", 3)
 Fk:loadTranslationTable{
   ["child__sunquan"] = "小孙权",
   ["#child__sunquan"] = "未知",
-  ["~child__sunquan"] = "",
+  ["~child__sunquan"] = "阿娘，大哥抢我糖人！",
 }
 
 local huiwan = fk.CreateTriggerSkill {
@@ -1662,6 +1662,9 @@ Fk:loadTranslationTable{
   ["huiwan"] = "会玩",
   [":huiwan"] = "每回合每种牌名限一次，当你摸牌时，你可以选择至多等量牌堆中有的基本牌或普通锦囊牌牌名，然后改为从牌堆中获得你选择的牌。",
   ["#huiwan-choice"] = "会玩：你可选择至多 %arg 个牌名，本次改为摸所选牌名的牌",
+
+  ["$huiwan1"] = "金珠弹黄鹂，玉带做秋千，如此游戏人间。",
+  ["$huiwan2"] = "小爷横行江东，今日走马、明日弄鹰。",
 }
 
 xiaosunquan:addSkill(huiwan)
@@ -1809,6 +1812,9 @@ Fk:loadTranslationTable{
   ["#huanli_lose"] = "唤理",
   ["#huanli_zhangzhao-choose"] = "唤理：你可令一名其他角色技能失效且获得“直谏”“固政”直到其下回合结束",
   ["#huanli_zhouyu-choose"] = "唤理：你可令其中一名角色技能失效且获得“英姿”“反间”直到其下回合结束",
+
+  ["$huanli1"] = "金乌当空，汝欲与我辩日否？",
+  ["$huanli2"] = "童言无忌，童言有理！",
 }
 
 huanli:addRelatedSkill(huanliLose)

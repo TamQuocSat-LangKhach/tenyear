@@ -7,7 +7,6 @@ Fk:loadTranslationTable{
   ["tenyear_yj23"] = "十周年-一将2023",
 }
 
---夏侯楙 孙礼 陈式 费曜
 local xiahoumao = General(extension, "xiahoumao", "wei", 4)
 local tongwei = fk.CreateActiveSkill{
   name = "tongwei",
@@ -263,6 +262,421 @@ Fk:loadTranslationTable{
   ["#zhenfengf-invoke"] = "镇锋：是否发动“镇锋”，猜测 %dest 手牌？",
   ["#zhenfengf-choice"] = "镇锋：猜测 %dest 手牌中的%arg数",
   ["@zhenfengf"] = "镇锋",
+}
+
+local xuangongzhu1 = General(extension, "ty__xuangongzhu1", "wei", 3, 3, General.Female)
+local xuangongzhu2 = General(extension, "ty__xuangongzhu2", "wei", 3, 3, General.Female)
+local xuangongzhu = General(extension, "ty__xuangongzhu", "wei", 3, 3, General.Female)
+local ty__qimei = fk.CreateActiveSkill{
+  name = "ty__qimei",
+  anim_type = "drawcard",
+  card_num = 0,
+  target_num = 1,
+  prompt = "#ty__qimei-active",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 or
+      (player:getMark("ty__qimei-phase") > 0 and player:usedSkillTimes(self.name, Player.HistoryPhase) == 1)
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    player:drawCards(2, self.name)
+    if not target.dead then
+      target:drawCards(2, self.name)
+    end
+    local cards = {}
+    if not player.dead and not player:isNude() then
+      local c = room:askForDiscard(player, 2, 2, true, self.name, false)
+      table.insertTableIfNeed(cards, c)
+    end
+    if not target.dead and not target:isNude() then
+      local c = room:askForDiscard(target, 2, 2, true, self.name, false)
+      table.insertTableIfNeed(cards, c)
+    end
+    if #cards == 0 then return end
+    local suits = {}
+    for _, id in ipairs(cards) do
+      if Fk:getCardById(id).suit ~= Card.NoSuit then
+        table.insertIfNeed(suits, Fk:getCardById(id).suit)
+      end
+    end
+    if #suits == 1 then
+      cards = table.filter(cards, function(id)
+        return room:getCardArea(id) == Card.DiscardPile
+      end)
+      while not player.dead and #cards > 0 do
+        local use = U.askForUseRealCard(room, player, cards, ".", self.name, "#ty__qimei-use",
+          {expand_pile = cards, bypass_times = false, extraUse = true}, true)
+        if use then
+          table.removeOne(cards, use.card:getEffectiveId())
+          room:useCard(use)
+        else
+          return
+        end
+      end
+    elseif #suits == 2 then
+      if not player.dead then
+        player:reset()
+      end
+      if not target.dead then
+        target:reset()
+      end
+    elseif #suits == 3 then
+      if not player.dead and not player.chained then
+        player:setChainState(true)
+      end
+      if not target.dead and not target.chained then
+        target:setChainState(true)
+      end
+    elseif #suits == 4 then
+      if not player.dead then
+        player:drawCards(1, self.name)
+        room:setPlayerMark(player, "ty__qimei-phase", 1)
+      end
+      if not target.dead then
+        target:drawCards(1, self.name)
+      end
+    end
+  end,
+}
+local ty__zhuijix = fk.CreateTriggerSkill{
+  name = "ty__zhuijix",
+  anim_type = "support",
+  events = {fk.Deathed},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self, false, true)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper), 1, 1,
+      "#ty__zhuijix-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local subtypes = {
+      Card.SubtypeWeapon,
+      Card.SubtypeArmor,
+      Card.SubtypeDefensiveRide,
+      Card.SubtypeOffensiveRide,
+      Card.SubtypeTreasure
+    }
+    local subtype
+    while not to.dead do
+      while #subtypes > 0 do
+        subtype = table.remove(subtypes, 1)
+        if to:hasEmptyEquipSlot(subtype) then
+          local cards = {}
+          local card
+          cards = table.filter(room.draw_pile, function(id)
+            card = Fk:getCardById(id)
+            return card.sub_type == subtype and U.canUseCardTo(room, to, to, card)
+          end)
+          for _, id in ipairs(room.discard_pile) do
+            card = Fk:getCardById(id)
+            if card.sub_type == subtype and U.canUseCardTo(room, to, to, card) then
+              table.insert(cards, id)
+            end
+          end
+          if #cards > 0 then
+            card = cards[math.random(1, #cards)]
+            local mark = U.getMark(to, self.name)
+            table.insert(mark, card)
+            room:setPlayerMark(to, self.name, mark)
+            room:useCard{
+              from = to.id,
+              card = Fk:getCardById(card),
+            }
+            break
+          end
+        end
+      end
+      if #subtypes == 0 then break end
+    end
+  end,
+}
+local ty__zhuijix_delay = fk.CreateTriggerSkill{
+  name = "ty__zhuijix_delay",
+  mute = true,
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:getMark("ty__zhuijix") ~= 0 then
+      for _, move in ipairs(data) do
+        if move.from == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerEquip and table.contains(U.getMark(player, "ty__zhuijix"), info.cardId) and
+              #player:getAvailableEquipSlots(Fk:getCardById(info.cardId).sub_type) > 0 then
+              local e = player.room.logic:getCurrentEvent():findParent(GameEvent.SkillEffect)
+              if e and e.data[3] == self then  --FIXME：防止顶替装备时重复触发
+                return false
+              end
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, move in ipairs(data) do
+      if move.from == player.id then
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerEquip and table.contains(U.getMark(player, "ty__zhuijix"), info.cardId) and
+            #player:getAvailableEquipSlots(Fk:getCardById(info.cardId).sub_type) > 0 then
+            local mark = U.getMark(player, "ty__zhuijix")
+            table.removeOne(mark, info.cardId)
+            room:setPlayerMark(player, "ty__zhuijix", mark)
+            room:abortPlayerArea(player, {Util.convertSubtypeAndEquipSlot(Fk:getCardById(info.cardId).sub_type)})
+          end
+        end
+      end
+    end
+  end,
+}
+ty__zhuijix:addRelatedSkill(ty__zhuijix_delay)
+xuangongzhu:addSkill(ty__qimei)
+xuangongzhu:addSkill(ty__zhuijix)
+Fk:loadTranslationTable{
+  ["ty__xuangongzhu"] = "宣公主",
+  --["#ty__xuangongzhu"] = "",
+  ["designer:ty__xuangongzhu"] = "谜城惊雨声",
+  ["ty__qimei"] = "齐眉",
+  [":ty__qimei"] = "出牌阶段限一次，你可以选择一名其他角色，你与其各摸两张牌并各弃置两张牌，根据弃置牌的花色数，你执行以下效果：<br>"..
+  "1，你可以依次使用这些牌；<br>2，你与其复原武将牌；<br>3，你与其横置；<br>4，你与其各摸一张牌，然后本回合此技能改为“限两次”。",
+  ["ty__zhuijix"] = "追姬",
+  [":ty__zhuijix"] = "当你死亡后，你可以令一名角色从牌堆和弃牌堆中随机使用有空余栏位的装备牌，直至其装备区满，若如此做，当其失去以此法使用的<br>"..
+  "装备牌后，废除对应的装备栏。",
+  ["#ty__qimei-active"] = "齐眉：与一名角色各摸两张牌然后弃两张牌，根据弃牌花色数执行效果",
+  ["#ty__qimei-use"] = "齐眉：你可以使用这些牌",
+  ["#ty__zhuijix-choose"] = "追姬：你可以令一名角色随机使用装备牌至装备区满",
+}
+
+local linghuyu = General(extension, "linghuyu", "wei", 4)
+local xuzhi = fk.CreateActiveSkill{
+  name = "xuzhi",
+  anim_type = "support",
+  card_num = 0,
+  target_num = 2,
+  prompt = "#xuzhi-active",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    return #selected < 2 and not Fk:currentRoom():getPlayerById(to_select):isKongcheng() and
+      Fk:currentRoom():getPlayerById(to_select):getMark("xuzhi-phase") == 0
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target1 = room:getPlayerById(effect.tos[1])
+    local target2 = room:getPlayerById(effect.tos[2])
+    room:setPlayerMark(target1, "xuzhi-phase", 1)
+    room:setPlayerMark(target2, "xuzhi-phase", 1)
+    local targets = {target1, target2}
+    target1.request_data = json.encode({"choose_cards_skill", "#xuzhi-card::"..target2.id, true, {
+      num = target1:getHandcardNum(),
+      min_num = 1,
+      max_num = target1:getHandcardNum(),
+      include_equip = false,
+      pattern = ".",
+      reason = self.name,
+    }})
+    target2.request_data = json.encode({"choose_cards_skill", "#xuzhi-card::"..target1.id, true, {
+      num = target2:getHandcardNum(),
+      min_num = 1,
+      max_num = target2:getHandcardNum(),
+      include_equip = false,
+      pattern = ".",
+      reason = self.name,
+    }})
+    room:notifyMoveFocus(targets, self.name)
+    room:doBroadcastRequest("AskForUseActiveSkill", targets)
+    local cards = {}
+    for i = 1, 2, 1 do
+      if targets[i].reply_ready then
+        local replyCard = json.decode(targets[i].client_reply).card
+        cards[i] = json.decode(replyCard).subcards
+      else
+        cards[i] = {table.random(targets[i]:getCardIds("h"))}
+      end
+    end
+    U.swapCards(room, player, target1, target2, cards[1], cards[2], self.name)
+    local n1, n2 = #cards[1] - #cards[2], #cards[2]
+    if n1 == n2 then
+      if player.dead then return end
+      player:drawCards(2, self.name)
+      if player.dead then return end
+      room:askForUseActiveSkill(player, self.name, "#xuzhi-active", true, {}, false)
+    else
+      local to = n2 > n1 and target1 or target2
+      if to.dead then return end
+      U.askForUseVirtualCard(room, to, "slash", {}, self.name, "#xuzhi-use", true, true, true, true)
+    end
+  end,
+}
+linghuyu:addSkill(xuzhi)
+Fk:loadTranslationTable{
+  ["linghuyu"] = "令狐愚",
+  --["#linghuyu"] = "",
+  ["designer:linghuyu"] = "浮兮璃璃",
+  ["xuzhi"] = "蓄志",
+  [":xuzhi"] = "出牌阶段限一次，你可以令两名角色同时选择任意张手牌并交换这些牌，获得牌数较少的角色视为使用一张无距离限制的【杀】；"..
+  "若获得牌数相等，你摸两张牌，且可以对本阶段未以此法选择过的角色再发动〖蓄志〗。",
+  ["#xuzhi-active"] = "蓄志：令两名角色交换任意张手牌",
+  ["#xuzhi-card"] = "蓄志：选择任意张手牌与 %dest 交换",
+  ["#xuzhi-use"] = "蓄志：你可以视为使用一张无距离限制的【杀】",
+}
+
+local xukun = General(extension, "xukun", "wu", 4)
+local fazhu = fk.CreateTriggerSkill{
+  name = "fazhu",
+  events = {fk.EventPhaseStart},
+  anim_type = "drawCard",
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Start and
+      table.find(player:getCardIds("hej"), function(id)
+        return not Fk:getCardById(id).is_damage_card
+      end)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = table.filter(player:getCardIds("hej"), function(id)
+      return not Fk:getCardById(id).is_damage_card
+    end)
+    if #cards == 0 then return end
+    local to_give = room:recastCard(cards, player, self.name)
+    to_give = table.filter(to_give, function(id)
+      return table.contains(player:getCardIds("h"), id)
+    end)
+    --FIXME: 要用moveCardsHoldingAreaCheck严格判断会很麻烦
+    local result = U.askForDistribution(player, to_give, room.alive_players, self.name, 0, #to_give, "#fazhu-give", "", false, 1)
+    local targets = {}
+    for _, p in ipairs(room:getAlivePlayers()) do
+      if #result[tostring(p.id)] > 0 then
+        table.insert(targets, p)
+      end
+    end
+    for _, p in ipairs(targets) do
+      if not p.dead then
+        local use = room:askForUseCard(p, "slash", "slash", "#fazhu-use", true, {bypass_distances = true, bypass_times = true})
+        if use then
+          use.extraUse = true
+          room:useCard(use)
+        end
+      end
+    end
+  end,
+}
+xukun:addSkill(fazhu)
+Fk:loadTranslationTable{
+  ["xukun"] = "徐琨",
+  --["#xukun"] = "",
+  ["designer:xukun"] = "卤香蛋2",
+  ["fazhu"] = "筏铸",
+  [":fazhu"] = "准备阶段，你可以重铸你区域内所有非伤害牌，然后将因此获得的牌交给至多等量名角色各一张，以此法获得牌的角色可以依次使用一张"..
+  "【杀】（无距离限制）。",
+  ["#fazhu-give"] = "筏铸：你可以将这些牌分配给任意角色各一张，获得牌的角色可以使用一张无距离限制的【杀】",
+  ["#fazhu-use"] = "筏铸：你可以使用一张【杀】（无距离限制）",
+}
+
+local simafu = General(extension, "ty__simafu", "wei", 3)
+simafu.subkingdom = "jin"
+local beiyu = fk.CreateActiveSkill{
+  name = "beiyu",
+  anim_type = "drawcard",
+  card_num = 0,
+  target_num = 0,
+  prompt = "#beiyu-active",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and player:getHandcardNum() < player.maxHp
+  end,
+  card_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    player:drawCards(player.maxHp - player:getHandcardNum(), self.name)
+    if player.dead or player:isKongcheng() then return end
+    local choices = {}
+    for _, id in ipairs(player:getCardIds("h")) do
+      if Fk:getCardById(id).suit ~= Card.NoSuit then
+        table.insertIfNeed(choices, Fk:getCardById(id):getSuitString(true))
+      end
+    end
+    local choice = room:askForChoice(player, choices, self.name, "#beiyu-choose", false,
+      {"log_spade", "log_heart", "log_club", "log_diamond"})
+    local cards = table.filter(player:getCardIds("h"), function(id)
+      return Fk:getCardById(id):getSuitString(true) == choice
+    end)
+    if #cards == 1 then
+      room:moveCards({
+        ids = cards,
+        from = player.id,
+        toArea = Card.DrawPile,
+        moveReason = fk.ReasonJustMove,
+        skillName = self.name,
+        proposer = player.id,
+        drawPilePosition = -1,
+      })
+    else
+      local result = U.askForGuanxing(player, cards, {}, {0, 0}, self.name, "", true, {"$Hand", ""})
+      room:moveCards({
+        ids = result.top,
+        from = player.id,
+        toArea = Card.DrawPile,
+        moveReason = fk.ReasonJustMove,
+        skillName = self.name,
+        proposer = player.id,
+        drawPilePosition = -1,
+      })
+    end
+  end,
+}
+local duchi = fk.CreateTriggerSkill{
+  name = "duchi",
+  anim_type = "defensive",
+  events = {fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and
+      data.from ~= player.id
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(1, self.name, "bottom")
+    if player.dead or player:isKongcheng() then return end
+    local cards = table.simpleClone(player:getCardIds("h"))
+    player:showCards(cards)
+    if player.dead or player:isKongcheng() then return end
+    if table.every(cards, function(id)
+      return Fk:getCardById(id).color == Fk:getCardById(cards[1]).color or
+      Fk:getCardById(id).color == Card.NoColor
+    end) then
+      table.insertIfNeed(data.nullifiedTargets, player.id)
+      if data.card.sub_type == Card.SubtypeDelayedTrick then
+        AimGroup:cancelTarget(data, player.id)
+      end
+    end
+  end,
+}
+simafu:addSkill(beiyu)
+simafu:addSkill(duchi)
+Fk:loadTranslationTable{
+  ["ty__simafu"] = "司马孚",
+  --["#ty__simafu"] = "",
+  ["designer:ty__simafu"] = "黑暗魔女",
+  ["beiyu"] = "备预",
+  [":beiyu"] = "出牌阶段限一次，你可以将手牌摸至体力上限，然后将一种花色的所有手牌以任意顺序置于牌堆底。",
+  ["duchi"] = "督持",
+  [":duchi"] = "每回合限一次，当你成为其他角色使用牌的目标后，你可以从牌堆底摸一张牌并展示所有手牌，若颜色均相同，此牌对你无效。",
+  ["#beiyu-active"] = "备预：将手牌摸至体力上限，然后将一种花色的手牌置于牌堆底",
+  ["#beiyu-choose"] = "备预：选择一种花色，将所有此花色的手牌置于牌堆底",
 }
 
 return extension

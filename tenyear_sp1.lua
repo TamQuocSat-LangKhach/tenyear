@@ -6038,7 +6038,7 @@ local tongguan = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.TurnStart},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and target:getMark("@[:]tongguan") == 0 then
+    if player:hasSkill(self) and target:getMark("tongguan_info") == 0 then
       local events = player.room.logic:getEventsOfScope(GameEvent.Turn, 1, function(e)
         return e.data[1] == target
       end, Player.HistoryGame)
@@ -6048,20 +6048,19 @@ local tongguan = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local choices = table.simpleClone(tg_list)
-    local choiceMap = {}
-    for _, p in ipairs(room.alive_players) do
-      local c = p:getMark("@[:]tongguan")
-      if c ~= 0 then
-        choiceMap[c] = (choiceMap[c] or 0) + 1
-        if choiceMap[c] == 2 then
-          table.removeOne(choices, c)
-        end
+    local record = room:getTag("tongguan_record") or {2,2,2,2,2}
+    local choices = {}
+    for i = 1, 5 do
+      if record[i] > 0 then
+        table.insert(choices, tg_list[i])
       end
     end
     if #choices == 0 then return end
     local choice = room:askForChoice(player, choices, self.name, "#tongguan-choice::"..target.id, true)
-    room:setPlayerMark(target, "@[:]tongguan", choice)
+    room:setPlayerMark(target, "tongguan_info", choice)
+    local i = table.indexOf(tg_list, choice)
+    record[i] = record[i] - 1
+    room:setTag("tongguan_record", record)
   end,
 }
 local mengjiez = fk.CreateTriggerSkill{
@@ -6069,7 +6068,7 @@ local mengjiez = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    local mark = target:getMark("@[:]tongguan")
+    local mark = target:getMark("tongguan_info")
     local room = player.room
     if player:hasSkill(self) and mark ~= 0 then
       if mark == "tg_wuyong" then
@@ -6134,44 +6133,25 @@ local mengjiez = fk.CreateTriggerSkill{
       end
     end
   end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    local mark = target:getMark("@[:]tongguan")
-    if mark == "tg_duomou" then
-      return room:askForSkillInvoke(player, self.name, nil, "#mengjiez3-invoke")
-    else
-      local targets, prompt
-      if mark == "tg_wuyong" then
-        targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
-        prompt = "#mengjiez1-invoke"
-      elseif mark == "tg_gangying" then
-        targets = table.map(table.filter(room:getAlivePlayers(), function(p)
-          return p:isWounded() end), Util.IdMapper)
-        prompt = "#mengjiez2-invoke"
-      elseif mark == "tg_guojue"  then
-        targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
-          return not p:isAllNude() end), Util.IdMapper)
-        prompt = "#mengjiez4-invoke"
-      elseif mark == "tg_renzhi" then
-        targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
-          return p:getHandcardNum() < p.maxHp end), Util.IdMapper)
-        prompt = "#mengjiez5-invoke"
-      end
-      if #targets == 0 then return false end
-      local to = room:askForChoosePlayers(player, targets, 1, 1, prompt, self.name, true)
-      if #to > 0 then
-        self.cost_data = to[1]
-        return true
-      end
-    end
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local mark = target:getMark("@[:]tongguan")
+    local mark = target:getMark("tongguan_info")
     if mark == "tg_duomou" then
       player:drawCards(2, self.name)
     else
-      local to = room:getPlayerById(self.cost_data)
+      local targets = room:getOtherPlayers(player)
+      local prompt = "#mengjiez1-invoke"
+      if mark == "tg_gangying" then
+        targets = room:getAlivePlayers()
+        prompt = "#mengjiez2-invoke"
+      elseif mark == "tg_guojue"  then
+        prompt = "#mengjiez4-invoke"
+      elseif mark == "tg_renzhi" then
+        prompt = "#mengjiez5-invoke"
+      end
+      if #targets == 0 then return false end
+      local to = room:getPlayerById(room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, prompt, self.name, false)[1])
       if mark == "tg_wuyong" then
         room:damage{
           from = player,
@@ -6180,18 +6160,27 @@ local mengjiez = fk.CreateTriggerSkill{
           skillName = self.name,
         }
       elseif mark == "tg_gangying" then
-        room:recover({
-          who = to,
-          num = 1,
-          recoverBy = player,
-          skillName = self.name
-        })
+        if to:isWounded() then
+          room:recover({
+            who = to,
+            num = 1,
+            recoverBy = player,
+            skillName = self.name
+          })
+        end
       elseif mark == "tg_guojue" then
-        local cards = room:askForCardsChosen(player, to, 1, 2, "hej", self.name)
-        room:throwCard(cards, self.name, to, player)
+        if not to:isAllNude() then
+          local cards = room:askForCardsChosen(player, to, 1, 2, "hej", self.name)
+          room:throwCard(cards, self.name, to, player)
+        end
       elseif mark == "tg_renzhi" then
-        to:drawCards(math.min(5, to.maxHp - to:getHandcardNum()), self.name)
+        if to:getHandcardNum() < to.maxHp then
+          to:drawCards(math.min(5, to.maxHp - to:getHandcardNum()), self.name)
+        end
       end
+    end
+    if target:getMark("@[:]tongguan") == 0 then
+      room:setPlayerMark(target, "@[:]tongguan", target:getMark("tongguan_info"))
     end
   end,
 }
@@ -6223,11 +6212,10 @@ Fk:loadTranslationTable{
   [":tg_guojue"] = "回合结束时，若其本回合弃置或获得过其他角色的牌，你弃置一名其他角色区域内的至多两张牌",
   ["tg_renzhi"] = "仁智",
   [":tg_renzhi"] = "回合结束时，若其本回合交给其他角色牌，你令一名其他角色将手牌摸至体力上限（至多摸五张）",
-  ["#mengjiez1-invoke"] = "梦解：你可以对一名其他角色造成1点伤害",
-  ["#mengjiez2-invoke"] = "梦解：你可以令一名角色回复1点体力",
-  ["#mengjiez3-invoke"] = "梦解：你可以摸两张牌",
-  ["#mengjiez4-invoke"] = "梦解：你可以弃置一名其他角色区域内至多两张牌",
-  ["#mengjiez5-invoke"] = "梦解：你可以令一名其他角色将手牌摸至体力上限（至多摸五张）",
+  ["#mengjiez1-invoke"] = "梦解：对一名其他角色造成1点伤害",
+  ["#mengjiez2-invoke"] = "梦解：令一名角色回复1点体力",
+  ["#mengjiez4-invoke"] = "梦解：弃置一名其他角色区域内至多两张牌",
+  ["#mengjiez5-invoke"] = "梦解：令一名其他角色将手牌摸至体力上限（至多摸五张）",
 
   ["$tongguan1"] = "极目宇宙，可观如织之命数。",
   ["$tongguan2"] = "命河长往，唯我立于川上。",

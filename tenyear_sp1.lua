@@ -1211,7 +1211,7 @@ local fuxue = fk.CreateTriggerSkill{
 }
 local yaoyi = fk.CreateTriggerSkill{
   name = "yaoyi",
-  anim_type = "special",
+  anim_type = "control",
   frequency = Skill.Compulsory,
   events = {fk.GameStart},
   can_trigger = function(self, event, target, player, data)

@@ -1928,12 +1928,25 @@ Fk:loadTranslationTable{
 
 
   ["$taozhou1"] = "皇叔借荆州久矣，谨特来讨要。",
-  ["$taozhou2"] = "荆州弹丸之地，诸君其可食言而肥？",
+  ["$taozhou2"] = "荆州弹丸之地，诸君岂可食言而肥？",
   ["$houde1"] = "君子有德，可以载天下之重。",
   ["$houde2"] = "南山有松，任尔风雨雷霆。",
   ["~tymou__zhugejin"] = "吾数梦，琅琊旧园……",
 }
 
+--local guanping = General(extension, "tymou__guanping", "shu", 4)
+
+Fk:loadTranslationTable{
+  ["tymou__guanping"] = "关平",
+  --["#tymou__guanping"] = "",
+  --["designer:tymou__guanping"] = "",
+
+  ["wuwei"] = "武威",
+  [":wuwei"] = "出牌阶段限一次，你可以将一种颜色的所有手牌当【杀】使用（无距离和次数限制），"..
+  "当此【杀】被使用时，你可以选择至多X项：1.摸一张牌；2.目标角色的所有不带“锁定技”标签的技能无效；"..
+  "3.此技能于此阶段内发动的次数上限+1。若你选择了所有项，此【杀】的伤害值基数+1。",
+
+}
 
 --毒士鸩计：张绣
 

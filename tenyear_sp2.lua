@@ -5467,6 +5467,169 @@ Fk:loadTranslationTable{
   ["~caofang"] = "匹夫无罪，怀璧其罪……",
 }
 
+local zhupeilan = General(extension, "zhupeilan", "wu", 3, 3, General.Female)
+local cilv = fk.CreateTriggerSkill{
+  name = "cilv",
+  anim_type = "defensive",
+  events = {fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.card:isCommonTrick() and not table.every({1,2,3}, function (i)
+      return player:getMark("cilv" .. tostring(i)) > 0
+    end)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local nums = table.filter({1,2,3}, function (i)
+      return player:getMark("cilv" .. tostring(i)) == 0
+    end)
+    player:drawCards(#nums, self.name)
+    if player.dead or player:getHandcardNum() <= player.maxHp then return false end
+    local all_choices = {"cilv1", "cilv2", "cilv3"}
+    local choices = table.filter(all_choices, function (choice)
+      return player:getMark(choice) == 0
+    end)
+    if #choices == 0 then return false end
+    local choice = room:askForChoice(player, choices, self.name, "#cilv-choose:::"..data.card:toLogString(), false, all_choices)
+    room:setPlayerMark(player, choice, 1)
+    if choice == "cilv1" then
+      table.insertIfNeed(data.nullifiedTargets, player.id)
+    elseif choice == "cilv2" then
+      data.extra_data = data.extra_data or {}
+      data.extra_data.cilv_defensive = data.extra_data.cilv_defensive or {}
+      table.insert(data.extra_data.cilv_defensive, player.id)
+    elseif choice == "cilv3" then
+      data.extra_data = data.extra_data or {}
+      data.extra_data.cilv_recycle = data.extra_data.cilv_recycle or {}
+      table.insert(data.extra_data.cilv_recycle, player.id)
+    end
+  end,
+
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == self
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "cilv1", 0)
+    room:setPlayerMark(player, "cilv2", 0)
+    room:setPlayerMark(player, "cilv3", 0)
+  end,
+}
+local cilv_delay = fk.CreateTriggerSkill{
+  name = "#cilv_delay",
+  mute = true,
+  events = {fk.CardUseFinished, fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    if player.dead then return false end
+    if event == fk.CardUseFinished then
+      return data.extra_data and data.extra_data.cilv_recycle and table.contains(data.extra_data.cilv_recycle, player.id) and
+      player.room:getCardArea(data.card) == Card.Processing
+    elseif event == fk.DamageInflicted then
+      if player == target and data.card then
+        local card_event = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+        if not card_event then return false end
+        local use = card_event.data[1]
+        return use.extra_data and use.extra_data.cilv_defensive and table.contains(use.extra_data.cilv_defensive, player.id)
+      end
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    if event == fk.CardUseFinished then
+      player.room:obtainCard(player.id, data.card, true, fk.ReasonJustMove)
+    else
+      return true
+    end
+  end,
+}
+local tongdao = fk.CreateTriggerSkill{
+  name = "tongdao",
+  anim_type = "support",
+  events = {fk.AskForPeaches},
+  frequency = Skill.Limited,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    local to = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, function (p)
+      return p.id end), 1, 1, "#tongdao-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    --“愚蠢技能” —— by Ho-spair
+    --FIXME:先伪实现一下
+    local skills = {}
+    for _, s in ipairs(to.player_skills) do
+      if s:isPlayerSkill(to) then
+        table.insertIfNeed(skills, s.name)
+      end
+    end
+    if room.settings.gameMode == "m_1v2_mode" and to.role == "lord" then
+      table.removeOne(skills, "m_feiyang")
+      table.removeOne(skills, "m_bahu")
+    end
+    if #skills > 0 then
+      room:handleAddLoseSkills(to, "-"..table.concat(skills, "|-"), nil, true, false)
+    end
+    skills = Fk.generals[to.general]:getSkillNameList(true)
+    if to.deputyGeneral ~= "" then
+      table.insertTableIfNeed(skills, Fk.generals[to.deputyGeneral]:getSkillNameList(true))
+    end
+    --FIXME:需要排除主公技，懒得写
+    if #skills > 0 then
+      --需要重置限定技、觉醒技、转换技、使命技
+      local skill
+      for _, skill_name in ipairs(skills) do
+        skill = Fk.skills[skill_name]
+        if skill.frequency == Skill.Quest then
+          room:setPlayerMark(to, MarkEnum.QuestSkillPreName .. skill_name, 0)
+        end
+        if skill.switchSkillName then
+          room:setPlayerMark(to, MarkEnum.SwithSkillPreName .. skill_name, fk.SwitchYang)
+        end
+        to:setSkillUseHistory(skill_name, 0, Player.HistoryGame)
+      end
+      room:handleAddLoseSkills(to, table.concat(skills, "|"), nil, true, false)
+    end
+    if not (player.dead or target.dead) and player:isWounded() and player.hp < to.hp then
+      room:recover {
+        who = player,
+        num = to.hp - player.hp,
+        recoverBy = player,
+        skillName = self.name,
+      }
+    end
+  end,
+}
+cilv:addRelatedSkill(cilv_delay)
+zhupeilan:addSkill(cilv)
+zhupeilan:addSkill(tongdao)
+Fk:loadTranslationTable{
+  ["zhupeilan"] = "朱佩兰",
+  --["#zhupeilan"] = "",
+  --["illustrator:zhupeilan"] = "",
+
+  ["cilv"] = "辞虑",
+  [":cilv"] = "当你成为普通锦囊牌的目标后，你可以摸X张牌（X为此技能的剩余选项数），"..
+  "若你的手牌数大于你的体力上限，你选择并移除一项："..
+  "1.此牌对你无效；2.此牌对你造成伤害时防止之；3.此牌结算结束后你获得之。",
+  ["tongdao"] = "痛悼",
+  [":tongdao"] = "限定技，当你处于濒死状态时，你可以选择一名角色，其失去所有技能，获得其武将牌上的所有技能,"..
+  "你回复体力至X点（X为其体力值）。",
+
+  ["#tongdao-choose"] = "是否发动 痛悼，选择一名角色，令其技能还原为初始状态，并回复体力至与该角色相同",
+  ["#cilv-choose"] = "辞虑：选择一项对%arg执行，然后移除此项",
+  ["cilv1"] = "此牌对你无效",
+  ["cilv2"] = "防止此牌对你造成的伤害",
+  ["cilv3"] = "此牌结算后你获得之",
+  ["#cilv_delay"] = "辞虑",
+}
+
 --往者可谏：大乔小乔 SP马超 SP赵云 SP甄姬
 local zhenji = General(extension, "ty_sp__zhenji", "qun", 3, 3, General.Female)
 local jijiez = fk.CreateTriggerSkill{

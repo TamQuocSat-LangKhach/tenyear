@@ -720,6 +720,22 @@ local caiyi = fk.CreateTriggerSkill{
     room:setPlayerMark(player, choice, 1)
     doCaiyi(player, to, choice, num)
   end,
+  
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == self
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "caiyiyang1", 0)
+    room:setPlayerMark(player, "caiyiyang2", 0)
+    room:setPlayerMark(player, "caiyiyang3", 0)
+    room:setPlayerMark(player, "caiyiyang4", 0)
+    room:setPlayerMark(player, "caiyiyinn1", 0)
+    room:setPlayerMark(player, "caiyiyinn2", 0)
+    room:setPlayerMark(player, "caiyiyinn3", 0)
+    room:setPlayerMark(player, "caiyiyinn4", 0)
+  end,
 }
 local guili = fk.CreateTriggerSkill{
   name = "guili",
@@ -2789,23 +2805,24 @@ local fenhui = fk.CreateActiveSkill{
 local fenhui_delay = fk.CreateTriggerSkill{
   name = "#fenhui_delay",
   mute = true,
-  events = {fk.DamageCaused, fk.Death},
+  events = {fk.DamageInflicted, fk.Death},
   can_trigger = function(self, event, target, player, data)
     if player.dead then return false end
-    if event == fk.DamageCaused then
-      return player == target and player:getMark("fenhui_target") == data.to.id and not data.to.dead and
-      data.to:getMark("@fenhui_hatred") > 0
+    if event == fk.DamageInflicted then
+      return player == target and player:getMark("@fenhui_hatred") > 0
     elseif event == fk.Death then
       return player:getMark("fenhui_target") == target.id and target:getMark("@fenhui_hatred") > 0
     end
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    if event == fk.DamageCaused then
-      player.room:removePlayerMark(data.to, "@fenhui_hatred")
+    if event == fk.DamageInflicted then
+      player.room:removePlayerMark(player, "@fenhui_hatred")
       data.damage = data.damage + 1
     elseif event == fk.Death then
       local room = player.room
+      room:notifySkillInvoked(player, "fenhui")
+      player:broadcastSkillInvoke("fenhui")
       room:changeMaxHp(player, -1)
       if player.dead then return false end
       local skills = "xingmen"
@@ -2819,8 +2836,8 @@ local fenhui_delay = fk.CreateTriggerSkill{
   refresh_events = {fk.TargetSpecified, fk.BuryVictim},
   can_refresh = function(self, event, target, player, data)
     if event == fk.TargetSpecified then
-      return player == target and data.card.color == Card.Black and
-      player.id ~= data.to and player:hasSkill(fenhui, true) and player:usedSkillTimes("fenhui", Player.HistoryGame) == 0
+      return player == target and player.id ~= data.to and player:hasSkill(fenhui, true) and
+      player:usedSkillTimes("fenhui", Player.HistoryGame) == 0
     elseif event == fk.BuryVictim then
       return player:getMark("@fenhui_hatred") > 0 and table.every(player.room.alive_players, function (p)
         return p:getMark("fenhui_target") ~= player.id
@@ -2859,11 +2876,12 @@ local xingmen = fk.CreateTriggerSkill{
           recover = true
         end
       end
-      if #cards < 2 or not table.every(cards, function (id)
-        return Fk:getCardById(id).color == Card.Red
-      end) then
+      if #cards < 2 then
         cards = {}
       end
+      cards = table.filter(cards, function (id)
+        return Fk:getCardById(id).color == Card.Red
+      end)
       if #cards > 0 or recover then
         self.cost_data = {cards, recover}
         return true
@@ -2917,11 +2935,11 @@ Fk:loadTranslationTable{
   [":shouzhiEX"] = "一名角色的回合结束时，若你的手牌数：大于此回合开始时的手牌数，你可以弃置一张手牌；"..
   "小于此回合开始时的手牌数，你可以摸两张牌。",
   ["fenhui"] = "奋恚",
-  [":fenhui"] = "限定技，出牌阶段，你可以令一名其他角色获得X枚“恨”（X为你对其使用过黑色牌的次数且至多为5），你摸等量的牌。"..
-  "当你对其造成伤害时，你令其弃1枚“恨”且伤害值+1；当其死亡时，若其有“恨”，你减1点体力上限，失去〖守执〗，获得〖守执〗和〖兴门〗。",
+  [":fenhui"] = "限定技，出牌阶段，你可以令一名其他角色获得X枚“恨”（X为你对其使用过牌的次数且至多为5），你摸等量的牌。"..
+  "当其受到伤害时，其弃1枚“恨”且伤害值+1；当其死亡时，若其有“恨”，你减1点体力上限，失去〖守执〗，获得〖守执〗和〖兴门〗。",
   ["xingmen"] = "兴门",
   [":xingmen"] = "当你因执行〖守执〗的效果而弃置手牌后，你可以回复1点体力。当你因摸牌而得到牌后，"..
-  "若这些牌数大于1且均为红色，你使用其中的牌不能被响应。",
+  "若这些牌数大于1，你使用其中的红色牌不能被响应。",
 
   ["@shouzhi-turn"] = "守执",
   ["#shouzhi-draw"] = "是否发动 守执，摸两张牌",

@@ -907,9 +907,8 @@ local ruijun = fk.CreateTriggerSkill{
     player:drawCards(player:getLostHp() + 1, self.name)
     if player.dead or to.dead then return false end
     room:setPlayerMark(to, "@@ruijun-phase", 1)
-    local mark = U.getMark(player, "ruijun_targets-phase")
-    table.insert(mark, to.id)
-    room:setPlayerMark(player, "ruijun_targets-phase", mark)
+    room:setPlayerMark(player, "ruijun_targets-phase", to.id)
+    room:setPlayerMark(player, "ruijun_event_id-phase", room.logic.current_event_id)
   end,
 }
 local ruijun_delay = fk.CreateTriggerSkill{
@@ -917,23 +916,22 @@ local ruijun_delay = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    return target == player and not player.dead and table.contains(U.getMark(player, "ruijun_targets-phase"), data.to.id)
+    return target == player and not player.dead and player:getMark("ruijun_targets-phase") == data.to.id
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke("ruijun")
     room:notifySkillInvoked(player, "ruijun", "offensive")
-    local x = player:getMark("ruijun_count-phase")
-    if x == 0 then
-      room:setPlayerMark(player, "ruijun_count-phase", data.damage)
-    else
-      if x < 5 then
-        x = x + 1
-        room:setPlayerMark(player, "ruijun_count-phase", x)
+    local x = 0
+    U.getActualDamageEvents(room, 1, function (e)
+      local damage = e.data[1]
+      if damage.from == player and damage.to == data.to then
+        x = damage.damage
+        return true
       end
-      data.damage = x
-    end
+    end, nil, player:getMark("ruijun_event_id-phase"))
+    data.damage = math.min(5, x+1)
   end,
 }
 local ruijun_attackrange = fk.CreateAttackRangeSkill{

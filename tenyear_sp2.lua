@@ -5548,7 +5548,11 @@ local tongdao = fk.CreateTriggerSkill{
   events = {fk.AskForPeaches},
   frequency = Skill.Limited,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+    return
+      target == player and
+      player:hasSkill(self) and
+      data.who == player.id and
+      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   on_cost = function(self, event, target, player, data)
     local to = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, function (p)

@@ -1934,18 +1934,132 @@ Fk:loadTranslationTable{
   ["~tymou__zhugejin"] = "吾数梦，琅琊旧园……",
 }
 
---local guanping = General(extension, "tymou__guanping", "shu", 4)
-
+local guanping = General(extension, "tymou__guanping", "shu", 4)
+local wuwei = fk.CreateViewAsSkill{
+  name = "wuwei",
+  anim_type = "offensive",
+  prompt = "#wuwei-active",
+  interaction = function()
+    local reds, blacks = {}, {}
+    local colors = {}
+    local color
+    for _, id in ipairs(Self:getCardIds(Player.Hand)) do
+      color = Fk:getCardById(id).color
+      if color == Card.Red then
+        table.insert(reds, id)
+      elseif color == Card.Black then
+        table.insert(blacks, id)
+      end
+    end
+    if #reds > 0 then
+      local card = Fk:cloneCard("slash")
+      card:addSubcards(reds)
+      card.skillName = "wuwei"
+      if not Self:prohibitUse(card) then
+        table.insert(colors, "red")
+      end
+    end
+    if #blacks > 0 then
+      local card = Fk:cloneCard("slash")
+      card:addSubcards(blacks)
+      card.skillName = "wuwei"
+      if not Self:prohibitUse(card) then
+        table.insert(colors, "black")
+      end
+    end
+    return UI.ComboBox {choices = colors, all_choices = {"red", "black"}}
+  end,
+  card_filter = Util.FalseFunc,
+  view_as = function(self, cards)
+    local card = Fk:cloneCard("slash")
+    card:addSubcards(table.filter(Self:getCardIds(Player.Hand), function(id)
+      return Fk:getCardById(id):getColorString() == self.interaction.data
+    end))
+    card.skillName = self.name
+    return card
+  end,
+  before_use = function(self, player, use)
+    local types = {}
+    for _, id in ipairs(use.card.subcards) do
+      table.insertIfNeed(types, Fk:getCardById(id).type)
+    end
+    use.extra_data = use.extra_data or {}
+    use.extra_data.wuwei_num = {player.id, #types}
+    use.extraUse = true
+  end,
+  enabled_at_play = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) <= player:getMark("wuwei_addtimes-turn") and
+    not player:isKongcheng()
+  end,
+}
+local wuwei_targetmod = fk.CreateTargetModSkill{
+  name = "#wuwei_targetmod",
+  bypass_times = function(self, player, skill, scope, card)
+    return card and scope == Player.HistoryPhase and table.contains(card.skillNames, wuwei.name)
+  end,
+  bypass_distances = function(self, player, skill, card)
+    return card and table.contains(card.skillNames, wuwei.name)
+  end,
+}
+local wuwei_trigger = fk.CreateTriggerSkill{
+  name = "#wuwei_trigger",
+  mute = true,
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    if not player.dead and data.extra_data and data.extra_data.wuwei_num and data.extra_data.wuwei_num[1] == player.id then
+      self.cost_data = data.extra_data.wuwei_num[2]
+      return true
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local x = self.cost_data
+    local choices = room:askForChoices(player, {"draw1", "wuwei_invalidity", "wuwei_addtimes"}, 1, x, "wuwei", "#wuwei-choose:::" .. x, true)
+    if #choices == 3 then
+      data.additionalDamage = (data.additionalDamage or 0) + 1
+    end
+    if table.contains(choices, "draw1") then
+      player:drawCards(1, self.name)
+    end
+    if table.contains(choices, "wuwei_invalidity") then
+      for _, pid in ipairs(TargetGroup:getRealTargets(data.tos)) do
+        local to = room:getPlayerById(pid)
+        if not to.dead then
+          room:addPlayerMark(to, "@@wuwei-turn")
+          room:addPlayerMark(to, MarkEnum.UncompulsoryInvalidity .. "-turn")
+        end
+      end
+    end
+    if table.contains(choices, "wuwei_addtimes") then
+      room:addPlayerMark(player, "wuwei_addtimes-turn")
+    end
+  end,
+}
+wuwei:addRelatedSkill(wuwei_targetmod)
+wuwei:addRelatedSkill(wuwei_trigger)
+guanping:addSkill(wuwei)
 Fk:loadTranslationTable{
   ["tymou__guanping"] = "关平",
-  --["#tymou__guanping"] = "",
+  ["#tymou__guanping"] = "百战烈烈",
   --["designer:tymou__guanping"] = "",
+  ["illustrator:tymou__guanping"] = "黯荧岛",
 
   ["wuwei"] = "武威",
   [":wuwei"] = "出牌阶段限一次，你可以将一种颜色的所有手牌当【杀】使用（无距离和次数限制），"..
-  "当此【杀】被使用时，你可以选择至多X项：1.摸一张牌；2.目标角色的所有不带“锁定技”标签的技能无效；"..
+  "当此【杀】被使用时，你可以选择至多X项：1.摸一张牌；2.目标角色的所有不带“锁定技”标签的技能于此回合内无效；"..
   "3.此技能于此阶段内发动的次数上限+1。若你选择了所有项，此【杀】的伤害值基数+1。",
 
+  ["#wuwei-active"] = "发动 武威，将一种颜色的所有手牌当【杀】使用，并根据类别数选择等量的效果",
+  ["#wuwei_trigger"] = "武威",
+  ["#wuwei-choose"] = "武威：你可以选择至多%arg项",
+  ["wuwei_invalidity"] = "目标角色本回合非锁定技失效",
+  ["wuwei_addtimes"] = "此技能本回合发动的次数上限+1",
+  ["@@wuwei-turn"] = "武威",
+
+  ["$wuwei1"] = "残阳洗长刀，漫卷天下帜。",
+  ["$wuwei2"] = "武效万人敌，复行千里路。",
+  ["~tymou__guanping"] = "生未屈刀兵，死罢战黄泉……",
 }
 
 --毒士鸩计：张绣

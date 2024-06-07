@@ -2925,9 +2925,9 @@ guanyueg:addRelatedSkill(shouzhiEX)
 guanyueg:addRelatedSkill(xingmen)
 Fk:loadTranslationTable{
   ["guanyueg"] = "关樾",
-  --["#guanyueg"] = "",
+  ["#guanyueg"] = "动心忍性",
   --["designer:guanyueg"] = "",
-  --["illustrator:guanyueg"] = "",
+  ["illustrator:guanyueg"] = "匠人绘",
   ["shouzhi"] = "守执",
   [":shouzhi"] = "锁定技，一名角色的回合结束时，若你的手牌数：大于此回合开始时的手牌数，你弃置一张手牌；"..
   "小于此回合开始时的手牌数，你摸两张牌。",
@@ -2951,8 +2951,13 @@ Fk:loadTranslationTable{
   ["@fenhui_hatred"] = "恨",
   ["@@xingmen-inhand"] = "兴门",
 
-
-
+  ["$shouzhi1"] = "日暮且眠岗上松，散尽千金买东风。",
+  ["$shouzhi2"] = "这沽来的酒，哪有赊的有味道。",
+  ["$fenhui1"] = "国仇家恨，不共戴天！",
+  ["$fenhui2"] = "手中虽无青龙吟，心有长刀仍啸月。",
+  ["$xingmen1"] = "尔等，休道我关氏无人！",
+  ["$xingmen2"] = "义在人心，人人皆可成关公！",
+  ["~guanyueg"] = "提履无处归，举目山河冷……",
 }
 
 

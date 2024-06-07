@@ -262,6 +262,10 @@ Fk:loadTranslationTable{
   ["#zhenfengf-invoke"] = "镇锋：是否发动“镇锋”，猜测 %dest 手牌？",
   ["#zhenfengf-choice"] = "镇锋：猜测 %dest 手牌中的%arg数",
   ["@zhenfengf"] = "镇锋",
+
+  ["$zhenfengf1"] = "河西诸贼作乱，吾当驱万里之远。",
+  ["$zhenfengf2"] = "可折诸葛之锋而御者，无我其谁！",
+  ["~feiyao"] = "姜维！你果然是蜀军内应！",
 }
 
 local xuangongzhu = General(extension, "ty__xuangongzhu", "wei", 3, 3, General.Female)

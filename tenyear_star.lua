@@ -663,7 +663,7 @@ local lifengc_trigger = fk.CreateTriggerSkill{
 
   refresh_events = {fk.AfterCardUseDeclared},
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill("lifengc", true) and data.card.color ~= Card.NoColor
+    return player:hasSkill(lifengc, true) and data.card.color ~= Card.NoColor
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:addPlayerMark(player, "lifengc_"..data.card:getColorString().."-turn", 1)

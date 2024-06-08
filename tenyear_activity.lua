@@ -553,7 +553,7 @@ local kangge_trigger = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.EnterDying},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill("kangge") and player:getMark("kangge") == target.id and player:usedSkillTimes(self.name, Player.HistoryRound) == 0
+    return player:hasSkill(kangge) and player:getMark("kangge") == target.id and player:usedSkillTimes(self.name, Player.HistoryRound) == 0
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, "kangge", data, "#kangge-recover::"..target.id)
@@ -4145,7 +4145,7 @@ local zhuili = fk.CreateTriggerSkill{
   events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.card.color == Card.Black and data.from ~= player.id and
-      player:hasSkill("piaoping", true) and player:getMark("zhuili_invalid-turn") == 0
+      player:hasSkill(piaoping, true) and player:getMark("zhuili_invalid-turn") == 0
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

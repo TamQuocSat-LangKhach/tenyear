@@ -1293,7 +1293,8 @@ local chongxu = fk.CreateActiveSkill{
     return "#chongxu:::"..tostring(Self:getMark("ty__sunhanhua_ling"))
   end,
   can_use = function(self, player)
-    return player:getMark("ty__sunhanhua_ling") > 3 and player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and player:hasSkill("huiling", true)
+    return player:getMark("ty__sunhanhua_ling") > 3 and player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and
+    player:hasSkill(huiling, true)
   end,
   card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
@@ -2078,10 +2079,10 @@ local kuangcai = fk.CreateTriggerSkill{
 local kuangcai_targetmod = fk.CreateTargetModSkill{
   name = "#kuangcai_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return player:hasSkill("kuangcai") and player.phase ~= Player.NotActive
+    return player:hasSkill(kuangcai) and player.phase ~= Player.NotActive
   end,
   bypass_distances = function(self, player, skill, card, to)
-    return player:hasSkill("kuangcai") and player.phase ~= Player.NotActive
+    return player:hasSkill(kuangcai) and player.phase ~= Player.NotActive
   end,
 }
 local shejian = fk.CreateTriggerSkill{

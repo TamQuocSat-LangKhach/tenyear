@@ -1722,7 +1722,7 @@ local jieshu = fk.CreateTriggerSkill{
 local jieshu_max = fk.CreateMaxCardsSkill{
   name = "#jieshu_maxcard",
   exclude_from = function(self, player, card)
-    if player:hasSkill("jieshu") then
+    if player:hasSkill(jieshu) then
       local mark = player:getMark("@[geyuan]")
       local all = Util.DummyTable
       if type(mark) == "table" and mark.all then all = mark.all end
@@ -1819,7 +1819,7 @@ local lianzhi_trigger = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.EnterDying},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill("lianzhi") and player:getMark("lianzhi") ~= 0 and
+    return target == player and player:hasSkill(lianzhi) and player:getMark("lianzhi") ~= 0 and
       not player.room:getPlayerById(player:getMark("lianzhi")).dead and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
   end,
   on_cost = Util.TrueFunc,

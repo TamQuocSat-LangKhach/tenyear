@@ -1817,7 +1817,7 @@ local xiongmang = fk.CreateViewAsSkill{
 local xiongmang_targetmod = fk.CreateTargetModSkill{
   name = "#xiongmang_targetmod",
   extra_target_func = function(self, player, skill, card)
-    if player:hasSkill("xiongmang") and skill.trueName == "slash_skill" and table.contains(card.skillNames, "xiongmang") then
+    if player:hasSkill(xiongmang) and skill.trueName == "slash_skill" and table.contains(card.skillNames, "xiongmang") then
       return #card.subcards - 1
     end
   end,

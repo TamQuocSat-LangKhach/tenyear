@@ -255,7 +255,7 @@ local jiuxian = fk.CreateViewAsSkill{
 local jiuxian_targetmod = fk.CreateTargetModSkill{
   name = "#jiuxian_targetmod",
   bypass_times = function(self, player, skill, scope, card)
-    return player:hasSkill("jiuxian") and card.trueName == "analeptic" and scope == Player.HistoryTurn
+    return player:hasSkill(jiuxian) and card.trueName == "analeptic" and scope == Player.HistoryTurn
   end,
 }
 local shixian_pairs = {
@@ -769,7 +769,7 @@ local tycl__zhiheng_record = fk.CreateTriggerSkill{
 
   refresh_events = {fk.Damage},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill("tycl__zhiheng") and player.phase == Player.Play and data.to ~= player.id
+    return target == player and player:hasSkill(tycl__zhiheng) and player.phase == Player.Play and data.to ~= player.id
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -1825,6 +1825,7 @@ local quyuan = General(extension, "quyuan", "qun", 3)
 Fk:loadTranslationTable{
   ["quyuan"] = "屈原",
   ["#quyuan"] = "未知",
+  ["cv:quyuan"] = "虞晓旭",
   ["~quyuan"] = "伏清白以死直兮，固前圣之所厚。",
 }
 

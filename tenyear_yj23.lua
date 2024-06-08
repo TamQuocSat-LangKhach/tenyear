@@ -254,8 +254,9 @@ local zhenfengf = fk.CreateTriggerSkill{
 feiyao:addSkill(zhenfengf)
 Fk:loadTranslationTable{
   ["feiyao"] = "费曜",
-  ["#feiyao"] = "费曜",
+  ["#feiyao"] = "后将军",
   ["designer:feiyao"] = "米陶诺斯",
+  ["illustrator:feiyao"] = "青雨",
   ["zhenfengf"] = "镇锋",
   [":zhenfengf"] = "每回合限一次，一名其他角色于其回合内使用牌时，若其手牌数不大于体力值，你可以猜测其手牌中与此牌类别相同的牌数。"..
   "若你猜对，你摸X张牌并视为对其使用一张【杀】（X为你连续猜对次数且最多为5）；若猜错且差值大于1，则视为其对你使用一张【杀】。",
@@ -264,7 +265,7 @@ Fk:loadTranslationTable{
   ["@zhenfengf"] = "镇锋",
 
   ["$zhenfengf1"] = "河西诸贼作乱，吾当驱万里之远。",
-  ["$zhenfengf2"] = "可折诸葛之锋而御者，无我其谁！",
+  ["$zhenfengf2"] = "可折诸葛之锋而御者，独我其谁！",
   ["~feiyao"] = "姜维！你果然是蜀军内应！",
 }
 

@@ -3951,7 +3951,7 @@ local dehuaBuff = fk.CreateMaxCardsSkill{
   name = "#dehua_buff",
   frequency = Skill.Compulsory,
   correct_func = function(self, player)
-    return player:hasSkill("dehua") and #U.getMark(player, "dehuaChosen") or 0
+    return player:hasSkill(dehua) and #U.getMark(player, "dehuaChosen") or 0
   end,
   exclude_from = function(self, player, card)
     return player:getMark("dehua_keep_damage") > 0 and card.is_damage_card
@@ -3960,7 +3960,7 @@ local dehuaBuff = fk.CreateMaxCardsSkill{
 local dehuaProhibited = fk.CreateProhibitSkill{
   name = "#dehua_prohibited",
   prohibit_use = function(self, player, card)
-    if not player:hasSkill("dehua") then
+    if not player:hasSkill(dehua) then
       return false
     end
 
@@ -4820,7 +4820,7 @@ local qizi_prohibit = fk.CreateProhibitSkill{
   name = "#qizi_prohibit",
   frequency = Skill.Compulsory,
   prohibit_use = function(self, player, card)
-    if player:hasSkill("qizi") and card.name == "peach" then
+    if player:hasSkill(qizi) and card.name == "peach" then
       return table.find(Fk:currentRoom().alive_players, function(p) return p.dying and player:distanceTo(p) > 2 end)
     end
   end,

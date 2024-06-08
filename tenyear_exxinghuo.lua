@@ -333,7 +333,7 @@ local ty_ex__jiaozhao_change = fk.CreateTriggerSkill{
   refresh_events = {fk.AfterTurnEnd, fk.EventLoseSkill},
   can_refresh = function(self, event, target, player, data)
     if event == fk.AfterTurnEnd then
-      return target == player and player:hasSkill("ty_ex__jiaozhao&", true)
+      return target == player and player:hasSkill(ty_ex__jiaozhaoVS, true)
     else
       return target == player and data == ty_ex__jiaozhao
     end
@@ -548,7 +548,7 @@ local ty__linglong = fk.CreateTriggerSkill{
 local ty__linglong_maxcards = fk.CreateMaxCardsSkill{
   name = "#ty__linglong_maxcards",
   correct_func = function(self, player)
-    if player:hasSkill("ty__linglong") and
+    if player:hasSkill(ty__linglong) and
       player:getEquipment(Card.SubtypeOffensiveRide) == nil and player:getEquipment(Card.SubtypeDefensiveRide) == nil then
       return 2
     end
@@ -559,7 +559,7 @@ local ty__linglong_targetmod = fk.CreateTargetModSkill{
   name = "#ty__linglong_targetmod",
   frequency = Skill.Compulsory,
   bypass_distances = function(self, player, skill, card)
-    return player:hasSkill("ty__linglong") and player:getEquipment(Card.SubtypeTreasure) == nil
+    return player:hasSkill(ty__linglong) and player:getEquipment(Card.SubtypeTreasure) == nil
     and card and card.type == Card.TypeTrick
   end,
 }

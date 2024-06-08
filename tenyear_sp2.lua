@@ -1889,7 +1889,7 @@ local zhaowen_trigger = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.EventPhaseStart, fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill("zhaowen") and player.phase == Player.Play then
+    if target == player and player:hasSkill(zhaowen) and player.phase == Player.Play then
       if event == fk.EventPhaseStart then
         return not player:isKongcheng()
       else
@@ -2117,15 +2117,23 @@ local mansi_trigger = fk.CreateTriggerSkill{
   events = {fk.Damaged},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill("mansi") and data.card and data.card.trueName == "savage_assault"
+    return player:hasSkill(mansi) and data.card and data.card.trueName == "savage_assault"
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    player:drawCards(1, "@mansi")
-    room:addPlayerMark(player, "@mansi", 1)
     player:broadcastSkillInvoke("mansi")
     room:notifySkillInvoked(player, "mansi", "drawcard")
+    player:drawCards(1, "mansi")
+    room:addPlayerMark(player, "@mansi", 1)
+  end,
+
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == mansi and player:getMark("@mansi") ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@mansi", 0)
   end,
 }
 local souying = fk.CreateTriggerSkill{

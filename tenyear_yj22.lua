@@ -1044,7 +1044,7 @@ local diezhang = fk.CreateTriggerSkill{
 local diezhang_targetmod = fk.CreateTargetModSkill{
   name = "#diezhang_targetmod",
   residue_func = function(self, player, skill, scope, card)
-    if card and player:hasSkill("diezhang") and card.trueName == "slash" and scope == Player.HistoryPhase then
+    if card and player:hasSkill(diezhang) and card.trueName == "slash" and scope == Player.HistoryPhase then
       return 1
     end
   end,
@@ -1068,7 +1068,7 @@ local duanwan = fk.CreateTriggerSkill{
       recoverBy = player,
       skillName = self.name
     })
-    if not player:hasSkill("diezhang", true) then return end
+    if not player:hasSkill(diezhang, true) then return end
     local skill = "diezhangYang"
     if player:getSwitchSkillState("diezhang", false) == fk.SwitchYang then
       skill = "diezhangYin"

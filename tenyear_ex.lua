@@ -54,7 +54,7 @@ local ty_ex__jiushi_buff = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.AfterCardUseDeclared},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill("ty_ex__jiushi") and data.card.name == "analeptic"
+    return target == player and player:hasSkill(ty_ex__jiushi) and data.card.name == "analeptic"
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
@@ -72,7 +72,7 @@ local ty_ex__jiushi_buff = fk.CreateTriggerSkill{
 local jiushi_targetmod = fk.CreateTargetModSkill{
   name = "#jiushi_targetmod",
   residue_func = function(self, player, skill, scope)
-    if player:hasSkill("ty_ex__jiushi") and skill.trueName == "slash_skill" and scope == Player.HistoryPhase then
+    if player:hasSkill(ty_ex__jiushi) and skill.trueName == "slash_skill" and scope == Player.HistoryPhase then
       return player:getMark("@ty_ex_jiushi_buff")
     end
   end,
@@ -2530,7 +2530,7 @@ local ty_ex__xiansi_viewas = fk.CreateViewAsSkill{
     local room = player.room
     for _, id in ipairs(TargetGroup:getRealTargets(use.tos)) do
       local p = room:getPlayerById(id)
-      if p:hasSkill("ty_ex__xiansi", true) and #p:getPile("ty_ex__xiansi_ni") > 1 then
+      if p:hasSkill(ty_ex__xiansi, true) and #p:getPile("ty_ex__xiansi_ni") > 1 then
         local cards = table.random(p:getPile("ty_ex__xiansi_ni"), 2)
         room:moveCards({
           from = id,
@@ -2545,11 +2545,11 @@ local ty_ex__xiansi_viewas = fk.CreateViewAsSkill{
   end,
   enabled_at_play = function(self, player)
     return table.find(Fk:currentRoom().alive_players, function(p)
-      return (p:hasSkill("ty_ex__xiansi", true) and #p:getPile("ty_ex__xiansi_ni") > 1) end)
+      return (p:hasSkill(ty_ex__xiansi, true) and #p:getPile("ty_ex__xiansi_ni") > 1) end)
   end,
   enabled_at_response = function(self, player, response)
     return not response and table.find(Fk:currentRoom().alive_players, function(p)
-      return (p:hasSkill("ty_ex__xiansi", true) and #p:getPile("ty_ex__xiansi_ni") > 1) end)
+      return (p:hasSkill(ty_ex__xiansi, true) and #p:getPile("ty_ex__xiansi_ni") > 1) end)
   end,
 }
 local ty_ex__xiansi_prohibit = fk.CreateProhibitSkill{  --FIXME: 目标多指！
@@ -2557,7 +2557,7 @@ local ty_ex__xiansi_prohibit = fk.CreateProhibitSkill{  --FIXME: 目标多指！
   is_prohibited = function(self, from, to, card)
     if from:hasSkill(self, true) then
       return card.trueName == "slash" and table.contains(card.skillNames, "ty_ex__xiansi") and
-        not (to:hasSkill("ty_ex__xiansi", true) and #to:getPile("ty_ex__xiansi_ni") > 1)
+        not (to:hasSkill(ty_ex__xiansi, true) and #to:getPile("ty_ex__xiansi_ni") > 1)
     end
   end,
 }
@@ -2585,10 +2585,10 @@ local ty_ex__xiansi_viewasSkill = fk.CreateViewAsSkill{
       })
   end,
   enabled_at_play = function(self, player)
-    return player:hasSkill("ty_ex__xiansi", true) and #player:getPile("ty_ex__xiansi_ni") > player.hp
+    return player:hasSkill(ty_ex__xiansi, true) and #player:getPile("ty_ex__xiansi_ni") > player.hp
   end,
   enabled_at_response = function(self, player, response)
-    return not response and player:hasSkill("ty_ex__xiansi", true) and #player:getPile("ty_ex__xiansi_ni") > player.hp
+    return not response and player:hasSkill(ty_ex__xiansi, true) and #player:getPile("ty_ex__xiansi_ni") > player.hp
   end,
 }
 ty_ex__xiansi:addRelatedSkill(ty_ex__xiansi_viewasSkill)
@@ -3679,7 +3679,7 @@ local benxi_choice = fk.CreateTriggerSkill{
   main_skill = benxi,
   events = {fk.AfterCardTargetDeclared},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill("ty_ex__benxi") and player.phase ~= Player.NotActive then
+    if target == player and player:hasSkill(benxi) and player.phase ~= Player.NotActive then
       for _, p in ipairs(player.room:getOtherPlayers(player)) do
         if player:distanceTo(p) > 1 then return end
       end

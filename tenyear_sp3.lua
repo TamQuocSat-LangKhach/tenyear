@@ -2504,6 +2504,7 @@ Fk:loadTranslationTable{
 local xujing = General(extension, "ty__xujing", "shu", 3)
 local shangyu = fk.CreateTriggerSkill{
   name = "shangyu",
+  anim_type = "support",
   events = {fk.AfterCardsMove, fk.Damage, fk.GameStart},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)

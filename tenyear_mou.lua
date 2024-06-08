@@ -2015,24 +2015,28 @@ local wuwei_trigger = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local x = self.cost_data
-    local choices = room:askForChoices(player, {"draw1", "wuwei_invalidity", "wuwei_addtimes"}, 1, x, "wuwei", "#wuwei-choose:::" .. x, true)
-    if #choices == 3 then
-      data.additionalDamage = (data.additionalDamage or 0) + 1
-    end
-    if table.contains(choices, "draw1") then
-      player:drawCards(1, self.name)
-    end
-    if table.contains(choices, "wuwei_invalidity") then
-      for _, pid in ipairs(TargetGroup:getRealTargets(data.tos)) do
-        local to = room:getPlayerById(pid)
-        if not to.dead then
-          room:addPlayerMark(to, "@@wuwei-turn")
-          room:addPlayerMark(to, MarkEnum.UncompulsoryInvalidity .. "-turn")
+    local choices = {}
+    for i = 1, x, 1 do
+      local choice = room:askForChoice(player, {"draw1", "wuwei_invalidity", "wuwei_addtimes"}, "wuwei",
+      "#wuwei-choose:::" .. i .. ":" .. x)
+      table.insertIfNeed(choices, choice)
+      if choice == "draw1" then
+        player:drawCards(1, "wuwei")
+        if player.dead then break end
+      elseif choice == "wuwei_invalidity" then
+        for _, pid in ipairs(TargetGroup:getRealTargets(data.tos)) do
+          local to = room:getPlayerById(pid)
+          if not to.dead then
+            room:addPlayerMark(to, "@@wuwei-turn")
+            room:addPlayerMark(to, MarkEnum.UncompulsoryInvalidity .. "-turn")
+          end
         end
+      elseif choice == "wuwei_addtimes" then
+        room:addPlayerMark(player, "wuwei_addtimes-turn")
       end
     end
-    if table.contains(choices, "wuwei_addtimes") then
-      room:addPlayerMark(player, "wuwei_addtimes-turn")
+    if #choices == 3 then
+      data.additionalDamage = (data.additionalDamage or 0) + 1
     end
   end,
 }
@@ -2047,14 +2051,14 @@ Fk:loadTranslationTable{
 
   ["wuwei"] = "武威",
   [":wuwei"] = "出牌阶段限一次，你可以将一种颜色的所有手牌当【杀】使用（无距离和次数限制），"..
-  "当此【杀】被使用时，你可以选择至多X项：1.摸一张牌；2.目标角色的所有不带“锁定技”标签的技能于此回合内无效；"..
+  "当此【杀】被使用时，你依次选择至多X次：1.摸一张牌；2.目标角色的所有不带“锁定技”标签的技能于此回合内无效；"..
   "3.此技能于此阶段内发动的次数上限+1。若你选择了所有项，此【杀】的伤害值基数+1。",
 
   ["#wuwei-active"] = "发动 武威，将一种颜色的所有手牌当【杀】使用，并根据类别数选择等量的效果",
   ["#wuwei_trigger"] = "武威",
-  ["#wuwei-choose"] = "武威：你可以选择至多%arg项",
-  ["wuwei_invalidity"] = "目标角色本回合非锁定技失效",
-  ["wuwei_addtimes"] = "此技能本回合发动的次数上限+1",
+  ["#wuwei-choose"] = "武威：你可以选择一项（%arg/%arg2）",
+  ["wuwei_invalidity"] = "目标非锁定技失效",
+  ["wuwei_addtimes"] = "此技能发动次数+1",
   ["@@wuwei-turn"] = "武威",
 
   ["$wuwei1"] = "残阳洗长刀，漫卷天下帜。",

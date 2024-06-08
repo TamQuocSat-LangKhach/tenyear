@@ -331,9 +331,25 @@ local tiqi = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.EventPhaseChanging},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and player ~= target and target and not target.dead and target:getMark("tiqi-turn") ~= 2 and
-        player:usedSkillTimes(self.name) < 1 then
-      return data.to == Player.Play or data.to == Player.Discard or data.to == Player.Finish
+    if
+      not (
+        player:hasSkill(self) and
+        player ~= target and
+        target and
+        not target.dead
+        and target:getMark("tiqi-turn") ~= 2 and
+        player:usedSkillTimes(self.name) < 1
+      )
+    then
+      return false
+    end
+
+    if data.to == Player.Play or data.to == Player.Discard or data.to == Player.Finish then
+      return
+        target.skipped_phases[Player.Draw] or
+        #player.room.logic:getEventsOfScope(GameEvent.Phase, 1, function (e)
+          return e.data[2] == Player.Draw
+        end, Player.HistoryTurn) > 0
     end
   end,
   on_cost = Util.TrueFunc,

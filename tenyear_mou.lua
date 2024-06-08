@@ -232,7 +232,7 @@ local mengmou = fk.CreateTriggerSkill{
   switch_skill_name = "mengmou",
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) then
+    if player:hasSkill(self) and player:getMark("mengmou_"..player:getSwitchSkillState(self.name, false, true).."-turn") == 0 then
       local targets = {}
       for _, move in ipairs(data) do
         if move.toArea == Card.PlayerHand then
@@ -283,6 +283,7 @@ local mengmou = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    room:setPlayerMark(player, "mengmou_"..player:getSwitchSkillState(self.name, true, true).."-turn", 1)
     local to = room:getPlayerById(self.cost_data)
     room:doIndicate(player.id, {to.id})
     setTYMouSwitchSkillState(player, "lusu", self.name)

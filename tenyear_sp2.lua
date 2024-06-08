@@ -671,7 +671,7 @@ local ty__jianji = fk.CreateActiveSkill{
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     local target = Fk:currentRoom():getPlayerById(to_select)
-    if #selected < Self:getAttackRange() then
+    if #selected < Self:getAttackRange() and not target:isRemoved() then
       if #selected == 0 then
         return true
       else

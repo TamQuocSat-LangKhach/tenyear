@@ -140,7 +140,7 @@ local sitian_trigger = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.PreCardEffect},
   can_trigger = function(self, event, target, player, data)
-    return target:getMark("@@lw_dawu") > 0 and data.card.type == Card.TypeBasic
+    return target and target:getMark("@@lw_dawu") > 0 and data.card.type == Card.TypeBasic
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)

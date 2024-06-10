@@ -582,21 +582,15 @@ local poyuan = fk.CreateTriggerSkill{
 }
 local huace = fk.CreateViewAsSkill{
   name = "huace",
+  prompt = "#huace-active",
   interaction = function()
-    local names = {}
-    local mark = Self:getMark("huace2")
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id, true)
-      if card:isCommonTrick() and card.trueName ~= "nullification" and card.name ~= "adaptation" and not card.is_derived then
-        if mark == 0 or (not table.contains(mark, card.trueName)) then
-          table.insertIfNeed(names, card.name)
-        end
-      end
-    end
-    return UI.ComboBox {choices = names}
+    local all_names = U.getAllCardNames("t")
+    local names = U.getViewAsCardNames(Self, "zhaowen", all_names, {}, U.getMark(Self, "huace2"))
+    if #names == 0 then return false end
+    return UI.ComboBox { choices = names, all_choices = all_names }
   end,
   enabled_at_play = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
@@ -645,6 +639,7 @@ Fk:loadTranslationTable{
   [":huace"] = "出牌阶段限一次，你可以将一张手牌当上一轮没有角色使用过的普通锦囊牌使用。",
   ["#poyuan-invoke"] = "破垣：你可以装备【霹雳车】",
   ["#poyuan-choose"] = "破垣：你可以弃置一名其他角色至多两张牌",
+  ["#huace-active"] = "发动 画策，将一张手牌当上一轮没有角色使用过的普通锦囊牌使用",
 
   ["$poyuan1"] = "砲石飞空，坚垣难存。",
   ["$poyuan2"] = "声若霹雳，人马俱摧。",
@@ -1837,22 +1832,10 @@ local zhaowen = fk.CreateViewAsSkill{
   pattern = ".|.|.|.|.|trick|.",
   prompt = "#zhaowen",
   interaction = function()
-    local names = {}
-    local mark = Self:getMark("zhaowen-turn")
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card:isCommonTrick() and not card.is_derived then
-        local c = Fk:cloneCard(card.name)
-        if ((Fk.currentResponsePattern == nil and card.skill:canUse(Self, c) and not Self:prohibitUse(c)) or
-        (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(c))) then
-          if mark == 0 or (not table.contains(mark, card.trueName)) then
-            table.insertIfNeed(names, card.name)
-          end
-        end
-      end
-    end
+    local all_names = U.getAllCardNames("t")
+    local names = U.getViewAsCardNames(Self, "zhaowen", all_names, {}, U.getMark(Self, "zhaowen-turn"))
     if #names == 0 then return false end
-    return UI.ComboBox { choices = names }
+    return UI.ComboBox { choices = names, all_choices = all_names }
   end,
   card_filter = function(self, to_select, selected)
     local card = Fk:getCardById(to_select)
@@ -2979,7 +2962,7 @@ local posuo = fk.CreateViewAsSkill{
     if type(names) ~= "table" then
       names = {}
       for _, id in ipairs(Fk:getAllCardIds()) do
-        local card = Fk:getCardById(id)
+        local card = Fk:getCardById(id, true)
         if card.is_damage_card and not card.is_derived then
           names[card.name] = names[card.name] or {}
           table.insertIfNeed(names[card.name], card:getSuitString(true))
@@ -6290,7 +6273,6 @@ local xingzuo_delay = fk.CreateTriggerSkill{
     end
   end,
 }
-
 local miaoxian = fk.CreateViewAsSkill{
   name = "miaoxian",
   pattern = ".|.|.|.|.|trick|.",
@@ -6298,19 +6280,8 @@ local miaoxian = fk.CreateViewAsSkill{
   interaction = function()
     local blackcards = table.filter(Self.player_cards[Player.Hand], function(id) return Fk:getCardById(id).color == Card.Black end)
     if #blackcards ~= 1 then return false end
-    local names, all_names = {} , {}
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card:isCommonTrick() and not card.is_derived and not table.contains(all_names, card.name) then
-        table.insert(all_names, card.name)
-        local to_use = Fk:cloneCard(card.name)
-        to_use:addSubcard(blackcards[1])
-        if ((Fk.currentResponsePattern == nil and card.skill:canUse(Self, to_use) and not Self:prohibitUse(to_use)) or
-        (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use))) then
-          table.insert(names, card.name)
-        end
-      end
-    end
+    local all_names = U.getAllCardNames("t")
+    local names = U.getViewAsCardNames(Self, "miaoxian", all_names, blackcards)
     if #names == 0 then return false end
     return UI.ComboBox { choices = names, all_choices = all_names }
   end,

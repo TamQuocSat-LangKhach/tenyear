@@ -345,6 +345,7 @@ local tiqi = fk.CreateTriggerSkill{
     end
 
     if data.to == Player.Play or data.to == Player.Discard or data.to == Player.Finish then
+      --FIXME:无法判断是否处于额外阶段@Ho-spair
       return
         target.skipped_phases[Player.Draw] or
         #player.room.logic:getEventsOfScope(GameEvent.Phase, 1, function (e)
@@ -429,8 +430,8 @@ Fk:loadTranslationTable{
   ["#ty__fengfangnv"] = "泣珠伊人",
   ["illustrator:ty__fengfangnv"] = "君桓文化",
   ["tiqi"] = "涕泣",
-  [":tiqi"] = "其他角色出牌阶段、弃牌阶段、结束开始前，若其于此回合的摸牌阶段内因摸牌而得到的牌数之和不等于2且你于此回合内未发动过此技能，"..
-  "则你摸超出或少于2的牌，然后可以令该角色本回合手牌上限增加或减少同样的数值。",
+  [":tiqi"] = "其他角色的额定的出牌阶段、弃牌阶段、结束阶段开始前，若其于此回合的摸牌阶段内因摸牌而得到过的牌数之和不等于2且"..
+  "你于此回合内未发动过此技能，你摸那个相差数值的牌，然后可以选择令该角色的手牌上限于此回合内增加或减少同样的数值。",
   ["baoshu"] = "宝梳",
   ["#baoshu_delay"] = "宝梳",
   [":baoshu"] = "准备阶段，你可以选择至多X名角色（X为你的体力上限），这些角色各获得一个“梳”标记并重置武将牌，"..
@@ -2320,13 +2321,7 @@ local shijiz = fk.CreateTriggerSkill{
     local room = player.room
     local mark = player:getMark("shijiz_names")
     if type(mark) ~= "table" then
-      mark = {}
-      for _, id in ipairs(Fk:getAllCardIds()) do
-        local card = Fk:getCardById(id)
-        if card:isCommonTrick() and not card.is_derived then
-          table.insertIfNeed(mark, card.name)
-        end
-      end
+      mark = U.getAllCardNames("t")
       room:setPlayerMark(player, "shijiz_names", mark)
     end
     local mark2 = player:getMark("@$shijiz-round")
@@ -3438,7 +3433,7 @@ local juewu = fk.CreateViewAsSkill{
     if type(names) ~= "table" then
       names = {}
       for _, id in ipairs(Fk:getAllCardIds()) do
-        local card = Fk:getCardById(id)
+        local card = Fk:getCardById(id, true)
         if card.is_damage_card and not card.is_derived then
           table.insertIfNeed(names, card.name)
         end
@@ -3474,7 +3469,7 @@ local juewu = fk.CreateViewAsSkill{
     if type(names) ~= "table" then
       names = {}
       for _, id in ipairs(Fk:getAllCardIds()) do
-        local card = Fk:getCardById(id)
+        local card = Fk:getCardById(id, true)
         if card.is_damage_card and not card.is_derived then
           table.insertIfNeed(names, card.name)
         end
@@ -3499,7 +3494,7 @@ local juewu = fk.CreateViewAsSkill{
     if type(names) ~= "table" then
       names = {}
       for _, id in ipairs(Fk:getAllCardIds()) do
-        local card = Fk:getCardById(id)
+        local card = Fk:getCardById(id, true)
         if card.is_damage_card and not card.is_derived then
           table.insertIfNeed(names, card.name)
         end
@@ -3579,7 +3574,7 @@ local wuyou = fk.CreateActiveSkill{
       local tmp_names = {}
       local card, index
       for _, id in ipairs(Fk:getAllCardIds()) do
-        card = Fk:getCardById(id)
+        card = Fk:getCardById(id, true)
         if not card.is_derived and card.type ~= Card.TypeEquip then
           index = table.indexOf(tmp_names, card.trueName)
           if index == -1 then

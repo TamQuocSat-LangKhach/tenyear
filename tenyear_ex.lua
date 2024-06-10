@@ -4734,19 +4734,10 @@ local ty_ex__huomo = fk.CreateViewAsSkill{
     return "#ty_ex__huomo-card"
   end,
   interaction = function()
-    local names = {}
-    local mark = U.getMark(Self, "ty_ex__huomo-turn")
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if ((Fk.currentResponsePattern == nil and Self:canUse(card)) or
-      (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
-        if card.type == Card.TypeBasic and not table.contains(mark, card.trueName) then
-          table.insertIfNeed(names, card.name)
-        end
-      end
-    end
+    local all_names = U.getAllCardNames("b")
+    local names = U.getViewAsCardNames(Self, "ty_ex__huomo", all_names, {}, U.getMark(Self, "ty_ex__huomo-turn"))
     if #names == 0 then return false end
-    return UI.ComboBox {choices = names}
+    return UI.ComboBox { choices = names, all_choices = all_names }
   end,
   card_filter = function (self, to_select, selected)
     local card = Fk:getCardById(to_select)

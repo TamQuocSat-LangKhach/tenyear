@@ -5196,12 +5196,10 @@ local difa = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:throwCard(self.cost_data, self.name, player, player)
-    local names = {}
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card.type == Card.TypeTrick and not card.is_derived then
-        table.insertIfNeed(names, card.name)
-      end
+    local names = player:getMark("difa_names")
+    if type(names) ~= "table" then
+      names = U.getAllCardNames("td", true)
+      room:setPlayerMark(player, "difa_names", names)
     end
     if #names == 0 then return end
     local name = room:askForChoice(player, names, self.name)
@@ -5307,15 +5305,10 @@ local heqia_active = fk.CreateActiveSkill{
 local heqia_viewas = fk.CreateActiveSkill{
   name = "heqia_viewas",
   interaction = function()
-    local names = {}
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card.type == Card.TypeBasic and not card.is_derived and Self:canUse(card) and not Self:prohibitUse(card) then
-        table.insertIfNeed(names, card.name)
-      end
-    end
-    if #names == 0 then return end
-    return UI.ComboBox {choices = names}
+    local all_names = U.getAllCardNames("b")
+    local names = U.getViewAsCardNames(Self, "heqia", all_names)
+    if #names == 0 then return false end
+    return UI.ComboBox { choices = names, all_choices = all_names }
   end,
   card_filter = function (self, to_select, selected)
     return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Card.PlayerEquip

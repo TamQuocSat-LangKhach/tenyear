@@ -1007,18 +1007,10 @@ local faqi = fk.CreateTriggerSkill{
 local faqi_viewas = fk.CreateViewAsSkill{
   name = "faqi_viewas",
   interaction = function()
-    local names, all_names = {}, {}
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card:isCommonTrick() and not card.is_derived then
-        table.insertIfNeed(all_names, card.name)
-        if not table.contains(U.getMark(Self, "faqi-turn"), card.name) then
-          table.insertIfNeed(names, card.name)
-        end
-      end
-    end
-    if #names == 0 then return end
-    return UI.ComboBox {choices = names, all_choices = all_names,}
+    local all_names = U.getAllCardNames("t")
+    local names = U.getViewAsCardNames(Self, "faqi", all_names, {}, U.getMark(Self, "faqi-turn"))
+    if #names == 0 then return false end
+    return UI.ComboBox { choices = names, all_choices = all_names }
   end,
   card_filter = Util.FalseFunc,
   view_as = function(self, cards)

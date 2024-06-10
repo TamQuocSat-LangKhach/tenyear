@@ -5268,6 +5268,7 @@ local tuiyan = fk.CreateTriggerSkill{
 local busuan = fk.CreateActiveSkill {
   name = "busuan",
   anim_type = "control",
+  prompt = "#busuan-active",
   target_num = 1,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
@@ -5279,24 +5280,14 @@ local busuan = fk.CreateActiveSkill {
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local names = {}
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if (card.type == Card.TypeBasic or card.type == Card.TypeTrick) and not card.is_derived then
-        table.insertIfNeed(names, card.trueName)
-      end
+    local names = player:getMark("busuan_names")
+    if type(names) ~= "table" then
+      --这里其实应该用真实卡名的，但是线上不是
+      names = U.getAllCardNames("btd")
+      room:setPlayerMark(player, "busuan_names", names)
     end
-    local mark = target:getMark(self.name)
-    if mark == 0 then mark = {} end
-    for i = 1, 2, 1 do
-      local name = room:askForChoice(player, names, self.name)
-      if name == "Cancel" then break end
-      table.insert(mark, name)
-      table.removeOne(names, name)
-      if i == 1 then
-        table.insert(names, "Cancel")
-      end
-    end
+    local mark = U.getMark(target, self.name)
+    table.insertTable(mark, room:askForChoices(player, names, 1, 2, self.name, "#busuan-choose::" .. target.id, false))
     room:setPlayerMark(target, self.name, mark)
   end,
 }
@@ -5322,9 +5313,9 @@ local busuan_trigger = fk.CreateTriggerSkill {
         local x = #table.filter(card_names, function (card_name)
           return card_name == name end)
 
-        local tosearch = room:getCardsFromPileByRule(name, x, "discardPile")
+        local tosearch = room:getCardsFromPileByRule(".|.|.|.|" .. name, x, "discardPile")
         if #tosearch < x then
-          table.insertTable(tosearch, room:getCardsFromPileByRule(name, x - #tosearch))
+          table.insertTable(tosearch, room:getCardsFromPileByRule(".|.|.|.|" .. name, x - #tosearch))
         end
 
         for i2 = 1, #card_names, 1 do
@@ -5414,6 +5405,9 @@ Fk:loadTranslationTable{
   ["mingjie"] = "命戒",
   [":mingjie"] = "结束阶段，你可以摸一张牌，若此牌为红色，你可以重复此流程直到摸到黑色牌或摸到第三张牌。当你以此法摸到黑色牌时，"..
   "若你的体力值大于1，你失去1点体力。",
+
+  ["#busuan-active"] = "发动 卜算，选择一名其他角色，控制其下个摸牌阶段的摸到的牌的牌名",
+  ["#busuan-choose"] = "卜算：选择至多两个卡名，作为%arg下次摸牌阶段摸到的牌",
 
   ["$tuiyan1"] = "鸟语略知，万物略懂。",
   ["$tuiyan2"] = "玄妙之舒巧，推微而知晓。",

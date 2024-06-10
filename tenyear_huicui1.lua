@@ -2835,7 +2835,7 @@ local zhuning_viewas = fk.CreateViewAsSkill{
   interaction = function()
     local names = {}
     for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
+      local card = Fk:getCardById(id, true)
       if card.is_damage_card and not card.is_derived then
         table.insertIfNeed(names, card.name)
       end
@@ -3336,17 +3336,10 @@ local ty__yizan = fk.CreateViewAsSkill{
     return (Self:usedSkillTimes("ty__longyuan", Player.HistoryGame) > 0) and "#ty__yizan2" or "#ty__yizan1"
   end,
   interaction = function()
-    local names = {}
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card.type == Card.TypeBasic and not card.is_derived and
-        ((Fk.currentResponsePattern == nil and card.skill:canUse(Self, card)) or
-        (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
-        table.insertIfNeed(names, card.name)
-      end
-    end
-    if #names == 0 then return end
-    return UI.ComboBox {choices = names}
+    local all_names = U.getAllCardNames("b")
+    local names = U.getViewAsCardNames(Self, "ty__yizan", all_names)
+    if #names == 0 then return false end
+    return UI.ComboBox { choices = names, all_choices = all_names }
   end,
   card_filter = function(self, to_select, selected)
     if #selected == 0 then
@@ -3932,7 +3925,7 @@ local dehua = fk.CreateTriggerSkill{
     local names = {}
     local realNames = {}
     for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
+      local card = Fk:getCardById(id, true)
       if card.is_damage_card and not card.is_derived then
         table.insertIfNeed(names, card.trueName)
         if card.trueName ~= card.name then
@@ -5524,17 +5517,10 @@ local shizong = fk.CreateViewAsSkill{
   pattern = ".|.|.|.|.|basic",
   prompt = "#shizong",
   interaction = function()
-    local names = {}
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card.type == Card.TypeBasic and
-        ((Fk.currentResponsePattern == nil and Self:canUse(card)) or
-        (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
-        table.insertIfNeed(names, card.name)
-      end
-    end
+    local all_names = U.getAllCardNames("b")
+    local names = U.getViewAsCardNames(Self, "shizong", all_names)
     if #names == 0 then return false end
-    return UI.ComboBox {choices = names}
+    return UI.ComboBox { choices = names, all_choices = all_names }
   end,
   card_filter = Util.FalseFunc,
   before_use = function (self, player, use)

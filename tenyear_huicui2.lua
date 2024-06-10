@@ -5269,6 +5269,7 @@ Fk:loadTranslationTable{
   ["#mu__miheng"] = "鹗立鸷群",
   --["designer:mu__miheng"] = "",
   ["illustrator:mu__miheng"] = "君桓文化",
+  ["cv:mu__miheng"] = "虞晓旭",
 
   ["jigu"] = "激鼓",
   [":jigu"] = "锁定技，游戏开始时，你的初始手牌增加“激鼓”标记且不计入手牌上限。当你造成或受到伤害后，"..

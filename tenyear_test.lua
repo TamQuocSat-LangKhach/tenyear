@@ -5,7 +5,6 @@ local U = require "packages/utility/utility"
 
 Fk:loadTranslationTable{
   ["tenyear_test"] = "十周年-测试服",
-  ["tymou"] = "新服谋",
 }
 
 local caiyong = General(extension, "mu__caiyong", "qun", 3)
@@ -360,5 +359,291 @@ Fk:loadTranslationTable{
   ["shuaiyan_discard"] = "弃置%dest的一张牌",
 }
 
+local zhangzhao = General(extension, "tystar__zhangzhao", "wu", 3)
+local function DoZhongyanz(player, source, choice)
+  local room = player.room
+  if choice == "recover" then
+    if not player.dead and player:isWounded() then
+      room:recover{
+        who = player,
+        num = 1,
+        recoverBy = source,
+        skillName = "zhongyanz",
+      }
+    end
+  else
+    local targets = table.map(table.filter(room.alive_players, function(p)
+      return #p:getCardIds("ej") > 0
+    end), Util.IdMapper)
+    if not player.dead and #targets > 0 then
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#zhongyanz-choose", "zhongyanz", false)
+      to = room:getPlayerById(to[1])
+      local cards = room:askForCardsChosen(player, to, 1, 1, "ej", "zhongyanz")
+      room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonPrey, "zhongyanz", "", true, player.id)
+    end
+  end
+end
+local zhongyanz = fk.CreateActiveSkill{
+  name = "zhongyanz",
+  anim_type = "support",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_num = 0,
+  target_num = 1,
+  prompt = "#zhongyanz",
+  card_filter = Util.FalseFunc,
+  target_filter = function (self, to_select, selected)
+    return #selected == 0 and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local to = room:getPlayerById(effect.tos[1])
+    local cards = room:getNCards(3)
+    room:moveCards({
+      ids = cards,
+      toArea = Card.Processing,
+      moveReason = fk.ReasonJustMove,
+      skillName = self.name,
+      proposer = player.id,
+    })
+    if to.dead or to:isKongcheng() then
+      room:moveCards({
+        ids = cards,
+        toArea = Card.DrawPile,
+        moveReason = fk.ReasonJustMove,
+        skillName = self.name,
+      })
+      return
+    end
+    local result = U.askForExchange(to, "Top", "hand_card", cards, to:getCardIds("h"), "#zhongyanz-exchange", 1, false)
+    local position = table.indexOf(cards, result[2])
+    local moveInfos = {{
+      ids = {result[2]},
+      fromArea = Card.Processing,
+      to = to.id,
+      toArea = Card.PlayerHand,
+      moveReason = fk.ReasonExchange,
+      proposer = to.id,
+      skillName = self.name,
+      moveVisible = true,
+    }}
+    local new_cards = {}
+    for i = #cards, 1, -1 do
+      if i == position then
+        new_cards[i] = result[1]
+        table.insert(moveInfos, {
+          ids = {result[1]},
+          from = player.id,
+          fromArea = Card.PlayerHand,
+          toArea = Card.DrawPile,
+          moveReason = fk.ReasonExchange,
+          proposer = to.id,
+          skillName = self.name,
+          moveVisible = true,
+        })
+      else
+        new_cards[i] = cards[i]
+        table.insert(moveInfos, {
+          ids = {cards[i]},
+          fromArea = Card.Processing,
+          toArea = Card.DrawPile,
+          moveReason = fk.ReasonJustMove,
+          proposer = to.id,
+          skillName = self.name,
+          moveVisible = true,
+        })
+      end
+    end
+    room:moveCards(table.unpack(moveInfos))
+    if to.dead then return end
+    if table.every(new_cards, function(id)
+      return Fk:getCardById(id).color == Fk:getCardById(cards[1]).color
+    end) then
+      local choices = {"recover", "zhongyanz_prey"}
+      local choice = room:askForChoice(to, choices, self.name)
+      DoZhongyanz(to, player, choice)
+      if to ~= player then
+        DoZhongyanz(player, player, choice)
+      end
+    end
+  end,
+}
+local jinglun = fk.CreateTriggerSkill{
+  name = "jinglun",
+  anim_type = "support",
+  events = {fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target and not target.dead and player:distanceTo(target) <= 1 and
+      player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#jinglun-invoke::"..target.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {target.id})
+    local n = #target:getCardIds("e")
+    if n > 0 then
+      target:drawCards(n, self.name)
+    end
+    if target.dead then return end
+    room:notifySkillInvoked(player, "zhongyanz")
+    player:broadcastSkillInvoke("zhongyanz")
+    zhongyanz:onUse(room, {
+      from = player.id,
+      tos = {target.id},
+    })
+  end,
+}
+zhangzhao:addSkill(zhongyanz)
+zhangzhao:addSkill(jinglun)
+Fk:loadTranslationTable{
+  ["tystar__zhangzhao"] = "星张昭",
 
+  ["zhongyanz"] = "忠言",
+  [":zhongyanz"] = "出牌阶段限一次，你可展示牌堆顶三张牌，令一名角色将一张手牌交换其中一张牌。然后若这些牌颜色相同，"..
+  "其选择回复1点体力或获得场上一张牌；若该角色不为你，你执行另一项。",
+  ["jinglun"] = "经纶",
+  [":jinglun"] = "每回合限一次，你距离1以内的角色造成伤害后，你可以令其摸X张牌，并对其发动〖忠言〗（X为其装备区牌数）。",
+  ["#zhongyanz"] = "忠言：亮出牌堆顶三张牌，令一名角色用一张手牌交换其中一张牌",
+  ["#zhongyanz-exchange"] = "忠言：请用一张手牌交换其中一张牌",
+  ["zhongyanz_prey"] = "获得场上一张牌",
+  ["#zhongyanz-choose"] = "忠言：选择一名角色，获得其场上一张牌",
+  ["#jinglun-invoke"] = "经纶：是否令 %dest 摸牌并对其发动“忠言”？",
+}
+
+local zhurong = General(extension, "ty_sp__zhurong", "qun", 4, 4, General.Female)
+local manhou = fk.CreateActiveSkill{
+  name = "manhou",
+  anim_type = "special",
+  card_num = 0,
+  target_num = 0,
+  interaction = function()
+    return UI.Spin {
+      from = 1,
+      to = 4,
+    }
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  prompt = "#manhou-prompt",
+  card_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local n = self.interaction.data or 1
+    player:drawCards(n, self.name)
+    for i = 1, n, 1 do
+      if player.dead then return end
+      if i == 1 then
+        room:handleAddLoseSkills(player, "-tanluan", nil, true, false)
+      elseif i == 2 then
+        room:askForDiscard(player, 1, 1, false, self.name, false)
+      elseif i == 3 then
+        room:loseHp(player, 1, self.name)
+      elseif i == 4 then
+        room:askForDiscard(player, 1, 1, true, self.name, false)
+        room:handleAddLoseSkills(player, "tanluan", nil, true, false)
+      end
+    end
+  end,
+}
+local tanluan = fk.CreateTriggerSkill{
+  name = "tanluan",
+  anim_type = "control",
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) and data.firstTarget then
+      local n = #player.room.alive_players - 2 * #AimGroup:getAllTargets(data.tos)
+      if n <= 0 then
+        self.cost_data = 1
+        return #player.room:getPlayerById(data.to):getCardIds("ej") > 0
+      else
+        self.cost_data = 2
+        return true
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if self.cost_data == 1 then
+      local targets = table.filter(AimGroup:getAllTargets(data.tos), function(id)
+        return #player.room:getPlayerById(id):getCardIds("ej") > 0
+      end)
+      if #targets == 0 then return end
+      local tos = player.room:askForChoosePlayers(player, targets, 1, 1, "#tanluan-choose", self.name, true)
+      if #tos > 0 then
+        self.cost_data = tos
+        return true
+      end
+    else
+      self.cost_data = 2
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if type(self.cost_data) == "table" then
+      local to = room:getPlayerById(self.cost_data[1])
+      local cards = room:askForCardsChosen(player, to, 1, 1, "ej", self.name)
+      room:throwCard(cards, self.name, to, player)
+    else
+      room:addPlayerMark(player, "@@tanluan-phase", 1)
+    end
+  end,
+}
+local tanluan_trigger = fk.CreateTriggerSkill{
+  name = "#tanluan_trigger",
+  mute = true,
+  events = {fk.AfterCardUseDeclared, fk.AfterCardTargetDeclared},
+  can_trigger = function(self, event, target, player, data)
+    if target == player then
+      if event == fk.AfterCardUseDeclared then
+        return player:getMark("@@tanluan-phase") > 0
+      else
+        return data.extra_data and data.extra_data.tanluan and data.extra_data.tanluan[1] == player.id and
+          data.tos and #U.getUseExtraTargets(player.room, data, false) > 0
+      end
+    end
+  end,
+  on_cost = function (self, event, target, player, data)
+    if event == fk.AfterCardUseDeclared then
+      return true
+    else
+      local n = data.extra_data.tanluan[2]
+      local tos = player.room:askForChoosePlayers(player, U.getUseExtraTargets(player.room, data, false), 1, n,
+        "#tanluan-add:::"..data.card:toLogString()..":"..n, "tanluan", true)
+      if #tos > 0 then
+        self.cost_data = tos
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    if event == fk.AfterCardUseDeclared then
+      local n = player:getMark("@@tanluan-phase")
+      player.room:setPlayerMark(player, "@@tanluan-phase", 0)
+      data.extra_data = data.extra_data or {}
+      data.extra_data.tanluan = {player.id, n}
+    else
+      table.insertTable(data.tos, table.map(self.cost_data, function(p) return {p} end))
+    end
+  end,
+}
+tanluan:addRelatedSkill(tanluan_trigger)
+zhurong:addSkill(manhou)
+zhurong:addRelatedSkill(tanluan)
+Fk:loadTranslationTable{
+  ["ty_sp__zhurong"] = "祝融",
+
+  ["manhou"] = "蛮后",
+  [":manhou"] = "出牌阶段限一次，你可以摸至多四张牌，依次执行前等量项：1.失去〖探乱〗；2.弃置一张手牌；3.失去1点体力；4.弃置一张牌并获得〖探乱〗。",
+  ["tanluan"] = "探乱",
+  [":tanluan"] = "当你使用牌指定目标后，若目标角色数不少于非目标角色数，你可以弃置其中一名目标角色场上的一张牌；若目标角色数少于非目标角色数，"..
+  "本回合你使用下一张牌目标数+1。",
+  ["#manhou-prompt"] = "蛮后：你可以摸至多四张牌，依次执行等量效果",
+  ["#tanluan-choose"] = "探乱：你可以弃置其中一名角色场上的一张牌",
+  ["@@tanluan-phase"] = "探乱",
+  ["#tanluan-add"] = "探乱：你可以为%arg额外指定%arg2个目标",
+}
 return extension

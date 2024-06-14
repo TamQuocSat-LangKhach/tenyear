@@ -359,6 +359,206 @@ Fk:loadTranslationTable{
   ["shuaiyan_discard"] = "弃置%dest的一张牌",
 }
 
+local qinghegongzhu = General(extension, "ty__qinghegongzhu", "wei", 3, 3, General.Female)
+local ty__zhangjiq = fk.CreateTriggerSkill{
+  name = "ty__zhangjiq",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.BeforeCardUseEffect},  --FIXME: 睿智描述，先胡乱结算
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and #TargetGroup:getRealTargets(data.tos) > 1 and
+      table.contains(TargetGroup:getRealTargets(data.tos), player.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local new_tos = {}
+    for _, info in ipairs(data.tos) do
+      if info[1] == player.id then
+        table.insert(new_tos, info)
+      end
+    end
+    for _, info in ipairs(data.tos) do
+      if info[1] ~= player.id then
+        table.insert(new_tos, info)
+      end
+    end
+    data.tos = new_tos
+    player:drawCards(#TargetGroup:getRealTargets(data.tos) - 1, self.name)
+  end,
+}
+local ty__zengou = fk.CreateActiveSkill{
+  name = "ty__zengou",
+  anim_type = "control",
+  min_card_num = 1,
+  target_num = 1,
+  prompt = function()
+    return "#ty__zengou:::"..Self.maxHp
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected < Self.maxHp
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local cards = effect.cards
+    room:setPlayerMark(target, "@@ty__zengou", 1)
+    room:moveCardTo(cards, Card.PlayerHand, target, fk.ReasonGive, self.name, nil, false, player.id, "@@ty__zengou-inhand")
+    if not player.dead then
+      player:drawCards(#cards, self.name)
+    end
+  end,
+}
+local ty__zengou_delay = fk.CreateTriggerSkill{
+  name = "#ty__zengou_delay",
+  mute = true,
+  events = {fk.HpChanged, fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:getMark("@@ty__zengou") > 0 then
+      if event == fk.HpChanged then
+        return data.num > 0
+      else
+        return true
+      end
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "@@ty__zengou", 0)
+    if player:isKongcheng() then return end
+    local cards = player:getCardIds("h")
+    local n = #table.filter(cards, function(id)
+      return Fk:getCardById(id):getMark("@@ty__zengou-inhand") > 0
+    end)
+    player:showCards(cards)
+    if player.dead or n == 0 then return end
+    room:loseHp(player, n, "ty__zengou")
+  end,
+}
+ty__zengou:addRelatedSkill(ty__zengou_delay)
+qinghegongzhu:addSkill(ty__zhangjiq)
+qinghegongzhu:addSkill(ty__zengou)
+Fk:loadTranslationTable{
+  ["ty__qinghegongzhu"] = "清河公主",
+
+  ["ty__zhangjiq"] = "长姬",
+  [":ty__zhangjiq"] = "锁定技，一张牌指定包括你在内的多名角色为目标时，先结算对你产生的效果，然后你摸X张牌（X为剩余目标数）。",
+  ["ty__zengou"] = "谮构",
+  [":ty__zengou"] = "出牌阶段限一次，你可以交给一名其他角色至多你体力上限张牌并摸等量的牌，若如此做，其下次体力值增加或使用牌后展示所有手牌，"..
+  "每有一张“谮构”牌，其失去1点体力。",
+  ["#ty__zengou"] = "谮构：交给一名角色至多%arg张牌并摸等量牌，其下次体力增加或使用牌后失去体力",
+  ["@@ty__zengou"] = "谮构",
+  ["@@ty__zengou-inhand"] = "谮构",
+}
+
+local caoang = General(extension, "tymou__caoang", "wei", 4)
+local fengmin = fk.CreateTriggerSkill{
+  name = "fengmin",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and player:getMark("@@fengmin-turn") == 0 then
+      for _, move in ipairs(data) do
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerEquip then
+            return move.from and player.room:getPlayerById(move.from).phase ~= Player.NotActive and
+              #player.room:getPlayerById(move.from):getCardIds("e") < 5
+          end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(5 - #player.room.current:getCardIds("e"), self.name)
+    if player:usedSkillTimes(self.name, Player.HistoryTurn) > player:getLostHp() then
+      player.room:setPlayerMark(player, "@@fengmin-turn", 1)
+    end
+  end,
+}
+local zhiwang = fk.CreateTriggerSkill{
+  name = "zhiwang",
+  anim_type = "special",
+  events = {fk.EnterDying},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self, false, true) and data.damage and data.damage.card
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+      "#zhiwang-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    data.damage.from = nil
+    local to = room:getPlayerById(self.cost_data)
+    local mark = U.getMark(to, "@@zhiwang-turn")
+    table.insertIfNeed(mark, player.id)
+    room:setPlayerMark(to, "@@zhiwang-turn", mark)
+  end,
+}
+local zhiwang_delay = fk.CreateTriggerSkill{
+  name = "#zhiwang_delay",
+  mute = true,
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    return player:getMark("@@zhiwang-turn") ~= 0
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local mark = U.getMark(player, "@@zhiwang-turn")
+    local cards = {}
+    for _, id in ipairs(mark) do
+      local p = room:getPlayerById(id)
+      room.logic:getEventsOfScope(GameEvent.Death, 1, function (e)
+        if e.data[1].who == p.id and e.data[1].damage and e.data[1].damage.card and U.isPureCard(e.data[1].damage.card) then
+          if table.contains(room.discard_pile, e.data[1].damage.card.id) then
+            table.insertIfNeed(cards, e.data[1].damage.card.id)
+          end
+        end
+        return false
+      end, Player.HistoryTurn)
+    end
+    if #cards == 0 then return false end
+    while not player.dead and #cards > 0 do
+      local use = U.askForUseRealCard(room, player, cards, ".", "zhiwang", "#zhiwang-use",
+        {expand_pile = cards, bypass_times = true, extraUse = true}, true)
+      if use then
+        table.removeOne(cards, use.card:getEffectiveId())
+        room:useCard(use)
+      else
+        return
+      end
+    end
+  end,
+}
+zhiwang:addRelatedSkill(zhiwang_delay)
+caoang:addSkill(fengmin)
+caoang:addSkill(zhiwang)
+Fk:loadTranslationTable{
+  ["tymou__caoang"] = "谋曹昂",
+
+  ["fengmin"] = "丰愍",
+  [":fengmin"] = "锁定技，一名角色于其回合内失去装备区的牌后，你摸其装备区空位数的牌。若此技能发动次数大于你已损失体力值，本回合失效。",
+  ["zhiwang"] = "质亡",
+  [":zhiwang"] = "每回合限一次，当你受到牌造成的伤害进入濒死状态时，你可以将此伤害改为无来源伤害并选择一名其他角色，当前回合结束时，"..
+  "其使用弃牌堆中令你进入濒死状态的牌。",
+  ["@@fengmin-turn"] = "丰愍失效",
+  ["#zhiwang-choose"] = "质亡：将伤害改为无伤害来源，并令一名角色本回合结束可以使用使你进入濒死状态的牌",
+  ["@@zhiwang-turn"] = "质亡",
+  ["#zhiwang-use"] = "质亡：请使用这些牌",
+}
+
 local zhangzhao = General(extension, "tystar__zhangzhao", "wu", 3)
 local function DoZhongyanz(player, source, choice)
   local room = player.room

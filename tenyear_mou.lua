@@ -2045,7 +2045,7 @@ wuwei:addRelatedSkill(wuwei_targetmod)
 wuwei:addRelatedSkill(wuwei_trigger)
 guanping:addSkill(wuwei)
 Fk:loadTranslationTable{
-  ["tymou__guanping"] = "关平",
+  ["tymou__guanping"] = "谋关平",
   ["#tymou__guanping"] = "百战烈烈",
   --["designer:tymou__guanping"] = "",
   ["illustrator:tymou__guanping"] = "黯荧岛",

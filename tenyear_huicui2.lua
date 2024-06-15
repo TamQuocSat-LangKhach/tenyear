@@ -5697,17 +5697,31 @@ local yunzheng = fk.CreateTriggerSkill{
     for _, id in ipairs(cards) do
       room:setCardMark(Fk:getCardById(id), "@@yunzheng-inhand", 1)
     end
-    room:setPlayerMark(player, "@@yunzheng", 1)
+    room:setPlayerMark(player, "@yunzheng", #cards)
   end,
 
   refresh_events = {fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)
-    return player:getMark("@@yunzheng") > 0 and table.every(player:getCardIds(Player.Hand), function (id)
-      return Fk:getCardById(id):getMark("@@yunzheng-inhand") == 0
-    end)
+    for _, move in ipairs(data) do
+      if move.from == player.id then
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand then
+            return true
+          end
+        end
+      end
+      if move.to == player.id and move.toArea == Player.Hand and #move.moveInfo > 0 then
+        return true
+      end
+    end
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:setPlayerMark(player, "@@yunzheng", 0)
+    local x = #table.filter(player:getCardIds(Player.Hand), function (id)
+      return Fk:getCardById(id):getMark("@@yunzheng-inhand") > 0
+    end)
+    if player:getMark("@yunzheng") ~= x then
+      player.room:setPlayerMark(player, "@yunzheng", x)
+    end
   end,
 }
 local yunzheng_maxcards = fk.CreateMaxCardsSkill{
@@ -5719,7 +5733,7 @@ local yunzheng_maxcards = fk.CreateMaxCardsSkill{
 local yunzheng_invalidity = fk.CreateInvaliditySkill {
   name = "#yunzheng_invalidity",
   invalidity_func = function(self, from, skill)
-    if from:getMark("@@yunzheng") > 0 and table.contains(from.player_skills, skill)
+    if from:getMark("@yunzheng") > 0 and table.contains(from.player_skills, skill)
     and skill.frequency ~= Skill.Compulsory and skill.frequency ~= Skill.Wake and skill:isPlayerSkill(from) then
       return table.find(Fk:currentRoom().alive_players, function(p)
         return p:hasSkill(yunzheng)
@@ -5733,25 +5747,39 @@ local huoxin = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    if not (target == player and player:hasSkill(self) and U.IsUsingHandcard(player, data)) or data.to == player.id then return false end
-    local to = player.room:getPlayerById(data.to)
-    return not (to.dead or to:isKongcheng())
+    return target == player and player:hasSkill(self) and U.IsUsingHandcard(player, data) and data.firstTarget and
+    table.find(AimGroup:getAllTargets(data.tos), function (pid)
+      if pid ~= player.id then
+        local to = player.room:getPlayerById(pid)
+        return not (to.dead or to:isKongcheng())
+      end
+    end)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:doIndicate(player.id, {data.to})
-    local to = player.room:getPlayerById(data.to)
+    local tos = table.filter(AimGroup:getAllTargets(data.tos), function (pid)
+      if pid ~= player.id then
+        local to = player.room:getPlayerById(pid)
+        return not (to.dead or to:isKongcheng())
+      end
+    end)
+    if #tos == 0 then return false end
+    if #tos > 1 then
+      tos = room:askForChoosePlayers(player, tos, 1, 1, "#mu__huoxin-choose", self.name, false, true)
+    end
+    room:doIndicate(player.id, tos)
+    local to = room:getPlayerById(tos[1])
     local id = room:askForCardChosen(player, to, "h", self.name)
     to:showCards({id})
     local card = Fk:getCardById(id)
-    if (card.suit == data.card.suit and card.suit ~= Card.NoSuit) or card:getMark("@@yunzheng-inhand") > 0 then
-      room:obtainCard(player, id, true, fk.ReasonPrey, player.id, self.name)
-      --存疑：通过惑心得到的牌是否拥有“筝”标记
-    else
+    local toObtain = true
+    if card:getMark("@@yunzheng-inhand") == 0 then
+      toObtain = false
       room:setCardMark(card, "@@yunzheng-inhand", 1)
-      if to:getMark("@@yunzheng-inhand") == 0 then
-        room:setPlayerMark(to, "@@yunzheng", 1)
-      end
+      room:addPlayerMark(to, "@yunzheng")
+    end
+    if toObtain or (card.suit == data.card.suit and card.suit ~= Card.NoSuit) then
+      room:obtainCard(player, id, true, fk.ReasonPrey, player.id, self.name, "@@yunzheng-inhand")
     end
   end,
 }
@@ -5761,17 +5789,19 @@ zoushi:addSkill(yunzheng)
 zoushi:addSkill(huoxin)
 Fk:loadTranslationTable{
   ["mu__zoushi"] = "乐邹氏",
-  --["#mu__zoushi"] = "",
+  ["#mu__zoushi"] = "淯水吟",
   --["designer:mu__zoushi"] = "",
+  ["illustrator:mu__zoushi"] = "黯荧岛",
 
   ["yunzheng"] = "韵筝",
   [":yunzheng"] = "锁定技，游戏开始时，你的初始手牌增加“筝”标记且不计入手牌上限。手牌区里有“筝”的角色的不带“锁定技”标签的技能无效。",
   ["mu__huoxin"] = "惑心",
-  [":mu__huoxin"] = "锁定技，当你使用手牌指定一名其他角色为目标后，你展示其一张手牌并标记为“筝”，"..
-  "若此牌与你使用的牌花色相同或已被标记，则改为你获得之。",
+  [":mu__huoxin"] = "锁定技，当你使用手牌指定第一个目标后，你可以选择目标角色中的一名其他角色，你展示其一张手牌并标记为“筝”，"..
+  "若此牌与你使用的牌花色相同或已被标记，你获得之并标记为“筝”。",
 
-  ["@@yunzheng"] = "韵筝",
+  ["@yunzheng"] = "筝",
   ["@@yunzheng-inhand"] = "筝",
+  ["#mu__huoxin-choose"] = "惑心：选择一名目标角色，展示其一张手牌标记为“筝”",
 }
 
 local zhugeguo = General(extension, "mu__zhugeguo", "shu", 3, 3, General.Female)

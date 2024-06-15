@@ -5606,8 +5606,9 @@ zhupeilan:addSkill(cilv)
 zhupeilan:addSkill(tongdao)
 Fk:loadTranslationTable{
   ["zhupeilan"] = "朱佩兰",
-  --["#zhupeilan"] = "",
-  --["illustrator:zhupeilan"] = "",
+  ["#zhupeilan"] = "景皇后",
+  --["designer:zhupeilan"] = "",
+  ["illustrator:zhupeilan"] = "匠人绘",
 
   ["cilv"] = "辞虑",
   [":cilv"] = "当你成为普通锦囊牌的目标后，你可以摸X张牌（X为此技能的剩余选项数），"..

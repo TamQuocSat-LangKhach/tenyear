@@ -26,7 +26,7 @@ local yuqi = fk.CreateTriggerSkill{
       return false
     end
     local cards = room:getNCards(n1)
-    local result = U.askForArrangeCards(player, self.name, {cards, "Top", target.general, player.general}, "#yuqi",
+    local result = room:askForArrangeCards(player, self.name, {cards, "Top", target.general, player.general}, "#yuqi",
     false, 0, {n1, n2, n3}, {0, 1, 1})
     local top, bottom = result[2], result[3]
     local moveInfos = {}
@@ -3008,7 +3008,7 @@ local jincui = fk.CreateTriggerSkill{
       end
       player.hp = math.min(player.maxHp, math.max(n, 1))
       room:broadcastProperty(player, "hp")
-      U.askForGuanxing(player, room:getNCards(player.hp))
+      room:askForGuanxing(player, room:getNCards(player.hp))
     end
   end,
 }

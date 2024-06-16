@@ -1815,7 +1815,7 @@ local jiufa = fk.CreateTriggerSkill{
         table.insert(throw, id)
       end
     end
-    local result = U.askForArrangeCards(player, self.name, {card_ids},
+    local result = room:askForArrangeCards(player, self.name, {card_ids},
     "#jiufa", false, 0, {9, 9}, {0, #get}, ".", "jiufa", {throw, get})
     throw = result[1]
     get = result[2]

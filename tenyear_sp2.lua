@@ -3694,7 +3694,7 @@ local qianlong = fk.CreateTriggerSkill{
       skillName = self.name,
       proposer = player.id,
     })
-    local result = U.askForGuanxing(player, cards, {0, 3}, {0, player:getLostHp()}, self.name, nil, true, {"Bottom", "toObtain"})
+    local result = room:askForGuanxing(player, cards, {0, 3}, {0, player:getLostHp()}, self.name, true, {"Bottom", "toObtain"})
     if #result.bottom > 0 then
       room:moveCardTo(result.bottom, Player.Hand, player, fk.ReasonJustMove, self.name, "", true, player.id)
     end
@@ -5556,8 +5556,6 @@ local tongdao = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
-    --“愚蠢技能” —— by Ho-spair
-    --FIXME:先伪实现一下
     local skills = {}
     for _, s in ipairs(to.player_skills) do
       if s:isPlayerSkill(to) then
@@ -5575,10 +5573,16 @@ local tongdao = fk.CreateTriggerSkill{
     if to.deputyGeneral ~= "" then
       table.insertTableIfNeed(skills, Fk.generals[to.deputyGeneral]:getSkillNameList(true))
     end
-    --FIXME:需要排除主公技，懒得写
+    local skill
+    if not (table.contains({"aaa_role_mode", "aab_role_mode", "vanished_dragon"}, room.settings.gameMode) and
+    to.role_shown and to.role == "lord") then
+      skills = table.filter(skills, function (skill_name)
+        skill = Fk.skills[skill_name]
+        return not skill.lordSkill
+      end)
+    end
     if #skills > 0 then
       --需要重置限定技、觉醒技、转换技、使命技
-      local skill
       for _, skill_name in ipairs(skills) do
         skill = Fk.skills[skill_name]
         if skill.frequency == Skill.Quest then
@@ -5587,6 +5591,9 @@ local tongdao = fk.CreateTriggerSkill{
         if skill.switchSkillName then
           room:setPlayerMark(to, MarkEnum.SwithSkillPreName .. skill_name, fk.SwitchYang)
         end
+        to:setSkillUseHistory(skill_name, 0, Player.HistoryPhase)
+        to:setSkillUseHistory(skill_name, 0, Player.HistoryTurn)
+        to:setSkillUseHistory(skill_name, 0, Player.HistoryRound)
         to:setSkillUseHistory(skill_name, 0, Player.HistoryGame)
       end
       room:handleAddLoseSkills(to, table.concat(skills, "|"), nil, true, false)
@@ -6245,7 +6252,7 @@ local xingzuo = fk.CreateTriggerSkill{
     local room = player.room
     local cards = room:getNCards(3, "bottom")
     local handcards = player:getCardIds(Player.Hand)
-    local cardmap = U.askForArrangeCards(player, self.name,
+    local cardmap = room:askForArrangeCards(player, self.name,
     {cards, handcards, "Bottom", "$Hand"}, "#xingzuo-invoke")
     U.swapCardsWithPile(player, cardmap[1], cardmap[2], self.name, "Bottom")
   end,

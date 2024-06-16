@@ -988,7 +988,7 @@ local xunli = fk.CreateTriggerSkill{
       local cards = table.filter(player:getCardIds("h"), function(id)
         return Fk:getCardById(id, true).color == Card.Black and Fk:getCardById(id).color == Card.Black
       end)
-      local piles = U.askForArrangeCards(player, self.name, {player:getPile("jiping_li"), cards, "jiping_li", "$Hand"},
+      local piles = room:askForArrangeCards(player, self.name, {player:getPile("jiping_li"), cards, "jiping_li", "$Hand"},
       "#xunli-exchange", true)
       U.swapCardsWithPile(player, piles[1], piles[2], self.name, "jiping_li", true)
     end
@@ -5832,7 +5832,7 @@ local xidi = fk.CreateTriggerSkill{
         room:setCardMark(Fk:getCardById(id), "@@xidi-inhand", 1)
       end
     else
-      U.askForGuanxing(player, room:getNCards(self.cost_data))
+      room:askForGuanxing(player, room:getNCards(self.cost_data))
     end
   end,
 }

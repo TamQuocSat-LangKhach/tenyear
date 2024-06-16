@@ -630,7 +630,7 @@ local beiyu = fk.CreateActiveSkill{
         drawPilePosition = -1,
       })
     else
-      local result = U.askForGuanxing(player, cards, {}, {0, 0}, self.name, "", true, {"$Hand", ""})
+      local result = room:askForGuanxing(player, cards, {}, {0, 0}, self.name, true, {"$Hand", ""})
       room:moveCards({
         ids = result.top,
         from = player.id,

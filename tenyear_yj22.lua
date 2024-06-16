@@ -204,7 +204,7 @@ local cibei = fk.CreateTriggerSkill{
     if event == fk.CardUseFinished then
       local c = data.card:getEffectiveId()
       local ids = table.filter(player:getPile("hanlong_ci"), function(id) return Fk:getCardById(id).trueName ~= "slash" end)
-      local piles = U.askForArrangeCards(player, self.name, {{c}, ids, "slash", "hanlong_ci"}, "#cibei-cibei")
+      local piles = room:askForArrangeCards(player, self.name, {{c}, ids, "slash", "hanlong_ci"}, "#cibei-cibei")
       local c2 = 0
       if piles[1][1] == c then
         c2 = table.random(ids)

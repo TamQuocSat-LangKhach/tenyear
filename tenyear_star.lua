@@ -931,14 +931,16 @@ local ruijun_delay = fk.CreateTriggerSkill{
         return true
       end
     end, nil, player:getMark("ruijun_event_id-phase"))
-    data.damage = math.min(5, x+1)
+    if x > 0 then
+      data.damage = math.min(5, x+1)
+    end
   end,
 }
 local ruijun_attackrange = fk.CreateAttackRangeSkill{
   name = "#ruijun_attackrange",
   without_func = function (self, from, to)
-    local mark = U.getMark(from, "ruijun_targets-phase")
-    return #mark > 0 and not table.contains(mark, to.id)
+    local mark = from:getMark("ruijun_targets-phase")
+    return mark ~= 0 and mark ~= to.id
   end,
 }
 local gangyi = fk.CreateTriggerSkill{

@@ -2374,7 +2374,7 @@ local ty_ex__chengxiang = fk.CreateTriggerSkill{
       skillName = self.name,
       proposer = player.id,
     })
-    local get = U.askForArrangeCards(player, self.name, {cards},
+    local get = room:askForArrangeCards(player, self.name, {cards},
     "#chengxiang-choose", false, 0, {4, 4}, {0, 1}, ".", "chengxiang_count", {{}, {cards[1]}})[2]
     room:moveCardTo(get, Player.Hand, player, fk.ReasonJustMove, self.name, "", true, player.id)
     if not player.dead then
@@ -3262,7 +3262,7 @@ local ty_ex__zongxuan = fk.CreateTriggerSkill{
       end))
       if #cards == 0 then return false end
     end
-    local top = U.askForArrangeCards(player, self.name, {cards, "pile_discard", "Top"},
+    local top = room:askForArrangeCards(player, self.name, {cards, "pile_discard", "Top"},
     "#ty_ex__zongxuan-invoke", true, 7, nil, {0, 1})[2]
     top = table.reverse(top)
     room:sendLog{

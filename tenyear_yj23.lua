@@ -521,7 +521,7 @@ local xuzhi = fk.CreateActiveSkill{
       if player.dead then return end
       room:askForUseActiveSkill(player, self.name, "#xuzhi-active", true, {}, false)
     else
-      local to = n2 > n1 and target1 or target2
+      local to = n2 > n1 and target2 or target1
       if to.dead then return end
       U.askForUseVirtualCard(room, to, "slash", {}, self.name, "#xuzhi-use", true, true, true, true)
     end

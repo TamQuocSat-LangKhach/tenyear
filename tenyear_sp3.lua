@@ -3006,17 +3006,8 @@ local jincui = fk.CreateTriggerSkill{
           n = n + 1
         end
       end
-      n = math.max(n, 1)
-      if player.hp > n then
-        room:loseHp(player, player.hp - n, self.name)
-      elseif player.hp < n then
-        room:recover({
-          who = player,
-          num = math.min(n - player.hp, player:getLostHp()),
-          recoverBy = player,
-          skillName = self.name
-        })
-      end
+      player.hp = math.min(player.maxHp, math.max(n, 1))
+      room:broadcastProperty(player, "hp")
       U.askForGuanxing(player, room:getNCards(player.hp))
     end
   end,

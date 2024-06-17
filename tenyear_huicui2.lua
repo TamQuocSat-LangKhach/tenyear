@@ -5186,7 +5186,7 @@ local jigu = fk.CreateTriggerSkill{
     if event == fk.GameStart then
       return #handcards > 0
     elseif player == target then
-      if player:getMark("jiguused-turn") < #player.room.alive_players then
+      if player:getMark("jiguused-round") < player.room:getTag("RoundCount") then
         local x = #player:getCardIds(Player.Equip)
         if x == #table.filter(handcards, function (id)
           return Fk:getCardById(id):getMark("@@jigu-inhand") > 0
@@ -5207,7 +5207,7 @@ local jigu = fk.CreateTriggerSkill{
         room:setCardMark(Fk:getCardById(id), "@@jigu-inhand", 1)
       end
     else
-      room:addPlayerMark(player, "jiguused-turn")
+      room:addPlayerMark(player, "jiguused-round")
       player:drawCards(self.cost_data, self.name)
     end
   end,
@@ -5273,7 +5273,7 @@ Fk:loadTranslationTable{
 
   ["jigu"] = "激鼓",
   [":jigu"] = "锁定技，游戏开始时，你的初始手牌增加“激鼓”标记且不计入手牌上限。当你造成或受到伤害后，"..
-  "若你于当前回合内发动过此技能的次数小于存活角色数且你装备区里的牌数等于你手牌区里的“激鼓”牌数，你摸X张牌（X为你空置的装备栏数）。",
+  "若你于此轮内发动过此技能的次数小于轮次数且你装备区里的牌数等于你手牌区里的“激鼓”牌数，你摸X张牌（X为你空置的装备栏数）。",
   ["sirui"] = "思锐",
   [":sirui"] = "出牌阶段限一次，你可以将一张牌当牌名字数相等的基本牌或普通锦囊牌使用（无距离和次数限制）。",
 
@@ -5796,8 +5796,8 @@ Fk:loadTranslationTable{
   ["yunzheng"] = "韵筝",
   [":yunzheng"] = "锁定技，游戏开始时，你的初始手牌增加“筝”标记且不计入手牌上限。手牌区里有“筝”的角色的不带“锁定技”标签的技能无效。",
   ["mu__huoxin"] = "惑心",
-  [":mu__huoxin"] = "锁定技，当你使用手牌指定第一个目标后，你可以选择目标角色中的一名其他角色，你展示其一张手牌并标记为“筝”，"..
-  "若此牌与你使用的牌花色相同或已被标记，你获得之并标记为“筝”。",
+  [":mu__huoxin"] = "锁定技，当你使用手牌指定第一个目标后，你展示目标角色中的一名其他角色的一张手牌并标记为“筝”，"..
+  "若此牌与你使用的牌花色相同或已被标记，你获得之（保留“筝”标记）。",
 
   ["@yunzheng"] = "筝",
   ["@@yunzheng-inhand"] = "筝",

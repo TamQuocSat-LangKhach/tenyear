@@ -545,7 +545,7 @@ local xianshuai = fk.CreateTriggerSkill{
   events = {fk.Damage},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self) then return false end
+    if not player:hasSkill(self) or target == nil then return false end
     local room = player.room
     local damage_event = room.logic:getCurrentEvent()
     if not damage_event then return false end

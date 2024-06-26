@@ -4806,7 +4806,7 @@ local gangu = fk.CreateTriggerSkill{
     return player:hasSkill(self) and player:usedSkillTimes(self.name) == 0
   end,
   on_use = function(self, event, target, player, data)
-    player:drawCards(2, self.name)
+    player:drawCards(3, self.name)
     if not player.dead then
       player.room:loseHp(player, 1, self.name)
     end
@@ -4823,7 +4823,7 @@ local kuizhen = fk.CreateActiveSkill{
   target_filter = function(self, to_select, selected)
     if #selected == 0 then
       local target = Fk:currentRoom():getPlayerById(to_select)
-      if target.hp > Self.hp or target:getHandcardNum() > Self:getHandcardNum() then
+      if target.hp >= Self.hp or target:getHandcardNum() >= Self:getHandcardNum() then
         local duel = Fk:cloneCard("duel")
         duel.skillName = self.name
         return target:canUseTo(duel, Self)
@@ -4881,9 +4881,9 @@ Fk:loadTranslationTable{
   ["#gongsunxiu"] = "寸莛击钟",
   ["illustrator:gongsunxiu"] = "鬼画府",
   ["gangu"] = "干蛊",
-  [":gangu"] = "锁定技，当一名角色失去体力后，若你于当前回合内未发动过此技能，你摸两张牌，失去1点体力。",
+  [":gangu"] = "锁定技，当一名角色失去体力后，若你于当前回合内未发动过此技能，你摸三张牌，失去1点体力。",
   ["kuizhen"] = "溃阵",
-  [":kuizhen"] = "出牌阶段限一次，你可以选择一名手牌数或体力值大于你的角色，其视为对你使用【决斗】，若你："..
+  [":kuizhen"] = "出牌阶段限一次，你可以选择一名手牌数或体力值不小于你的角色，其视为对你使用【决斗】，若你："..
   "受到过此【决斗】造成的伤害，你观看其所有手牌，获得其中所有的【杀】且你使用以此法获得的【杀】无次数限制；"..
   "未受到过此【决斗】造成的伤害，其失去1点体力。",
 

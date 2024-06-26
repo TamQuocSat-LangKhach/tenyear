@@ -5131,8 +5131,26 @@ local tianze = fk.CreateTriggerSkill{
   mute = true,
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and target ~= player and data.card.color == Card.Black then
-      if event == fk.FinishJudge then return true end
-      return target.phase == Player.Play and player:getMark("tianze_damage-turn") == 0 and not player:isNude()
+      if event == fk.FinishJudge then
+        return true
+      else
+        if target.dead or target.phase ~= Player.Play or player:isNude() then return false end
+        local room = player.room
+        local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
+        if use_event == nil then return false end
+        local x = target:getMark("tianze_record-turn")
+        if x == 0 then
+          room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+            local use = e.data[1]
+            if use.from == target.id and use.card.color == Card.Black then
+              x = e.id
+              room:setPlayerMark(target, "tianze_record-turn", x)
+              return true
+            end
+          end, Player.HistoryPhase)
+        end
+        return x == use_event.id
+      end
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -5149,9 +5167,8 @@ local tianze = fk.CreateTriggerSkill{
     if event == fk.CardUseFinished then
       room:notifySkillInvoked(player, self.name, "offensive")
       room:doIndicate(player.id, {target.id})
-      room:setPlayerMark(player, "tianze_damage-turn", 1)
       room:throwCard(self.cost_data, self.name, player, player)
-      room:damage{ from = player, to = target, damage = 1, skillName = self.name}
+      room:damage{ from = player, to = target, damage = 1, skillName = self.name }
     else
       room:notifySkillInvoked(player, self.name, "drawcard")
       player:drawCards(1, self.name)
@@ -5164,11 +5181,12 @@ local difa = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and player:usedSkillTimes(self.name) == 0 and player.phase ~= Player.NotActive then
+      local room = player.room
       for _, move in ipairs(data) do
-        if move.to == player.id and move.moveReason == fk.ReasonDraw and move.toArea == Card.PlayerHand and
+        if move.to == player.id and move.toArea == Card.PlayerHand and
           table.find(move.moveInfo, function (info)
-          return info.fromArea == Card.DrawPile and player.room:getCardOwner(info.cardId) == player and
-            player.room:getCardArea(info.cardId) == Player.Hand and Fk:getCardById(info.cardId).color == Card.Red end) then
+          return player.room:getCardOwner(info.cardId) == player and player.room:getCardArea(info.cardId) == Player.Hand and
+          Fk:getCardById(info.cardId).color == Card.Red end) then
           return true
         end
       end
@@ -5176,11 +5194,12 @@ local difa = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local ids = {}
+    local room = player.room
     for _, move in ipairs(data) do
-      if move.to == player.id and move.moveReason == fk.ReasonDraw and move.toArea == Card.PlayerHand then
+      if move.to == player.id and move.toArea == Card.PlayerHand then
         for _, info in ipairs(move.moveInfo) do
-          if info.fromArea == Card.DrawPile and player.room:getCardOwner(info.cardId) == player and
-          player.room:getCardArea(info.cardId) == Player.Hand and Fk:getCardById(info.cardId).color == Card.Red then
+          if room:getCardOwner(info.cardId) == player and room:getCardArea(info.cardId) == Player.Hand and
+          Fk:getCardById(info.cardId).color == Card.Red then
             table.insert(ids, info.cardId)
           end
         end
@@ -5219,12 +5238,15 @@ Fk:loadTranslationTable{
   ["#ty__zhangning"] = "大贤后人",
   ["illustrator:ty__zhangning"] = "君桓文化",
   ["tianze"] = "天则",
-  [":tianze"] = "①每回合限一次，当其他角色于其出牌阶段内使用一张黑色牌结算结束后，你可以弃置一张黑色牌，对其造成1点伤害；<br>②当其他角色的黑色判定牌生效后，你摸一张牌。",
+  [":tianze"] = "当其他角色于其出牌阶段内使用第一张黑色牌结算结束后，你可以弃置一张黑色牌，对其造成1点伤害；"..
+  "当其他角色的黑色判定牌生效后，你摸一张牌。",
   ["difa"] = "地法",
-  [":difa"] = "你的回合内限一次，当你从牌堆摸到红色牌后，你可以弃置此牌，然后选择一种锦囊牌的牌名，从牌堆或弃牌堆获得一张。",
+  [":difa"] = "当你于回合内得到红色牌后，若你于此回合内未发动过此技能，你可以弃置其中一张牌，"..
+  "然后选择一种锦囊牌的牌名，从牌堆或弃牌堆获得一张此牌名的牌。",
 
-  ["#tianze-invoke"] = "天则：你可弃置一张黑色牌来对%dest造成1点伤害",
-  ["#difa-invoke"] = "地法：你可弃置一张摸到的红色牌，然后检索一张锦囊牌",
+  ["#tianze-invoke"] = "是否发动 天则，弃置一张黑色牌来对%dest造成1点伤害",
+  ["#difa-invoke"] = "是否发动 地法，弃置一张刚得到的红色牌，然后检索一张锦囊牌",
+
   ["$tianze1"] = "观天则，以断人事。",
   ["$tianze2"] = "乾元用九，乃见天则。",
   ["$difa1"] = "地蕴天成，微妙玄通。",

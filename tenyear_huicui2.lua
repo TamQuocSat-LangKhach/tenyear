@@ -3583,19 +3583,29 @@ local chiying = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
+    local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+      return target:inMyAttackRange(p) and not p:isNude()
+    end), Util.IdMapper)
+    if #targets == 0 then return end
+    local tos = room:askForChoosePlayers(target, targets, 1, #targets, "#chiying-choose", self.name, true)
+    if #tos == 0 then return end
+    room:sortPlayersByAction(tos)
     local ids = {}
-    for _, p in ipairs(room:getOtherPlayers(player)) do
-      if target:inMyAttackRange(p) and not p.dead and not p:isNude() then
-        local card = room:askForDiscard(p, 1, 1, true, self.name, false, nil)
-        if target ~= player and #card > 0 and Fk:getCardById(card[1]).type == Card.TypeBasic then
-          table.insertIfNeed(ids, card[1])
+    for _, id in ipairs(tos) do
+      if target.dead then return end
+      local p = room:getPlayerById(id)
+      if not p.dead and not p:isNude() then
+        local card = room:askForCardChosen(target, p, "he", self.name, "#chiying-discard::"..p.id)
+        room:throwCard(card, self.name, p, target)
+        if target ~= player and card and Fk:getCardById(card).type == Card.TypeBasic then
+          table.insertIfNeed(ids, card)
         end
       end
     end
     if #ids == 0 or target.dead then return end
     ids = table.filter(ids, function(id) return room:getCardArea(id) == Card.DiscardPile end)
     if #ids == 0 then return end
-    room:obtainCard(target, ids, true, fk.ReasonJustMove)
+    room:moveCardTo(ids, Card.PlayerHand, target, fk.ReasonPrey, self.name, nil, true, target.id)
   end,
 }
 gaoxiang:addSkill(chiying)
@@ -3606,8 +3616,11 @@ Fk:loadTranslationTable{
   ["illustrator:gaoxiang"] = "黯荧岛工作室",
 
   ["chiying"] = "驰应",
-  [":chiying"] = "出牌阶段限一次，你可以选择一名体力值不大于你的角色，令其攻击范围内的其他角色各弃置一张牌。若选择的角色不为你，其获得其中的基本牌。",
-  ["#chiying-invoke"] = "驰应：选择一名角色，其攻击范围内其他角色各弃一张牌",
+  [":chiying"] = "出牌阶段限一次，你可以选择一名体力值不大于你的角色，其可以弃置其攻击范围内任意名其他角色各一张牌。若选择的角色不为你，"..
+  "其获得其中的基本牌。",
+  ["#chiying-invoke"] = "驰应：选择一名角色，其可以弃置攻击范围内其他角色各一张牌",
+  ["#chiying-choose"] = "驰应：你可以弃置任意名角色各一张牌",
+  ["#chiying-discard"] = "驰应：弃置 %dest 一张牌",
 
   ["$chiying1"] = "今诱老贼来此，必折其父子于上方谷。",
   ["$chiying2"] = "列柳城既失，当下唯死守阳平关。",

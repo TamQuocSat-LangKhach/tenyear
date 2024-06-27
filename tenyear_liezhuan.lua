@@ -1371,6 +1371,7 @@ local xuezhao = fk.CreateActiveSkill{
   max_target_num = function()
     return Self.maxHp
   end,
+  prompt = "#xuezhao",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
@@ -1385,8 +1386,9 @@ local xuezhao = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     room:sortPlayersByAction(effect.tos)
     room:throwCard(effect.cards, self.name, player, player)
+    local yes = true
     for _, to in ipairs(effect.tos) do
-      if player.dead then break end
+      if player.dead then return end
       local p = room:getPlayerById(to)
       if not p.dead then
         local cards = {}
@@ -1394,7 +1396,8 @@ local xuezhao = fk.CreateActiveSkill{
           cards = room:askForCard(p, 1, 1, true, self.name, true, ".", "#xuezhao-give:"..player.id)
         end
         if #cards > 0 then
-          room:obtainCard(player, cards, false, fk.ReasonGive, p.id, self.name)
+          yes = false
+          room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonGive, self.name, "", false, p.id)
           if not p.dead then
             p:drawCards(1, self.name)
           end
@@ -1405,6 +1408,9 @@ local xuezhao = fk.CreateActiveSkill{
           room:setPlayerMark(player, "xuezhao-phase", mark)
         end
       end
+    end
+    if yes and player:getHandcardNum() < player.maxHp and not player.dead then
+      player:drawCards(player.maxHp - player:getHandcardNum(), self.name)
     end
   end,
 }
@@ -1428,8 +1434,9 @@ Fk:loadTranslationTable{
   ["designer:ty__dongcheng"] = "步穗",
   ["illustrator:ty__dongcheng"] = "游漫美绘",
   ["xuezhao"] = "血诏",
-  [":xuezhao"] = "出牌阶段限一次，你可以弃置一张手牌并选择至多X名其他角色（X为你的体力上限），然后令这些角色依次选择是否交给你一张牌，"..
-  "若选择是，该角色摸一张牌且你本阶段使用【杀】的次数上限+1；若选择否，该角色本阶段不能响应你使用的牌。",
+  [":xuezhao"] = "出牌阶段限一次，你可以弃置一张手牌并选择至多X名其他角色（X为你的体力上限），然后令这些角色依次选择是否交给你一张牌，若选择是，"..
+  "该角色摸一张牌且你本阶段使用【杀】的次数上限+1；若选择否，该角色本阶段不能响应你使用的牌。若没有角色交给你牌，你将手牌摸至体力上限。",
+  ["#xuezhao"] = "血诏：弃一张手牌，令任意角色选择交给你一张牌或其本阶段不能响应你使用的牌",
   ["#xuezhao-give"] = "血诏：交出一张牌并摸一张牌使 %src 使用【杀】次数上限+1；或本阶段不能响应其使用的牌",
 
   ["$xuezhao1"] = "奉旨行事，莫敢不从？",

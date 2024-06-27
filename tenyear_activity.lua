@@ -731,11 +731,12 @@ local liangjue = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and player.hp > 1 then
+    if player:hasSkill(self) then
       for _, move in ipairs(data) do
         if move.from == player.id then
           for _, info in ipairs(move.moveInfo) do
-            if Fk:getCardById(info.cardId).color == Card.Black and (info.fromArea == Card.PlayerJudge or info.fromArea == Card.PlayerEquip) then
+            if Fk:getCardById(info.cardId).color == Card.Black and
+              (info.fromArea == Card.PlayerJudge or info.fromArea == Card.PlayerEquip) then
               return true
             end
           end
@@ -751,8 +752,28 @@ local liangjue = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:loseHp(player, 1, self.name)
-    player:drawCards(2, self.name)
+    local n = 0
+    for _, move in ipairs(data) do
+      if move.from == player.id then
+        for _, info in ipairs(move.moveInfo) do
+          if Fk:getCardById(info.cardId).color == Card.Black and
+            (info.fromArea == Card.PlayerJudge or info.fromArea == Card.PlayerEquip) then
+            n = n + 1
+          end
+        end
+      end
+      if move.to == player.id and (move.toArea == Card.PlayerJudge or move.toArea == Card.PlayerEquip) then
+        for _, info in ipairs(move.moveInfo) do
+          if Fk:getCardById(info.cardId).color == Card.Black then
+            n = n + 1
+          end
+        end
+      end
+    end
+    player:drawCards(2 * n, self.name)
+    if player.hp > 1 then
+      player.room:loseHp(player, 1, self.name)
+    end
   end,
 }
 local dangzai = fk.CreateTriggerSkill{
@@ -775,7 +796,14 @@ local dangzai = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local src = room:getPlayerById(self.cost_data)
-    room:askForMoveCardInBoard(player, src, player, self.name, "j", src)
+    local cards = table.filter(src:getCardIds("j"), function(id)
+      return src:canMoveCardInBoardTo(player, id)
+    end)
+    cards = U.askforChooseCardsAndChoice(player, cards, {"OK"}, self.name, "#dangzai-ask::"..src.id, nil, 1, #cards, src:getCardIds("j"))
+    cards = table.map(cards, function(id)
+      return room:getCardOwner(id):getVirualEquip(id) or Fk:getCardById(id)
+    end)
+    room:moveCardTo(cards, Player.Judge, player, fk.ReasonJustMove, self.name, nil, true, player.id)
   end,
 }
 zhangheng:addSkill(liangjue)
@@ -785,10 +813,11 @@ Fk:loadTranslationTable{
   ["#zhangheng"] = "戾鹘枭鹰",
   ["illustrator:zhangheng"] = "匠人绘",
   ["liangjue"] = "粮绝",
-  [":liangjue"] = "锁定技，当有黑色牌进入或者离开你的判定区或装备区时，若你的体力值大于1，你失去1点体力，然后摸两张牌。",
+  [":liangjue"] = "锁定技，每当一张黑色牌进入或者离开你的判定区或装备区时，你摸两张牌，然后若你的体力值大于1，你失去1点体力。",
   ["dangzai"] = "挡灾",
-  [":dangzai"] = "出牌阶段开始时，你可以将一名其他角色判定区里的一张牌移至你的判定区。",
-  ["#dangzai-choose"] = "挡灾：你可以将其他角色判定区里的一张牌移至你的判定区",
+  [":dangzai"] = "出牌阶段开始时，你可以选择一名判定区内有牌的其他角色，将其判定区里的任意张牌移至你的判定区。",
+  ["#dangzai-choose"] = "挡灾：你可以将一名角色判定区里的任意张牌移至你的判定区",
+  ["#dangzai-ask"] = "挡灾：选择任意张牌从%dest判定区移给你",
 
   ["$liangjue1"] = "行军者，切不可无粮！",
   ["$liangjue2"] = "粮尽援绝，须另谋出路。",

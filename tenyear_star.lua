@@ -67,6 +67,12 @@ local canxi = fk.CreateTriggerSkill{
         table.insertIfNeed(kingdoms, p.kingdom)
       end
       room:setPlayerMark(player, "@canxi_exist_kingdoms", kingdoms)
+      local n = #table.filter({"wei", "shu", "wu", "qun"}, function(s)
+        return not table.contains(kingdoms, s)
+      end)
+      if n > 0 then
+        room:changeMaxHp(player, n)
+      end
     end
   end,
 
@@ -100,13 +106,16 @@ local pizhi = fk.CreateTriggerSkill{
       if event == fk.EventPhaseEnd then
         return target == player and player.phase == Player.Finish and player:getMark("canxi_removed_kingdoms") > 0
       elseif event == fk.Death then
-        return player:getMark("@canxi1-round") == target.kingdom or player:getMark("@canxi2-round") == target.kingdom
+        return player:getMark("@canxi1-round") == target.kingdom or player:getMark("@canxi2-round") == target.kingdom or
+          not table.find(player.room.alive_players, function(p)
+            return p.kingdom == target.kingdom
+          end)
       end
     end
   end,
   on_use = function (self, event, target, player, data)
+    local room = player.room
     if event == fk.Death then
-      local room = player.room
       if player:getMark("@canxi1-round") == target.kingdom then
         room:setPlayerMark(player, "@canxi1-round", 0)
       end
@@ -118,9 +127,18 @@ local pizhi = fk.CreateTriggerSkill{
         room:setPlayerMark(player, "@canxi_exist_kingdoms", #mark > 0 and mark or 0)
         room:addPlayerMark(player, "canxi_removed_kingdoms")
       end
-      if #mark == 0 then mark = 0 end
+      player:drawCards(player:getMark("canxi_removed_kingdoms"), self.name)
+      if not player.dead and player:isWounded() then
+        room:recover({
+          who = player,
+          num = 1,
+          recoverBy = player,
+          skillName = self.name
+        })
+      end
+    else
+      player:drawCards(player:getMark("canxi_removed_kingdoms"), self.name)
     end
-    player:drawCards(player:getMark("canxi_removed_kingdoms"), self.name)
   end,
 }
 local zhonggu = fk.CreateTriggerSkill{
@@ -151,11 +169,12 @@ Fk:loadTranslationTable{
   ["designer:tystar__yuanshu"] = "头发好借好还",
   ["illustrator:tystar__yuanshu"] = "黯萤岛工作室",
   ["canxi"] = "残玺",
-  [":canxi"] = "锁定技，游戏开始时，你获得场上各势力的“玺角”标记。每轮开始时，你选择一个“玺角”势力并选择一个效果生效直到下轮开始：<br>"..
-  "「妄生」：该势力角色每回合首次造成伤害+1，计算与其他角色距离-1；<br>「向死」：该势力其他角色每回合首次回复体力后失去1点体力，"..
-  "每回合对你使用的第一张牌无效。",
+  [":canxi"] = "锁定技，游戏开始时，你获得场上各势力的“玺角”标记（魏、蜀、吴、群每少一个势力，你加1点体力上限）。每轮开始时，"..
+  "你选择一个“玺角”势力并选择一个效果生效直到下轮开始：<br>「妄生」：该势力角色每回合首次造成伤害+1，计算与其他角色距离-1；<br>"..
+  "「向死」：该势力其他角色每回合首次回复体力后失去1点体力，每回合对你使用的第一张牌无效。",
   ["pizhi"] = "圮秩",
-  [":pizhi"] = "锁定技，结束阶段，你摸X张牌；有角色死亡时，若其势力与当前生效的“玺角”势力相同，你失去此“玺角”，然后摸X张牌（X为你已失去的“玺角”数）。",
+  [":pizhi"] = "锁定技，结束阶段，你摸X张牌；有角色死亡时，若其势力与当前生效的“玺角”势力相同或是该势力最后一名角色，你失去此“玺角”，"..
+  "然后摸X张牌并回复1点体力（X为你已失去的“玺角”数）。",
   ["zhonggu"] = "冢骨",
   [":zhonggu"] = "主公技，锁定技，若游戏轮数不小于群势力角色数，你摸牌阶段摸牌数+2，否则-1。",
 

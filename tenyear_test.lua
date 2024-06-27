@@ -547,6 +547,7 @@ caoang:addSkill(fengmin)
 caoang:addSkill(zhiwang)
 Fk:loadTranslationTable{
   ["tymou__caoang"] = "谋曹昂",
+  --["#tymou__caoang"] = "",
 
   ["fengmin"] = "丰愍",
   [":fengmin"] = "锁定技，一名角色于其回合内失去装备区的牌后，你摸其装备区空位数的牌。若此技能发动次数大于你已损失体力值，本回合失效。",
@@ -557,6 +558,94 @@ Fk:loadTranslationTable{
   ["#zhiwang-choose"] = "质亡：将伤害改为无伤害来源，并令一名角色本回合结束可以使用使你进入濒死状态的牌",
   ["@@zhiwang-turn"] = "质亡",
   ["#zhiwang-use"] = "质亡：请使用这些牌",
+}
+
+local dianwei = General(extension, "tymou__dianwei", "wei", 4, 5)
+local kuangzhan = fk.CreateActiveSkill{
+  name = "kuangzhan",
+  anim_type = "offensive",
+  card_num = 0,
+  target_num = 0,
+  prompt = "#kuangzhan",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and player:getHandcardNum() < player.maxHp
+  end,
+  card_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local n = player.maxHp - player:getHandcardNum()
+    player:drawCards(n, self.name)
+    for i = 1, n, 1 do
+      if player.dead then return end
+      local targets = table.map(table.filter(room:getOtherPlayers(player), function(p) return player:canPindian(p) end), Util.IdMapper)
+      if #targets == 0 then return end
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#kuangzhan-choose:::"..i..":"..n, self.name, false)
+      to = room:getPlayerById(to[1])
+      local pindian = player:pindian({to}, self.name)
+      if pindian.results[to.id].winner == player then
+        local tos = {}
+        for _, p in ipairs(room:getOtherPlayers(player)) do
+          room.logic:getEventsOfScope(GameEvent.Pindian, 1, function(e)
+            local dat = e.data[1]
+              if dat.results[p.id] and dat.results[p.id].winner ~= p then
+                table.insertIfNeed(tos, p)
+              end
+            return false
+          end, Player.HistoryTurn)
+        end
+        if #tos > 0 then
+          room:useVirtualCard("slash", nil, player, tos, self.name, true)
+        end
+      else
+        room:useVirtualCard("slash", nil, to, player, self.name, true)
+      end
+    end
+  end,
+}
+local kangyong = fk.CreateTriggerSkill{
+  name = "kangyong",
+  anim_type = "defensive",
+  frequency = Skill.Compulsory,
+  events = {fk.TurnStart, fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) then
+      if event == fk.TurnStart then
+        return player:isWounded()
+      else
+        return player.hp > 1 and player:getMark("kangyong-turn") > 0
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.TurnStart then
+      local n = player:getLostHp()
+      room:setPlayerMark(player, "kangyong-turn", n)
+      room:recover({
+        who = player,
+        num = n,
+        recoverBy = player,
+        skillName = self.name
+      })
+    else
+      local n = math.min(player:getMark("kangyong-turn"), player.hp - 1)
+      room:loseHp(player, n, self.name)
+    end
+  end,
+}
+dianwei:addSkill(kuangzhan)
+dianwei:addSkill(kangyong)
+Fk:loadTranslationTable{
+  ["tymou__dianwei"] = "谋典韦",
+  ["#tymou__dianwei"] = "狂战怒莽",
+
+  ["kuangzhan"] = "狂战",
+  [":kuangzhan"] = "出牌阶段限一次，你可以将手牌摸至体力上限并依次进行X次拼点，每次拼点若你赢，你视为对所有本回合拼点未赢的其他角色使用一张【杀】；"..
+  "若你没赢，其视为对你使用一张【杀】。（X为你以此法摸牌数）",
+  ["kangyong"] = "亢勇",
+  [":kangyong"] = "锁定技，回合开始时，你回复体力至体力上限；回合结束时，你失去等量体力（至多失去至1点）。",
+  ["#kuangzhan"] = "狂战：摸牌至体力上限，根据摸牌数拼点",
+  ["#kuangzhan-choose"] = "狂战：拼点，若赢，你视为对所有拼点输的角色使用【杀】；若没赢，其视为对你使用【杀】（第%arg次，共%arg2次！）",
 }
 
 local zhangzhao = General(extension, "tystar__zhangzhao", "wu", 3)
@@ -616,49 +705,21 @@ local zhongyanz = fk.CreateActiveSkill{
       })
       return
     end
-    local result = U.askForExchange(to, "Top", "hand_card", cards, to:getCardIds("h"), "#zhongyanz-exchange", 1, false)
-    local position = table.indexOf(cards, result[2])
-    local moveInfos = {{
-      ids = {result[2]},
-      fromArea = Card.Processing,
-      to = to.id,
-      toArea = Card.PlayerHand,
-      moveReason = fk.ReasonExchange,
-      proposer = to.id,
-      skillName = self.name,
-      moveVisible = true,
-    }}
-    local new_cards = {}
-    for i = #cards, 1, -1 do
-      if i == position then
-        new_cards[i] = result[1]
-        table.insert(moveInfos, {
-          ids = {result[1]},
-          from = player.id,
-          fromArea = Card.PlayerHand,
-          toArea = Card.DrawPile,
-          moveReason = fk.ReasonExchange,
-          proposer = to.id,
-          skillName = self.name,
-          moveVisible = true,
-        })
-      else
-        new_cards[i] = cards[i]
-        table.insert(moveInfos, {
-          ids = {cards[i]},
-          fromArea = Card.Processing,
-          toArea = Card.DrawPile,
-          moveReason = fk.ReasonJustMove,
-          proposer = to.id,
-          skillName = self.name,
-          moveVisible = true,
-        })
+    local results = U.askForExchange(to, "Top", "hand_card", cards, to:getCardIds("h"), "#zhongyanz-exchange", 1, false)
+    if #results > 0 then
+      local to_hand = {}
+      for i = #cards, 1, -1 do
+        if table.removeOne(results, cards[i]) then
+          table.insert(to_hand, cards[i])
+          table.remove(cards, i)
+        end
       end
+      table.insertTable(results, cards)
+      U.swapCardsWithPile(to, results, to_hand, self.name, "Top", false, player.id)
     end
-    room:moveCards(table.unpack(moveInfos))
     if to.dead then return end
-    if table.every(new_cards, function(id)
-      return Fk:getCardById(id).color == Fk:getCardById(cards[1]).color
+    if table.every(results, function(id)
+      return Fk:getCardById(id).color == Fk:getCardById(results[1]).color
     end) then
       local choices = {"recover", "zhongyanz_prey"}
       local choice = room:askForChoice(to, choices, self.name)

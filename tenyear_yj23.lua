@@ -551,11 +551,17 @@ local fazhu = fk.CreateTriggerSkill{
         return not Fk:getCardById(id).is_damage_card
       end)
   end,
+  on_cost = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "fazhu_cards", player:getCardIds("j"))
+    local success, dat = player.room:askForUseActiveSkill(player, "fazhu_active", "#fazhu-invoke", true)
+    if success then
+      self.cost_data = dat
+      return true
+    end
+  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local cards = table.filter(player:getCardIds("hej"), function(id)
-      return not Fk:getCardById(id).is_damage_card
-    end)
+    local cards = self.cost_data.cards
     if #cards == 0 then return end
     local to_give = room:recastCard(cards, player, self.name)
     to_give = table.filter(to_give, function(id)
@@ -580,14 +586,29 @@ local fazhu = fk.CreateTriggerSkill{
     end
   end,
 }
+local fazhu_active = fk.CreateActiveSkill{
+  name = "fazhu_active",
+  mute = true,
+  min_card_num = 1,
+  target_num = 0,
+  expand_pile = function(self)
+    return U.getMark(Self, "fazhu_cards")
+  end,
+  card_filter = function(self, to_select, selected)
+    return not Fk:getCardById(to_select).is_damage_card
+  end,
+}
+Fk:addSkill(fazhu_active)
 xukun:addSkill(fazhu)
 Fk:loadTranslationTable{
   ["xukun"] = "徐琨",
   --["#xukun"] = "",
   ["designer:xukun"] = "卤香蛋2",
   ["fazhu"] = "筏铸",
-  [":fazhu"] = "准备阶段，你可以重铸你区域内所有非伤害牌，然后将因此获得的牌交给至多等量名角色各一张，以此法获得牌的角色可以依次使用一张"..
+  [":fazhu"] = "准备阶段，你可以重铸你区域内任意张非伤害牌，然后将因此获得的牌交给至多等量名角色各一张，以此法获得牌的角色可以依次使用一张"..
   "【杀】（无距离限制）。",
+  ["fazhu_active"] = "筏铸",
+  ["#fazhu-invoke"] = "筏铸：你可以重铸任意张非伤害牌，将获得的牌分配给任意角色",
   ["#fazhu-give"] = "筏铸：你可以将这些牌分配给任意角色各一张，获得牌的角色可以使用一张无距离限制的【杀】",
   ["#fazhu-use"] = "筏铸：你可以使用一张【杀】（无距离限制）",
 }

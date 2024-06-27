@@ -1039,4 +1039,158 @@ Fk:loadTranslationTable{
   ["~tystar__sunjian"] = "身怀宝器，必受群狼觊觎……",
 }
 
+local sunshangxiang = General(extension, "tystar__sunshangxiang", "wu", 3, 3, General.Female)
+local saying = fk.CreateViewAsSkill{
+  name = "saying",
+  pattern = "slash,jink,peach,analeptic",
+  prompt = function (self)
+    if self.interaction.data == nil then
+      return "#saying-nil"
+    end
+    return "#saying-" .. self.interaction.data
+  end,
+  interaction = function()
+    local all_names = {"slash", "jink", "peach", "analeptic"}
+    local names = U.getViewAsCardNames(Self, "saying", all_names, {}, U.getMark(Self, "saying-round"))
+    if #names == 0 then return end
+    return UI.ComboBox { choices = names, all_choices = all_names }
+  end,
+  card_filter = function (self, to_select, selected)
+    if #selected > 0 then return false end
+    if self.interaction.data == "slash" or self.interaction.data == "jink" then
+      if Fk:currentRoom():getCardArea(to_select) == Card.PlayerEquip then return false end
+      local card = Fk:getCardById(to_select)
+      return card.type == Card.TypeEquip and Self:canUseTo(card, Self)
+    elseif self.interaction.data == "peach" or self.interaction.data == "analeptic" then
+      return Fk:currentRoom():getCardArea(to_select) == Card.PlayerEquip
+    end
+  end,
+  view_as = function(self, cards)
+    if not self.interaction.data or #cards == 0 then return nil end
+    local card = Fk:cloneCard(self.interaction.data)
+    card:setMark(self.name, cards[1])
+    card.skillName = self.name
+    return card
+  end,
+  before_use = function(self, player, use)
+    local room = player.room
+    local mark = U.getMark(player, "saying-round")
+    table.insert(mark, use.card.trueName)
+    room:setPlayerMark(player, "saying-round", mark)
+    local card_id = use.card:getMark(self.name)
+    if use.card.trueName == "slash" or use.card.trueName == "jink" then
+      room:useCard{
+        from = player.id,
+        tos = {{player.id}},
+        card = Fk:getCardById(card_id),
+      }
+    elseif use.card.trueName == "peach" or use.card.trueName == "analeptic" then
+      room:obtainCard(player, card_id, true, fk.ReasonPrey, player.id, self.name)
+    end
+  end,
+  enabled_at_play = function(self, player)
+    local card
+    local mark = U.getMark(player, "saying-round")
+    return not table.every({"slash", "peach", "analeptic"}, function(name)
+      if table.contains(mark, name) then return true end
+      card = Fk:cloneCard(name)
+      card.skillName = self.name
+      return not player:canUse(card) or player:prohibitUse(card)
+    end)
+  end,
+  enabled_at_response = function(self, player, response)
+    if response or Fk.currentResponsePattern == nil then return false end
+    local card
+    local mark = U.getMark(player, "saying-round")
+    return not table.every({"slash", "jink", "peach", "analeptic"}, function(name)
+      if table.contains(mark, name) then return true end
+      card = Fk:cloneCard(name)
+      card.skillName = self.name
+      return not Exppattern:Parse(Fk.currentResponsePattern):match(card) or player:prohibitUse(card)
+    end)
+  end,
+}
+local jiaohao = fk.CreateActiveSkill{
+  name = "ty__jiaohao",
+  anim_type = "control",
+  prompt = "#ty__jiaohao-active",
+  card_num = 0,
+  target_num = 1,
+  can_use = function(self, player)
+    return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if #selected == 0 and to_select ~= Self.id then
+      local target = Fk:currentRoom():getPlayerById(to_select)
+      return Self:canPindian(target) and #Self:getCardIds(Player.Equip) >= #target:getCardIds(Player.Equip)
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local pindian = player:pindian({target}, self.name)
+    if player.dead then return end
+    local winner = pindian.results[target.id].winner
+    if winner == nil or winner.dead then return end
+    local cards = {}
+    local id = pindian.fromCard:getEffectiveId()
+    if room:getCardArea(id) == Card.DiscardPile then
+      table.insert(cards, id)
+    end
+    id = pindian.results[target.id].toCard:getEffectiveId()
+    if room:getCardArea(id) == Card.DiscardPile then
+      table.insertIfNeed(cards, id)
+    end
+    local choices = {"ty__jiaohao_slash", "Cancel"}
+    if #cards > 0 then
+      table.insert(choices, "ty__jiaohao_obtain")
+    end
+    local choice = room:askForChoice(player, choices, self.name, "#ty__jiaohao-choice::" .. winner.id, false,
+    {"ty__jiaohao_obtain", "ty__jiaohao_slash", "Cancel"})
+    if choice == "ty__jiaohao_obtain" then
+      room:obtainCard(winner, cards, true, fk.ReasonJustMove, winner.id, self.name)
+    elseif choice == "ty__jiaohao_slash" then
+      local use = room:askForUseCard(winner, "slash", "slash", "#ty__jiaohao-slash", true, { bypass_times = true })
+      if use then
+        use.extraUse = true
+        room:useCard(use)
+      end
+    end
+  end,
+}
+sunshangxiang:addSkill(saying)
+sunshangxiang:addSkill(jiaohao)
+Fk:loadTranslationTable{
+  ["tystar__sunshangxiang"] = "星孙尚香",
+  ["#tystar__sunshangxiang"] = "鸳袖衔剑珮",
+  --["illustrator:tystar__sunshangxiang"] = "",
+
+  ["saying"] = "飒影",
+  [":saying"] = "每轮每种牌名限一次，当你需要使用【杀】或【闪】时，你可以使用一张装备牌，然后视为使用之；"..
+  "当你需要使用【桃】或【酒】时，你可以收回装备区里的一张牌，然后视为使用之。",
+  ["ty__jiaohao"] = "骄豪",
+  [":ty__jiaohao"] = "出牌阶段限一次，你可以与装备区里的牌数不大于你的角色拼点，然后你可以令拼点赢的角色获得拼点的牌或者令其使用一张【杀】。",
+
+  ["#saying-nil"] = "发动 飒影，没有可使用的牌",
+  ["#saying-slash"] = "发动 飒影，选择手牌中一张装备牌使用，并选择使用【杀】的目标角色",
+  ["#saying-jink"] = "发动 飒影，选择手牌中一张装备牌使用，视为使用【闪】",
+  ["#saying-peach"] = "发动 飒影，选择装备区里的一张牌收回手牌，视为使用【桃】",
+  ["#saying-analeptic"] = "发动 飒影，选择装备区里的一张牌收回手牌，视为使用【酒】",
+  ["#ty__jiaohao-active"] = "发动 骄豪，与装备区里的牌数不大于你的角色拼点",
+  ["#ty__jiaohao-choice"] = "骄豪：你可以选择一项令%dest执行",
+  ["ty__jiaohao_obtain"] = "令其获得拼点的牌",
+  ["ty__jiaohao_slash"] = "令其可以使用一张【杀】",
+
+  ["#ty__jiaohao-slash"] = "骄豪：你可以使用一张【杀】",
+
+
+
+  ["$saying1"] = "",
+  ["$saying2"] = "",
+  ["$ty__jiaohao1"] = "",
+  ["$ty__jiaohao"] = "",
+  ["~tystar__sunshangxiang"] = "",
+}
+
 return extension

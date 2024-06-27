@@ -751,7 +751,7 @@ local liangjue = fk.CreateTriggerSkill{
       end
     end
   end,
-  on_use = function(self, event, target, player, data)
+  on_trigger = function(self, event, target, player, data)
     local n = 0
     for _, move in ipairs(data) do
       if move.from == player.id then
@@ -770,7 +770,13 @@ local liangjue = fk.CreateTriggerSkill{
         end
       end
     end
-    player:drawCards(2 * n, self.name)
+    for i = 1, n do
+      if not player:hasSkill(self) then break end
+      self:doCost(event, target, player, data)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(2, self.name)
     if player.hp > 1 then
       player.room:loseHp(player, 1, self.name)
     end
@@ -813,7 +819,7 @@ Fk:loadTranslationTable{
   ["#zhangheng"] = "戾鹘枭鹰",
   ["illustrator:zhangheng"] = "匠人绘",
   ["liangjue"] = "粮绝",
-  [":liangjue"] = "锁定技，每当一张黑色牌进入或者离开你的判定区或装备区时，你摸两张牌，然后若你的体力值大于1，你失去1点体力。",
+  [":liangjue"] = "锁定技，每当一张黑色牌进入或者离开你的判定区或装备区后，你摸两张牌，然后若你的体力值大于1，你失去1点体力。",
   ["dangzai"] = "挡灾",
   [":dangzai"] = "出牌阶段开始时，你可以选择一名判定区内有牌的其他角色，将其判定区里的任意张牌移至你的判定区。",
   ["#dangzai-choose"] = "挡灾：你可以将一名角色判定区里的任意张牌移至你的判定区",

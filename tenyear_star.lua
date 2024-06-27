@@ -107,9 +107,9 @@ local pizhi = fk.CreateTriggerSkill{
         return target == player and player.phase == Player.Finish and player:getMark("canxi_removed_kingdoms") > 0
       elseif event == fk.Death then
         return player:getMark("@canxi1-round") == target.kingdom or player:getMark("@canxi2-round") == target.kingdom or
-          not table.find(player.room.alive_players, function(p)
+          (not table.find(player.room.alive_players, function(p)
             return p.kingdom == target.kingdom
-          end)
+          end) and table.contains(U.getMark(player, "@canxi_exist_kingdoms"), target.kingdom))
       end
     end
   end,

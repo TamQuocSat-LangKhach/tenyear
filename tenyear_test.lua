@@ -706,26 +706,32 @@ local zhongyanz = fk.CreateActiveSkill{
       return
     end
     local results = U.askForExchange(to, "Top", "hand_card", cards, to:getCardIds("h"), "#zhongyanz-exchange", 1, false)
+    local to_hand = {}
     if #results > 0 then
-      local to_hand = {}
+      to_hand = table.filter(results, function(id)
+        return table.contains(cards, id)
+      end)
+      table.removeOne(results, to_hand[1])
       for i = #cards, 1, -1 do
-        if table.removeOne(results, cards[i]) then
-          table.insert(to_hand, cards[i])
-          table.remove(cards, i)
+        if cards[i] == to_hand[1] then
+          cards[i] = results[1]
+          break
         end
       end
-      table.insertTable(results, cards)
-      U.swapCardsWithPile(to, results, to_hand, self.name, "Top", false, player.id)
+    else
+      to_hand, cards[1] = {cards[1]}, to:getCardIds("h")[1]
     end
+    U.swapCardsWithPile(to, cards, to_hand, self.name, "Top", false, player.id)
     if to.dead then return end
-    if table.every(results, function(id)
-      return Fk:getCardById(id).color == Fk:getCardById(results[1]).color
+    if table.every(cards, function(id)
+      return Fk:getCardById(id).color == Fk:getCardById(cards[1]).color
     end) then
       local choices = {"recover", "zhongyanz_prey"}
       local choice = room:askForChoice(to, choices, self.name)
       DoZhongyanz(to, player, choice)
       if to ~= player then
-        DoZhongyanz(player, player, choice)
+        table.removeOne(choices, choice)
+        DoZhongyanz(player, player, choices[1])
       end
     end
   end,

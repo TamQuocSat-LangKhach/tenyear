@@ -530,7 +530,7 @@ local xuzhi = fk.CreateActiveSkill{
 linghuyu:addSkill(xuzhi)
 Fk:loadTranslationTable{
   ["linghuyu"] = "令狐愚",
-  --["#linghuyu"] = "",
+  ["#linghuyu"] = "名愚性浚",
   ["designer:linghuyu"] = "浮兮璃璃",
   ["xuzhi"] = "蓄志",
   [":xuzhi"] = "出牌阶段限一次，你可以令两名角色同时选择任意张手牌并交换这些牌，获得牌数较少的角色视为使用一张无距离限制的【杀】；"..
@@ -693,7 +693,7 @@ simafu:addSkill(beiyu)
 simafu:addSkill(duchi)
 Fk:loadTranslationTable{
   ["ty__simafu"] = "司马孚",
-  --["#ty__simafu"] = "",
+  ["#ty__simafu"] = "仁孝忠德",
   ["designer:ty__simafu"] = "黑暗魔女",
   ["beiyu"] = "备预",
   [":beiyu"] = "出牌阶段限一次，你可以将手牌摸至体力上限，然后将一种花色的所有手牌以任意顺序置于牌堆底。",

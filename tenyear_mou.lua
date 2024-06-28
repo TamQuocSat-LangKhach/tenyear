@@ -774,6 +774,13 @@ jiaxu:addSkill(sushen)
 fumouj:addRelatedSkill(fumouj_switch)
 jiaxu:addSkill(fumouj)
 jiaxu:addRelatedSkill(rushi)
+
+local tymou2__jiaxu = General(extension, "tymou2__jiaxu", "qun", 3)
+tymou2__jiaxu.hidden = true
+tymou2__jiaxu:addSkill("sushen")
+tymou2__jiaxu:addSkill("fumouj")
+tymou2__jiaxu:addRelatedSkill("rushi")
+
 Fk:loadTranslationTable{
   ["tymou__jiaxu"] = "谋贾诩",
   --["#tymou__jiaxu"] = "",
@@ -795,6 +802,27 @@ Fk:loadTranslationTable{
   ["#fumouj-choose"] = "覆谋：选择1名其他角色，令其获得%dest展示的这些卡牌",
   ["#fumouj-use"] = "覆谋：使用 %arg（无距离限制且不能被响应）",
   ["#fumouj_switch"] = "覆谋",
+  
+  --阳形态
+  ["$sushen1"] = "",
+  ["$sushen2"] = "",
+  ["$rushi1"] = "",
+  ["$rushi2"] = "",
+  ["$fumouj1"] = "",
+  ["$fumouj2"] = "",
+  ["~tymou__jiaxu"] = "",
+
+  --阴形态
+  ["tymou2__jiaxu"] = "谋贾诩",
+  --["#tymou2__jiaxu"] = "",
+  --["illustrator:tymou2__jiaxu"] = "",
+  ["$sushen_tymou2__jiaxu1"] = "",
+  ["$sushen_tymou2__jiaxu2"] = "",
+  ["$rushi_tymou2__jiaxu1"] = "",
+  ["$rushi_tymou2__jiaxu2"] = "",
+  ["$fumouj_tymou2__jiaxu1"] = "",
+  ["$fumouj_tymou2__jiaxu2"] = "",
+  ["~tymou2__jiaxu"] = "",
 }
 
 
@@ -1480,7 +1508,7 @@ local shiju = fk.CreateTriggerSkill{
     if event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
       return data == self
     elseif event == fk.BuryVictim then
-      return player:hasSkill(self, true, true)
+      return target:hasSkill(self, true, true)
     end
   end,
   on_refresh = function(self, event, target, player, data)

@@ -1164,7 +1164,7 @@ sunshangxiang:addSkill(jiaohao)
 Fk:loadTranslationTable{
   ["tystar__sunshangxiang"] = "星孙尚香",
   ["#tystar__sunshangxiang"] = "鸳袖衔剑珮",
-  --["illustrator:tystar__sunshangxiang"] = "",
+  ["illustrator:tystar__sunshangxiang"] = "匠人绘",
 
   ["saying"] = "飒影",
   [":saying"] = "每轮每种牌名限一次，当你需要使用【杀】或【闪】时，你可以使用一张装备牌，然后视为使用之；"..
@@ -1181,16 +1181,13 @@ Fk:loadTranslationTable{
   ["#ty__jiaohao-choice"] = "骄豪：你可以选择一项令%dest执行",
   ["ty__jiaohao_obtain"] = "令其获得拼点的牌",
   ["ty__jiaohao_slash"] = "令其可以使用一张【杀】",
-
   ["#ty__jiaohao-slash"] = "骄豪：你可以使用一张【杀】",
 
-
-
-  ["$saying1"] = "",
-  ["$saying2"] = "",
-  ["$ty__jiaohao1"] = "",
-  ["$ty__jiaohao"] = "",
-  ["~tystar__sunshangxiang"] = "",
+  ["$saying1"] = "倩影映江汀，巾帼犹飒爽！",
+  ["$saying2"] = "我有一袭红袖，欲揾英雄泪！",
+  ["$ty__jiaohao1"] = "身虽为碧玉，手不怠锟铻！",
+  ["$ty__jiaohao2"] = "站住！且与本姑娘分个高下！",
+  ["~tystar__sunshangxiang"] = "秋风冷，江水寒……",
 }
 
 return extension

@@ -4599,13 +4599,14 @@ local longsong = fk.CreateTriggerSkill{
     end
     if player.dead then return end
     local skills = {}
+    local ban_list = {"xionghuo", "dunshi"}
     for _, s in ipairs(to.player_skills) do
-      if s:isPlayerSkill(to) and not player:hasSkill(s, true) and s.frequency < 4 then
-        if table.contains(longsong_skills, s.name) or s:isInstanceOf(ActiveSkill) then
+      if not table.contains(ban_list, s.name) and s:isPlayerSkill(to) and not player:hasSkill(s, true) and s.frequency < 4 then
+        if table.contains(longsong_skills, s.name) or s:isInstanceOf(ActiveSkill) or s:isInstanceOf(ViewAsSkill) then
           table.insertIfNeed(skills, s.name)
         elseif s:isInstanceOf(TriggerSkill) then
           local str = Fk:translate(":"..s.name)
-          if string.sub(str, 1, 12) == "出牌阶段" and string.sub(str, 13, 15) ~= "开始" and string.sub(str, 13, 15) ~= "结束" then
+          if string.sub(str, 1, 12) == "出牌阶段" and string.sub(str, 13, 18) ~= "开始" and string.sub(str, 13, 18) ~= "结束" then
             table.insertIfNeed(skills, s.name)
           end
         end

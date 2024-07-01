@@ -4577,7 +4577,7 @@ local longsong = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and player.phase == Player.Play
   end,
   on_cost = function(self, event, target, player, data)
-    local tos, cards = U.askForChooseCardsAndPlayers(player.room, player, 0, 1,
+    local tos, cards = player.room:askForChooseCardsAndPlayers(player, 0, 1,
     table.map(player.room:getOtherPlayers(player), Util.IdMapper),
     1, 1, ".|.|heart,diamond", "#longsong-invoke", self.name, true)
     if #tos == 1 then
@@ -4599,7 +4599,7 @@ local longsong = fk.CreateTriggerSkill{
     end
     if player.dead then return end
     local skills = {}
-    local ban_list = {"xionghuo", "dunshi"}
+    local ban_list = {"xionghuo", "mobile__xionghuo", "n_dunshi", "dunshi"}
     for _, s in ipairs(to.player_skills) do
       if not table.contains(ban_list, s.name) and s:isPlayerSkill(to) and not player:hasSkill(s, true) and s.frequency < 4 then
         if table.contains(longsong_skills, s.name) or s:isInstanceOf(ActiveSkill) or s:isInstanceOf(ViewAsSkill) then

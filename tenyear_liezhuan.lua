@@ -991,7 +991,7 @@ local lilu = fk.CreateTriggerSkill{
     local targets = room:getOtherPlayers(player, false)
     if #targets == 0 then return true end
     local x = player:getMark("@lilu")
-    local tos, cards = U.askForChooseCardsAndPlayers(room, player, 1, 999, table.map(targets, Util.IdMapper), 1, 1, ".|.|.|hand",
+    local tos, cards = room:askForChooseCardsAndPlayers(player, 1, 999, table.map(targets, Util.IdMapper), 1, 1, ".|.|.|hand",
     "#lilu-card:::"..tostring(x), self.name, false, true)
     local to = room:getPlayerById(tos[1])
     room:moveCardTo(cards, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)

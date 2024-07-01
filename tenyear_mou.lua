@@ -216,7 +216,7 @@ local mingshil = fk.CreateTriggerSkill{
     local room = player.room
     room:drawCards(player, 2, self.name)
     if player.dead or player:getHandcardNum() < 3 or #room.alive_players < 2 then return false end
-    local tos, cards = U.askForChooseCardsAndPlayers(room, player, 3, 3, table.map(room:getOtherPlayers(player, false),
+    local tos, cards = room:askForChooseCardsAndPlayers(player, 3, 3, table.map(room:getOtherPlayers(player, false),
     Util.IdMapper), 1, 1, ".|.|.|hand", "#mingshil-give", "mingshil", false)
     player:showCards(cards)
     cards = table.filter(cards, function(id) return table.contains(player:getCardIds("h"), id) end)

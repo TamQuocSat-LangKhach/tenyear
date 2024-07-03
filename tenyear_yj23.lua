@@ -407,11 +407,11 @@ local ty__zhuijix = fk.CreateTriggerSkill{
   end,
 }
 local ty__zhuijix_delay = fk.CreateTriggerSkill{
-  name = "ty__zhuijix_delay",
+  name = "#ty__zhuijix_delay",
   mute = true,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:getMark("ty__zhuijix") ~= 0 then
+    if player:getMark("ty__zhuijix") ~= 0 and not player.dead then
       for _, move in ipairs(data) do
         if move.from == player.id then
           for _, info in ipairs(move.moveInfo) do
@@ -462,6 +462,7 @@ Fk:loadTranslationTable{
   ["#ty__qimei-active"] = "齐眉：与一名角色各摸两张牌然后弃两张牌，根据弃牌花色数执行效果",
   ["#ty__qimei-use"] = "齐眉：你可以使用这些牌",
   ["#ty__zhuijix-choose"] = "追姬：你可以令一名角色随机使用装备牌至装备区满",
+  ["#ty__zhuijix_delay"] = "追姬",
 }
 
 local linghuyu = General(extension, "linghuyu", "wei", 4)

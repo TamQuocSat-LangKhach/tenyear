@@ -3773,15 +3773,15 @@ local ty__fenyin = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and player.phase ~= Player.NotActive then
-      local mark = U.getMark(player, "fenyin_suits-turn")
+      local mark = U.getMark(player, "@fenyin_suits-turn")
       if #mark > 3 then return false end
       local suits = {}
-      local suit = 0
+      local suit = ""
       for _, move in ipairs(data) do
         if move.toArea == Card.DiscardPile then
           for _, info in ipairs(move.moveInfo) do
-            suit = Fk:getCardById(info.cardId).suit
-            if suit ~= Card.NoSuit and not table.contains(mark, suit) then
+            suit = Fk:getCardById(info.cardId):getSuitString(true)
+            if suit ~= "log_nosuit" and not table.contains(mark, suit) then
               table.insertIfNeed(suits, suit)
             end
           end
@@ -3794,11 +3794,9 @@ local ty__fenyin = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    local mark = U.getMark(player, "fenyin_suits-turn")
-    for _, suit in ipairs(self.cost_data) do
-      table.insert(mark, suit)
-    end
-    player.room:setPlayerMark(player, "fenyin_suits-turn", mark)
+    local mark = U.getMark(player, "@fenyin_suits-turn")
+    table.insertTable(mark, self.cost_data)
+    player.room:setPlayerMark(player, "@fenyin_suits-turn", mark)
     player:drawCards(#self.cost_data, self.name)
   end,
 }
@@ -3877,6 +3875,7 @@ Fk:loadTranslationTable{
   ["illustrator:ty__liuzan"] = "酸包",
   ["ty__fenyin"] = "奋音",
   [":ty__fenyin"] = "锁定技，你的回合内，每当有一种花色的牌进入弃牌堆后（每回合每种花色各限一次），你摸一张牌。",
+  ["@fenyin_suits-turn"] = "奋音",
   ["liji"] = "力激",
   [":liji"] = "出牌阶段限零次，你可以弃置一张牌然后对一名其他角色造成1点伤害。你的回合内，本回合进入弃牌堆的牌每次达到8的倍数张时"..
   "（存活人数小于5时改为4的倍数），此技能使用次数+1。",

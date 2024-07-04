@@ -3365,6 +3365,7 @@ local ty__yizan = fk.CreateViewAsSkill{
 }
 local qingren = fk.CreateTriggerSkill{
   name = "qingren",
+  anim_type = "drawcard",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self) and target == player and

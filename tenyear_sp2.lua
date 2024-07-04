@@ -3512,7 +3512,7 @@ Fk:loadTranslationTable{
   ["~malingli"] = "花无百日好，人无再少年……",
 }
 
---皇家贵胄：孙皓 士燮 曹髦 刘辩 刘虞 全惠解 丁尚涴 袁姬 谢灵毓 孙瑜 甘夫人糜夫人 曹芳
+--皇家贵胄：孙皓 士燮 曹髦 刘辩 刘虞 全惠解 丁尚涴 袁姬 谢灵毓 孙瑜 甘夫人糜夫人 曹芳 朱佩兰
 local ty__sunhao = General(extension, "ty__sunhao", "wu", 5)
 local ty__canshi = fk.CreateTriggerSkill{
   name = "ty__canshi",
@@ -5516,7 +5516,7 @@ local cilv_delay = fk.CreateTriggerSkill{
       return data.extra_data and data.extra_data.cilv_recycle and table.contains(data.extra_data.cilv_recycle, player.id) and
       player.room:getCardArea(data.card) == Card.Processing
     elseif event == fk.DamageInflicted then
-      if player == target and data.card then
+      if data.card then
         local card_event = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
         if not card_event then return false end
         local use = card_event.data[1]
@@ -5620,7 +5620,7 @@ Fk:loadTranslationTable{
   ["cilv"] = "辞虑",
   [":cilv"] = "当你成为普通锦囊牌的目标后，你可以摸X张牌（X为此技能的剩余选项数），"..
   "若你的手牌数大于你的体力上限，你选择并移除一项："..
-  "1.此牌对你无效；2.此牌对你造成伤害时防止之；3.此牌结算结束后你获得之。",
+  "1.此牌对你无效；2.此牌造成伤害时你防止之；3.此牌结算结束后你获得之。",
   ["tongdao"] = "痛悼",
   [":tongdao"] = "限定技，当你处于濒死状态时，你可以选择一名角色，其失去所有技能，其获得其武将牌上的所有技能，"..
   "你回复体力至X点（X为其体力值）。",
@@ -5638,6 +5638,146 @@ Fk:loadTranslationTable{
   ["$tongdao2"] = "故峻恶，皓恶甚于峻。",
   ["~zhupeilan"] = "生如浮萍，随波而逝……",
 }
+
+local bianyue = General(extension, "bianyue", "wei", 3, 3, General.Female)
+local bizu = fk.CreateActiveSkill{
+  name = "bizu",
+  anim_type = "support",
+  prompt = function()
+    local x = Self:getHandcardNum()
+    local tos = {}
+    for _, p in ipairs(Fk:currentRoom().alive_players) do
+      if p:getHandcardNum() == x then
+        table.insert(tos, p.id)
+      end
+    end
+    local mark = U.getMark(Self, "bizu_targets-turn")
+    if table.find(mark, function(tos2)
+      return #tos == #tos2 and table.every(tos, function(pid)
+        return table.contains(tos2, pid)
+      end)
+    end) then
+      return "#bizu-active-last"
+    else
+      return "#bizu-active"
+    end
+  end,
+  card_num = 0,
+  target_num = 0,
+  can_use = function(self, player)
+    return player:getMark("bizu-turn") == 0
+  end,
+  card_filter = function() return false end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return Fk:currentRoom():getPlayerById(to_select):getHandcardNum() == Self:getHandcardNum()
+  end,
+  feasible = function(self, selected, selected_cards)
+    local x = Self:getHandcardNum()
+    return #selected == 0 or #selected == #table.filter(Fk:currentRoom().alive_players, function (p)
+      return p:getHandcardNum() == x
+    end)
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local x = player:getHandcardNum()
+    local targets = table.filter(room:getAlivePlayers(), function (p)
+      return p:getHandcardNum() == x
+    end)
+    local tos = table.map(targets, Util.IdMapper)
+    room:doIndicate(player.id, tos)
+    local mark = U.getMark(player, "bizu_targets-turn")
+    if table.find(mark, function(tos2)
+      return #tos == #tos2 and table.every(tos, function(pid)
+        return table.contains(tos2, pid)
+      end)
+    end) then
+      room:setPlayerMark(player, "bizu-turn", 1)
+    else
+      table.insert(mark, tos)
+      room:setPlayerMark(player, "bizu_targets-turn", mark)
+    end
+    for _, p in ipairs(targets) do
+      if p:isAlive() then
+        room:drawCards(p, 1, self.name)
+      end
+    end
+  end,
+}
+local wuxie = fk.CreateTriggerSkill{
+  name = "wuxie",
+  anim_type = "control",
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 then
+      local ids = {}
+      local handcards = player:getCardIds(Player.Hand)
+      for _, move in ipairs(data) do
+        if move.to == player.id and move.toArea == Player.Hand then
+          for _, info in ipairs(move.moveInfo) do
+            local id = info.cardId
+            if Fk:getCardById(id).is_damage_card and table.contains(handcards, id) then
+              table.insert(ids, id)
+            end
+          end
+        end
+      end
+      if #ids > 0 then
+        self.cost_data = ids
+        return true
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local ids = self.cost_data
+    local tos, cards = U.askForChooseCardsAndPlayers(room, player, 1, 999,
+    table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, tostring(Exppattern{ id = ids }),
+    "#wuxie-cost", self.name, true, false)
+    if #tos > 0 and #cards > 0 then
+      self.cost_data = {tos, cards}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local ret = self.cost_data
+    local to = room:getPlayerById(ret[1][1])
+    local cards = table.simpleClone(ret[2])
+    table.shuffle(cards)
+    room:moveCards{
+      ids = cards,
+      from = player.id,
+      toArea = Card.DrawPile,
+      moveReason = fk.ReasonJustMove,
+      skillName = self.name,
+      drawPilePosition = -1,
+      moveVisible = false,
+    }
+    if to:isAlive() then
+      room:askForDiscard(to, #cards, #cards, true, self.name, false)
+    end
+  end,
+}
+bianyue:addSkill(bizu)
+bianyue:addSkill(wuxie)
+Fk:loadTranslationTable{
+  ["bianyue"] = "卞玥",
+  ["#bianyue"] = "暮辉映族",
+  --["designer:bianyue"] = "",
+  --["illustrator:bianyue"] = "",
+
+  ["bizu"] = "庇族",
+  [":bizu"] = "出牌阶段，你可以选择手牌数与你相等的所有角色，这些角色各摸一张牌，"..
+  "若这些角色与你此前于此回合内发动此技能时选择的角色完全相同，此技能于此回合内无效。",
+  ["wuxie"] = "无胁",
+  [":wuxie"] = "当你得到牌后，若你于当前回合内未发动过此技能，你可以将其中任意张伤害牌随机置于牌堆底并选择一名角色，其弃置等量的牌。",
+
+  ["#bizu-active"] = "发动 庇族，令所有手牌数与你相同的角色各摸一张牌（未重复目标）",
+  ["#bizu-active-last"] = "发动 庇族，令所有手牌数与你相同的角色各摸一张牌（技能无效）",
+  ["#wuxie-cost"] = "是否发动 无胁，选择任意张伤害牌放置在牌堆底，令一名其他角色弃置等量的牌",
+
+}
+
 
 --往者可谏：大乔小乔 SP马超 SP赵云 SP甄姬
 local zhenji = General(extension, "ty_sp__zhenji", "qun", 3, 3, General.Female)

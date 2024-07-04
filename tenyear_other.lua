@@ -2241,4 +2241,42 @@ Fk:loadTranslationTable{
 lisao:addRelatedSkill(lisaoDebuff)
 quyuan:addSkill(lisao)
 
+local wuming = General(extension, "wuming", "qun", 3)
+Fk:loadTranslationTable{
+  ["wuming"] = "无名",
+  ["#wuming"] = "未知",
+  ["~wuming"] = "",
+}
+
+local chushan = fk.CreateTriggerSkill {
+  name = "chushan",
+  events = {fk.GameStart},
+  frequency = Skill.Compulsory,
+  anim_type = "support",
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local generals = Fk:getGeneralsRandomly(2, nil, { "wuming" })
+    local skills = {}
+    for _, general in ipairs(generals) do
+      table.insertIfNeed(skills, table.random(general:getSkillNameList(true)))
+    end
+
+    if #skills > 0 then
+      local realNames = table.map(skills, function(name) return Fk:translate(name) end)
+      room:setPlayerMark(player, "@chushan_skills", "<font color='burlywood'>" .. table.concat(realNames, " ") .. "</font>")
+      room:handleAddLoseSkills(player, table.concat(skills, "|"))
+    end
+  end,
+}
+Fk:loadTranslationTable{
+  ["chushan"] = "出山",
+  [":chushan"] = "锁定技，游戏开始时，你获得两个随机武将牌上的各一项随机技能。",
+  ["@chushan_skills"] = "",
+}
+
+wuming:addSkill(chushan)
+
 return extension

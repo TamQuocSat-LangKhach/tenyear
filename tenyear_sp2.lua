@@ -2770,7 +2770,7 @@ local liying = fk.CreateTriggerSkill{
     if player.phase ~= Player.NotActive and #player:getPile("ruiji_wang") < #room.players then
       prompt = "#liying2-invoke"
     end
-    local tos, cards = room:askForChooseCardsAndPlayers(player, 1, 999,
+    local tos, cards = U.askForChooseCardsAndPlayers(room, player, 1, 999,
     table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, tostring(Exppattern{ id = ids }),
     prompt, self.name, true, false)
     if #tos > 0 and #cards > 0 then
@@ -5730,7 +5730,7 @@ local wuxie = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local ids = self.cost_data
-    local tos, cards = U.askForChooseCardsAndPlayers(room, player, 1, 999,
+    local tos, cards = room:askForChooseCardsAndPlayers(room, player, 1, 999,
     table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, tostring(Exppattern{ id = ids }),
     "#wuxie-cost", self.name, true, false)
     if #tos > 0 and #cards > 0 then

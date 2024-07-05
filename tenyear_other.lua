@@ -2258,10 +2258,26 @@ local chushan = fk.CreateTriggerSkill {
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local generals = Fk:getGeneralsRandomly(2, nil, { "wuming" })
+    local generals = Fk:getGeneralsRandomly(6, nil, { "wuming" })
     local skills = {}
     for _, general in ipairs(generals) do
       table.insertIfNeed(skills, table.random(general:getSkillNameList(true)))
+    end
+
+    data = json.encode({
+      path = "packages/utility/qml/ChooseSkillBox.qml",
+      data = {
+        skills, 2, 2, "#chushan-choose:::" .. tostring(2), table.map(generals, function(general) return general.name end)
+      },
+    })
+
+    room:notifyMoveFocus(player, self.name)
+    local result = room:doRequest(player, "CustomDialog", data)
+
+    if result == "" then
+      skills = table.random(skills, 2)
+    else
+      skills = json.decode(result)
     end
 
     if #skills > 0 then
@@ -2273,8 +2289,9 @@ local chushan = fk.CreateTriggerSkill {
 }
 Fk:loadTranslationTable{
   ["chushan"] = "出山",
-  [":chushan"] = "锁定技，游戏开始时，你获得两个随机武将牌上的各一项随机技能。",
+  [":chushan"] = "锁定技，游戏开始时，你从随机六项技能中选择两项技能获得。",
   ["@chushan_skills"] = "",
+  ["#chushan-choose"] = "请选择%arg个技能出战（右键或长按可查看技能描述）",
 }
 
 wuming:addSkill(chushan)

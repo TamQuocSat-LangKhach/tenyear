@@ -1039,6 +1039,7 @@ Fk:loadTranslationTable{
   ["~tystar__sunjian"] = "身怀宝器，必受群狼觊觎……",
 }
 
+--瑶光：孙尚香
 local sunshangxiang = General(extension, "tystar__sunshangxiang", "wu", 3, 3, General.Female)
 local saying = fk.CreateViewAsSkill{
   name = "saying",

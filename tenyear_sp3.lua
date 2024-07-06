@@ -3017,9 +3017,9 @@ local qingshi = fk.CreateTriggerSkill{
   events = {fk.CardUsing},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Play and player:getMark("@@qingshi-turn") == 0 and
+    return target == player and player:hasSkill(self) and player.phase == Player.Play and player:getMark("qingshi_invalidity-turn") == 0 and
       table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id).trueName == data.card.trueName end) and
-      not table.contains(U.getMark(player, "@$qingshi-turn"), data.card.trueName)
+      not table.contains(U.getMark(player, "qingshi-turn"), data.card.trueName)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -3046,9 +3046,9 @@ local qingshi = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local mark = U.getMark(player, "@$qingshi-turn")
+    local mark = U.getMark(player, "qingshi-turn")
     table.insert(mark, data.card.trueName)
-    room:setPlayerMark(player, "@$qingshi-turn", mark)
+    room:setPlayerMark(player, "qingshi-turn", mark)
     if self.cost_data[1] == "qingshi1" then
       room:notifySkillInvoked(player, self.name, "offensive")
       player:broadcastSkillInvoke(self.name)
@@ -3070,8 +3070,18 @@ local qingshi = fk.CreateTriggerSkill{
       room:notifySkillInvoked(player, self.name, "drawcard")
       player:broadcastSkillInvoke(self.name)
       player:drawCards(3, self.name)
-      room:setPlayerMark(player, "@@qingshi-turn", 1)
+      room:setPlayerMark(player, "qingshi_invalidity-turn", 1)
     end
+  end,
+
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and data == self
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "qingshi-turn", 0)
+    room:setPlayerMark(player, "qingshi_invalidity-turn", 0)
   end,
 }
 local qingshi_delay = fk.CreateTriggerSkill{
@@ -3235,8 +3245,8 @@ Fk:loadTranslationTable{
   "2.令任意名其他角色各摸一张牌；3.摸三张牌，然后此技能本回合失效。",
   ["zhizhe"] = "智哲",
   [":zhizhe"] = "限定技，出牌阶段，你可以复制一张手牌（衍生牌除外）。此牌因你使用或打出而进入弃牌堆后，你获得且本回合不能再使用或打出之。",
-  ["@$qingshi-turn"] = "情势",
-  ["@@qingshi-turn"] = "情势失效",
+  ["qingshi-turn"] = "情势",
+  ["qingshi_invalidity-turn"] = "情势失效",
   ["#qingshi-invoke"] = "情势：请选择一项（当前使用牌为%arg）",
   ["qingshi1"] = "令此牌对其中一个目标伤害+1",
   ["qingshi2"] = "令任意名其他角色各摸一张牌",

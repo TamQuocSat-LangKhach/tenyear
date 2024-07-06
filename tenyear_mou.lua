@@ -1855,7 +1855,6 @@ local taozhou_trigger = fk.CreateTriggerSkill{
 local houde = fk.CreateTriggerSkill{
   name = "houde",
   anim_type = "defensive",
-  frequency = Skill.Compulsory,
   events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) then
@@ -2398,10 +2397,11 @@ dianwei:addSkill(kangyong)
 Fk:loadTranslationTable{
   ["tymou__dianwei"] = "谋典韦",
   ["#tymou__dianwei"] = "狂战怒莽",
+  ["illustrator:tymou__dianwei"] = "黯荧岛",
 
   ["kuangzhan"] = "狂战",
-  [":kuangzhan"] = "出牌阶段限一次，你可以将手牌摸至体力上限并依次进行X次拼点（X为你以此法摸牌数），"..
-  "每次拼点若你赢，你视为对所有本回合拼点未赢的其他角色使用一张【杀】；若你没赢，其视为对你使用一张【杀】。",
+  [":kuangzhan"] = "出牌阶段限一次，你可以将手牌摸至体力上限并依次拼点X次（X为你以此法摸牌数），"..
+  "每次拼点若你：赢，你视为对所有本回合拼点未赢的其他角色使用一张【杀】；没赢，其视为对你使用一张【杀】。",
   ["kangyong"] = "亢勇",
   [":kangyong"] = "锁定技，回合开始时，你回复体力至体力上限；回合结束时，你失去等量体力（至多失去至1点）。",
   ["#kuangzhan"] = "狂战：摸牌至体力上限，根据摸牌数拼点",

@@ -1735,7 +1735,7 @@ Fk:loadTranslationTable{
   ["tymou__jiangji"] = "谋蒋济",
   ["#tymou__jiangji"] = "策论万机",
   ["illustrator:tymou__jiangji"] = "错落宇宙",
-  --["designer:tymou__jiangji"] = "",
+  ["designer:tymou__jiangji"] = "坑坑",
 
   ["shiju"] = "势举",
   [":shiju"] = "其他角色的出牌阶段限一次，其可以将一张牌交给你，若此牌为装备牌，你可以使用之，令其攻击范围于此回合内+X（X为你装备区里的牌数），"..

@@ -4097,7 +4097,7 @@ local suoliang = fk.CreateTriggerSkill{
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and
-      not data.to.dead and not data.to:isNude()
+      data.to ~= player and not data.to.dead and not data.to:isNude()
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#suoliang-invoke::"..data.to.id)
@@ -4106,12 +4106,13 @@ local suoliang = fk.CreateTriggerSkill{
     local room = player.room
     local cards = room:askForCardsChosen(player, data.to, 1, math.min(data.to.maxHp, 5), "he", self.name)
     if #cards > 0 then
+      data.to:showCards(cards)
       local suits = {Card.Heart, Card.Club}
       local to_get = table.filter(cards, function (id)
         return table.contains(suits, Fk:getCardById(id).suit)
       end)
       if #to_get > 0 then
-        room:obtainCard(player, to_get, true, fk.ReasonPrey)
+        room:obtainCard(player, to_get, true, fk.ReasonPrey, player.id, self.name)
       else
         room:throwCard(cards, self.name, data.to, player)
       end
@@ -4146,7 +4147,7 @@ Fk:loadTranslationTable{
   ["#guanhai"] = "掠地劫州",
   ["illustrator:guanhai"] = "六道目",
   ["suoliang"] = "索粮",
-  [":suoliang"] = "每回合限一次，你对一名其他角色造成伤害后，选择其至多X张牌（X为其体力上限且最多为5），获得其中的<font color='red'>♥</font>和♣牌。"..
+  [":suoliang"] = "每回合限一次，你对一名其他角色造成伤害后，你可以展示该角色的至多X张牌（X为其体力上限且最多为5），获得其中的<font color='red'>♥</font>和♣牌。"..
   "若你未获得牌，则弃置你选择的牌。",
   ["qinbao"] = "侵暴",
   [":qinbao"] = "锁定技，手牌数大于等于你的其他角色不能响应你使用的【杀】或普通锦囊牌。",

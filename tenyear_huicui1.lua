@@ -3729,6 +3729,7 @@ local liuli = General(extension, "liuliG", "shu", 3)
 Fk:loadTranslationTable{
   ["liuliG"] = "刘理",
   ["#liuliG"] = "安平王",
+  ["designer:liuliG"] = "亚雷",
   ["illustrator:liuliG"] = "黯荧岛工作室",
   ["~liuliG"] = "覆舟之水，皆百姓之泪。",
 }

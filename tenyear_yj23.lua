@@ -56,7 +56,7 @@ local tongwei_trigger = fk.CreateTriggerSkill{
       local names = {"slash", "dismantlement"}
       for i = 2, 1, -1 do
         local card = Fk:cloneCard(names[i])
-        if not U.canUseCardTo(room, player, target, card, false, false) then
+        if not player:canUseTo(card, target, {bypass_distances = true, bypass_times = true}) then
           table.remove(names, i)
         end
       end
@@ -73,29 +73,56 @@ local cuguo = fk.CreateTriggerSkill{
   events = {fk.CardEffectCancelledOut},
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self) and data.from and data.from == player.id and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
+    and #TargetGroup:getRealTargets(data.tos) > 0
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:askForDiscard(player, 1, 1, true, self.name, false)
-    if data.tos and table.find(TargetGroup:getRealTargets(data.tos), function(id) return not room:getPlayerById(id).dead end) then
-      room:useVirtualCard(data.card.name, nil, player,
-        table.map(TargetGroup:getRealTargets(data.tos), function(id) return room:getPlayerById(id) end), self.name, true)
+    local e = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+    if e then
+      local use = e.data[1]
+      use.extra_data = use.extra_data or {}
+      use.extra_data.cuguo_to = data.to
     end
   end,
 }
 local cuguo_trigger = fk.CreateTriggerSkill{
   name = "#cuguo_trigger",
   mute = true,
-  events = {fk.CardEffectCancelledOut},
+  events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-    return data.from and data.from == player.id and table.contains(data.card.skillNames, "cuguo") and not player.dead
+    if data.from and data.from == player.id and not player.dead then
+      if (data.extra_data or {}).cuguo_to then
+        return true
+      elseif table.contains(data.card.skillNames, "cuguo") then
+        return (data.extra_data or {}).cuguo_negative
+      end
+    end
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    player:broadcastSkillInvoke("cuguo")
-    room:notifySkillInvoked(player, "cuguo", "negative")
-    room:loseHp(player, 1, "cuguo")
+    if (data.extra_data or {}).cuguo_to then
+      local to = room:getPlayerById(data.extra_data.cuguo_to)
+      if not to.dead then
+        room:useVirtualCard(data.card.name, nil, player, to, "cuguo", true)
+      end
+    else
+      room:loseHp(player, 1, "cuguo")
+    end
+  end,
+
+  refresh_events = {fk.CardEffectCancelledOut},
+  can_refresh = function (self, event, target, player, data)
+    return data.from == player.id and table.contains(data.card.skillNames, "cuguo")
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local e = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+    if e then
+      local use = e.data[1]
+      use.extra_data = use.extra_data or {}
+      use.extra_data.cuguo_negative = true
+    end
   end,
 }
 tongwei:addRelatedSkill(tongwei_trigger)
@@ -110,9 +137,10 @@ Fk:loadTranslationTable{
   [":tongwei"] = "出牌阶段限一次，你可以指定一名其他角色并重铸两张牌。若如此做，其使用下一张牌结算后，若此牌点数介于你上次此法重铸牌点数之间，"..
   "你视为对其使用一张【杀】或【过河拆桥】。",
   ["cuguo"] = "蹙国",
-  [":cuguo"] = "锁定技，当你每回合使用牌首次被抵消后，你需弃置一张牌，此牌对目标角色再结算一次；此牌结算后，若仍被抵消，你失去1点体力。",
+  [":cuguo"] = "锁定技，当你对一名角色使用的牌被抵消后，若你本回合未发动此技能，你须弃置一张牌，令你于此牌结算后视为对该角色使用一张牌名相同的牌，若此牌仍被抵消，你失去1点体力。",
   ["#tongwei"] = "统围：你可以重铸两张牌并指定一名其他角色",
   ["@tongwei"] = "统围",
+  ["#tongwei_trigger"] = "统围",
   ["#tongwei-choice"] = "统围：选择视为对 %dest 使用的牌",
 
   ["$tongwei1"] = "今统虎贲十万，必困金龙于斯。",

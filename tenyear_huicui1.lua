@@ -5223,30 +5223,27 @@ local qinshen = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and player.phase == Player.Discard
   end,
   on_cost = function(self, event, target, player, data)
-    self.cost_data = 0
-    for _, suit in ipairs({"spade", "club", "heart", "diamond"}) do
-      if player:getMark("qinshen_"..suit.."-turn") == 0 then
-        self.cost_data = self.cost_data + 1
+    local room = player.room
+    local suits = {1,2,3,4}
+    room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
+      for _, move in ipairs(e.data) do
+        if move.toArea == Card.DiscardPile then
+          for _, info in ipairs(move.moveInfo) do
+            local suit = Fk:getCardById(info.cardId).suit
+            table.removeOne(suits, suit)
+          end
+        end
       end
+      return #suits == 0
+    end, Player.HistoryTurn)
+    local n = #suits
+    if n > 0 then
+      self.cost_data = n
+      return room:askForSkillInvoke(player, self.name, nil, "#qinshen-invoke:::"..n)
     end
-    return self.cost_data > 0 and player.room:askForSkillInvoke(player, self.name, nil, "#qinshen-invoke:::"..self.cost_data)
   end,
   on_use = function(self, event, target, player, data)
     player:drawCards(self.cost_data, self.name)
-  end,
-
-  refresh_events = {fk.AfterCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self) and player.phase < Player.Finish
-  end,
-  on_refresh = function(self, event, target, player, data)
-    for _, move in ipairs(data) do
-      if move.toArea == Card.DiscardPile then
-        for _, info in ipairs(move.moveInfo) do
-          player.room:addPlayerMark(player, "qinshen_"..Fk:getCardById(info.cardId):getSuitString().."-turn", 1)
-        end
-      end
-    end
   end,
 }
 local weidang_active = fk.CreateActiveSkill{
@@ -5254,40 +5251,59 @@ local weidang_active = fk.CreateActiveSkill{
   anim_type = "control",
   card_num = 1,
   target_num = 0,
-  can_use = function(self, player)
-    return not player:isNude()
-  end,
-  card_filter = function(self, to_select, selected, targets)
+  card_filter = function(self, to_select, selected)
     if #selected == 0 then
-      local n = 0
-      for _, suit in ipairs({"spade", "club", "heart", "diamond"}) do
-        if Self:getMark("weidang_"..suit.."-turn") == 0 then
-          n = n + 1
-        end
-      end
-      return Fk:translate(Fk:getCardById(to_select).trueName, "zh_CN"):len() == n
+      return Fk:translate(Fk:getCardById(to_select).trueName, "zh_CN"):len() == self.weidang_num
     end
   end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
+}
+local weidang = fk.CreateTriggerSkill{
+  name = "weidang",
+  events = {fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target ~= player and target.phase == Player.Finish and not player:isNude()
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local suits = {1,2,3,4}
+    room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
+      for _, move in ipairs(e.data) do
+        if move.toArea == Card.DiscardPile then
+          for _, info in ipairs(move.moveInfo) do
+            local suit = Fk:getCardById(info.cardId).suit
+            table.removeOne(suits, suit)
+          end
+        end
+      end
+      return #suits == 0
+    end, Player.HistoryTurn)
+    local n = #suits
+    if n > 0 then
+      local _,dat = room:askForUseActiveSkill(player, "#weidang_active", "#weidang-invoke:::"..n, true, {weidang_num = n})
+      if dat then
+        self.cost_data = dat.cards
+        return true
+      end
+    end
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
     room:moveCards({
-      ids = effect.cards,
+      ids = self.cost_data,
       from = player.id,
-      fromArea = Card.PlayerHand,
       toArea = Card.DrawPile,
       moveReason = fk.ReasonJustMove,
       skillName = self.name,
       drawPilePosition = -1,
+      proposer = player.id,
     })
-    local cards = {}
-    for i = 1, #room.draw_pile, 1 do
-      local card = Fk:getCardById(room.draw_pile[i])
-      if #Fk:translate(card.trueName) == #Fk:translate(Fk:getCardById(effect.cards[1]).trueName) then
-        table.insertIfNeed(cards, room.draw_pile[i])
-      end
-    end
+    if player.dead then return end
+    local num = Fk:translate(Fk:getCardById(self.cost_data[1]).trueName, "zh_CN"):len()
+    local cards = table.filter(room.draw_pile, function(id)
+      return Fk:translate(Fk:getCardById(id).trueName, "zh_CN"):len() == num
+    end)
+    if #cards == 0 then return end
     local id = table.random(cards)
-    local card = Fk:getCardById(id)
     room:moveCards({
       ids = {id},
       to = player.id,
@@ -5296,43 +5312,8 @@ local weidang_active = fk.CreateActiveSkill{
       proposer = player.id,
       skillName = self.name,
     })
-    if player:canUse(card) then
-      local use = room:askForUseCard(player, "weidang", ".|.|.|.|.|.|"..id, "#weidang-use:::"..card:toLogString(), false)
-      if use then
-        room:useCard(use)
-      end
-    end
-  end,
-}
-local weidang = fk.CreateTriggerSkill{
-  name = "weidang",
-  events = {fk.EventPhaseEnd},
-  can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and target ~= player and target.phase == Player.Finish
-  end,
-  on_cost = function(self, event, target, player, data)
-    local n = 0
-    for _, suit in ipairs({"spade", "club", "heart", "diamond"}) do
-      if player:getMark("weidang_"..suit.."-turn") == 0 then
-        n = n + 1
-      end
-    end
-    if n > 0 then
-      player.room:askForUseActiveSkill(player, "#weidang_active", "#weidang-invoke:::"..n, true)
-    end
-  end,
-
-  refresh_events = {fk.AfterCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self) and player.room.current
-  end,
-  on_refresh = function(self, event, target, player, data)
-    for _, move in ipairs(data) do
-      if move.toArea == Card.DiscardPile then
-        for _, info in ipairs(move.moveInfo) do
-          player.room:addPlayerMark(player, "weidang_"..Fk:getCardById(info.cardId):getSuitString().."-turn", 1)
-        end
-      end
+    if table.contains(player:getCardIds("h"), id) then
+      U.askForUseRealCard(room, player, {id}, ".", self.name, nil, nil, false, false)
     end
   end,
 }
@@ -5351,7 +5332,7 @@ Fk:loadTranslationTable{
   [":weidang"] = "其他角色的结束阶段，你可以将一张字数为X的牌置于牌堆底，然后获得牌堆中一张字数为X的牌（X为本回合没有进入过弃牌堆的花色数量），能使用则使用之。",
   ["#qinshen-invoke"] = "勤慎：你可以摸%arg张牌",
   ["#weidang_active"] = "伪谠",
-  ["#weidang-invoke"] = "伪谠：你可以将一张牌名字数为%arg的牌置于牌堆底，然后从牌堆获得一张字数相同的牌并使用之",
+  ["#weidang-invoke"] = "伪谠：可将名字数为 %arg 的牌置于牌堆底，从获得一张字数相同的牌并使用",
   ["#weidang-use"] = "伪谠：请使用%arg",
 
   ["$qinshen1"] = "怀藏拙之心，赚不名之利。",

@@ -217,6 +217,7 @@ Fk:loadTranslationTable{
   ["#ty__benyu-draw"] = "贲育：你可以摸至 %arg 张牌",
   ["ty__benyu_draw"] = "摸牌",
   ["ty__benyu_damage"] = "弃牌并造成伤害",
+  ["#ty__shefu_ambush"] = "设伏",
 
   ["$ty__shefu1"] = "吾已埋下伏兵，敌兵一来，管教他瓮中捉鳖。",
   ["$ty__shefu2"] = "我已设下重重圈套，就等敌军入彀矣。",

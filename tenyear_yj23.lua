@@ -178,10 +178,15 @@ local kangli = fk.CreateTriggerSkill{
 sunli:addSkill(kangli)
 Fk:loadTranslationTable{
   ["sunli"] = "孙礼",
+  ["#sunli"] = "百炼公才",
   ["designer:sunli"] = "老酒馆的猫",
   ["kangli"] = "伉厉",
   [":kangli"] = "当你造成或受到伤害后，你摸两张牌，然后你下次造成伤害时弃置这些牌。",
   ["@@kangli-inhand"] = "伉厉",
+
+  ["$kangli1"] = "地界纷争皋陶难断，然图藏天府，坐上可明。",
+  ["$kangli2"] = "正至歉岁，难征百姓于役，望陛下明鉴。",
+  ["~sunli"] = "国无矩不立，何谓之方圆……",
 }
 
 local chenshi = General(extension, "chenshi", "shu", 4)
@@ -631,7 +636,7 @@ Fk:addSkill(fazhu_active)
 xukun:addSkill(fazhu)
 Fk:loadTranslationTable{
   ["xukun"] = "徐琨",
-  --["#xukun"] = "",
+  ["#xukun"] = "平虏击逆",
   ["designer:xukun"] = "卤香蛋2",
   ["fazhu"] = "筏铸",
   [":fazhu"] = "准备阶段，你可以重铸你区域内任意张非伤害牌，然后将因此获得的牌交给至多等量名角色各一张，以此法获得牌的角色可以依次使用一张"..
@@ -640,6 +645,10 @@ Fk:loadTranslationTable{
   ["#fazhu-invoke"] = "筏铸：你可以重铸任意张非伤害牌，将获得的牌分配给任意角色",
   ["#fazhu-give"] = "筏铸：你可以将这些牌分配给任意角色各一张，获得牌的角色可以使用一张无距离限制的【杀】",
   ["#fazhu-use"] = "筏铸：你可以使用一张【杀】（无距离限制）",
+
+  ["$fazhu1"] = "击风雨于共济，逆流亦溯千帆。",
+  ["$fazhu2"] = "泰山轻于大义，每思志士、何惧临渊。",
+  ["~xukun"] = "何处……射来的流矢……",
 }
 
 local simafu = General(extension, "ty__simafu", "wei", 3)

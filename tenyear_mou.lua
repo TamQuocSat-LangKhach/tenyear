@@ -783,8 +783,8 @@ tymou2__jiaxu:addRelatedSkill("rushi")
 
 Fk:loadTranslationTable{
   ["tymou__jiaxu"] = "谋贾诩",
-  --["#tymou__jiaxu"] = "",
-  --["illustrator:tymou__jiaxu"] = "",
+  ["#tymou__jiaxu"] = "晦谋独善",
+  ["illustrator:tymou__jiaxu"] = "鬼画府",
   ["sushen"] = "肃身",
   [":sushen"] = "限定技，出牌阶段，你可以记录你的体力值、手牌数和〖覆谋〗的阴阳状态，然后获得〖入世〗。",
   ["rushi"] = "入世",
@@ -804,25 +804,25 @@ Fk:loadTranslationTable{
   ["#fumouj_switch"] = "覆谋",
 
   --阳形态
-  ["$sushen1"] = "",
-  ["$sushen2"] = "",
-  ["$rushi1"] = "",
-  ["$rushi2"] = "",
-  ["$fumouj1"] = "",
-  ["$fumouj2"] = "",
-  ["~tymou__jiaxu"] = "",
+  ["$sushen1"] = "谋先于行则昌，行先于谋则亡。",
+  ["$sushen2"] = "天行五色，雪覆林间睡狐，独我执白。",
+  ["$rushi1"] = "孤立川上，观逝者如东去之流水。",
+  ["$rushi2"] = "九州如画，怎可空老人间？",
+  ["$fumouj1"] = "恩仇付浊酒，荡平劫波，且做英雄吼。",
+  ["$fumouj2"] = "人无恒敌，亦无恒友，唯有恒利。",
+  ["~tymou__jiaxu"] = "辛者抱薪，妄燃烽火以戏诸侯……",
 
   --阴形态
   ["tymou2__jiaxu"] = "谋贾诩",
-  --["#tymou2__jiaxu"] = "",
-  --["illustrator:tymou2__jiaxu"] = "",
-  ["$sushen_tymou2__jiaxu1"] = "",
-  ["$sushen_tymou2__jiaxu2"] = "",
-  ["$rushi_tymou2__jiaxu1"] = "",
-  ["$rushi_tymou2__jiaxu2"] = "",
-  ["$fumouj_tymou2__jiaxu1"] = "",
-  ["$fumouj_tymou2__jiaxu2"] = "",
-  ["~tymou2__jiaxu"] = "",
+  ["#tymou2__jiaxu"] = "晦谋独善",
+  ["illustrator:tymou2__jiaxu"] = "鬼画府",
+  ["$sushen_tymou2__jiaxu1"] = "我有三窟之筹谋，不蹈背水之维谷。",
+  ["$sushen_tymou2__jiaxu2"] = "已积千里跬步，欲履万里河山。",
+  ["$rushi_tymou2__jiaxu1"] = "曾寄青鸟凌云志，归来城头看王旗。",
+  ["$rushi_tymou2__jiaxu2"] = "烽火照长安，淯水洗枯骨，今日对弈何人？",
+  ["$fumouj_tymou2__jiaxu1"] = "不周之柱已折，这世间，当起一阵风、落一场雨！",
+  ["$fumouj_tymou2__jiaxu2"] = "善谋者，不与善战者争功。",
+  ["~tymou2__jiaxu"] = "未见青山草木，枯骨徒付浊流……",
 }
 
 
@@ -2187,7 +2187,8 @@ caoang:addSkill(fengmin)
 caoang:addSkill(zhiwang)
 Fk:loadTranslationTable{
   ["tymou__caoang"] = "谋曹昂",
-  --["#tymou__caoang"] = "",
+  ["#tymou__caoang"] = "两全忠孝",
+  --["illustrator:tymou__caoang"] = "",
 
   ["fengmin"] = "丰愍",
   [":fengmin"] = "锁定技，一名角色于其回合内失去装备区的牌后，你摸其装备区空位数的牌。若此技能发动次数大于你已损失体力值，本回合失效。",
@@ -2304,7 +2305,7 @@ zhangxiu:addSkill(haoyi)
 Fk:loadTranslationTable{
   ["tymou__zhangxiu"] = "谋张绣",
   ["#tymou__zhangxiu"] = "凌枪破宛",
-  --["designer:tymou__zhangxiu"] = "",
+  ["illustrator:tymou__zhangxiu"] = "君桓文化",
 
   ["fuxi"] = "附袭",
   [":fuxi"] = "其他角色的出牌阶段开始时，若其为手牌数最多的角色，你可以选择："..
@@ -2317,6 +2318,11 @@ Fk:loadTranslationTable{
   ["fuxi_discard"] = "弃置其一张牌，视为对其使用【杀】",
   ["#fuxi-give"] = "附袭：选择一张牌，交给 %dest",
 
+  ["$fuxi1"] = "可因势而附，亦可因势而袭。",
+  ["$fuxi2"] = "仗剑在手，或亮之，或藏之。",
+  ["$haoyi1"] = "今缴丧敌之炙，且宴麾下袍泽。",
+  ["$haoyi2"] = "龙骧枯荣一体，岂曰同袍无衣。",
+  ["~tymou__zhangxiu"] = "曹贼……欺我太甚！",
 }
 
 local dianwei = General(extension, "tymou__dianwei", "wei", 4, 5)

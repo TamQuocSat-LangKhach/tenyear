@@ -4485,6 +4485,7 @@ dingfuren:addSkill(fudao)
 Fk:loadTranslationTable{
   ["dingfuren"] = "丁尚涴",
   ["#dingfuren"] = "与君不载",
+  ["designer:dingfuren"] = "韩旭",
   ["illustrator:dingfuren"] = "匠人绘",
   ["fengyan"] = "讽言",
   [":fengyan"] = "出牌阶段每项限一次，你可以选择一名其他角色，若其体力值小于等于你，你令其交给你一张手牌；"..

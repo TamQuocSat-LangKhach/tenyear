@@ -2239,7 +2239,7 @@ local xunshi_trigger = fk.CreateTriggerSkill{
   name = "#xunshi_trigger",
   anim_type = "offensive",
   frequency = Skill.Compulsory,
-  events = {fk.AfterCardTargetDeclared},
+  events = {fk.CardUsing},
   mute = true,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(xunshi) and data.card.color == Card.NoColor

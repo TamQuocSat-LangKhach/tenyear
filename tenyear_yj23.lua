@@ -164,14 +164,16 @@ local kangli = fk.CreateTriggerSkill{
       end
     end
   end,
-  on_cost = Util.TrueFunc,
+  on_cost = function (self, event, target, player, data)
+    return (event == fk.DamageCaused) or player.room:askForSkillInvoke(player, self.name)
+  end,
   on_use = function (self, event, target, player, data)
     local room = player.room
     if event == fk.DamageCaused then
       local ids = table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@kangli-inhand") > 0 end)
       room:throwCard(ids, self.name, player, player)
     else
-      local cards = player:drawCards(2, self.name, nil, "@@kangli-inhand")
+      player:drawCards(2, self.name, nil, "@@kangli-inhand")
     end
   end,
 }
@@ -181,7 +183,7 @@ Fk:loadTranslationTable{
   ["#sunli"] = "百炼公才",
   ["designer:sunli"] = "老酒馆的猫",
   ["kangli"] = "伉厉",
-  [":kangli"] = "当你造成或受到伤害后，你摸两张牌，然后你下次造成伤害时弃置这些牌。",
+  [":kangli"] = "当你造成或受到伤害后，你可以摸两张牌，然后你下次造成伤害时弃置这些牌。",
   ["@@kangli-inhand"] = "伉厉",
 
   ["$kangli1"] = "地界纷争皋陶难断，然图藏天府，坐上可明。",

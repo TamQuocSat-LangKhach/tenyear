@@ -2239,7 +2239,7 @@ local xunshi_trigger = fk.CreateTriggerSkill{
   name = "#xunshi_trigger",
   anim_type = "offensive",
   frequency = Skill.Compulsory,
-  events = {fk.CardUsing},
+  events = {fk.AfterCardTargetDeclared},
   mute = true,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(xunshi) and data.card.color == Card.NoColor
@@ -2249,7 +2249,7 @@ local xunshi_trigger = fk.CreateTriggerSkill{
     room:notifySkillInvoked(player, xunshi.name)
     player:broadcastSkillInvoke(xunshi.name)
     if player:getMark("xunshi") < 4 then
-      player.room:addPlayerMark(player, "xunshi", 1)
+      room:addPlayerMark(player, "xunshi", 1)
     end
     local targets = U.getUseExtraTargets(room, data)
     local n = #targets
@@ -2259,6 +2259,7 @@ local xunshi_trigger = fk.CreateTriggerSkill{
       table.forEach(tos, function (id)
         table.insert(data.tos, {id})
       end)
+      room:sendLog{ type = "#AddTargetsBySkill", from = target.id, to = tos, arg = xunshi.name, arg2 = data.card:toLogString() }
     end
   end,
 
@@ -2309,7 +2310,7 @@ Fk:loadTranslationTable{
   ["@@shencai_liu"] = "流",
   ["@shencai_si"] = "死",
   ["#shencai-active"] = "发动神裁，选择一名其他角色，令其判定",
-  ["#xunshi-choose"] = "巡使：可为此【%arg】额外指定任意个目标",
+  ["#xunshi-choose"] = "巡使：可为此 %arg 额外指定任意个目标",
 
   ["$shencai1"] = "我有三千炼狱，待汝万世轮回！",
   ["$shencai2"] = "纵汝王侯将相，亦须俯首待裁！",

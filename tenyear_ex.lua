@@ -4914,7 +4914,7 @@ local ty_ex__yanzhu_trigger = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
-    return target:getMark("@@yanzhudamage") ~= 0 
+    return target:getMark("@@yanzhudamage") ~= 0
   end,
   on_use = function(self, event, target, player, data)
     data.damage = data.damage + 1
@@ -4947,6 +4947,7 @@ local ty_ex__xingxue = fk.CreateTriggerSkill{
     local tos = player.room:askForChoosePlayers(player, table.map(player.room:getAlivePlayers(), Util.IdMapper), 1, n,
       "#ty_ex__xingxue-choose:::"..n, self.name, true)
     if #tos > 0 then
+      player.room:sortPlayersByAction(tos)
       self.cost_data = tos
       return true
     end
@@ -4955,7 +4956,9 @@ local ty_ex__xingxue = fk.CreateTriggerSkill{
     local room = player.room
     for _, id in ipairs(self.cost_data) do
       local to = room:getPlayerById(id)
-      to:drawCards(1, self.name)
+      if not to.dead then
+        to:drawCards(1, self.name)
+      end
     end
     for _, id in ipairs(self.cost_data) do
       local to = room:getPlayerById(id)

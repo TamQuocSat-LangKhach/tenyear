@@ -2261,7 +2261,7 @@ local chushan = fk.CreateTriggerSkill {
     local generals = Fk:getGeneralsRandomly(6, nil, { "wuming" })
     local skills = {}
     for _, general in ipairs(generals) do
-      table.insertIfNeed(skills, table.random(general:getSkillNameList(true)))
+      table.insertIfNeed(skills, table.random(general:getSkillNameList()))
     end
 
     data = json.encode({

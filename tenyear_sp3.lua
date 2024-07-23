@@ -8,7 +8,7 @@ Fk:loadTranslationTable{
   ["wm"] = "武",
 }
 
---锦瑟良缘：曹金玉 孙翊 冯妤 来莺儿 曹华 张奋 诸葛梦雪 诸葛若雪 曹宪
+--锦瑟良缘：曹金玉 孙翊 冯妤 来莺儿 曹华 张奋 诸葛梦雪 诸葛若雪 曹宪 柳婒
 local caojinyu = General(extension, "caojinyu", "wei", 3, 3, General.Female)
 local yuqi = fk.CreateTriggerSkill{
   name = "yuqi",
@@ -1334,6 +1334,132 @@ Fk:loadTranslationTable{
   ["$zhifou1"] = "满怀相思意，念君君可知？",
   ["$zhifou2"] = "世有人万万，相知无二三。",
   ["~caoxian"] = "恨生枭雄府，恨嫁君王家……",
+}
+
+local liutan = General(extension, "liutan", "shu", 3, 3, General.Female)
+local jingyin = fk.CreateTriggerSkill{
+  name = "jingyin",
+  anim_type = "support",
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) or player:usedSkillTimes(self.name) > 0 then return false end
+    local room = player.room
+    local move_event = room.logic:getCurrentEvent()
+    local parent_event = move_event.parent
+    if parent_event ~= nil and parent_event.event == GameEvent.UseCard then
+      local parent_data = parent_event.data[1]
+      if parent_data.from and parent_data.from ~= room.current.id and parent_data.card.trueName == "slash" then
+        local card_ids = room:getSubcardsByRule(parent_data.card)
+        if #card_ids == 0 then return false end
+        for _, move in ipairs(data) do
+          if move.toArea == Card.DiscardPile and move.moveReason == fk.ReasonUse then
+            for _, info in ipairs(move.moveInfo) do
+              if info.fromArea == Card.Processing and room:getCardArea(info.cardId) == Card.DiscardPile then
+                if not table.removeOne(card_ids, info.cardId) then
+                  --不懂有没有意义，暂且要求必须实体牌完全对应才行
+                  return false
+                end
+              end
+            end
+          end
+        end
+        if #card_ids == 0 then
+          return true
+        end
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard, false)
+    if use_event == nil then return false end
+    local targets = table.map(room.alive_players, Util.IdMapper)
+    table.removeOne(targets, use_event.data[1].from)
+    local to = room:askForChoosePlayers(player, targets, 1, 1, "#jingyin-card:::"..use_event.data[1].card:toLogString(), self.name, true)
+    if #to > 0 then
+      self.cost_data = {to[1], room:getSubcardsByRule(use_event.data[1].card)}
+      --不二次检测了
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:moveCardTo(self.cost_data[2], Card.PlayerHand, self.cost_data[1], fk.ReasonGive, self.name, "", true,
+    player.id, "@@jingyin-inhand")
+  end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and not data.card:isVirtual() and data.card:getMark("@@jingyin-inhand") > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.extraUse = true
+  end,
+}
+local jingyin_targetmod = fk.CreateTargetModSkill{
+  name = "#jingyin_targetmod",
+  bypass_times = function(self, player, skill, scope, card)
+    return card:getMark("@@jingyin-inhand") > 0
+  end,
+}
+local chixing = fk.CreateTriggerSkill{
+  name = "chixing",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and target.phase == Player.Play then
+      local room = player.room
+      local phase_event = room.logic:getCurrentEvent():findParent(GameEvent.Phase, true)
+      if phase_event == nil then return false end
+      local x = 0
+      U.getEventsByRule(room, GameEvent.MoveCards, 1, function (e)
+        for _, move in ipairs(e.data) do
+          if move.toArea == Card.DiscardPile then
+            for _, info in ipairs(move.moveInfo) do
+              if room:getCardArea(info.cardId) == Card.DiscardPile and Fk:getCardById(info.cardId).trueName == "slash" then
+                x = x + 1
+              end
+            end
+          end
+        end
+        return false
+      end, phase_event.id)
+      if x > 0 then
+        self.cost_data = x
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = room:drawCards(player, self.cost_data, self.name)
+    local handcards = player:getCardIds(Player.Hand)
+    cards = table.filter(cards, function (id)
+      return table.contains(cards, id) and Fk:getCardById(id).trueName == "slash"
+    end)
+    if #cards > 0 then
+      local use = U.askForUseRealCard(room, player, cards, ".", self.name, "#chixing-use",
+      {bypass_times = true}, false, true)
+    end
+  end,
+}
+jingyin:addRelatedSkill(jingyin_targetmod)
+liutan:addSkill(jingyin)
+liutan:addSkill(chixing)
+Fk:loadTranslationTable{
+  ["liutan"] = "柳婒",
+  ["#liutan"] = "维情所止",
+  --["designer:liutan"] = "",
+
+  ["jingyin"] = "经音",
+  [":jingyin"] = "当一名角色于其回合外使用的【杀】移至弃牌堆后，若你于当前回合内未发动过此技能，"..
+  "你可以令其以外的一名角色获得此牌，以此法得到的牌被使用时无次数限制。",
+  ["chixing"] = "迟行",
+  [":chixing"] = "一名角色的出牌阶段结束时，若有【杀】于此阶段内置入过弃牌堆，你可以摸等量的牌，"..
+  "然后你可以使用你摸到的这些牌中的一张【杀】。",
+
+  ["#jingyin-card"] = "是否发动 经音，令一名角色获得%arg（其使用时无次数限制）",
+  ["@@jingyin-inhand"] = "经音",
+  ["#chixing-use"] = "迟行：你可以使用一张【杀】",
 }
 
 --高山仰止：王朗 刘徽

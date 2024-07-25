@@ -1415,7 +1415,7 @@ local chixing = fk.CreateTriggerSkill{
         for _, move in ipairs(e.data) do
           if move.toArea == Card.DiscardPile then
             for _, info in ipairs(move.moveInfo) do
-              if room:getCardArea(info.cardId) == Card.DiscardPile and Fk:getCardById(info.cardId).trueName == "slash" then
+              if Fk:getCardById(info.cardId, true).trueName == "slash" then
                 x = x + 1
               end
             end
@@ -1454,7 +1454,7 @@ Fk:loadTranslationTable{
   [":jingyin"] = "当一名角色于其回合外使用的【杀】移至弃牌堆后，若你于当前回合内未发动过此技能，"..
   "你可以令其以外的一名角色获得此牌，以此法得到的牌被使用时无次数限制。",
   ["chixing"] = "迟行",
-  [":chixing"] = "一名角色的出牌阶段结束时，若有【杀】于此阶段内置入过弃牌堆，你可以摸等量的牌，"..
+  [":chixing"] = "一名角色的出牌阶段结束时，若有【杀】于此阶段内移至过弃牌堆，你可以摸等量的牌，"..
   "然后你可以使用你摸到的这些牌中的一张【杀】。",
 
   ["#jingyin-card"] = "是否发动 经音，令一名角色获得%arg（其使用时无次数限制）",
@@ -3901,9 +3901,9 @@ Fk:loadTranslationTable{
   ["juewu"] = "绝武",
   [":juewu"] = "你可以将点数为2的牌当伤害牌或【水淹七军】使用（每回合每种牌名限一次）。当你得到其他角色的牌后，这些牌的点数视为2。",
   ["wuyou"] = "武佑",
-  [":wuyou"] = "出牌阶段限一次，你可以从五个随机的不为装备牌的牌名中声明一个并选择你的一张手牌，此牌视为你声明的牌且无距离和次数限制。"..
+  [":wuyou"] = "出牌阶段限一次，你可以从五个随机的不为装备牌的牌名中声明一个并选择你的一张手牌，此牌视为你声明的牌且使用时无距离和次数限制。"..
   "其他角色的出牌阶段限一次，其可以将一张手牌交给你，然后你可以从五个随机的不为装备牌的牌名中声明一个并将一张手牌交给该角色，"..
-  "此牌视为你声明的牌且无距离和次数限制。",
+  "此牌视为你声明的牌且使用时无距离和次数限制。",
   ["yixian"] = "义贤",
   [":yixian"] = "限定技，出牌阶段，你可以选择：1.获得场上的所有装备牌，你对以此法被你获得牌的角色依次可以令其摸等量的牌并回复1点体力；"..
   "2.获得弃牌堆中的所有装备牌。",

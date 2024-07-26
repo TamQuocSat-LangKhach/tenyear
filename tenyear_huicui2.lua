@@ -4241,14 +4241,21 @@ local juying = fk.CreateTriggerSkill{
   events = {fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and player.phase == Player.Play then
-      local card = Fk:cloneCard("slash")
-      local slash_skill = card.skill
-      local status_skills = Fk:currentRoom().status_skills[TargetModSkill] or Util.DummyTable
-      for _, skill in ipairs(status_skills) do
-        if skill:bypassTimesCheck(player, slash_skill, Player.HistoryPhase, card, nil) then return true end
+      for _, name in ipairs({ "slash", "analeptic" }) do
+        local card = Fk:cloneCard(name)
+        local card_skill = card.skill
+        local status_skills = Fk:currentRoom().status_skills[TargetModSkill] or Util.DummyTable
+        for _, skill in ipairs(status_skills) do
+          if skill:bypassTimesCheck(player, card_skill, Player.HistoryPhase, card, nil) then return true end
+        end
+        local history = name == "slash" and Player.HistoryPhase or Player.HistoryTurn
+        if player:usedCardTimes(name, Player.HistoryPhase) < card_skill:getMaxUseTime(player, history, card, nil) then
+          return true
+        end
       end
-      return player:usedCardTimes("slash", Player.HistoryPhase) < slash_skill:getMaxUseTime(player, Player.HistoryPhase, card, nil)
     end
+
+    return false
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -4291,7 +4298,7 @@ Fk:loadTranslationTable{
   ["designer:liupi"] = "韩旭",
   ["illustrator:liupi"] = "君桓文化",
   ["juying"] = "踞营",
-  [":juying"] = "出牌阶段结束时，若你本阶段使用【杀】的次数小于次数上限，你可以选择任意项：1.下个回合出牌阶段使用【杀】次数上限+1；"..
+  [":juying"] = "出牌阶段结束时，若你本阶段使用【杀】或【酒】的次数小于次数上限，你可以选择任意项：1.下个回合出牌阶段使用【杀】次数上限+1；"..
   "2.本回合手牌上限+2；3.摸三张牌。若你选择的选项数大于你的体力值，你弃置一张牌。",
   ["#juying-choice"] = "踞营：你可以选择任意项，每比体力值多选一项便弃一张牌",
   ["juying1"] = "下个回合出牌阶段使用【杀】上限+1",

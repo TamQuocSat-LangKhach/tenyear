@@ -3364,6 +3364,219 @@ Fk:loadTranslationTable{
 
 godhuatuo:addSkill(huandao)
 
+local godhuangzhong = General(extension, "godhuangzhong", "god", 4)
+Fk:loadTranslationTable{
+  ["godhuangzhong"] = "神黄忠",
+  ["#godhuangzhong"] = "战意破苍穹",
+  -- ["illustrator:godhuangzhong"] = "君桓文化",
+  -- ["~godhuangzhong"] = "世无良医，枉死者半……",
+}
+
+local yiwu = fk.CreateTriggerSkill{
+  name = "yiwu",
+  anim_type = "offensive",
+  events = {fk.CardUsing, fk.CardUseFinished, fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    if target ~= player or not player:hasSkill(self) then
+      return false
+    end
+
+    if event == fk.CardUsing then
+      return data.card.trueName == "slash" and player:getEquipment(Card.SubtypeWeapon)
+    elseif event == fk.CardUseFinished then
+      return data.card.trueName == "slash" and not data.damageDealt
+    end
+
+    return data.to ~= player
+  end,
+  on_cost = function (self, event, target, player, data)
+    return event ~= fk.CardUseFinished or player.room:askForSkillInvoke(player, self.name, nil, "#yiwu-invoke")
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.CardUsing then
+      data.disresponsiveList = table.map(room.players, Util.IdMapper)
+    elseif event == fk.CardUseFinished then
+      player:drawCards(2, self.name)
+    else
+      room:addPlayerMark(player, "@yiwu_chi")
+      local victim = data.to
+      if not victim:isAlive() then
+        return false
+      end
+
+      local choices = {
+        "yiwu_head",
+        "yiwu_shoulder",
+        "yiwu_hand",
+        "yiwu_upper_limb",
+        "yiwu_lower_limb",
+        "yiwu_chest",
+        "yiwu_abdomen",
+      }
+
+      local partsChosen = U.getMark(player, "yiwu_parts-turn")
+      choices = table.filter(choices, function(part) return not table.contains(partsChosen, part) end)
+      if #choices == 0 then
+        return false
+      end
+
+      choices = table.random(choices, player:getMark("@yiwu_chi"))
+      local choice = room:askForChoices(player, choices, 1, 1, self.name, "#yiwu-choose::" .. victim.id)
+      if #choice == 0 then
+        return false
+      end
+      choice = choice[1]
+      table.insert(partsChosen, choice)
+      room:setPlayerMark(player, "yiwu_parts-turn", partsChosen)
+
+      if choice == "yiwu_head" and victim.hp > 0 then
+        room:loseHp(victim, victim.hp, self.name)
+      elseif choice == "yiwu_shoulder" then
+        local toDiscard = victim:getEquipments(Card.SubtypeWeapon)
+        table.insertTable(toDiscard, victim:getEquipments(Card.SubtypeArmor))
+        if #toDiscard > 0 then
+          room:throwCard(toDiscard, self.name, victim, player)
+        end
+      elseif choice == "yiwu_hand" then
+        local halfMaxCards = math.floor(victim:getMaxCards() / 2)
+        room:setPlayerMark(victim, "@@yiwu_hand", halfMaxCards < 1 and -1 or halfMaxCards)
+      elseif choice == "yiwu_upper_limb" then
+        local toDiscard = table.filter(victim:getCardIds("h"), function(id) return not victim:prohibitDiscard(id) end)
+        if #toDiscard > 0 then
+          toDiscard = table.random(toDiscard, 2)
+          room:throwCard(toDiscard, self.name, victim, victim)
+        end
+      else
+        room:setPlayerMark(victim, "@@" .. choice, 1)
+      end
+    end
+  end,
+
+  refresh_events = { fk.AfterTurnEnd },
+  can_refresh = function(self, event, target, player, data)
+    return
+      target == player and
+      table.find(
+        {
+          "@@yiwu_hand",
+          "@@yiwu_lower_limb",
+          "@@yiwu_chest",
+          "@@yiwu_abdomen",
+        },
+        function(markName) return player:getMark(markName) ~= 0 end
+      )
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    for _, markName in ipairs({ "@@yiwu_hand", "@@yiwu_lower_limb", "@@yiwu_chest", "@@yiwu_abdomen" }) do
+      if player:getMark(markName) ~= 0 then
+        room:setPlayerMark(player, markName, 0)
+      end
+    end
+  end,
+}
+local yiwuTrigger = fk.CreateTriggerSkill{
+  name = "#yiwu_trigger",
+  anim_type = "negative",
+  events = {fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:getMark("@@yiwu_lower_limb") > 0 and player.hp > 1
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    data.damage = data.damage + 1
+  end,
+}
+local yiwuMaxCards = fk.CreateMaxCardsSkill{
+  name = "#yiwu_max_cards",
+  fixed_func = function(self, player)
+    local halfMaxCards = player:getMark("@@yiwu_hand")
+    return halfMaxCards ~= 0 and math.max(0, halfMaxCards) or nil
+  end
+}
+local yiwuProhibit = fk.CreateProhibitSkill{
+  name = "#yiwu_prohibit",
+  prohibit_use = function(self, player, card)
+    return
+      (player:getMark("@@yiwu_chest") > 0 and player.phase ~= Player.NotActive and card.is_damage_card) or
+      (player:getMark("@@yiwu_abdomen") > 0 and table.contains({ "jink", "peach" }, card.trueName))
+  end,
+}
+Fk:loadTranslationTable{
+  ["yiwu"] = "毅武",
+  [":yiwu"] = "当你使用【杀】时，若你的装备区里有武器牌，则此【杀】不可被响应；当你使用的【杀】结算结束后，若此【杀】未造成过伤害，" ..
+  "则你可以摸两张牌；当你对其他角色造成伤害后，你获得一枚“赤”标记，然后你可从随机X个你本回合未选择过的部位中选择一个部位“击伤”" ..
+  "（X为你的“赤”标记数）。<br>" ..
+  "可击伤的部位：<br>" ..
+  "头部：令其失去所有体力。<br>" ..
+  "肩部：弃置其装备区里的武器牌和防具牌。<br>" ..
+  "手部：令其手牌上限基数为“击伤”时的手牌上限的一半（向下取整）直到其回合结束。<br>" ..
+  "上肢：令其随机弃置两张手牌。<br>" ..
+  "下肢：令其直到其回合结束，当其受到伤害时，若其体力值大于1，则此伤害+1。<br>" ..
+  "胸部：令其下回合不能使用伤害牌。<br>" ..
+  "腹部：令其不能使用【闪】和【桃】直到其回合结束。",
+  ["#yiwu-invoke"] = "毅武：你可以摸两张牌",
+  ["#yiwu-choose"] = "毅武：你可“击伤” %dest 的其中一个部位",
+
+  ["#yiwu_trigger"] = "毅武",
+  ["#yiwu_prohibit"] = "毅武",
+  ["@yiwu_chi"] = "赤",
+  ["yiwu_head"] = "头部：令其失去所有体力。",
+  ["yiwu_shoulder"] = "肩部：弃置其装备区里的武器牌和防具牌。",
+  ["yiwu_hand"] = "手部：令其手牌上限基数为“击伤”时的手牌上限的一半（向下取整）直到其回合结束。",
+  ["yiwu_upper_limb"] = "上肢：令其随机弃置两张手牌。",
+  ["yiwu_lower_limb"] = "下肢：令其直到其回合结束，当其受到伤害时，若其体力值大于1，则此伤害+1。",
+  ["yiwu_chest"] = "胸部：令其下回合不能使用伤害牌。",
+  ["yiwu_abdomen"] = "腹部：令其不能使用【闪】和【桃】直到其回合结束。",
+  ["@@yiwu_hand"] = "击伤手部",
+  ["@@yiwu_lower_limb"] = "击伤下肢",
+  ["@@yiwu_chest"] = "击伤胸部",
+  ["@@yiwu_abdomen"] = "击伤腹部",
+}
+
+yiwu:addRelatedSkill(yiwuTrigger)
+yiwu:addRelatedSkill(yiwuMaxCards)
+yiwu:addRelatedSkill(yiwuProhibit)
+godhuangzhong:addSkill(yiwu)
+
+local chiren = fk.CreateTriggerSkill{
+  name = "chiren",
+  anim_type = "support",
+  frequency = Skill.Compulsory,
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if target ~= player or player.phase ~= Player.Finish then
+      return false
+    end
+    local markChi = player:getMark("@yiwu_chi")
+    return markChi > 0 and markChi >= player:getLostHp()
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if player.hp < 4 then
+      room:recover{
+        who = player,
+        num = 4 - player.hp,
+        recoverBy = player,
+        skillName = self.name,
+      }
+    end
+
+    local markChi = player:getMark("@yiwu_chi")
+    room:setPlayerMark(player, "@yiwu_chi", 0)
+    player:drawCards(markChi, self.name)
+  end,
+}
+Fk:loadTranslationTable{
+  ["chiren"] = "赤刃",
+  [":chiren"] = "锁定技，结束阶段开始时，若你的“赤”标记数不小于你已损失的体力值，则你将体力回复至4点，" ..
+  "移去所有“赤”标记并摸等量的牌。",
+}
+
+godhuangzhong:addSkill(chiren)
+
 --百战虎贲：兀突骨 文鸯 夏侯霸 皇甫嵩 王双 留赞 黄祖 雷铜 吴兰 陈泰 王濬 杜预 陈武董袭 丁奉（同OL） 胡遵
 local wutugu = General(extension, "ty__wutugu", "qun", 15)
 local ty__ranshang = fk.CreateTriggerSkill{
@@ -4435,11 +4648,16 @@ local tongye = fk.CreateTriggerSkill{
   events = {fk.GameStart, fk.Deathed, fk.DrawNCards},
   anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and (event ~= fk.DrawNCards or (player == target and player:getMark("@tongye_count") == 1))
+    return
+      player:hasSkill(self) and
+      (
+        event ~= fk.DrawNCards or
+        (player == target and player:getMark("@tongye_count") > 0 and player:getMark("@tongye_count") < 4)
+      )
   end,
   on_use = function(self, event, target, player, data)
     if event == fk.DrawNCards then
-      data.n = data.n + 3
+      data.n = data.n + 4 - player:getMark("@tongye_count")
     else
       local room = player.room
       local kingdoms = {}
@@ -4448,13 +4666,25 @@ local tongye = fk.CreateTriggerSkill{
       end
       room:setPlayerMark(player, "@tongye_count", #kingdoms)
       room:broadcastProperty(player, "MaxCards")
+      if #kingdoms == 1 then
+        room:recover{
+          who = player,
+          num = 3,
+          recoverBy = player,
+          skillName = self.name,
+        }
+      end
     end
   end,
 }
 local tongye_maxcards = fk.CreateMaxCardsSkill{
   name = "#tongye_maxcards",
   correct_func = function(self, player)
-    if player:hasSkill(tongye) and player:getMark("@tongye_count") <= 4 then
+    if
+      player:hasSkill(tongye) and
+      player:getMark("@tongye_count") > 0 and
+      player:getMark("@tongye_count") <= 4
+    then
       return 3
     end
   end,
@@ -4462,7 +4692,11 @@ local tongye_maxcards = fk.CreateMaxCardsSkill{
 local tongye_attackrange = fk.CreateAttackRangeSkill{
   name = "#tongye_attackrange",
   correct_func = function (self, from, to)
-    if from:hasSkill(tongye) and from:getMark("@tongye_count") <= 3 then
+    if
+      from:hasSkill(tongye) and
+      from:getMark("@tongye_count") > 0 and
+      from:getMark("@tongye_count") <= 3
+    then
       return 3
     end
   end,
@@ -4470,7 +4704,12 @@ local tongye_attackrange = fk.CreateAttackRangeSkill{
 local tongye_targetmod = fk.CreateTargetModSkill{
   name = "#tongye_targetmod",
   residue_func = function(self, player, skill, scope)
-    if skill.trueName == "slash_skill" and player:hasSkill(tongye) and player:getMark("@tongye_count") <= 2 then
+    if
+      skill.trueName == "slash_skill" and
+      player:hasSkill(tongye) and
+      player:getMark("@tongye_count") > 0 and
+      player:getMark("@tongye_count") <= 2
+    then
       return 3
     end
     return 0
@@ -4489,7 +4728,8 @@ Fk:loadTranslationTable{
   ["mianyao"] = "免徭",
   [":mianyao"] = "摸牌阶段结束时，你可以展示手牌中点数最小的一张牌并将之置于牌堆随机位置，若如此做，本回合结束时，你摸此牌点数张牌。",
   ["tongye"] = "统业",
-  [":tongye"] = "锁定技，游戏开始时，或其他角色死亡后，你根据场上势力数获得对应效果（覆盖之前获得的效果）：不大于4，你的手牌上限+3；不大于3，你的攻击范围+3；不大于2，你于出牌阶段内使用【杀】的次数上限+3；为1，你于摸牌阶段多摸三张牌。",
+  [":tongye"] = "锁定技，游戏开始时，或其他角色死亡后，你根据场上势力数获得对应效果（覆盖之前获得的效果）：不大于4，你的手牌上限+3；" ..
+  "不大于3，你的攻击范围+3，摸牌阶段摸牌数增加4减去势力数；不大于2，你于出牌阶段内使用【杀】的次数上限+3；为1，你回复3点体力。",
   ["changqu"] = "长驱",
   [":changqu"] = "出牌阶段限一次，你可以<font color='red'>开一艘战舰</font>，从你的上家或下家开始选择任意名座次连续的其他角色，第一个目标角色获得战舰标记。"..
   "获得战舰标记的角色选择一项：1.交给你X张手牌，然后将战舰标记移动至下一个目标；2.下次受到的属性伤害+X，然后横置武将牌（X为本次选择1的次数，至少为1）。",

@@ -5787,7 +5787,8 @@ local huoxin = fk.CreateTriggerSkill{
       room:setCardMark(card, "@@yunzheng-inhand", 1)
       room:addPlayerMark(to, "@yunzheng")
     end
-    if toObtain or (card.suit == data.card.suit and card.suit ~= Card.NoSuit) then
+    if (toObtain or (card.suit == data.card.suit and card.suit ~= Card.NoSuit)) and
+    room:askForSkillInvoke(player, self.name, nil, "#yunzheng-prey::" .. to.id .. ":" .. card:toLogString()) then
       room:obtainCard(player, id, true, fk.ReasonPrey, player.id, self.name, "@@yunzheng-inhand")
     end
   end,
@@ -5806,11 +5807,12 @@ Fk:loadTranslationTable{
   [":yunzheng"] = "锁定技，游戏开始时，你的初始手牌增加“筝”标记且不计入手牌上限。手牌区里有“筝”的其他角色的不带“锁定技”标签的技能无效。",
   ["mu__huoxin"] = "惑心",
   [":mu__huoxin"] = "当你使用不为装备牌的牌指定第一个目标后，你可以展示一名其他角色的一张手牌并标记为“筝”，"..
-  "若此牌与你使用的牌花色相同或已被标记，你获得之（保留“筝”标记）。",
+  "若此牌与你使用的牌花色相同或已被标记，你可以获得之（保留“筝”标记）。",
 
   ["@yunzheng"] = "筝",
   ["@@yunzheng-inhand"] = "筝",
-  ["#mu__huoxin-choose"] = "惑心：选择一名目标角色，展示其一张手牌标记为“筝”",
+  ["#mu__huoxin-choose"] = "是否发动 惑心，选择一名其他角色，展示其一张手牌标记为“筝”",
+  ["#yunzheng-prey"] = "惑心：是否获得%dest展示的%arg",
 
   ["$yunzheng1"] = "佳人弄青丝，柔荑奏鸣筝。",
   ["$yunzheng2"] = "玉柱冷寒雪，清商怨羽声。",

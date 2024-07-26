@@ -5699,7 +5699,7 @@ Fk:loadTranslationTable{
 local zoushi = General(extension, "mu__zoushi", "qun", 3, 3, General.Female)
 local yunzheng = fk.CreateTriggerSkill{
   name = "yunzheng",
-  anim_type = "negative",
+  anim_type = "control",
   frequency = Skill.Compulsory,
   events = {fk.GameStart},
   can_trigger = function(self, event, target, player, data)
@@ -5750,7 +5750,7 @@ local yunzheng_invalidity = fk.CreateInvaliditySkill {
     if from:getMark("@yunzheng") > 0 and table.contains(from.player_skills, skill)
     and skill.frequency ~= Skill.Compulsory and skill.frequency ~= Skill.Wake and skill:isPlayerSkill(from) then
       return table.find(Fk:currentRoom().alive_players, function(p)
-        return p:hasSkill(yunzheng)
+        return p ~= from and p:hasSkill(yunzheng)
       end)
     end
   end,
@@ -5758,31 +5758,26 @@ local yunzheng_invalidity = fk.CreateInvaliditySkill {
 local huoxin = fk.CreateTriggerSkill{
   name = "mu__huoxin",
   anim_type = "control",
-  frequency = Skill.Compulsory,
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and U.IsUsingHandcard(player, data) and data.firstTarget and
-    table.find(AimGroup:getAllTargets(data.tos), function (pid)
-      if pid ~= player.id then
-        local to = player.room:getPlayerById(pid)
-        return not (to.dead or to:isKongcheng())
-      end
+    return target == player and player:hasSkill(self) and data.firstTarget and data.card.type ~= Card.TypeEquip and
+    table.find(player.room.alive_players, function (p)
+      return p ~= player and not p:isKongcheng()
     end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = room:askForChoosePlayers(player, table.map(table.filter(room.alive_players, function (p)
+      return p ~= player and not p:isKongcheng()
+    end), Util.IdMapper), 1, 1, "#mu__huoxin-choose", self.name, true)
+    if #targets > 0 then
+      self.cost_data = targets
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local tos = table.filter(AimGroup:getAllTargets(data.tos), function (pid)
-      if pid ~= player.id then
-        local to = player.room:getPlayerById(pid)
-        return not (to.dead or to:isKongcheng())
-      end
-    end)
-    if #tos == 0 then return false end
-    if #tos > 1 then
-      tos = room:askForChoosePlayers(player, tos, 1, 1, "#mu__huoxin-choose", self.name, false, true)
-    end
-    room:doIndicate(player.id, tos)
-    local to = room:getPlayerById(tos[1])
+    local to = room:getPlayerById(self.cost_data[1])
     local id = room:askForCardChosen(player, to, "h", self.name)
     to:showCards({id})
     local card = Fk:getCardById(id)
@@ -5808,14 +5803,20 @@ Fk:loadTranslationTable{
   ["illustrator:mu__zoushi"] = "黯荧岛",
 
   ["yunzheng"] = "韵筝",
-  [":yunzheng"] = "锁定技，游戏开始时，你的初始手牌增加“筝”标记且不计入手牌上限。手牌区里有“筝”的角色的不带“锁定技”标签的技能无效。",
+  [":yunzheng"] = "锁定技，游戏开始时，你的初始手牌增加“筝”标记且不计入手牌上限。手牌区里有“筝”的其他角色的不带“锁定技”标签的技能无效。",
   ["mu__huoxin"] = "惑心",
-  [":mu__huoxin"] = "锁定技，当你使用手牌指定第一个目标后，你展示目标角色中的一名其他角色的一张手牌并标记为“筝”，"..
+  [":mu__huoxin"] = "当你使用不为装备牌的牌指定第一个目标后，你可以展示一名其他角色的一张手牌并标记为“筝”，"..
   "若此牌与你使用的牌花色相同或已被标记，你获得之（保留“筝”标记）。",
 
   ["@yunzheng"] = "筝",
   ["@@yunzheng-inhand"] = "筝",
   ["#mu__huoxin-choose"] = "惑心：选择一名目标角色，展示其一张手牌标记为“筝”",
+
+  ["$yunzheng1"] = "佳人弄青丝，柔荑奏鸣筝。",
+  ["$yunzheng2"] = "玉柱冷寒雪，清商怨羽声。",
+  ["$mu__huoxin1"] = "闻君精通音律，与我合奏一曲如何？",
+  ["$mu__huoxin2"] = "知君有心意，此筝寄我情。",
+  ["~mu__zoushi"] = "雁归衡阳，良人当还……",
 }
 
 local zhugeguo = General(extension, "mu__zhugeguo", "shu", 3, 3, General.Female)

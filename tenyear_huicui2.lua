@@ -4629,29 +4629,48 @@ local zhenze = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Discard
   end,
+  on_cost = function (self, event, target, player, data)
+    local room = player.room
+    local a = player:getHandcardNum() - player.hp
+    local targets = {{},{}}
+    for _, p in ipairs(room:getAlivePlayers()) do
+      local b = p:getHandcardNum() - p.hp
+      if b == a or (a * b) > 0 then
+        room:setPlayerMark(p, "@zhenze", "recover")
+        table.insert(targets[2], p.id)
+      else
+        room:setPlayerMark(p, "@zhenze", "loseHp")
+        table.insert(targets[1], p.id)
+      end
+    end
+    local all_choices = {"zhenze_lose", "zhenze_recover", "Cancel"}
+    local choices = {"zhenze_recover", "Cancel"}
+    if #targets[1] > 0 then table.insert(choices, 1, "zhenze_lose") end
+    local choice = room:askForChoice(player, choices, self.name, nil, false, all_choices)
+    for _, p in ipairs(room.alive_players) do
+      room:setPlayerMark(p, "@zhenze", 0)
+    end
+    if choice ~= "Cancel" then
+      self.cost_data = {choice, targets[table.indexOf(all_choices, choice)]}
+      return true
+    end
+  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local choice = room:askForChoice(player, {"zhenze_lose", "zhenze_recover"}, self.name)
-    if choice == "zhenze_lose" then
-      for _, p in ipairs(room:getOtherPlayers(player)) do
-        if ((p:getHandcardNum() > p.hp) ~= (player:getHandcardNum() > player.hp) or
-          (p:getHandcardNum() == p.hp) ~= (player:getHandcardNum() == player.hp) or
-          (p:getHandcardNum() < p.hp) ~= (player:getHandcardNum() < player.hp)) then
-            room:loseHp(p, 1, self.name)
-        end
-      end
-    else
-      for _, p in ipairs(room:getAlivePlayers()) do
-        if p:isWounded() and
-          ((p:getHandcardNum() > p.hp) and (player:getHandcardNum() > player.hp) or
-          (p:getHandcardNum() == p.hp) and (player:getHandcardNum() == player.hp) or
-          (p:getHandcardNum() < p.hp) and (player:getHandcardNum() < player.hp)) then
-            room:recover({
-              who = p,
-              num = 1,
-              recoverBy = player,
-              skillName = self.name
-            })
+    local choice, targets = table.unpack(self.cost_data)
+    room:doIndicate(player.id, targets)
+    for _, pid in ipairs(targets) do
+      local p = room:getPlayerById(pid)
+      if not p.dead then
+        if choice == "zhenze_lose" then
+          room:loseHp(p, 1, self.name)
+        elseif p:isWounded() then
+          room:recover({
+            who = p,
+            num = 1,
+            recoverBy = player,
+            skillName = self.name
+          })
         end
       end
     end
@@ -4662,6 +4681,7 @@ local anliao = fk.CreateActiveSkill{
   anim_type = "control",
   card_num = 0,
   target_num = 1,
+  prompt = "#anliao-prompt",
   can_use = function(self, player)
     local n = 0
     for _, p in ipairs(Fk:currentRoom().alive_players) do
@@ -4694,8 +4714,10 @@ Fk:loadTranslationTable{
   "2.令所有手牌数和体力值的大小关系与你相同的角色回复1点体力。",
   ["anliao"] = "安辽",
   [":anliao"] = "出牌阶段限X次（X为群势力角色数），你可以重铸一名角色的一张牌。",
+  ["#anliao-prompt"] = "安辽：你可以重铸一名角色的一张牌",
   ["zhenze_lose"] = "手牌数和体力值的大小关系与你不同的角色失去1点体力",
   ["zhenze_recover"] = "所有手牌数和体力值的大小关系与你相同的角色回复1点体力",
+  ["@zhenze"] = "震泽",
 
   ["$zhenze1"] = "名震千里，泽被海东。",
   ["$zhenze2"] = "施威除暴，上下咸服。",

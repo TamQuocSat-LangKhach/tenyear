@@ -1500,20 +1500,71 @@ Fk:loadTranslationTable{
 }
 
 local jiangji = General(extension, "tymou__jiangji", "wei", 3)
-local shiju = fk.CreateTriggerSkill{
+local shiju = fk.CreateActiveSkill{
   name = "shiju",
+  anim_type = "support",
+  prompt = "#shiju_self-active",
+  card_num = 1,
+  target_num = 0,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isNude()
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0
+  end,
+  target_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+
+    local id = effect.cards[1]
+    if room:getCardArea(id) == Card.PlayerEquip then
+      room:moveCardTo(effect.cards, Player.Hand, player, fk.ReasonGive, self.name, nil, false, player.id)
+    end
+    if player.dead or room:getCardArea(id) ~= Card.PlayerHand or room:getCardOwner(id) ~= player then return end
+    local card = Fk:getCardById(id)
+    if card.type ~= Card.TypeEquip then return end
+    if
+      not (player:canUseTo(card, player) and
+      room:askForSkillInvoke(player, self.name, nil, "#shiju_self-use:::" .. card:toLogString()))
+    then
+      return
+    end
+    local no_draw = table.every(player:getCardIds(Player.Equip), function (cid)
+      return Fk:getCardById(cid).sub_type ~= card.sub_type
+    end)
+    room:useCard({
+      from = player.id,
+      tos = {{ player.id }},
+      card = card,
+    })
+    if player:isAlive() then
+      local x = #player:getCardIds(Player.Equip)
+      if x > 0 then
+        x = x + player:getMark("shiju-turn")
+        room:setPlayerMark(player, "shiju-turn", x)
+        room:setPlayerMark(player, "@shiju-turn", "+" .. tostring(x))
+      end
+    end
+    if not no_draw and player:isAlive() then
+      room:drawCards(player, 2, self.name)
+      room:drawCards(player, 2, self.name)
+    end
+  end,
+}
+local shijuTrigger = fk.CreateTriggerSkill{
+  name = "#shiju_trigger",
 
   refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
   can_refresh = function(self, event, target, player, data)
     if event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == self
+      return data == shiju
     elseif event == fk.BuryVictim then
-      return target:hasSkill(self, true, true)
+      return target:hasSkill(shiju, true, true)
     end
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if table.every(room.alive_players, function(p) return not p:hasSkill(self, true) or p == player end) then
+    if table.every(room.alive_players, function(p) return not p:hasSkill(shiju, true) or p == player end) then
       if player:hasSkill("shiju&", true, true) then
         room:handleAddLoseSkills(player, "-shiju&", nil, false, true)
       end
@@ -1592,58 +1643,18 @@ local yingshij = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self) and player:usedSkillTimes(self.name) < 2 and
-    data.firstTarget and data.card:isCommonTrick() and not table.contains(data.card.skillNames, self.name) then
-      local x, y = player:getMark("yingshij_used-turn"), #player:getCardIds(Player.Equip)
-      if x == 2 and y == 0 then return false end
-      local room = player.room
-      local to
-      local targets2 = {}
-      local targets = table.filter(AimGroup:getAllTargets(data.tos), function (id)
-        to = room:getPlayerById(id)
-        if not to.dead and (x ~= 2 or #to:getCardIds("he") >= y) then
-          if to:getMark("yingshij-turn") == 0 then
-            table.insert(targets2, id)
-          else
-            return true
-          end
-        end
-      end)
-      if #targets2 > 0 then
-        local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
-        if use_event ~= nil then
-          local turn_event = use_event:findParent(GameEvent.Turn)
-          if turn_event ~= nil then
-            local all_events = room.logic.event_recorder[GameEvent.UseCard]
-            local players = {}
-            for i = #all_events, 1, -1 do
-              local e = all_events[i]
-              if e.id <= turn_event.id then break end
-              if e.id < use_event.id then
-                table.insertTableIfNeed(players, TargetGroup:getRealTargets(e.data[1].tos))
-              end
-            end
-            for _, id in ipairs(players) do
-              to = room:getPlayerById(id)
-              if to:getMark("yingshij-turn") == 0 then
-                room:setPlayerMark(to, "yingshij-turn", 1)
-                if table.removeOne(targets2, id) then
-                  table.insert(targets, id)
-                end
-              end
-            end
-          end
-        end
-      end
-      if #targets > 0 then
-        self.cost_data = targets
-        return true
-      end
-    end
+    return
+      target == player and
+      player:hasSkill(self) and
+      player:getMark("yingshij_nullified-turn") == 0 and
+      data.firstTarget and
+      data.card:isCommonTrick() and
+      not table.contains(data.card.skillNames, self.name) and
+      table.find(AimGroup:getAllTargets(data.tos), function(pId) return player.room:getPlayerById(pId):isAlive() end)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.simpleClone(self.cost_data)
+    local targets = AimGroup:getAllTargets(data.tos)
     if #targets == 1 then
       if room:askForSkillInvoke(player, self.name, nil, "#yingshij-invoke::" .. targets[1]) then
         room:doIndicate(player.id, targets)
@@ -1661,33 +1672,17 @@ local yingshij = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data[1])
-    local x = player:getMark("yingshij_used-turn")
-    if x == 0 then
-      x = #player:getCardIds(Player.Equip)
-      if x > 0 and #room:askForDiscard(to, x, x, true, self.name, true, ".",
-      "#yingshij-discard:" .. player.id .. "::"..tostring(x) .. ":" .. data.card:toLogString())> 0 then
-        room:setPlayerMark(player, "yingshij_used-turn", 1)
-        table.insertIfNeed(data.nullifiedTargets, to.id)
-      else
-        room:setPlayerMark(player, "yingshij_used-turn", 2)
-        data.extra_data = data.extra_data or {}
-        data.extra_data.yingshij = {
-          from = player.id,
-          to = to.id,
-          subTargets = data.subTargets
-        }
-      end
-    elseif x == 1 then
+    local equipNum = #player:getCardIds(Player.Equip)
+    if equipNum > 0 and #room:askForDiscard(to, equipNum, equipNum, true, self.name, true, ".",
+      "#yingshij-discard:" .. player.id .. "::" .. tostring(equipNum) .. ":" .. data.card:toLogString()) > 0 then
+      room:setPlayerMark(player, "yingshij_nullified-turn", 1)
+    else
       data.extra_data = data.extra_data or {}
       data.extra_data.yingshij = {
         from = player.id,
         to = to.id,
         subTargets = data.subTargets
       }
-    elseif x == 2 then
-      x = #player:getCardIds(Player.Equip)
-      room:askForDiscard(to, x, x, true, self.name, false, ".")
-      table.insertIfNeed(data.nullifiedTargets, to.id)
     end
   end,
 }
@@ -1727,6 +1722,7 @@ local yingshij_delay = fk.CreateTriggerSkill{
   end,
 }
 Fk:addSkill(shiju_active)
+shiju:addRelatedSkill(shijuTrigger)
 shiju:addRelatedSkill(shiju_attackrange)
 yingshij:addRelatedSkill(yingshij_delay)
 jiangji:addSkill(shiju)
@@ -1738,20 +1734,23 @@ Fk:loadTranslationTable{
   ["designer:tymou__jiangji"] = "坑坑",
 
   ["shiju"] = "势举",
-  [":shiju"] = "其他角色的出牌阶段限一次，其可以将一张牌交给你，若此牌为装备牌，你可以使用之，令其攻击范围于此回合内+X（X为你装备区里的牌数），"..
+  [":shiju"] = "任意角色的出牌阶段限一次，其可以将一张牌交给你（若该角色为你，则改为你选择你的一张牌，若此牌不为手牌，则将此牌移入你的手牌），" ..
+  "若此牌为装备牌，你可以使用之，令其攻击范围于此回合内+X（X为你装备区里的牌数），"..
   "若你于使用此牌之前的装备区里有与此牌副类别相同的牌，你与其各摸两张牌。",
   ["yingshij"] = "应时",
-  [":yingshij"] = "当普通锦囊牌指定第一个目标后，若使用者为你，你可以选择一名于此牌被使用之前的当前回合内成为过牌的目标的目标角色，其选择于当前回合内未被选择过的一项："..
-  "1.当此牌结算后，你视为对其使用相同牌名的牌；2.弃置X张牌（X为你装备区里的牌数），此牌对其无效。",
+  [":yingshij"] = "当你不因此技能使用普通锦囊牌指定第一个目标后，你可以令一名目标角色选择一项："..
+  "1.当此牌结算后，你视为对其使用相同牌名的牌；2.弃置X张牌（X为你装备区里的牌数），然后此技能本回合失效。",
 
   ["shiju&"] = "势举",
-  [":shiju&"] = "出牌阶段限一次，你可以将一张牌交给蒋济。",
+  [":shiju&"] = "出牌阶段限一次，你可以将一张牌交给谋蒋济。",
+  ["#shiju_self-active"] = "势举：你可以选择你的一张牌，若此牌为装备牌则使用之并获得收益",
+  ["#shiju_self-use"] = "势举：你可以使用%arg，令你增加攻击范围",
   ["#shiju-active"] = "发动 势举，选择一张牌交给一名拥有“势举”的角色",
   ["#shiju-use"] = "势举：你可以使用%arg，令%src增加攻击范围",
   ["@shiju-turn"] = "势举范围",
   ["#yingshij-invoke"] = "是否对%dest发动 应时",
   ["#yingshij-choose"] = "是否发动 应时，选择一名目标角色",
-  ["#yingshij-discard"] = "应时：弃置%arg张牌，令【%arg2】对你无效，或者点取消则此牌对你额外结算一次",
+  ["#yingshij-discard"] = "应时：弃置%arg张牌，令%src的“应时”本回合失效，或者取消令此牌对你额外结算一次",
   ["#yingshij_delay"] = "应时",
 
   ["$shiju1"] = "借力为己用，可攀青云直上。",

@@ -1161,7 +1161,7 @@ local zengdao_trigger = fk.CreateTriggerSkill{
     local room = player.room
     local cards = room:askForCard(player, 1, 1, false, "zengdao", true, ".|.|.|zengdao|.|.|.", "#zengdao-invoke", "zengdao")
     if #cards == 0 then cards = {player:getPile("zengdao")[math.random(1, #player:getPile("zengdao"))]} end
-    player:removeCards(Player.Special, cards, "zengdao")
+    room:moveCardTo(cards, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, "zengdao", nil, true, player.id)
     data.damage = data.damage + 1
   end
 }

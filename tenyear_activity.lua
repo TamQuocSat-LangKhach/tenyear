@@ -4950,7 +4950,7 @@ local guanyue = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local result = room:askForGuanxing(player, room:getNCards(2), {1, 2}, {1, 1}, self.name, nil, true, {"Top", "prey"})
+    local result = room:askForGuanxing(player, room:getNCards(2), {1, 2}, {1, 1}, self.name, true, {"Top", "prey"})
     if #result.top > 0 then
       table.insert(room.draw_pile, 1, result.top[1])
       room:sendLog{

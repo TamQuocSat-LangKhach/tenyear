@@ -1919,7 +1919,7 @@ Fk:loadTranslationTable{
   ["~liuhui"] = "算学如海，穷我一生，只得杯水……",
 }
 
---钟灵毓秀：董贵人 滕芳兰 张瑾云 周不疑 许靖 关樾
+--钟灵毓秀：董贵人 滕芳兰 张瑾云 周不疑 许靖 关樾 诸葛京
 local dongguiren = General(extension, "dongguiren", "qun", 3, 3, General.Female)
 local lianzhi = fk.CreateTriggerSkill{
   name = "lianzhi",
@@ -3098,6 +3098,115 @@ Fk:loadTranslationTable{
   ["~guanyueg"] = "提履无处归，举目山河冷……",
 }
 
+local zhugejing = General(extension, "zhugejing", "qun", 3)
+zhugejing.subkingdom = "jin"
+local yanzuo = fk.CreateActiveSkill{
+  name = "yanzuo",
+  anim_type = "special",
+  card_num = 1,
+  target_num = 0,
+  prompt = "#yanzuo",
+  derived_piles = "yanzuo",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 + player:getMark("zuyin")
+  end,
+  card_filter = function(self, to_select, selected)
+    local card = Fk:getCardById(to_select)
+    return #selected == 0 and (card.type == Card.TypeBasic or card:isCommonTrick())
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    player:addToPile(self.name, effect.cards, true, self.name, player.id)
+    if player.dead or #player:getPile(self.name) == 0 then return end
+    local names = {}
+    for _, id in ipairs(player:getPile(self.name)) do
+      local card = Fk:getCardById(id)
+      if card.type == Card.TypeBasic or card:isCommonTrick() then
+        table.insertIfNeed(names, card.name)
+      end
+    end
+    U.askForUseVirtualCard(room, player, names, nil, self.name, "#yanzuo-ask", false, false, true, false)
+  end,
+}
+local zuyin = fk.CreateTriggerSkill{
+  name = "zuyin",
+  anim_type = "defensive",
+  frequency = Skill.Compulsory,
+  events = {fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.from ~= player.id and
+      (data.card.trueName == "slash" or data.card:isCommonTrick())
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = table.filter(player:getPile("yanzuo"), function (id)
+      return Fk:getCardById(id).trueName == data.card.trueName
+    end)
+    if #cards > 0 then
+      data.nullifiedTargets = table.map(room:getAlivePlayers(), Util.IdMapper)
+      room:moveCardTo(cards, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
+    else
+      if player:getMark(self.name) < 2 then
+        room:addPlayerMark(player, self.name, 1)
+      end
+      cards = room:getCardsFromPileByRule(data.card.trueName, 1, "allPiles")
+      if #cards > 0 then
+        player:addToPile("yanzuo", cards, true, self.name, player.id)
+      end
+    end
+  end,
+}
+local pijian = fk.CreateTriggerSkill{
+  name = "pijian",
+  anim_type = "offensive",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Finish and
+      #player:getPile("yanzuo") >= #player.room.alive_players
+  end,
+  on_cost = function(self, event, target, player, data)
+    local to = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper), 1, 1,
+      "#pijian-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    room:moveCardTo(player:getPile("yanzuo"), Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
+    if not to.dead then
+      room:damage{
+        from = player,
+        to = to,
+        damage = 2,
+        skillName = self.name,
+      }
+    end
+  end,
+}
+zhugejing:addSkill(yanzuo)
+zhugejing:addSkill(zuyin)
+zhugejing:addSkill(pijian)
+Fk:loadTranslationTable{
+  ["zhugejing"] = "诸葛京",
+  ["#zhugejing"] = "武侯遗秀",
+  --["designer:zhugejing"] = "",
+  ["illustrator:zhugejing"] = "",
+
+  ["yanzuo"] = "研作",
+  [":yanzuo"] = "出牌阶段限一次，你可以将一张基本牌或普通锦囊牌置于武将牌上，然后视为使用一张“研作”牌。",
+  ["zuyin"] = "祖荫",
+  [":zuyin"] = "锁定技，你成为其他角色使用【杀】或普通锦囊牌的目标后，若你的“研作”牌中：没有同名牌，你从牌堆或弃牌堆中将一张同名牌置为"..
+  "“研作”牌，然后令〖研作〗出牌阶段可发动次数+1（至多为3）；有同名牌，令此牌无效并移去“研作”牌中全部同名牌。",
+  ["pijian"] = "辟剑",
+  [":pijian"] = "结束阶段，若“研作”牌数不少于存活角色数，你可移去这些牌，对一名角色造成2点伤害。",
+  ["#yanzuo"] = "研作：将一张基本牌或普通锦囊牌置为“研作”牌，然后视为使用一张“研作”牌",
+  ["#yanzuo-ask"] = "研作：视为使用一张牌",
+
+   ["#pijian-choose"] = "辟剑：你可以移去所有“研作”牌，对一名角色造成2点伤害！",
+}
 
 --武庙：诸葛亮、陆逊
 local zhugeliang = General(extension, "wm__zhugeliang", "shu", 4, 7)

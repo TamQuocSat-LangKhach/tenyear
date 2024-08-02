@@ -44,7 +44,7 @@ Fk:loadTranslationTable{
   ["#tymou_switch-transer"] = "请选择 %arg 的阴阳状态",
 }
 
---谋定天下：周瑜、鲁肃、司马懿、贾诩
+--谋定天下：周瑜、鲁肃、司马懿、贾诩、程昱
 local tymou__zhouyu = General(extension, "tymou__zhouyu", "wu", 4)
 local ronghuo = fk.CreateTriggerSkill{
   name = "ronghuo",
@@ -826,7 +826,138 @@ Fk:loadTranslationTable{
 }
 
 
+local chengyu = General(extension, "tymou__chengyu", "wei", 3)
+local shizha = fk.CreateTriggerSkill{
+  name = "shizha",
+  anim_type = "control",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and target ~= player and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 then
+      local room = player.room
+      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
+      if turn_event == nil then return false end
+      local changehp_event_id = 1
+      room.logic:getEventsByRule(GameEvent.ChangeHp, 1, function (e)
+        if e.data[1] == target and e.data[2] ~= 0 then
+          changehp_event_id = e.end_id
+          return true
+        end
+      end, turn_event.id)
+      if changehp_event_id == 1 then return false end
+      local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
+      if use_event == nil then return false end
+      local use_event_id = 1
+      room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
+        if e.data[1].from == target.id then
+          use_event_id = e.id
+        end
+      end, changehp_event_id)
+      return use_event_id == use_event.id
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#shizha-invoke::"..target.id..":"..data.card:toLogString())
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {target.id})
+    data.tos = {}
+    room:sendLog{
+      type = "#CardNullifiedBySkill",
+      from = target.id,
+      arg = self.name,
+      arg2 = data.card:toLogString(),
+    }
+    if room:getCardArea(data.card) == Card.Processing then
+      room:moveCardTo(data.card, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
+    end
+  end,
+}
+local gaojian = fk.CreateTriggerSkill{
+  name = "gaojian",
+  anim_type = "support",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.card:isCommonTrick() and player.phase == Player.Play and
+      (not data.card:isVirtual() or data.card.subcards) and #player.room.alive_players > 1
+  end,
+  on_cost = function (self,event, target, player, data)
+    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+      "#gaojian-choose", self.name, false)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local cards = {}
+    for i = 1, 5, 1 do
+      local card = room:getNCards(1)
+      table.insert(cards, card[1])
+      room:moveCardTo(card, Card.Processing, nil, fk.ReasonJustMove, self.name, nil, true, to.id)
+      if Fk:getCardById(card[1]).type == Card.TypeTrick then
+        break
+      end
+    end
+    local yes = false
+    if Fk:getCardById(cards[#cards]).type == Card.TypeTrick then
+      local card = cards[#cards]
+      if U.askForUseRealCard(room, to, {card}, ".", self.name, "#gaojian-use:::"..Fk:getCardById(card):toLogString(),
+        {expand_pile = {card}, extraUse = true}) then
+        yes = true
+      end
+    end
+    if not yes then
+      local results = U.askForExchange(to, "gaojian", "hand_card", cards, to:getCardIds("h"), "#gaojian-exchange", 999, true)
+      if #results > 0 then
+        local cards1 = table.filter(results, function(id)
+          return table.contains(to:getCardIds("h"), id)
+        end)
+        local cards2 = table.filter(results, function(id)
+          return table.contains(cards, id)
+        end)
+        room:moveCards({
+          ids = cards1,
+          from = to.id,
+          toArea = Card.Processing,
+          moveReason = fk.ReasonExchange,
+          proposer = to.id,
+          skillName = self.name,
+          moveVisible = true,
+        },
+        {
+          ids = cards2,
+          to = to.id,
+          toArea = Card.PlayerHand,
+          moveReason = fk.ReasonExchange,
+          proposer = to.id,
+          skillName = self.name,
+          moveVisible = true,
+        })
+      end
+    end
+    U.clearRemainCards(room, cards, self.name)
+  end,
+}
+chengyu:addSkill(shizha)
+chengyu:addSkill(gaojian)
+Fk:loadTranslationTable{
+  ["tymou__chengyu"] = "谋程昱",
+  ["#tymou__chengyu"] = "沐风知秋",
+  ["illustrator:tymou__chengyu"] = "",
 
+  ["shizha"] = "识诈",
+  [":shizha"] = "每回合限一次，其他角色使用牌时，若此牌是其本回合体力变化后使用的第一张牌，你可令此牌无效并获得此牌。",
+  ["gaojian"] = "告谏",
+  [":gaojian"] = "当你于出牌阶段使用锦囊牌结算完毕进入弃牌堆时，你可以选择一名其他角色，其依次展示牌堆顶的牌直到出现锦囊牌（至多五张），"..
+  "然后其选择一项：1.使用此牌；2.将任意张手牌与等量展示牌交换。",
+  ["#shizha-invoke"] = "识诈：是否令 %dest 使用的%arg无效并获得之？",
+  ["#gaojian-choose"] = "告谏：选择一名角色，其展示牌堆顶牌，使用其中的锦囊牌或用手牌交换",
+  ["#gaojian-use"] = "告谏：使用%arg，或点“取消”将任意张手牌与等量展示牌交换",
+  ["#gaojian-exchange"] = "告谏：将任意张手牌与等量展示牌交换",
+}
 
 
 
@@ -2417,6 +2548,187 @@ Fk:loadTranslationTable{
   ["$kangyong1"] = "此猛士之血，其与醇酒孰烈乎？",
   ["$kangyong2"] = "歃血为誓，城在则人在！",
   ["~tymou__dianwei"] = "主公无恙，韦虽死犹生……",
+}
+
+--奇佐论胜：郭嘉、沮授
+
+local jvshou = General(extension, "tymou__jvshou", "qun", 3)
+local zuojun = fk.CreateActiveSkill{
+  name = "zuojun",
+  anim_type = "support",
+  card_num = 0,
+  target_num = 1,
+  prompt = "#zuojun",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0
+  end,
+  on_use = function(self, room, effect)
+    local target = room:getPlayerById(effect.tos[1])
+    local cards = target:drawCards(3, self.name)
+    local choice = room:askForChoice(target, {"zuojun1", "zuojun2"}, self.name)
+    if choice == "zuojun1" then
+      cards = table.filter(cards, function (id)
+        return table.contains(target:getCardIds("h"), id)
+      end)
+      local mark = U.getMark(target, self.name)
+      table.insertTableIfNeed(mark, cards)
+      room:setPlayerMark(target, self.name, mark)
+      for _, id in ipairs(mark) do
+        room:setCardMark(Fk:getCardById(id), "@@zuojun-inhand", 1)
+      end
+    else
+      room:loseHp(target, 1, self.name)
+      if not target.dead then
+        cards = table.filter(cards, function (id)
+          return table.contains(target:getCardIds("h"), id)
+        end)
+        local card = target:drawCards(1, self.name)
+        if table.contains(target:getCardIds("h"), card[1]) then
+          table.insert(cards, card[1])
+        end
+        while not target.dead and #cards > 0 do
+          local use = U.askForUseRealCard(room, target, cards, ".", self.name, "#zuojun-use",
+            {extraUse = true}, true)
+          if use then
+            table.removeOne(cards, use.card:getEffectiveId())
+            room:useCard(use)
+          else
+            break
+          end
+          cards = table.filter(cards, function (id)
+            return table.contains(target:getCardIds("h"), id)
+          end)
+        end
+      end
+      cards = table.filter(cards, function (id)
+        return table.contains(target:getCardIds("h"), id)
+      end)
+      if #cards > 0 then
+        room:throwCard(cards, self.name, target, target)
+      end
+    end
+  end,
+}
+local zuojun_prohibit = fk.CreateProhibitSkill{
+  name = "#zuojun_prohibit",
+  prohibit_use = function(self, player, card)
+    return card and card:getMark("@@zuojun-inhand") > 0
+  end,
+}
+local zuojun_maxcards = fk.CreateMaxCardsSkill{
+  name = "#zuojun_maxcards",
+  exclude_from = function(self, player, card)
+    return card:getMark("@@zuojun-inhand") > 0
+  end,
+}
+local zuojun_trigger = fk.CreateTriggerSkill{
+  name = "#zuojun_trigger",
+
+  refresh_events = {fk.AfterTurnEnd},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player:getMark("zuojun") ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    for _, id in ipairs(U.getMark(player, "zuojun")) do
+      room:setCardMark(Fk:getCardById(id), "@@zuojun-inhand", 0)
+    end
+    room:setPlayerMark(player, "zuojun", 0)
+  end,
+}
+local muwang = fk.CreateTriggerSkill{
+  name = "muwang",
+  mute = true,
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      if player:getMark("muwang-turn") == 0 then
+        for _, move in ipairs(data) do
+          if move.toArea == Card.DiscardPile then
+            for _, info in ipairs(move.moveInfo) do
+              if Fk:getCardById(info.cardId).type == Card.TypeBasic or Fk:getCardById(info.cardId):isCommonTrick() then
+                local room = player.room
+                local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
+                if turn_event == nil then return false end
+                if move.from == player.id then
+                  if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+                    self.cost_data = info.cardId
+                    return true
+                  end
+                else
+                  self.cost_data = -1
+                  room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
+                    for _, m in ipairs(e.data) do
+                      if m.from == player.id then
+                        for _, i in ipairs(m.moveInfo) do
+                          if i.cardId == info.cardId and (i.fromArea == Card.PlayerHand or i.fromArea == Card.PlayerEquip) then
+                            --一个人不能两次踏进同一条河流~
+                            self.cost_data = info.cardId
+                            return true
+                          end
+                        end
+                      end
+                    end
+                  end, Player.HistoryTurn)
+                  return self.cost_data ~= -1
+                end
+              end
+            end
+          end
+        end
+      else
+        for _, move in ipairs(data) do
+          if move.from == player.id then
+            for _, info in ipairs(move.moveInfo) do
+              if (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip) and
+                info.cardId == player:getMark("muwang-turn") then
+                return true
+              end
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke(self.name)
+    if player:getMark("muwang-turn") == 0 then
+      room:notifySkillInvoked(player, self.name, "drawcard")
+      room:setPlayerMark(player, "muwang-turn", self.cost_data)
+      room:moveCardTo(self.cost_data, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id, "@@muwang-turn")
+    else
+      room:notifySkillInvoked(player, self.name, "negative")
+      room:askForDiscard(player, 1, 1, true, self.name, false)
+    end
+  end,
+}
+zuojun:addRelatedSkill(zuojun_prohibit)
+zuojun:addRelatedSkill(zuojun_maxcards)
+zuojun:addRelatedSkill(zuojun_trigger)
+jvshou:addSkill(zuojun)
+jvshou:addSkill(muwang)
+Fk:loadTranslationTable{
+  ["tymou__jvshou"] = "谋沮授",
+  ["#tymou__jvshou"] = "",
+  ["illustrator:tymou__jvshou"] = "",
+
+  ["zuojun"] = "佐军",
+  [":zuojun"] = "出牌阶段限一次，你可选择一名角色，其摸三张牌并选择一项：1.这些牌无法使用且不计入手牌上限，直到其下回合结束；2.失去1点体力，"..
+  "再摸一张牌，然后使用其中任意张牌，弃置剩余未使用的牌。",
+  ["muwang"] = "暮往",
+  [":muwang"] = "锁定技，当你每回合失去第一张基本牌或普通锦囊牌进入弃牌堆后，你获得之；当你本回合再次失去此牌后，弃置一张牌。",
+  ["#zuojun"] = "佐军：令一名角色摸三张牌，然后其执行后续效果",
+  ["@@zuojun-inhand"] = "佐军",
+  ["zuojun1"] = "这些牌无法使用且不计入手牌上限直到你下回合结束",
+  ["zuojun2"] = "失去1点体力再摸一张牌，然后使用其中任意张，弃置剩余牌",
+  ["#zuojun-use"] = "佐军：请使用这些牌，未使用的将被弃置",
+  ["@@muwang-turn"] = "暮往",
 }
 
 return extension

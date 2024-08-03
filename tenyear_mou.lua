@@ -44,7 +44,7 @@ Fk:loadTranslationTable{
   ["#tymou_switch-transer"] = "请选择 %arg 的阴阳状态",
 }
 
---谋定天下：周瑜、鲁肃、司马懿、贾诩、程昱
+--谋定天下：周瑜、鲁肃、司马懿、贾诩
 local tymou__zhouyu = General(extension, "tymou__zhouyu", "wu", 4)
 local ronghuo = fk.CreateTriggerSkill{
   name = "ronghuo",
@@ -826,148 +826,276 @@ Fk:loadTranslationTable{
 }
 
 
-local chengyu = General(extension, "tymou__chengyu", "wei", 3)
-local shizha = fk.CreateTriggerSkill{
-  name = "shizha",
-  anim_type = "control",
-  events = {fk.CardUsing},
-  can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and target ~= player and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 then
-      local room = player.room
-      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
-      if turn_event == nil then return false end
-      local changehp_event_id = 1
-      room.logic:getEventsByRule(GameEvent.ChangeHp, 1, function (e)
-        if e.data[1] == target and e.data[2] ~= 0 then
-          changehp_event_id = e.end_id
-          return true
-        end
-      end, turn_event.id)
-      if changehp_event_id == 1 then return false end
-      local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
-      if use_event == nil then return false end
-      local use_event_id = 1
-      room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
-        if e.data[1].from == target.id then
-          use_event_id = e.id
-        end
-      end, changehp_event_id)
-      return use_event_id == use_event.id
+
+
+
+
+
+
+
+
+--冢虎狼顾：蒋济、王凌、司马师、曹爽
+local jiangji = General(extension, "tymou__jiangji", "wei", 3)
+local shiju = fk.CreateActiveSkill{
+  name = "shiju",
+  anim_type = "support",
+  prompt = "#shiju_self-active",
+  card_num = 1,
+  target_num = 0,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isNude()
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0
+  end,
+  target_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+
+    local id = effect.cards[1]
+    if room:getCardArea(id) == Card.PlayerEquip then
+      room:moveCardTo(effect.cards, Player.Hand, player, fk.ReasonGive, self.name, nil, false, player.id)
     end
+    if player.dead or room:getCardArea(id) ~= Card.PlayerHand or room:getCardOwner(id) ~= player then return end
+    local card = Fk:getCardById(id)
+    if card.type ~= Card.TypeEquip then return end
+    if
+      not (player:canUseTo(card, player) and
+      room:askForSkillInvoke(player, self.name, nil, "#shiju_self-use:::" .. card:toLogString()))
+    then
+      return
+    end
+    local no_draw = table.every(player:getCardIds(Player.Equip), function (cid)
+      return Fk:getCardById(cid).sub_type ~= card.sub_type
+    end)
+    room:useCard({
+      from = player.id,
+      tos = {{ player.id }},
+      card = card,
+    })
+    if player:isAlive() then
+      local x = #player:getCardIds(Player.Equip)
+      if x > 0 then
+        x = x + player:getMark("shiju-turn")
+        room:setPlayerMark(player, "shiju-turn", x)
+        room:setPlayerMark(player, "@shiju-turn", "+" .. tostring(x))
+      end
+    end
+    if not no_draw and player:isAlive() then
+      room:drawCards(player, 2, self.name)
+      room:drawCards(player, 2, self.name)
+    end
+  end,
+}
+local shijuTrigger = fk.CreateTriggerSkill{
+  name = "#shiju_trigger",
+
+  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
+      return data == shiju
+    elseif event == fk.BuryVictim then
+      return target:hasSkill(shiju, true, true)
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if table.every(room.alive_players, function(p) return not p:hasSkill(shiju, true) or p == player end) then
+      if player:hasSkill("shiju&", true, true) then
+        room:handleAddLoseSkills(player, "-shiju&", nil, false, true)
+      end
+    else
+      if not player:hasSkill("shiju&", true, true) then
+        room:handleAddLoseSkills(player, "shiju&", nil, false, true)
+      end
+    end
+  end,
+}
+local shiju_active = fk.CreateActiveSkill{
+  name = "shiju&",
+  anim_type = "support",
+  prompt = "#shiju-active",
+  card_num = 1,
+  target_num = 1,
+  can_use = function(self, player)
+    local targetRecorded = U.getMark(player, "shiju_targets-phase")
+    return table.find(Fk:currentRoom().alive_players, function(p)
+      return p ~= player and p:hasSkill(shiju) and not table.contains(targetRecorded, p.id)
+    end)
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id and Fk:currentRoom():getPlayerById(to_select):hasSkill(shiju) and
+    not table.contains(U.getMark(Self, "shiju_targets-phase"), to_select)
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    target:broadcastSkillInvoke("shiju")
+    local targetRecorded = U.getMark(player, "shiju_targets-phase")
+    table.insertIfNeed(targetRecorded, target.id)
+    room:setPlayerMark(player, "shiju_targets-phase", targetRecorded)
+    local id = effect.cards[1]
+    room:moveCardTo(effect.cards, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
+    if target.dead or room:getCardArea(id) ~= Card.PlayerHand or room:getCardOwner(id) ~= target then return end
+    local card = Fk:getCardById(id)
+    if card.type ~= Card.TypeEquip then return end
+    if not (target:canUseTo(card, target) and room:askForSkillInvoke(target, "shiju", nil, "#shiju-use:"..player.id.."::"..card:toLogString())) then return end
+    local no_draw = table.every(target:getCardIds(Player.Equip), function (cid)
+      return Fk:getCardById(cid).sub_type ~= card.sub_type
+    end)
+    room:useCard({
+      from = target.id,
+      tos = {{target.id}},
+      card = card,
+    })
+    if not player.dead and not target.dead then
+      local x = #target:getCardIds(Player.Equip)
+      if x > 0 then
+        x = x + player:getMark("shiju-turn")
+        room:setPlayerMark(player, "shiju-turn", x)
+        room:setPlayerMark(player, "@shiju-turn", "+" .. tostring(x))
+      end
+    end
+    if no_draw then return end
+    if not target.dead then
+      room:drawCards(target, 2, self.name)
+    end
+    if not player.dead then
+      room:drawCards(player, 2, self.name)
+    end
+  end,
+}
+local shiju_attackrange = fk.CreateAttackRangeSkill{
+  name = "#shiju_attackrange",
+  correct_func = function (self, from, to)
+    return from:getMark("shiju-turn")
+  end,
+}
+local yingshij = fk.CreateTriggerSkill{
+  name = "yingshij",
+  anim_type = "offensive",
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    return
+      target == player and
+      player:hasSkill(self) and
+      player:getMark("yingshij_nullified-turn") == 0 and
+      data.firstTarget and
+      data.card:isCommonTrick() and
+      not table.contains(data.card.skillNames, self.name) and
+      table.find(AimGroup:getAllTargets(data.tos), function(pId) return player.room:getPlayerById(pId):isAlive() end)
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#shizha-invoke::"..target.id..":"..data.card:toLogString())
+    local room = player.room
+    local targets = AimGroup:getAllTargets(data.tos)
+    if #targets == 1 then
+      if room:askForSkillInvoke(player, self.name, nil, "#yingshij-invoke::" .. targets[1]) then
+        room:doIndicate(player.id, targets)
+        self.cost_data = targets
+        return true
+      end
+    else
+      targets = room:askForChoosePlayers(player, targets, 1, 1, "#yingshij-choose", self.name, true)
+      if #targets > 0 then
+        self.cost_data = targets
+        return true
+      end
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:doIndicate(player.id, {target.id})
-    data.tos = {}
-    room:sendLog{
-      type = "#CardNullifiedBySkill",
-      from = target.id,
-      arg = self.name,
-      arg2 = data.card:toLogString(),
-    }
-    if room:getCardArea(data.card) == Card.Processing then
-      room:moveCardTo(data.card, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
+    local to = room:getPlayerById(self.cost_data[1])
+    local equipNum = #player:getCardIds(Player.Equip)
+    if equipNum > 0 and #room:askForDiscard(to, equipNum, equipNum, true, self.name, true, ".",
+      "#yingshij-discard:" .. player.id .. "::" .. tostring(equipNum) .. ":" .. data.card:toLogString()) > 0 then
+      room:setPlayerMark(player, "yingshij_nullified-turn", 1)
+    else
+      data.extra_data = data.extra_data or {}
+      data.extra_data.yingshij = {
+        from = player.id,
+        to = to.id,
+        subTargets = data.subTargets
+      }
     end
   end,
 }
-local gaojian = fk.CreateTriggerSkill{
-  name = "gaojian",
-  anim_type = "support",
+local yingshij_delay = fk.CreateTriggerSkill{
+  name = "#yingshij_delay",
+  mute = true,
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.card:isCommonTrick() and player.phase == Player.Play and
-      (not data.card:isVirtual() or data.card.subcards) and #player.room.alive_players > 1
-  end,
-  on_cost = function (self,event, target, player, data)
-    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1,
-      "#gaojian-choose", self.name, false)
-    if #to > 0 then
-      self.cost_data = to[1]
-      return true
+    if data.extra_data and data.extra_data.yingshij and not player.dead then
+      local use = table.simpleClone(data.extra_data.yingshij)
+      if use.from == player.id then
+        local card = Fk:cloneCard(data.card.name)
+        card.skillName = "yingshij"
+        if player:prohibitUse(card) then return false end
+        use.card = card
+        local room = player.room
+        local to = room:getPlayerById(use.to)
+        if not to.dead and U.canTransferTarget(to, use, false) then
+          local tos = {use.to}
+          if use.subTargets then
+            table.insertTable(tos, use.subTargets)
+          end
+          self.cost_data = {
+            from = player.id,
+            tos = table.map(tos, function(pid) return { pid } end),
+            card = card,
+            extraUse = true
+          }
+          return true
+        end
+      end
     end
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    local to = room:getPlayerById(self.cost_data)
-    local cards = {}
-    for i = 1, 5, 1 do
-      local card = room:getNCards(1)
-      table.insert(cards, card[1])
-      room:moveCardTo(card, Card.Processing, nil, fk.ReasonJustMove, self.name, nil, true, to.id)
-      if Fk:getCardById(card[1]).type == Card.TypeTrick then
-        break
-      end
-    end
-    local yes = false
-    if Fk:getCardById(cards[#cards]).type == Card.TypeTrick then
-      local card = cards[#cards]
-      if U.askForUseRealCard(room, to, {card}, ".", self.name, "#gaojian-use:::"..Fk:getCardById(card):toLogString(),
-        {expand_pile = {card}, extraUse = true}) then
-        yes = true
-      end
-    end
-    if not yes then
-      local results = U.askForExchange(to, "gaojian", "hand_card", cards, to:getCardIds("h"), "#gaojian-exchange", 999, true)
-      if #results > 0 then
-        local cards1 = table.filter(results, function(id)
-          return table.contains(to:getCardIds("h"), id)
-        end)
-        local cards2 = table.filter(results, function(id)
-          return table.contains(cards, id)
-        end)
-        room:moveCards({
-          ids = cards1,
-          from = to.id,
-          toArea = Card.Processing,
-          moveReason = fk.ReasonExchange,
-          proposer = to.id,
-          skillName = self.name,
-          moveVisible = true,
-        },
-        {
-          ids = cards2,
-          to = to.id,
-          toArea = Card.PlayerHand,
-          moveReason = fk.ReasonExchange,
-          proposer = to.id,
-          skillName = self.name,
-          moveVisible = true,
-        })
-      end
-    end
-    U.clearRemainCards(room, cards, self.name)
+    player.room:useCard(table.simpleClone(self.cost_data))
   end,
 }
-chengyu:addSkill(shizha)
-chengyu:addSkill(gaojian)
+Fk:addSkill(shiju_active)
+shiju:addRelatedSkill(shijuTrigger)
+shiju:addRelatedSkill(shiju_attackrange)
+yingshij:addRelatedSkill(yingshij_delay)
+jiangji:addSkill(shiju)
+jiangji:addSkill(yingshij)
 Fk:loadTranslationTable{
-  ["tymou__chengyu"] = "谋程昱",
-  ["#tymou__chengyu"] = "沐风知秋",
-  ["illustrator:tymou__chengyu"] = "",
+  ["tymou__jiangji"] = "谋蒋济",
+  ["#tymou__jiangji"] = "策论万机",
+  ["illustrator:tymou__jiangji"] = "错落宇宙",
+  ["designer:tymou__jiangji"] = "坑坑",
 
-  ["shizha"] = "识诈",
-  [":shizha"] = "每回合限一次，其他角色使用牌时，若此牌是其本回合体力变化后使用的第一张牌，你可令此牌无效并获得此牌。",
-  ["gaojian"] = "告谏",
-  [":gaojian"] = "当你于出牌阶段使用锦囊牌结算完毕进入弃牌堆时，你可以选择一名其他角色，其依次展示牌堆顶的牌直到出现锦囊牌（至多五张），"..
-  "然后其选择一项：1.使用此牌；2.将任意张手牌与等量展示牌交换。",
-  ["#shizha-invoke"] = "识诈：是否令 %dest 使用的%arg无效并获得之？",
-  ["#gaojian-choose"] = "告谏：选择一名角色，其展示牌堆顶牌，使用其中的锦囊牌或用手牌交换",
-  ["#gaojian-use"] = "告谏：使用%arg，或点“取消”将任意张手牌与等量展示牌交换",
-  ["#gaojian-exchange"] = "告谏：将任意张手牌与等量展示牌交换",
+  ["shiju"] = "势举",
+  [":shiju"] = "任意角色的出牌阶段限一次，其可以将一张牌交给你（若该角色为你，则改为你选择你的一张牌，若此牌不为手牌，则将此牌移入你的手牌），" ..
+  "若此牌为装备牌，你可以使用之，令其攻击范围于此回合内+X（X为你装备区里的牌数），"..
+  "若你于使用此牌之前的装备区里有与此牌副类别相同的牌，你与其各摸两张牌。",
+  ["yingshij"] = "应时",
+  [":yingshij"] = "当你不因此技能使用普通锦囊牌指定第一个目标后，你可以令一名目标角色选择一项："..
+  "1.当此牌结算后，你视为对其使用相同牌名的牌；2.弃置X张牌（X为你装备区里的牌数），然后此技能本回合失效。",
+
+  ["shiju&"] = "势举",
+  [":shiju&"] = "出牌阶段限一次，你可以将一张牌交给谋蒋济。",
+  ["#shiju_self-active"] = "势举：你可以选择你的一张牌，若此牌为装备牌则使用之并获得收益",
+  ["#shiju_self-use"] = "势举：你可以使用%arg，令你增加攻击范围",
+  ["#shiju-active"] = "发动 势举，选择一张牌交给一名拥有“势举”的角色",
+  ["#shiju-use"] = "势举：你可以使用%arg，令%src增加攻击范围",
+  ["@shiju-turn"] = "势举范围",
+  ["#yingshij-invoke"] = "是否对%dest发动 应时",
+  ["#yingshij-choose"] = "是否发动 应时，选择一名目标角色",
+  ["#yingshij-discard"] = "应时：弃置%arg张牌，令%src的“应时”本回合失效，或者取消令此牌对你额外结算一次",
+  ["#yingshij_delay"] = "应时",
+
+  ["$shiju1"] = "借力为己用，可攀青云直上。",
+  ["$shiju2"] = "应势而动，事半而功倍。",
+  ["$yingshij1"] = "今君失道寡助，何不审时以降？",
+  ["$yingshij2"] = "君既掷刀于地，可保富贵无虞。",
+  ["~tymou__jiangji"] = "大醉解忧，然忧无解，唯忘耳……",
 }
 
-
-
-
-
-
-
-
-
---冢虎狼顾：王凌、司马师、曹爽
 
 local wangling = General(extension, "tymou__wangling", "wei", 4)
 local jichouw_distribution = fk.CreateActiveSkill{
@@ -1630,268 +1758,7 @@ Fk:loadTranslationTable{
   ["~tymou__caoshuang"] = "我度太傅之意，不欲伤我兄弟耳……",
 }
 
-local jiangji = General(extension, "tymou__jiangji", "wei", 3)
-local shiju = fk.CreateActiveSkill{
-  name = "shiju",
-  anim_type = "support",
-  prompt = "#shiju_self-active",
-  card_num = 1,
-  target_num = 0,
-  can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isNude()
-  end,
-  card_filter = function(self, to_select, selected)
-    return #selected == 0
-  end,
-  target_filter = Util.FalseFunc,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-
-    local id = effect.cards[1]
-    if room:getCardArea(id) == Card.PlayerEquip then
-      room:moveCardTo(effect.cards, Player.Hand, player, fk.ReasonGive, self.name, nil, false, player.id)
-    end
-    if player.dead or room:getCardArea(id) ~= Card.PlayerHand or room:getCardOwner(id) ~= player then return end
-    local card = Fk:getCardById(id)
-    if card.type ~= Card.TypeEquip then return end
-    if
-      not (player:canUseTo(card, player) and
-      room:askForSkillInvoke(player, self.name, nil, "#shiju_self-use:::" .. card:toLogString()))
-    then
-      return
-    end
-    local no_draw = table.every(player:getCardIds(Player.Equip), function (cid)
-      return Fk:getCardById(cid).sub_type ~= card.sub_type
-    end)
-    room:useCard({
-      from = player.id,
-      tos = {{ player.id }},
-      card = card,
-    })
-    if player:isAlive() then
-      local x = #player:getCardIds(Player.Equip)
-      if x > 0 then
-        x = x + player:getMark("shiju-turn")
-        room:setPlayerMark(player, "shiju-turn", x)
-        room:setPlayerMark(player, "@shiju-turn", "+" .. tostring(x))
-      end
-    end
-    if not no_draw and player:isAlive() then
-      room:drawCards(player, 2, self.name)
-      room:drawCards(player, 2, self.name)
-    end
-  end,
-}
-local shijuTrigger = fk.CreateTriggerSkill{
-  name = "#shiju_trigger",
-
-  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
-  can_refresh = function(self, event, target, player, data)
-    if event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == shiju
-    elseif event == fk.BuryVictim then
-      return target:hasSkill(shiju, true, true)
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if table.every(room.alive_players, function(p) return not p:hasSkill(shiju, true) or p == player end) then
-      if player:hasSkill("shiju&", true, true) then
-        room:handleAddLoseSkills(player, "-shiju&", nil, false, true)
-      end
-    else
-      if not player:hasSkill("shiju&", true, true) then
-        room:handleAddLoseSkills(player, "shiju&", nil, false, true)
-      end
-    end
-  end,
-}
-local shiju_active = fk.CreateActiveSkill{
-  name = "shiju&",
-  anim_type = "support",
-  prompt = "#shiju-active",
-  card_num = 1,
-  target_num = 1,
-  can_use = function(self, player)
-    local targetRecorded = U.getMark(player, "shiju_targets-phase")
-    return table.find(Fk:currentRoom().alive_players, function(p)
-      return p ~= player and p:hasSkill(shiju) and not table.contains(targetRecorded, p.id)
-    end)
-  end,
-  card_filter = function(self, to_select, selected)
-    return #selected == 0
-  end,
-  target_filter = function(self, to_select, selected)
-    return #selected == 0 and to_select ~= Self.id and Fk:currentRoom():getPlayerById(to_select):hasSkill(shiju) and
-    not table.contains(U.getMark(Self, "shiju_targets-phase"), to_select)
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    target:broadcastSkillInvoke("shiju")
-    local targetRecorded = U.getMark(player, "shiju_targets-phase")
-    table.insertIfNeed(targetRecorded, target.id)
-    room:setPlayerMark(player, "shiju_targets-phase", targetRecorded)
-    local id = effect.cards[1]
-    room:moveCardTo(effect.cards, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
-    if target.dead or room:getCardArea(id) ~= Card.PlayerHand or room:getCardOwner(id) ~= target then return end
-    local card = Fk:getCardById(id)
-    if card.type ~= Card.TypeEquip then return end
-    if not (target:canUseTo(card, target) and room:askForSkillInvoke(target, "shiju", nil, "#shiju-use:"..player.id.."::"..card:toLogString())) then return end
-    local no_draw = table.every(target:getCardIds(Player.Equip), function (cid)
-      return Fk:getCardById(cid).sub_type ~= card.sub_type
-    end)
-    room:useCard({
-      from = target.id,
-      tos = {{target.id}},
-      card = card,
-    })
-    if not player.dead and not target.dead then
-      local x = #target:getCardIds(Player.Equip)
-      if x > 0 then
-        x = x + player:getMark("shiju-turn")
-        room:setPlayerMark(player, "shiju-turn", x)
-        room:setPlayerMark(player, "@shiju-turn", "+" .. tostring(x))
-      end
-    end
-    if no_draw then return end
-    if not target.dead then
-      room:drawCards(target, 2, self.name)
-    end
-    if not player.dead then
-      room:drawCards(player, 2, self.name)
-    end
-  end,
-}
-local shiju_attackrange = fk.CreateAttackRangeSkill{
-  name = "#shiju_attackrange",
-  correct_func = function (self, from, to)
-    return from:getMark("shiju-turn")
-  end,
-}
-local yingshij = fk.CreateTriggerSkill{
-  name = "yingshij",
-  anim_type = "offensive",
-  events = {fk.TargetSpecified},
-  can_trigger = function(self, event, target, player, data)
-    return
-      target == player and
-      player:hasSkill(self) and
-      player:getMark("yingshij_nullified-turn") == 0 and
-      data.firstTarget and
-      data.card:isCommonTrick() and
-      not table.contains(data.card.skillNames, self.name) and
-      table.find(AimGroup:getAllTargets(data.tos), function(pId) return player.room:getPlayerById(pId):isAlive() end)
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    local targets = AimGroup:getAllTargets(data.tos)
-    if #targets == 1 then
-      if room:askForSkillInvoke(player, self.name, nil, "#yingshij-invoke::" .. targets[1]) then
-        room:doIndicate(player.id, targets)
-        self.cost_data = targets
-        return true
-      end
-    else
-      targets = room:askForChoosePlayers(player, targets, 1, 1, "#yingshij-choose", self.name, true)
-      if #targets > 0 then
-        self.cost_data = targets
-        return true
-      end
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local to = room:getPlayerById(self.cost_data[1])
-    local equipNum = #player:getCardIds(Player.Equip)
-    if equipNum > 0 and #room:askForDiscard(to, equipNum, equipNum, true, self.name, true, ".",
-      "#yingshij-discard:" .. player.id .. "::" .. tostring(equipNum) .. ":" .. data.card:toLogString()) > 0 then
-      room:setPlayerMark(player, "yingshij_nullified-turn", 1)
-    else
-      data.extra_data = data.extra_data or {}
-      data.extra_data.yingshij = {
-        from = player.id,
-        to = to.id,
-        subTargets = data.subTargets
-      }
-    end
-  end,
-}
-local yingshij_delay = fk.CreateTriggerSkill{
-  name = "#yingshij_delay",
-  mute = true,
-  events = {fk.CardUseFinished},
-  can_trigger = function(self, event, target, player, data)
-    if data.extra_data and data.extra_data.yingshij and not player.dead then
-      local use = table.simpleClone(data.extra_data.yingshij)
-      if use.from == player.id then
-        local card = Fk:cloneCard(data.card.name)
-        card.skillName = "yingshij"
-        if player:prohibitUse(card) then return false end
-        use.card = card
-        local room = player.room
-        local to = room:getPlayerById(use.to)
-        if not to.dead and U.canTransferTarget(to, use, false) then
-          local tos = {use.to}
-          if use.subTargets then
-            table.insertTable(tos, use.subTargets)
-          end
-          self.cost_data = {
-            from = player.id,
-            tos = table.map(tos, function(pid) return { pid } end),
-            card = card,
-            extraUse = true
-          }
-          return true
-        end
-      end
-    end
-  end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
-    player.room:useCard(table.simpleClone(self.cost_data))
-  end,
-}
-Fk:addSkill(shiju_active)
-shiju:addRelatedSkill(shijuTrigger)
-shiju:addRelatedSkill(shiju_attackrange)
-yingshij:addRelatedSkill(yingshij_delay)
-jiangji:addSkill(shiju)
-jiangji:addSkill(yingshij)
-Fk:loadTranslationTable{
-  ["tymou__jiangji"] = "谋蒋济",
-  ["#tymou__jiangji"] = "策论万机",
-  ["illustrator:tymou__jiangji"] = "错落宇宙",
-  ["designer:tymou__jiangji"] = "坑坑",
-
-  ["shiju"] = "势举",
-  [":shiju"] = "任意角色的出牌阶段限一次，其可以将一张牌交给你（若该角色为你，则改为你选择你的一张牌，若此牌不为手牌，则将此牌移入你的手牌），" ..
-  "若此牌为装备牌，你可以使用之，令其攻击范围于此回合内+X（X为你装备区里的牌数），"..
-  "若你于使用此牌之前的装备区里有与此牌副类别相同的牌，你与其各摸两张牌。",
-  ["yingshij"] = "应时",
-  [":yingshij"] = "当你不因此技能使用普通锦囊牌指定第一个目标后，你可以令一名目标角色选择一项："..
-  "1.当此牌结算后，你视为对其使用相同牌名的牌；2.弃置X张牌（X为你装备区里的牌数），然后此技能本回合失效。",
-
-  ["shiju&"] = "势举",
-  [":shiju&"] = "出牌阶段限一次，你可以将一张牌交给谋蒋济。",
-  ["#shiju_self-active"] = "势举：你可以选择你的一张牌，若此牌为装备牌则使用之并获得收益",
-  ["#shiju_self-use"] = "势举：你可以使用%arg，令你增加攻击范围",
-  ["#shiju-active"] = "发动 势举，选择一张牌交给一名拥有“势举”的角色",
-  ["#shiju-use"] = "势举：你可以使用%arg，令%src增加攻击范围",
-  ["@shiju-turn"] = "势举范围",
-  ["#yingshij-invoke"] = "是否对%dest发动 应时",
-  ["#yingshij-choose"] = "是否发动 应时，选择一名目标角色",
-  ["#yingshij-discard"] = "应时：弃置%arg张牌，令%src的“应时”本回合失效，或者取消令此牌对你额外结算一次",
-  ["#yingshij_delay"] = "应时",
-
-  ["$shiju1"] = "借力为己用，可攀青云直上。",
-  ["$shiju2"] = "应势而动，事半而功倍。",
-  ["$yingshij1"] = "今君失道寡助，何不审时以降？",
-  ["$yingshij2"] = "君既掷刀于地，可保富贵无虞。",
-  ["~tymou__jiangji"] = "大醉解忧，然忧无解，唯忘耳……",
-}
-
---子敬邀刀：诸葛瑾
+--子敬邀刀：诸葛瑾、关平
 
 local zhugejin = General(extension, "tymou__zhugejin", "wu", 3)
 local zijin = fk.CreateTriggerSkill{
@@ -2548,6 +2415,118 @@ Fk:loadTranslationTable{
   ["$kangyong1"] = "此猛士之血，其与醇酒孰烈乎？",
   ["$kangyong2"] = "歃血为誓，城在则人在！",
   ["~tymou__dianwei"] = "主公无恙，韦虽死犹生……",
+}
+
+--周郎将计：程昱
+local chengyu = General(extension, "tymou__chengyu", "wei", 3)
+local shizha = fk.CreateTriggerSkill{
+  name = "shizha",
+  anim_type = "control",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and target ~= player and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 then
+      local room = player.room
+      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
+      if turn_event == nil then return false end
+      local changehp_event_id = 1
+      room.logic:getEventsByRule(GameEvent.ChangeHp, 1, function (e)
+        if e.data[1] == target and e.data[2] ~= 0 then
+          changehp_event_id = e.end_id
+          return true
+        end
+      end, turn_event.id)
+      if changehp_event_id == 1 then return false end
+      local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
+      if use_event == nil then return false end
+      local use_event_id = 1
+      room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
+        if e.data[1].from == target.id then
+          use_event_id = e.id
+        end
+      end, changehp_event_id)
+      return use_event_id == use_event.id
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#shizha-invoke::"..target.id..":"..data.card:toLogString())
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {target.id})
+    data.tos = {}
+    room:sendLog{
+      type = "#CardNullifiedBySkill",
+      from = target.id,
+      arg = self.name,
+      arg2 = data.card:toLogString(),
+    }
+    if room:getCardArea(data.card) == Card.Processing then
+      room:moveCardTo(data.card, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
+    end
+  end,
+}
+local gaojian = fk.CreateTriggerSkill{
+  name = "gaojian",
+  anim_type = "support",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.card:isCommonTrick() and player.phase == Player.Play and
+      (not data.card:isVirtual() or data.card.subcards) and #player.room.alive_players > 1
+  end,
+  on_cost = function (self,event, target, player, data)
+    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+      "#gaojian-choose", self.name, false)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local cards = {}
+    for i = 1, 5, 1 do
+      local card = room:getNCards(1)
+      table.insert(cards, card[1])
+      room:moveCardTo(card, Card.Processing, nil, fk.ReasonJustMove, self.name, nil, true, to.id)
+      if Fk:getCardById(card[1]).type == Card.TypeTrick then
+        break
+      end
+    end
+    local yes = false
+    if Fk:getCardById(cards[#cards]).type == Card.TypeTrick then
+      local card = cards[#cards]
+      if U.askForUseRealCard(room, to, {card}, ".", self.name, "#gaojian-use:::"..Fk:getCardById(card):toLogString(),
+        {expand_pile = {card}, extraUse = true}) then
+        yes = true
+      end
+    end
+    if not yes then
+      local results = room:askForArrangeCards(to, self.name, {cards, to:getCardIds("h"), "gaojian", "hand_card"},
+        "#gaojian-exchange")
+      if #results > 0 then
+        U.swapCardsWithPile(to, results[1], results[2], self.name, "Top")
+      end
+    end
+    U.clearRemainCards(room, cards, self.name)
+  end,
+}
+chengyu:addSkill(shizha)
+chengyu:addSkill(gaojian)
+Fk:loadTranslationTable{
+  ["tymou__chengyu"] = "谋程昱",
+  ["#tymou__chengyu"] = "沐风知秋",
+  ["illustrator:tymou__chengyu"] = "",
+
+  ["shizha"] = "识诈",
+  [":shizha"] = "每回合限一次，其他角色使用牌时，若此牌是其本回合体力变化后使用的第一张牌，你可令此牌无效并获得此牌。",
+  ["gaojian"] = "告谏",
+  [":gaojian"] = "当你于出牌阶段使用锦囊牌结算完毕进入弃牌堆时，你可以选择一名其他角色，其依次展示牌堆顶的牌直到出现锦囊牌（至多五张），"..
+  "然后其选择一项：1.使用此牌；2.将任意张手牌与等量展示牌交换。",
+  ["#shizha-invoke"] = "识诈：是否令 %dest 使用的%arg无效并获得之？",
+  ["#gaojian-choose"] = "告谏：选择一名角色，其展示牌堆顶牌，使用其中的锦囊牌或用手牌交换",
+  ["#gaojian-use"] = "告谏：使用%arg，或点“取消”将任意张手牌与等量展示牌交换",
+  ["#gaojian-exchange"] = "告谏：将任意张手牌与等量展示牌交换",
 }
 
 --奇佐论胜：郭嘉、沮授

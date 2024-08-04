@@ -3193,7 +3193,7 @@ Fk:loadTranslationTable{
   ["zhugejing"] = "诸葛京",
   ["#zhugejing"] = "武侯遗秀",
   --["designer:zhugejing"] = "",
-  ["illustrator:zhugejing"] = "",
+  --["illustrator:zhugejing"] = "",
 
   ["yanzuo"] = "研作",
   [":yanzuo"] = "出牌阶段限一次，你可以将一张基本牌或普通锦囊牌置于武将牌上，然后视为使用一张“研作”牌。",

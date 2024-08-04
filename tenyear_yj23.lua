@@ -640,6 +640,7 @@ Fk:loadTranslationTable{
   ["xukun"] = "徐琨",
   ["#xukun"] = "平虏击逆",
   ["designer:xukun"] = "卤香蛋2",
+  ["illustrator:xukun"] = "君桓文化",
   ["fazhu"] = "筏铸",
   [":fazhu"] = "准备阶段，你可以重铸你区域内任意张非伤害牌，然后将因此获得的牌交给至多等量名角色各一张，以此法获得牌的角色可以依次使用一张"..
   "【杀】（无距离限制）。",

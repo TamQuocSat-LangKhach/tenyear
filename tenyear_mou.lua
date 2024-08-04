@@ -843,7 +843,7 @@ local shiju = fk.CreateActiveSkill{
   card_num = 1,
   target_num = 0,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isNude()
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0
@@ -851,10 +851,9 @@ local shiju = fk.CreateActiveSkill{
   target_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-
     local id = effect.cards[1]
     if room:getCardArea(id) == Card.PlayerEquip then
-      room:moveCardTo(effect.cards, Player.Hand, player, fk.ReasonGive, self.name, nil, false, player.id)
+      room:moveCardTo(effect.cards, Player.Hand, player, fk.ReasonPrey, self.name, nil, false, player.id)
     end
     if player.dead or room:getCardArea(id) ~= Card.PlayerHand or room:getCardOwner(id) ~= player then return end
     local card = Fk:getCardById(id)
@@ -1070,12 +1069,12 @@ Fk:loadTranslationTable{
   ["designer:tymou__jiangji"] = "坑坑",
 
   ["shiju"] = "势举",
-  [":shiju"] = "任意角色的出牌阶段限一次，其可以将一张牌交给你（若该角色为你，则改为你选择你的一张牌，若此牌不为手牌，则将此牌移入你的手牌），" ..
-  "若此牌为装备牌，你可以使用之，令其攻击范围于此回合内+X（X为你装备区里的牌数），"..
+  [":shiju"] = "一名角色的出牌阶段限一次，其可以将一张牌交给你（若其为你，则改为你选择你的一张牌，若此牌为你装备区里的牌，你获得之），" ..
+  "若此牌为装备牌，你可以使用之，并令其攻击范围于此回合内+X（X为你装备区里的牌数），"..
   "若你于使用此牌之前的装备区里有与此牌副类别相同的牌，你与其各摸两张牌。",
   ["yingshij"] = "应时",
-  [":yingshij"] = "当你不因此技能使用普通锦囊牌指定第一个目标后，你可以令一名目标角色选择一项："..
-  "1.当此牌结算后，你视为对其使用相同牌名的牌；2.弃置X张牌（X为你装备区里的牌数），然后此技能本回合失效。",
+  [":yingshij"] = "当你不因此技能使用普通锦囊牌指定第一个目标后，你可以令一名目标角色选择："..
+  "1.当此牌结算后，你视为对其使用相同牌名的牌；2.弃置X张牌（X为你装备区里的牌数），然后此技能于当前回合内无效。",
 
   ["shiju&"] = "势举",
   [":shiju&"] = "出牌阶段限一次，你可以将一张牌交给谋蒋济。",
@@ -2516,7 +2515,7 @@ chengyu:addSkill(gaojian)
 Fk:loadTranslationTable{
   ["tymou__chengyu"] = "谋程昱",
   ["#tymou__chengyu"] = "沐风知秋",
-  ["illustrator:tymou__chengyu"] = "",
+  ["illustrator:tymou__chengyu"] = "匠人绘",
 
   ["shizha"] = "识诈",
   [":shizha"] = "每回合限一次，其他角色使用牌时，若此牌是其本回合体力变化后使用的第一张牌，你可令此牌无效并获得此牌。",
@@ -2527,6 +2526,12 @@ Fk:loadTranslationTable{
   ["#gaojian-choose"] = "告谏：选择一名角色，其展示牌堆顶牌，使用其中的锦囊牌或用手牌交换",
   ["#gaojian-use"] = "告谏：使用%arg，或点“取消”将任意张手牌与等量展示牌交换",
   ["#gaojian-exchange"] = "告谏：将任意张手牌与等量展示牌交换",
+
+  ["$shizha1"] = "不好，江东鼠辈欲趁东风来袭！",
+  ["$shizha2"] = "江上起东风，恐战局生变。",
+  ["$gaojian1"] = "江东不乏能人，主公不可小觑。",
+  ["$gaojian2"] = "狮子搏兔，亦需尽其全力。",
+  ["~tymou__chengyu"] = "乌鹊南飞，何枝可依呀……",
 }
 
 --奇佐论胜：郭嘉、沮授
@@ -2694,8 +2699,8 @@ jvshou:addSkill(zuojun)
 jvshou:addSkill(muwang)
 Fk:loadTranslationTable{
   ["tymou__jvshou"] = "谋沮授",
-  ["#tymou__jvshou"] = "",
-  ["illustrator:tymou__jvshou"] = "",
+  --["#tymou__jvshou"] = "",
+  --["illustrator:tymou__jvshou"] = "",
 
   ["zuojun"] = "佐军",
   [":zuojun"] = "出牌阶段限一次，你可选择一名角色，其摸三张牌并选择一项：1.这些牌无法使用且不计入手牌上限，直到其下回合结束；2.失去1点体力，"..

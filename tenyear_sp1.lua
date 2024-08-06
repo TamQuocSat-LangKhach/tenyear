@@ -6295,6 +6295,7 @@ local tongguan = fk.CreateTriggerSkill{
     local i = table.indexOf(tg_list, choice)
     record[i] = record[i] - 1
     room:setTag("tongguan_record", record)
+    U.setPrivateMark(target, ":tongguan", {choice}, {player.id})
   end,
 }
 local mengjiez = fk.CreateTriggerSkill{
@@ -6413,9 +6414,7 @@ local mengjiez = fk.CreateTriggerSkill{
         end
       end
     end
-    if target:getMark("@[:]tongguan") == 0 then
-      room:setPlayerMark(target, "@[:]tongguan", target:getMark("tongguan_info"))
-    end
+    U.showPrivateMark(target, ":tongguan")
   end,
 }
 zhaozhi:addSkill(tongguan)
@@ -6435,7 +6434,7 @@ Fk:loadTranslationTable{
   "果决：弃置或获得其他角色的牌；弃置一名其他角色区域内的至多两张牌<br>"..
   "仁智：交给其他角色牌；令一名其他角色将手牌摸至体力上限（至多摸五张）",
   ["#tongguan-choice"] = "统观：为 %dest 选择一项属性（每种属性至多被选择两次）",
-  ["@[:]tongguan"] = "统观",
+  ["@[private]:tongguan"] = "统观",
   ["tg_wuyong"] = "武勇",
   [":tg_wuyong"] = "回合结束时，若其本回合造成过伤害，你对一名其他角色造成1点伤害",
   ["tg_gangying"] = "刚硬",

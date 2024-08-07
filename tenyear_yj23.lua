@@ -654,7 +654,7 @@ Fk:loadTranslationTable{
   ["~xukun"] = "何处……射来的流矢……",
 }
 
-local simafu = General(extension, "ty__simafu", "wei", 3)
+local simafu = General(extension, "ty__simafu", "wei", 4)
 simafu.subkingdom = "jin"
 local beiyu = fk.CreateActiveSkill{
   name = "beiyu",

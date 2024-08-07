@@ -5798,9 +5798,9 @@ local yunzheng_invalidity = fk.CreateInvaliditySkill {
 local huoxin = fk.CreateTriggerSkill{
   name = "mu__huoxin",
   anim_type = "control",
-  events = {fk.TargetSpecified},
+  events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.firstTarget and data.card.type ~= Card.TypeEquip and
+    return target == player and player:hasSkill(self) and data.card.type ~= Card.TypeEquip and
     table.find(player.room.alive_players, function (p)
       return p ~= player and not p:isKongcheng()
     end)
@@ -5847,7 +5847,7 @@ Fk:loadTranslationTable{
   ["yunzheng"] = "韵筝",
   [":yunzheng"] = "锁定技，游戏开始时，你的初始手牌增加“筝”标记且不计入手牌上限。手牌区里有“筝”的其他角色的不带“锁定技”标签的技能无效。",
   ["mu__huoxin"] = "惑心",
-  [":mu__huoxin"] = "当你使用不为装备牌的牌指定第一个目标后，你可以展示一名其他角色的一张手牌并标记为“筝”，"..
+  [":mu__huoxin"] = "当你使用不为装备牌的牌时，你可以展示一名其他角色的一张手牌并标记为“筝”，"..
   "若此牌与你使用的牌花色相同或已被标记，你可以获得之。",
 
   ["@yunzheng"] = "筝",

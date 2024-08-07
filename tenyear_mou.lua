@@ -2552,44 +2552,55 @@ local zuojun = fk.CreateActiveSkill{
   end,
   on_use = function(self, room, effect)
     local target = room:getPlayerById(effect.tos[1])
-    local cards = target:drawCards(3, self.name)
+    target:drawCards(3, self.name, "top", "zuojun-inhand")
+    if target.dead then return end
     local choice = room:askForChoice(target, {"zuojun1", "zuojun2"}, self.name)
     if choice == "zuojun1" then
-      cards = table.filter(cards, function (id)
-        return table.contains(target:getCardIds("h"), id)
+      local card
+      local cards = table.filter(target:getCardIds(Player.Hand), function (id)
+        card = Fk:getCardById(id)
+        if card:getMark("zuojun-inhand") > 0 then
+          room:setCardMark(card, "zuojun-inhand", 0)
+          room:setCardMark(card, "@@zuojun_prohibit-inhand", 1)
+          return true
+        end
       end)
-      local mark = U.getMark(target, self.name)
-      table.insertTableIfNeed(mark, cards)
-      room:setPlayerMark(target, self.name, mark)
-      for _, id in ipairs(mark) do
-        room:setCardMark(Fk:getCardById(id), "@@zuojun-inhand", 1)
+      if #cards > 0 then
+        local mark = U.getMark(target, "zuojun_prohibit")
+        table.insertTableIfNeed(mark, cards)
+        room:setPlayerMark(target, "zuojun_prohibit", mark)
+        if target.phase ~= Player.NotActive then
+          mark = U.getMark(target, "zuojun_noclean-turn")
+          table.insertTableIfNeed(mark, cards)
+          room:setPlayerMark(target, "zuojun_noclean-turn", mark)
+        end
       end
     else
       room:loseHp(target, 1, self.name)
-      if not target.dead then
-        cards = table.filter(cards, function (id)
-          return table.contains(target:getCardIds("h"), id)
+      if target.dead then return end
+      target:drawCards(1, self.name, "top", "zuojun-inhand")
+      if target.dead then return end
+      local card
+      local cards = table.filter(target:getCardIds(Player.Hand), function (id)
+        card = Fk:getCardById(id)
+        if card:getMark("zuojun-inhand") > 0 then
+          room:setCardMark(card, "zuojun-inhand", 0)
+          room:setCardMark(card, "@@zuojun-inhand", 1)
+          return true
+        end
+      end)
+      if #cards == 0 then return false end
+      while U.askForUseRealCard(room, target, cards, ".", self.name, "#zuojun-use", {extraUse = true, bypass_times = true}) do
+        if target.dead then return end
+        cards = table.filter(target:getCardIds(Player.Hand), function (id)
+          return Fk:getCardById(id):getMark("@@zuojun-inhand") > 0
         end)
-        local card = target:drawCards(1, self.name)
-        if table.contains(target:getCardIds("h"), card[1]) then
-          table.insert(cards, card[1])
-        end
-        while not target.dead and #cards > 0 do
-          local use = U.askForUseRealCard(room, target, cards, ".", self.name, "#zuojun-use",
-            {extraUse = true}, true)
-          if use then
-            table.removeOne(cards, use.card:getEffectiveId())
-            room:useCard(use)
-          else
-            break
-          end
-          cards = table.filter(cards, function (id)
-            return table.contains(target:getCardIds("h"), id)
-          end)
-        end
+        if #cards == 0 then return end
       end
       cards = table.filter(cards, function (id)
-        return table.contains(target:getCardIds("h"), id)
+        card = Fk:getCardById(id)
+        room:setCardMark(card, "@@zuojun-inhand", 1)
+        return not target:prohibitDiscard(card)
       end)
       if #cards > 0 then
         room:throwCard(cards, self.name, target, target)
@@ -2600,13 +2611,20 @@ local zuojun = fk.CreateActiveSkill{
 local zuojun_prohibit = fk.CreateProhibitSkill{
   name = "#zuojun_prohibit",
   prohibit_use = function(self, player, card)
-    return card and card:getMark("@@zuojun-inhand") > 0
+    local mark = U.getMark(player, "zuojun_prohibit")
+    if #mark > 0 then
+      local cards = card:isVirtual() and card.subcards or {card.id}
+      return table.find(cards, function(id) return table.contains(mark, id) end)
+    end
+  end,
+  prohibit_discard = function(self, player, card)
+    return table.contains(U.getMark(player, "zuojun_prohibit"), card.id)
   end,
 }
 local zuojun_maxcards = fk.CreateMaxCardsSkill{
   name = "#zuojun_maxcards",
   exclude_from = function(self, player, card)
-    return card:getMark("@@zuojun-inhand") > 0
+    return table.contains(U.getMark(player, "zuojun_prohibit"), card.id)
   end,
 }
 local zuojun_trigger = fk.CreateTriggerSkill{
@@ -2614,14 +2632,19 @@ local zuojun_trigger = fk.CreateTriggerSkill{
 
   refresh_events = {fk.AfterTurnEnd},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:getMark("zuojun") ~= 0
+    return target == player and player:getMark("zuojun_prohibit") ~= player:getMark("zuojun_noclean-turn")
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    for _, id in ipairs(U.getMark(player, "zuojun")) do
-      room:setCardMark(Fk:getCardById(id), "@@zuojun-inhand", 0)
+    local mark = U.getMark(player, "zuojun_noclean-turn")
+    local card
+    for _, id in ipairs(player:getCardIds(Player.Hand)) do
+      card = Fk:getCardById(id)
+      if card:getMark("@@zuojun_prohibit-inhand") > 0 and not table.contains(mark, id) then
+        room:setCardMark(card, "@@zuojun_prohibit-inhand", 0)
+      end
     end
-    room:setPlayerMark(player, "zuojun", 0)
+    room:setPlayerMark(player, "zuojun_prohibit", player:getMark("zuojun_noclean-turn"))
   end,
 }
 local muwang = fk.CreateTriggerSkill{
@@ -2630,49 +2653,56 @@ local muwang = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) then
-      if player:getMark("muwang-turn") == 0 then
-        for _, move in ipairs(data) do
-          if move.toArea == Card.DiscardPile then
+    if not player:hasSkill(self) then return false end
+    local room = player.room
+    if player:usedSkillTimes(self.name) == 0 then
+      local cards = {}
+      local card
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile then
+          if move.from == player.id then
             for _, info in ipairs(move.moveInfo) do
-              if Fk:getCardById(info.cardId).type == Card.TypeBasic or Fk:getCardById(info.cardId):isCommonTrick() then
-                local room = player.room
-                local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
-                if turn_event == nil then return false end
-                if move.from == player.id then
-                  if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
-                    self.cost_data = info.cardId
-                    return true
+              card = Fk:getCardById(info.cardId, true)
+              if (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip) and
+              (card.type == Card.TypeBasic or card:isCommonTrick()) then
+                table.insertIfNeed(cards, info.cardId)
+              end
+            end
+          elseif move.from == nil and move.moveReason == fk.ReasonUse then
+            local move_event = room.logic:getCurrentEvent()
+            local parent_event = move_event.parent
+            if parent_event ~= nil and (parent_event.event == GameEvent.UseCard or parent_event.event == GameEvent.RespondCard) then
+              local parent_data = parent_event.data[1]
+              if parent_data.from == player.id then
+                local card_ids = room:getSubcardsByRule(parent_data.card)
+                for _, info in ipairs(move.moveInfo) do
+                  card = Fk:getCardById(info.cardId, true)
+                  if table.contains(card_ids, info.cardId) and (card.type == Card.TypeBasic or card:isCommonTrick()) then
+                    table.insertIfNeed(cards, info.cardId)
                   end
-                else
-                  self.cost_data = -1
-                  room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
-                    for _, m in ipairs(e.data) do
-                      if m.from == player.id then
-                        for _, i in ipairs(m.moveInfo) do
-                          if i.cardId == info.cardId and (i.fromArea == Card.PlayerHand or i.fromArea == Card.PlayerEquip) then
-                            --一个人不能两次踏进同一条河流~
-                            self.cost_data = info.cardId
-                            return true
-                          end
-                        end
-                      end
-                    end
-                  end, Player.HistoryTurn)
-                  return self.cost_data ~= -1
                 end
               end
             end
           end
         end
-      else
-        for _, move in ipairs(data) do
-          if move.from == player.id then
-            for _, info in ipairs(move.moveInfo) do
-              if (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip) and
-                info.cardId == player:getMark("muwang-turn") then
-                return true
-              end
+      end
+      cards = table.filter(cards, function (id)
+        return room:getCardArea(id) == Card.DiscardPile
+      end)
+      if #cards > 0 then
+        self.cost_data = cards
+        return true
+      end
+    else
+      local mark = U.getMark(player, "muwang-turn")
+      if #mark == 0 then return false end
+      for _, move in ipairs(data) do
+        if move.from == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip) and
+            table.contains(mark, info.cardId) then
+              self.cost_data = {}
+              return true
             end
           end
         end
@@ -2682,13 +2712,46 @@ local muwang = fk.CreateTriggerSkill{
   on_use = function (self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(self.name)
-    if player:getMark("muwang-turn") == 0 then
+    if #self.cost_data > 0 then
       room:notifySkillInvoked(player, self.name, "drawcard")
-      room:setPlayerMark(player, "muwang-turn", self.cost_data)
-      room:moveCardTo(self.cost_data, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id, "@@muwang-turn")
+      room:moveCardTo(table.random(self.cost_data), Card.PlayerHand, player, fk.ReasonJustMove, self.name,
+      nil, true, player.id, "@@muwang-inhand-turn")
     else
       room:notifySkillInvoked(player, self.name, "negative")
+      local mark = U.getMark(player, "muwang-turn")
+      for _, move in ipairs(data) do
+        if move.from == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip) then
+              table.removeOne(mark, info.cardId)
+            end
+          end
+        end
+      end
+      room:setPlayerMark(player, "muwang-turn", mark)
       room:askForDiscard(player, 1, 1, true, self.name, false)
+    end
+  end,
+
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = Util.TrueFunc,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    local marked = {}
+    for _, move in ipairs(data) do
+      if move.to == player.id and move.toArea == Card.PlayerHand and move.skillName == self.name then
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player then
+            table.insert(marked, id)
+          end
+        end
+      end
+    end
+    if #marked > 0 then
+      local mark = U.getMark(player, "muwang-turn")
+      table.insertTableIfNeed(mark, marked)
+      room:setPlayerMark(player, "muwang-turn", mark)
     end
   end,
 }
@@ -2703,16 +2766,19 @@ Fk:loadTranslationTable{
   --["illustrator:tymou__jvshou"] = "",
 
   ["zuojun"] = "佐军",
-  [":zuojun"] = "出牌阶段限一次，你可选择一名角色，其摸三张牌并选择一项：1.这些牌无法使用且不计入手牌上限，直到其下回合结束；2.失去1点体力，"..
-  "再摸一张牌，然后使用其中任意张牌，弃置剩余未使用的牌。",
+  [":zuojun"] = "出牌阶段限一次，你可以选择一名角色，其摸三张牌并选择："..
+  "1.直到其下个回合结束之前，其不能使用或弃置这些牌且这些牌不计入其手牌上限；"..
+  "2.失去1点体力，摸一张牌，依次可以使用以此法摸的牌，弃置以此法摸的牌。",
   ["muwang"] = "暮往",
-  [":muwang"] = "锁定技，当你每回合失去第一张基本牌或普通锦囊牌进入弃牌堆后，你获得之；当你本回合再次失去此牌后，弃置一张牌。",
+  [":muwang"] = "锁定技，当你的牌移至弃牌堆后，或由你使用、打出的牌移至弃牌堆后，若其中有基本牌或普通锦囊牌且你于当前回合内未发动过此技能，"..
+  "你获得其中的基本牌和普通锦囊牌中的随机一张。当你于此回合内失去以此法得到的牌后，你弃置一张牌。",
   ["#zuojun"] = "佐军：令一名角色摸三张牌，然后其执行后续效果",
+  ["@@zuojun_prohibit-inhand"] = "佐军",
   ["@@zuojun-inhand"] = "佐军",
   ["zuojun1"] = "这些牌无法使用且不计入手牌上限直到你下回合结束",
   ["zuojun2"] = "失去1点体力再摸一张牌，然后使用其中任意张，弃置剩余牌",
   ["#zuojun-use"] = "佐军：请使用这些牌，未使用的将被弃置",
-  ["@@muwang-turn"] = "暮往",
+  ["@@muwang-inhand-turn"] = "暮往",
 }
 
 return extension

@@ -5708,55 +5708,85 @@ local bizu = fk.CreateActiveSkill{
 local wuxie = fk.CreateTriggerSkill{
   name = "wuxie",
   anim_type = "control",
-  events = {fk.AfterCardsMove},
+  events = {fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 then
-      local ids = {}
-      local handcards = player:getCardIds(Player.Hand)
-      for _, move in ipairs(data) do
-        if move.to == player.id and move.toArea == Player.Hand then
-          for _, info in ipairs(move.moveInfo) do
-            local id = info.cardId
-            if Fk:getCardById(id).is_damage_card and table.contains(handcards, id) then
-              table.insert(ids, id)
-            end
-          end
-        end
-      end
-      if #ids > 0 then
-        self.cost_data = ids
-        return true
-      end
-    end
+    return player == target and player.phase == Player.Play and player:hasSkill(self)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local ids = self.cost_data
-    local tos, cards = room:askForChooseCardsAndPlayers(player, 1, 999,
-    table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, tostring(Exppattern{ id = ids }),
-    "#wuxie-cost", self.name, true, false)
-    if #tos > 0 and #cards > 0 then
-      self.cost_data = {tos, cards}
+    local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, 
+    "#wuxie-cost", self.name, true)
+    if #tos > 0  then
+      self.cost_data = tos
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local ret = self.cost_data
-    local to = room:getPlayerById(ret[1][1])
-    local cards = table.simpleClone(ret[2])
-    table.shuffle(cards)
-    room:moveCards{
-      ids = cards,
-      from = player.id,
-      toArea = Card.DrawPile,
-      moveReason = fk.ReasonJustMove,
-      skillName = self.name,
-      drawPilePosition = -1,
-      moveVisible = false,
-    }
-    if to:isAlive() then
-      room:askForDiscard(to, #cards, #cards, true, self.name, false)
+    local to = room:getPlayerById(self.cost_data[1])
+    local card
+    local cards = table.filter(player:getCardIds(Player.Hand), function (id)
+      card = Fk:getCardById(id)
+      return card.is_damage_card
+    end)
+    local x = #cards
+    if x > 0 then
+      table.shuffle(cards)
+      room:moveCards{
+        ids = cards,
+        from = player.id,
+        toArea = Card.DrawPile,
+        moveReason = fk.ReasonJustMove,
+        skillName = self.name,
+        drawPilePosition = -1,
+        moveVisible = false,
+      }
+    end
+    local y = 0
+    if not to.dead then
+      cards = table.filter(to:getCardIds(Player.Hand), function (id)
+        card = Fk:getCardById(id)
+        return card.is_damage_card
+      end)
+      y = #cards
+      if y > 0 then
+        table.shuffle(cards)
+        room:moveCards{
+          ids = cards,
+          from = to.id,
+          toArea = Card.DrawPile,
+          moveReason = fk.ReasonJustMove,
+          skillName = self.name,
+          drawPilePosition = -1,
+          moveVisible = false,
+        }
+      end
+    end
+    if player.dead then return false end
+    local targets = {}
+    if x > y then
+      if not player:isWounded() then return false end
+      targets = {player.id}
+    elseif x == y then
+      if player:isWounded() then
+        targets = {player.id}
+      end
+      if not to.dead and to:isWounded() then
+        table.insert(targets, to.id)
+      end
+      if #targets == 0 then return false end
+    else
+      if to.dead or not to:isWounded() then return false end
+      targets = {to.id}
+    end
+    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#wuxie-recover", self.name, true)
+    if #tos > 0 then
+      room:recover({
+        who = room:getPlayerById(tos[1]),
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      })
     end
   end,
 }
@@ -5772,11 +5802,13 @@ Fk:loadTranslationTable{
   [":bizu"] = "出牌阶段，你可以选择手牌数与你相等的所有角色，这些角色各摸一张牌，"..
   "若这些角色与你此前于此回合内发动此技能时选择的角色完全相同，此技能于此回合内无效。",
   ["wuxie"] = "无胁",
-  [":wuxie"] = "当你得到牌后，若你于当前回合内未发动过此技能，你可以将其中任意张伤害牌随机置于牌堆底并选择一名其他角色，其弃置等量的牌。",
+  [":wuxie"] = "出牌阶段结束时，你可以选择一名其他角色，你与其各将手牌区中的所有伤害类牌随机置于牌堆底，"..
+  "你可以令以此法失去牌较多的角色回复1点体力。",
 
   ["#bizu-active"] = "发动 庇族，令所有手牌数与你相同的角色各摸一张牌（未重复目标）",
   ["#bizu-active-last"] = "发动 庇族，令所有手牌数与你相同的角色各摸一张牌（技能无效）",
-  ["#wuxie-cost"] = "是否发动 无胁，选择任意张伤害牌放置在牌堆底，令一名其他角色弃置等量的牌",
+  ["#wuxie-cost"] = "是否发动 无胁，选择一名其他角色，将你与该角色手牌中的所有伤害牌放到牌堆底",
+  ["#wuxie-recover"] = "无胁：可以令一名角色回复1点体力",
 
 }
 

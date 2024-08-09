@@ -5677,7 +5677,7 @@ local lianhua = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.Damaged then
       local color = "black"
-      if table.contains({"lord", "loyalist"}, player.role) and table.contains({"lord", "loyalist"}, player.role) or
+      if table.contains({"lord", "loyalist"}, player.role) and table.contains({"lord", "loyalist"}, target.role) or
         (player.role == target.role) then
         color = "red"
       end
@@ -5691,7 +5691,7 @@ local lianhua = fk.CreateTriggerSkill{
         if player:getMark("lianhua-red") > player:getMark("lianhua-black") then
           pattern, skill = "ex_nihilo", "ex__guanxing"
         elseif player:getMark("lianhua-red") < player:getMark("lianhua-black") then
-          pattern, skill = "snatch", "zhiyan"
+          pattern, skill = "snatch", "ty_ex__zhiyan"
         elseif player:getMark("lianhua-red") == player:getMark("lianhua-black") then
           pattern, skill = "slash", "gongxin"
         end
@@ -5780,7 +5780,7 @@ gexuan:addSkill(lianhua)
 gexuan:addSkill(zhafu)
 gexuan:addRelatedSkill("ex__yingzi")
 gexuan:addRelatedSkill("ex__guanxing")
-gexuan:addRelatedSkill("zhiyan")
+gexuan:addRelatedSkill("ty_ex__zhiyan")
 gexuan:addRelatedSkill("gongxin")
 Fk:loadTranslationTable{
   ["gexuan"] = "葛玄",
@@ -5805,7 +5805,7 @@ Fk:loadTranslationTable{
   ["$zhafu1"] = "垂恩广救，慈悲在怀。",
   ["$zhafu2"] = "行符敕鬼，神变善易。",
   ["$ex__yingzi_gexuan"] = "仙人之姿，凡目岂见！",
-  ["$zhiyan_gexuan"] = "仙人之语，凡耳震聩！",
+  ["$ty_ex__zhiyan_gexuan"] = "仙人之语，凡耳震聩！",
   ["$gongxin_gexuan"] = "仙人之目，因果即现！",
   ["$ex__guanxing_gexuan"] = "仙人之栖，群星浩瀚！",
   ["~gexuan"] = "善变化，拙用身。",

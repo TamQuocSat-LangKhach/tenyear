@@ -5796,7 +5796,7 @@ Fk:loadTranslationTable{
   ["bianyue"] = "卞玥",
   ["#bianyue"] = "暮辉映族",
   --["designer:bianyue"] = "",
-  --["illustrator:bianyue"] = "",
+  ["illustrator:bianyue"] = "黯荧岛",
 
   ["bizu"] = "庇族",
   [":bizu"] = "出牌阶段，你可以选择手牌数与你相等的所有角色，这些角色各摸一张牌，"..
@@ -5810,6 +5810,11 @@ Fk:loadTranslationTable{
   ["#wuxie-cost"] = "是否发动 无胁，选择一名其他角色，将你与该角色手牌中的所有伤害牌放到牌堆底",
   ["#wuxie-recover"] = "无胁：可以令一名角色回复1点体力",
 
+  ["$bizu1"] = "花既繁于枝，当为众乔灌荫。",
+  ["$bizu2"] = "手执金麾伞，可为我族遮风挡雨。",
+  ["$wuxie1"] = "一个弱质女流，安能登辇拔剑？",
+  ["$wuxie2"] = "主上既亡，我当为生者计。",
+  ["~bianyue"] = "空怀悲怆之心，未有杀贼之力……",
 }
 
 

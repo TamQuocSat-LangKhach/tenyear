@@ -1449,6 +1449,7 @@ Fk:loadTranslationTable{
   ["liutan"] = "柳婒",
   ["#liutan"] = "维情所止",
   --["designer:liutan"] = "",
+  ["illustrator:liutan"] = "黯荧岛",
 
   ["jingyin"] = "经音",
   [":jingyin"] = "当一名角色于其回合外使用的【杀】移至弃牌堆后，若你于当前回合内未发动过此技能，"..
@@ -1460,6 +1461,12 @@ Fk:loadTranslationTable{
   ["#jingyin-card"] = "是否发动 经音，令一名角色获得%arg（其使用时无次数限制）",
   ["@@jingyin-inhand"] = "经音",
   ["#chixing-use"] = "迟行：你可以使用一张【杀】",
+
+  ["$jingyin1"] = "金柝越关山，唯送君于南。",
+  ["$jingyin2"] = "燕燕于飞，寒江照孤影。",
+  ["$chixing1"] = "孤鸿鸣晚林，泪垂大江流。",
+  ["$chixing2"] = "若路的尽头是离别，妾宁愿蹒跚一世。",
+  ["~liutan"] = "孤灯照长夜，羹熟唤何人？",
 }
 
 --高山仰止：王朗 刘徽

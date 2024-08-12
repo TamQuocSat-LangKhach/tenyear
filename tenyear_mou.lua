@@ -2668,7 +2668,7 @@ local muwang = fk.CreateTriggerSkill{
                 table.insertIfNeed(cards, info.cardId)
               end
             end
-          elseif move.from == nil and move.moveReason == fk.ReasonUse then
+          elseif move.from == nil and (move.moveReason == fk.ReasonUse or move.moveReason == fk.ReasonResonpse) then
             local move_event = room.logic:getCurrentEvent()
             local parent_event = move_event.parent
             if parent_event ~= nil and (parent_event.event == GameEvent.UseCard or parent_event.event == GameEvent.RespondCard) then

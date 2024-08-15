@@ -3125,14 +3125,26 @@ local yanzuo = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     player:addToPile(self.name, effect.cards, true, self.name, player.id)
     if player.dead or #player:getPile(self.name) == 0 then return end
-    local names = {}
-    for _, id in ipairs(player:getPile(self.name)) do
-      local card = Fk:getCardById(id)
-      if card.type == Card.TypeBasic or card:isCommonTrick() then
-        table.insertIfNeed(names, card.name)
+    -- local names = {}
+    -- for _, id in ipairs(player:getPile(self.name)) do
+    --   local card = Fk:getCardById(id)
+    --   if card.type == Card.TypeBasic or card:isCommonTrick() then
+    --     table.insertIfNeed(names, card.name)
+    --   end
+    -- end
+    -- U.askForPlayCard(room, player, names, nil, self.name, "#yanzuo-ask", false, true, false, true)
+    local cards = player:getPile("yanzuo")
+    if #cards > 0 then
+      local use = U.askForUseRealCard(room, player, cards, ".|.|.|yanzuo", self.name, "#yanzuo-ask", {expand_pile = "yanzuo", bypass_times = true}, true, false)
+      if use then
+        room:useCard{
+          card = Fk:cloneCard(use.card.name),
+          from = player.id,
+          tos = use.tos,
+          skillName = self.name
+        }
       end
     end
-    U.askForUseVirtualCard(room, player, names, nil, self.name, "#yanzuo-ask", false, false, true, false)
   end,
 }
 local zuyin = fk.CreateTriggerSkill{

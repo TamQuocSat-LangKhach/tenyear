@@ -3141,7 +3141,8 @@ local yanzuo = fk.CreateActiveSkill{
           card = Fk:cloneCard(use.card.name),
           from = player.id,
           tos = use.tos,
-          skillName = self.name
+          skillName = self.name,
+          extraUse = true
         }
       end
     end

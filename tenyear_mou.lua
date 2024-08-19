@@ -2536,6 +2536,292 @@ Fk:loadTranslationTable{
 
 --奇佐论胜：郭嘉、沮授
 
+local mouguojia = General(extension, "tymou__guojia", "wei", 3)
+Fk:loadTranslationTable{
+  ["tymou__guojia"] = "谋郭嘉",
+  ["#tymou__guojia"] = "翼谋奇佐",
+  -- ["illustrator:tymou__guojia"] = "匠人绘",
+  ["~tymou__guojia"] = "",
+}
+
+local xianmou = fk.CreateTriggerSkill{
+  name = "xianmou",
+  anim_type = "switch",
+  switch_skill_name = "xianmou",
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    return
+      player:hasSkill(self) and
+      #player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
+        for _, move in ipairs(e.data) do
+          if
+            move.from == player.id and
+            not (move.to == player.id and (move.toArea == Card.PlayerHand or move.toArea == Card.PlayerEquip))
+          then
+            return
+              table.find(
+                move.moveInfo,
+                function(info) return info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip end
+              ) ~= nil
+          end
+        end
+
+        return false
+      end, Player.HistoryTurn) > 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local sum = 0
+    room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
+      for _, move in ipairs(e.data) do
+        if
+          move.from == player.id and
+          not (move.to == player.id and (move.toArea == Card.PlayerHand or move.toArea == Card.PlayerEquip))
+        then
+          sum = sum + #table.filter(
+            move.moveInfo,
+            function(info) return info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip end
+          )
+
+          if sum > 4 then
+            return true
+          end
+        end
+      end
+
+      return false
+    end, Player.HistoryTurn)
+
+    if player:getSwitchSkillState(self.name) == fk.SwitchYang then
+      if not room:askForSkillInvoke(player, self.name, data, "#xianmou_yang-invoke:::" .. sum) then
+        return false
+      end
+
+      self.cost_data = sum
+    else
+      local targets = table.filter(room.alive_players, function(p) return not p:isKongcheng() end)
+      if #targets == 0 then
+        return false
+      end
+
+      local tos = room:askForChoosePlayers(
+        player,
+        table.map(targets, Util.IdMapper),
+        1,
+        1,
+        "#xianmou_yin-invoke:::" .. sum,
+        self.name
+      )
+      if #tos == 0 then
+        return false
+      end
+
+      self.cost_data = { tos[1], sum }
+    end
+    
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+
+    if player:getMark("xianmou_yiji") > 0 and player:hasSkill("ex__yiji") then
+      room:handleAddLoseSkills(player, "-ex__yiji")
+    end
+    setTYMouSwitchSkillState(player, "guojia", self.name)
+    if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
+      local ids = room:getNCards(5)
+      local sum = self.cost_data
+      local cards, choice = U.askforChooseCardsAndChoice(
+        player,
+        ids,
+        { "OK" },
+        self.name,
+        "#xianmou_yang-choose:::" .. sum,
+        { "Cancel" },
+        1,
+        sum
+      )
+
+      if choice == "Cancel" then
+        return false
+      end
+
+      room:obtainCard(player, cards, false, fk.ReasonPrey, player.id, self.name)
+      if #cards < sum and not player:hasSkill("ex__yiji") then
+        room:setPlayerMark(player, "xianmou_yiji", 1)
+        room:handleAddLoseSkills(player, "ex__yiji")
+      end
+    else
+      local toId, sum = table.unpack(self.cost_data)
+      local to = room:getPlayerById(toId)
+      if to:isKongcheng() then
+        return false
+      end
+
+      local cards, choice = U.askforChooseCardsAndChoice(
+        player,
+        player == to and
+          table.filter(to:getCardIds("h"), function(id) return not player:prohibitDiscard(id) end) or
+          to:getCardIds("h"),
+        { "OK" },
+        self.name,
+        "#xianmou_yin-choose:::" .. sum,
+        { "Cancel" },
+        1,
+        sum,
+        to:getCardIds("h")
+      )
+
+      if choice == "Cancel" then
+        return false
+      end
+
+      room:throwCard(cards, self.name, to, player)
+      if #cards == sum then
+        local judge = {
+          who = player,
+          reason = "lightning",
+          pattern = ".|2~9|spade",
+        }
+        room:judge(judge)
+        if judge.card.suit == Card.Spade and judge.card.number > 1 and judge.card.number < 10 then
+          room:damage{
+            to = player,
+            damage = 3,
+            damageType = fk.ThunderDamage,
+            skillName = self.name,
+          }
+        end
+      end
+    end
+  end,
+}
+local xianmouSwitch = fk.CreateTriggerSkill{
+  name = "#xianmou_switch",
+  events = {fk.GameStart},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(xianmou)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    setTYMouSwitchSkillState(player, "guojia", "xianmou",
+    player.room:askForChoice(player, { "tymou_switch:::xianmou:yang", "tymou_switch:::xianmou:yin" },
+    "xianmou", "#tymou_switch-transer:::xianmou") == "tymou_switch:::xianmou:yin")
+  end,
+}
+xianmou:addRelatedSkill(xianmouSwitch)
+mouguojia:addSkill(xianmou)
+Fk:loadTranslationTable{
+  ["xianmou"] = "先谋",
+  [":xianmou"] = "转换技，游戏开始时可自选阴阳状态。一名角色的回合结束时，若X大于0，你可以：阳，" ..
+  "观看牌堆顶五张牌并可获得其中至多X张牌，若获得牌数少于X，则你获得“遗计”直到你下次发动本技能；阴，" ..
+  "观看一名角色的手牌并可弃置其中至多X张牌，若弃置牌数等于X，则你进行一次【闪电】判定（X为你本回合失去过的牌数）。",
+  ["#xianmou_yang-invoke"] = "先谋：你可观看牌堆顶五张牌并可获得其中至多%arg张",
+  ["#xianmou_yin-invoke"] = "先谋：你可选择一名角色，观看其手牌并可弃置其中至多%arg张",
+  ["#xianmou_yang-choose"] = "你可获得其中至多%arg张牌，若获得牌数少于%arg，则获得“遗计”",
+  ["#xianmou_yin-choose"] = "你可弃置其中至多%arg张牌，若弃置牌数等于%arg，则你判定【闪电】",
+
+  ["$xianmou1"] = "",
+  ["$xianmou2"] = "",
+}
+
+local lunshi = fk.CreateViewAsSkill{
+  name = "tymou__lunshi",
+  anim_type = "control",
+  pattern = "nullification",
+  prompt = "#tymou__lunshi-viewas",
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) == Card.PlayerHand
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 then return end
+    local card = Fk:cloneCard("nullification")
+    card.skillName = self.name
+    card:addSubcard(cards[1])
+    return card
+  end,
+  enabled_at_response = function (self, player, response)
+    if
+      not (
+        not response and
+        (
+          response == nil or
+          player:getMark("tymou__lunshi_activated") > 0
+        ) and
+        not player:isKongcheng()
+      )
+    then
+      return false
+    end
+
+    local red, black = 0, 0
+    for _, id in ipairs(player:getCardIds("h")) do
+      local color = Fk:getCardById(id).color
+      if color == Card.Black then
+        black = black + 1
+      elseif color == Card.Red then
+        red = red + 1
+      end
+    end
+
+    return red == black
+  end,
+}
+local lunshiActivate = fk.CreateTriggerSkill{
+  name = "#tymou__lunshi_activate",
+  refresh_events = {fk.HandleAskForPlayCard},
+  can_refresh = function(self, event, target, player, data)
+    if data.afterRequest and (data.extra_data or {}).lunshiEffected then
+      return player:getMark("tymou__lunshi_activated") > 0
+    end
+
+    return
+      player:hasSkill(lunshi) and
+      data.eventData and
+      data.eventData.from and
+      data.eventData.to and
+      data.eventData.from ~= player.id and
+      data.eventData.to ~= data.eventData.from and
+      data.eventData.card:isCommonTrick() and
+      Exppattern:Parse(data.pattern):match(Fk:cloneCard("nullification"))
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if data.afterRequest then
+      room:setPlayerMark(player, "tymou__lunshi_activated", 0)
+    else
+      room:setPlayerMark(player, "tymou__lunshi_activated", 1)
+      data.extra_data = data.extra_data or {}
+      data.extra_data.lunshiEffected = true
+    end
+  end,
+}
+Fk:loadTranslationTable{
+  ["tymou__lunshi"] = "论势",
+  [":tymou__lunshi"] = "当你需要使用【无懈可击】抵消其他角色对除其外的角色使用的普通锦囊牌时，" ..
+  "若你手牌中的红色和黑色牌数相等，你可以将一张手牌当【无懈可击】使用。",
+  ["#tymou__lunshi-viewas"] = "论势：你可将一张手牌当【无懈可击】使用",
+
+  ["$tymou__lunshi1"] = "",
+  ["$tymou__lunshi2"] = "",
+}
+
+lunshi:addRelatedSkill(lunshiActivate)
+mouguojia:addSkill(lunshi)
+
+local tymou2Guojia = General(extension, "tymou2__guojia", "wei", 3)
+tymou2Guojia.hidden = true
+tymou2Guojia:addSkill("xianmou")
+tymou2Guojia:addSkill("tymou__lunshi")
+
+Fk:loadTranslationTable{
+  ["tymou2__guojia"] = "谋郭嘉",
+  ["#tymou2__guojia"] = "翼谋奇佐",
+  -- ["illustrator:tymou__guojia"] = "匠人绘",
+  ["~tymou2__guojia"] = "",
+}
+
 local jvshou = General(extension, "tymou__jvshou", "qun", 3)
 local zuojun = fk.CreateActiveSkill{
   name = "zuojun",

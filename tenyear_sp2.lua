@@ -4731,7 +4731,7 @@ local quanshou = fk.CreateTriggerSkill{
     local choice = room:askForChoice(target, {"quanshou1", "quanshou2:"..player.id}, self.name, "#quanshou-choice:"..player.id)
     if choice == "quanshou1" then
       room:setPlayerMark(target, "quanshou1-turn", 1)
-      local n = math.min(target.maxHp, 5) - target:getHandcardNum()
+      local n = math.min(target.maxHp - target:getHandcardNum(), 5)
       if n > 0 then
         target:drawCards(n, self.name)
       end

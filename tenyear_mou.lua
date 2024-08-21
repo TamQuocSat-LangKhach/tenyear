@@ -1113,12 +1113,12 @@ Fk:addSkill(jichouw_distribution)
 local jichouw = fk.CreateTriggerSkill{
   name = "jichouw",
   anim_type = "support",
-  events = {fk.EventPhaseEnd},
+  events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self) and player.phase == Player.Play then
+    if target == player and player:hasSkill(self) and player.phase == Player.Finish then
       local room = player.room
-      local phase_event = room.logic:getCurrentEvent():findParent(GameEvent.Phase, true)
-      if phase_event == nil then return false end
+      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
+      if turn_event == nil then return false end
       local names = {}
       local cards = {}
       U.getEventsByRule(room, GameEvent.UseCard, 1, function (e)
@@ -1131,7 +1131,7 @@ local jichouw = fk.CreateTriggerSkill{
           table.insert(names, use.card.trueName)
           table.insertTableIfNeed(cards, Card:getIdList(use.card))
         end
-      end, phase_event.id)
+      end, turn_event.id)
       cards = table.filter(cards, function (id)
         return room:getCardArea(id) == Card.DiscardPile
       end)
@@ -1292,7 +1292,7 @@ Fk:loadTranslationTable{
   ["illustrator:tymou__wangling"] = "鬼画府",
 
   ["jichouw"] = "集筹",
-  [":jichouw"] = "出牌阶段结束时，若你于此阶段内使用过的牌的牌名各不相同，你可以将弃牌堆中的这些牌交给你选择的角色各一张。"..
+  [":jichouw"] = "结束阶段，若你于此回合内使用过的牌的牌名各不相同，你可以将弃牌堆中的这些牌交给你选择的角色各一张。"..
   "然后你摸X张牌（X为其中此前没有以此法给出过的牌名数）。",
   ["ty__mouli"] = "谋立",
   [":ty__mouli"] = "觉醒技，回合结束时，若你因〖集筹〗给出的牌名不同的牌超过了5种，你加1点体力上限，回复1点体力，获得〖自缚〗。",
@@ -2624,8 +2624,11 @@ local xianmou = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
 
-    if player:getMark("xianmou_yiji") > 0 and player:hasSkill("ex__yiji") then
-      room:handleAddLoseSkills(player, "-ex__yiji")
+    if player:getMark("xianmou_yiji") > 0 then
+      room:setPlayerMark(player, "xianmou_yiji", 0)
+      if player:hasSkill("ex__yiji", true) then
+        room:handleAddLoseSkills(player, "-ex__yiji")
+      end
     end
     setTYMouSwitchSkillState(player, "guojia", self.name)
     if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
@@ -2642,12 +2645,10 @@ local xianmou = fk.CreateTriggerSkill{
         sum
       )
 
-      if choice == "Cancel" then
-        return false
+      if #cards > 0 then
+        room:obtainCard(player, cards, false, fk.ReasonPrey, player.id, self.name)
       end
-
-      room:obtainCard(player, cards, false, fk.ReasonPrey, player.id, self.name)
-      if #cards < sum and not player:hasSkill("ex__yiji") then
+      if #cards < sum and not player:hasSkill("ex__yiji", true) then
         room:setPlayerMark(player, "xianmou_yiji", 1)
         room:handleAddLoseSkills(player, "ex__yiji")
       end

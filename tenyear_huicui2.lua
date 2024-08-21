@@ -4393,21 +4393,18 @@ local jizhong = fk.CreateActiveSkill{
     target:drawCards(2, self.name)
     if target.dead or player.dead then return end
 
-    if target:getMark("@@xinzhong") > 0 then
-      local cards = target:getCardIds(Player.Hand)
+    --并不清楚卡牌不足三张时能不能选给牌
+    if target:getMark("@@xinzhong") > 0 or
+    room:askForChoice(target, {"become_xinzhong", "donate3cardsto:" .. player.id}, self.name) ~= "become_xinzhong" then
+      local cards = target:getCardIds{Player.Hand, Player.Equip}
       if #cards > 3 then
-        cards = room:askForCard(target, 3, 3, false, self.name, false, ".", "#jizhong-give:" .. player.id)
+        cards = room:askForCardsChosen(player, target, 3, 3, "he", self.name)
       end
       if #cards > 0 then
-        room:moveCardTo(cards, Player.Hand, player, fk.ReasonGive, self.name, nil, false, target.id)
+        room:moveCardTo(cards, Player.Hand, player, fk.ReasonPrey, self.name, nil, false, player.id)
       end
     else
-      local cards = room:askForCard(target, 3, 3, false, self.name, true, ".", "#jizhong-choice:" .. player.id)
-      if #cards == 0 then
-        room:setPlayerMark(target, "@@xinzhong", 1)
-      else
-        room:moveCardTo(cards, Player.Hand, player, fk.ReasonGive, self.name, nil, false, target.id)
-      end
+      room:setPlayerMark(target, "@@xinzhong", 1)
     end
   end,
 }
@@ -4456,13 +4453,14 @@ local guangshi = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Start and
-      table.every(player.room:getOtherPlayers(player, false), function (p)
-        return p:getMark("@@xinzhong") > 0
-      end)
+    return target == player and player:hasSkill(self) and player.phase == Player.Start and #player.room.alive_players > 1 and
+    table.every(player.room:getOtherPlayers(player, false), function (p)
+      return p:getMark("@@xinzhong") > 0
+    end)
   end,
   on_use = function(self, event, target, player, data)
-    player:drawCards(2, self.name)
+    local room = player.room
+    player:drawCards(#room.alive_players - 1, self.name)
     if player:isAlive() then
       player.room:loseHp(player, 1, self.name)
     end
@@ -4477,17 +4475,16 @@ Fk:loadTranslationTable{
   ["designer:zhangchu"] = "韩旭",
   ["illustrator:zhangchu"] = "黯荧岛工作室",
   ["jizhong"] = "集众",
-  [":jizhong"] = "出牌阶段限一次，你可以令一名其他角色摸两张牌，然后若其：不是“信众”，则其选择一项：1.成为“信众”；"..
-  "2.将三张手牌交给你；是“信众”，其将三张手牌交给你（不足则全部交给）。",
+  [":jizhong"] = "出牌阶段限一次，你可以令一名其他角色摸两张牌，其选择：1.成为“信众”；2.令你获得其三张牌。",
   ["rihui"] = "日慧",
   [":rihui"] = "每回合限一次，当你使用指定唯一其他角色为目标的普通锦囊牌或黑色基本牌后，若其：不是“信众”，所有“信众”均视为对其使用此牌；"..
   "是“信众”，你可以获得其区域内的一张牌。",
   ["guangshi"] = "光噬",
-  [":guangshi"] = "锁定技，准备阶段，若所有其他角色均是“信众”，你摸两张牌并失去1点体力。",
-  ["#jizhong-active"] = "发动 集众，令一名其他角色摸两张牌，然后其选择交给你三张牌或成为“信众”",
+  [":guangshi"] = "锁定技，准备阶段，若所有其他角色均是“信众”，你摸X张牌（X为这些角色数），失去1点体力。",
+  ["#jizhong-active"] = "发动 集众，令一名其他角色摸两张牌，然后其选择成为“信众”或被你获取3张卡牌",
   ["@@xinzhong"] = "信众",
-  ["#jizhong-choice"] = "集众：选择将三张手牌交给 %src，否则成为“信众”",
-  ["#jizhong-give"] = "集众：选择将三张手牌交给 %src",
+  ["become_xinzhong"] = "成为“信众”",
+  ["donate3cardsto"] = "%src获得你的3张牌",
   ["#rihui-use"] = "日慧：你可以令所有“信众”视为对 %dest 使用一张【%arg】",
   ["#rihui-get"] = "日慧：你可以获得 %dest 区域内一张牌",
 

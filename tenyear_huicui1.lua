@@ -5723,7 +5723,7 @@ local suizheng = fk.CreateTriggerSkill{
 
   refresh_events = {fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
-    return player:getMark("@@suizheng") > 0
+    return player:getMark("@@suizheng") > 0 and target == player
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room

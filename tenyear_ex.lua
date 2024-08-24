@@ -1580,7 +1580,7 @@ local ty_ex__fuhun = fk.CreateViewAsSkill{
   name = "ty_ex__fuhun",
   pattern = "slash",
   card_filter = function(self, to_select, selected)
-    return #selected < 2 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+    return #selected < 2 and table.contains(Self:getHandlyIds(true), to_select)
   end,
   view_as = function(self, cards)
     if #cards ~= 2 then return end

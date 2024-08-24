@@ -1354,7 +1354,6 @@ local tunan = fk.CreateActiveSkill{
     end
     local choice = room:askForChoice(target, choices, self.name, nil, nil,
       {"tunan1:::"..card:toLogString(), "tunan2:::"..card:toLogString()})
-    local success, dat
     if choice[6] == "1" then
       U.askForUseRealCard(room, target, cards, ".", self.name, nil, {expand_pile = cards, bypass_distances = true}, false, false)
     else
@@ -5366,7 +5365,7 @@ local heqia_viewas = fk.CreateActiveSkill{
     return UI.ComboBox { choices = names, all_choices = all_names }
   end,
   card_filter = function (self, to_select, selected)
-    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Card.PlayerEquip
+    return #selected == 0 and table.contains(Self:getHandlyIds(true), to_select)
   end,
   target_filter = function(self, to_select, selected, selected_cards)
     if not self.interaction.data or #selected_cards ~= 1 then return false end

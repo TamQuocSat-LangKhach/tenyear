@@ -2800,8 +2800,15 @@ local zhuning = fk.CreateActiveSkill{
   anim_type = "support",
   min_card_num = 1,
   target_num = 1,
+  prompt = "#zhuning",
   can_use = function(self, player)
-    return player:getMark("zhuning-phase") < 2 and not player:isNude()
+    if not player:isNude() then
+      if player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 then
+        return true
+      elseif player:usedSkillTimes(self.name, Player.HistoryPhase) == 1 then
+        return player:getMark("zhuning-phase") > 0
+      end
+    end
   end,
   card_filter = Util.TrueFunc,
   target_filter = function(self, to_select, selected)
@@ -2810,50 +2817,27 @@ local zhuning = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    room:addPlayerMark(player, "zhuning-phase", 2)
-    room:moveCardTo(effect.cards, Card.PlayerHand, target, fk.ReasonGive, self.naame, "", false, player.id, "@@zhuning-inhand")
+    room:moveCardTo(effect.cards, Card.PlayerHand, target, fk.ReasonGive, self.name, "", false, player.id, "@@zhuning-inhand")
     if not player.dead then
-      local success, data = room:askForUseActiveSkill(player, "zhuning_viewas", "#zhuning-choice", true)
-      if success then
-        local card = Fk.skills["zhuning_viewas"]:viewAs(data.cards)
+      local cards = table.filter(U.getUniversalCards(room, "bt", false), function (id)
+        return Fk:getCardById(id).is_damage_card
+      end)
+      local use = U.askForUseRealCard(room, player, cards, nil, self.name, "#zhuning-use",
+        {expand_pile = cards, bypass_times = true}, true, true)
+      if use then
         local use = {
+          card = Fk:cloneCard(use.card.name),
           from = player.id,
-          tos = table.map(data.targets, function(id) return {id} end),
-          card = card,
+          tos = use.tos,
+          skillName = self.name,
           extraUse = true,
         }
         room:useCard(use)
         if not player.dead and not use.damageDealt then
-          room:removePlayerMark(player, "zhuning-phase", 1)
+          room:setPlayerMark(player, "zhuning-phase", 1)
         end
       end
     end
-  end,
-}
-local zhuning_viewas = fk.CreateViewAsSkill{
-  name = "zhuning_viewas",
-  interaction = function()
-    local names = {}
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id, true)
-      if card.is_damage_card and not card.is_derived then
-        table.insertIfNeed(names, card.name)
-      end
-    end
-    return UI.ComboBox {choices = names}
-  end,
-  card_filter = Util.FalseFunc,
-  view_as = function(self, cards)
-    if not self.interaction.data then return end
-    local card = Fk:cloneCard(self.interaction.data)
-    card.skillName = "zhuning"
-    return card
-  end,
-}
-local zhuning_targetmod = fk.CreateTargetModSkill{
-  name = "#zhuning_targetmod",
-  bypass_times = function(self, player, skill, scope, card)
-    return card and table.contains(card.skillNames, "zhuning")
   end,
 }
 local function getFengxiangPlayer(room)
@@ -2937,8 +2921,6 @@ local fengxiang = fk.CreateTriggerSkill{
     end
   end,
 }
-Fk:addSkill(zhuning_viewas)
-zhuning:addRelatedSkill(zhuning_targetmod)
 liuyong:addSkill(zhuning)
 liuyong:addSkill(fengxiang)
 Fk:loadTranslationTable{
@@ -2954,8 +2936,8 @@ Fk:loadTranslationTable{
   [":fengxiang"] = "锁定技，当你受到伤害后，手牌中“隙”唯一最多的角色回复1点体力（没有唯一最多的角色则改为你摸一张牌）；"..
   "当有角色因手牌数改变而使“隙”唯一最多的角色改变后，你摸一张牌。",
   ["@@zhuning-inhand"] = "隙",
-  ["zhuning_viewas"] = "诛佞",
-  ["#zhuning-choice"] = "诛佞：你可以视为使用一张不计次数的伤害牌",
+  ["#zhuning"] = "诛佞：交给一名角色任意张牌（标记为“隙”），然后视为使用一张伤害牌",
+  ["#zhuning-use"] = "诛佞：你可以视为使用一张不计次数的伤害牌",
 
   ["$zhuning1"] = "此剑半丈，当斩奸佞人头！",
   ["$zhuning2"] = "此身八尺，甘为柱国之石。",

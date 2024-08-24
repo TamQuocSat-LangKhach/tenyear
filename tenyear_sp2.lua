@@ -1198,7 +1198,7 @@ local ty__suishi = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self) or target == player then return false end
     if event == fk.EnterDying then
-      return data.damage and data.damage.from and player.kingdom == data.damage.from.from
+      return data.damage and data.damage.from and player.kingdom == data.damage.from.kingdom
     else
       return player.kingdom == target.kingdom and not player:isKongcheng()
     end

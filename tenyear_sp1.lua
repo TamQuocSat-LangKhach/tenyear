@@ -536,12 +536,7 @@ local ty__shanjia = fk.CreateTriggerSkill{
     local cards = {}
     if player:getMark(self.name) < 3 then
       local x = 3 - player:getMark(self.name)
-      if #player:getCardIds{Player.Hand, Player.Equip} < x then
-        cards = table.simpleClone(player:getCardIds{Player.Hand, Player.Equip})
-        player:throwAllCards("he")
-      else
-        cards = room:askForDiscard(player, x, x, true, self.name, false, ".", "#ty__shanjia-discard:::"..x)
-      end
+      cards = room:askForDiscard(player, x, x, true, self.name, false, ".", "#ty__shanjia-discard:::"..x)
     end
     if not table.find(cards, function(id) return Fk:getCardById(id).type == Card.TypeBasic end) then
       room:setPlayerMark(player, "ty__shanjia_basic-turn", 1)
@@ -550,20 +545,7 @@ local ty__shanjia = fk.CreateTriggerSkill{
       room:setPlayerMark(player, "ty__shanjia_trick-turn", 1)
     end
     if player:getMark("ty__shanjia_basic-turn") > 0 and player:getMark("ty__shanjia_trick-turn") > 0 then
-      local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
-        return not player:isProhibited(p, Fk:cloneCard("slash")) end), Util.IdMapper)
-      if #targets == 0 then return end
-      local success, dat = room:askForUseActiveSkill(player, "ty__shanjia_viewas", "#ty__shanjia-choose", true)
-      if success then
-        local card = Fk:cloneCard("slash")
-        card.skillName = self.name
-        room:useCard{
-          from = player.id,
-          tos = table.map(dat.targets, function(id) return {id} end),
-          card = card,
-          extraUse = true,
-        }
-      end
+      U.askForUseVirtualCard(room, player, "slash", nil, self.name, "#ty__shanjia-use", true, true, false, true)
     end
   end,
 
@@ -590,16 +572,6 @@ local ty__shanjia = fk.CreateTriggerSkill{
     end
   end,
 }
-local ty__shanjia_viewas = fk.CreateViewAsSkill{
-  name = "ty__shanjia_viewas",
-  pattern = "slash",
-  card_filter = Util.FalseFunc,
-  view_as = function(self, cards)
-    local card = Fk:cloneCard("slash")
-    card.skillName = "ty__shanjia_viewas"
-    return card
-  end,
-}
 local ty__shanjia_targetmod = fk.CreateTargetModSkill{
   name = "#ty__shanjia_targetmod",
   residue_func = function(self, player, skill, scope, card)
@@ -611,7 +583,6 @@ local ty__shanjia_targetmod = fk.CreateTargetModSkill{
     return player:getMark("ty__shanjia_trick-turn") > 0
   end,
 }
-Fk:addSkill(ty__shanjia_viewas)
 ty__shanjia:addRelatedSkill(ty__shanjia_targetmod)
 caochun:addSkill(ty__shanjia)
 Fk:loadTranslationTable{
@@ -622,10 +593,9 @@ Fk:loadTranslationTable{
   [":ty__shanjia"] = "出牌阶段开始时，你可以摸三张牌，然后弃置三张牌（你每不因使用而失去过一张装备牌，便少弃置一张），若你本次没有弃置过："..
   "基本牌，你此阶段使用【杀】次数上限+1；锦囊牌，你此阶段使用牌无距离限制；都满足，你可以视为使用【杀】。",
   ["#ty__shanjia-discard"] = "缮甲：你需弃置%arg张牌",
-  ["#ty__shanjia-choose"] = "缮甲：你可以视为使用【杀】",
-  ["ty__shanjia_viewas"] = "缮甲",
+  ["#ty__shanjia-use"] = "缮甲：你可以视为使用【杀】",
   ["@ty__shanjia"] = "缮甲",
-  
+
   ["$ty__shanjia1"] = "百锤锻甲，披之可陷靡阵、断神兵、破坚城！",
   ["$ty__shanjia2"] = "千炼成兵，邀天下群雄引颈，且试我剑利否！",
   ["~ty__caochun"] = "不胜即亡，唯一死而已！",
@@ -3904,6 +3874,7 @@ local ty__fenyue = fk.CreateActiveSkill{
   anim_type = "offensive",
   card_num = 0,
   target_num = 1,
+  prompt = "#ty__fenyue",
   can_use = function(self, player)
     return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) < player:getMark("ty__fenyue-phase")
   end,
@@ -3922,20 +3893,13 @@ local ty__fenyue = fk.CreateActiveSkill{
           room:obtainCard(player, id, false, fk.ReasonPrey)
         end
       end
-      if pindian.fromCard.number < 10 then
+      if pindian.fromCard.number < 10 and not player.dead then
         local card = room:getCardsFromPileByRule("slash")
         if #card > 0 then
-          room:moveCards({
-            ids = card,
-            to = player.id,
-            toArea = Card.PlayerHand,
-            moveReason = fk.ReasonPrey,
-            proposer = player.id,
-            skillName = self.name,
-          })
+          room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
         end
       end
-      if pindian.fromCard.number < 14 then
+      if pindian.fromCard.number < 14 and not target.dead then
         room:useVirtualCard("thunder__slash", nil, player, target, self.name, true)
       end
     end
@@ -3963,6 +3927,7 @@ Fk:loadTranslationTable{
   ["ty__fenyue"] = "奋钺",
   [":ty__fenyue"] = "出牌阶段限X次（X为与你不同阵营的存活角色数），你可以与一名角色拼点，若你赢，根据你拼点的牌的点数执行以下效果："..
   "小于等于K：视为对其使用一张雷【杀】；小于等于9：获得牌堆中的一张【杀】；小于等于5：获得其一张牌。",
+  ["#ty__fenyue"] = "奋钺：与一名角色拼点，若你赢，根据你拼点牌的点数执行效果",
 
   ["$ty__fenyue1"] = "逆贼势大，且扎营寨，击其懈怠。",
   ["$ty__fenyue2"] = "兵有其变，不在众寡。",

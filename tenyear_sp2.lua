@@ -8,7 +8,7 @@ Fk:loadTranslationTable{
   ["ty_sp"] = "新服SP",
 }
 
---计将安出：程昱 王允 蒋干 赵昂 刘晔 杨弘 郤正 桓范 刘琦
+--计将安出：程昱 王允 蒋干 赵昂 刘晔 杨弘 郤正 桓范 刘琦 田丰
 local ty__chengyu = General(extension, "ty__chengyu", "wei", 3)
 Fk:addQmlMark{
   name = "ty__shefu",
@@ -1187,6 +1187,45 @@ Fk:loadTranslationTable{
   ["$ty__tunjiang1"] = "这浑水，不蹚也罢。",
   ["$ty__tunjiang2"] = "荆州风云波澜动，唯守江夏避险峻。",
   ["~ty__liuqi"] = "这荆州，终究容不下我。",
+}
+
+local ty__tianfeng = General(extension, "ty__tianfeng", "qun", 3)
+local ty__suishi = fk.CreateTriggerSkill{
+  name = "ty__suishi",
+  frequency = Skill.Compulsory,
+  events = {fk.EnterDying, fk.Death},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) or target == player then return false end
+    if event == fk.EnterDying then
+      return data.damage and data.damage.from and player.kingdom == data.damage.from.from
+    else
+      return player.kingdom == target.kingdom and not player:isKongcheng()
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EnterDying then
+      room:notifySkillInvoked(player, self.name, "drawcard")
+      player:broadcastSkillInvoke(self.name, 1)
+      player:drawCards(1, self.name)
+    else
+      room:notifySkillInvoked(player, self.name, "negative")
+      player:broadcastSkillInvoke(self.name, 2)
+      room:askForDiscard(player, 1, 999, false, self.name, false)
+    end
+  end,
+}
+ty__tianfeng:addSkill("sijian")
+ty__tianfeng:addSkill(ty__suishi)
+Fk:loadTranslationTable{
+  ["ty__tianfeng"] = "田丰",
+  ["#ty__tianfeng"] = "河北瑰杰",
+  ["illustrator:ty__tianfeng"] = "",
+
+  ["ty__suishi"] = "随势",
+  [":ty__suishi"] = "锁定技，当其他角色进入濒死状态时，若伤害来源与你势力相同，你摸一张牌；当其他角色死亡时，若其与你势力相同，你弃置至少一张"..
+  "手牌。",
 }
 
 --笔舌如椽：陈琳 杨修 骆统 王昶 程秉 杨彪 阮籍

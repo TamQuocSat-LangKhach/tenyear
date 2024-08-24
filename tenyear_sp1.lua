@@ -5014,6 +5014,157 @@ Fk:loadTranslationTable{
   ["~huzun"] = "",
 }
 
+local ty__zhangren = General(extension, "ty__zhangren", "qun", 4)
+local ty__chuanxin = fk.CreateTriggerSkill{
+  name = "ty__chuanxin",
+  anim_type = "offensive",
+  events = {fk.DamageCaused},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and target:hasSkill(self) and player.phase == Player.Play and
+      data.card and table.contains({"slash", "duel"}, data.card.trueName) and U.damageByCardEffect(player.room, true)
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, data, "#ty__chuanxin-invoke::"..data.to.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local target = data.to
+    local all_choices = {"ty__chuanxin1", "ty__chuanxin2"}
+    local choices = table.clone(all_choices)
+    if #data.to:getCardIds("e") == 0 then table.remove(choices, 1) end
+    local choice = room:askForChoice(target, choices, self.name, nil, false, all_choices)
+    if choice == "ty__chuanxin1" then
+      target:throwAllCards("e")
+      if not target.dead then
+        room:loseHp(target, 1, self.name)
+      end
+    else
+      room:askForDiscard(target, 2, 2, false, self.name, false)
+      if not target.dead then
+        room:setPlayerMark(target, "@@ty__chuanxin-turn", 1)
+        room:addPlayerMark(target, MarkEnum.UncompulsoryInvalidity.."-turn", 1)
+      end
+    end
+    return true
+  end,
+}
+local ty__fengshi = fk.CreateTriggerSkill{
+  name = "ty__fengshi",
+  anim_type = "offensive",
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash" then
+      local to = player.room:getPlayerById(data.to)
+      return not to:inMyAttackRange(player) and not to.dead and
+        (#to:getEquipments(Card.SubtypeArmor) > 0 or #to:getEquipments(Card.SubtypeDefensiveRide) > 0)
+    end
+  end,
+  on_cost = function (self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(data.to)
+    local cards = table.simpleClone(to:getEquipments(Card.SubtypeArmor))
+    table.insertTableIfNeed(cards, table.simpleClone(to:getEquipments(Card.SubtypeDefensiveRide)))
+    local card = U.askforChooseCardsAndChoice(player, cards, {"OK"}, self.name, "#ty__fengshi-invoke::"..data.to, {"Cancel"}, 1, 1)
+    if #card > 0 then
+      self.cost_data = card
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:throwCard(self.cost_data, self.name, room:getPlayerById(data.to), player)
+  end,
+}
+ty__zhangren:addSkill(ty__chuanxin)
+ty__zhangren:addSkill(ty__fengshi)
+Fk:loadTranslationTable{
+  ["ty__zhangren"] = "张任",
+  ["#ty__zhangren"] = "索命神射",
+  --["illustrator:ty__zhangren"] = "",
+
+  ["ty__chuanxin"] = "穿心",
+  [":ty__chuanxin"] = "当你于出牌阶段内使用【杀】或【决斗】对目标角色造成伤害时，你可以防止此伤害。若如此做，该角色选择一项：1.弃置装备区内的"..
+  "所有牌，然后失去1点体力；2.弃置两张手牌，然后非锁定技失效直到回合结束。",
+  ["ty__fengshi"] = "锋矢",
+  [":ty__fengshi"] = "当你使用【杀】指定目标后，若你不在其攻击范围内，你可以弃置该角色装备区内的一张防具牌或防御坐骑牌。",
+  ["#ty__chuanxin-invoke"] = "穿心：是否防止对 %dest 造成的伤害，令其选择一项？",
+  ["ty__chuanxin1"] = "弃置所有装备，失去1点体力",
+  ["ty__chuanxin2"] = "弃置两张手牌，非锁定技失效直到回合结束",
+  ["@@ty__chuanxin-turn"] = "穿心",
+  ["#ty__fengshi-invoke"] = "锋矢：是否弃置 %dest 的防具牌或防御坐骑牌？",
+}
+
+local ty__jiangqin = General(extension, "ty__jiangqin", "wu", 4)
+Fk:addPoxiMethod{
+  name = "ty__shangyi",
+  card_filter = function(to_select, selected, data)
+    if table.contains(data[1], to_select) and #selected < 2 and
+      (Fk:getCardById(to_select).suit == Card.Spade or Fk:getCardById(to_select).suit == Card.Club) then
+      if #selected == 0 then
+        return true
+      elseif #selected == 1 then
+        return Fk:getCardById(to_select).suit ~= Fk:getCardById(selected[1]).suit
+      end
+    end
+  end,
+  feasible = Util.TrueFunc,
+}
+local ty__shangyi = fk.CreateActiveSkill{
+  name = "ty__shangyi",
+  anim_type = "control",
+  card_num = 0,
+  target_num = 1,
+  prompt = "#ty__shangyi",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0 and to_select ~= Self.id 
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    U.viewCards(target, player:getCardIds("h"), self.name)
+    if player.dead or target.dead or target:isKongcheng() then return end
+    local n = target:getHandcardNum()
+    local cards = room:askForArrangeCards(player, self.name,
+      {target.general, target:getCardIds("h"), "method_discard", {}},
+      "#ty__shangyi-discard", false, 0, {n, n}, {0, 1}, ".", "ty__shangyi", nil)[2]
+    if #cards > 0 then
+      room:throwCard(cards, self.name, target, player)
+    end
+  end,
+}
+local ty__niaoxiang = fk.CreateTriggerSkill{
+  name = "ty__niaoxiang",
+  anim_type = "offensive",
+  frequency = Skill.Compulsory,
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.card.trueName == "slash" and
+      player.room:getPlayerById(data.to):inMyAttackRange(player)
+  end,
+  on_use = function(self, event, target, player, data)
+    data.fixedResponseTimes = data.fixedResponseTimes or {}
+    data.fixedResponseTimes["jink"] = 2
+  end,
+}
+ty__jiangqin:addSkill(ty__shangyi)
+ty__jiangqin:addSkill(ty__niaoxiang)
+Fk:loadTranslationTable{
+  ["ty__jiangqin"] = "蒋钦",
+  ["#ty__jiangqin"] = "祁奚之器",
+  --["illustrator:ty__jiangqin"] = "",
+
+  ["ty__shangyi"] = "尚义",
+  [":ty__shangyi"] = "出牌阶段限一次，你可以令一名其他角色观看你的手牌。若如此做，你观看其手牌并可以弃置其中的一张♠牌和一张♣牌。",
+  ["ty__niaoxiang"] = "鸟翔",
+  [":ty__niaoxiang"] = "锁定技，当你使用【杀】指定目标后，若你在其攻击范围内，其响应此【杀】的方式改为依次使用两张【闪】。",
+  ["#ty__shangyi"] = "尚义：令一名角色观看你的手牌，然后你观看其手牌并可以弃置其中一张♠牌和一张♣牌",
+  ["#ty__shangyi-discard"] = "尚义：你可以弃置其中一张♠牌和一张♣牌",
+}
+
 --奇人异士：张宝 司马徽 蒲元 管辂 葛玄 杜夔 朱建平 吴范 赵直 周宣 笮融
 
 -- 司马徽
@@ -5373,7 +5524,6 @@ Fk:loadTranslationTable{
 }
 
 local puyuan = General(extension, "ty__puyuan", "shu", 4)
-local puyuan_equips = {"red_spear", "quenched_blade", "poisonous_dagger", "water_sword", "thunder_blade"}
 local tianjiang = fk.CreateActiveSkill{
   name = "tianjiang",
   anim_type = "support",
@@ -5395,7 +5545,7 @@ local tianjiang = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     local card = Fk:getCardById(effect.cards[1])
     U.moveCardIntoEquip(room, target, card.id, self.name, true, player)
-    if table.contains(puyuan_equips, card.name) then
+    if table.contains({"red_spear", "quenched_blade", "poisonous_dagger", "water_sword", "thunder_blade"}, card.name) then
       player:drawCards(2, self.name)
     end
   end,
@@ -5427,8 +5577,6 @@ local tianjiang_trigger = fk.CreateTriggerSkill{
     end
   end,
 }
-local zhuren_weapons = { {"red_spear", Card.Heart, 1}, {"quenched_blade", Card.Diamond, 1}, {"poisonous_dagger", Card.Spade, 1},
-{"water_sword", Card.Club, 1}, {"thunder_blade", Card.Spade, 1} }
 local zhuren = fk.CreateActiveSkill{
   name = "zhuren",
   anim_type = "special",
@@ -5465,7 +5613,13 @@ local zhuren = fk.CreateActiveSkill{
       end
     end
     if name ~= "slash" then
-      get = table.find(U.prepareDeriveCards(room, zhuren_weapons, "zhuren_derivecards"), function (id)
+      get = table.find(U.prepareDeriveCards(room, {
+        {"red_spear", Card.Heart, 1},
+        {"quenched_blade", Card.Diamond, 1},
+        {"poisonous_dagger", Card.Spade, 1},
+        {"water_sword", Card.Club, 1},
+        {"thunder_blade", Card.Spade, 1}
+      }, "zhuren_derivecards"), function (id)
         return room:getCardArea(id) == Card.Void and Fk:getCardById(id).name == name
       end)
       if not get then
@@ -5481,26 +5635,11 @@ local zhuren = fk.CreateActiveSkill{
     if name == "slash" then
       local ids = room:getCardsFromPileByRule("slash")
       if #ids > 0 then
-        room:moveCards({
-          ids = ids,
-          to = player.id,
-          toArea = Card.PlayerHand,
-          moveReason = fk.ReasonPrey,
-          proposer = player.id,
-          skillName = self.name,
-        })
+        room:moveCardTo(ids, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
       end
     elseif get then
       room:setCardMark(Fk:getCardById(get), MarkEnum.DestructIntoDiscard, 1)
-      room:moveCards({
-        ids = {get},
-        fromArea = Card.Void,
-        to = player.id,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonPrey,
-        proposer = player.id,
-        skillName = self.name,
-      })
+      room:moveCardTo(get, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
     end
   end,
 }

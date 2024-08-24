@@ -4617,7 +4617,7 @@ Fk:loadTranslationTable{
   ["~ty__zhangmancheng"] = "逡巡不前，坐以待毙……",
 }
 
---异军突起：公孙度 孟优 公孙修
+--异军突起：公孙度 孟优 公孙修 马腾
 local gongsundu = General(extension, "gongsundu", "qun", 4)
 local zhenze = fk.CreateTriggerSkill{
   name = "zhenze",
@@ -4937,6 +4937,66 @@ Fk:loadTranslationTable{
   ["~gongsunxiu"] = "大星坠地，父子俱亡……",
 }
 
+local ty__mateng = General(extension, "ty__mateng", "qun", 4)
+local ty__xiongyi = fk.CreateActiveSkill{
+  name = "ty__xiongyi",
+  anim_type = "drawcard",
+  target_num = 1,
+  card_num = 0,
+  frequency = Skill.Limited,
+  prompt = "#ty__xiongyi",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    player:drawCards(3, self.name)
+    if not target.dead then
+      target:drawCards(3, self.name)
+    end
+    if player:isWounded() and not player.dead and player:getMark("ty__xiongyi") == 0 and
+      table.every(room:getOtherPlayers(player), function (p)
+        return p.hp > player.hp
+      end) then
+        room:recover({
+          who = player,
+          num = 1,
+          recoverBy = player,
+          skillName = self.name,
+        })
+    end
+  end,
+}
+local ty__xiongyi_trigger = fk.CreateTriggerSkill{
+  name = "#ty__xiongyi_trigger",
+
+  refresh_events = {fk.AfterDying},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and not player.dead and player:usedSkillTimes("ty__xiongyi", Player.HistoryGame) > 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player:setSkillUseHistory("ty__xiongyi", 0, Player.HistoryGame)
+    player.room:setPlayerMark(player, "ty__xiongyi", 1)
+  end,
+}
+ty__xiongyi:addRelatedSkill(ty__xiongyi_trigger)
+ty__mateng:addSkill("mashu")
+ty__mateng:addSkill(ty__xiongyi)
+Fk:loadTranslationTable{
+  ["ty__mateng"] = "马腾",
+  ["#ty__mateng"] = "驰骋西陲",
+  ["illustrator:ty__mateng"] = "",
+
+  ["ty__xiongyi"] = "雄异",
+  [":ty__xiongyi"] = "限定技，出牌阶段，你可以选择一名其他角色，你与其各摸三张牌，然后若你体力值全场唯一最少，你回复1点体力。"..
+  "当你进入濒死状态被救回后，若你发动过此技能，此技能视为未发动过并移除回复体力的效果。",
+  ["#ty__xiongyi"] = "雄异：选择一名其他角色，与其各摸三张牌！",
+}
 
 
 --正音雅乐：蔡文姬 周妃 蔡邕 大乔 小乔

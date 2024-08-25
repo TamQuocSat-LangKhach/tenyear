@@ -5063,8 +5063,7 @@ local ty__jiangqin = General(extension, "ty__jiangqin", "wu", 4)
 Fk:addPoxiMethod{
   name = "ty__shangyi",
   card_filter = function(to_select, selected, data)
-    if table.contains(data[1], to_select) and #selected < 2 and
-      (Fk:getCardById(to_select).suit == Card.Spade or Fk:getCardById(to_select).suit == Card.Club) then
+    if Fk:getCardById(to_select).suit == Card.Spade or Fk:getCardById(to_select).suit == Card.Club then
       if #selected == 0 then
         return true
       elseif #selected == 1 then
@@ -5073,6 +5072,7 @@ Fk:addPoxiMethod{
     end
   end,
   feasible = Util.TrueFunc,
+  prompt = "#ty__shangyi-discard",
 }
 local ty__shangyi = fk.CreateActiveSkill{
   name = "ty__shangyi",
@@ -5085,17 +5085,16 @@ local ty__shangyi = fk.CreateActiveSkill{
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0 and to_select ~= Self.id 
+    return #selected == 0 and to_select ~= Self.id
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     U.viewCards(target, player:getCardIds("h"), self.name)
     if player.dead or target.dead or target:isKongcheng() then return end
-    local n = target:getHandcardNum()
-    local cards = room:askForArrangeCards(player, self.name,
-      {target.general, target:getCardIds("h"), "method_discard", {}},
-      "#ty__shangyi-discard", false, 0, {n, n}, {0, 1}, ".", "ty__shangyi", nil)[2]
+    local cards = room:askForPoxi(player, self.name, {
+      { target.general, target:getCardIds("h") },
+    }, nil, true)
     if #cards > 0 then
       room:throwCard(cards, self.name, target, player)
     end

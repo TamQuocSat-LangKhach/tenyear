@@ -2742,6 +2742,9 @@ local lunshi = fk.CreateViewAsSkill{
     card:addSubcard(cards[1])
     return card
   end,
+  before_use = function (self, player, use)
+    use.disresponsiveList = table.map(player.room.players, Util.IdMapper)
+  end,
   enabled_at_response = function (self, player, response)
     if
       not (
@@ -2801,7 +2804,7 @@ local lunshiActivate = fk.CreateTriggerSkill{
 Fk:loadTranslationTable{
   ["tymou__lunshi"] = "论势",
   [":tymou__lunshi"] = "当你需要使用【无懈可击】抵消其他角色对除其外的角色使用的普通锦囊牌时，" ..
-  "若你手牌中的红色和黑色牌数相等，你可以将一张手牌当【无懈可击】使用。",
+  "若你手牌中的红色和黑色牌数相等，你可以将一张手牌当不可被响应的【无懈可击】使用。",
   ["#tymou__lunshi-viewas"] = "论势：你可将一张手牌当【无懈可击】使用",
 
   ["$tymou__lunshi1"] = "",

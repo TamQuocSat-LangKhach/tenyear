@@ -2968,17 +2968,19 @@ local zhenge = fk.CreateTriggerSkill{
       room:addPlayerMark(to, "@zhenge", 1)
     end
     local slash = Fk:cloneCard("slash")
-    if to:prohibitUse(slash) then return false end
+    slash.skillName = self.name
+    if to.dead or to:prohibitUse(slash) then return false end
     local targets = {}
     for _, p in ipairs(room:getOtherPlayers(to, false)) do
       if to:inMyAttackRange(p) then
-        if p ~= to and not to:isProhibited(p, slash) then
+        if not to:isProhibited(p, slash) then
           table.insert(targets, p.id)
         end
       else
         return false
       end
     end
+    if #targets == 0 then return end
     local tos = room:askForChoosePlayers(player, targets, 1, 1, "#zhenge-slash::"..to.id, self.name, true)
     if #tos > 0 then
       room:useVirtualCard("slash", nil, to, room:getPlayerById(tos[1]), self.name, true)

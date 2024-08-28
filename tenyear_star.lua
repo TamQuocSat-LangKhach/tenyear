@@ -660,12 +660,7 @@ local lifengc = fk.CreateViewAsSkill{
   view_as = function(self, cards)
     if #cards ~= 1 or self.interaction.data == nil then return end
     local card_name = self.interaction.data
-    local card = Fk:getCardById(cards[1])
-    if card.trueName == card_name then
-      card_name = card.name
-      --for 一个奇怪的本意 →_→
-    end
-    card = Fk:cloneCard(card_name)
+    local card = Fk:cloneCard(card_name)
     card.skillName = self.name
     card:addSubcard(cards[1])
     return card

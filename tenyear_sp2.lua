@@ -5967,6 +5967,7 @@ local huiji__amazingGraceSkill = fk.CreateActiveSkill{
     table.removeOne(effect.extra_data.AGFilled, chosen)
   end,
 }
+huiji__amazingGraceSkill.cardSkill = true
 Fk:addSkill(huiji__amazingGraceSkill)
 local huiji = fk.CreateActiveSkill{
   name = "huiji",

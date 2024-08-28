@@ -947,6 +947,7 @@ local jianzheng = fk.CreateActiveSkill{
   anim_type = "control",
   target_num = 1,
   card_num = 0,
+  prompt = "#jianzheng-prompt",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
@@ -1003,13 +1004,13 @@ local fumou = fk.CreateTriggerSkill{
     local tos = room:askForChoosePlayers(player, targets, 1, player:getLostHp(), "#fumou-choose:::"..player:getLostHp(), self.name, true)
     if #tos > 0 then
       room:sortPlayersByAction(tos)
-      self.cost_data = tos
+      self.cost_data = {tos = tos}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    for _, id in ipairs(self.cost_data) do
+    for _, id in ipairs(self.cost_data.tos) do
       local p = room:getPlayerById(id)
       if not p.dead then
         local choices = {}
@@ -1062,6 +1063,8 @@ Fk:loadTranslationTable{
   ["fumou"] = "腹谋",
   [":fumou"] = "当你受到伤害后，你可以令至多X名角色依次选择一项：1.移动场上一张牌；2.弃置所有手牌并摸两张牌；3.弃置装备区所有牌并回复1点体力。"..
   "（X为你已损失的体力值）",
+
+  ["#jianzheng-prompt"] = "谏诤：你可观看一名其他角色的手牌，且可以获得并使用其中一张",
   ["#jianzheng-choose"] = "谏诤：选择一张使用",
   ["#jianzheng-use"] = "谏诤：请使用%arg",
   ["#fumou-choose"] = "腹谋：你可以令至多%arg名角色依次选择执行一项",
@@ -2176,7 +2179,7 @@ local souying = fk.CreateTriggerSkill{
           return use.from == player.id and table.contains(TargetGroup:getRealTargets(use.tos), data.to)
         end, Player.HistoryTurn)
       else
-        if TargetGroup:getRealTargets(data.tos)[1] ~= player.id then return false end
+        if AimGroup:getAllTargets(data.tos)[1] ~= player.id then return false end
         events = room.logic:getEventsOfScope(GameEvent.UseCard, 2, function(e)
           local use = e.data[1]
           return use.from == target.id and table.contains(TargetGroup:getRealTargets(use.tos), player.id)
@@ -2291,8 +2294,8 @@ Fk:loadTranslationTable{
   ["mansi"] = "蛮嗣",
   [":mansi"] = "出牌阶段限一次，你可以将所有手牌当【南蛮入侵】使用；当一名角色受到【南蛮入侵】的伤害后，你摸一张牌。",
   ["souying"] = "薮影",
-  [":souying"] = "每回合限一次，当你使用牌指定其他角色为唯一目标后，若此牌不是本回合你对其使用的第一张牌，你可以弃置一张牌获得之；"..
-  "当其他角色使用牌指定你为唯一目标后，若此牌不是本回合其对你使用的第一张牌，你可以弃置一张牌令此牌对你无效。",
+  [":souying"] = "每回合限一次，当你使用基本牌或普通锦囊牌指定其他角色为唯一目标后，若此牌不是本回合你对其使用的第一张牌，你可以弃置一张牌获得之；"..
+  "当其他角色使用基本牌或普通锦囊牌指定你为唯一目标后，若此牌不是本回合其对你使用的第一张牌，你可以弃置一张牌令此牌对你无效。",
   ["zhanyuan"] = "战缘",
   [":zhanyuan"] = "觉醒技，准备阶段，若你发动〖蛮嗣〗获得不少于七张牌，你加1点体力上限并回复1点体力。然后你可以选择一名男性角色，"..
   "你与其获得技能〖系力〗，你失去技能〖蛮嗣〗。",

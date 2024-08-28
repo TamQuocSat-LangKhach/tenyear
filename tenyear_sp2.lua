@@ -2043,6 +2043,7 @@ local jiudun__analepticSkill = fk.CreateActiveSkill{
     end
   end,
 }
+jiudun__analepticSkill.cardSkill = true
 Fk:addSkill(jiudun__analepticSkill)
 
 local jiudun_rule = fk.CreateTriggerSkill{

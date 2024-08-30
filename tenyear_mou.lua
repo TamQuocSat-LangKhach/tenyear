@@ -2416,6 +2416,125 @@ Fk:loadTranslationTable{
   ["~tymou__dianwei"] = "主公无恙，韦虽死犹生……",
 }
 
+local hucheer = General(extension, "tymou__hucheer", "qun", 4)
+local kongwu = fk.CreateActiveSkill{
+  name = "kongwu",
+  anim_type = "switch",
+  switch_skill_name = "kongwu",
+  min_card_num = 1,
+  max_card_num = function ()
+    return Self.maxHp
+  end,
+  target_num = 0,
+  prompt = function (self, selected_cards, selected_targets)
+    if Self:getSwitchSkillState(self.name, false) == fk.SwitchYang then
+      return "#kongwu-yang:::"..Self.maxHp
+    else
+      return "#kongwu-yin:::"..Self.maxHp
+    end
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected < Self.maxHp and not Self:prohibitDiscard(Fk:getCardById(to_select))
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:throwCard(effect.cards, self.name, player, player)
+    if player.dead then return end
+    local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+    if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
+      targets = table.map(table.filter(room:getOtherPlayers(player), function (p)
+        return not p:isNude()
+      end), Util.IdMapper)
+    end
+    if #targets == 0 then return end
+    local n = #effect.cards
+    local to = room:askForChoosePlayers(player, targets, 1, 1,
+      "#kongwu_"..player:getSwitchSkillState(self.name, true, true).."-choose:::"..n, self.name, false)
+    to = room:getPlayerById(to[1])
+    local mark = player:getTableMark("kongwu-phase")
+    table.insertIfNeed(mark, to.id)
+    room:setPlayerMark(player, "kongwu-phase", mark)
+    if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
+      local cards = room:askForCardsChosen(player, to, 1, n, "he", self.name, "#kongwu-discard::"..to.id..":"..n)
+      room:throwCard(cards, self.name, to, player)
+    else
+      for i = 1, n, 1 do
+        if to.dead then return end
+        room:useVirtualCard("slash", nil, player, to, self.name, true)
+      end
+    end
+  end
+}
+local kongwu_delay = fk.CreateTriggerSkill{
+  name = "#kongwu_delay",
+  mute = true,
+  events = {fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player.phase == Player.Play and player:getMark("kongwu-phase") ~= 0
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local mark = player:getTableMark("kongwu-phase")
+    for _, id in ipairs(mark) do
+      local to = room:getPlayerById(id)
+      if not to.dead and to:getHandcardNum() <= player:getHandcardNum() and to.hp <= player.hp then
+        player:broadcastSkillInvoke("kongwu")
+        room:notifySkillInvoked(player, "kongwu", "control")
+        room:doIndicate(player.id, {to.id})
+        room:addPlayerMark(to, "kongwu", 1)
+      end
+    end
+  end,
+
+  refresh_events = {fk.TurnStart, fk.DrawNCards},
+  can_refresh = function(self, event, target, player, data)
+    if target == player then
+      if event == fk.TurnStart then
+        return player:getMark("kongwu") > 0
+      else
+        return player:getMark("@@kongwu-turn") > 0
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.TurnStart then
+      room:setPlayerMark(player, "@@kongwu-turn", player:getMark("kongwu"))
+      room:setPlayerMark(player, "kongwu", 0)
+    else
+      data.n = data.n - player:getMark("@@kongwu-turn")
+    end
+  end,
+}
+local kongwu_invalidity = fk.CreateInvaliditySkill {
+  name = "#kongwu_invalidity",
+  invalidity_func = function(self, from, skill)
+    return from:getMark("@@kongwu-turn") > 0 and skill:isEquipmentSkill(from)
+  end
+}
+kongwu:addRelatedSkill(kongwu_delay)
+kongwu:addRelatedSkill(kongwu_invalidity)
+hucheer:addSkill(kongwu)
+Fk:loadTranslationTable{
+  ["tymou__hucheer"] = "谋胡车儿",
+  ["#tymou__hucheer"] = "",
+  ["illustrator:tymou__hucheer"] = "",
+
+  ["kongwu"] = "孔武",
+  [":kongwu"] = "转换技，出牌阶段限一次，你可以弃置至多体力上限张牌，然后选择一名其他角色：阳：弃置其至多等量的牌；阴：视为对其使用"..
+  "等量张【杀】。此阶段结束时，若其手牌数和体力值均不大于你，其下回合装备区内的牌失效且摸牌阶段摸牌数-1。",
+  ["#kongwu-yang"] = "孔武：你可以弃置至多%arg张牌，然后弃置一名其他角色至多等量的牌",
+  ["#kongwu-yin"] = "孔武：你可以弃置至多%arg张牌，然后视为对一名其他角色使用等量张【杀】",
+  ["#kongwu_yang-choose"] = "孔武：选择一名角色，弃置其至多%arg张牌",
+  ["#kongwu_yin-choose"] = "孔武：选择一名角色，视为对其使用%arg张【杀】",
+  ["#kongwu-discard"] = "孔武：弃置 %dest 至多%arg张牌",
+  ["@@kongwu-turn"] = "孔武",
+}
+
 --周郎将计：程昱
 local chengyu = General(extension, "tymou__chengyu", "wei", 3)
 local shizha = fk.CreateTriggerSkill{
@@ -2624,14 +2743,14 @@ local xianmou = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
 
-    if player:getMark("xianmou_yiji") > 0 then
-      room:setPlayerMark(player, "xianmou_yiji", 0)
-      if player:hasSkill("ex__yiji", true) then
-        room:handleAddLoseSkills(player, "-ex__yiji")
-      end
-    end
     setTYMouSwitchSkillState(player, "guojia", self.name)
     if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
+      if player:getMark("xianmou_yiji") > 0 then
+        room:setPlayerMark(player, "xianmou_yiji", 0)
+        if player:hasSkill("ex__yiji", true) then
+          room:handleAddLoseSkills(player, "-ex__yiji")
+        end
+      end
       local ids = room:getNCards(5)
       local sum = self.cost_data
       local cards, choice = U.askforChooseCardsAndChoice(
@@ -2713,10 +2832,11 @@ local xianmouSwitch = fk.CreateTriggerSkill{
 }
 xianmou:addRelatedSkill(xianmouSwitch)
 mouguojia:addSkill(xianmou)
+mouguojia:addRelatedSkill("ex__yiji")
 Fk:loadTranslationTable{
   ["xianmou"] = "先谋",
   [":xianmou"] = "转换技，游戏开始时可自选阴阳状态。一名角色的回合结束时，若X大于0，你可以：阳，" ..
-  "观看牌堆顶五张牌并可获得其中至多X张牌，若获得牌数少于X，则你获得“遗计”直到你下次发动本技能；阴，" ..
+  "观看牌堆顶五张牌并可获得其中至多X张牌，若获得牌数少于X，则你获得〖遗计〗直到你下次发动本项；阴，" ..
   "观看一名角色的手牌并可弃置其中至多X张牌，若弃置牌数等于X，则你进行一次【闪电】判定（X为你本回合失去过的牌数）。",
   ["#xianmou_yang-invoke"] = "先谋：你可观看牌堆顶五张牌并可获得其中至多%arg张",
   ["#xianmou_yin-invoke"] = "先谋：你可选择一名角色，观看其手牌并可弃置其中至多%arg张",

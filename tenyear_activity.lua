@@ -26,7 +26,7 @@ local langxi = fk.CreateTriggerSkill{
     local to = room:askForChoosePlayers(player, table.map(table.filter(room:getOtherPlayers(player), function(p)
       return p.hp <= player.hp end), Util.IdMapper), 1, 1, "#langxi-choose", self.name, true)
     if #to > 0 then
-      self.cost_data = to[1]
+      self.cost_data = {tos = to}
       return true
     end
   end,
@@ -34,7 +34,7 @@ local langxi = fk.CreateTriggerSkill{
     local room = player.room
     room:damage({
       from = player,
-      to = room:getPlayerById(self.cost_data),
+      to = room:getPlayerById(self.cost_data.tos[1]),
       damage = math.random(0, 2),
       skillName = self.name,
     })
@@ -51,7 +51,8 @@ local yisuan = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeMaxHp(player, -1)
-    room:obtainCard(player.id, data.card, true, fk.ReasonJustMove)
+    if player.dead then return end
+    room:obtainCard(player.id, data.card, true, fk.ReasonJustMove, player.id, self.name)
   end,
 }
 lijue:addSkill(langxi)
@@ -79,6 +80,7 @@ local tanbei = fk.CreateActiveSkill{
   anim_type = "offensive",
   card_num = 0,
   target_num = 1,
+  prompt = "#tanbei-prompt",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
@@ -90,16 +92,16 @@ local tanbei = fk.CreateActiveSkill{
     local player = room:getPlayerById(use.from)
     local target = room:getPlayerById(use.tos[1])
     local choices = {"tanbei2"}
-    if not target:isNude() then
+    if not target:isAllNude() then
       table.insert(choices, 1, "tanbei1")
     end
     local choice = room:askForChoice(target, choices, self.name)
-    local targetRecorded = type(player:getMark(choice.."-turn")) == "table" and player:getMark(choice.."-turn") or {}
-    table.insertIfNeed(targetRecorded, target.id)
-    room:setPlayerMark(player, choice.."-turn", targetRecorded)
+    room:addTableMark(player, choice.."-turn", target.id)
     if choice == "tanbei1" then
       local id = table.random(target:getCardIds{Player.Hand, Player.Equip, Player.Judge})
-      room:obtainCard(player.id, id, false, fk.ReasonPrey)
+      room:obtainCard(player.id, id, false, fk.ReasonPrey, player.id, self.name)
+    else
+      room:setPlayerMark(target, "@@tanbei-turn", 1)
     end
   end,
 }
@@ -109,7 +111,7 @@ local tanbei_refresh = fk.CreateTriggerSkill{
   refresh_events = {fk.PreCardUse},
   can_refresh = function(self, event, target, player, data)
     if player == target then
-      local mark = U.getMark(player, "tanbei2-turn")
+      local mark = player:getTableMark("tanbei2-turn")
       return #mark > 0 and table.find(TargetGroup:getRealTargets(data.tos), function (pid)
         return table.contains(mark, pid)
       end)
@@ -122,16 +124,16 @@ local tanbei_refresh = fk.CreateTriggerSkill{
 local tanbei_prohibit = fk.CreateProhibitSkill{
   name = "#tanbei_prohibit",
   is_prohibited = function(self, from, to, card)
-    return table.contains(U.getMark(from, "tanbei1-turn"), to.id)
+    return table.contains(from:getTableMark("tanbei1-turn"), to.id)
   end,
 }
 local tanbei_targetmod = fk.CreateTargetModSkill{
   name = "#tanbei_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return to and table.contains(U.getMark(player, "tanbei2-turn"), to.id)
+    return to and table.contains(player:getTableMark("tanbei2-turn"), to.id)
   end,
   bypass_distances =  function(self, player, skill, card, to)
-    return to and table.contains(U.getMark(player, "tanbei2-turn"), to.id)
+    return to and table.contains(player:getTableMark("tanbei2-turn"), to.id)
   end,
 }
 local sidao = fk.CreateTriggerSkill{
@@ -141,41 +143,59 @@ local sidao = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and player.phase == Player.Play and not player:isKongcheng() and
       player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 then
-      return self.sidao_tos and #self.sidao_tos > 0
+      local tos = TargetGroup:getRealTargets(data.tos)
+      table.removeOne(tos, player.id)
+      if #tos == 0 then return false end
+      local use_event = player.room.logic:getCurrentEvent()
+      local turn_e = use_event:findParent(GameEvent.Phase)
+      if not turn_e then return false end
+      local end_id = turn_e.id
+      local last_e = U.getEventsByRule (player.room, GameEvent.UseCard, 1, function (e)
+        return e.id < use_event.id and e.data[1].from == target.id
+      end, end_id)
+      if #last_e > 0 then
+        local last_use = last_e[1].data[1]
+        local avail_tos = table.filter(TargetGroup:getRealTargets(last_use.tos), function (id)
+          return table.contains(tos, id)
+        end)
+        if #avail_tos > 0 then
+          self.cost_data = avail_tos
+          return true
+        end
+      end
     end
   end,
-  on_cost = function(self, event, target, player, data)  --TODO: target filter
-    local tos, id = player.room:askForChooseCardAndPlayers(player, self.sidao_tos, 1, 1, ".|.|.|hand|.|.", "#sidao-cost", self.name, true)
-    if #tos > 0 then
-      self.cost_data = {tos[1], id}
+  on_cost = function(self, event, target, player, data)
+    local _,dat = player.room:askForUseActiveSkill(player, "sidao_vs", "#sidao-cost", true, {sidao_tos = self.cost_data}, true)
+    if dat then
+      self.cost_data = {tos = dat.targets, cards = dat.cards}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:useVirtualCard("snatch", {self.cost_data[2]}, player, player.room:getPlayerById(self.cost_data[1]), self.name)
+    player.room:useVirtualCard("snatch", self.cost_data.cards, player, player.room:getPlayerById(self.cost_data.tos[1]), self.name)
   end,
-
-  refresh_events = {fk.TargetSpecified},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Play and data.firstTarget
+}
+local sidao_vs = fk.CreateActiveSkill{
+  name = "sidao_vs",
+  card_num = 1,
+  target_num = 1,
+  card_filter = function(self, to_select, selected)
+    if #selected == 0 and table.contains(Self.player_cards[Player.Hand], to_select) then
+      local c = Fk:cloneCard("snatch")
+      c:addSubcard(to_select)
+      c.skillName = "tanbei"
+      return not Self:prohibitUse(c)
+    end
   end,
-  on_refresh = function(self, event, target, player, data)
-    self.sidao_tos = {}
-    local mark = player:getMark("sidao-phase")
-    if mark ~= 0 and #mark > 0 and #AimGroup:getAllTargets(data.tos) > 0 then
-      for _, id in ipairs(AimGroup:getAllTargets(data.tos)) do
-        if table.contains(mark, id) then
-          table.insert(self.sidao_tos, id)
-        end
-      end
+  target_filter = function(self, to_select, selected, selected_cards)
+    local to = Fk:currentRoom():getPlayerById(to_select)
+    if #selected == 0 and #selected_cards == 1 and table.contains(self.sidao_tos or {}, to_select) and not to:isAllNude() then
+      local c = Fk:cloneCard("snatch")
+      c:addSubcard(selected_cards[1])
+      c.skillName = "tanbei"
+      return not Self:isProhibited(to, c)
     end
-    if #AimGroup:getAllTargets(data.tos) > 0 then
-      mark = AimGroup:getAllTargets(data.tos)
-      table.removeOne(mark, player.id)
-    else
-      mark = 0
-    end
-    player.room:setPlayerMark(player, "sidao-phase", mark)
   end,
 }
 tanbei:addRelatedSkill(tanbei_refresh)
@@ -183,6 +203,7 @@ tanbei:addRelatedSkill(tanbei_prohibit)
 tanbei:addRelatedSkill(tanbei_targetmod)
 guosi:addSkill(tanbei)
 guosi:addSkill(sidao)
+Fk:addSkill(sidao_vs)
 Fk:loadTranslationTable{
   ["guosi"] = "郭汜",
   ["#guosi"] = "党豺为虐",
@@ -191,10 +212,14 @@ Fk:loadTranslationTable{
   [":tanbei"] = "出牌阶段限一次，你可以令一名其他角色选择一项：1.令你随机获得其区域内的一张牌，此回合不能再对其使用牌；"..
   "2.令你此回合对其使用牌无距离和次数限制。",
   ["sidao"] = "伺盗",
-  [":sidao"] = "出牌阶段限一次，当你对一名其他角色连续使用两张牌后，你可将一张手牌当【顺手牵羊】对其使用（目标须合法）。",
+  [":sidao"] = "当你于出牌阶段使用的牌结算结束后，若此牌与你本阶段使用的上一张牌有相同的目标角色，且你于此阶段内未发动过此技能，你可以将一张手牌当【顺手牵羊】对其中一名不为你的角色使用。",
+
+  ["@@tanbei-turn"] = "被贪狈",
+  ["#tanbei-prompt"] = "贪狈：令一名其他角色选择被你获得牌，或你对其使用牌无次数距离限制",
   ["tanbei1"] = "其随机获得你区域内的一张牌，此回合不能再对你使用牌",
   ["tanbei2"] = "此回合对你使用牌无距离和次数限制",
-  ["#sidao-cost"] = "伺盗：你可将一张手牌当【顺手牵羊】对相同的目标使用",
+  ["#sidao-cost"] = "伺盗：你可将一张手牌当【顺手牵羊】对其中一名角色使用",
+  ["sidao_vs"] = "伺盗",
 
   ["$tanbei1"] = "此机，我怎么会错失。",
   ["$tanbei2"] = "你的东西，现在是我的了！",
@@ -209,6 +234,7 @@ local xiongsuan = fk.CreateActiveSkill{
   anim_type = "offensive",
   card_num = 1,
   target_num = 1,
+  prompt = "#ty__xiongsuan",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
@@ -241,7 +267,7 @@ Fk:loadTranslationTable{
   ["illustrator:ty__lijueguosi"] = "君桓文化",
   ["ty__xiongsuan"] = "凶算",
   [":ty__xiongsuan"] = "出牌阶段限一次，你可以弃置一张手牌并对一名角色造成1点伤害，然后摸三张牌。若该角色不为你，你失去1点体力。",
-  ["#ty__xiongsuan"] = "凶算:弃置一张手牌并对一名角色造成1点伤害，然后你摸三张牌",
+  ["#ty__xiongsuan"] = "凶算:弃一张手牌并对一名角色造成1点伤害，你摸三张牌，若不为你，你失去体力",
   ["$ty__xiongsuan1"] = "此战虽凶，得益颇高。",
   ["$ty__xiongsuan2"] = "谋算计策，吾二人尚有险招。",
   ["~ty__lijueguosi"] = "异心相争，兵败战损……",

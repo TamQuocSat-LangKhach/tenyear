@@ -621,6 +621,416 @@ Fk:loadTranslationTable{
   ["~tystar__yuanshao"] = "骄兵必败，奈何不记前辙……",
 }
 
+--天璇：荀彧
+local xunyu = General(extension, "tystar__xunyu", "wei", 3)
+local anshu = fk.CreateTriggerSkill{
+  name = "anshu",
+  anim_type = "support",
+  events = {fk.RoundEnd, fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      if event == fk.RoundEnd then
+        return true
+      elseif event == fk.TurnEnd then
+        return table.find(player:getTableMark("anshu-turn"), function (id)
+          local p = player.room:getPlayerById(id)
+          return not p.dead and p:getHandcardNum() < math.min(p.maxHp, 5)
+        end)
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.RoundEnd then
+      return room:askForSkillInvoke(player, self.name, nil, "#anshu-use")
+    elseif event == fk.TurnEnd then
+      local targets = table.filter(player:getTableMark("anshu-turn"), function (id)
+        local p = room:getPlayerById(id)
+        return not p.dead and p:getHandcardNum() < math.min(p.maxHp, 5)
+      end)
+      local tos = room:askForChoosePlayers(player, targets, 1, 10, "#anshu-draw", self.name, true)
+      if #tos > 0 then
+        self.cost_data = {tos = tos}
+        return true
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.RoundEnd then
+      local cards = {}
+      for _, id in ipairs(room.discard_pile) do
+        local card = Fk:getCardById(id)
+        if card.type == Card.TypeBasic then
+          cards[card.trueName] = cards[card.trueName] or {}
+          table.insert(cards[card.trueName], id)
+        end
+      end
+      if next(cards) ~= nil then
+        local card_data = {}
+        for _, name in ipairs({"slash", "jink", "peach", "analeptic"}) do  --按杀闪桃酒顺序排列
+          if cards[name] then
+            table.insert(card_data, {name, cards[name]})
+          end
+        end
+        for name, ids in pairs(cards) do
+          if not table.contains({"slash", "jink", "peach", "analeptic"}, name) and #ids > 0 then  --其他基本牌按牌名排列
+            table.insert(card_data, {name, ids})
+          end
+        end
+        local ret = room:askForPoxi(player, self.name, card_data, nil, false)
+        ret = table.reverse(ret)
+        room:moveCards({
+          ids = ret,
+          toArea = Card.DrawPile,
+          moveReason = fk.ReasonPut,
+          skillName = self.name,
+        })
+      end
+      local targets = table.filter(room:getAlivePlayers(), function (p)
+        return not player:isProhibited(p, Fk:cloneCard("amazing_grace"))
+      end)
+      if #targets == 0 then return end
+      local tos = table.map(table.filter(targets, function (p)
+        return p:isWounded()
+      end), Util.IdMapper)
+      if table.contains(targets, player) then
+        table.insertIfNeed(tos, player.id)
+      end
+      local card = Fk:cloneCard("amazing_grace")
+      card.skillName = self.name
+      local use = {
+        from = player.id,
+        card = card,
+      }
+      if #tos > 0 then
+        use.extra_data = {}
+        use.extra_data.anshu_start = room:askForChoosePlayers(player, tos, 1, 1, "#anshu-choose", self.name, false)[1]
+      end
+      room:useCard(use)
+    elseif event == fk.TurnEnd then
+      room:sortPlayersByAction(self.cost_data.tos)
+      for _, id in ipairs(self.cost_data.tos) do
+        local p = room:getPlayerById(id)
+        if not p.dead then
+          local n = math.min(p.maxHp, 5) - p:getHandcardNum()
+          if n > 0 then
+            p:drawCards(n, self.name)
+          end
+        end
+      end
+    end
+  end,
+
+  refresh_events = {fk.BeforeCardUseEffect, fk.CardUseFinished, fk.AfterCardsMove, fk.RoundEnd},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.BeforeCardUseEffect then
+      return target == player and data.extra_data and data.extra_data.anshu_start
+    elseif event == fk.CardUseFinished then
+      return target == player and table.contains(data.card.skillNames, self.name) and data.extra_data and data.extra_data.AGResult
+    elseif event == fk.AfterCardsMove then
+      if player:getTableMark("anshu_record") ~= 0 then
+        local mark = player:getTableMark("anshu_record")
+        for _, move in ipairs(data) do
+          if move.from and mark[string.format("%.0f", move.from)] then
+            return true
+          end
+        end
+      end
+    elseif event == fk.RoundEnd then
+      return player:getTableMark("anshu_record") ~= 0
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.BeforeCardUseEffect then
+      local new_tos = {}
+      local n = 0
+      for i, info in ipairs(data.tos) do
+        if info[1] == data.extra_data.anshu_start then
+          table.insert(new_tos, info)
+          n = i
+        end
+        if n > 0 and i > n then
+          table.insert(new_tos, info)
+        end
+      end
+      for i, info in ipairs(data.tos) do
+        if i < n then
+          table.insert(new_tos, info)
+        end
+      end
+      data.tos = new_tos
+    elseif event == fk.CardUseFinished then
+      local mark = {}
+      for _, dat in ipairs(data.extra_data.AGResult) do
+        local to = room:getPlayerById(dat[1])
+        if not to.dead and table.contains(to:getCardIds("h"), dat[2]) then
+          mark[string.format("%.0f", to.id)] = mark[string.format("%.0f", to.id)] or {}
+          table.insert(mark[string.format("%.0f", to.id)], dat[2])
+        end
+      end
+      room:setPlayerMark(player, "anshu_record", mark)
+    elseif event == fk.AfterCardsMove then
+      local mark = player:getTableMark("anshu_record")
+      for _, move in ipairs(data) do
+        if move.from and mark[string.format("%.0f", move.from)] then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand and table.removeOne(mark[string.format("%.0f", move.from)], info.cardId) then
+              room:addTableMark(player, "anshu-turn", move.from)
+            end
+          end
+        end
+      end
+      room:setPlayerMark(player, "anshu_record", mark)
+    elseif event == fk.RoundEnd then
+      room:setPlayerMark(player, "anshu_record", 0)
+    end
+  end,
+}
+Fk:addPoxiMethod{
+  name = "anshu",
+  card_filter = Util.TrueFunc,
+  feasible = function(selected, data)
+    if data and #data == #selected then
+      local areas = {}
+      for _, id in ipairs(selected) do
+        for _, v in ipairs(data) do
+          if table.contains(v[2], id) then
+            table.insertIfNeed(areas, v[2])
+            break
+          end
+        end
+      end
+      return #areas == #selected
+    end
+  end,
+  prompt = "#anshu_put",
+  default_choice = function(data)
+    if not data then return {} end
+    local cids = table.map(data, function(v) return v[2][1] end)
+    return cids
+  end,
+}
+local kuangzuo = fk.CreateActiveSkill{
+  name = "kuangzuo",
+  anim_type = "support",
+  frequency = Skill.Limited,
+  card_num = 0,
+  target_num = 1,
+  prompt = "#kuangzuo",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local skills = {"chengfeng"}
+    if target.role == "lord" and not table.find(target.player_skills, function(s)
+      return s.lordSkill
+    end) then
+      table.insert(skills, "tongyin")
+    end
+    room:handleAddLoseSkills(target, skills, nil, true, false)
+    if player.dead or target.dead then return end
+    local targets = table.filter(room:getOtherPlayers(target), function (p)
+      return not p:isNude()
+    end)
+    if #targets == 0 then return end
+    local to = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1,
+      "#kuangzuo-choose::"..target.id, self.name, false)
+    to = room:getPlayerById(to[1])
+    local success, dat = room:askForUseActiveSkill(to, "kuangzuo_active", "#kuangzuo-put::"..target.id, false)
+    if success and dat then
+      if #dat.cards > 0 then
+        target:addToPile(self.name, dat.cards, true, self.name, to.id)
+      end
+    end
+  end,
+}
+local kuangzuo_active = fk.CreateActiveSkill{
+  name = "kuangzuo_active",
+  card_filter = function(self, to_select, selected)
+    return table.contains(Self:getCardIds("he"), to_select) and Fk:getCardById(to_select).suit ~= Card.NoSuit and
+      table.every(selected, function(id) return Fk:getCardById(to_select).suit ~= Fk:getCardById(id).suit end)
+  end,
+  feasible = function (self, selected, selected_cards)
+    local suits = {}
+    for _, id in ipairs(Self:getCardIds("he")) do
+      table.insertIfNeed(suits, Fk:getCardById(id).suit)
+    end
+    table.removeOne(suits, Card.NoSuit)
+    return #selected_cards == #suits
+  end,
+}
+local chengfeng = fk.CreateViewAsSkill{
+  name = "chengfeng",
+  pattern = "jink,nullification",
+  expand_pile = "kuangzuo",
+  prompt = "#chengfeng",
+  card_filter = function(self, to_select, selected)
+    if #selected == 0 and Self:getPileNameOfId(to_select) == "kuangzuo" then
+      local _c = Fk:getCardById(to_select)
+      local c
+      if _c.color == Card.Red then
+        c = Fk:cloneCard("jink")
+      elseif _c.color == Card.Black then
+        c = Fk:cloneCard("nullification")
+      else
+        return false
+      end
+      return Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(c)
+    end
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 then return end
+    local card
+    if Fk:getCardById(cards[1]).color == Card.Red then
+      card = Fk:cloneCard("jink")
+    elseif Fk:getCardById(cards[1]).color == Card.Black then
+      card = Fk:cloneCard("nullification")
+    end
+    card.skillName = self.name
+    card:addSubcard(cards[1])
+    return card
+  end,
+  after_use = function (self, player, use)
+    local room = player.room
+    if not player.dead then
+      local colors = {}
+      for _, id in ipairs(player:getPile("kuangzuo")) do
+        table.insertIfNeed(colors, Fk:getCardById(id).color)
+      end
+      table.removeOne(colors, Card.NoColor)
+      if #colors < 2 and room:askForSkillInvoke(player, self.name, nil, "#chengfeng-put") then
+        player:addToPile("kuangzuo", room:getNCards(1), true, self.name, player.id)
+      end
+    end
+  end,
+  enabled_at_response = function(self, player, response)
+    if
+      not (
+        not response and
+        (
+          response == nil or
+          player:getMark("chengfeng_activated") > 0
+        ) and
+        #player:getPile("kuangzuo") > 0
+      )
+    then
+      return false
+    end
+    return player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
+  end,
+}
+local chengfeng_trigger = fk.CreateTriggerSkill{
+  name = "#chengfeng_trigger",
+
+  refresh_events = {fk.HandleAskForPlayCard},
+  can_refresh = function(self, event, target, player, data)
+    if data.afterRequest and (data.extra_data or {}).chengfeng_effected then
+      return player:getMark("chengfeng_activated") > 0
+    end
+
+    return
+      player:hasSkill(chengfeng) and
+      data.eventData and
+      data.eventData.to and
+      data.eventData.to == player.id
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if data.afterRequest then
+      room:setPlayerMark(player, "chengfeng_activated", 0)
+    else
+      room:setPlayerMark(player, "chengfeng_activated", 1)
+      data.extra_data = data.extra_data or {}
+      data.extra_data.chengfeng_effected = true
+    end
+  end,
+}
+local tongyin = fk.CreateTriggerSkill{
+  name = "tongyin$",
+  anim_type = "masochism",
+  events = {fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) and data.from and data.from ~= player and data.card then
+      if data.from.kingdom == player.kingdom then
+        return player.room:getCardArea(data.card) == Card.Processing
+      else
+        return not data.from.dead and not data.from:isNude()
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    if data.from.kingdom == player.kingdom then
+      return player.room:askForSkillInvoke(player, self.name, nil, "#tongyin1-invoke:::"..data.card)
+    else
+      return player.room:askForSkillInvoke(player, self.name, nil, "#tongyin2-invoke::"..data.from.id)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local card
+    if data.from.kingdom == player.kingdom then
+      card = data.card
+    else
+      room:doIndicate(player.id, {data.from.id})
+      card = room:askForCardChosen(player, data.from, "he", self.name, "#tongyin2-put::"..data.from.id)
+    end
+    player:addToPile("kuangzuo", card, true, self.name, player.id)
+  end,
+}
+Fk:addSkill(kuangzuo_active)
+chengfeng:addRelatedSkill(chengfeng_trigger)
+xunyu:addSkill(anshu)
+xunyu:addSkill(kuangzuo)
+xunyu:addRelatedSkill(chengfeng)
+xunyu:addRelatedSkill(tongyin)
+Fk:loadTranslationTable{
+  ["tystar__xunyu"] = "星荀彧",
+  ["#tystar__xunyu"] = "怀忠念治",
+  ["designer:tystar__xunyu"] = "对勾对勾w",
+  ["illustrator:tystar__xunyu"] = "黯荧岛",
+
+  ["anshu"] = "安庶",
+  [":anshu"] = "每轮结束时，你可以将弃牌堆中牌名不同的基本牌各一张置于牌堆顶，然后视为使用一张【五谷丰登】，你选择从你或一名已受伤角色开始"..
+  "结算此【五谷丰登】。直到下轮结束，若有角色失去了因此【五谷丰登】选择的牌，当前回合结束时你可以令其将手牌摸至体力上限（最多摸至五张）。",
+  ["kuangzuo"] = "匡祚",
+  [":kuangzuo"] = "限定技，出牌阶段，你可以令一名角色获得技能〖承奉〗（若其为主公且没有主公技，则额外获得〖统荫〗），然后令另一名角色将"..
+  "每种花色各一张牌置于获得技能角色的武将牌上（称为“匡祚”牌）。",
+  ["chengfeng"] = "承奉",
+  [":chengfeng"] = "每回合限一次，你可以将一张红色“匡祚”牌当【闪】或黑色“匡祚”牌当【无懈可击】对即将对你生效的牌使用，此牌结算后，"..
+  "若“匡祚”不足两种颜色，你可以将牌堆顶一张牌置为“匡祚”。",
+  ["tongyin"] = "统荫",
+  [":tongyin"] = "主公技，当你受到其他角色使用牌造成的伤害后，若伤害来源与你势力相同，你可以将造成伤害的牌置为“匡祚”；若与你势力不同，"..
+  "你可以将其一张牌置为“匡祚”。",
+  ["#anshu-use"] = "安庶：是否视为使用【五谷丰登】？",
+  ["#anshu-draw"] = "安庶：你可以令这些角色将手牌摸至体力上限（最多摸至五张）",
+  ["#anshu_put"] = "安庶：将每种牌名各一张牌置于牌堆顶（按选择的顺序从上到下放置）",
+  ["#anshu-choose"] = "安庶：选择一名角色，从其开始结算此【五谷丰登】",
+  ["#kuangzuo"] = "匡祚：令一名角色获得技能〖承奉〗，若其为主公且没有主公技，则额外获得〖统荫〗",
+  ["#kuangzuo-choose"] = "匡祚：令一名角色将其每种花色各一张牌置为 %dest 的“匡祚”牌",
+  ["kuangzuo_active"] = "匡祚",
+  ["#kuangzuo-put"] = "匡祚：请将每种花色各一张牌置为 %dest 的“匡祚”牌",
+  ["#chengfeng"] = "承奉：你可以将红色“匡祚”当【闪】、黑色“匡祚”当【无懈可击】对即将对你生效的牌使用",
+  ["#chengfeng-put"] = "承奉：是否将牌堆顶一张牌置为“匡祚”？",
+  ["#tongyin1-invoke"] = "统荫：是否将%arg置为“匡祚”？",
+  ["#tongyin2-invoke"] = "统荫：是否将 %dest 的一张牌置为“匡祚”？",
+  ["#tongyin2-put"] = "统荫：将 %dest 的一张牌置为“匡祚”",
+
+  ["$anshu1"] = "春种其粟，秋得其实。",
+  ["$anshu2"] = "与民休养生息，则国可得安泰。",
+  ["$kuangzuo1"] = "家国兴衰，系于一肩之上，朝纲待重振之时。",
+  ["$kuangzuo2"] = "吾辈向汉，当矢志不渝，不可坐视神州陆沉。",
+  ["$chengfeng1"] = "臣簇于君侧，为耳目，为股肱。",
+  ["$chengfeng2"] = "承臣子之任，奉天子之统。",
+  ["~tystar__xunyu"] = "臣固忠于国，非一家之臣。",
+}
 
 --玉衡：曹仁 张春华
 local caoren = General(extension, "tystar__caoren", "wei", 4)
@@ -1185,416 +1595,5 @@ Fk:loadTranslationTable{
   ["$ty__jiaohao2"] = "站住！且与本姑娘分个高下！",
   ["~tystar__sunshangxiang"] = "秋风冷，江水寒……",
 }
-
-
-
-
-local xunyu = General(extension, "tystar__xunyu", "wei", 3)
-local anshu = fk.CreateTriggerSkill{
-  name = "anshu",
-  anim_type = "support",
-  events = {fk.RoundEnd, fk.TurnEnd},
-  can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) then
-      if event == fk.RoundEnd then
-        return true
-      elseif event == fk.TurnEnd then
-        return table.find(player:getTableMark("anshu-turn"), function (id)
-          local p = player.room:getPlayerById(id)
-          return not p.dead and p:getHandcardNum() < math.min(p.maxHp, 5)
-        end)
-      end
-    end
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.RoundEnd then
-      return room:askForSkillInvoke(player, self.name, nil, "#anshu-use")
-    elseif event == fk.TurnEnd then
-      local targets = table.filter(player:getTableMark("anshu-turn"), function (id)
-        local p = room:getPlayerById(id)
-        return not p.dead and p:getHandcardNum() < math.min(p.maxHp, 5)
-      end)
-      local tos = room:askForChoosePlayers(player, targets, 1, 10, "#anshu-draw", self.name, true)
-      if #tos > 0 then
-        self.cost_data = {tos = tos}
-        return true
-      end
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.RoundEnd then
-      local cards = {}
-      for _, id in ipairs(room.discard_pile) do
-        local card = Fk:getCardById(id)
-        if card.type == Card.TypeBasic then
-          cards[card.trueName] = cards[card.trueName] or {}
-          table.insert(cards[card.trueName], id)
-        end
-      end
-      if next(cards) ~= nil then
-        local card_data = {}
-        for _, name in ipairs({"slash", "jink", "peach", "analeptic"}) do  --按杀闪桃酒顺序排列
-          if cards[name] then
-            table.insert(card_data, {name, cards[name]})
-          end
-        end
-        for name, ids in pairs(cards) do
-          if not table.contains({"slash", "jink", "peach", "analeptic"}, name) and #ids > 0 then  --其他基本牌按牌名排列
-            table.insert(card_data, {name, ids})
-          end
-        end
-        local ret = room:askForPoxi(player, self.name, card_data, nil, false)
-        ret = table.reverse(ret)
-        room:moveCards({
-          ids = ret,
-          toArea = Card.DrawPile,
-          moveReason = fk.ReasonPut,
-          skillName = self.name,
-        })
-      end
-      local targets = table.filter(room:getAlivePlayers(), function (p)
-        return not player:isProhibited(p, Fk:cloneCard("amazing_grace"))
-      end)
-      if #targets == 0 then return end
-      local tos = table.map(table.filter(targets, function (p)
-        return p:isWounded()
-      end), Util.IdMapper)
-      if table.contains(targets, player) then
-        table.insertIfNeed(tos, player.id)
-      end
-      local card = Fk:cloneCard("amazing_grace")
-      card.skillName = self.name
-      local use = {
-        from = player.id,
-        card = card,
-      }
-      if #tos > 0 then
-        use.extra_data = {}
-        use.extra_data.anshu_start = room:askForChoosePlayers(player, tos, 1, 1, "#anshu-choose", self.name, false)[1]
-      end
-      room:useCard(use)
-    elseif event == fk.TurnEnd then
-      room:sortPlayersByAction(self.cost_data.tos)
-      for _, id in ipairs(self.cost_data.tos) do
-        local p = room:getPlayerById(id)
-        if not p.dead then
-          local n = math.min(p.maxHp, 5) - p:getHandcardNum()
-          if n > 0 then
-            p:drawCards(n, self.name)
-          end
-        end
-      end
-    end
-  end,
-
-  refresh_events = {fk.BeforeCardUseEffect, fk.CardUseFinished, fk.AfterCardsMove, fk.RoundEnd},
-  can_refresh = function(self, event, target, player, data)
-    if event == fk.BeforeCardUseEffect then
-      return target == player and data.extra_data and data.extra_data.anshu_start
-    elseif event == fk.CardUseFinished then
-      return target == player and table.contains(data.card.skillNames, self.name) and data.extra_data and data.extra_data.AGResult
-    elseif event == fk.AfterCardsMove then
-      if player:getTableMark("anshu_record") ~= 0 then
-        local mark = player:getTableMark("anshu_record")
-        for _, move in ipairs(data) do
-          if move.from and mark[string.format("%.0f", move.from)] then
-            return true
-          end
-        end
-      end
-    elseif event == fk.RoundEnd then
-      return player:getTableMark("anshu_record") ~= 0
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.BeforeCardUseEffect then
-      local new_tos = {}
-      local n = 0
-      for i, info in ipairs(data.tos) do
-        if info[1] == data.extra_data.anshu_start then
-          table.insert(new_tos, info)
-          n = i
-        end
-        if n > 0 and i > n then
-          table.insert(new_tos, info)
-        end
-      end
-      for i, info in ipairs(data.tos) do
-        if i < n then
-          table.insert(new_tos, info)
-        end
-      end
-      data.tos = new_tos
-    elseif event == fk.CardUseFinished then
-      local mark = {}
-      for _, dat in ipairs(data.extra_data.AGResult) do
-        local to = room:getPlayerById(dat[1])
-        if not to.dead and table.contains(to:getCardIds("h"), dat[2]) then
-          mark[string.format("%.0f", to.id)] = mark[string.format("%.0f", to.id)] or {}
-          table.insert(mark[string.format("%.0f", to.id)], dat[2])
-        end
-      end
-      room:setPlayerMark(player, "anshu_record", mark)
-    elseif event == fk.AfterCardsMove then
-      local mark = player:getTableMark("anshu_record")
-      for _, move in ipairs(data) do
-        if move.from and mark[string.format("%.0f", move.from)] then
-          for _, info in ipairs(move.moveInfo) do
-            if info.fromArea == Card.PlayerHand and table.removeOne(mark[string.format("%.0f", move.from)], info.cardId) then
-              room:addTableMark(player, "anshu-turn", move.from)
-            end
-          end
-        end
-      end
-      room:setPlayerMark(player, "anshu_record", mark)
-    elseif event == fk.RoundEnd then
-      room:setPlayerMark(player, "anshu_record", 0)
-    end
-  end,
-}
-Fk:addPoxiMethod{
-  name = "anshu",
-  card_filter = Util.TrueFunc,
-  feasible = function(selected, data)
-    if data and #data == #selected then
-      local areas = {}
-      for _, id in ipairs(selected) do
-        for _, v in ipairs(data) do
-          if table.contains(v[2], id) then
-            table.insertIfNeed(areas, v[2])
-            break
-          end
-        end
-      end
-      return #areas == #selected
-    end
-  end,
-  prompt = "#anshu_put",
-  default_choice = function(data)
-    if not data then return {} end
-    local cids = table.map(data, function(v) return v[2][1] end)
-    return cids
-  end,
-}
-local kuangzuo = fk.CreateActiveSkill{
-  name = "kuangzuo",
-  anim_type = "support",
-  frequency = Skill.Limited,
-  card_num = 0,
-  target_num = 1,
-  prompt = "#kuangzuo",
-  can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
-  end,
-  card_filter = Util.FalseFunc,
-  target_filter = function(self, to_select, selected)
-    return #selected == 0
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    local skills = {"chengfeng"}
-    if target.role == "lord" and not table.find(target.player_skills, function(s)
-      return s.lordSkill
-    end) then
-      table.insert(skills, "tongyin")
-    end
-    room:handleAddLoseSkills(target, skills, nil, true, false)
-    if player.dead or target.dead then return end
-    local targets = table.filter(room:getOtherPlayers(target), function (p)
-      return not p:isNude()
-    end)
-    if #targets == 0 then return end
-    local to = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1,
-      "#kuangzuo-choose::"..target.id, self.name, false)
-    to = room:getPlayerById(to[1])
-    local success, dat = room:askForUseActiveSkill(to, "kuangzuo_active", "#kuangzuo-put::"..target.id, false)
-    if success and dat then
-      if #dat.cards > 0 then
-        target:addToPile(self.name, dat.cards, true, self.name, to.id)
-      end
-    end
-  end,
-}
-local kuangzuo_active = fk.CreateActiveSkill{
-  name = "kuangzuo_active",
-  card_filter = function(self, to_select, selected)
-    return table.contains(Self:getCardIds("he"), to_select) and Fk:getCardById(to_select).suit ~= Card.NoSuit and
-      table.every(selected, function(id) return Fk:getCardById(to_select).suit ~= Fk:getCardById(id).suit end)
-  end,
-  feasible = function (self, selected, selected_cards)
-    local suits = {}
-    for _, id in ipairs(Self:getCardIds("he")) do
-      table.insertIfNeed(suits, Fk:getCardById(id).suit)
-    end
-    table.removeOne(suits, Card.NoSuit)
-    return #selected_cards == #suits
-  end,
-}
-local chengfeng = fk.CreateViewAsSkill{
-  name = "chengfeng",
-  pattern = "jink,nullification",
-  expand_pile = "kuangzuo",
-  prompt = "#chengfeng",
-  card_filter = function(self, to_select, selected)
-    if #selected == 0 and Self:getPileNameOfId(to_select) == "kuangzuo" then
-      local _c = Fk:getCardById(to_select)
-      local c
-      if _c.color == Card.Red then
-        c = Fk:cloneCard("jink")
-      elseif _c.color == Card.Black then
-        c = Fk:cloneCard("nullification")
-      else
-        return false
-      end
-      return Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(c)
-    end
-  end,
-  view_as = function(self, cards)
-    if #cards ~= 1 then return end
-    local card
-    if Fk:getCardById(cards[1]).color == Card.Red then
-      card = Fk:cloneCard("jink")
-    elseif Fk:getCardById(cards[1]).color == Card.Black then
-      card = Fk:cloneCard("nullification")
-    end
-    card.skillName = self.name
-    card:addSubcard(cards[1])
-    return card
-  end,
-  after_use = function (self, player, use)
-    local room = player.room
-    if not player.dead then
-      local colors = {}
-      for _, id in ipairs(player:getPile("kuangzuo")) do
-        table.insertIfNeed(colors, Fk:getCardById(id).color)
-      end
-      table.removeOne(colors, Card.NoColor)
-      if #colors < 2 and room:askForSkillInvoke(player, self.name, nil, "#chengfeng-put") then
-        player:addToPile("kuangzuo", room:getNCards(1), true, self.name, player.id)
-      end
-    end
-  end,
-  enabled_at_response = function(self, player, response)
-    if
-      not (
-        not response and
-        (
-          response == nil or
-          player:getMark("chengfeng_activated") > 0
-        ) and
-        #player:getPile("kuangzuo") > 0
-      )
-    then
-      return false
-    end
-    return player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
-  end,
-}
-local chengfeng_trigger = fk.CreateTriggerSkill{
-  name = "#chengfeng_trigger",
-
-  refresh_events = {fk.HandleAskForPlayCard},
-  can_refresh = function(self, event, target, player, data)
-    if data.afterRequest and (data.extra_data or {}).chengfeng_effected then
-      return player:getMark("chengfeng_activated") > 0
-    end
-
-    return
-      player:hasSkill(chengfeng) and
-      data.eventData and
-      data.eventData.to and
-      data.eventData.to == player.id
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if data.afterRequest then
-      room:setPlayerMark(player, "chengfeng_activated", 0)
-    else
-      room:setPlayerMark(player, "chengfeng_activated", 1)
-      data.extra_data = data.extra_data or {}
-      data.extra_data.chengfeng_effected = true
-    end
-  end,
-}
-local tongyin = fk.CreateTriggerSkill{
-  name = "tongyin$",
-  anim_type = "masochism",
-  events = {fk.Damaged},
-  can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self) and data.from and data.from ~= player and data.card then
-      if data.from.kingdom == player.kingdom then
-        return player.room:getCardArea(data.card) == Card.Processing
-      else
-        return not data.from.dead and not data.from:isNude()
-      end
-    end
-  end,
-  on_cost = function(self, event, target, player, data)
-    if data.from.kingdom == player.kingdom then
-      return player.room:askForSkillInvoke(player, self.name, nil, "#tongyin1-invoke:::"..data.card)
-    else
-      return player.room:askForSkillInvoke(player, self.name, nil, "#tongyin2-invoke::"..data.from.id)
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local card
-    if data.from.kingdom == player.kingdom then
-      card = data.card
-    else
-      room:doIndicate(player.id, {data.from.id})
-      card = room:askForCardChosen(player, data.from, "he", self.name, "#tongyin2-put::"..data.from.id)
-    end
-    player:addToPile("kuangzuo", card, true, self.name, player.id)
-  end,
-}
-Fk:addSkill(kuangzuo_active)
-chengfeng:addRelatedSkill(chengfeng_trigger)
-xunyu:addSkill(anshu)
-xunyu:addSkill(kuangzuo)
-xunyu:addRelatedSkill(chengfeng)
-xunyu:addRelatedSkill(tongyin)
-Fk:loadTranslationTable{
-  ["tystar__xunyu"] = "星荀彧",
-  ["#tystar__xunyu"] = "",
-  ["illustrator:tystar__xunyu"] = "匠人绘",
-
-  ["anshu"] = "安庶",
-  [":anshu"] = "每轮结束时，你可以将弃牌堆中牌名不同的基本牌各一张置于牌堆顶，然后视为使用一张【五谷丰登】，你选择从你或一名已受伤角色开始"..
-  "结算此【五谷丰登】。直到下轮结束，若有角色失去了因此【五谷丰登】选择的牌，当前回合结束时你可以令其将手牌摸至体力上限（最多摸至五张）。",
-  ["kuangzuo"] = "匡祚",
-  [":kuangzuo"] = "限定技，出牌阶段，你可以令一名角色获得技能〖承奉〗（若其为主公且没有主公技，则额外获得〖统荫〗），然后令另一名角色将"..
-  "每种花色各一张牌置于获得技能角色的武将牌上（称为“匡祚”牌）。",
-  ["chengfeng"] = "承奉",
-  [":chengfeng"] = "每回合限一次，你可以将一张红色“匡祚”牌当【闪】或黑色“匡祚”牌当【无懈可击】对即将对你生效的牌使用，此牌结算后，"..
-  "若“匡祚”不足两种颜色，你可以将牌堆顶一张牌置为“匡祚”。",
-  ["tongyin"] = "统荫",
-  [":tongyin"] = "主公技，当你受到其他角色使用牌造成的伤害后，若伤害来源与你势力相同，你可以将造成伤害的牌置为“匡祚”；若与你势力不同，"..
-  "你可以将其一张牌置为“匡祚”。",
-  ["#anshu-use"] = "安庶：是否视为使用【五谷丰登】？",
-  ["#anshu-draw"] = "安庶：你可以令这些角色将手牌摸至体力上限（最多摸至五张）",
-  ["#anshu_put"] = "安庶：将每种牌名各一张牌置于牌堆顶（按选择的顺序从上到下放置）",
-  ["#anshu-choose"] = "安庶：选择一名角色，从其开始结算此【五谷丰登】",
-  ["#kuangzuo"] = "匡祚：令一名角色获得技能〖承奉〗，若其为主公且没有主公技，则额外获得〖统荫〗",
-  ["#kuangzuo-choose"] = "匡祚：令一名角色将其每种花色各一张牌置为 %dest 的“匡祚”牌",
-  ["kuangzuo_active"] = "匡祚",
-  ["#kuangzuo-put"] = "匡祚：请将每种花色各一张牌置为 %dest 的“匡祚”牌",
-  ["#chengfeng"] = "承奉：你可以将红色“匡祚”当【闪】、黑色“匡祚”当【无懈可击】对即将对你生效的牌使用",
-  ["#chengfeng-put"] = "承奉：是否将牌堆顶一张牌置为“匡祚”？",
-  ["#tongyin1-invoke"] = "统荫：是否将%arg置为“匡祚”？",
-  ["#tongyin2-invoke"] = "统荫：是否将 %dest 的一张牌置为“匡祚”？",
-  ["#tongyin2-put"] = "统荫：将 %dest 的一张牌置为“匡祚”",
-}
-
-
-
-
-
-
-
 
 return extension

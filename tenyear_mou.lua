@@ -2425,7 +2425,7 @@ local kongwu = fk.CreateActiveSkill{
   max_card_num = function ()
     return Self.maxHp
   end,
-  target_num = 0,
+  target_num = 1,
   prompt = function (self, selected_cards, selected_targets)
     if Self:getSwitchSkillState(self.name, false) == fk.SwitchYang then
       return "#kongwu-yang:::"..Self.maxHp
@@ -2439,31 +2439,31 @@ local kongwu = fk.CreateActiveSkill{
   card_filter = function(self, to_select, selected)
     return #selected < Self.maxHp and not Self:prohibitDiscard(Fk:getCardById(to_select))
   end,
+  target_filter = function (self, to_select, selected)
+    if #selected == 0 and to_select ~= Self.id then
+      if Self:getSwitchSkillState(self.name, false) == fk.SwitchYang then
+        return not Fk:currentRoom():getPlayerById(to_select):isNude()
+      else
+        return true
+      end
+    end
+  end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
     room:throwCard(effect.cards, self.name, player, player)
     if player.dead then return end
-    local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
-    if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
-      targets = table.map(table.filter(room:getOtherPlayers(player), function (p)
-        return not p:isNude()
-      end), Util.IdMapper)
-    end
-    if #targets == 0 then return end
     local n = #effect.cards
-    local to = room:askForChoosePlayers(player, targets, 1, 1,
-      "#kongwu_"..player:getSwitchSkillState(self.name, true, true).."-choose:::"..n, self.name, false)
-    to = room:getPlayerById(to[1])
     local mark = player:getTableMark("kongwu-phase")
-    table.insertIfNeed(mark, to.id)
+    table.insertIfNeed(mark, target.id)
     room:setPlayerMark(player, "kongwu-phase", mark)
     if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
-      local cards = room:askForCardsChosen(player, to, 1, n, "he", self.name, "#kongwu-discard::"..to.id..":"..n)
-      room:throwCard(cards, self.name, to, player)
+      local cards = room:askForCardsChosen(player, target, 1, n, "he", self.name, "#kongwu-discard::"..target.id..":"..n)
+      room:throwCard(cards, self.name, target, player)
     else
       for i = 1, n, 1 do
-        if to.dead then return end
-        room:useVirtualCard("slash", nil, player, to, self.name, true)
+        if target.dead then return end
+        room:useVirtualCard("slash", nil, player, target, self.name, true)
       end
     end
   end
@@ -2521,18 +2521,20 @@ kongwu:addRelatedSkill(kongwu_invalidity)
 hucheer:addSkill(kongwu)
 Fk:loadTranslationTable{
   ["tymou__hucheer"] = "谋胡车儿",
-  ["#tymou__hucheer"] = "",
-  ["illustrator:tymou__hucheer"] = "",
+  ["#tymou__hucheer"] = "有力逮戟",
+  ["illustrator:tymou__hucheer"] = "钟於",
 
   ["kongwu"] = "孔武",
-  [":kongwu"] = "转换技，出牌阶段限一次，你可以弃置至多体力上限张牌，然后选择一名其他角色：阳：弃置其至多等量的牌；阴：视为对其使用"..
+  [":kongwu"] = "转换技，出牌阶段限一次，你可以弃置至多体力上限张牌并选择一名其他角色：阳：弃置其至多等量的牌；阴：视为对其使用"..
   "等量张【杀】。此阶段结束时，若其手牌数和体力值均不大于你，其下回合装备区内的牌失效且摸牌阶段摸牌数-1。",
-  ["#kongwu-yang"] = "孔武：你可以弃置至多%arg张牌，然后弃置一名其他角色至多等量的牌",
-  ["#kongwu-yin"] = "孔武：你可以弃置至多%arg张牌，然后视为对一名其他角色使用等量张【杀】",
-  ["#kongwu_yang-choose"] = "孔武：选择一名角色，弃置其至多%arg张牌",
-  ["#kongwu_yin-choose"] = "孔武：选择一名角色，视为对其使用%arg张【杀】",
+  ["#kongwu-yang"] = "孔武：你可以弃置至多%arg张牌，弃置一名其他角色至多等量的牌",
+  ["#kongwu-yin"] = "孔武：你可以弃置至多%arg张牌，视为对一名其他角色使用等量张【杀】",
   ["#kongwu-discard"] = "孔武：弃置 %dest 至多%arg张牌",
   ["@@kongwu-turn"] = "孔武",
+
+  ["$kongwu1"] = "臂有千斤力，何惧万人敌！",
+  ["$kongwu2"] = "莫说兵器，取汝首级也易如反掌。",
+  ["~tymou__hucheer"] = "典，典将军，您还没睡呀？",
 }
 
 --周郎将计：程昱

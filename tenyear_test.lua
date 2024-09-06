@@ -840,7 +840,7 @@ local kunli = fk.CreateTriggerSkill{
     local room = player.room
     room:recover({
       who = player,
-      num = math.max(2, player.maxHp) - player.hp,
+      num = math.min(2, player.maxHp) - player.hp,
       recoverBy = player,
       skillName = self.name,
     })

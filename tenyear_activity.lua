@@ -4330,14 +4330,15 @@ local dunxi_delay = fk.CreateTriggerSkill{
       if #targets > 0 then
         local random_target = table.random(targets)
 
-        for i = 1, 3, 1 do
+        for i = 1, 2, 1 do
           for _, p in ipairs(room:getAllPlayers()) do
+            room:setEmotion(p, "./image/anim/selectable")
             room:notifyMoveFocus(p, self.name)
             room:delay(300)
           end
         end
         for _, p in ipairs(room:getAllPlayers()) do
-          room:notifyMoveFocus(p, self.name)
+          room:setEmotion(p, "./image/anim/selectable")
           room:delay(600)
           if p.id == random_target then
             room:doIndicate(data.from, {random_target})

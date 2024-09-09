@@ -182,6 +182,8 @@ Fk:loadTranslationTable{
   ["sunli"] = "孙礼",
   ["#sunli"] = "百炼公才",
   ["designer:sunli"] = "老酒馆的猫",
+  ["illustrator:sunli"] = "错落宇宙",
+
   ["kangli"] = "伉厉",
   [":kangli"] = "当你造成或受到伤害后，你可以摸两张牌，然后你下次造成伤害时弃置这些牌。",
   ["@@kangli-inhand"] = "伉厉",
@@ -606,7 +608,12 @@ local fazhu = fk.CreateTriggerSkill{
     --FIXME: 要用moveCardsHoldingAreaCheck严格判断会很麻烦
     local result = U.askForDistribution(player, to_give, room.alive_players, self.name, 0, #to_give, "#fazhu-give", "", false, 1)
     local targets = {}
-    for _, p in ipairs(room:getAlivePlayers()) do
+    if table.find(to_give, function (id)
+      return table.contains(player:getCardIds("h"), id)
+    end) then
+      table.insert(targets, player)
+    end
+    for _, p in ipairs(room:getOtherPlayers(player)) do
       if #result[tostring(p.id)] > 0 then
         table.insert(targets, p)
       end

@@ -139,7 +139,15 @@ Fk:loadTranslationTable{
 
 --嵇康 曹不兴 马良
 
---袁胤
+Fk:loadTranslationTable{
+  ["yuanyin"] = "袁胤",
+  ["#yuanyin"] = "载路素车",
+
+  ["moshou"] = "墨守",
+  [":moshou"] = "当你成为其他角色使用黑色牌的目标后，你可以摸X张牌（X为1、2、3，依次循环）。",
+  ["yunjiu"] = "运柩",
+  [":yunjiu"] = "一名角色死亡时，你可以弃置其牌数的牌，将其所有牌交给一名其他角色，然后你加1点体力上限并回复1点体力。",
+}
 
 local tmp_illustrate = fk.CreateActiveSkill{name = "tmp_illustrate"}
 
@@ -148,6 +156,7 @@ chezhou:addSkill(tmp_illustrate)
 chezhou.hidden = true
 Fk:loadTranslationTable{
   ["chezhou"] = "车胄",
+  ["#chezhou"] = "当车螳臂",
   ["tmp_illustrate"] = "看画",
   [":tmp_illustrate"] = "这个武将还没上线，你可以看看插画。不会出现在选将框。",
 
@@ -212,6 +221,7 @@ matie:addSkill("sp__zhuiji")
 matie:addSkill(quxian)
 Fk:loadTranslationTable{
   ["matie"] = "马铁",
+  ["#matie"] = "继志伏波",
 
   ["quxian"] = "驱险",
   [":quxian"] = "出牌阶段开始时，你可以选择一名角色，攻击范围内有其的其他角色均可以对其使用【杀】。"..
@@ -349,6 +359,7 @@ hansong:addSkill(yinbi)
 hansong:addSkill(shuaiyan)
 Fk:loadTranslationTable{
   ["hansong"] = "韩嵩",
+  ["#hansong"] = "楚国之望",
 
   ["yinbi"] = "隐避",
   [":yinbi"] = "锁定技，若其他角色的手牌数均不与你相等，你使用牌无距离和次数限制。"..
@@ -357,6 +368,128 @@ Fk:loadTranslationTable{
   [":shuaiyan"] = "锁定技，当其他角色得到/失去手牌后，若其手牌数与你相等，你选择：1.弃置其一张牌；2.摸一张牌。",
 
   ["shuaiyan_discard"] = "弃置%dest的一张牌",
+}
+
+local huzun = General(extension, "huzun", "wei", 4)
+local zhantao = fk.CreateTriggerSkill{
+  name = "zhantao",
+  anim_type = "offensive",
+  events = {fk.Damaged},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and (player == target or player:inMyAttackRange(target)) and
+    data.from and not data.from.dead and data.from ~= player
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if room:askForSkillInvoke(player, self.name, nil, "#zhantao-invoke::" .. data.from.id) then
+      room:doIndicate(player.id, {data.from.id})
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local n = 13
+    local pattern = ".|0"
+    if data.card and data.card.number > 0 and data.card.number < 13 then
+      n = data.card.number
+      pattern = ".|" .. tostring(n+1) .. "~13"
+    end
+    local judge = {
+      who = player,
+      reason = self.name,
+      pattern = pattern,
+    }
+    room:judge(judge)
+    if judge.card.number > n then
+      room:useVirtualCard("slash", nil, player, data.from, self.name, true)
+    end
+  end,
+}
+local anjing = fk.CreateTriggerSkill{
+  name = "anjing",
+  anim_type = "support",
+  events = {fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and player == target and player:usedSkillTimes(self.name) < 1 and
+    not table.every(player.room.alive_players, function (p)
+      return not p:isWounded()
+    end)
+  end,
+  on_cost = function (self, event, target, player, data)
+    local targets = table.filter(player.room.alive_players, function (p) return p:isWounded() end)
+    local n = math.min(#targets, player:getMark(self.name) + 1)
+    local tos = player.room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, n,
+    "#anjing-choose:::" .. tostring(n), self.name, true)
+    if #tos > 0 then
+      self.cost_data = tos
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:addPlayerMark(player, self.name, 1)
+    local tos = table.simpleClone(self.cost_data)
+    room:sortPlayersByAction(tos)
+    tos = table.map(tos, Util.Id2PlayerMapper)
+    for _, p in ipairs(tos) do
+      if not p.dead then
+        p:drawCards(1, self.name)
+      end
+    end
+    local recovers = {}
+    for _, p in ipairs(tos) do
+      if not p.dead and p:isWounded() then
+        if #recovers == 0 then
+          table.insert(recovers, p)
+        else
+          if p.hp < recovers[1].hp then
+            recovers = {p}
+          elseif p.hp == recovers[1].hp then
+            table.insert(recovers, p)
+          end
+        end
+      end
+    end
+    if #recovers > 0 then
+      room:recover{
+        who = table.random(recovers),
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      }
+    end
+  end,
+
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == self
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, self.name, 0)
+  end,
+}
+huzun:addSkill(zhantao)
+huzun:addSkill(anjing)
+Fk:loadTranslationTable{
+  ["huzun"] = "胡遵",
+  ["#huzun"] = "蓝翎紫璧",
+  --["designer:huzun"] = "",
+  --["illustrator:huzun"] = "",
+
+  ["zhantao"] = "斩涛",
+  [":zhantao"] = "当你或你攻击范围内的角色受到伤害后，若来源不为你，你可以判定，若点数大于伤害牌的点数，你视为对来源使用【杀】。",
+  ["anjing"] = "安境",
+  [":anjing"] = "当你造成伤害后，若你于当前回合内未发动过此技能，你可以选择至多X名已受伤的角色（X为此技能发动过的次数+1），"..
+  "这些角色各摸一张牌，然后其中体力值最小的随机一名角色回复1点体力。",
+
+  ["#zhantao-invoke"] = "是否对 %dest 发动 斩涛，进行判定",
+  ["#anjing-choose"] = "是否发动 安境，令1-%arg名已受伤的角色摸牌，体力值最少的角色回复体力",
+
+  ["$zhantao1"] = "",
+  ["$zhantao2"] = "",
+  ["$anjing1"] = "",
+  ["$anjing2"] = "",
+  ["~huzun"] = "",
 }
 
 local qinghegongzhu = General(extension, "ty__qinghegongzhu", "wei", 3, 3, General.Female)
@@ -445,6 +578,7 @@ qinghegongzhu:addSkill(ty__zhangjiq)
 qinghegongzhu:addSkill(ty__zengou)
 Fk:loadTranslationTable{
   ["ty__qinghegongzhu"] = "清河公主",
+  ["#ty__qinghegongzhu"] = "大魏长公主",
 
   ["ty__zhangjiq"] = "长姬",
   [":ty__zhangjiq"] = "锁定技，一张牌指定包括你在内的多名角色为目标时，先结算对你产生的效果，然后你摸X张牌（X为剩余目标数）。",
@@ -454,6 +588,15 @@ Fk:loadTranslationTable{
   ["#ty__zengou"] = "谮构：交给一名角色至多%arg张牌并摸等量牌，其下次体力增加或使用牌后失去体力",
   ["@@ty__zengou"] = "谮构",
   ["@@ty__zengou-inhand"] = "谮构",
+}
+
+Fk:loadTranslationTable{
+  ["ty__lingcao"] = "凌操",--4/5
+  ["#ty__lingcao"] = "激浪奋孤胆",
+
+  ["dufeng"] = "独锋",
+  [":dufeng"] = "锁定技，出牌阶段开始时，你选择至少一项：1.失去1点体力；2.废除一个装备栏。然后你摸X张牌，你的攻击范围和出牌阶段使用【杀】"..
+  "次数上限均改为X（X为你废除的装备栏数与已损失体力值之和，至多为你的体力上限）。",
 }
 
 local zhangzhao = General(extension, "tystar__zhangzhao", "wu", 3)
@@ -575,6 +718,7 @@ zhangzhao:addSkill(zhongyanz)
 zhangzhao:addSkill(jinglun)
 Fk:loadTranslationTable{
   ["tystar__zhangzhao"] = "星张昭",
+  ["#tystar__zhangzhao"] = "忠蹇方直",
 
   ["zhongyanz"] = "忠言",
   [":zhongyanz"] = "出牌阶段限一次，你可展示牌堆顶三张牌，令一名角色将一张手牌交换其中一张牌。然后若这些牌颜色相同，"..
@@ -710,6 +854,7 @@ zhurong:addSkill(manhou)
 zhurong:addRelatedSkill(tanluan)
 Fk:loadTranslationTable{
   ["ty_sp__zhurong"] = "祝融",
+  ["#ty_sp__zhurong"] = "诗惹喜莫",
 
   ["manhou"] = "蛮后",
   [":manhou"] = "出牌阶段限一次，你可以摸至多四张牌，依次执行前等量项：1.失去〖探乱〗；2.弃置一张手牌；3.失去1点体力；4.弃置一张牌并获得〖探乱〗。",

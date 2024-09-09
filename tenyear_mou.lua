@@ -3174,8 +3174,8 @@ jvshou:addSkill(zuojun)
 jvshou:addSkill(muwang)
 Fk:loadTranslationTable{
   ["tymou__jvshou"] = "谋沮授",
-  --["#tymou__jvshou"] = "",
-  --["illustrator:tymou__jvshou"] = "",
+  ["#tymou__jvshou"] = "忠不逢时",
+  ["illustrator:tymou__jvshou"] = "鬼画府",
 
   ["zuojun"] = "佐军",
   [":zuojun"] = "出牌阶段限一次，你可以选择一名角色，其摸三张牌并选择："..

@@ -1393,7 +1393,7 @@ local qiexie = fk.CreateTriggerSkill{
 
       local names
       if result == "" then
-        names = { cards = math.random(availableGenerals) }
+        names = table.random(availableGenerals, 1)
       else
         names = json.decode(result).cards
       end

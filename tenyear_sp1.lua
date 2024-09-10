@@ -4511,18 +4511,110 @@ Fk:loadTranslationTable{
   "手牌。",
 }
 
---local lvfan = General(extension, "ty__lvfan", "wu", 3)
+local lvfan = General(extension, "ty__lvfan", "wu", 3)
+local ty__diaodu = fk.CreateTriggerSkill{
+  name = "ty__diaodu",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Play and
+      table.find(player.room.alive_players, function(p)
+        return player:distanceTo(p) <= 1 and #p:getCardIds("e") > 0
+      end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.filter(room.alive_players, function(p)
+      return player:distanceTo(p) <= 1 and #p:getCardIds("e") > 0
+    end)
+    local to = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#ty__diaodu-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = {tos = to}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data.tos[1])
+    local id = room:askForCardChosen(player, to, "e", self.name)
+    room:moveCardTo(id, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
+    if player.dead or not table.contains(player:getCardIds("h"), id) then return end
+    local targets = table.map(table.filter(room.alive_players, function(p)
+      return p ~= to
+    end), Util.IdMapper)
+    local p = room:askForChoosePlayers(player, targets, 1, 1,
+      "#ty__diaodu-give:::"..Fk:getCardById(id):toLogString(), self.name, to ~= player)
+    if #p > 0 then
+      p = room:getPlayerById(p[1])
+      room:moveCardTo(id, Card.PlayerHand, p, fk.ReasonGive, self.name, nil, true, player.id)
+      local card = Fk:getCardById(id)
+      if p.dead or not table.contains(p:getCardIds("h"), id) or p:isProhibited(p, card) then return end
+      if room:askForSkillInvoke(p, self.name, nil, "#ty__diaodu-use:"..player.id.."::"..card:toLogString()) then
+        room:useCard({
+          from = p.id,
+          tos = {{p.id}},
+          card = card,
+        })
+        if not player.dead then
+          player:drawCards(1, self.name)
+        end
+      else
+        p:drawCards(1, self.name)
+      end
+    end
+  end,
+}
+local ty__diancai = fk.CreateTriggerSkill{
+  name = "ty__diancai",
+  events = {fk.EventPhaseEnd},
+  anim_type = "drawcard",
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and target ~= player and target.phase == Player.Play and player:getHandcardNum() < player.maxHp then
+    local num = 0
+    player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
+      for _, move in ipairs(e.data) do
+        if move.from == player.id and ((move.to and move.to ~= player.id) or
+          not table.contains({Card.PlayerHand, Card.PlayerEquip}, move.toArea)) then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+              num = num + 1
+              if num > 5 then
+                return true
+              end
+            end
+          end
+        end
+      end
+    end, Player.HistoryPhase)
+      return num >= math.min(player.hp, 5)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:drawCards(player.maxHp - player:getHandcardNum(), self.name)
+    if not player.dead and table.find(room.alive_players, function(p)
+      return player:distanceTo(p) <= 1 and #p:getCardIds("e") > 0
+    end) then
+      ty__diaodu:doCost(event, target, player, data)
+    end
+  end,
+}
+lvfan:addSkill(ty__diaodu)
+lvfan:addSkill(ty__diancai)
 Fk:loadTranslationTable{
   ["ty__lvfan"] = "吕范",
   ["#ty__lvfan"] = "忠笃亮直",
   ["illustrator:ty__lvfan"] = "叶孑",
 
   ["ty__diaodu"] = "调度",
-  [":ty__diaodu"] = "出牌阶段开始时，你可以获得距离1以内一名角色装备区内的一张牌，然后将此牌交给另一名角色，该角色选择一项：1.使用此牌，"..
+  [":ty__diaodu"] = "出牌阶段开始时，你可以获得距离1以内一名角色装备区内的一张牌，然后将此牌交给除其以外一名角色，该角色选择一项：1.使用此牌，"..
   "然后你摸一张牌；2.不使用此牌，其摸一张牌。",
   ["ty__diancai"] = "典财",
   [":ty__diancai"] = "其他角色出牌阶段结束时，若你此阶段失去了至少X张牌，你可以将手牌摸至体力上限（X为你的体力值，至多为5），然后你可以发动"..
   "一次〖调度〗。",
+  ["#ty__diaodu-choose"] = "调度：获得一名角色装备区一张牌，然后交给除其以外的角色，该角色可以使用之",
+  ["#ty__diaodu-give"] = "调度：将%arg交给一名角色，其可以使用之",
+  ["#ty__diaodu-use"] = "调度：使用%arg令 %src 摸一张牌；或不使用，你摸一张牌",
 }
 
 return extension

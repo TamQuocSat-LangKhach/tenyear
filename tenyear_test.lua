@@ -71,7 +71,7 @@ local feibaic = fk.CreateTriggerSkill{
       if turn_event == nil then return false end
       local end_id = math.max(turn_event.id, player:getMark("feibaic-turn"))  --截至上次发动技能的事件id
       local yes = true
-      if #U.getEventsByRule(room, GameEvent.UseCard, 2, function(e)
+      if #room.logic:getEventsByRule(GameEvent.UseCard, 2, function(e)
         local use = e.data[1]
         if e.id <= room.logic:getCurrentEvent().id then  --插入其他使用事件，eg.闪
           if use.from == player.id then
@@ -91,7 +91,7 @@ local feibaic = fk.CreateTriggerSkill{
     if turn_event == nil then return false end
     local end_id = math.max(turn_event.id, player:getMark("feibaic-turn"))
     local n, event_record = 0, 0
-    U.getEventsByRule(room, GameEvent.UseCard, 2, function(e)
+    room.logic:getEventsByRule(GameEvent.UseCard, 2, function(e)
       local use = e.data[1]
       if use.from == player.id then
         if event_record == 0 then
@@ -109,14 +109,7 @@ local feibaic = fk.CreateTriggerSkill{
       end
     end
     if #cards > 0 then
-      room:moveCards({
-        ids = {table.random(cards)},
-        to = player.id,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonJustMove,
-        proposer = player.id,
-        skillName = self.name,
-      })
+      room:moveCardTo(table.random(cards), Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
     end
     if player:getMark("@jiaowei") <= n then
       player:setSkillUseHistory(self.name, 0, Player.HistoryTurn)
@@ -178,13 +171,13 @@ local quxian = fk.CreateTriggerSkill{
     local to = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper), 1, 1,
     "#quxian-choose", self.name, true)
     if #to > 0 then
-      self.cost_data = to[1]
+      self.cost_data = {tos = to}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local tar = room:getPlayerById(self.cost_data)
+    local tar = room:getPlayerById(self.cost_data.tos[1])
     local tos = table.filter(room:getAlivePlayers(), function (p)
       return p ~= player and p:inMyAttackRange(tar)
     end)

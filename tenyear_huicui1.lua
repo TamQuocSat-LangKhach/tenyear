@@ -4008,32 +4008,25 @@ local ty__jianshu = fk.CreateActiveSkill{
   anim_type = "control",
   card_num = 1,
   target_num = 1,
+  prompt = "#ty__jianshu-prompt",
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:getCardById(to_select).color == Card.Black
+    and table.contains(Self.player_cards[Player.Hand], to_select)
   end,
-  target_filter = function(self, to_select, selected)
-    return #selected == 0 and to_select ~= Self.id
+  target_filter = function(self, to_select, selected, cards)
+    return #selected == 0 and to_select ~= Self.id and #cards == 1
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    room:obtainCard(target.id, Fk:getCardById(effect.cards[1]), false, fk.ReasonGive)
-    local targets = {}
-    for _, p in ipairs(room:getOtherPlayers(target)) do
-      if not p:isKongcheng() and p ~= player then
-        table.insert(targets, p.id)
-      end
-    end
+    room:obtainCard(target.id, Fk:getCardById(effect.cards[1]), false, fk.ReasonGive, player.id, self.name)
+    if target.dead or target:isKongcheng() or player.dead then return end
+    local targets = table.filter(room.alive_players, function(p) return target:canPindian(p) and p ~= player end)
     if #targets == 0 then return end
-    local to = room:askForChoosePlayers(player, targets, 1, 1, "#ty__jianshu-choose::"..target.id, self.name, false)
-    if #to == 0 then
-      to = room:getPlayerById(table.random(targets))
-    else
-      to = room:getPlayerById(to[1])
-    end
+    local to = room:getPlayerById(room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#ty__jianshu-choose::"..target.id, self.name, false)[1])
     local pindian = target:pindian({to}, self.name)
     if pindian.results[to.id].winner then
       local winner, loser
@@ -4125,6 +4118,7 @@ Fk:loadTranslationTable{
   [":ty__yongdi"] = "限定技，出牌阶段，你可选择一名男性角色：若其体力值全场最少，其回复1点体力；体力上限全场最少，其加1点体力上限；"..
   "手牌数全场最少，其摸体力上限张牌（最多摸五张）。",
   ["#ty__jianshu-choose"] = "间书：选择另一名其他角色，令其和 %dest 拼点",
+  ["#ty__jianshu-prompt"] = "间书：选择一张黑色手牌交给一名其他角色，令其与你选择的角色拼点，赢的弃牌，没赢失去体力",
 
   ["$ty__jianshu1"] = "令其相疑，则一鼓可破也。",
   ["$ty__jianshu2"] = "貌合神离，正合用反间之计。",

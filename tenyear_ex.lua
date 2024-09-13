@@ -2755,8 +2755,6 @@ Fk:loadTranslationTable{
   ["#ty_ex__qiaoshui-choose"] = "巧说：你可以为%arg增加/减少一个目标",
   ["@@ty_ex__qiaoshui-turn"] = "巧说",
   ["#ty_ex__qiaoshui-prompt"] = "巧说:与一名角色拼点，若赢，下一张基本牌或普通锦囊牌可增加或取消一个目标",
-  ["#AddTargetsBySkill"] = "用于 %arg 的效果，%from 使用的 %arg2 增加了目标 %to",
-  ["#RemoveTargetsBySkill"] = "用于 %arg 的效果，%from 使用的 %arg2 取消了目标 %to",
 
   ["$ty_ex__qiaoshui1"] = "慧心妙舌，难题可解。",
   ["$ty_ex__qiaoshui2"] = "巧言善辩，应对自如。",

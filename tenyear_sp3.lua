@@ -3493,40 +3493,32 @@ local shijiz = fk.CreateTriggerSkill{
       mark = U.getAllCardNames("t")
       room:setPlayerMark(player, "shijiz_names", mark)
     end
-    local mark2 = player:getMark("@$shijiz-round")
-    if mark2 == 0 then mark2 = {} end
-    local names, choices = {}, {}
+    local used = player:getTableMark("@$shijiz-round")
+    local all_names, names = {}, {}
     for _, name in ipairs(mark) do
       local card = Fk:cloneCard(name)
       card.skillName = self.name
       if target:canUse(card) and not target:prohibitUse(card) then
-        table.insert(names, name)
-        if not table.contains(mark2, name) then
-          table.insert(choices, name)
+        table.insert(all_names, name)
+        if not table.contains(used, name) then
+          table.insert(names, name)
         end
       end
     end
-    table.insert(names, "Cancel")
-    table.insert(choices, "Cancel")
-    local choice = room:askForChoice(player, choices, self.name, "#shijiz-invoke::"..target.id, false, names)
-    if choice ~= "Cancel" then
-      room:doIndicate(player.id, {target.id})
-      self.cost_data = choice
+    local choices = U.askForChooseCardNames(room, player, names, 1, 1, self.name, "#shijiz-invoke::"..target.id, all_names, true)
+    if #choices == 1 then
+      self.cost_data = {tos = {target.id}, choice = choices[1]}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local mark = player:getMark("@$shijiz-round")
-    if mark == 0 then mark = {} end
-    table.insert(mark, self.cost_data)
-    room:setPlayerMark(player, "@$shijiz-round", mark)
-    room:doIndicate(player.id, {target.id})
-    room:setPlayerMark(target, "shijiz-tmp", self.cost_data)
-    local success, dat = room:askForUseActiveSkill(target, "shijiz_viewas", "#shijiz-use:::"..self.cost_data, true)
-    room:setPlayerMark(target, "shijiz-tmp", 0)
-    if success then
-      local card = Fk:cloneCard(self.cost_data)
+    local cardName = self.cost_data.choice
+    room:addTableMark(player, "@$shijiz-round", cardName)
+    local success, dat = room:askForUseActiveSkill(target, "shijiz_viewas", "#shijiz-use:::"..cardName, true,
+    {shijiz_name = cardName})
+    if dat then
+      local card = Fk:cloneCard(cardName)
       card:addSubcards(dat.cards)
       card.skillName = self.name
       room:useCard{
@@ -3540,11 +3532,11 @@ local shijiz = fk.CreateTriggerSkill{
 local shijiz_viewas = fk.CreateViewAsSkill{
   name = "shijiz_viewas",
   card_filter = function(self, to_select, selected)
-    return #selected == 0 and Self:getMark("shijiz-tmp") ~= 0
+    return #selected == 0
   end,
   view_as = function(self, cards)
     if #cards ~= 1 then return end
-    local card = Fk:cloneCard(Self:getMark("shijiz-tmp"))
+    local card = Fk:cloneCard(self.shijiz_name)
     card:addSubcard(cards[1])
     card.skillName = "shijiz"
     return card
@@ -3667,7 +3659,7 @@ Fk:loadTranslationTable{
   [":silun"] = "准备阶段或当你受到伤害后，你可以摸四张牌，然后将四张牌依次置于场上、牌堆顶或牌堆底，若此牌为你装备区里的牌，你复原武将牌，"..
   "若你将装备牌置于一名角色装备区，其复原武将牌。",
   ["@$shijiz-round"] = "十计",
-  ["#shijiz-invoke"] = "十计：你可以选择一种锦囊，令 %dest 可以将一张牌当此牌使用（不能指定其自己为目标）",
+  ["#shijiz-invoke"] = "十计：选择一种锦囊，%dest 可将一张牌当此牌使用(不能指定其为目标)",
   ["shijiz_viewas"] = "十计",
   ["#shijiz-use"] = "十计：你可以将一张牌当【%arg】使用",
   ["silun_active"] = "四论",

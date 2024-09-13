@@ -80,12 +80,12 @@ local jiufa = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and
-    not table.contains(U.getMark(player, "@$jiufa"), data.card.trueName)
+    not table.contains(player:getTableMark("@$jiufa"), data.card.trueName)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local mark = U.getMark(player, "@$jiufa")
+    local mark = player:getTableMark("@$jiufa")
     table.insertIfNeed(mark, data.card.trueName)
     room:setPlayerMark(player, "@$jiufa", mark)
     if #mark < 9 or not room:askForSkillInvoke(player, self.name, nil, "#jiufa-invoke") then return false end
@@ -676,7 +676,7 @@ local sanshou = fk.CreateTriggerSkill{
       skillName = self.name,
       proposer = player.id,
     })
-    local mark = U.getMark(player, "sanshou-turn")
+    local mark = player:getTableMark("sanshou-turn")
     if #mark ~= 3 then
       mark = {0, 0, 0}
     end
@@ -1455,11 +1455,11 @@ local jingyu = fk.CreateTriggerSkill{
       target:hasSkill(data, true, true) and
       not data:isEquipmentSkill(player) and
       not table.contains({ "m_feiyang", "m_bahu" }, data.name) and
-      not table.contains(U.getMark(player, "jingyu_skills-round"), data.name)
+      not table.contains(player:getTableMark("jingyu_skills-round"), data.name)
   end,
   on_use = function(self, _, target, player, data)
     local room = player.room
-    local skills = U.getMark(player, "jingyu_skills-round")
+    local skills = player:getTableMark("jingyu_skills-round")
     table.insertIfNeed(skills, data.name)
     room:setPlayerMark(player, "jingyu_skills-round", skills)
 
@@ -1919,18 +1919,18 @@ local ty__songci = fk.CreateActiveSkill{
   card_num = 0,
   target_num = 1,
   can_use = function(self, player)
-    local mark = U.getMark(player, self.name)
+    local mark = player:getTableMark(self.name)
     return table.find(Fk:currentRoom().alive_players, function(p) return not table.contains(mark, p.id) end)
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
-    local mark = U.getMark(Self, self.name)
+    local mark = Self:getTableMark(self.name)
     return #selected == 0 and not table.contains(mark, to_select)
   end,
   on_use = function(self, room, effect)
     local target = room:getPlayerById(effect.tos[1])
     local player = room:getPlayerById(effect.from)
-    local mark = U.getMark(player, self.name)
+    local mark = player:getTableMark(self.name)
     table.insert(mark, target.id)
     room:setPlayerMark(player, self.name, mark)
     if #target.player_cards[Player.Hand] <= target.hp then
@@ -1950,7 +1950,7 @@ local ty__songci_trigger = fk.CreateTriggerSkill{
   main_skill = ty__songci,
   events = {fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
-    local mark = U.getMark(player, "ty__songci")
+    local mark = player:getTableMark("ty__songci")
     return target == player and player:hasSkill(self) and player.phase == Player.Discard
     and table.every(player.room.alive_players, function (p) return table.contains(mark, p.id) end)
   end,
@@ -2028,7 +2028,7 @@ local ty__jilei = fk.CreateTriggerSkill{
 local ty__jilei_prohibit = fk.CreateProhibitSkill{
   name = "#ty__jilei_prohibit",
   prohibit_use = function(self, player, card)
-    if table.contains(U.getMark(player, "@ty__jilei"), card:getTypeString() .. "_char") then
+    if table.contains(player:getTableMark("@ty__jilei"), card:getTypeString() .. "_char") then
       local subcards = card:isVirtual() and card.subcards or {card.id}
       return #subcards > 0 and table.every(subcards, function(id)
         return table.contains(player:getCardIds(Player.Hand), id)
@@ -2036,7 +2036,7 @@ local ty__jilei_prohibit = fk.CreateProhibitSkill{
     end
   end,
   prohibit_response = function(self, player, card)
-    if table.contains(U.getMark(player, "@ty__jilei"), card:getTypeString() .. "_char") then
+    if table.contains(player:getTableMark("@ty__jilei"), card:getTypeString() .. "_char") then
       local subcards = card:isVirtual() and card.subcards or {card.id}
       return #subcards > 0 and table.every(subcards, function(id)
         return table.contains(player:getCardIds(Player.Hand), id)
@@ -2044,7 +2044,7 @@ local ty__jilei_prohibit = fk.CreateProhibitSkill{
     end
   end,
   prohibit_discard = function(self, player, card)
-    return table.contains(U.getMark(player, "@ty__jilei"), card:getTypeString() .. "_char")
+    return table.contains(player:getTableMark("@ty__jilei"), card:getTypeString() .. "_char")
   end,
 }
 ty__jilei:addRelatedSkill(ty__jilei_prohibit)
@@ -2579,7 +2579,7 @@ local zhaowen = fk.CreateViewAsSkill{
   prompt = "#zhaowen",
   interaction = function()
     local all_names = U.getAllCardNames("t")
-    local names = U.getViewAsCardNames(Self, "zhaowen", all_names, {}, U.getMark(Self, "zhaowen-turn"))
+    local names = U.getViewAsCardNames(Self, "zhaowen", all_names, {}, Self:getTableMark("zhaowen-turn"))
     if #names == 0 then return false end
     return UI.ComboBox { choices = names, all_choices = all_names }
   end,
@@ -3062,7 +3062,7 @@ local fengying = fk.CreateViewAsSkill{
   pattern = ".",
   prompt = "#fengying",
   interaction = function()
-    local all_names, names = U.getMark(Self, "@$fengying"), {}
+    local all_names, names = Self:getTableMark("@$fengying"), {}
     for _, name in ipairs(all_names) do
       local to_use = Fk:cloneCard(name)
       to_use.skillName = "fengying"
@@ -3110,7 +3110,7 @@ local fengying = fk.CreateViewAsSkill{
   end,
   before_use = function(self, player, useData)
     useData.extraUse = true
-    local names = U.getMark(player, "@$fengying")
+    local names = player:getTableMark("@$fengying")
     if table.removeOne(names, useData.card.name) then
       player.room:setPlayerMark(player, "@$fengying", names)
     end

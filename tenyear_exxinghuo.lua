@@ -236,7 +236,7 @@ local ty_ex__jiaozhao = fk.CreateActiveSkill{
       if player:getMark("@ty_ex__jiaozhao") < 2 then
         return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
       else
-        return #U.getMark(player, "ty_ex__jiaozhao_choice-phase") < 2
+        return #player:getTableMark("ty_ex__jiaozhao_choice-phase") < 2
       end
     end
   end,
@@ -264,7 +264,7 @@ local ty_ex__jiaozhao = fk.CreateActiveSkill{
     player:showCards(effect.cards)
     if player.dead then return end
     local c = Fk:getCardById(effect.cards[1])
-    local mark = U.getMark(player, "ty_ex__jiaozhao_choice-phase")
+    local mark = player:getTableMark("ty_ex__jiaozhao_choice-phase")
     local pat = table.contains(mark, "b") and "" or "b"
     if not table.contains(mark, "t") then pat = pat .. "t" end
     local names = U.getAllCardNames(pat)

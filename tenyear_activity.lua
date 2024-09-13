@@ -972,7 +972,7 @@ local jiaoxia = fk.CreateTriggerSkill{
     if target ~= player or not player:hasSkill(self) then return false end
     if event == fk.TargetSpecified then
       return data.card.trueName == "slash" and player.phase == player.Play and
-      not table.contains(U.getMark(player, "jiaoxia_target-phase"), data.to)
+      not table.contains(player:getTableMark("jiaoxia_target-phase"), data.to)
     elseif event == fk.CardUseFinished then
       if table.contains(data.card.skillNames, "jiaoxia") and data.damageDealt then
         local card = Fk:getCardById(data.card:getEffectiveId())
@@ -992,9 +992,7 @@ local jiaoxia = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.TargetSpecified then
-      local mark = U.getMark(player, "jiaoxia_target-phase")
-      table.insert(mark, data.to)
-      room:setPlayerMark(player, "jiaoxia_target-phase", mark)
+      room:addTableMark(player, "jiaoxia_target-phase", data.to)
     elseif event == fk.CardUseFinished then
       local ids = Card:getIdList(data.card)
       U.askForUseRealCard(room, player, ids, ".", self.name, "#jiaoxia-use:::"..Fk:getCardById(ids[1]):toLogString(),
@@ -1008,7 +1006,7 @@ local jiaoxia = fk.CreateTriggerSkill{
   refresh_events = {fk.PreCardUse},
   can_refresh = function(self, event, target, player, data)
     if player == target and data.card.trueName == "slash" and player.phase == Player.Play and player:hasSkill(self) then
-      local mark = U.getMark(player, "jiaoxia_target-phase")
+      local mark = player:getTableMark("jiaoxia_target-phase")
       return table.find(TargetGroup:getRealTargets(data.tos), function (pid)
         return not table.contains(mark, pid)
       end)
@@ -1034,11 +1032,11 @@ local jiaoxia_targetmod = fk.CreateTargetModSkill{
   name = "#jiaoxia_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
     return player:hasSkill(jiaoxia) and card and card.trueName == "slash" and to and
-    not table.contains(U.getMark(player, "jiaoxia_target-phase"), to.id)
+    not table.contains(player:getTableMark("jiaoxia_target-phase"), to.id)
   end,
   bypass_distances =  function(self, player, skill, card, to)
     return player:hasSkill(jiaoxia) and card and card.trueName == "slash" and to and
-    not table.contains(U.getMark(player, "jiaoxia_target-phase"), to.id)
+    not table.contains(player:getTableMark("jiaoxia_target-phase"), to.id)
   end,
 }
 local humei = fk.CreateActiveSkill{
@@ -3066,14 +3064,14 @@ local bingji = fk.CreateActiveSkill{
   can_use = function(self, player)
     if not player:isKongcheng() then
       local suit = Fk:getCardById(player.player_cards[Player.Hand][1]):getSuitString(true)
-      return not table.contains(U.getMark(player, "@bingji-phase"), suit)
+      return not table.contains(player:getTableMark("@bingji-phase"), suit)
       and table.every(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getSuitString(true) == suit end)
     end
   end,
   card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local mark = U.getMark(player, "@bingji-phase")
+    local mark = player:getTableMark("@bingji-phase")
     local suit = Fk:getCardById(player.player_cards[Player.Hand][1]):getSuitString(true)
     table.insert(mark, suit)
     room:setPlayerMark(player, "@bingji-phase", mark)
@@ -4585,10 +4583,10 @@ local xiuwen = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and not table.contains(U.getMark(player, self.name), data.card.trueName)
+    return target == player and player:hasSkill(self) and not table.contains(player:getTableMark(self.name), data.card.trueName)
   end,
   on_use = function(self, event, target, player, data)
-    local mark = U.getMark(player, self.name)
+    local mark = player:getTableMark(self.name)
     table.insert(mark, data.card.trueName)
     player.room:setPlayerMark(player, self.name, mark)
     player:drawCards(1, self.name)
@@ -4767,7 +4765,7 @@ local jinghe = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     room:sortPlayersByAction(effect.tos)
-    local mark = U.getMark(player, "jinghe_data")
+    local mark = player:getTableMark("jinghe_data")
     player:showCards(effect.cards)
     local skills = table.random(
       {"ex__leiji", "yinbingn", "huoqi", "guizhu", "xianshou", "lundao", "guanyue", "yanzhengn",

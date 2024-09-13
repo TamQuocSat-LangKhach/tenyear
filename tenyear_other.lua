@@ -480,7 +480,7 @@ local wudao = fk.CreateTriggerSkill{
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and data.card.type ~= Card.TypeEquip then
-      local mark = U.getMark(player, "@wudao-turn")
+      local mark = player:getTableMark("@wudao-turn")
       if table.contains(mark, data.card:getTypeString().."_char") then
         return data.card.sub_type ~= Card.SubtypeDelayedTrick
       else
@@ -500,12 +500,12 @@ local wudao = fk.CreateTriggerSkill{
     end
   end,
   on_cost = function(self, event, target, player, data)
-    return table.contains(U.getMark(player, "@wudao-turn"), data.card:getTypeString().."_char") or
+    return table.contains(player:getTableMark("@wudao-turn"), data.card:getTypeString().."_char") or
     player.room:askForSkillInvoke(player, self.name, nil, "#wudao-invoke:::"..data.card:getTypeString())
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local mark = U.getMark(player, "@wudao-turn")
+    local mark = player:getTableMark("@wudao-turn")
     local type_name = data.card:getTypeString().."_char"
     if table.contains(mark, type_name) then
       data.disresponsiveList = table.map(room.alive_players, Util.IdMapper)
@@ -904,14 +904,14 @@ local cibeis = fk.CreateTriggerSkill{
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and target == player and player ~= data.to then
-      return not table.contains(U.getMark(player, "cibeis-turn"), data.to.id)
+      return not table.contains(player:getTableMark("cibeis-turn"), data.to.id)
     end
   end,
   on_cost = function (self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#cibeis-invoke:"..data.to.id)
   end,
   on_use = function(self, event, target, player, data)
-    local mark = U.getMark(player, "cibeis-turn")
+    local mark = player:getTableMark("cibeis-turn")
     table.insert(mark, data.to.id)
     player.room:setPlayerMark(player, "cibeis-turn", mark)
     player:drawCards(5, self.name)
@@ -994,7 +994,7 @@ local faqi = fk.CreateTriggerSkill{
     local card_name = dat.interaction
     local card = Fk:cloneCard(card_name)
     card.skillName = self.name
-    local mark = U.getMark(player, "faqi-turn")
+    local mark = player:getTableMark("faqi-turn")
     table.insert(mark, card_name)
     room:setPlayerMark(player, "faqi-turn", mark)
     room:useCard{
@@ -1008,7 +1008,7 @@ local faqi_viewas = fk.CreateViewAsSkill{
   name = "faqi_viewas",
   interaction = function()
     local all_names = U.getAllCardNames("t")
-    local names = U.getViewAsCardNames(Self, "faqi", all_names, {}, U.getMark(Self, "faqi-turn"))
+    local names = U.getViewAsCardNames(Self, "faqi", all_names, {}, Self:getTableMark("faqi-turn"))
     if #names == 0 then return false end
     return UI.ComboBox { choices = names, all_choices = all_names }
   end,
@@ -1226,7 +1226,7 @@ local benxi = fk.CreateTriggerSkill{
         }
       else
         room:handleAddLoseSkills(player, skill)
-        local skills = U.getMark(player, self.name)
+        local skills = player:getTableMark(self.name)
         table.insert(skills, skill)
         room:setPlayerMark(player, self.name, skills)
       end
@@ -1467,8 +1467,8 @@ local qiexieFilter = fk.CreateFilterSkill{
   name = "#qiexie_filter",
   equip_skill_filter = function(self, skill, player)
     if player then
-      local leftSkills = U.getMark(player, "qiexie_left_skills")
-      local rightSkills = U.getMark(player, "qiexie_right_skills")
+      local leftSkills = player:getTableMark("qiexie_left_skills")
+      local rightSkills = player:getTableMark("qiexie_right_skills")
       if table.contains(leftSkills, skill.name) then
         return "goddianwei_left_arm"
       elseif table.contains(rightSkills, skill.name) then
@@ -1524,13 +1524,13 @@ local cuijue = fk.CreateActiveSkill{
       end
     end
 
-    targets = table.filter(targets, function(pId) return not table.contains(U.getMark(player, "cuijue_targeted-turn"), pId) end)
+    targets = table.filter(targets, function(pId) return not table.contains(player:getTableMark("cuijue_targeted-turn"), pId) end)
 
     if #targets == 0 then
       return
     end
     local tos = room:askForChoosePlayers(player, targets, 1, 1, "#cuijue-choose", self.name, false)
-    local cuijueTargeted = U.getMark(player, "cuijue_targeted-turn")
+    local cuijueTargeted = player:getTableMark("cuijue_targeted-turn")
     table.insertIfNeed(cuijueTargeted, tos[1])
     room:setPlayerMark(player, "cuijue_targeted-turn", cuijueTargeted)
     room:damage{
@@ -1572,7 +1572,7 @@ local huiwan = fk.CreateTriggerSkill {
     local availableNames = table.filter(
       player.room:getTag("huiwanAllCardNames") or {},
       function(name)
-        return not table.contains(U.getMark(player, "huiwan_card_names-turn"), name)
+        return not table.contains(player:getTableMark("huiwan_card_names-turn"), name)
       end
     )
 
@@ -1591,7 +1591,7 @@ local huiwan = fk.CreateTriggerSkill {
     local allCardNames = table.filter(
       room:getTag("huiwanAllCardNames") or {},
       function(name)
-        return not table.contains(U.getMark(player, "huiwan_card_names-turn"), name)
+        return not table.contains(player:getTableMark("huiwan_card_names-turn"), name)
       end
     )
 
@@ -1613,7 +1613,7 @@ local huiwan = fk.CreateTriggerSkill {
   on_use = function(self, event, target, player, data)
     local room = player.room
     local namesChosen = table.simpleClone(self.cost_data)
-    local cardNamesRecord = U.getMark(player, "huiwan_card_names-turn")
+    local cardNamesRecord = player:getTableMark("huiwan_card_names-turn")
     table.insertTableIfNeed(cardNamesRecord, table.map(namesChosen, function(name) return name end))
     room:setPlayerMark(player, "huiwan_card_names-turn", cardNamesRecord)
 
@@ -1773,7 +1773,7 @@ local huanliLose = fk.CreateTriggerSkill {
   on_use = function(self, event, target, player, data)
     local room = player.room
     if player:getMark("@@huanli") ~= 0 then
-      local huanliSkills = table.simpleClone(U.getMark(player, "@@huanli"))
+      local huanliSkills = table.simpleClone(player:getTableMark("@@huanli"))
       room:setPlayerMark(player, "@@huanli", 0)
       if #huanliSkills > 0 then
         room:handleAddLoseSkills(player, table.concat(table.map(huanliSkills, function(skill) return "-" .. skill end), "|"))

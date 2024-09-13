@@ -452,7 +452,7 @@ local ty__zhuijix_delay = fk.CreateTriggerSkill{
       for _, move in ipairs(data) do
         if move.from == player.id then
           for _, info in ipairs(move.moveInfo) do
-            if info.fromArea == Card.PlayerEquip and table.contains(U.getMark(player, "ty__zhuijix"), info.cardId) and
+            if info.fromArea == Card.PlayerEquip and table.contains(player:getTableMark("ty__zhuijix"), info.cardId) and
               #player:getAvailableEquipSlots(Fk:getCardById(info.cardId).sub_type) > 0 then
               local e = player.room.logic:getCurrentEvent():findParent(GameEvent.SkillEffect)
               if e and e.data[3] == self then  --FIXME：防止顶替装备时重复触发
@@ -471,9 +471,9 @@ local ty__zhuijix_delay = fk.CreateTriggerSkill{
     for _, move in ipairs(data) do
       if move.from == player.id then
         for _, info in ipairs(move.moveInfo) do
-          if info.fromArea == Card.PlayerEquip and table.contains(U.getMark(player, "ty__zhuijix"), info.cardId) and
+          if info.fromArea == Card.PlayerEquip and table.contains(player:getTableMark("ty__zhuijix"), info.cardId) and
             #player:getAvailableEquipSlots(Fk:getCardById(info.cardId).sub_type) > 0 then
-            local mark = U.getMark(player, "ty__zhuijix")
+            local mark = player:getTableMark("ty__zhuijix")
             table.removeOne(mark, info.cardId)
             room:setPlayerMark(player, "ty__zhuijix", mark)
             room:abortPlayerArea(player, {Util.convertSubtypeAndEquipSlot(Fk:getCardById(info.cardId).sub_type)})
@@ -635,7 +635,7 @@ local fazhu_active = fk.CreateActiveSkill{
   min_card_num = 1,
   target_num = 0,
   expand_pile = function(self)
-    return U.getMark(Self, "fazhu_cards")
+    return Self:getTableMark("fazhu_cards")
   end,
   card_filter = function(self, to_select, selected)
     return not Fk:getCardById(to_select).is_damage_card

@@ -411,7 +411,7 @@ local ty__fenyin = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and player.phase ~= Player.NotActive then
-      local mark = U.getMark(player, "@fenyin_suits-turn")
+      local mark = player:getTableMark("@fenyin_suits-turn")
       if #mark > 3 then return false end
       local suits = {}
       local suit = ""
@@ -432,7 +432,7 @@ local ty__fenyin = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    local mark = U.getMark(player, "@fenyin_suits-turn")
+    local mark = player:getTableMark("@fenyin_suits-turn")
     table.insertTable(mark, self.cost_data)
     player.room:setPlayerMark(player, "@fenyin_suits-turn", mark)
     player:drawCards(#self.cost_data, self.name)
@@ -444,7 +444,7 @@ local liji = fk.CreateActiveSkill{
   card_num = 1,
   target_num = 1,
   can_use = function(self, player)
-    local mark = U.getMark(player, "@liji-turn")
+    local mark = player:getTableMark("@liji-turn")
     return #mark > 0 and mark[1] > 0
   end,
   card_filter = function(self, to_select, selected)
@@ -456,7 +456,7 @@ local liji = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local mark = U.getMark(player, "@liji-turn")
+    local mark = player:getTableMark("@liji-turn")
     mark[1] = mark[1] - 1
     room:setPlayerMark(player, "@liji-turn", mark)
     room:throwCard(effect.cards, self.name, player, player)
@@ -477,7 +477,7 @@ local liji_record = fk.CreateTriggerSkill{
     if event == fk.TurnStart then
       return player == target
     else
-      return player.room.current == player and not player.dead and #U.getMark(player, "@liji-turn") == 5
+      return player.room.current == player and not player.dead and #player:getTableMark("@liji-turn") == 5
     end
   end,
   on_refresh = function(self, event, target, player, data)
@@ -486,11 +486,11 @@ local liji_record = fk.CreateTriggerSkill{
         player.room:setPlayerMark(player, "@liji-turn", {0, "-", 0, "/", #player.room.alive_players < 5 and 4 or 8})
       end
     elseif event == fk.EventPhaseStart then
-      local mark = U.getMark(player, "@liji-turn")
+      local mark = player:getTableMark("@liji-turn")
       mark[1] = player:getMark("liji_times-turn")
       player.room:setPlayerMark(player, "@liji-turn", mark)
     else
-      local mark = U.getMark(player, "@liji-turn")
+      local mark = player:getTableMark("@liji-turn")
       local x = mark[3]
       for _, move in ipairs(data) do
         if move.toArea == Card.DiscardPile then
@@ -3308,7 +3308,7 @@ local ty__shefu_active = fk.CreateActiveSkill{
   card_num = 1,
   target_num = 0,
   interaction = function(self)
-    local mark = U.getMark(Self, "@[ty__shefu]")
+    local mark = Self:getTableMark("@[ty__shefu]")
     local all_names = U.getAllCardNames("btd", true)
     local names = table.filter(all_names, function(name)
       return table.every(mark, function(shefu_pair)
@@ -3336,7 +3336,7 @@ local ty__shefu = fk.CreateTriggerSkill{
         return target == player and player.phase == Player.Finish and not player:isNude()
       else
         return target ~= player and player.phase == Player.NotActive and
-        table.find(U.getMark(player, "@[ty__shefu]"), function (shefu_pair)
+        table.find(player:getTableMark("@[ty__shefu]"), function (shefu_pair)
           return shefu_pair[2] == data.card.trueName
         end)
          and U.IsUsingHandcard(target, data)
@@ -3365,12 +3365,12 @@ local ty__shefu = fk.CreateTriggerSkill{
       local name = self.cost_data.interaction
       player:addToPile("#ty__shefu_ambush", cid, true, self.name)
       if table.contains(player:getPile("#ty__shefu_ambush"), cid) then
-        local mark = U.getMark(player, "@[ty__shefu]")
+        local mark = player:getTableMark("@[ty__shefu]")
         table.insert(mark, {cid, name})
         room:setPlayerMark(player, "@[ty__shefu]", mark)
       end
     else
-      local mark = U.getMark(player, "@[ty__shefu]")
+      local mark = player:getTableMark("@[ty__shefu]")
       for i = 1, #mark, 1 do
         if mark[i][2] == data.card.trueName then
           local cid = mark[i][1]
@@ -3740,7 +3740,7 @@ local ty__wenji = fk.CreateTriggerSkill{
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
     local card = room:askForCard(to, 1, 1, true, self.name, false, ".", "#ty__wenji-give::"..player.id)
-    local mark = U.getMark(player, "@ty__wenji-turn")
+    local mark = player:getTableMark("@ty__wenji-turn")
     table.insertIfNeed(mark, Fk:getCardById(card[1]):getTypeString().."_char")
     room:setPlayerMark(player, "@ty__wenji-turn", mark)
     room:obtainCard(player, card[1], false, fk.ReasonGive, to.id)
@@ -3752,7 +3752,7 @@ local ty__wenji_record = fk.CreateTriggerSkill{
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
     if target == player then
-      local mark = U.getMark(player, "@ty__wenji-turn")
+      local mark = player:getTableMark("@ty__wenji-turn")
       return table.contains(mark, data.card:getTypeString().."_char")
     end
   end,
@@ -3978,7 +3978,7 @@ local huace = fk.CreateViewAsSkill{
   prompt = "#huace-active",
   interaction = function()
     local all_names = U.getAllCardNames("t")
-    local names = U.getViewAsCardNames(Self, "zhaowen", all_names, {}, U.getMark(Self, "huace2"))
+    local names = U.getViewAsCardNames(Self, "zhaowen", all_names, {}, Self:getTableMark("huace2"))
     if #names == 0 then return false end
     return UI.ComboBox { choices = names, all_choices = all_names }
   end,

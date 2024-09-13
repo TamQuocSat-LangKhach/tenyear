@@ -1134,14 +1134,14 @@ local jieling = fk.CreateActiveSkill{
   card_num = 2,
   min_target_num = 1,
   can_use = function(self, player)
-    return #U.getMark(player, "@jieling-phase") < 3
+    return #player:getTableMark("@jieling-phase") < 3
   end,
   card_filter = function(self, to_select, selected)
     if Fk:currentRoom():getCardArea(to_select) ~= Player.Equip then
       local card = Fk:getCardById(to_select)
       if card.suit == Card.NoSuit then return false end
-      local record = U.getMark(Self, "@jieling-phase")
-      if table.contains(U.getMark(Self, "@jieling-phase"), card:getSuitString(true)) then return false end
+      local record = Self:getTableMark("@jieling-phase")
+      if table.contains(Self:getTableMark("@jieling-phase"), card:getSuitString(true)) then return false end
       if #selected == 0 then
         return true
       elseif #selected == 1 then
@@ -1175,7 +1175,7 @@ local jieling = fk.CreateActiveSkill{
       card = Fk:cloneCard("slash"),
       extra_data = {jielingUser = player.id},
     }
-    local record = U.getMark(player, "@jieling-phase")
+    local record = player:getTableMark("@jieling-phase")
     for _, cid in ipairs(effect.cards) do
       use.card:addSubcard(cid)
       local suit = Fk:getCardById(cid):getSuitString(true)
@@ -1376,7 +1376,7 @@ local dunshi_record = fk.CreateTriggerSkill{
   on_refresh = function(self, event, target, player, data)
     if event == fk.EventAcquireSkill then
       local UImark = {"slash", "jink", "peach", "analeptic"}
-      for _, name in ipairs(U.getMark(player, "dunshi")) do
+      for _, name in ipairs(player:getTableMark("dunshi")) do
         table.removeOne(UImark, name)
       end
       player:getMark("@$dunshi")
@@ -4077,7 +4077,7 @@ local liuzhuan = fk.CreateTriggerSkill{
           end
         end
       end
-      local mark = U.getMark(player, "liuzhuan_record-turn")
+      local mark = player:getTableMark("liuzhuan_record-turn")
       if move.toArea == Card.DiscardPile and #mark > 0 then
         for _, info in ipairs(move.moveInfo) do
           id = info.cardId
@@ -4098,7 +4098,7 @@ local liuzhuan = fk.CreateTriggerSkill{
     local room = player.room
     local toMarked = table.simpleClone(self.cost_data[1])
     local toObtain = table.simpleClone(self.cost_data[2])
-    local mark = U.getMark(player, "liuzhuan_record-turn")
+    local mark = player:getTableMark("liuzhuan_record-turn")
     table.insertTableIfNeed(mark, toMarked)
     room:setPlayerMark(player, "liuzhuan_record-turn", mark)
     for _, id in ipairs(toMarked) do
@@ -4112,11 +4112,11 @@ local liuzhuan = fk.CreateTriggerSkill{
   refresh_events = {fk.AfterCardsMove, fk.Death},
   can_refresh = function(self, event, target, player, data)
     if event == fk.Death and player ~= target then return false end
-    return #U.getMark(player, "liuzhuan_record-turn") > 0
+    return #player:getTableMark("liuzhuan_record-turn") > 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    local mark = U.getMark(player, "liuzhuan_record-turn")
+    local mark = player:getTableMark("liuzhuan_record-turn")
     if event == fk.AfterCardsMove then
       for _, move in ipairs(data) do
         if move.to ~= room.current.id and (move.toArea == Card.PlayerHand or move.toArea == Card.PlayerEquip) then

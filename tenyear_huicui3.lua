@@ -171,13 +171,13 @@ local moyu = fk.CreateActiveSkill{
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
-    return #selected == 0 and to_select ~= Self.id and not table.contains(U.getMark(Self, "moyu_targets-phase"), to_select) and
+    return #selected == 0 and to_select ~= Self.id and not table.contains(Self:getTableMark("moyu_targets-phase"), to_select) and
     #Fk:currentRoom():getPlayerById(to_select):getCardIds("hej") > Self:getMark("@@moyu1-phase")
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local mark = U.getMark(player, "moyu_targets-phase")
+    local mark = player:getTableMark("moyu_targets-phase")
     table.insert(mark, target.id)
     room:setPlayerMark(player, "moyu_targets-phase", mark)
     local x = 1
@@ -350,6 +350,7 @@ local luecheng = fk.CreateActiveSkill{
   anim_type = "offensive",
   card_num = 0,
   target_num = 1,
+  prompt = "#luecheng",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
@@ -394,7 +395,9 @@ local luecheng_delay = fk.CreateTriggerSkill{
       return Fk:getCardById(id).trueName == "slash"
     end)
     while #slashs > 0 do
-      local use = room:askForUseCard(player, "slash", tostring(Exppattern{ id = slashs }), "#luecheng-slash::" .. target.id, true,
+    local pat = "slash|.|.|hand|.|.|"..table.concat(slashs, ",")
+      local use = room:askForUseCard(player, "slash", pat,
+      "#luecheng-slash::" .. target.id, true,
       { exclusive_targets = {target.id}, bypass_distances = true, bypass_times = true })
       if use then
         use.extraUse = true
@@ -452,7 +455,8 @@ Fk:loadTranslationTable{
   ["zhongji"] = "螽集",
   [":zhongji"] = "当你使用牌时，若你没有该花色的手牌且手牌数小于体力上限，你可将手牌摸至体力上限并弃置X张牌（X为本回合发动此技能的次数）。",
 
-  ["@@luecheng-turn"] = "掠城",
+  ["#luecheng"] = "掠城：选择一名其他角色，本回合对其使用当前手牌中的【杀】无次数限制",
+  ["@@luecheng-turn"] = "被掠城",
   ["@@luecheng-inhand-phase"] = "掠城",
   ["#luecheng_delay"] = "掠城",
   ["#luecheng-slash"] = "掠城：你可以依次对 %dest 使用手牌中所有【杀】！",
@@ -580,7 +584,7 @@ local manzhi = fk.CreateTriggerSkill{
     local room = player.room
     if player.phase == Player.Finish then
       if player:getMark("@manzhi-turn") == 0 or player.hp ~= tonumber(player:getMark("@manzhi-turn")) then return end
-      local record = U.getMark(player, "_manzhi-turn")
+      local record = player:getTableMark("_manzhi-turn")
       if #record >= 2 then return end
       return table.find(room:getOtherPlayers(player), function(p)
         return (not table.contains(record, "manzhi_give") and #p:getCardIds("he") > 1)
@@ -595,7 +599,7 @@ local manzhi = fk.CreateTriggerSkill{
     local _, dat = room:askForUseActiveSkill(player, "manzhi_active", "#manzhi-ask", true, nil, false)
     if dat then
       local choice = dat.interaction
-      local record = U.getMark(player, "_manzhi-turn")
+      local record = player:getTableMark("_manzhi-turn")
       table.insertIfNeed(record, choice)
       room:setPlayerMark(player, "_manzhi-turn", record)
       self.cost_data = {dat.targets[1], choice}
@@ -640,7 +644,7 @@ local manzhi_active = fk.CreateActiveSkill{
   target_num = 1,
   interaction = function()
     local all_choices = {"manzhi_give", "manzhi_prey"}
-    local choices = table.filter(all_choices, function (str) return not table.contains(U.getMark(Self, "_manzhi-turn"), str) end)
+    local choices = table.filter(all_choices, function (str) return not table.contains(Self:getTableMark("_manzhi-turn"), str) end)
     return UI.ComboBox {choices = choices, all_choices = all_choices}
   end,
   card_filter = Util.FalseFunc,
@@ -868,11 +872,11 @@ local shuangjia = fk.CreateTriggerSkill{
 
   refresh_events = {fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)
-    return #U.getMark(player, "beifen") > 0
+    return #player:getTableMark("beifen") > 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    local mark = U.getMark(player, "beifen")
+    local mark = player:getTableMark("beifen")
     for _, id in ipairs(player:getCardIds(Player.Hand)) do
       local card = Fk:getCardById(id)
       local value = table.contains(mark, id) and 1 or 0
@@ -901,7 +905,7 @@ local beifen = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
-      local mark = U.getMark(player, "beifen")
+      local mark = player:getTableMark("beifen")
       if #mark == 0 then return false end
       local cards = {}
       for _, move in ipairs(data) do
@@ -921,7 +925,7 @@ local beifen = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local mark = U.getMark(player, "beifen")
+    local mark = player:getTableMark("beifen")
     for _, id in ipairs(self.cost_data) do
       table.removeOne(mark, id)
     end
@@ -1565,11 +1569,11 @@ local weiwan = fk.CreateActiveSkill{
       if #get == 1 then
         room:loseHp(to, 1, self.name)
       elseif #get == 2 then
-        local mark = U.getMark(player, "weiwan_targetmod-turn")
+        local mark = player:getTableMark("weiwan_targetmod-turn")
         table.insert(mark, to.id)
         room:setPlayerMark(player, "weiwan_targetmod-turn", mark)
       elseif #get == 3 then
-        local mark = U.getMark(player, "weiwan_prohibit-turn")
+        local mark = player:getTableMark("weiwan_prohibit-turn")
         table.insert(mark, to.id)
         room:setPlayerMark(player, "weiwan_prohibit-turn", mark)
       end
@@ -1582,7 +1586,7 @@ local weiwan_refresh = fk.CreateTriggerSkill{
   refresh_events = {fk.PreCardUse},
   can_refresh = function(self, event, target, player, data)
     if player == target then
-      local mark = U.getMark(player, "weiwan_targetmod-turn")
+      local mark = player:getTableMark("weiwan_targetmod-turn")
       return #mark > 0 and table.find(TargetGroup:getRealTargets(data.tos), function (pid)
         return table.contains(mark, pid)
       end)
@@ -1595,16 +1599,16 @@ local weiwan_refresh = fk.CreateTriggerSkill{
 local weiwan_targetmod = fk.CreateTargetModSkill{
   name = "#weiwan_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return to and table.contains(U.getMark(player, "weiwan_targetmod-turn"), to.id)
+    return to and table.contains(player:getTableMark("weiwan_targetmod-turn"), to.id)
   end,
   bypass_distances = function(self, player, skill, card, to)
-    return to and table.contains(U.getMark(player, "weiwan_targetmod-turn"), to.id)
+    return to and table.contains(player:getTableMark("weiwan_targetmod-turn"), to.id)
   end,
 }
 local weiwan_prohibit = fk.CreateProhibitSkill{
   name = "#weiwan_prohibit",
   is_prohibited = function(self, player, to, card)
-    return table.contains(U.getMark(player, "weiwan_prohibit-turn"), to.id)
+    return table.contains(player:getTableMark("weiwan_prohibit-turn"), to.id)
   end,
 }
 weiwan:addRelatedSkill(weiwan_refresh)

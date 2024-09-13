@@ -1024,7 +1024,7 @@ local ty_ex__xianzhen_trigger = fk.CreateTriggerSkill{
     else
       if target == player and player:usedSkillTimes("ty_ex__xianzhen", Player.HistoryTurn) > 0 and data.card
       and data.to:getMark("@@ty_ex__xianzhen-turn") > 0 then
-        local mark = U.getMark(player, "ty_ex__xianzhen_damage-turn")
+        local mark = player:getTableMark("ty_ex__xianzhen_damage-turn")
         return not table.contains(mark, data.card.trueName)
       end
     end
@@ -1038,7 +1038,7 @@ local ty_ex__xianzhen_trigger = fk.CreateTriggerSkill{
       data.extra_data.ty_ex__xianzhen = data.extra_data.ty_ex__xianzhen or {}
       data.extra_data.ty_ex__xianzhen[tostring(data.to)] = (data.extra_data.ty_ex__xianzhen[tostring(data.to)] or 0) + 1
     else
-      local mark = U.getMark(player, "ty_ex__xianzhen_damage-turn")
+      local mark = player:getTableMark("ty_ex__xianzhen_damage-turn")
       table.insert(mark, data.card.trueName)
       room:setPlayerMark(player, "ty_ex__xianzhen_damage-turn", mark)
       data.damage = data.damage + 1
@@ -3362,7 +3362,7 @@ local ty_ex__pindi = fk.CreateActiveSkill{
   end,
   card_filter = function(self, to_select, selected)
     if #selected == 0 and not Self:prohibitDiscard(Fk:getCardById(to_select)) then
-      local mark = U.getMark(Self, "ty_ex__pindi-phase")
+      local mark = Self:getTableMark("ty_ex__pindi-phase")
       return not table.contains(mark, Fk:getCardById(to_select):getTypeString())
     end
   end,
@@ -3375,7 +3375,7 @@ local ty_ex__pindi = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local mark = U.getMark(player, "ty_ex__pindi-phase")
+    local mark = player:getTableMark("ty_ex__pindi-phase")
     table.insert(mark, Fk:getCardById(effect.cards[1]):getTypeString())
     room:setPlayerMark(player, "ty_ex__pindi-phase", mark)
     room:setPlayerMark(target, "ty_ex__pindi_target-phase", 1)
@@ -3469,11 +3469,11 @@ local ty_ex__sidi = fk.CreateTriggerSkill{
 local ty_ex__sidi_prohibit = fk.CreateProhibitSkill{
   name = "#ty_ex__sidi_prohibit",
   prohibit_response = function(self, player, card)
-    local mark = U.getMark(player, "@ty_ex__sidi-phase")
+    local mark = player:getTableMark("@ty_ex__sidi-phase")
     return table.contains(mark, card:getColorString())
   end,
   prohibit_use = function(self, player, card)
-    local mark = U.getMark(player, "@ty_ex__sidi-phase")
+    local mark = player:getTableMark("@ty_ex__sidi-phase")
     return table.contains(mark, card:getColorString())
   end,
 }
@@ -3598,7 +3598,7 @@ local ty_ex__shenduan = fk.CreateTriggerSkill{
 }
 local ty_ex__shenduan_active = fk.CreateViewAsSkill{
   name = "ty_ex__shenduan_active",
-  expand_pile = function () return U.getMark(Self, "ty_ex__shenduan") end,
+  expand_pile = function () return Self:getTableMark("ty_ex__shenduan") end,
   card_filter = function(self, to_select, selected)
     if #selected == 0 then
       local ids = Self:getMark("ty_ex__shenduan")
@@ -4735,7 +4735,7 @@ local ty_ex__huomo = fk.CreateViewAsSkill{
   end,
   interaction = function()
     local all_names = U.getAllCardNames("b")
-    local names = U.getViewAsCardNames(Self, "ty_ex__huomo", all_names, {}, U.getMark(Self, "ty_ex__huomo-turn"))
+    local names = U.getViewAsCardNames(Self, "ty_ex__huomo", all_names, {}, Self:getTableMark("ty_ex__huomo-turn"))
     if #names == 0 then return false end
     return UI.ComboBox { choices = names, all_choices = all_names }
   end,
@@ -4745,7 +4745,7 @@ local ty_ex__huomo = fk.CreateViewAsSkill{
   end,
   before_use = function (self, player, use)
     local room = player.room
-    local mark = U.getMark(player, "ty_ex__huomo-turn")
+    local mark = player:getTableMark("ty_ex__huomo-turn")
     table.insert(mark, use.card.trueName)
     room:setPlayerMark(player, "ty_ex__huomo-turn", mark)
     local put = use.card:getMark(self.name)

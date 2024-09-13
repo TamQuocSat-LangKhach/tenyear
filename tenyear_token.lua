@@ -524,19 +524,19 @@ local leftArm = fk.CreateWeapon{
   attack_range = 1,
   dynamic_attack_range = function(self, player)
     if player then
-      local mark = U.getMark(player, "@qiexie_left")
+      local mark = player:getTableMark("@qiexie_left")
       return #mark == 2 and tonumber(mark[2]) or nil
     end
   end,
   dynamic_equip_skills = function(self, player)
     if player then
-      return table.map(U.getMark(player, "qiexie_left_skills"), function(skillName) return Fk.skills[skillName] end)
+      return table.map(player:getTableMark("qiexie_left_skills"), function(skillName) return Fk.skills[skillName] end)
     end
   end,
   on_uninstall = function(self, room, player)
     Weapon.onUninstall(self, room, player)
 
-    local qiexieInfo = U.getMark(player, "@qiexie_left")
+    local qiexieInfo = player:getTableMark("@qiexie_left")
     if #qiexieInfo == 2 then
       room:returnToGeneralPile({ qiexieInfo[1] })
     end
@@ -558,19 +558,19 @@ local rightArm = fk.CreateWeapon{
   attack_range = 1,
   dynamic_attack_range = function(self, player)
     if player then
-      local mark = U.getMark(player, "@qiexie_right")
+      local mark = player:getTableMark("@qiexie_right")
       return #mark == 2 and tonumber(mark[2]) or nil
     end
   end,
   dynamic_equip_skills = function(self, player)
     if player then
-      return table.map(U.getMark(player, "qiexie_right_skills"), function(skillName) return Fk.skills[skillName] end)
+      return table.map(player:getTableMark("qiexie_right_skills"), function(skillName) return Fk.skills[skillName] end)
     end
   end,
   on_uninstall = function(self, room, player)
     Weapon.onUninstall(self, room, player)
 
-    local qiexieInfo = U.getMark(player, "@qiexie_right")
+    local qiexieInfo = player:getTableMark("@qiexie_right")
     if #qiexieInfo == 2 then
       room:returnToGeneralPile({ qiexieInfo[1] })
     end

@@ -2379,7 +2379,7 @@ local yuanyu = fk.CreateActiveSkill{
     local tar, card = room:askForChooseCardAndPlayers(player, table.map(targets, Util.IdMapper), 1, 1, ".|.|.|hand",
     "#yuanyu-choose", self.name, false)
     if #tar > 0 and card then
-      local targetRecorded = U.getMark(player, "yuanyu_targets")
+      local targetRecorded = player:getTableMark("yuanyu_targets")
       if not table.contains(targetRecorded, tar[1]) then
         table.insert(targetRecorded, tar[1])
         room:setPlayerMark(player, "yuanyu_targets", targetRecorded)
@@ -2396,14 +2396,14 @@ local yuanyu_trigger = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(yuanyu) then
       if event == fk.Damage then
-        return target and not target:isKongcheng() and table.contains(U.getMark(player, "yuanyu_targets"), target.id)
+        return target and not target:isKongcheng() and table.contains(player:getTableMark("yuanyu_targets"), target.id)
       elseif event == fk.EventPhaseStart and target.phase == Player.Discard then
         if target == player then
-          return table.find(U.getMark(player, "yuanyu_targets"), function (pid)
+          return table.find(player:getTableMark("yuanyu_targets"), function (pid)
             local p = player.room:getPlayerById(pid)
             return not p:isKongcheng() and not p.dead end)
         else
-          return not target:isKongcheng() and table.contains(U.getMark(player, "yuanyu_targets"), target.id)
+          return not target:isKongcheng() and table.contains(player:getTableMark("yuanyu_targets"), target.id)
         end
       end
     end
@@ -2442,7 +2442,7 @@ local yuanyu_trigger = fk.CreateTriggerSkill{
 
   refresh_events = {fk.AfterCardsMove, fk.EventLoseSkill, fk.Death},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.AfterCardsMove then return #U.getMark(player, "@[yuanyu_resent]") ~= #player:getPile("#yuanyu_resent") end
+    if event == fk.AfterCardsMove then return #player:getTableMark("@[yuanyu_resent]") ~= #player:getPile("#yuanyu_resent") end
     if event == fk.EventLoseSkill and data ~= yuanyu then return false end
     return player == target and type(player:getMark("yuanyu_targets")) == "table"
   end,
@@ -3882,7 +3882,7 @@ local dehua = fk.CreateTriggerSkill{
       return false
     end
 
-    local availableNames = U.getMark(player, "@$dehua")
+    local availableNames = player:getTableMark("@$dehua")
     if #availableNames < 1 then
       return false
     end
@@ -3906,7 +3906,7 @@ local dehua = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
 
-    local availableNames = U.getMark(player, "@$dehua")
+    local availableNames = player:getTableMark("@$dehua")
     local realNames = player.tag["dehuaRealNames"]
     for i = 1, #availableNames do
       local name = availableNames[i]
@@ -3920,15 +3920,15 @@ local dehua = fk.CreateTriggerSkill{
 
     local use = U.askForUseVirtualCard(room, player, availableNames, nil, self.name, "#dehua-use", false, true, false, true)
     if (use or {}).card then
-      local names = U.getMark(player, "@$dehua")
+      local names = player:getTableMark("@$dehua")
       table.removeOne(names, use.card.trueName)
       room:setPlayerMark(player, "@$dehua", #names > 0 and names or 0)
 
-      if #U.getMark(player, "@$dehua") == 0 then
+      if #player:getTableMark("@$dehua") == 0 then
         room:handleAddLoseSkills(player, "-" .. self.name)
         room:setPlayerMark(player, "dehua_keep_damage", 1)
       else
-        local namesChosen = U.getMark(player, "dehuaChosen")
+        local namesChosen = player:getTableMark("dehuaChosen")
         table.insertIfNeed(namesChosen, use.card.trueName)
         room:setPlayerMark(player, "dehuaChosen", namesChosen)
       end
@@ -3962,7 +3962,7 @@ local dehuaBuff = fk.CreateMaxCardsSkill{
   name = "#dehua_buff",
   frequency = Skill.Compulsory,
   correct_func = function(self, player)
-    return player:hasSkill(dehua) and #U.getMark(player, "dehuaChosen") or 0
+    return player:hasSkill(dehua) and #player:getTableMark("dehuaChosen") or 0
   end,
   exclude_from = function(self, player, card)
     return player:getMark("dehua_keep_damage") > 0 and card.is_damage_card
@@ -3975,7 +3975,7 @@ local dehuaProhibited = fk.CreateProhibitSkill{
       return false
     end
 
-    local namesChosen = U.getMark(player, "dehuaChosen")
+    local namesChosen = player:getTableMark("dehuaChosen")
     if type(namesChosen) == "table" and table.contains(namesChosen, card.trueName) then
       local subcards = card:isVirtual() and card.subcards or {card.id}
       return #subcards > 0 and table.every(subcards, function(id)

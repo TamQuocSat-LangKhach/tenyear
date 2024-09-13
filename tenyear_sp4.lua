@@ -1026,7 +1026,7 @@ local yuyun = fk.CreateTriggerSkill{
   refresh_events = {fk.PreCardUse},
   can_refresh = function(self, event, target, player, data)
     if player == target and data.card.trueName == "slash" then
-      local mark = U.getMark(player, "yuyun2-turn")
+      local mark = player:getTableMark("yuyun2-turn")
       return #mark > 0 and table.find(TargetGroup:getRealTargets(data.tos), function (pid)
         return table.contains(mark, pid)
       end)
@@ -1039,10 +1039,10 @@ local yuyun = fk.CreateTriggerSkill{
 local yuyun_targetmod = fk.CreateTargetModSkill{
   name = "#yuyun_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return card.trueName == "slash" and to and table.contains(U.getMark(player, "yuyun2-turn"), to.id)
+    return card.trueName == "slash" and to and table.contains(player:getTableMark("yuyun2-turn"), to.id)
   end,
   bypass_distances =  function(self, player, skill, card, to)
-    return card.trueName == "slash" and to and table.contains(U.getMark(player, "yuyun2-turn"), to.id)
+    return card.trueName == "slash" and to and table.contains(player:getTableMark("yuyun2-turn"), to.id)
   end,
 }
 local yuyun_maxcards = fk.CreateMaxCardsSkill{
@@ -1682,7 +1682,7 @@ local ty__gushe = fk.CreateActiveSkill{
   max_target_num = 3,
   prompt = "#ty__gushe-active",
   can_use = function(self, player)
-    return not player:isKongcheng() and #U.getMark(player, "@ty__gushe-turn") == 2
+    return not player:isKongcheng() and #player:getTableMark("@ty__gushe-turn") == 2
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
@@ -1707,7 +1707,7 @@ local ty__gushe_delay = fk.CreateTriggerSkill{
     local room = player.room
     if not player.dead and data.winner ~= player then
       room:addPlayerMark(player, "@ty__raoshe", 1)
-      local mark = U.getMark(player, "@ty__gushe-turn")
+      local mark = player:getTableMark("@ty__gushe-turn")
       if #mark == 2 and mark[2] > 1 then
         room:setPlayerMark(player, "@ty__gushe-turn", {"times_left", mark[2] - 1})
       end
@@ -1749,7 +1749,7 @@ local ty__gushe_delay = fk.CreateTriggerSkill{
       local x = 7 - player:getMark("@ty__raoshe")
       room:setPlayerMark(player, "@ty__gushe-turn", x > 0 and {"times_left", x} or "invalidity")
     elseif event == fk.PindianResultConfirmed then
-      local mark = U.getMark(player, "@ty__gushe-turn")
+      local mark = player:getTableMark("@ty__gushe-turn")
       if #mark == 2 then
         local x = mark[2] - 1
         room:setPlayerMark(player, "@ty__gushe-turn", x > 0 and {"times_left", x} or "invalidity")
@@ -2175,7 +2175,7 @@ local qingshi = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Play and player:getMark("qingshi_invalidity-turn") == 0 and
       table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id).trueName == data.card.trueName end) and
-      not table.contains(U.getMark(player, "qingshi-turn"), data.card.trueName)
+      not table.contains(player:getTableMark("qingshi-turn"), data.card.trueName)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -2202,7 +2202,7 @@ local qingshi = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local mark = U.getMark(player, "qingshi-turn")
+    local mark = player:getTableMark("qingshi-turn")
     table.insert(mark, data.card.trueName)
     room:setPlayerMark(player, "qingshi-turn", mark)
     if self.cost_data[1] == "qingshi1" then
@@ -2298,7 +2298,7 @@ local zhizhe_delay = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    local mark = U.getMark(player, "zhizhe")
+    local mark = player:getTableMark("zhizhe")
     if #mark == 0 then return false end
     local room = player.room
     local move_event = room.logic:getCurrentEvent()
@@ -2338,8 +2338,8 @@ local zhizhe_delay = fk.CreateTriggerSkill{
   can_refresh = Util.TrueFunc,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    local marked = U.getMark(player, "zhizhe")
-    local marked2 = U.getMark(player, "zhizhe-turn")
+    local marked = player:getTableMark("zhizhe")
+    local marked2 = player:getTableMark("zhizhe-turn")
     marked2 = table.filter(marked2, function (id)
       return room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player
     end)
@@ -2370,7 +2370,7 @@ local zhizhe_delay = fk.CreateTriggerSkill{
 local zhizhe_prohibit = fk.CreateProhibitSkill{
   name = "#zhizhe_prohibit",
   prohibit_use = function(self, player, card)
-    local mark = U.getMark(player, "zhizhe-turn")
+    local mark = player:getTableMark("zhizhe-turn")
     if #mark == 0 then return false end
     local cardList = card:isVirtual() and card.subcards or {card.id}
     return table.find(cardList, function (id) return table.contains(mark, id) end)
@@ -2598,7 +2598,7 @@ local juewu = fk.CreateViewAsSkill{
       table.insertIfNeed(names, "ty__drowning")
       Self:setMark("juewu_names", names)
     end
-    local choices = U.getViewAsCardNames(Self, "juewu", names, nil, U.getMark(Self, "juewu-turn"))
+    local choices = U.getViewAsCardNames(Self, "juewu", names, nil, Self:getTableMark("juewu-turn"))
     if #choices == 0 then return end
     return UI.ComboBox { choices = choices, all_choices = names }
   end,
@@ -2617,7 +2617,7 @@ local juewu = fk.CreateViewAsSkill{
     return card
   end,
   before_use = function(self, player, use)
-    local mark = U.getMark(player, "juewu-turn")
+    local mark = player:getTableMark("juewu-turn")
     table.insert(mark, use.card.trueName)
     player.room:setPlayerMark(player, "juewu-turn", mark)
   end,
@@ -2634,7 +2634,7 @@ local juewu = fk.CreateViewAsSkill{
       table.insertIfNeed(names, "ty__drowning")
       player:setMark("juewu_names", names)
     end
-    local mark = U.getMark(player, "juewu-turn")
+    local mark = player:getTableMark("juewu-turn")
     local choices = {}
     for _, name in pairs(names) do
       local to_use = Fk:cloneCard(name)
@@ -2659,7 +2659,7 @@ local juewu = fk.CreateViewAsSkill{
       table.insertIfNeed(names, "ty__drowning")
       player:setMark("juewu_names", names)
     end
-    local mark = U.getMark(player, "juewu-turn")
+    local mark = player:getTableMark("juewu-turn")
     local choices = {}
     for _, name in pairs(names) do
       local to_use = Fk:cloneCard(name)
@@ -2797,7 +2797,7 @@ local wuyou_active = fk.CreateActiveSkill{
   card_num = 1,
   target_num = 1,
   can_use = function(self, player)
-    local targetRecorded = U.getMark(player, "wuyou_targets-phase")
+    local targetRecorded = player:getTableMark("wuyou_targets-phase")
     return table.find(Fk:currentRoom().alive_players, function(p)
       return p ~= player and p:hasSkill(wuyou) and not table.contains(targetRecorded, p.id)
     end)
@@ -2807,7 +2807,7 @@ local wuyou_active = fk.CreateActiveSkill{
   end,
   target_filter = function(self, to_select, selected)
     return #selected == 0 and to_select ~= Self.id and Fk:currentRoom():getPlayerById(to_select):hasSkill(wuyou) and
-    not table.contains(U.getMark(Self, "wuyou_targets-phase"), to_select)
+    not table.contains(Self:getTableMark("wuyou_targets-phase"), to_select)
   end,
   on_use = function(self, room, effect)
     local target = room:getPlayerById(effect.from)

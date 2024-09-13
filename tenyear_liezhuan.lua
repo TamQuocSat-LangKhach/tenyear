@@ -327,10 +327,10 @@ local addTYPingjianSkill = function(player, skill_name)
   local skill = Fk.skills[skill_name]
   if skill == nil or player:hasSkill(skill_name, true) then return false end
   room:handleAddLoseSkills(player, skill_name, nil)
-  local pingjian_skills = U.getMark(player, "ty__pingjian_skills")
+  local pingjian_skills = player:getTableMark("ty__pingjian_skills")
   table.insertIfNeed(pingjian_skills, skill_name)
   room:setPlayerMark(player, "ty__pingjian_skills", pingjian_skills)
-  local pingjian_skill_times = U.getMark(player, "ty__pingjian_skill_times")
+  local pingjian_skill_times = player:getTableMark("ty__pingjian_skill_times")
   table.insert(pingjian_skill_times, {skill_name, player:usedSkillTimes(skill_name)})
   for _, s in ipairs(skill.related_skills) do
     table.insert(pingjian_skill_times, {s.name, player:usedSkillTimes(s.name)})
@@ -344,11 +344,11 @@ local removeTYPingjianSkill = function(player, skill_name)
   local skill = Fk.skills[skill_name]
   if skill == nil then return false end
   room:handleAddLoseSkills(player, "-" .. skill_name, nil)
-  local pingjian_skills = U.getMark(player, "ty__pingjian_skills")
+  local pingjian_skills = player:getTableMark("ty__pingjian_skills")
   table.removeOne(pingjian_skills, skill_name)
   room:setPlayerMark(player, "ty__pingjian_skills", pingjian_skills)
   local invoked = false
-  local pingjian_skill_times = U.getMark(player, "ty__pingjian_skill_times")
+  local pingjian_skill_times = player:getTableMark("ty__pingjian_skill_times")
   local record_copy = {}
   for _, pingjian_record in ipairs(pingjian_skill_times) do
     if #pingjian_record == 2 then
@@ -396,7 +396,7 @@ local function getPingjianSkills(player, event)
       "js__pianchong", "linghui", "huayi", "jue",
     },
   }
-  local used_skills = U.getMark(player, "ty__pingjian_used_skills")
+  local used_skills = player:getTableMark("ty__pingjian_used_skills")
   return table.filter(list[event] or {}, function (skill_name)
     return Fk.skills[skill_name] and not table.contains(used_skills, skill_name) and not player:hasSkill(skill_name, true)
   end)
@@ -418,7 +418,7 @@ local ty__pingjian = fk.CreateActiveSkill{
     if #skills == 0 then return false end
     local choices = table.random(skills, 3)
     local skill_name = room:askForChoice(player, choices, self.name, "#ty__pingjian-choice", true)
-    local used_skills = U.getMark(player, "ty__pingjian_used_skills")
+    local used_skills = player:getTableMark("ty__pingjian_used_skills")
     table.insert(used_skills, skill_name)
     room:setPlayerMark(player, "ty__pingjian_used_skills", used_skills)
     local phase_event = room.logic:getCurrentEvent():findParent(GameEvent.Phase)
@@ -451,7 +451,7 @@ local ty__pingjian_trigger = fk.CreateTriggerSkill{
     if #skills == 0 then return false end
     local choices = table.random(skills, 3)
     local skill_name = room:askForChoice(player, choices, ty__pingjian.name, "#ty__pingjian-choice", true)
-    local used_skills = U.getMark(player, "ty__pingjian_used_skills")
+    local used_skills = player:getTableMark("ty__pingjian_used_skills")
     table.insert(used_skills, skill_name)
     room:setPlayerMark(player, "ty__pingjian_used_skills", used_skills)
     local skill = Fk.skills[skill_name]
@@ -467,7 +467,7 @@ local ty__pingjian_trigger = fk.CreateTriggerSkill{
 local ty__pingjian_invalidity = fk.CreateInvaliditySkill {
   name = "#ty__pingjian_invalidity",
   invalidity_func = function(self, player, skill)
-    local pingjian_skill_times = U.getMark(player, "ty__pingjian_skill_times")
+    local pingjian_skill_times = player:getTableMark("ty__pingjian_skill_times")
     return table.find(pingjian_skill_times, function (pingjian_record)
       if #pingjian_record == 2 then
         local skill_name = pingjian_record[1]
@@ -1403,7 +1403,7 @@ local xuezhao = fk.CreateActiveSkill{
           end
           room:addPlayerMark(player, MarkEnum.SlashResidue.."-phase", 1)
         else
-          local mark = U.getMark(player, "xuezhao-phase")
+          local mark = player:getTableMark("xuezhao-phase")
           table.insert(mark, p.id)
           room:setPlayerMark(player, "xuezhao-phase", mark)
         end
@@ -1419,11 +1419,11 @@ local xuezhao_record = fk.CreateTriggerSkill{
 
   refresh_events = {fk.CardUsing},
   can_refresh = function(self, event, target, player, data)
-    return target == player and #U.getMark(player, "xuezhao-phase") > 0
+    return target == player and #player:getTableMark("xuezhao-phase") > 0
   end,
   on_refresh = function(self, event, target, player, data)
     data.disresponsiveList = data.disresponsiveList or {}
-    table.insertTableIfNeed(data.disresponsiveList, U.getMark(player, "xuezhao-phase"))
+    table.insertTableIfNeed(data.disresponsiveList, player:getTableMark("xuezhao-phase"))
   end,
 }
 xuezhao:addRelatedSkill(xuezhao_record)
@@ -2029,7 +2029,7 @@ local ty__zhanyi = fk.CreateTriggerSkill{
     local room = player.room
     local types = {"basic", "trick", "equip"}
     local card_type = self.cost_data
-    local mark = U.getMark(player, "@[cardtypes]ty__zhanyi")
+    local mark = player:getTableMark("@[cardtypes]ty__zhanyi")
     if card_type == "basic" then
       table.insertTableIfNeed(mark, {2, 3})
     elseif card_type == "trick" then
@@ -2062,8 +2062,8 @@ local ty__zhanyi_trigger = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if event == fk.CardUsing then
       return target == player and not player.dead and
-      data.card.type < 3 and table.contains(U.getMark(player, "@[cardtypes]ty__zhanyi"), data.card.type)
-    elseif table.contains(U.getMark(player, "@[cardtypes]ty__zhanyi"), 3) then
+      data.card.type < 3 and table.contains(player:getTableMark("@[cardtypes]ty__zhanyi"), data.card.type)
+    elseif table.contains(player:getTableMark("@[cardtypes]ty__zhanyi"), 3) then
       for _, move in ipairs(data) do
         if move.to and move.to == player.id and move.toArea == Player.Equip and #move.moveInfo > 0 then
           return true
@@ -2119,13 +2119,13 @@ local ty__zhanyi_trigger = fk.CreateTriggerSkill{
 local ty__zhanyi_targetmod = fk.CreateTargetModSkill{
   name = "#ty__zhanyi_targetmod",
   bypass_distances = function(self, player, skill, card)
-    return table.contains(U.getMark(player, "@[cardtypes]ty__zhanyi"), 1) and card and card.type == Card.TypeBasic
+    return table.contains(player:getTableMark("@[cardtypes]ty__zhanyi"), 1) and card and card.type == Card.TypeBasic
   end,
 }
 local ty__zhanyi_maxcards = fk.CreateMaxCardsSkill{
   name = "#ty__zhanyi_maxcards",
   exclude_from = function(self, player, card)
-    return table.contains(U.getMark(player, "@[cardtypes]ty__zhanyi"), 2) and card.type == Card.TypeTrick
+    return table.contains(player:getTableMark("@[cardtypes]ty__zhanyi"), 2) and card.type == Card.TypeTrick
   end,
 }
 ty__zhanyi:addRelatedSkill(ty__zhanyi_trigger)

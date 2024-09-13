@@ -19,17 +19,17 @@ local canxi = fk.CreateTriggerSkill{
     if not player:hasSkill(self) then return false end
     if event == fk.DamageCaused then
       return target and player:getMark("@canxi1-round") == target.kingdom and
-      not table.contains(U.getMark(player, "canxi1-turn"), target.id)
+      not table.contains(player:getTableMark("canxi1-turn"), target.id)
     elseif event == fk.HpRecover then
       return player:getMark("@canxi2-round") == target.kingdom and
-      not target.dead and target ~= player and not table.contains(U.getMark(player, "canxi21-turn"), target.id)
+      not target.dead and target ~= player and not table.contains(player:getTableMark("canxi21-turn"), target.id)
     elseif event == fk.TargetConfirmed then
       if player == target and data.from ~= player.id then
         local p = player.room:getPlayerById(data.from)
-        return player:getMark("@canxi2-round") == p.kingdom and not table.contains(U.getMark(player, "canxi22-turn"), p.id)
+        return player:getMark("@canxi2-round") == p.kingdom and not table.contains(player:getTableMark("canxi22-turn"), p.id)
       end
     elseif event == fk.RoundStart then
-      return #U.getMark(player, "@canxi_exist_kingdoms") > 0
+      return #player:getTableMark("@canxi_exist_kingdoms") > 0
     elseif event == fk.GameStart then
       return true
     end
@@ -39,19 +39,19 @@ local canxi = fk.CreateTriggerSkill{
     player:broadcastSkillInvoke(self.name)
     if event == fk.DamageCaused then
       room:notifySkillInvoked(player, self.name, "offensive")
-      local mark = U.getMark(player, "canxi1-turn")
+      local mark = player:getTableMark("canxi1-turn")
       table.insert(mark, target.id)
       room:setPlayerMark(player, "canxi1-turn", mark)
       data.damage = data.damage + 1
     elseif event == fk.HpRecover then
       room:notifySkillInvoked(player, self.name, "control")
-      local mark = U.getMark(player, "canxi21-turn")
+      local mark = player:getTableMark("canxi21-turn")
       table.insert(mark, target.id)
       room:setPlayerMark(player, "canxi21-turn", mark)
       room:loseHp(target, 1, self.name)
     elseif event == fk.TargetConfirmed then
       room:notifySkillInvoked(player, self.name, "defensive")
-      local mark = U.getMark(player, "canxi22-turn")
+      local mark = player:getTableMark("canxi22-turn")
       table.insert(mark, data.from)
       room:setPlayerMark(player, "canxi22-turn", mark)
       table.insertIfNeed(data.nullifiedTargets, player.id)
@@ -109,7 +109,7 @@ local pizhi = fk.CreateTriggerSkill{
         return player:getMark("@canxi1-round") == target.kingdom or player:getMark("@canxi2-round") == target.kingdom or
           (not table.find(player.room.alive_players, function(p)
             return p.kingdom == target.kingdom
-          end) and table.contains(U.getMark(player, "@canxi_exist_kingdoms"), target.kingdom))
+          end) and table.contains(player:getTableMark("@canxi_exist_kingdoms"), target.kingdom))
       end
     end
   end,
@@ -552,7 +552,7 @@ local aoshi_other = fk.CreateActiveSkill{
   mute = true,
   can_use = function(self, player)
     if player.kingdom ~= "qun" then return false end
-    local targetRecorded = U.getMark(player, "aoshi_sources-phase")
+    local targetRecorded = player:getTableMark("aoshi_sources-phase")
     return table.find(Fk:currentRoom().alive_players, function(p)
       return p ~= player and p:hasSkill(aoshi) and not table.contains(targetRecorded, p.id)
     end)
@@ -566,14 +566,14 @@ local aoshi_other = fk.CreateActiveSkill{
     return
     #selected == 0 and to_select ~= Self.id and
     Fk:currentRoom():getPlayerById(to_select):hasSkill(aoshi) and
-    not table.contains(U.getMark(Self, "aoshi_sources-phase"), to_select)
+    not table.contains(Self:getTableMark("aoshi_sources-phase"), to_select)
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     room:notifySkillInvoked(player, aoshi.name)
     target:broadcastSkillInvoke(aoshi.name)
-    local targetRecorded = U.getMark(player, "aoshi_sources-phase")
+    local targetRecorded = player:getTableMark("aoshi_sources-phase")
     table.insertIfNeed(targetRecorded, target.id)
     room:setPlayerMark(player, "aoshi_sources-phase", targetRecorded)
     room:moveCardTo(effect.cards, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
@@ -1457,7 +1457,7 @@ local saying = fk.CreateViewAsSkill{
   end,
   interaction = function()
     local all_names = {"slash", "jink", "peach", "analeptic"}
-    local names = U.getViewAsCardNames(Self, "saying", all_names, {}, U.getMark(Self, "saying-round"))
+    local names = U.getViewAsCardNames(Self, "saying", all_names, {}, Self:getTableMark("saying-round"))
     if #names == 0 then return end
     return UI.ComboBox { choices = names, all_choices = all_names }
   end,
@@ -1480,7 +1480,7 @@ local saying = fk.CreateViewAsSkill{
   end,
   before_use = function(self, player, use)
     local room = player.room
-    local mark = U.getMark(player, "saying-round")
+    local mark = player:getTableMark("saying-round")
     table.insert(mark, use.card.trueName)
     room:setPlayerMark(player, "saying-round", mark)
     local card_id = use.card:getMark(self.name)
@@ -1496,7 +1496,7 @@ local saying = fk.CreateViewAsSkill{
   end,
   enabled_at_play = function(self, player)
     local card
-    local mark = U.getMark(player, "saying-round")
+    local mark = player:getTableMark("saying-round")
     return not table.every({"slash", "peach", "analeptic"}, function(name)
       if table.contains(mark, name) then return true end
       card = Fk:cloneCard(name)
@@ -1507,7 +1507,7 @@ local saying = fk.CreateViewAsSkill{
   enabled_at_response = function(self, player, response)
     if response or Fk.currentResponsePattern == nil then return false end
     local card
-    local mark = U.getMark(player, "saying-round")
+    local mark = player:getTableMark("saying-round")
     return not table.every({"slash", "jink", "peach", "analeptic"}, function(name)
       if table.contains(mark, name) then return true end
       card = Fk:cloneCard(name)

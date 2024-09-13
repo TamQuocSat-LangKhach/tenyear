@@ -95,7 +95,7 @@ local biejun_active = fk.CreateActiveSkill{
   card_num = 1,
   target_num = 1,
   can_use = function(self, player)
-    local targetRecorded = U.getMark(player, "biejun_targets-phase")
+    local targetRecorded = player:getTableMark("biejun_targets-phase")
     return table.find(Fk:currentRoom().alive_players, function(p)
       return p ~= player and p:hasSkill(biejun) and not table.contains(targetRecorded, p.id)
     end)
@@ -105,13 +105,13 @@ local biejun_active = fk.CreateActiveSkill{
   end,
   target_filter = function(self, to_select, selected)
     return #selected == 0 and to_select ~= Self.id and Fk:currentRoom():getPlayerById(to_select):hasSkill(biejun) and
-    not table.contains(U.getMark(Self, "biejun_targets-phase"), to_select)
+    not table.contains(Self:getTableMark("biejun_targets-phase"), to_select)
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     target:broadcastSkillInvoke(biejun.name)
-    local targetRecorded = U.getMark(player, "biejun_targets-phase")
+    local targetRecorded = player:getTableMark("biejun_targets-phase")
     table.insert(targetRecorded, target.id)
     room:setPlayerMark(player, "biejun_targets-phase", targetRecorded)
     room:moveCardTo(effect.cards[1], Card.PlayerHand, target, fk.ReasonGive, "biejun", nil, false, player.id, "@@biejun-inhand-turn")
@@ -403,7 +403,7 @@ local sangu = fk.CreateTriggerSkill{
       return false
     end, end_id)
     if #names == 0 then
-      mark = U.getMark(player, "sangu_avoid")
+      mark = player:getTableMark("sangu_avoid")
       table.insert(mark, to.id)
       room:setPlayerMark(player, "sangu_avoid", mark)
     end
@@ -418,11 +418,11 @@ local sangu_delay = fk.CreateTriggerSkill{
       if player == target and data.card and table.contains(data.card.skillNames, "sangu") then
         local card_event = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
         if not card_event then return false end
-        return table.contains(U.getMark(player, "sangu_avoid"), card_event.data[1].from)
+        return table.contains(player:getTableMark("sangu_avoid"), card_event.data[1].from)
       end
       return false
     end
-    if player:isAlive() and player.phase == Player.Play and #U.getMark(player, "@$sangu") > 0 then
+    if player:isAlive() and player.phase == Player.Play and #player:getTableMark("@$sangu") > 0 then
       if event == fk.EventPhaseStart then return player == target end
       if player:getMark("sangu_effect-phase") == 0 then return false end
       if event == fk.AfterCardsMove then
@@ -461,7 +461,7 @@ local sangu_delay = fk.CreateTriggerSkill{
         end)
       end
     else
-      local mark = U.getMark(player, "@$sangu")
+      local mark = player:getTableMark("@$sangu")
       table.remove(mark, 1)
       room:setPlayerMark(player, "@$sangu", #mark > 0 and mark or 0)
       if #mark == 0 then
@@ -475,11 +475,11 @@ local sangu_filter = fk.CreateFilterSkill{
   name = "#sangu_filter",
   mute = true,
   card_filter = function(self, to_select, player)
-    return player:getMark("sangu_effect-phase") ~= 0 and #U.getMark(player, "@$sangu") > 0 and
+    return player:getMark("sangu_effect-phase") ~= 0 and #player:getTableMark("@$sangu") > 0 and
     table.contains(player.player_cards[Player.Hand], to_select.id)
   end,
   view_as = function(self, to_select, player)
-    local mark = U.getMark(player, "@$sangu")
+    local mark = player:getTableMark("@$sangu")
     if #mark > 0 then
       local card = Fk:cloneCard(mark[1], to_select.suit, to_select.number)
       card.skillName = sangu.name

@@ -524,7 +524,7 @@ local xuzhi = fk.CreateActiveSkill{
     room:setPlayerMark(target1, "xuzhi-phase", 1)
     room:setPlayerMark(target2, "xuzhi-phase", 1)
     local targets = {target1, target2}
-    target1.request_data = json.encode({"choose_cards_skill", "#xuzhi-card::"..target2.id, true, {
+    target1.request_data = json.encode({"choose_cards_skill", "#xuzhi-card::"..target2.id, false, {
       num = target1:getHandcardNum(),
       min_num = 1,
       max_num = target1:getHandcardNum(),
@@ -532,7 +532,7 @@ local xuzhi = fk.CreateActiveSkill{
       pattern = ".",
       reason = self.name,
     }})
-    target2.request_data = json.encode({"choose_cards_skill", "#xuzhi-card::"..target1.id, true, {
+    target2.request_data = json.encode({"choose_cards_skill", "#xuzhi-card::"..target1.id, false, {
       num = target2:getHandcardNum(),
       min_num = 1,
       max_num = target2:getHandcardNum(),
@@ -552,7 +552,7 @@ local xuzhi = fk.CreateActiveSkill{
       end
     end
     U.swapCards(room, player, target1, target2, cards[1], cards[2], self.name)
-    local n1, n2 = #cards[1] - #cards[2], #cards[2]
+    local n1, n2 = #cards[1], #cards[2]
     if n1 == n2 then
       if player.dead then return end
       player:drawCards(2, self.name)
@@ -571,10 +571,10 @@ Fk:loadTranslationTable{
   ["#linghuyu"] = "名愚性浚",
   ["designer:linghuyu"] = "浮兮璃璃",
   ["xuzhi"] = "蓄志",
-  [":xuzhi"] = "出牌阶段限一次，你可以令两名角色同时选择任意张手牌并交换这些牌，获得牌数较少的角色视为使用一张无距离限制的【杀】；"..
+  [":xuzhi"] = "出牌阶段限一次，你可以令两名角色同时选择至少一张手牌并交换这些牌，获得牌数较少的角色视为使用一张无距离限制的【杀】；"..
   "若获得牌数相等，你摸两张牌，且可以对本阶段未以此法选择过的角色再发动〖蓄志〗。",
-  ["#xuzhi-active"] = "蓄志：令两名角色交换任意张手牌",
-  ["#xuzhi-card"] = "蓄志：选择任意张手牌与 %dest 交换",
+  ["#xuzhi-active"] = "蓄志：选择两名角色，令他们同时选择至少一张手牌并交换",
+  ["#xuzhi-card"] = "蓄志：你须选择至少一张手牌与 %dest 交换",
   ["#xuzhi-use"] = "蓄志：你可以视为使用一张无距离限制的【杀】",
 }
 

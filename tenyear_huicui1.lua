@@ -237,6 +237,7 @@ Fk:loadTranslationTable{
   ["#caoxing"] = "健儿",
   ["cv:caoxing"] = "曹真",
   ["illustrator:caoxing"] = "匠人绘",
+  ["designer:caoxing"] = "五月y",
 
   ["liushi"] = "流矢",
   [":liushi"] = "出牌阶段，你可以将一张<font color='red'>♥</font>牌置于牌堆顶，视为对一名角色使用一张【杀】（不计入次数且无距离限制）。"..
@@ -2113,6 +2114,7 @@ Fk:loadTranslationTable{
   ["xiahoulingnv"] = "夏侯令女",
   ["#xiahoulingnv"] = "女义如山",
   ["illustrator:xiahoulingnv"] = "匠人绘",
+  ["designer:xiahoulingnv"] = "笔枔",
 
   ["fuping"] = "浮萍",
   [":fuping"] = "当其他角色以你为目标的基本牌或锦囊牌牌结算后，若你未记录此牌，你可以废除一个装备栏并记录此牌。"..
@@ -5282,6 +5284,7 @@ Fk:loadTranslationTable{
   ["ty__yuejin"] = "乐进",
   ["#ty__yuejin"] = "奋强突固",
   ["illustrator:ty__yuejin"] = "君桓文化",
+  ["designer:ty__yuejin"] = "淬毒",
 
   ["ty__xiaoguo"] = "骁果",
   [":ty__xiaoguo"] = "其他角色的结束阶段，你可以弃置一张手牌，然后其选择一项：1.弃置一张装备牌，然后你摸一张牌；2.你对其造成1点伤害。",

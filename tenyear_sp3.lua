@@ -865,7 +865,7 @@ local tianjie = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    for _, id in ipairs(self.cost_data) do
+    for _, id in ipairs(self.cost_data.tos) do
       local p = room:getPlayerById(id)
       if not p.dead then
         local n = math.max(1, #table.filter(p:getCardIds("h"), function(c) return Fk:getCardById(c).trueName == "jink" end))

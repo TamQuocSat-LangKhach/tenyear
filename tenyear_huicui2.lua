@@ -1705,6 +1705,8 @@ Fk:loadTranslationTable{
   ["huzhao"] = "胡昭",
   ["#huzhao"] = "阖门守静",
   ["illustrator:huzhao"] = "游漫美绘",
+  ["designer:huzhao"] = "神壕",
+
   ["midu"] = "弥笃",
   [":midu"] = "出牌阶段限一次，你可以选择一项：1.废除任意个装备栏或判定区，令一名角色摸等量的牌；2.恢复一个被废除的装备栏或判定区，"..
   "你获得〖活墨〗直到你下个回合开始。",

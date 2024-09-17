@@ -201,6 +201,8 @@ Fk:loadTranslationTable{
   ["ty__liuhong"] = "刘宏",
   ["#ty__liuhong"] = "汉灵帝",
   ["illustrator:ty__liuhong"] = "凝聚永恒",
+  ["designer:ty__liuhong"] = "笔枔",
+
   ["yujue"] = "鬻爵",
   [":yujue"] = "出牌阶段限一次，你可以废除你的一个装备栏，并选择一名有手牌的其他角色，令其交给你一张手牌，然后其获得技能“执笏”直到你的下个回合开始。",
   ["#yujue-give"] = "鬻爵：请交给 %src 一张手牌",

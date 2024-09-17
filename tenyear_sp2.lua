@@ -2266,6 +2266,8 @@ Fk:loadTranslationTable{
   ["quanhuijie"] = "全惠解",
   ["#quanhuijie"] = "春宫早深",
   ["illustrator:quanhuijie"] = "游漫美绘",
+  ["designer:quanhuijie"] = "笔枔",
+
   ["huishu"] = "慧淑",
   [":huishu"] = "摸牌阶段结束时，你可以摸3张牌然后弃置1张手牌。"..
   "若如此做，你本回合弃置超过2张牌时，从弃牌堆中随机获得等量的非基本牌。",

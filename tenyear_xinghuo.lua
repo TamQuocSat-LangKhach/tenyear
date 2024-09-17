@@ -252,6 +252,8 @@ Fk:loadTranslationTable{
   ["duji"] = "杜畿",
   ["#duji"] = "卧镇京畿",
   ["illustrator:duji"] = "李秀森",
+  ["designer:duji"] = "笔枔",
+
   ["andong"] = "安东",
   [":andong"] = "当你受到其他角色造成的伤害时，你可令伤害来源选择一项：1.防止此伤害，本回合弃牌阶段<font color='red'>♥</font>牌不计入手牌上限；"..
   "2.观看其手牌，若其中有<font color='red'>♥</font>牌则你获得这些牌。",
@@ -1009,6 +1011,8 @@ Fk:loadTranslationTable{
   ["lvdai"] = "吕岱",
   ["#lvdai"] = "清身奉公",
   ["illustrator:lvdai"] = "biou09",
+  ["designer:lvdai"] = "笔枔",
+
   ["qinguo"] = "勤国",
   [":qinguo"] = "当你于回合内使用装备牌结算结束后，你可视为使用【杀】；当你的装备区里的牌数变化后，"..
   "若你装备区里的牌数与你的体力值相等，你回复1点体力。",

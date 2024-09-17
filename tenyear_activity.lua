@@ -1326,6 +1326,8 @@ Fk:loadTranslationTable{
   ["zhanggong"] = "张恭",
   ["#zhanggong"] = "西域长歌",
   ["illustrator:zhanggong"] = "B_LEE",
+  ["designer:zhanggong"] = "笔枔",
+
   ["qianxinz"] = "遣信",
   [":qianxinz"] = "出牌阶段限一次，若牌堆中没有“信”，你可以选择一名角色并将任意张手牌置于牌堆中X倍数的位置（X为存活人数），称为“信”。"..
   "该角色弃牌阶段开始时，若其手牌中有本回合获得的“信”，其选择一项：1.你将手牌摸至四张；2.其本回合手牌上限-2。",
@@ -2123,6 +2125,8 @@ Fk:loadTranslationTable{
   ["xinpi"] = "辛毗",
   ["#xinpi"] = "一节肃六军",
   ["illustrator:xinpi"] = "石蝉",
+  ["designer:xinpi"] = "神壕",
+
   ["chijie"] = "持节",
   [":chijie"] = "每回合每项各限一次，<br>①当其他角色使用牌对你生效时，你可以令此牌在接下来的结算中对其他角色无效；<br>②当其他角色使用牌结算结束后，"..
   "若你是目标之一且此牌没有造成过伤害，你可以获得之。",
@@ -3103,6 +3107,7 @@ Fk:loadTranslationTable{
   ["#ty__zhaoyan"] = "扬历干功",
   ["cv:ty__zhaoyan"] = "冰霜墨菊",
   ["illustrator:ty__zhaoyan"] = "游漫美绘",
+  ["designer:ty__zhaoyan"] = "追风青年",
 
   ["funing"] = "抚宁",
   [":funing"] = "当你使用一张牌时，你可以摸两张牌然后弃置X张牌（X为此技能本回合发动次数）。",

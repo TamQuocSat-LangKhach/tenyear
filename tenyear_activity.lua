@@ -4814,59 +4814,6 @@ local jinghe_trigger = fk.CreateTriggerSkill {
 jinghe:addRelatedSkill(jinghe_trigger)
 nanhualaoxian:addSkill(gongxiu)
 nanhualaoxian:addSkill(jinghe)
-local ex__leiji = fk.CreateTriggerSkill{
-  name = "ex__leiji",
-  anim_type = "offensive",
-  events = {fk.CardUsing, fk.CardResponding},
-  can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and target == player and data.card.name == "jink"
-  end,
-  on_cost = function(self, event, target, player, data)
-    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1,
-      "#ex__leiji-choose", self.name, true)
-    if #to > 0 then
-      self.cost_data = to[1]
-      return true
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local to = room:getPlayerById(self.cost_data)
-    local judge = {
-      who = to,
-      reason = self.name,
-      pattern = ".|.|spade,club",
-    }
-    room:judge(judge)
-    if judge.card.suit == Card.Spade then
-      room:damage{
-        from = player,
-        to = to,
-        damage = 2,
-        damageType = fk.ThunderDamage,
-        skillName = self.name,
-      }
-    elseif judge.card.suit == Card.Club then
-      if player:isWounded() then
-        room:recover({
-          who = player,
-          num = 1,
-          recoverBy = player,
-          skillName = self.name
-        })
-      end
-      if not to.dead then
-        room:damage{
-          from = player,
-          to = to,
-          damage = 1,
-          damageType = fk.ThunderDamage,
-          skillName = self.name,
-        }
-      end
-    end
-  end,
-}
 local yinbingn = fk.CreateTriggerSkill{
   name = "yinbingn",
   anim_type = "offensive",
@@ -5042,7 +4989,7 @@ local yanzhengn = fk.CreateTriggerSkill{
     end
   end,
 }
-nanhualaoxian:addRelatedSkill(ex__leiji)
+nanhualaoxian:addRelatedSkill("ex__leiji")
 nanhualaoxian:addRelatedSkill(yinbingn)
 nanhualaoxian:addRelatedSkill(huoqi)
 nanhualaoxian:addRelatedSkill(guizhu)
@@ -5058,6 +5005,7 @@ Fk:loadTranslationTable{
   ["ty__nanhualaoxian"] = "南华老仙",
   ["#ty__nanhualaoxian"] = "仙人指路",
   ["illustrator:ty__nanhualaoxian"] = "君桓文化",
+
   ["gongxiu"] = "共修",
   [":gongxiu"] = "结束阶段，若你本回合发动过〖经合〗，你可以选择一项：1.令所有本回合因〖经合〗获得过技能的角色摸一张牌；"..
   "2.令所有本回合未因〖经合〗获得过技能的其他角色弃置一张手牌。",
@@ -5069,9 +5017,6 @@ Fk:loadTranslationTable{
   ["gongxiu_discard"] = "令非“经合”角色各弃置一张手牌",
   ["#jinghe"] = "经合：展示至多四张牌名各不同的手牌，令等量的角色获得技能",
   ["#jinghe-choice"] = "经合：选择你要获得的技能",
-  ["ex__leiji"] = "雷击",
-  [":ex__leiji"] = "当你使用或打出【闪】后，你可以令一名其他角色进行一次判定，若结果为：♠，你对其造成2点雷电伤害；♣，你回复1点体力，对其造成1点雷电伤害。",
-  ["#ex__leiji-choose"] = "雷击：令一名角色进行判定，若为♠，你对其造成2点雷电伤害；若为♣，你回复1点体力，对其造成1点雷电伤害",
   ["yinbingn"] = "阴兵",
   [":yinbingn"] = "锁定技，你使用【杀】即将造成的伤害视为失去体力。当其他角色失去体力后，你摸一张牌。",
   ["huoqi"] = "活气",

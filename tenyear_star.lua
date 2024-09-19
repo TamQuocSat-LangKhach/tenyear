@@ -1348,7 +1348,7 @@ local ruijun_delay = fk.CreateTriggerSkill{
     player:broadcastSkillInvoke("ruijun")
     room:notifySkillInvoked(player, "ruijun", "offensive")
     local x = 0
-    U.getActualDamageEvents(room, 1, function (e)
+    room.logic:getActualDamageEvents(1, function (e)
       local damage = e.data[1]
       if damage.from == player and damage.to == data.to then
         x = damage.damage
@@ -1365,6 +1365,12 @@ local ruijun_attackrange = fk.CreateAttackRangeSkill{
   without_func = function (self, from, to)
     local mark = from:getMark("ruijun_targets-phase")
     return mark ~= 0 and mark ~= to.id
+  end,
+}
+local ruijun_targetmod = fk.CreateTargetModSkill{
+  name = "#ruijun_targetmod",
+  bypass_distances = function(self, player, skill, card, to)
+    return card and player:getMark("ruijun_targets-phase") == to.id
   end,
 }
 local gangyi = fk.CreateTriggerSkill{
@@ -1418,6 +1424,7 @@ local gangyi_prohibit = fk.CreateProhibitSkill{
 }
 ruijun:addRelatedSkill(ruijun_delay)
 ruijun:addRelatedSkill(ruijun_attackrange)
+ruijun:addRelatedSkill(ruijun_targetmod)
 gangyi:addRelatedSkill(gangyi_prohibit)
 sunjian:addSkill(ruijun)
 sunjian:addSkill(gangyi)
@@ -1427,7 +1434,7 @@ Fk:loadTranslationTable{
   ["illustrator:tystar__sunjian"] = "鬼画府",
   ["ruijun"] = "锐军",
   [":ruijun"] = "当你于出牌阶段内第一次使用牌指定其他角色为目标后，你可以摸X张牌（X为你已损失的体力值+1），"..
-  "此阶段内：除其外的其他角色视为不在你的攻击范围内；当你对其造成伤害时，伤害值比上次增加1（至多为5）。",
+  "此阶段内：除其外的其他角色视为不在你的攻击范围内；你对其使用牌无距离限制；当你对其造成伤害时，伤害值比上次增加1（至多为5）。",
   ["gangyi"] = "刚毅",
   [":gangyi"] = "锁定技，若你于回合内未造成过伤害，你于此回合内不能使用【桃】。"..
   "当你因执行【桃】或【酒】的作用效果而回复体力时，若你处于濒死状态，你令回复值+1。",

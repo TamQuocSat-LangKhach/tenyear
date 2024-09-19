@@ -5750,7 +5750,7 @@ local jichun = fk.CreateActiveSkill{
   card_num = 1,
   target_num = 0,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+    return player:getMark("jichun1-phase") == 0 or player:getMark("jichun2-phase") == 0
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0
@@ -5764,14 +5764,18 @@ local jichun = fk.CreateActiveSkill{
     local targets = table.map(table.filter(room.alive_players, function (p)
       return p:getHandcardNum() < player:getHandcardNum()
     end), Util.IdMapper)
-    local choices = {"jichun_discard"}
-    if #targets > 0 then
-      table.insert(choices, "jichun_give")
+    local choices = {}
+    if #targets > 0 and player:getMark("jichun1-phase") == 0 then
+      table.insert(choices, "jichun1")
     end
+    if player:getMark("jichun2-phase") == 0 then
+      table.insert(choices, "jichun2")
+    end
+    if #choices == 0 then return end
     local choice = room:askForChoice(player, choices, self.name,
-    "#jichun-choice:::" .. card:toLogString() .. ":" .. tostring(n),
-    false, {"jichun_give", "jichun_discard"})
-    if choice == "jichun_give" then
+      "#jichun-choice:::"..card:toLogString()..":"..tostring(n), false, {"jichun1", "jichun2"})
+    room:setPlayerMark(player, choice.."-phase", 1)
+    if choice == "jichun1" then
       targets = room:askForChoosePlayers(player, targets, 1, 1,
       "#jichun-give:::" .. card:toLogString() .. ":" .. tostring(n), self.name, false)
       room:moveCardTo(effect.cards, Player.Hand, room:getPlayerById(targets[1]), fk.ReasonGive, self.name,
@@ -5857,15 +5861,15 @@ Fk:loadTranslationTable{
   ["designer:zhugemengxue"] = "韩旭",
   --["illustrator:zhugemengxue"] = "",
   ["jichun"] = "寄春",
-  [":jichun"] = "出牌阶段限一次，你可以展示一张牌，选择：1.将此牌交给一名手牌数小于你的角色，然后摸X张牌；"..
+  [":jichun"] = "出牌阶段各限一次，你可以展示一张牌，选择：1.将此牌交给一名手牌数小于你的角色，然后摸X张牌；"..
   "2.弃置此牌，然后弃置一名手牌数大于你的角色区域里至多X张牌。（X为此牌的牌名字数）",
   ["hanying"] = "寒英",
   [":hanying"] = "准备阶段，你可以展示牌堆顶第一张装备牌，然后令一名手牌数等于你的角色使用之。",
 
   ["#jichun-active"] = "发动 寄春，选择一张牌展示之",
   ["#jichun-choice"] = "寄春：你展示的%arg牌名字数为%arg2，清选择：",
-  ["jichun_give"] = "将展示牌交给一名手牌数小于你的角色并摸牌",
-  ["jichun_discard"] = "弃置展示牌，然后弃置一名手牌数大于你的角色区域里的牌",
+  ["jichun1"] = "将展示牌交给一名手牌数小于你的角色并摸牌",
+  ["jichun2"] = "弃置展示牌，然后弃置一名手牌数大于你的角色区域里的牌",
   ["#jichun-give"] = "寄春：将展示的%arg交给一名手牌数小于你的角色并摸%arg2张牌",
   ["#jichun-discard"] = "寄春：选择一名手牌数大于你的角色弃置其区域里至多%arg张牌",
   ["#SearchFailed"] = "%from 发动 %arg 失败，无法检索到 %arg2",

@@ -1787,10 +1787,7 @@ local taozhou = fk.CreateActiveSkill{
     return player:getMark(self.name) == 0
   end,
   target_filter = function(self, to_select, selected, selected_cards)
-    if #selected == 0 and to_select ~= Self.id then
-      local target = Fk:currentRoom():getPlayerById(to_select)
-      return not (target:isKongcheng() or target:hasSkill(zijin))
-    end
+    return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -1805,13 +1802,8 @@ local taozhou = fk.CreateActiveSkill{
       if target.dead then return end
       n = n - #cards
       room:addPlayerMark(target, "@taozhou_damage", n)
-      if n > 1 then
-        if not player.dead then
-          room:useVirtualCard("slash", {}, target, player, self.name, true)
-        end
-        if not target.dead then
-          room:handleAddLoseSkills(target, "zijin", nil)
-        end
+      if n > 1 and not target.dead then
+        room:handleAddLoseSkills(target, "zijin", nil)
       end
     else
       if not player.dead then
@@ -1929,9 +1921,9 @@ Fk:loadTranslationTable{
   --["designer:tymou__zhugejin"] = "",
 
   ["taozhou"] = "讨州",
-  [":taozhou"] = "出牌阶段，你可以从1-3中秘密选择一个数字并选择一名有手牌且没有〖自矜〗的其他角色，此技能失效至对应轮数后恢复，"..
+  [":taozhou"] = "出牌阶段，你可以选择一名有手牌的其他角色并从1-3中秘密选择一个数字，此技能失效至对应轮数后恢复，"..
   "其可以将至多三张手牌交给你，若其以此法交给你的牌数：大于等于你选择的数字，你与其各摸一张牌；"..
-  "小于你选择的数字，其下X次受到的伤害+1（X为两者差值），若X大于1，则其视为对你使用【杀】，其获得〖自矜〗。",
+  "小于你选择的数字，其下X次受到的伤害+1（X为两者差值），若X大于1，其获得〖自矜〗。",
   ["houde"] = "厚德",
   [":houde"] = "当你于其他角色的出牌阶段内第一次成为红色【杀】/黑色普通锦囊牌的目标后，你可以弃置一张牌/弃置其一张牌，"..
   "此【杀】/锦囊牌对你无效。",
@@ -3190,6 +3182,20 @@ Fk:loadTranslationTable{
   ["zuojun2"] = "失去1点体力再摸一张牌，然后使用其中任意张，弃置剩余牌",
   ["#zuojun-use"] = "佐军：请使用这些牌，未使用的将被弃置",
   ["@@muwang-inhand-turn"] = "暮往",
+}
+
+--local chenlin = General(extension, "tymou__chenlin", "qun", 3)
+Fk:loadTranslationTable{
+  ["tymou__chenlin"] = "谋陈琳",
+  ["#tymou__chenlin"] = "",
+  ["illustrator:tymou__chenlin"] = "",
+
+  ["yaozuo"] = "邀作",
+  [":yaozuo"] = "出牌阶段限一次，你可以令所有其他角色选择是否交给你一张牌。然后交给你牌最快者选择另一名其他角色，你对其所选角色发动〖撰文〗；"..
+  "未交给你牌的角色，本回合你下次对其造成的伤害+1。",
+  ["zhuanwen"] = "撰文",
+  [":zhuanwen"] = "结束阶段，你可以选择一名其他角色，展示牌堆顶X张牌（X为其手牌数，至多为5）并选择一项：1.对其依次使用其中的伤害牌；"..
+  "2.令其获得其中的非伤害牌。然后将剩余牌放置在牌堆顶。",
 }
 
 return extension

@@ -570,6 +570,7 @@ Fk:loadTranslationTable{
   ["linghuyu"] = "令狐愚",
   ["#linghuyu"] = "名愚性浚",
   ["designer:linghuyu"] = "浮兮璃璃",
+  ["illustrator:linghuyu"] = "钟於",
   ["~linghuyu"] = "咳咳，我欲谋大事，奈何命不由己。",
 
   ["xuzhi"] = "蓄志",

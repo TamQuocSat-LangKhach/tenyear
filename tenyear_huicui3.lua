@@ -1137,8 +1137,19 @@ local jigu = fk.CreateTriggerSkill{
     if event == fk.GameStart then
       return #handcards > 0
     elseif player == target then
-      if player:getMark("jiguused-round") < #player.room.logic:getEventsOfScope(GameEvent.Turn, 9999, Util.TrueFunc,
-        Player.HistoryRound) then
+      local record = player:getMark("jiguused_record")
+      if record == 0 then
+        local players = table.map(player.room.players, Util.IdMapper)
+        player.room.logic:getEventsOfScope(GameEvent.Turn, 1, function (e)
+          table.removeOne(players, e.data[1].id)
+          return #players == 0
+        end, Player.HistoryGame)
+        record = #player.room.players - #players
+        if #players == 0 then
+          player.room:setPlayerMark(player, "jiguused_record", record)
+        end
+      end
+      if player:getMark("jiguused-round") < record then
         local x = #player:getCardIds(Player.Equip)
         if x == #table.filter(handcards, function (id)
           return Fk:getCardById(id):getMark("@@jigu-inhand") > 0
@@ -1225,7 +1236,7 @@ Fk:loadTranslationTable{
 
   ["jigu"] = "激鼓",
   [":jigu"] = "锁定技，游戏开始时，你的初始手牌增加“激鼓”标记且不计入手牌上限。当你造成或受到伤害后，"..
-  "若你于此轮内发动过此技能的次数小于已进入回合的角色数，且你装备区里的牌数等于你手牌区里的“激鼓”牌数，你摸X张牌（X为你空置的装备栏数）。",
+  "若你于此轮内发动过此技能的次数小于本局游戏已进入回合的角色数，且你装备区里的牌数等于你手牌区里的“激鼓”牌数，你摸X张牌（X为你空置的装备栏数）。",
   ["sirui"] = "思锐",
   [":sirui"] = "出牌阶段限一次，你可以将一张牌当牌名字数相等的基本牌或普通锦囊牌使用（无距离和次数限制）。",
 

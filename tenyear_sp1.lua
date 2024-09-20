@@ -4605,6 +4605,7 @@ Fk:loadTranslationTable{
   ["ty__lvfan"] = "吕范",
   ["#ty__lvfan"] = "忠笃亮直",
   ["illustrator:ty__lvfan"] = "叶孑",
+  ["~ty__lvfan"] = "印绶未下，疾病已发。",
 
   ["ty__diaodu"] = "调度",
   [":ty__diaodu"] = "出牌阶段开始时，你可以获得距离1以内一名角色装备区内的一张牌，然后将此牌交给除其以外一名角色，该角色选择一项：1.使用此牌，"..
@@ -4615,6 +4616,11 @@ Fk:loadTranslationTable{
   ["#ty__diaodu-choose"] = "调度：获得一名角色装备区一张牌，然后交给除其以外的角色，该角色可以使用之",
   ["#ty__diaodu-give"] = "调度：将%arg交给一名角色，其可以使用之",
   ["#ty__diaodu-use"] = "调度：使用%arg令 %src 摸一张牌；或不使用，你摸一张牌",
+
+  ["$ty__diaodu1"] = "开源节流，作法于凉。",
+  ["$ty__diaodu2"] = "调度征求，省行薄敛。",
+  ["$ty__diancai1"] = "量入为出，利析秋毫。",
+  ["$ty__diancai2"] = "天下熙攘，皆为利往。",
 }
 
 return extension

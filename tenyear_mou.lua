@@ -2649,8 +2649,8 @@ local mouguojia = General(extension, "tymou__guojia", "wei", 3)
 Fk:loadTranslationTable{
   ["tymou__guojia"] = "谋郭嘉",
   ["#tymou__guojia"] = "翼谋奇佐",
-  -- ["illustrator:tymou__guojia"] = "匠人绘",
-  ["~tymou__guojia"] = "",
+  ["illustrator:tymou__guojia"] = "鬼画府",
+  ["~tymou__guojia"] = "生如夏花，死亦何憾？",
 }
 
 local xianmou = fk.CreateTriggerSkill{
@@ -2836,8 +2836,8 @@ Fk:loadTranslationTable{
   ["#xianmou_yang-choose"] = "你可获得其中至多%arg张牌，若获得牌数少于%arg，则获得“遗计”",
   ["#xianmou_yin-choose"] = "你可弃置其中至多%arg张牌，若弃置牌数等于%arg，则你判定【闪电】",
 
-  ["$xianmou1"] = "",
-  ["$xianmou2"] = "",
+  ["$xianmou1"] = "绸缪于未雨，手握胜机，雨落何妨高歌？",
+  ["$xianmou2"] = "此帆济沧海，彼岸日边，任他风雨飘摇！",
 }
 
 local lunshi = fk.CreateViewAsSkill{
@@ -2920,8 +2920,8 @@ Fk:loadTranslationTable{
   "若你手牌中的红色和黑色牌数相等，你可以将一张手牌当不可被响应的【无懈可击】使用。",
   ["#tymou__lunshi-viewas"] = "论势：你可将一张手牌当【无懈可击】使用",
 
-  ["$tymou__lunshi1"] = "",
-  ["$tymou__lunshi2"] = "",
+  ["$tymou__lunshi1"] = "曹公济天下大难，必定霸王之业。",
+  ["$tymou__lunshi2"] = "智者审于良主，袁公未知用人之机。",
 }
 
 lunshi:addRelatedSkill(lunshiActivate)
@@ -2935,8 +2935,13 @@ tymou2Guojia:addSkill("tymou__lunshi")
 Fk:loadTranslationTable{
   ["tymou2__guojia"] = "谋郭嘉",
   ["#tymou2__guojia"] = "翼谋奇佐",
-  -- ["illustrator:tymou__guojia"] = "匠人绘",
-  ["~tymou2__guojia"] = "",
+  ["illustrator:tymou2__guojia"] = "鬼画府",
+  ["~tymou2__guojia"] = "江湖路远，诸君，某先行一步。",
+
+  ["$xianmou_tymou2__guojia1"] = "嘉不受此劫，安能以凡人之躯窥得天机！",
+  ["$xianmou_tymou2__guojia2"] = "九州为觞，风雨为酿，谁与我共饮此杯？",
+  ["$tymou__lunshi_tymou2__guojia1"] = "公有此十胜，败绍非难事尔。",
+  ["$tymou__lunshi_tymou2__guojia2"] = "嘉窃料之，绍有十败，公有十胜。",
 }
 
 local jvshou = General(extension, "tymou__jvshou", "qun", 3)
@@ -3167,6 +3172,7 @@ Fk:loadTranslationTable{
   ["tymou__jvshou"] = "谋沮授",
   ["#tymou__jvshou"] = "忠不逢时",
   ["illustrator:tymou__jvshou"] = "鬼画府",
+  ["~tymou__jvshou"] = "身虽死，忠魂不灭。",
 
   ["zuojun"] = "佐军",
   [":zuojun"] = "出牌阶段限一次，你可以选择一名角色，其摸三张牌并选择："..
@@ -3182,6 +3188,11 @@ Fk:loadTranslationTable{
   ["zuojun2"] = "失去1点体力再摸一张牌，然后使用其中任意张，弃置剩余牌",
   ["#zuojun-use"] = "佐军：请使用这些牌，未使用的将被弃置",
   ["@@muwang-inhand-turn"] = "暮往",
+
+  ["$zuojun1"] = "彼不得安，我取其逸，则大局可定。",
+  ["$zuojun2"] = "义者无敌，骄者先败，今非用兵之时。",
+  ["$muwang1"] = "授熟读十万书，腹中唯无降字。",
+  ["$muwang2"] = "长河没日，天岂无再明之时！",
 }
 
 --local chenlin = General(extension, "tymou__chenlin", "qun", 3)

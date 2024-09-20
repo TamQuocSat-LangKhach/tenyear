@@ -2948,6 +2948,7 @@ Fk:loadTranslationTable{
   ["ty__cuiyanmaojie"] = "崔琰毛玠",
   ["#ty__cuiyanmaojie"] = "日出月盛",
   ["illustrator:ty__cuiyanmaojie"] = "罔両",
+  ["~ty__cuiyanmaojie"] = "为世所痛惜，冤哉！",
 
   ["ty__zhengbi"] = "征辟",
   [":ty__zhengbi"] = "出牌阶段开始时，你可以选择一名其他角色并选择一项：1.此阶段结束时，若其此阶段获得过手牌，你获得其一张手牌和装备区内"..
@@ -2960,6 +2961,11 @@ Fk:loadTranslationTable{
   ["#ty__zhengbi_delay"] = "征辟",
   ["#ty__fengying"] = "奉迎：你可以弃置所有手牌，此回合结束后执行一个额外回合！",
   ["#ty__fengying_delay"] = "奉迎",
+
+  ["$ty__zhengbi1"] = "跅弛之士，在御之而已。",
+  ["$ty__zhengbi2"] = "内不避亲，外不避仇。",
+  ["$ty__fengying1"] = "二臣恭奉，以迎皇嗣。",
+  ["$ty__fengying2"] = "奉旨典选，以迎忠良。",
 }
 
 --钟灵毓秀：董贵人 滕芳兰 张瑾云 周不疑 许靖 关樾 诸葛京

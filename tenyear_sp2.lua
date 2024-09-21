@@ -6020,7 +6020,7 @@ local lingxi = fk.CreateTriggerSkill{
       if x > 0 then
         room:notifySkillInvoked(player, self.name, "drawcard")
         player:drawCards(x, self.name)
-      else
+      elseif x < 0 then
         room:notifySkillInvoked(player, self.name, "negative")
         room:askForDiscard(player, -x, -x, false, self.name, false)
       end

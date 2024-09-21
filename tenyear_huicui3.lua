@@ -7,6 +7,77 @@ Fk:loadTranslationTable{
   ["mu"] = "乐",
 }
 
+--太平甲子：管亥 张闿 刘辟 裴元绍 张楚 张曼成
+local guanhai = General(extension, "guanhai", "qun", 4)
+local suoliang = fk.CreateTriggerSkill{
+  name = "suoliang",
+  anim_type = "offensive",
+  events = {fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and
+      data.to ~= player and not data.to.dead and not data.to:isNude()
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#suoliang-invoke::"..data.to.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = room:askForCardsChosen(player, data.to, 1, math.min(data.to.maxHp, 5), "he", self.name)
+    if #cards > 0 then
+      data.to:showCards(cards)
+      local suits = {Card.Heart, Card.Club}
+      local to_get = table.filter(cards, function (id)
+        return table.contains(suits, Fk:getCardById(id).suit)
+      end)
+      if #to_get > 0 then
+        room:obtainCard(player, to_get, true, fk.ReasonPrey, player.id, self.name)
+      else
+        room:throwCard(cards, self.name, data.to, player)
+      end
+    end
+  end,
+}
+local qinbao = fk.CreateTriggerSkill{
+  name = "qinbao",
+  anim_type = "offensive",
+  events = {fk.CardUsing},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and
+      (data.card.trueName == "slash" or data.card:isCommonTrick()) and
+      #table.filter(player.room:getOtherPlayers(player), function(p) return p:getHandcardNum() >= player:getHandcardNum() end) > 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local targets = table.filter(player.room:getOtherPlayers(player), function(p)
+      return p:getHandcardNum() >= player:getHandcardNum() end)
+    if #targets > 0 then
+      data.disresponsiveList = data.disresponsiveList or {}
+      for _, p in ipairs(targets) do
+        table.insertIfNeed(data.disresponsiveList, p.id)
+      end
+    end
+  end,
+}
+guanhai:addSkill(suoliang)
+guanhai:addSkill(qinbao)
+Fk:loadTranslationTable{
+  ["guanhai"] = "管亥",
+  ["#guanhai"] = "掠地劫州",
+  ["illustrator:guanhai"] = "六道目",
+  ["suoliang"] = "索粮",
+  [":suoliang"] = "每回合限一次，你对一名其他角色造成伤害后，你可以展示该角色的至多X张牌（X为其体力上限且最多为5），获得其中的<font color='red'>♥</font>和♣牌。"..
+  "若你未获得牌，则弃置你选择的牌。",
+  ["qinbao"] = "侵暴",
+  [":qinbao"] = "锁定技，手牌数大于等于你的其他角色不能响应你使用的【杀】或普通锦囊牌。",
+  ["#suoliang-invoke"] = "索粮：你可以选择 %dest 最多其体力上限张牌，获得其中的<font color='red'>♥</font>和♣牌，若没有则弃置这些牌",
+
+  ["$suoliang1"] = "奉上万石粮草，吾便退兵！",
+  ["$suoliang2"] = "听闻北海富庶，特来借粮。",
+  ["$qinbao1"] = "赤箓护身，神鬼莫当。",
+  ["$qinbao2"] = "头裹黄巾，代天征伐。",
+  ["~guanhai"] = "这红脸汉子，为何如此眼熟……",
+}
+
 local zhangkai = General(extension, "zhangkai", "qun", 4)
 local xiangshuz = fk.CreateTriggerSkill{
   name = "xiangshuz",

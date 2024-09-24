@@ -5750,7 +5750,8 @@ local jichun = fk.CreateActiveSkill{
   card_num = 1,
   target_num = 0,
   can_use = function(self, player)
-    return player:getMark("jichun1-phase") == 0 or player:getMark("jichun2-phase") == 0
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 2 and
+      (player:getMark("jichun1-phase") == 0 or player:getMark("jichun2-phase") == 0)
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0

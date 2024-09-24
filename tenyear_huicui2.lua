@@ -4404,7 +4404,7 @@ local youzhan_trigger = fk.CreateTriggerSkill{
       room:notifySkillInvoked(player, "youzhan", "drawcard")
       for _, p in ipairs(room:getAlivePlayers()) do
         if p:getMark("youzhan-turn") > 0 and
-        #U.getActualDamageEvents(room, 1, function(e) return e.data[1].to == p end) == 0 then
+        #room.logic:getActualDamageEvents(1, function(e) return e.data[1].to == p end) == 0 then
           room:doIndicate(player.id, {p.id})
           p:drawCards(math.min(p:getMark("youzhan-turn"), 3), "youzhan")
         end

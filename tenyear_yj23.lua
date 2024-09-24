@@ -510,7 +510,7 @@ local xuzhi = fk.CreateActiveSkill{
   target_num = 2,
   prompt = "#xuzhi-active",
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 + player:getMark("xuzhi_times-phase")
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
@@ -555,9 +555,8 @@ local xuzhi = fk.CreateActiveSkill{
     local n1, n2 = #cards[1], #cards[2]
     if n1 == n2 then
       if player.dead then return end
+      room:addPlayerMark(player, "xuzhi_times-phase")
       player:drawCards(2, self.name)
-      if player.dead then return end
-      room:askForUseActiveSkill(player, self.name, "#xuzhi-active", true, {}, false)
     else
       local to = n2 > n1 and target2 or target1
       if to.dead then return end

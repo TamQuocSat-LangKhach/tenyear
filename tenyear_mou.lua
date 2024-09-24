@@ -2585,13 +2585,13 @@ local gaojian = fk.CreateTriggerSkill{
     local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1,
       "#gaojian-choose", self.name, false)
     if #to > 0 then
-      self.cost_data = to[1]
+      self.cost_data = {tos = to}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(self.cost_data)
+    local to = room:getPlayerById(self.cost_data.tos[1])
     local cards = {}
     for i = 1, 5, 1 do
       local card = room:getNCards(1)
@@ -2616,7 +2616,18 @@ local gaojian = fk.CreateTriggerSkill{
         U.swapCardsWithPile(to, results[1], results[2], self.name, "Top")
       end
     end
-    U.clearRemainCards(room, cards, self.name)
+    cards = table.filter(cards, function (id)
+      return room:getCardArea(id) == Card.Processing
+    end)
+    if #cards > 0 then
+      cards = table.reverse(cards)
+      room:moveCards({
+        ids = cards,
+        toArea = Card.DrawPile,
+        moveReason = fk.ReasonPut,
+        skillName = self.name,
+      })
+    end
   end,
 }
 chengyu:addSkill(shizha)
@@ -2630,7 +2641,7 @@ Fk:loadTranslationTable{
   [":shizha"] = "每回合限一次，其他角色使用牌时，若此牌是其本回合体力变化后使用的第一张牌，你可令此牌无效并获得此牌。",
   ["gaojian"] = "告谏",
   [":gaojian"] = "当你于出牌阶段使用锦囊牌结算完毕进入弃牌堆时，你可以选择一名其他角色，其依次展示牌堆顶的牌直到出现锦囊牌（至多五张），"..
-  "然后其选择一项：1.使用此牌；2.将任意张手牌与等量展示牌交换。",
+  "然后其选择一项：1.使用此牌；2.将任意张手牌与等量展示牌交换。然后将剩余牌置于牌堆顶。",
   ["#shizha-invoke"] = "识诈：是否令 %dest 使用的%arg无效并获得之？",
   ["#gaojian-choose"] = "告谏：选择一名角色，其展示牌堆顶牌，使用其中的锦囊牌或用手牌交换",
   ["#gaojian-use"] = "告谏：使用%arg，或点“取消”将任意张手牌与等量展示牌交换",
@@ -3195,18 +3206,274 @@ Fk:loadTranslationTable{
   ["$muwang2"] = "长河没日，天岂无再明之时！",
 }
 
---local chenlin = General(extension, "tymou__chenlin", "qun", 3)
+local chenlin = General(extension, "tymou__chenlin", "qun", 3)
+
+--- 陈琳的特殊race，有获胜角色之后也不中断
+---@param command string @ 请求类型
+---@param players ServerPlayer[] @ 要竞争这次请求的玩家列表
+---@param jsonData string @ 请求数据
+---@return ServerPlayer[] @ 在这次竞争请求中获胜的角色列表
+local function doRaceRequest(room, command, players, jsonData)
+  players = players or room.players
+  players = table.simpleClone(players)
+  local player_len = #players
+  room.room:setRequestTimer(room.timeout * 1000 + 500)
+  -- room:notifyMoveFocus(players, command)
+  room.request_queue = {}
+  room.race_request_list = players
+  for _, p in ipairs(players) do
+    p:doRequest(command, jsonData or p.request_data)
+  end
+
+  local remainTime = room.timeout
+  local currentTime = os.time()
+  local elapsed = 0
+  local confirmed_players, canceled_players = {}, {}
+  while true do
+    elapsed = os.time() - currentTime
+    if remainTime - elapsed <= 0 then
+      break
+    end
+    for i = #players, 1, -1 do
+      local p = players[i]
+      p:waitForReply(0)
+      if p.reply_ready == true then
+        table.insertIfNeed(confirmed_players, p)
+      end
+
+      if p.reply_cancel then
+        table.remove(players, i)
+        table.insertIfNeed(canceled_players, p)
+      elseif p.id > 0 then
+        -- 骗过调度器让他以为自己尚未就绪
+        p.request_timeout = remainTime - elapsed
+        p.serverplayer:setThinking(true)
+      end
+    end
+
+    if player_len == #confirmed_players + #canceled_players then
+      break
+    end
+
+    coroutine.yield("__handleRequest", (remainTime - elapsed) * 1000)
+  end
+
+  for _, p in ipairs(room.players) do
+    p.serverplayer:setBusy(false)
+    p.serverplayer:setThinking(false)
+  end
+
+  room.room:destroyRequestTimer()
+
+  --surrenderCheck
+  if room.hasSurrendered then
+    local player = table.find(room.players, function(p)
+      return p.surrendered
+    end)
+    if not player then
+      room.hasSurrendered = false
+    else
+      room:broadcastProperty(player, "surrendered")
+      local mode = Fk.game_modes[room.settings.gameMode]
+      local win = Pcall(mode.getWinner, mode, player)
+      if win ~= "" then
+        room:gameOver(win)
+      end
+
+      -- 以防万一
+      player.surrendered = false
+      room:broadcastProperty(player, "surrendered")
+      room.hasSurrendered = false
+    end
+  end
+
+  return confirmed_players
+end
+local yaozuo = fk.CreateActiveSkill{
+  name = "yaozuo",
+  anim_type = "control",
+  prompt = "#yaozuo",
+  card_num = 0,
+  target_num = 0,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and
+      #Fk:currentRoom().alive_players > 1
+  end,
+  card_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:doIndicate(player.id, table.map(room:getOtherPlayers(player), Util.IdMapper))
+    local targets = table.filter(room:getOtherPlayers(player), function (p)
+      return not p:isNude()
+    end)
+    if #targets == 0 then
+      for _, p in ipairs(room:getOtherPlayers(player)) do
+        room:setPlayerMark(p, "@@yaozuo-turn", player.id)
+      end
+      return
+    else
+      local extra_data = {
+        num = 1,
+        min_num = 1,
+        include_equip = true,
+        skillName = self.name,
+        pattern = ".",
+      }
+      local data = { "choose_cards_skill", "#yaozuo-give:"..player.id, true, extra_data }
+      room:notifyMoveFocus(targets, self.name)
+      local winners = doRaceRequest(room, "AskForUseActiveSkill", targets, json.encode(data))
+      for _, p in ipairs(room:getOtherPlayers(player)) do
+        if not table.contains(winners, p) then
+          room:setPlayerMark(p, "@@yaozuo-turn", player.id)
+        end
+      end
+      if #winners > 0 then
+        room:sendLog{
+          type = "#yaozuoWinner",
+          from = player.id,
+          to = {winners[1].id},
+          arg = self.name,
+          toast = true,
+        }
+        local moves = {}
+        for _, p in ipairs(winners) do
+          local replyCard = json.decode(p.client_reply).card
+          local cards = json.decode(replyCard).subcards
+          table.insert(moves, {
+            ids = cards,
+            from = p.id,
+            to = player.id,
+            toArea = Card.PlayerHand,
+            moveReason = fk.ReasonGive,
+            proposer = p.id,
+            skillName = self.name,
+          })
+        end
+        room:moveCards(table.unpack(moves))
+        if player.dead or winners[1].dead then return end
+        targets = table.filter(room:getOtherPlayers(player), function (p)
+          return p ~= winners[1] and not p:isKongcheng()
+        end)
+        if #targets == 0 then return end
+        local to = room:askForChoosePlayers(winners[1], table.map(targets, Util.IdMapper), 1, 1,
+          "#yaozuo-choose:"..player.id, self.name, false)
+        local skill = Fk.skills["zhuanwen"]
+        skill.cost_data = {tos = to}
+        player:broadcastSkillInvoke("zhuanwen")
+        room:notifySkillInvoked(player, "zhuanwen", "control")
+        skill:use(fk.EventPhaseStart, player, player, data)
+      end
+    end
+  end,
+}
+local yaozuo_trigger = fk.CreateTriggerSkill{
+  name = "#yaozuo_trigger",
+  mute = true,
+  events = {fk.DamageCaused},
+  can_trigger = function(self, event, target, player, data)
+    return target and target == player and data.to:getMark("@@yaozuo-turn") == player.id
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    player.room:setPlayerMark(data.to, "@@yaozuo-turn", 0)
+    data.damage = data.damage + 1
+  end,
+}
+local zhuanwen = fk.CreateTriggerSkill{
+  name = "zhuanwen",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Finish and
+      table.find(player.room:getOtherPlayers(player), function (p)
+        return not p:isKongcheng()
+      end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.filter(room:getOtherPlayers(player), function (p)
+      return not p:isKongcheng()
+    end)
+    local to = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1,
+      "#zhuanwen-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = {tos = to}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data.tos[1])
+    local cards = room:getNCards(math.min(to:getHandcardNum(), 5))
+    room:moveCardTo(cards, Card.Processing, nil, fk.ReasonJustMove, self.name, nil, true, player.id)
+    local choice = room:askForChoice(player, {"zhuanwen1", "zhuanwen2"}, self.name,
+      "#zhuanwen-choice::"..to.id)
+    if choice == "zhuanwen1" then
+      for _, id in ipairs(cards) do
+        if player.dead or to.dead then break end
+        local card = Fk:getCardById(id)
+        if card.is_damage_card and not player:isProhibited(to, card) then
+          room:delay(800)
+          room:useCard({
+            from = player.id,
+            tos = {{to.id}},
+            card = card,
+            extraUse = true,
+          })
+        end
+      end
+    else
+      local get = table.filter(cards, function (id)
+        return not Fk:getCardById(id).is_damage_card
+      end)
+      if #get > 0 then
+        room:moveCardTo(get, Card.PlayerHand, to, fk.ReasonJustMove, self.name, nil, true, to.id)
+      end
+    end
+    cards = table.filter(cards, function (id)
+      return room:getCardArea(id) == Card.Processing
+    end)
+    if #cards > 0 then
+      cards = table.reverse(cards)
+      room:moveCards({
+        ids = cards,
+        toArea = Card.DrawPile,
+        moveReason = fk.ReasonPut,
+        skillName = self.name,
+      })
+    end
+  end,
+}
+yaozuo:addRelatedSkill(yaozuo_trigger)
+chenlin:addSkill(yaozuo)
+chenlin:addSkill(zhuanwen)
 Fk:loadTranslationTable{
   ["tymou__chenlin"] = "谋陈琳",
-  ["#tymou__chenlin"] = "",
-  ["illustrator:tymou__chenlin"] = "",
+  ["#tymou__chenlin"] = "文翻云海",
+  ["illustrator:tymou__chenlin"] = "鬼画府",
 
   ["yaozuo"] = "邀作",
   [":yaozuo"] = "出牌阶段限一次，你可以令所有其他角色选择是否交给你一张牌。然后交给你牌最快者选择另一名其他角色，你对其所选角色发动〖撰文〗；"..
   "未交给你牌的角色，本回合你下次对其造成的伤害+1。",
   ["zhuanwen"] = "撰文",
   [":zhuanwen"] = "结束阶段，你可以选择一名其他角色，展示牌堆顶X张牌（X为其手牌数，至多为5）并选择一项：1.对其依次使用其中的伤害牌；"..
-  "2.令其获得其中的非伤害牌。然后将剩余牌放置在牌堆顶。",
+  "2.令其获得其中的非伤害牌。然后将剩余牌置于牌堆顶。",
+  ["#yaozuo"] = "邀作：令所有其他角色选择是否交给你一张牌",
+  ["#yaozuo-give"] = "邀作：是否交给 %src 一张牌，交出牌最快者可以令其发动〖撰文〗，不交出牌者本回合下次受到伤害+1",
+  ["#yaozuoWinner"] = "%from “%arg” 最快的响应者是 %to",
+  ["@@yaozuo-turn"] = "伤害+1",
+  ["#yaozuo-choose"] = "邀作：请选择一名角色，令 %src 对其发动“撰文”",
+  ["#yaozuo_trigger"] = "邀作",
+  ["#zhuanwen-choose"] = "撰文：选择一名角色，展示牌堆顶其手牌数张牌（至多5张），对其使用其中的伤害牌或令其获得其中的非伤害牌",
+  ["#zhuanwen-choice"] = "撰文：选择对 %dest 执行的一项",
+  ["zhuanwen1"] = "对其使用伤害牌",
+  ["zhuanwen2"] = "其获得非伤害牌",
+
+  ["$yaozuo1"] = "明公馈墨，琳当还以锦绣。",
+  ["$yaozuo2"] = "识时务者，应势而为，当为俊杰。",
+  ["$zhuanwen1"] = "夺人妻子，掘人祖陵，彼与桀纣何异！",
+  ["$zhuanwen2"] = "奸宦之后，权佞之子，安敢居南而大！",
+  ["~tymou__chenlin"] = "矢在弦上，不得不发，请曹公恕罪。",
 }
 
 return extension

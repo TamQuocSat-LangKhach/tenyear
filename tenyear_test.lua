@@ -1010,4 +1010,170 @@ Fk:loadTranslationTable{
   ["kengqiang2"] = "此伤害+1，你获得造成伤害的牌",
 }
 
+local huangwudie = General(extension, "huangwudie", "shu", 3, 3, General.Female)
+local shuangrui = fk.CreateTriggerSkill{
+  name = "shuangrui",
+  anim_type = "offensive",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Start and #player.room.alive_players > 1
+  end,
+  on_cost = function (self, event, target, player, data)
+    local room = player.room
+    local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+      "#shuangrui-choose", self.name, true, true)
+    if #to > 0 then
+      self.cost_data = {tos = to}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data.tos[1])
+    local card = Fk:cloneCard("slash")
+    card.skillName = self.name
+    local use = {
+      from = player.id,
+      tos = {{to.id}},
+      card = card,
+      extraUse = true,
+    }
+    local skill = ""
+    if player:inMyAttackRange(to) then
+      use.additionalDamage = 1
+      skill = "shouxing"
+    else
+      use.disresponsiveList = table.map(room.alive_players, Util.IdMapper)
+      skill = "shaxue"
+    end
+    room:handleAddLoseSkills(player, skill, nil, true, false)
+    room.logic:getCurrentEvent():findParent(GameEvent.Turn):addCleaner(function()
+      room:handleAddLoseSkills(player, "-"..skill, nil, true, false)
+    end)
+    if not player:isProhibited(to, card) then
+      room:useCard(use)
+    end
+  end,
+}
+local fuxie = fk.CreateActiveSkill{
+  name = "fuxie",
+  anim_type = "control",
+  max_card_num = 1,
+  target_num = 1,
+  prompt = function (self)
+    if self.interaction.data == "fuxie_weapon" then
+      return "#fuxie_weapon"
+    else
+      return "#fuxie_skill"
+    end
+  end,
+  interaction = function()
+    local choices = {"fuxie_weapon"}
+    local skills = table.map(table.filter(Self.player_skills, function (s)
+      return s:isPlayerSkill() and s.visible
+    end), function (s)
+      return s.name
+    end)
+    table.insertTable(choices, skills)
+    return UI.ComboBox { choices = choices }
+  end,
+  can_use = Util.TrueFunc,
+  card_filter = function(self, to_select, selected)
+    if self.interaction.data == "fuxie_weapon" then
+      return Fk:getCardById(to_select).sub_type == Card.SubtypeWeapon and not Self:prohibitDiscard(Fk:getCardById(to_select))
+    else
+      return false
+    end
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    if #effect.cards > 0 then
+      room:throwCard(effect.cards, self.name, player)
+    else
+      room:handleAddLoseSkills(player, "-"..self.interaction.data, nil, true, false)
+    end
+    if not target.dead and not target:isNude() then
+      room:askForDiscard(target, 2, 2, false, self.name, false)
+    end
+  end,
+}
+local shouxing = fk.CreateActiveSkill{
+  name = "shouxing",
+  anim_type = "offensive",
+  prompt = "#shouxing",
+  min_card_num = 1,
+  target_num = 1,
+  can_use = function(self, player)
+    local card = Fk:cloneCard("slash")
+    card.skillName = self.name
+    return player:canUse(card)
+  end,
+  card_filter = Util.TrueFunc,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if #selected == 0 and to_select ~= Self.id and #selected_cards > 0 then
+      local card = Fk:cloneCard("slash")
+      card.skillName = self.name
+      card:addSubcards(selected_cards)
+      local target = Fk:currentRoom():getPlayerById(to_select)
+      return not Self:inMyAttackRange(target) and Self:distanceTo(target) == #selected_cards and not Self:isProhibited(target, card)
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    room:useVirtualCard("slash", effect.cards, player, target, self.name, true)
+  end,
+}
+local shouxing_targetmod = fk.CreateTargetModSkill{
+  name = "#shouxing_targetmod",
+  bypass_distances = function(self, player, skill, card)
+    return skill.trueName == "slash_skill" and card and table.contains(card.skillNames, "shouxing")
+  end,
+  bypass_times = function(self, player, skill, scope, card)
+    return skill.trueName == "slash_skill" and scope == Player.HistoryPhase and card and table.contains(card.skillNames, "shouxing")
+  end,
+}
+local shaxue = fk.CreateTriggerSkill{
+  name = "shaxue",
+  anim_type = "drawcard",
+  events = {fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.to ~= player
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:drawCards(2, self.name)
+    if player.dead or data.to.dead or player:isNude() then return end
+    local n = player:distanceTo(data.to)
+    room:askForDiscard(player, n, n, true, self.name, false)
+  end,
+}
+shouxing:addRelatedSkill(shouxing_targetmod)
+huangwudie:addSkill(shuangrui)
+huangwudie:addSkill(fuxie)
+huangwudie:addRelatedSkill(shouxing)
+huangwudie:addRelatedSkill(shaxue)
+Fk:loadTranslationTable{
+  ["huangwudie"] = "黄舞蝶",
+
+  ["shuangrui"] = "双锐",
+  [":shuangrui"] = "准备阶段，你可以选择一名其他角色，视为对其使用一张【杀】。若其：不在你攻击范围内，此【杀】不可响应，你获得〖狩星〗"..
+  "直到回合结束；在你攻击范围内，此【杀】伤害+1，你获得〖铩雪〗直到回合结束。",
+  ["fuxie"] = "伏械",
+  [":fuxie"] = "出牌阶段，你可以弃置一张武器牌或失去一个技能，令一名其他角色弃置两张手牌。",
+  ["shouxing"] = "狩星",
+  [":shouxing"] = "你可以将X张牌当一张不计次数的【杀】对一名攻击范围外的角色使用（X为你计算与该角色的距离）。",
+  ["shaxue"] = "铩雪",
+  [":shaxue"] = "当你对其他角色造成伤害后，你可以摸两张牌，然后弃置X张牌（X为你计算与该角色的距离）。",
+  ["#shuangrui-choose"] = "双锐：选择一名角色视为对其使用【杀】，你根据是否在其攻击范围内获得不同的技能",
+  ["#fuxie_weapon"] = "伏械：弃置一张武器牌，令一名其他角色弃置两张手牌",
+  ["#fuxie_skill"] = "伏械：失去一个技能，令一名其他角色弃置两张手牌",
+  ["fuxie_weapon"] = "弃置武器牌",
+  ["#shouxing"] = "狩星：将任意张牌当一张不计次数的【杀】对一名攻击范围外、距离为牌数的角色使用",
+}
+
 return extension

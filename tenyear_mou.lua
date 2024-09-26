@@ -3213,7 +3213,8 @@ local chenlin = General(extension, "tymou__chenlin", "qun", 3)
 ---@param players ServerPlayer[] @ 要竞争这次请求的玩家列表
 ---@param jsonData string @ 请求数据
 ---@return ServerPlayer[] @ 在这次竞争请求中获胜的角色列表
-local function doRaceRequest(room, command, players, jsonData)
+local function doRaceRequest(src, command, players, jsonData)
+  local room = src.room
   players = players or room.players
   players = table.simpleClone(players)
   local player_len = #players
@@ -3244,6 +3245,7 @@ local function doRaceRequest(room, command, players, jsonData)
       if p.reply_cancel then
         table.remove(players, i)
         table.insertIfNeed(canceled_players, p)
+        room:setPlayerMark(p, "@@yaozuo-turn", src.id)  --谋陈琳专用
       elseif p.id > 0 then
         -- 骗过调度器让他以为自己尚未就绪
         p.request_timeout = remainTime - elapsed
@@ -3321,7 +3323,7 @@ local yaozuo = fk.CreateActiveSkill{
       }
       local data = { "choose_cards_skill", "#yaozuo-give:"..player.id, true, extra_data }
       room:notifyMoveFocus(targets, self.name)
-      local winners = doRaceRequest(room, "AskForUseActiveSkill", targets, json.encode(data))
+      local winners = doRaceRequest(player, "AskForUseActiveSkill", targets, json.encode(data))
       for _, p in ipairs(room:getOtherPlayers(player)) do
         if not table.contains(winners, p) then
           room:setPlayerMark(p, "@@yaozuo-turn", player.id)

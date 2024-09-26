@@ -1676,8 +1676,6 @@ local yiwu = fk.CreateTriggerSkill{
   end,
   on_cost = function (self, event, target, player, data)
     local choices = {
-      -- "yiwu_shoulder",
-      -- "yiwu_hand",
       "yiwu_upper_limb",
       "yiwu_lower_limb",
       "yiwu_chest",
@@ -1685,13 +1683,13 @@ local yiwu = fk.CreateTriggerSkill{
     }
 
     local victim = data.to
-    if table.contains(U.getMark(victim, "yiwu_hitter"), player.id) then
+    if table.contains(player:getTableMark("yiwu_hitter-turn"), victim.id) then
       table.insert(choices, 1, "yiwu_head")
     end
 
     local results = player.room:askForChoices(player, choices, 1, 1, self.name, "#yiwu-choose::" .. victim.id)
     if #results > 0 then
-      self.cost_data = results[1]
+      self.cost_data = {tos = {data.to.id}, choice = results[1]}
       return true
     end
 
@@ -1704,27 +1702,18 @@ local yiwu = fk.CreateTriggerSkill{
       return false
     end
 
-    local hitters = U.getMark(victim, "yiwu_hitter")
-    table.insertIfNeed(hitters, player.id)
-    room:setPlayerMark(victim, "yiwu_hitter", hitters)
+    local hitters = player:getTableMark("yiwu_hitter-turn")
+    table.insertIfNeed(hitters, victim.id)
+    room:setPlayerMark(player, "yiwu_hitter-turn", hitters)
 
-    local choice = self.cost_data
+    local choice = self.cost_data.choice
     if choice == "yiwu_head" and victim.hp > 0 then
       room:loseHp(victim, victim.hp, self.name)
-      if not victim:isAlive() then
+      if victim.dead then
         room:changeMaxHp(player, 1)
       end
-    elseif choice == "yiwu_shoulder" then
-      local toDiscard = victim:getEquipments(Card.SubtypeWeapon)
-      table.insertTable(toDiscard, victim:getEquipments(Card.SubtypeArmor))
-      if #toDiscard > 0 then
-        room:throwCard(toDiscard, self.name, victim, player)
-      end
-    elseif choice == "yiwu_hand" then
-      local halfMaxCards = math.floor(victim:getMaxCards() / 2)
-      room:setPlayerMark(victim, "@@yiwu_hand", halfMaxCards < 1 and -1 or halfMaxCards)
     elseif choice == "yiwu_upper_limb" then
-      local toDiscard = table.random(victim:getCardIds("h"), math.floor(#victim:getCardIds("h") / 2))
+      local toDiscard = table.random(victim:getCardIds("h"), math.ceil(#victim:getCardIds("h") / 2))
       if #toDiscard > 0 then
         room:throwCard(toDiscard, self.name, victim, victim)
       end
@@ -1739,7 +1728,6 @@ local yiwu = fk.CreateTriggerSkill{
       target == player and
       table.find(
         {
-          -- "@@yiwu_hand",
           "@@yiwu_lower_limb",
           "@@yiwu_chest",
           "@@yiwu_abdomen",
@@ -1749,7 +1737,7 @@ local yiwu = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    for _, markName in ipairs({ "@@yiwu_hand", "@@yiwu_lower_limb", "@@yiwu_chest", "@@yiwu_abdomen" }) do
+    for _, markName in ipairs({ "@@yiwu_lower_limb", "@@yiwu_chest", "@@yiwu_abdomen" }) do
       if player:getMark(markName) ~= 0 then
         room:setPlayerMark(player, markName, 0)
       end
@@ -1759,15 +1747,12 @@ local yiwu = fk.CreateTriggerSkill{
 local yiwuTrigger = fk.CreateTriggerSkill{
   name = "#yiwu_trigger",
   anim_type = "negative",
-  events = {fk.DamageCaused, fk.DamageInflicted},
+  events = {fk.CardUsing, fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
-    if event == fk.DamageCaused then
+    if event == fk.CardUsing then
       return
         target == player and
-        player.phase ~= Player.NotActive and
-        player:getMark("@@yiwu_chest") > 0 and
-        data.card and
-        data.card.is_damage_card
+        player:getMark("@@yiwu_chest") > 0
     end
 
     return target == player and player:getMark("@@yiwu_lower_limb") > 0 and player.hp > 1
@@ -1775,63 +1760,50 @@ local yiwuTrigger = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.DamageCaused then
-      data.damage = data.damage - 1
-      if data.damage < 1 then
-        return true
+    if event == fk.CardUsing then
+      room:setPlayerMark(player, "@@yiwu_chest", 0)
+      if data.toCard then
+        data.toCard = nil
+      else
+        data.tos = {}
       end
     else
+      room:setPlayerMark(player, "@@yiwu_lower_limb", 0)
       data.damage = data.damage + 1
     end
   end,
-}
-local yiwuMaxCards = fk.CreateMaxCardsSkill{
-  name = "#yiwu_max_cards",
-  fixed_func = function(self, player)
-    local halfMaxCards = player:getMark("@@yiwu_hand")
-    return halfMaxCards ~= 0 and math.max(0, halfMaxCards) or nil
-  end
 }
 local yiwuProhibit = fk.CreateProhibitSkill{
   name = "#yiwu_prohibit",
   prohibit_use = function(self, player, card)
     return
-      -- (player:getMark("@@yiwu_chest") > 0 and player.phase ~= Player.NotActive and card.is_damage_card) or
-      (player:getMark("@@yiwu_abdomen") > 0 and table.contains({ "jink", "peach" }, card.trueName))
+      player:getMark("@@yiwu_abdomen") > 0 and card.suit == Card.Heart
   end,
 }
 Fk:loadTranslationTable{
-  ["yiwu"] = "毅武",
+  ["yiwu"] = "裂穹",
   [":yiwu"] = "当你对其他角色造成伤害后，你可以选择以下任一部位进行“击伤”：<br>" ..
-  -- "肩部：弃置其装备区里的武器牌和防具牌。<br>" ..
-  -- "手部：令其手牌上限基数为“击伤”时的手牌上限的一半（向下取整）直到其回合结束。<br>" ..
-  "上肢：令其随机弃置一半手牌（向下取整）。<br>" ..
-  "下肢：令其直到其回合结束，当其受到伤害时，若其体力值大于1，则此伤害+1。<br>" ..
-  "胸部：令其下回合使用伤害牌造成的伤害-1。<br>" ..
-  "腹部：令其不能使用【闪】和【桃】直到其回合结束。<br>" ..
-  "若你击伤过该角色，则额外出现“头部”选项。<br>" ..
-  "头部：令其失去所有体力，然后若其死亡，则你加1点体力上限。",
-  ["#yiwu-invoke"] = "毅武：你可以摸两张牌",
-  ["#yiwu-choose"] = "毅武：你可“击伤” %dest 的其中一个部位",
+  "力烽：令其随机弃置一半手牌（向上取整）。<br>" ..
+  "地机：令其下次受到伤害+1直到其回合结束。<br>" ..
+  "地机：令其使用下一张牌失效直到其回合结束。<br>" ..
+  "气海：令其不能使用<font color='red'>♥</font>牌直到其回合结束。<br>" ..
+  "若你本回合击伤过该角色，则额外出现“天冲”选项。<br>" ..
+  "天冲：令其失去所有体力，然后若其死亡，则你加1点体力上限。",
+  ["#yiwu-choose"] = "裂穹：你可“击伤” %dest 的其中一个部位",
 
-  ["#yiwu_trigger"] = "毅武",
-  ["#yiwu_prohibit"] = "毅武",
-  ["@yiwu_chi"] = "赤",
-  ["yiwu_head"] = "头部：令其失去所有体力，若其死亡你加1体力上限。",
-  ["yiwu_shoulder"] = "肩部：弃置其装备区里的武器牌和防具牌。",
-  ["yiwu_hand"] = "手部：令其手牌上限基数为“击伤”时的手牌上限的一半（向下取整）直到其回合结束。",
-  ["yiwu_upper_limb"] = "上肢：令其随机弃置一半手牌（向下取整）",
-  ["yiwu_lower_limb"] = "下肢：令其直到其回合结束，当其受到伤害时，若其体力值大于1，则此伤害+1",
-  ["yiwu_chest"] = "胸部：令其下回合使用伤害牌造成的伤害-1",
-  ["yiwu_abdomen"] = "腹部：令其不能使用【闪】和【桃】直到其回合结束",
-  ["@@yiwu_hand"] = "击伤手部",
-  ["@@yiwu_lower_limb"] = "击伤下肢",
-  ["@@yiwu_chest"] = "击伤胸部",
-  ["@@yiwu_abdomen"] = "击伤腹部",
+  ["#yiwu_trigger"] = "裂穹",
+  ["#yiwu_prohibit"] = "裂穹",
+  ["yiwu_head"] = "天冲：令其失去所有体力，若其死亡你加1体力上限",
+  ["yiwu_upper_limb"] = "力烽：令其随机弃置一半手牌（向上取整）",
+  ["yiwu_lower_limb"] = "地机：令其下次受到伤害+1直到其回合结束",
+  ["yiwu_chest"] = "地机：令其使用下一张牌失效直到其回合结束",
+  ["yiwu_abdomen"] = "气海：令其不能使用<font color='red'>♥</font>牌直到其回合结束",
+  ["@@yiwu_lower_limb"] = "地机:受伤+1",
+  ["@@yiwu_chest"] = "地机:牌无效",
+  ["@@yiwu_abdomen"] = "气海:禁<font color='red'>♥</font>",
 }
 
 yiwu:addRelatedSkill(yiwuTrigger)
-yiwu:addRelatedSkill(yiwuMaxCards)
 yiwu:addRelatedSkill(yiwuProhibit)
 godhuangzhong:addSkill(yiwu)
 
@@ -1876,6 +1848,7 @@ local chirenBuff = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    room:setPlayerMark(player, "@chiren-phase", 0)
     if event == fk.CardUsing then
       data.disresponsiveList = table.map(room.players, Util.IdMapper)
     else
@@ -1895,15 +1868,15 @@ local chirenUnlimited = fk.CreateTargetModSkill{
   end,
 }
 Fk:loadTranslationTable{
-  ["chiren"] = "赤刃",
-  [":chiren"] = "出牌阶段开始时，你可以选择一项：1.摸体力值数量的牌，令你此阶段使用【杀】无距离限制且不可被响应；" ..
-  "2.摸已损失体力值数量的牌，令你于此阶段造成伤害后回复1点体力。",
-  ["#chiren_buff"] = "赤刃",
-  ["chiren_hp"] = "摸体力值数量的牌，令你此阶段使用【杀】无距离限制且不可被响应",
-  ["chiren_losthp"] = "摸已损失体力值数量的牌，令你于此阶段造成伤害后回复1点体力",
+  ["chiren"] = "斩决",
+  [":chiren"] = "出牌阶段开始时，你可以选择一项：1.摸体力值数量的牌，令你此阶段使用下一张【杀】无距离限制且不可被响应；" ..
+  "2.摸已损失体力值数量的牌，令你于此阶段下一次造成伤害后回复1点体力。",
+  ["#chiren_buff"] = "斩决",
+  ["chiren_hp"] = "摸体力值数量的牌，令你此阶段下一张【杀】无距离限制且不可被响应",
+  ["chiren_losthp"] = "摸已损失体力值数量的牌，令你此阶段下一次造成伤害后回复1点体力",
   ["chiren_aim"] = "强中",
   ["chiren_recover"] = "吸血",
-  ["@chiren-phase"] = "赤刃",
+  ["@chiren-phase"] = "斩决",
 }
 
 chiren:addRelatedSkill(chirenBuff)
@@ -2011,7 +1984,7 @@ local ty__jilei = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local choice = room:askForChoice(player, {"basic", "trick", "equip"}, self.name)
-    local mark = U.getMark(data.from, "@ty__jilei")
+    local mark = data.from:getTableMark("@ty__jilei")
     if table.insertIfNeed(mark, choice .. "_char") then
       room:setPlayerMark(data.from, "@ty__jilei", mark)
     end

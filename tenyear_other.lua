@@ -2424,4 +2424,130 @@ Fk:loadTranslationTable{
 qixin:addRelatedSkill(qixinTrigger)
 liuxiecaojie:addSkill(qixin)
 
+local xunyuxunyou = General(extension, "xunyuxunyou", "wei", 3)
+local zhinang = fk.CreateTriggerSkill{
+  name = "zhinang",
+  anim_type = "special",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.card.type ~= Card.TypeBasic
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if player:getMark("zhinang_pool") == 0 then
+      local skills1, skills2 = {}, {}
+      for name, _ in pairs(Fk.skills) do
+        if string.find(Fk:translate("$"..name.."1", "zh_CN"), "谋") or
+          string.find(Fk:translate("$"..name.."2", "zh_CN"), "谋") then  --暂时先这样，多句台词或者固定技能池看反馈
+          table.insert(skills1, name)
+        end
+        if string.find(Fk:translate(name, "zh_CN"), "谋") then
+          table.insert(skills2, name)
+        end
+      end
+      room:setPlayerMark(player, "zhinang_pool", {skills1, skills2})
+    end
+    local skill = ""
+    if data.card.type == Card.TypeTrick then
+      if player:getMark("zhinang_trick") ~= 0 then
+        skill = "-"..player:getMark("zhinang_trick")
+      end
+      local s = table.random(player:getMark("zhinang_pool")[1])
+      if s then
+        room:setPlayerMark(player, "zhinang_trick", s)
+        skill = skill.."|"..s
+        if string.find(Fk:translate("$"..s.."1", "zh_CN"), "谋") then
+          player:chat(string.format("$%s:%d", s, 1))
+        else
+          player:chat(string.format("$%s:%d", s, 2))
+        end
+      end
+    elseif data.card.type == Card.TypeEquip then
+      if player:getMark("zhinang_equip") ~= 0 then
+        skill = "-"..player:getMark("zhinang_equip")
+      end
+      local s = table.random(player:getMark("zhinang_pool")[2])
+      room:setPlayerMark(player, "zhinang_equip", s)
+      skill = skill.."|"..s
+    end
+    local mark = ""
+    if player:getMark("zhinang_trick") ~= 0 then
+      mark = Fk:translate(player:getMark("zhinang_trick"))
+    end
+    if player:getMark("zhinang_equip") ~= 0 then
+      mark = mark.." "..Fk:translate(player:getMark("zhinang_equip"))
+    end
+    room:setPlayerMark(player, "@zhinang_skills", "<font color='#87CEFA'>" .. mark .. "</font>")
+    room:handleAddLoseSkills(player, skill, nil, true, false)
+  end,
+}
+local gouzhu = fk.CreateTriggerSkill{
+  name = "gouzhu",
+  anim_type = "special",
+  frequency = Skill.Compulsory,
+  events = {fk.EventLoseSkill},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if data.frequency == Skill.Compulsory then
+      if player:isWounded() then
+        room:recover{
+          who = player,
+          num = 1,
+          recoverBy = player,
+          skillName = self.name,
+        }
+      end
+    end
+    if player.dead then return end
+    if data.frequency == Skill.Wake then
+      local card = room:getCardsFromPileByRule(".|.|.|.|.|basic")
+      if #card > 0 then
+        room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, false, player.id)
+      end
+    end
+    if player.dead then return end
+    if data.frequency == Skill.Limited then
+      if #room:getOtherPlayers(player) > 0 then
+        local to = table.random(room:getOtherPlayers(player))
+        room:doIndicate(player.id, {to.id})
+        room:damage{
+          from = player,
+          to = to,
+          damage = 1,
+          skillName = self.name,
+        }
+      end
+    end
+    if player.dead then return end
+    if data.isSwitchSkill then
+      room:addPlayerMark(player, MarkEnum.AddMaxCards, 1)
+    end
+    if data.lordSkill then
+      room:changeMaxHp(player, 1)
+    end
+  end,
+}
+xunyuxunyou:addSkill(zhinang)
+xunyuxunyou:addSkill(gouzhu)
+Fk:loadTranslationTable{
+  ["xunyuxunyou"] = "荀彧荀攸",
+
+  ["zhinang"] = "智囊",
+  [":zhinang"] = "当你使用锦囊牌后，你可以获得一个技能台词包含“谋”的技能直到下次获得；当你使用装备牌后，你可以获得一个技能名包含“谋”的技能直到"..
+  "下次获得。",
+  ["gouzhu"] = "苟渚",
+  [":gouzhu"] = "当你失去技能后，若此技能为：<br>锁定技，你回复1点体力；<br>觉醒技，你获得一张基本牌；<br>"..
+  "限定技，你对随机一名其他角色造成1点伤害；<br>转换技，你的手牌上限+1；<br>主公技，你加1点体力上限。",
+  ["@zhinang_skills"] = "",
+
+  ["$zhinang1"] = "",
+  ["$zhinang2"] = "",
+  ["$gouzhu1"] = "",
+  ["$gouzhu2"] = "",
+  ["~xunyuxunyou"] = "",
+}
+
 return extension

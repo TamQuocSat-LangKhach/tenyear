@@ -4112,7 +4112,7 @@ Fk:loadTranslationTable{
   ["~guanyueg"] = "提履无处归，举目山河冷……",
 }
 
-local zhugejing = General(extension, "zhugejing", "qun", 3)
+local zhugejing = General(extension, "zhugejing", "qun", 4)
 zhugejing.subkingdom = "jin"
 local yanzuo = fk.CreateActiveSkill{
   name = "yanzuo",
@@ -4125,24 +4125,23 @@ local yanzuo = fk.CreateActiveSkill{
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 + player:getMark("zuyin")
   end,
   card_filter = function(self, to_select, selected)
-    local card = Fk:getCardById(to_select)
-    return #selected == 0 and (card.type == Card.TypeBasic or card:isCommonTrick())
+    return #selected == 0
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     player:addToPile(self.name, effect.cards, true, self.name, player.id)
     if player.dead or #player:getPile(self.name) == 0 then return end
-    -- local names = {}
-    -- for _, id in ipairs(player:getPile(self.name)) do
-    --   local card = Fk:getCardById(id)
-    --   if card.type == Card.TypeBasic or card:isCommonTrick() then
-    --     table.insertIfNeed(names, card.name)
-    --   end
-    -- end
-    -- U.askForPlayCard(room, player, names, nil, self.name, "#yanzuo-ask", false, true, false, true)
-    local cards = player:getPile("yanzuo")
+    if player:getMark(self.name) == 0 then
+      room:setPlayerMark(player, self.name, U.getUniversalCards(room, "bt"))
+    end
+    local cards = table.filter(player:getMark(self.name), function (id)
+      return table.find(player:getPile("yanzuo"), function (id2)
+        return Fk:getCardById(id).name == Fk:getCardById(id2).name
+      end)
+    end)
     if #cards > 0 then
-      local use = U.askForUseRealCard(room, player, cards, ".|.|.|yanzuo", self.name, "#yanzuo-ask", {expand_pile = "yanzuo", bypass_times = true}, true, false)
+      local use = U.askForUseRealCard(room, player, cards, nil, self.name,
+        "#yanzuo-ask", {expand_pile = cards, bypass_times = true}, true, false)
       if use then
         room:useCard{
           card = Fk:cloneCard(use.card.name),
@@ -4186,30 +4185,27 @@ local zuyin = fk.CreateTriggerSkill{
 local pijian = fk.CreateTriggerSkill{
   name = "pijian",
   anim_type = "offensive",
+  frequency = Skill.Compulsory,
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Finish and
       #player:getPile("yanzuo") >= #player.room.alive_players
   end,
-  on_cost = function(self, event, target, player, data)
+  on_use = function(self, event, target, player, data)
+    local room = player.room
     local to = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper), 1, 1,
       "#pijian-choose", self.name, true)
     if #to > 0 then
-      self.cost_data = to[1]
-      return true
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local to = room:getPlayerById(self.cost_data)
-    room:moveCardTo(player:getPile("yanzuo"), Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
-    if not to.dead then
-      room:damage{
-        from = player,
-        to = to,
-        damage = 2,
-        skillName = self.name,
-      }
+      to = room:getPlayerById(to[1])
+      room:moveCardTo(player:getPile("yanzuo"), Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
+      if not to.dead then
+        room:damage{
+          from = player,
+          to = to,
+          damage = 2,
+          skillName = self.name,
+        }
+      end
     end
   end,
 }
@@ -4223,12 +4219,12 @@ Fk:loadTranslationTable{
   --["illustrator:zhugejing"] = "",
 
   ["yanzuo"] = "研作",
-  [":yanzuo"] = "出牌阶段限一次，你可以将一张基本牌或普通锦囊牌置于武将牌上，然后视为使用一张“研作”牌。",
+  [":yanzuo"] = "出牌阶段限一次，你可以将一张牌置于武将牌上，然后视为使用一张“研作”基本牌或普通锦囊牌。",
   ["zuyin"] = "祖荫",
   [":zuyin"] = "锁定技，你成为其他角色使用【杀】或普通锦囊牌的目标后，若你的“研作”牌中：没有同名牌，你从牌堆或弃牌堆中将一张同名牌置为"..
   "“研作”牌，然后令〖研作〗出牌阶段可发动次数+1（至多为3）；有同名牌，令此牌无效并移去“研作”牌中全部同名牌。",
   ["pijian"] = "辟剑",
-  [":pijian"] = "结束阶段，若“研作”牌数不少于存活角色数，你可移去这些牌，对一名角色造成2点伤害。",
+  [":pijian"] = "锁定技，结束阶段，若“研作”牌数不少于存活角色数，你可移去这些牌，对一名角色造成2点伤害。",
   ["#yanzuo"] = "研作：将一张基本牌或普通锦囊牌置为“研作”牌，然后视为使用一张“研作”牌",
   ["#yanzuo-ask"] = "研作：视为使用一张牌",
 

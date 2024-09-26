@@ -1010,7 +1010,7 @@ Fk:loadTranslationTable{
   ["kengqiang2"] = "此伤害+1，你获得造成伤害的牌",
 }
 
-local huangwudie = General(extension, "huangwudie", "shu", 3, 3, General.Female)
+local huangwudie = General(extension, "huangwudie", "shu", 4, 4, General.Female)
 local shuangrui = fk.CreateTriggerSkill{
   name = "shuangrui",
   anim_type = "offensive",

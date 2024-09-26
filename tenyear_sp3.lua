@@ -684,7 +684,7 @@ local sanshou = fk.CreateTriggerSkill{
       local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
       if turn_event ~= nil then
         local mark_change = false
-        U.getEventsByRule(room, GameEvent.UseCard, 1, function (e)
+        room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
           local use = e.data[1]
           if mark[use.card.type] == 0 then
             mark_change = true
@@ -1246,7 +1246,7 @@ local zhengqing = fk.CreateTriggerSkill{
     end
 
     local phases = room.logic:getEventsOfScope(GameEvent.Turn, 999, Util.TrueFunc, Player.HistoryRound)
-    local damageEvents = U.getActualDamageEvents(room, 999, Util.TrueFunc, Player.HistoryRound)
+    local damageEvents = room.logic:getActualDamageEvents(999, Util.TrueFunc, Player.HistoryRound)
 
     if #phases > 0 and #damageEvents > 0 then
       local curIndex = 1
@@ -2439,7 +2439,7 @@ local jue = fk.CreateTriggerSkill{
       if turn_event == nil then return false end
       local end_id = turn_event.id
       local cards = {}
-      U.getEventsByRule(room, GameEvent.MoveCards, 1, function (e)
+      room.logic:getEventsByRule(GameEvent.MoveCards, 1, function (e)
         for _, move in ipairs(e.data) do
           if move.toArea == Card.DiscardPile and move.moveReason == fk.ReasonDiscard then
             for _, info in ipairs(move.moveInfo) do

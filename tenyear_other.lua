@@ -2436,21 +2436,23 @@ local zhinang = fk.CreateTriggerSkill{
     local room = player.room
     if player:getMark("zhinang_pool") == 0 then
       local skills1, skills2 = {}, {}
-      for name, _ in pairs(Fk.skills) do
-        if string.find(Fk:translate("$"..name.."1", "zh_CN"), "谋") or
-          string.find(Fk:translate("$"..name.."2", "zh_CN"), "谋") then  --暂时先这样，多句台词或者固定技能池看反馈
-          table.insert(skills1, name)
-        end
-        if string.find(Fk:translate(name, "zh_CN"), "谋") then
-          table.insert(skills2, name)
+      for name, s in pairs(Fk.skills) do
+        if s.isPlayerSkill and s.visible then
+          if string.find(Fk:translate("$"..name.."1", "zh_CN"), "谋") or
+            string.find(Fk:translate("$"..name.."2", "zh_CN"), "谋") then  --暂时先这样，多句台词或者固定技能池看反馈
+            table.insert(skills1, name)
+          end
+          if string.find(Fk:translate(name, "zh_CN"), "谋") then
+            table.insert(skills2, name)
+          end
         end
       end
       room:setPlayerMark(player, "zhinang_pool", {skills1, skills2})
     end
-    local skill = ""
     if data.card.type == Card.TypeTrick then
       if player:getMark("zhinang_trick") ~= 0 and player:hasSkill(player:getMark("zhinang_trick"), true) then
-        skill = "-"..player:getMark("zhinang_trick")
+        room:handleAddLoseSkills(player, "-"..player:getMark("zhinang_trick"), nil, true, false)
+        if player.dead then return end
       end
       local skills = table.filter(player:getMark("zhinang_pool")[1], function (s)
         return not player:hasSkill(s, true)
@@ -2458,16 +2460,17 @@ local zhinang = fk.CreateTriggerSkill{
       if #skills > 0 then
         local s = table.random(skills)
         room:setPlayerMark(player, "zhinang_trick", s)
-        skill = skill.."|"..s
         if string.find(Fk:translate("$"..s.."1", "zh_CN"), "谋") then
           player:chat(string.format("$%s:%d", s, 1))
         else
           player:chat(string.format("$%s:%d", s, 2))
         end
+        room:handleAddLoseSkills(player, s, nil, true, false)
       end
     elseif data.card.type == Card.TypeEquip then
       if player:getMark("zhinang_equip") ~= 0 and player:hasSkill(player:getMark("zhinang_equip"), true) then
-        skill = "-"..player:getMark("zhinang_equip")
+        room:handleAddLoseSkills(player, "-"..player:getMark("zhinang_equip"), nil, true, false)
+        if player.dead then return end
       end
       local skills = table.filter(player:getMark("zhinang_pool")[2], function (s)
         return not player:hasSkill(s, true)
@@ -2475,7 +2478,7 @@ local zhinang = fk.CreateTriggerSkill{
       if #skills > 0 then
         local s = table.random(skills)
         room:setPlayerMark(player, "zhinang_equip", s)
-        skill = skill.."|"..s
+        room:handleAddLoseSkills(player, s, nil, true, false)
       end
     end
     local mark = ""
@@ -2486,7 +2489,6 @@ local zhinang = fk.CreateTriggerSkill{
       mark = mark.." "..Fk:translate(player:getMark("zhinang_equip"))
     end
     room:setPlayerMark(player, "@zhinang_skills", "<font color='#87CEFA'>" .. mark .. "</font>")
-    room:handleAddLoseSkills(player, skill, nil, true, false)
   end,
 }
 local gouzhu = fk.CreateTriggerSkill{
@@ -2495,7 +2497,7 @@ local gouzhu = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.EventLoseSkill},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
+    return target == player and player:hasSkill(self) and data.isPlayerSkill and data.visible
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -2530,7 +2532,7 @@ local gouzhu = fk.CreateTriggerSkill{
       end
     end
     if player.dead then return end
-    if data:isSwitchSkill() then
+    if data.switchSkillName and data.switchSkillName ~= "" then
       room:addPlayerMark(player, MarkEnum.AddMaxCards, 1)
     end
     if data.lordSkill then

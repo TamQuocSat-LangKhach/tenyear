@@ -150,7 +150,7 @@ local sidao = fk.CreateTriggerSkill{
       local turn_e = use_event:findParent(GameEvent.Phase)
       if not turn_e then return false end
       local end_id = turn_e.id
-      local last_e = U.getEventsByRule (player.room, GameEvent.UseCard, 1, function (e)
+      local last_e = player.room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
         return e.id < use_event.id and e.data[1].from == target.id
       end, end_id)
       if #last_e > 0 then

@@ -505,7 +505,7 @@ local xunji_trigger = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "@@xunji", 0)
     local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
     if turn_event == nil then return false end
-    if #U.getEventsByRule(room, GameEvent.UseCard, 1, function (e)
+    if #room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
       local use = e.data[1]
       return use.from == player.id and use.card.color == Card.Black
     end, turn_event.id) == 0 then return false end
@@ -541,10 +541,10 @@ local jiaofeng = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 then
-      local damage_event = U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == player end)
-      return #damage_event == 0
-    end
+    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and
+      #player.room.logic:getActualDamageEvents(1, function(e)
+        return e.data[1].from == player
+      end) == 0
   end,
   on_use = function(self, event, target, player, data)
     if player:getLostHp() > 0 then
@@ -1894,10 +1894,11 @@ local xiecui = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and target and not target.dead and target == player.room.current and data.card then
-      return player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and
-      #U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == target end) == 0
-    end
+    return player:hasSkill(self) and target and not target.dead and target == player.room.current and data.card and
+      player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and
+      #player.room.logic:getActualDamageEvents(1, function(e)
+        return e.data[1].from == target
+      end) == 0
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, data, "#xiecui-invoke:"..data.from.id..":"..data.to.id)
@@ -2296,12 +2297,12 @@ local zhuoli = fk.CreateTriggerSkill{
       local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
       if turn_event == nil then return false end
       local end_id = turn_event.id
-      local events = U.getEventsByRule(room, GameEvent.UseCard, player.hp + 1, function (e)
+      local events = room.logic:getEventsByRule(GameEvent.UseCard, player.hp + 1, function (e)
         return e.data[1].from == player.id
       end, end_id)
       if #events > player.hp then return true end
       local x = 0
-      events = U.getEventsByRule(room, GameEvent.MoveCards, 1, function (e)
+      events = room.logic:getEventsByRule(GameEvent.MoveCards, 1, function (e)
         for _, move in ipairs(e.data) do
           if move.to == player.id and move.toArea == Player.Hand then
             x = x + #move.moveInfo
@@ -3549,7 +3550,7 @@ local porui = fk.CreateTriggerSkill{
       local room = player.room
       local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
       local end_id = turn_event.id
-      return #U.getEventsByRule(room, GameEvent.MoveCards, 1, function (e)
+      return #room.logic:getEventsByRule(GameEvent.MoveCards, 1, function (e)
         for _, move in ipairs(e.data) do
           if move.from ~= nil and move.from ~= player.id and move.from ~= target.id and not room:getPlayerById(move.from).dead and
           (move.to ~= move.from or (move.toArea ~= Card.PlayerHand and move.toArea ~= Card.PlayerEquip)) then
@@ -3568,7 +3569,7 @@ local porui = fk.CreateTriggerSkill{
     local room = player.room
     local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
     local end_id = turn_event.id
-    U.getEventsByRule(room, GameEvent.MoveCards, 1, function (e)
+    room.logic:getEventsByRule(GameEvent.MoveCards, 1, function (e)
       for _, move in ipairs(e.data) do
         if move.from ~= nil and move.from ~= player.id and move.from ~= target.id and
         (move.to ~= move.from or (move.toArea ~= Card.PlayerHand and move.toArea ~= Card.PlayerEquip)) then
@@ -4225,7 +4226,7 @@ local fuyuan = fk.CreateTriggerSkill{
       if use_event == nil then return false end
       local turn_event = use_event:findParent(GameEvent.Turn, false)
       if turn_event == nil then return false end
-      return #U.getEventsByRule(room, GameEvent.UseCard, 1, function(e)
+      return #room.logic:getEventsByRule(GameEvent.UseCard, 1, function(e)
         if e.id < use_event.id then
           local use = e.data[1]
           if use.card.color == Card.Red and use.tos and table.contains(TargetGroup:getRealTargets(use.tos), target.id) then

@@ -2745,7 +2745,7 @@ local mengjiez = fk.CreateTriggerSkill{
     local room = player.room
     if player:hasSkill(self) and mark ~= 0 then
       if mark == "tg_wuyong" then
-        return #U.getActualDamageEvents(room, 1, function(e) return e.data[1].from == target end) > 0
+        return #player.room.logic:getActualDamageEvents(1, function(e) return e.data[1].from == target end) > 0
       elseif mark == "tg_gangying" then
         if target:getHandcardNum() > target.hp then return true end
         local _event = room.logic:getEventsOfScope(GameEvent.Recover, 1, function(e)
@@ -4342,7 +4342,7 @@ local danyi = fk.CreateTriggerSkill{
       local targets = AimGroup:getAllTargets(data.tos)
       local use_event = room.logic:getCurrentEvent()
       local last_tos = {}
-      U.getEventsByRule(room, GameEvent.UseCard, 1, function (e)
+      room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
         if e.id < use_event.id then
           local use = e.data[1]
           if use.from == player.id then

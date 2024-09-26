@@ -290,7 +290,7 @@ local kuimang = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.Death},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and #U.getActualDamageEvents(player.room, 1, function(e)
+    return player:hasSkill(self) and #player.room.logic:getActualDamageEvents(1, function(e)
       local damage = e.data[1]
       if damage.from == player and damage.to == target then
         return true
@@ -2185,13 +2185,13 @@ local xiangshu = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Finish
     and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
-    and #U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == player end) > 0
+    and #player.room.logic:getActualDamageEvents(1, function(e) return e.data[1].from == player end) > 0
     and table.find(player.room.alive_players, function(p) return p:isWounded() end)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local n = 0
-    U.getActualDamageEvents(player.room, 1, function(e)
+    room.logic:getActualDamageEvents(1, function(e)
       if e.data[1].from == player then
         n = n + e.data[1].damage
       end

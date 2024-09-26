@@ -973,7 +973,7 @@ local posuo_refresh = fk.CreateTriggerSkill{
       player.room:setPlayerMark(player, "@posuo-phase", "posuo_prohibit")
     elseif event == fk.EventAcquireSkill then
       local room = player.room
-      U.getActualDamageEvents(room, 1, function (e)
+      room.logic:getActualDamageEvents(1, function (e)
         local damage = e.data[1]
         if damage.from == player then
           room:setPlayerMark(player, "@posuo-phase", "posuo_prohibit")
@@ -2066,7 +2066,7 @@ local huishu = fk.CreateTriggerSkill{
               if turn_event == nil then return false end
               local end_id = turn_event.id
               local x = 0
-              U.getEventsByRule(room, GameEvent.MoveCards, 1, function (e)
+              room.logic:getEventsByRule(GameEvent.MoveCards, 1, function (e)
                 for _, move2 in ipairs(e.data) do
                   if move2.from == player.id and move2.moveReason == fk.ReasonDiscard then
                     for _, info2 in ipairs(move2.moveInfo) do
@@ -2736,7 +2736,7 @@ local shexue = fk.CreateTriggerSkill{
                     end
                   end
                   if #play_ids > 0 then
-                    U.getEventsByRule(room, GameEvent.UseCard, 1, function (e)
+                    room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
                       local in_play = false
                       for _, ids in ipairs(play_ids) do
                         if #ids == 2 and e.id > ids[1] and e.id < ids[2] then
@@ -4904,7 +4904,7 @@ local shanshen = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     AddYuqi(player, self.name, 2)
-    if player:isWounded() and #U.getActualDamageEvents(player.room, 1, function(e)
+    if player:isWounded() and #player.room.logic:getActualDamageEvents(1, function(e)
       local damage = e.data[1]
       if damage.from == player and damage.to == target then
         return true
@@ -6207,7 +6207,7 @@ local chixing = fk.CreateTriggerSkill{
       local phase_event = room.logic:getCurrentEvent():findParent(GameEvent.Phase, true)
       if phase_event == nil then return false end
       local x = 0
-      U.getEventsByRule(room, GameEvent.MoveCards, 1, function (e)
+      room.logic:getEventsByRule(GameEvent.MoveCards, 1, function (e)
         for _, move in ipairs(e.data) do
           if move.toArea == Card.DiscardPile then
             for _, info in ipairs(move.moveInfo) do

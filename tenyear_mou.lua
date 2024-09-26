@@ -1117,7 +1117,7 @@ local jichouw = fk.CreateTriggerSkill{
       if turn_event == nil then return false end
       local names = {}
       local cards = {}
-      U.getEventsByRule(room, GameEvent.UseCard, 1, function (e)
+      room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
         local use = e.data[1]
         if use.from == player.id then
           if table.contains(names, use.card.trueName) then
@@ -1330,7 +1330,7 @@ local sanshi = fk.CreateTriggerSkill{
       local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
       if turn_event == nil then return false end
       local ids = {}
-      U.getEventsByRule(room, GameEvent.MoveCards, 1, function (e)
+      room.logic:getEventsByRule(GameEvent.MoveCards, 1, function (e)
         for _, move in ipairs(e.data) do
           for _, info in ipairs(move.moveInfo) do
             local id = info.cardId
@@ -1676,7 +1676,7 @@ local fudou = fk.CreateTriggerSkill{
     if table.contains(mark, data.to) then
       return data.card.color == Card.Black
     else
-      if #U.getActualDamageEvents(room, 1, function (e)
+      if #room.logic:getActualDamageEvents(1, function (e)
         local damage = e.data[1]
         if damage.from == to and damage.to == player then
           return true
@@ -2241,7 +2241,7 @@ local haoyi = fk.CreateTriggerSkill{
       if turn_event == nil then return false end
       local end_id = turn_event.id
       local cards = {}
-      U.getEventsByRule(room, GameEvent.MoveCards, 1, function (e)
+      room.logic:getEventsByRule(GameEvent.MoveCards, 1, function (e)
         for _, move in ipairs(e.data) do
           if move.toArea == Card.DiscardPile then
             for _, info in ipairs(move.moveInfo) do
@@ -2255,7 +2255,7 @@ local haoyi = fk.CreateTriggerSkill{
       end, end_id)
       if #cards == 0 then return false end
       local damage
-      U.getActualDamageEvents(room, 1, function (e)
+      room.logic:getActualDamageEvents(1, function (e)
         damage = e.data[1]
         if damage.card then
           for _, id in ipairs(Card:getIdList(damage.card)) do

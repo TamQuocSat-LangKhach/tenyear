@@ -495,7 +495,7 @@ local ty_ex__zhuhai = fk.CreateTriggerSkill{
   anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and player ~= target and target.phase == Player.Finish and not player:isKongcheng() and not target.dead then
-      return #U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == target end) > 0
+      return #player.room.logic:getActualDamageEvents(1, function(e) return e.data[1].from == target end) > 0
     end
   end,
   on_cost = function(self, event, target, player, data)

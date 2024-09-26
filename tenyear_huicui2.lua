@@ -576,7 +576,7 @@ local suizheng = fk.CreateTriggerSkill{
       targets = table.map(room:getAlivePlayers(), Util.IdMapper)
       prompt = "#suizheng-choose"
     else
-      U.getActualDamageEvents(player.room, 1, function(e)
+      room.logic:getActualDamageEvents(1, function(e)
         local damage = e.data[1]
         if damage.from == target and damage.to ~= player then
           table.insertIfNeed(targets, damage.to.id)
@@ -1558,7 +1558,7 @@ local yinshih = fk.CreateTriggerSkill{
       if event == fk.FinishJudge then
         return table.contains({"eight_diagram", "#eight_diagram_skill"}, data.reason) and player.room:getCardArea(data.card) == Card.Processing
       elseif player == target and (not data.card or data.card.color == Card.NoColor) and player:getMark("yinshih_defensive-turn") == 0 then
-        return #U.getActualDamageEvents(player.room, 1, function(e)
+        return #player.room.logic:getActualDamageEvents(1, function(e)
           local damage = e.data[1]
           return damage.to == player and (not damage.card or damage.card.color == Card.NoColor)
         end) == 0
@@ -3288,13 +3288,13 @@ local kuangcai = fk.CreateTriggerSkill{
         if not used then
           self.cost_data = "noused"
           return true
-        elseif  #U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == player end) == 0 then
+        elseif #player.room.logic:getActualDamageEvents(1, function(e) return e.data[1].from == player end) == 0 then
           self.cost_data = "used"
           return true
         end
       elseif player.phase == Player.Finish then
         local n = 0
-        U.getActualDamageEvents(player.room, 1, function(e)
+        player.room.logic:getActualDamageEvents(1, function(e)
           if e.data[1].from == player then
             n = n + e.data[1].damage
           end
@@ -3538,7 +3538,7 @@ local anyong = fk.CreateTriggerSkill{
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and not player:isNude() and target and target == player.room.current and not data.to.dead and data.damage == 1 then
-      local dat = U.getActualDamageEvents(player.room, 1, function(e) return e.data[1].from == target end)
+      local dat = player.room.logic:getActualDamageEvents(1, function(e) return e.data[1].from == target end)
       return #dat > 0 and dat[1].data[1] == data
     end
   end,

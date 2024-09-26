@@ -270,7 +270,7 @@ local zhangrong_delay = fk.CreateTriggerSkill{
       local playerIds = table.filter(player:getMark("zhangrong-turn"), function (pid)
         return not player.room:getPlayerById(pid).dead
       end)
-      U.getActualDamageEvents(player.room, 1, function(e)
+      player.room.logic:getActualDamageEvents(1, function(e)
         table.removeOne(playerIds, e.data[1].to.id)
         return #playerIds == 0
       end)
@@ -1398,7 +1398,7 @@ local gangyi = fk.CreateTriggerSkill{
       if player == target and data == self and player:getMark("gangyi-turn") == 0 then
         local turn_event = player.room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
         if turn_event == nil then return false end
-        return #U.getActualDamageEvents(player.room, 1, function(e)
+        return #player.room.logic:getActualDamageEvents(1, function(e)
           return e.data[1].from == player
         end, nil, turn_event.id) > 0
       end

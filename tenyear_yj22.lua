@@ -395,7 +395,7 @@ local sangu = fk.CreateTriggerSkill{
     local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
     if turn_event == nil then return false end
     local end_id = turn_event.id
-    U.getEventsByRule(room, GameEvent.UseCard, 1, function (e)
+    room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
       local use = e.data[1]
       if use.from == player.id then
         table.removeOne(names, use.card.trueName)
@@ -605,10 +605,8 @@ local jiangxi = fk.CreateTriggerSkill{
     local room = player.room
     local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
     if turn_event == nil then return false end
-    if #U.getEventsByRule(room, GameEvent.ChangeHp, 1, function (e)
-      local damage = e.data[5]
-      return damage and not damage.to.dead
-    end, turn_event.id) == 0 and room:askForSkillInvoke(player, self.name, nil, "#jiangxi-invoke::" .. target.id) then
+    if #room.logic:getActualDamageEvents(1, Util.TrueFunc, turn_event.id) == 0 and
+      room:askForSkillInvoke(player, self.name, nil, "#jiangxi-invoke::" .. target.id) then
       player:drawCards(1, self.name)
       if not target.dead then
         target:drawCards(1, self.name)

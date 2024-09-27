@@ -4193,11 +4193,20 @@ local pijian = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper), 1, 1,
-      "#pijian-choose", self.name, true)
+    room:moveCardTo(player:getPile("yanzuo"), Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
+
+    local to = room:askForChoosePlayers(
+      player,
+      table.map(room.alive_players, Util.IdMapper),
+      1,
+      1,
+      "#pijian-choose",
+      self.name,
+      false
+    )
     if #to > 0 then
       to = room:getPlayerById(to[1])
-      room:moveCardTo(player:getPile("yanzuo"), Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
+
       if not to.dead then
         room:damage{
           from = player,
@@ -4221,14 +4230,14 @@ Fk:loadTranslationTable{
   ["yanzuo"] = "研作",
   [":yanzuo"] = "出牌阶段限一次，你可以将一张牌置于武将牌上，然后视为使用一张“研作”基本牌或普通锦囊牌。",
   ["zuyin"] = "祖荫",
-  [":zuyin"] = "锁定技，你成为其他角色使用【杀】或普通锦囊牌的目标后，若你的“研作”牌中：没有同名牌，你从牌堆或弃牌堆中将一张同名牌置为"..
-  "“研作”牌，然后令〖研作〗出牌阶段可发动次数+1（至多为3）；有同名牌，令此牌无效并移去“研作”牌中全部同名牌。",
+  [":zuyin"] = "锁定技，你成为其他角色使用【杀】或普通锦囊牌的目标后，若你的“研作”牌中：没有同名牌，令〖研作〗出牌阶段可发动次数+1（至多为3），"..
+  "然后你从牌堆或弃牌堆中将一张同名牌置为“研作”牌；有同名牌，令此牌无效并移去“研作”牌中全部同名牌。",
   ["pijian"] = "辟剑",
-  [":pijian"] = "锁定技，结束阶段，若“研作”牌数不少于存活角色数，你可移去这些牌，对一名角色造成2点伤害。",
+  [":pijian"] = "锁定技，结束阶段，若“研作”牌数不少于存活角色数，你移去这些牌，然后对一名角色造成2点伤害。",
   ["#yanzuo"] = "研作：将一张基本牌或普通锦囊牌置为“研作”牌，然后视为使用一张“研作”牌",
   ["#yanzuo-ask"] = "研作：视为使用一张牌",
 
-   ["#pijian-choose"] = "辟剑：你可以移去所有“研作”牌，对一名角色造成2点伤害！",
+   ["#pijian-choose"] = "辟剑：请选择一名角色，对其造成2点伤害",
 }
 
 return extension

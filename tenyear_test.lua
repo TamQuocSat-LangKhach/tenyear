@@ -1041,10 +1041,10 @@ local shuangrui = fk.CreateTriggerSkill{
     local skill = ""
     if player:inMyAttackRange(to) then
       use.additionalDamage = 1
-      skill = "shouxing"
+      skill = "shaxue"
     else
       use.disresponsiveList = table.map(room.alive_players, Util.IdMapper)
-      skill = "shaxue"
+      skill = "shouxing"
     end
     room:handleAddLoseSkills(player, skill, nil, true, false)
     room.logic:getCurrentEvent():findParent(GameEvent.Turn):addCleaner(function()

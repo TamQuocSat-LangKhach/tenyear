@@ -1667,8 +1667,8 @@ Fk:loadTranslationTable{
   -- ["~godhuangzhong"] = "世无良医，枉死者半……",
 }
 
-local yiwu = fk.CreateTriggerSkill{
-  name = "yiwu",
+local lieqiong = fk.CreateTriggerSkill{
+  name = "lieqiong",
   anim_type = "offensive",
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
@@ -1676,18 +1676,18 @@ local yiwu = fk.CreateTriggerSkill{
   end,
   on_cost = function (self, event, target, player, data)
     local choices = {
-      "yiwu_upper_limb",
-      "yiwu_lower_limb",
-      "yiwu_chest",
-      "yiwu_abdomen",
+      "lieqiong_upper_limb",
+      "lieqiong_lower_limb",
+      "lieqiong_chest",
+      "lieqiong_abdomen",
     }
 
     local victim = data.to
-    if table.contains(player:getTableMark("yiwu_hitter-turn"), victim.id) then
-      table.insert(choices, 1, "yiwu_head")
+    if table.contains(player:getTableMark("lieqiong_hitter-turn"), victim.id) then
+      table.insert(choices, 1, "lieqiong_head")
     end
 
-    local results = player.room:askForChoices(player, choices, 1, 1, self.name, "#yiwu-choose::" .. victim.id)
+    local results = player.room:askForChoices(player, choices, 1, 1, self.name, "#lieqiong-choose::" .. victim.id)
     if #results > 0 then
       self.cost_data = {tos = {data.to.id}, choice = results[1]}
       return true
@@ -1702,17 +1702,17 @@ local yiwu = fk.CreateTriggerSkill{
       return false
     end
 
-    local hitters = player:getTableMark("yiwu_hitter-turn")
+    local hitters = player:getTableMark("lieqiong_hitter-turn")
     table.insertIfNeed(hitters, victim.id)
-    room:setPlayerMark(player, "yiwu_hitter-turn", hitters)
+    room:setPlayerMark(player, "lieqiong_hitter-turn", hitters)
 
     local choice = self.cost_data.choice
-    if choice == "yiwu_head" and victim.hp > 0 then
+    if choice == "lieqiong_head" and victim.hp > 0 then
       room:loseHp(victim, victim.hp, self.name)
       if victim.dead then
         room:changeMaxHp(player, 1)
       end
-    elseif choice == "yiwu_upper_limb" then
+    elseif choice == "lieqiong_upper_limb" then
       local toDiscard = table.random(victim:getCardIds("h"), math.ceil(#victim:getCardIds("h") / 2))
       if #toDiscard > 0 then
         room:throwCard(toDiscard, self.name, victim, victim)
@@ -1728,94 +1728,94 @@ local yiwu = fk.CreateTriggerSkill{
       target == player and
       table.find(
         {
-          "@@yiwu_lower_limb",
-          "@@yiwu_chest",
-          "@@yiwu_abdomen",
+          "@@lieqiong_lower_limb",
+          "@@lieqiong_chest",
+          "@@lieqiong_abdomen",
         },
         function(markName) return player:getMark(markName) ~= 0 end
       )
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    for _, markName in ipairs({ "@@yiwu_lower_limb", "@@yiwu_chest", "@@yiwu_abdomen" }) do
+    for _, markName in ipairs({ "@@lieqiong_lower_limb", "@@lieqiong_chest", "@@lieqiong_abdomen" }) do
       if player:getMark(markName) ~= 0 then
         room:setPlayerMark(player, markName, 0)
       end
     end
   end,
 }
-local yiwuTrigger = fk.CreateTriggerSkill{
-  name = "#yiwu_trigger",
+local lieqiongTrigger = fk.CreateTriggerSkill{
+  name = "#lieqiong_trigger",
   anim_type = "negative",
   events = {fk.CardUsing, fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
     if event == fk.CardUsing then
       return
         target == player and
-        player:getMark("@@yiwu_chest") > 0
+        player:getMark("@@lieqiong_chest") > 0
     end
 
-    return target == player and player:getMark("@@yiwu_lower_limb") > 0 and player.hp > 1
+    return target == player and player:getMark("@@lieqiong_lower_limb") > 0
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.CardUsing then
-      room:setPlayerMark(player, "@@yiwu_chest", 0)
+      room:setPlayerMark(player, "@@lieqiong_chest", 0)
       if data.toCard then
         data.toCard = nil
       else
         data.tos = {}
       end
     else
-      room:setPlayerMark(player, "@@yiwu_lower_limb", 0)
+      room:setPlayerMark(player, "@@lieqiong_lower_limb", 0)
       data.damage = data.damage + 1
     end
   end,
 }
-local yiwuProhibit = fk.CreateProhibitSkill{
-  name = "#yiwu_prohibit",
+local lieqiongProhibit = fk.CreateProhibitSkill{
+  name = "#lieqiong_prohibit",
   prohibit_use = function(self, player, card)
     return
-      player:getMark("@@yiwu_abdomen") > 0 and card.suit == Card.Heart
+      player:getMark("@@lieqiong_abdomen") > 0 and card.suit == Card.Heart
   end,
 }
 Fk:loadTranslationTable{
-  ["yiwu"] = "裂穹",
-  [":yiwu"] = "当你对其他角色造成伤害后，你可以选择以下任一部位进行“击伤”：<br>" ..
+  ["lieqiong"] = "裂穹",
+  [":lieqiong"] = "当你对其他角色造成伤害后，你可以选择以下任一部位进行“击伤”：<br>" ..
   "力烽：令其随机弃置一半手牌（向上取整）。<br>" ..
   "地机：令其下次受到伤害+1直到其回合结束。<br>" ..
-  "地机：令其使用下一张牌失效直到其回合结束。<br>" ..
+  "中枢：令其使用下一张牌失效直到其回合结束。<br>" ..
   "气海：令其不能使用<font color='red'>♥</font>牌直到其回合结束。<br>" ..
   "若你本回合击伤过该角色，则额外出现“天冲”选项。<br>" ..
   "天冲：令其失去所有体力，然后若其死亡，则你加1点体力上限。",
-  ["#yiwu-choose"] = "裂穹：你可“击伤” %dest 的其中一个部位",
+  ["#lieqiong-choose"] = "裂穹：你可“击伤” %dest 的其中一个部位",
 
-  ["#yiwu_trigger"] = "裂穹",
-  ["#yiwu_prohibit"] = "裂穹",
-  ["yiwu_head"] = "天冲：令其失去所有体力，若其死亡你加1体力上限",
-  ["yiwu_upper_limb"] = "力烽：令其随机弃置一半手牌（向上取整）",
-  ["yiwu_lower_limb"] = "地机：令其下次受到伤害+1直到其回合结束",
-  ["yiwu_chest"] = "地机：令其使用下一张牌失效直到其回合结束",
-  ["yiwu_abdomen"] = "气海：令其不能使用<font color='red'>♥</font>牌直到其回合结束",
-  ["@@yiwu_lower_limb"] = "地机:受伤+1",
-  ["@@yiwu_chest"] = "地机:牌无效",
-  ["@@yiwu_abdomen"] = "气海:禁<font color='red'>♥</font>",
+  ["#lieqiong_trigger"] = "裂穹",
+  ["#lieqiong_prohibit"] = "裂穹",
+  ["lieqiong_head"] = "天冲：令其失去所有体力，若其死亡你加1体力上限",
+  ["lieqiong_upper_limb"] = "力烽：令其随机弃置一半手牌（向上取整）",
+  ["lieqiong_lower_limb"] = "地机：令其下次受到伤害+1直到其回合结束",
+  ["lieqiong_chest"] = "中枢：令其使用下一张牌失效直到其回合结束",
+  ["lieqiong_abdomen"] = "气海：令其不能使用<font color='red'>♥</font>牌直到其回合结束",
+  ["@@lieqiong_lower_limb"] = "地机:受伤+1",
+  ["@@lieqiong_chest"] = "中枢:牌无效",
+  ["@@lieqiong_abdomen"] = "气海:禁<font color='red'>♥</font>",
 }
 
-yiwu:addRelatedSkill(yiwuTrigger)
-yiwu:addRelatedSkill(yiwuProhibit)
-godhuangzhong:addSkill(yiwu)
+lieqiong:addRelatedSkill(lieqiongTrigger)
+lieqiong:addRelatedSkill(lieqiongProhibit)
+godhuangzhong:addSkill(lieqiong)
 
-local chiren = fk.CreateTriggerSkill{
-  name = "chiren",
+local zhanjue = fk.CreateTriggerSkill{
+  name = "ty_god__zhanjue",
   anim_type = "offensive",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player.phase == Player.Play and player:hasSkill(self)
   end,
   on_cost = function (self, event, target, player, data)
-    local choice = player.room:askForChoice(player, { "chiren_hp", "chiren_losthp", "Cancel" }, self.name)
+    local choice = player.room:askForChoice(player, { "ty_god__zhanjue_hp", "ty_god__zhanjue_losthp", "Cancel" }, self.name)
     if choice ~= "Cancel" then
       self.cost_data = choice
       return true
@@ -1825,30 +1825,30 @@ local chiren = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if self.cost_data == "chiren_hp" then
+    if self.cost_data == "ty_god__zhanjue_hp" then
       player:drawCards(player.hp, self.name)
-      room:setPlayerMark(player, "@chiren-phase", "chiren_aim")
+      room:setPlayerMark(player, "@ty_god__zhanjue-phase", "ty_god__zhanjue_aim")
     else
       player:drawCards(player:getLostHp(), self.name)
-      room:setPlayerMark(player, "@chiren-phase", "chiren_recover")
+      room:setPlayerMark(player, "@ty_god__zhanjue-phase", "ty_god__zhanjue_recover")
     end
   end,
 }
-local chirenBuff = fk.CreateTriggerSkill{
-  name = "#chiren_buff",
+local zhanjueBuff = fk.CreateTriggerSkill{
+  name = "#ty_god__zhanjue_buff",
   mute = true,
   events = {fk.CardUsing, fk.Damage},
   can_trigger = function(self, event, target, player, data)
     if event == fk.CardUsing then
-      return target == player and data.card.trueName == "slash" and player:getMark("@chiren-phase") == "chiren_aim"
+      return target == player and data.card.trueName == "slash" and player:getMark("@ty_god__zhanjue-phase") == "ty_god__zhanjue_aim"
     end
 
-    return target == player and player:getMark("@chiren-phase") == "chiren_recover"
+    return target == player and player:getMark("@ty_god__zhanjue-phase") == "ty_god__zhanjue_recover"
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:setPlayerMark(player, "@chiren-phase", 0)
+    room:setPlayerMark(player, "@ty_god__zhanjue-phase", 0)
     if event == fk.CardUsing then
       data.disresponsiveList = table.map(room.players, Util.IdMapper)
     else
@@ -1856,32 +1856,32 @@ local chirenBuff = fk.CreateTriggerSkill{
         who = player,
         num = 1,
         recoverBy = player,
-        skillName = "chiren",
+        skillName = "ty_god__zhanjue",
       }
     end
   end,
 }
-local chirenUnlimited = fk.CreateTargetModSkill{
-  name = "#chiren_unlimited",
+local zhanjueUnlimited = fk.CreateTargetModSkill{
+  name = "#ty_god__zhanjue_unlimited",
   bypass_distances = function(self, player, skill, card)
-    return player:getMark("@chiren-phase") == "chiren_aim" and skill.trueName == "slash_skill"
+    return player:getMark("@ty_god__zhanjue-phase") == "ty_god__zhanjue_aim" and skill.trueName == "slash_skill"
   end,
 }
 Fk:loadTranslationTable{
-  ["chiren"] = "斩决",
-  [":chiren"] = "出牌阶段开始时，你可以选择一项：1.摸体力值数量的牌，令你此阶段使用下一张【杀】无距离限制且不可被响应；" ..
+  ["ty_god__zhanjue"] = "斩决",
+  [":ty_god__zhanjue"] = "出牌阶段开始时，你可以选择一项：1.摸体力值数量的牌，令你此阶段使用下一张【杀】无距离限制且不可被响应；" ..
   "2.摸已损失体力值数量的牌，令你于此阶段下一次造成伤害后回复1点体力。",
-  ["#chiren_buff"] = "斩决",
-  ["chiren_hp"] = "摸体力值数量的牌，令你此阶段下一张【杀】无距离限制且不可被响应",
-  ["chiren_losthp"] = "摸已损失体力值数量的牌，令你此阶段下一次造成伤害后回复1点体力",
-  ["chiren_aim"] = "强中",
-  ["chiren_recover"] = "吸血",
-  ["@chiren-phase"] = "斩决",
+  ["#ty_god__zhanjue_buff"] = "斩决",
+  ["ty_god__zhanjue_hp"] = "摸体力值数量的牌，令你此阶段下一张【杀】无距离限制且不可被响应",
+  ["ty_god__zhanjue_losthp"] = "摸已损失体力值数量的牌，令你此阶段下一次造成伤害后回复1点体力",
+  ["ty_god__zhanjue_aim"] = "强中",
+  ["ty_god__zhanjue_recover"] = "吸血",
+  ["@ty_god__zhanjue-phase"] = "斩决",
 }
 
-chiren:addRelatedSkill(chirenBuff)
-chiren:addRelatedSkill(chirenUnlimited)
-godhuangzhong:addSkill(chiren)
+zhanjue:addRelatedSkill(zhanjueBuff)
+zhanjue:addRelatedSkill(zhanjueUnlimited)
+godhuangzhong:addSkill(zhanjue)
 
 --笔舌如椽：陈琳 杨修 骆统 王昶 程秉 杨彪 阮籍 崔琰毛玠
 local ty__chenlin = General(extension, "ty__chenlin", "wei", 3)

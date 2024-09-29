@@ -1663,8 +1663,8 @@ local godhuangzhong = General(extension, "godhuangzhong", "god", 4)
 Fk:loadTranslationTable{
   ["godhuangzhong"] = "神黄忠",
   ["#godhuangzhong"] = "战意破苍穹",
-  -- ["illustrator:godhuangzhong"] = "君桓文化",
-  -- ["~godhuangzhong"] = "世无良医，枉死者半……",
+  ["illustrator:godhuangzhong"] = "第七个桔子",
+  ["~godhuangzhong"] = "箭雨曾蔽日，今夕却成绝响。",
 }
 
 local lieqiong = fk.CreateTriggerSkill{
@@ -1801,6 +1801,9 @@ Fk:loadTranslationTable{
   ["@@lieqiong_lower_limb"] = "地机:受伤+1",
   ["@@lieqiong_chest"] = "中枢:牌无效",
   ["@@lieqiong_abdomen"] = "气海:禁<font color='red'>♥</font>",
+
+  ["$lieqiong1"] = "横眉蔑风雨，引弓狩天狼。",
+  ["$lieqiong2"] = "一箭出，万军毙！",
 }
 
 lieqiong:addRelatedSkill(lieqiongTrigger)
@@ -1877,6 +1880,9 @@ Fk:loadTranslationTable{
   ["ty_god__zhanjue_aim"] = "强中",
   ["ty_god__zhanjue_recover"] = "吸血",
   ["@ty_god__zhanjue-phase"] = "斩决",
+
+  ["$ty_god__zhanjue1"] = "流不尽的英雄血，斩不尽的逆贼头！",
+  ["$ty_god__zhanjue2"] = "长刀渴血，当饲英雄胆！",
 }
 
 zhanjue:addRelatedSkill(zhanjueBuff)
@@ -4225,7 +4231,8 @@ Fk:loadTranslationTable{
   ["zhugejing"] = "诸葛京",
   ["#zhugejing"] = "武侯遗秀",
   --["designer:zhugejing"] = "",
-  --["illustrator:zhugejing"] = "",
+  ["illustrator:zhugejing"] = "匠人绘",
+  ["~zhugejing"] = "子孙不肖，徒遗泪胡尘。",
 
   ["yanzuo"] = "研作",
   [":yanzuo"] = "出牌阶段限一次，你可以将一张牌置于武将牌上，然后视为使用一张“研作”基本牌或普通锦囊牌。",
@@ -4237,7 +4244,14 @@ Fk:loadTranslationTable{
   ["#yanzuo"] = "研作：将一张基本牌或普通锦囊牌置为“研作”牌，然后视为使用一张“研作”牌",
   ["#yanzuo-ask"] = "研作：视为使用一张牌",
 
-   ["#pijian-choose"] = "辟剑：请选择一名角色，对其造成2点伤害",
+  ["#pijian-choose"] = "辟剑：请选择一名角色，对其造成2点伤害",
+
+  ["$yanzuo1"] = "提笔欲续出师表，何日重登蜀道？",
+  ["$yanzuo2"] = "我族以诗书传家，苑中未绝琅琅。",
+  ["$zuyin1"] = "蒙先祖之佑，未觉春秋之寒。",
+  ["$zuyin2"] = "我本孺子，幸得父祖遮风挡雨。",
+  ["$pijian1"] = "神思凝慧剑，当悬宵小之颈。",
+  ["$pijian2"] = "仗剑凌天下，汝忘武侯否！",
 }
 
 return extension

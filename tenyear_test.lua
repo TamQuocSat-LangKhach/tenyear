@@ -1058,7 +1058,6 @@ local shuangrui = fk.CreateTriggerSkill{
 local fuxie = fk.CreateActiveSkill{
   name = "fuxie",
   anim_type = "control",
-  max_card_num = 1,
   target_num = 1,
   prompt = function (self)
     if self.interaction.data == "fuxie_weapon" then
@@ -1070,10 +1069,8 @@ local fuxie = fk.CreateActiveSkill{
   interaction = function()
     local choices = {"fuxie_weapon"}
     local skills = table.map(table.filter(Self.player_skills, function (s)
-      return s:isPlayerSkill() and s.visible
-    end), function (s)
-      return s.name
-    end)
+      return s:isPlayerSkill(Self) and s.visible
+    end), Util.NameMapper)
     table.insertTable(choices, skills)
     return UI.ComboBox { choices = choices }
   end,
@@ -1081,12 +1078,13 @@ local fuxie = fk.CreateActiveSkill{
   card_filter = function(self, to_select, selected)
     if self.interaction.data == "fuxie_weapon" then
       return Fk:getCardById(to_select).sub_type == Card.SubtypeWeapon and not Self:prohibitDiscard(Fk:getCardById(to_select))
+      and #selected == 0
     else
       return false
     end
   end,
-  target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0 and to_select ~= Self.id
+  target_filter = function(self, to_select, selected, cards)
+    return #selected == 0 and to_select ~= Self.id and (self.interaction.data ~= "fuxie_weapon" or #cards == 1)
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -1096,7 +1094,7 @@ local fuxie = fk.CreateActiveSkill{
     else
       room:handleAddLoseSkills(player, "-"..self.interaction.data, nil, true, false)
     end
-    if not target.dead and not target:isNude() then
+    if not target.dead and not target:isKongcheng() then
       room:askForDiscard(target, 2, 2, false, self.name, false)
     end
   end,

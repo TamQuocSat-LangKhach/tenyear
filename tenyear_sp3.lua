@@ -1857,7 +1857,7 @@ local zhanjueBuff = fk.CreateTriggerSkill{
     else
       room:recover{
         who = player,
-        num = 1,
+        num = data.damage,
         recoverBy = player,
         skillName = "ty_god__zhanjue",
       }
@@ -1873,10 +1873,10 @@ local zhanjueUnlimited = fk.CreateTargetModSkill{
 Fk:loadTranslationTable{
   ["ty_god__zhanjue"] = "斩决",
   [":ty_god__zhanjue"] = "出牌阶段开始时，你可以选择一项：1.摸体力值数量的牌，令你此阶段使用下一张【杀】无距离限制且不可被响应；" ..
-  "2.摸已损失体力值数量的牌，令你于此阶段下一次造成伤害后回复1点体力。",
+  "2.摸已损失体力值数量的牌，令你于此阶段下一次造成伤害后回复等量体力。",
   ["#ty_god__zhanjue_buff"] = "斩决",
   ["ty_god__zhanjue_hp"] = "摸体力值数量的牌，令你此阶段下一张【杀】无距离限制且不可被响应",
-  ["ty_god__zhanjue_losthp"] = "摸已损失体力值数量的牌，令你此阶段下一次造成伤害后回复1点体力",
+  ["ty_god__zhanjue_losthp"] = "摸已损失体力值数量的牌，令你此阶段下一次造成伤害后回复等量体力",
   ["ty_god__zhanjue_aim"] = "强中",
   ["ty_god__zhanjue_recover"] = "吸血",
   ["@ty_god__zhanjue-phase"] = "斩决",

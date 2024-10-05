@@ -258,12 +258,12 @@ local shouli = fk.CreateViewAsSkill{
         end
         local horse = to:getEquipment(horse_type)
         if horse then
-          room:obtainCard(player.id, horse, false, fk.ReasonPrey)
-          if room:getCardOwner(horse) == player and room:getCardArea(horse) == Player.Hand then
-            use.card:addSubcard(horse)
-            use.extraUse = true
-            return
-          end
+          -- room:obtainCard(player.id, horse, false, fk.ReasonPrey)
+          -- if room:getCardOwner(horse) == player and room:getCardArea(horse) == Player.Hand then
+          use.card:addSubcard(horse)
+          use.extraUse = true
+          return
+          -- end
         end
       end
     end

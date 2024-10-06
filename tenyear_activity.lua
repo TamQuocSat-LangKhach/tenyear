@@ -4591,10 +4591,16 @@ local xiuwen = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and not table.contains(player:getTableMark(self.name), data.card.trueName)
   end,
   on_use = function(self, event, target, player, data)
-    local mark = player:getTableMark(self.name)
-    table.insert(mark, data.card.trueName)
-    player.room:setPlayerMark(player, self.name, mark)
+    player.room:addTableMark(player, self.name, data.card.trueName)
     player:drawCards(1, self.name)
+  end,
+
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and data == self and player:getMark(self.name) ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, self.name, 0)
   end,
 }
 local longsong_skills = {
@@ -4623,14 +4629,14 @@ local longsong = fk.CreateTriggerSkill{
     table.map(player.room:getOtherPlayers(player), Util.IdMapper),
     1, 1, ".|.|heart,diamond", "#longsong-invoke", self.name, true)
     if #tos == 1 then
-      self.cost_data = {tos[1], cards}
+      self.cost_data = {tos = tos, cards = cards}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(self.cost_data[1])
-    local cards = self.cost_data[2]
+    local to = room:getPlayerById(self.cost_data.tos[1])
+    local cards = table.simpleClone(self.cost_data.cards)
     if #cards > 0 then
       room:moveCardTo(cards, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
     else
@@ -4687,7 +4693,8 @@ Fk:loadTranslationTable{
   ["xiuwen"] = "修文",
   [":xiuwen"] = "你使用一张牌时，若此牌名是你本局游戏第一次使用，你摸一张牌。",
   ["longsong"] = "龙诵",
-  [":longsong"] = "出牌阶段开始时，你可以交给或随机获得一名其他角色一张红色牌，然后你本阶段视为拥有该角色的一个“出牌阶段”的技能直到你发动之（若未获得其的技能则改为随机获得一个技能池中的技能）。",
+  [":longsong"] = "出牌阶段开始时，你可以交给或随机获得一名其他角色一张红色牌，然后你本阶段视为拥有该角色的一个“出牌阶段”的技能直到你发动之（若未获得其的技能则改为随机获得一个技能池中的技能）。"..
+  "<br><font color='red'>村：能获取的技能包括所有主动技和转化技、描述前4字为“出牌阶段”且后不接“开始时”和“结束时”的技能；随机技能池同许劭。</font>",
   ["#longsong-invoke"] = "龙诵：你可以交给或获得一名其他角色一张红色牌，本阶段获得其拥有的一个“出牌阶段”技能",
 
   ["$xiuwen1"] = "书生笔下三尺剑，毫锋可杀人。",

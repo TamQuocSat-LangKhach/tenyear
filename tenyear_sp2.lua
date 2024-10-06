@@ -3251,13 +3251,13 @@ local cilv = fk.CreateTriggerSkill{
 local cilv_delay = fk.CreateTriggerSkill{
   name = "#cilv_delay",
   mute = true,
-  events = {fk.CardUseFinished, fk.DamageInflicted},
+  events = {fk.CardUseFinished, fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
     if player.dead then return false end
     if event == fk.CardUseFinished then
       return data.extra_data and data.extra_data.cilv_recycle and table.contains(data.extra_data.cilv_recycle, player.id) and
       player.room:getCardArea(data.card) == Card.Processing
-    elseif event == fk.DamageInflicted then
+    elseif event == fk.DamageCaused then
       if data.card then
         local card_event = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
         if not card_event then return false end
@@ -3269,7 +3269,7 @@ local cilv_delay = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     if event == fk.CardUseFinished then
-      player.room:obtainCard(player.id, data.card, true, fk.ReasonJustMove)
+      player.room:obtainCard(player.id, data.card, true, fk.ReasonJustMove, player.id, "cilv")
     else
       return true
     end
@@ -3288,16 +3288,15 @@ local tongdao = fk.CreateTriggerSkill{
       player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   on_cost = function(self, event, target, player, data)
-    local to = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, function (p)
-      return p.id end), 1, 1, "#tongdao-choose", self.name, true)
-    if #to > 0 then
-      self.cost_data = to[1]
+    local tos = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper), 1, 1, "#tongdao-choose", self.name, true)
+    if #tos > 0 then
+      self.cost_data = {tos = tos}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(self.cost_data)
+    local to = room:getPlayerById(self.cost_data.tos[1])
     local skills = {}
     for _, s in ipairs(to.player_skills) do
       if s:isPlayerSkill(to) then
@@ -3362,7 +3361,7 @@ Fk:loadTranslationTable{
   ["cilv"] = "辞虑",
   [":cilv"] = "当你成为普通锦囊牌的目标后，你可以摸X张牌（X为此技能的剩余选项数），"..
   "若你的手牌数大于你的体力上限，你选择并移除一项："..
-  "1.此牌对你无效；2.此牌造成伤害时你防止之；3.此牌结算结束后你获得之。",
+  "1.此牌对你无效；2.此牌造成伤害时防止之；3.此牌结算结束后你获得之。",
   ["tongdao"] = "痛悼",
   [":tongdao"] = "限定技，当你处于濒死状态时，你可以选择一名角色，其失去所有技能，其获得其武将牌上的所有技能，"..
   "你回复体力至X点（X为其体力值）。",
@@ -3370,7 +3369,7 @@ Fk:loadTranslationTable{
   ["#tongdao-choose"] = "是否发动 痛悼，选择一名角色，令其技能还原为初始状态，并回复体力至与该角色相同",
   ["#cilv-choose"] = "辞虑：选择一项对%arg执行，然后移除此项",
   ["cilv1"] = "此牌对你无效",
-  ["cilv2"] = "防止此牌对你造成的伤害",
+  ["cilv2"] = "防止此牌造成伤害",
   ["cilv3"] = "此牌结算后你获得之",
   ["#cilv_delay"] = "辞虑",
 
@@ -3456,14 +3455,14 @@ local wuxie = fk.CreateTriggerSkill{
     local room = player.room
     local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, 
     "#wuxie-cost", self.name, true)
-    if #tos > 0  then
-      self.cost_data = tos
+    if #tos > 0 then
+      self.cost_data = {tos = tos}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(self.cost_data[1])
+    local to = room:getPlayerById(self.cost_data.tos[1])
     local card
     local cards = table.filter(player:getCardIds(Player.Hand), function (id)
       card = Fk:getCardById(id)

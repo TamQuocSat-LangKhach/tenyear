@@ -2701,6 +2701,14 @@ local juewu_trigger = fk.CreateTriggerSkill{
       room:setCardMark(Fk:getCardById(id), "@@juewu-inhand", 1)
     end
   end,
+
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and data == juewu and player:getMark("juewu-turn") ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "juewu-turn", 0)
+  end,
 }
 local juewu_filter = fk.CreateFilterSkill{
   name = "#juewu_filter",

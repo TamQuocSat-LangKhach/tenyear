@@ -1945,8 +1945,16 @@ local suifu = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and target ~= player and target.phase == Player.Finish and player:getMark("suifu-turn") > 1 and
-      not target:isKongcheng()
+    if player:hasSkill(self) and target ~= player and target.phase == Player.Finish and not target:isKongcheng() then
+      local count = 0
+      return #player.room.logic:getActualDamageEvents(1, function (e)
+        local damage = e.data[1]
+        if damage.to == player or damage.to.seat == 1 then
+          count = count + damage.damage
+        end
+        return count > 1
+      end, Player.HistoryTurn) > 0
+    end
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#suifu-invoke::"..target.id)
@@ -1965,14 +1973,6 @@ local suifu = fk.CreateTriggerSkill{
     room:useVirtualCard("amazing_grace", nil, player, table.filter(room:getAlivePlayers(), function (p)
       return not player:isProhibited(p, Fk:cloneCard("amazing_grace")) end), self.name, false)
   end,
-
-  refresh_events = {fk.Damaged},
-  can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self, true) and (target == player or target.seat == 1)
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:addPlayerMark(player, "suifu-turn", data.damage)
-  end,
 }
 local pijing = fk.CreateTriggerSkill{
   name = "pijing",
@@ -1982,23 +1982,32 @@ local pijing = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and player.phase == Player.Finish
   end,
   on_cost = function(self, event, target, player, data)
-    local tos = player.room:askForChoosePlayers(player, table.map(player.room:getAlivePlayers(), Util.IdMapper), 1, 10, "#pijing-choose", self.name, true)
-    if #tos > 0 then
-      self.cost_data = tos
+    local room = player.room
+    local extra_data = {
+      targets = table.map(room.alive_players, Util.IdMapper),
+      num = 99,
+      min_num = 0,
+      pattern = "",
+      skillName = self.name,
+    }
+    local success, dat = room:askForUseActiveSkill(player, "choose_players_skill", "#pijing-choose", true, extra_data, true)
+    if success and dat then
+      local tos = table.simpleClone(dat.targets)
+      table.insertIfNeed(tos, player.id)
+      room:sortPlayersByAction(tos)
+      self.cost_data = {tos = tos}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    local tos = table.simpleClone(self.cost_data.tos)
     for _, p in ipairs(room:getAlivePlayers()) do
       if p:hasSkill("zimu", true) then
         room:handleAddLoseSkills(p, "-zimu", nil, true, false)
       end
     end
-    if not table.contains(self.cost_data, player.id) then
-      table.insert(self.cost_data, 1, player.id)
-    end
-    for _, id in ipairs(self.cost_data) do
+    for _, id in ipairs(tos) do
       room:handleAddLoseSkills(room:getPlayerById(id), "zimu", nil, true, false)
     end
   end,
@@ -2020,6 +2029,14 @@ local zimu = fk.CreateTriggerSkill{
     end
     room:handleAddLoseSkills(player, "-zimu", nil, true, false)
   end,
+
+  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill},
+  can_refresh = function (self, event, target, player, data)
+    return target == player and data == self
+  end,
+  on_refresh = function (self, event, target, player, data)
+    player.room:setPlayerMark(player, "@@pijing", event == fk.EventAcquireSkill and 1 or 0)
+  end,
 }
 liuyu:addSkill(suifu)
 liuyu:addSkill(pijing)
@@ -2038,6 +2055,7 @@ Fk:loadTranslationTable{
   ["#suifu-invoke"] = "绥抚：你可以将 %dest 所有手牌置于牌堆顶，你视为使用【五谷丰登】",
   ["#pijing-choose"] = "辟境：你可以令包括你的任意名角色获得技能〖自牧〗直到下次发动〖辟境〗<br>"..
   "（锁定技，当你受到伤害后，有〖自牧〗的角色各摸一张牌，然后你失去〖自牧〗）",
+  ["@@pijing"] = "辟境",
 
   ["$suifu1"] = "以柔克刚，方是良策。",
   ["$suifu2"] = "镇抚边疆，为国家计。",
@@ -3575,14 +3593,14 @@ local ty__shushen = fk.CreateTriggerSkill{
     local room = player.room
     local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#ty__shushen-choose", self.name, true)
     if #to > 0 then
-      self.cost_data = to[1]
+      self.cost_data = {tos = to}
       return true
     end
     self.cancel_cost = true
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(self.cost_data)
+    local to = room:getPlayerById(self.cost_data.tos[1])
     local choices = {"ty__shushen_draw"}
     if to:isWounded() then
       table.insert(choices, "recover")

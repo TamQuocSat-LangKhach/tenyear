@@ -4180,15 +4180,25 @@ local huangquan = General(extension, "ty__huangquan", "shu", 3)
 local quanjian = fk.CreateActiveSkill{
   name = "quanjian",
   anim_type = "control",
+  prompt = "#quanjian",
   card_num = 0,
   target_num = 1,
   can_use = function(self, player)
     return player:getMark("quanjian1-phase") == 0 or player:getMark("quanjian2-phase") == 0
   end,
+  interaction = function(self)
+    local choices = {}
+    for i = 1, 2 do
+      if Self:getMark("quanjian"..i.."-phase") == 0 then
+        table.insert(choices, "quanjian"..i)
+      end
+    end
+    return UI.ComboBox { choices = choices }
+  end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     if #selected == 0 and to_select ~= Self.id then
-      if Self:getMark("quanjian2-phase") == 0 then
+      if self.interaction.data == "quanjian1" then
         return true
       else
         for _, p in ipairs(Fk:currentRoom().alive_players) do
@@ -4202,63 +4212,51 @@ local quanjian = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local targets = {}
-    for _, p in ipairs(room:getOtherPlayers(target)) do
-      if target:inMyAttackRange(p) then
-        table.insert(targets, p.id)
-      end
-    end
-    local choices = {}
-    if player:getMark("quanjian1-phase") == 0 and #targets > 0 then
-      table.insert(choices, "quanjian1")
-    end
-    if player:getMark("quanjian2-phase") == 0 then
-      table.insert(choices, "quanjian2")
-    end
-    local choice = room:askForChoice(player, choices, self.name)
-    room:addPlayerMark(player, choice.."-phase", 1)
-    local to
+    local choice = self.interaction.data
+    room:setPlayerMark(player, choice.."-phase", 1)
     if choice == "quanjian1" then
-      local tos = room:askForChoosePlayers(player, targets, 1, 1, "#quanjian-choose", self.name)
-      if #tos > 0 then
-        to = tos[1]
-      else
-        to = table.random(targets)
+      local targets = table.filter(room.alive_players, function(p) return target:inMyAttackRange(p) end)
+      if #targets > 0 then
+        local tos = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#quanjian-choose", self.name, false)
+        local victim = tos[1]
+        if room:askForSkillInvoke(target, self.name, nil, "#quanjian-damage:"..victim) then
+          room:doIndicate(target.id, {victim})
+          room:damage{
+            from = target,
+            to = room:getPlayerById(victim),
+            damage = 1,
+            skillName = self.name,
+          }
+          return
+        end
       end
-      room:doIndicate(target.id, {to})
-    end
-    local choices2 = {"quanjian_cancel"}
-    if choice == "quanjian1" then
-      table.insert(choices2, 1, "quanjian_damage")
     else
-      table.insert(choices2, 1, "quanjian_draw")
-    end
-    local choice2 = room:askForChoice(target, choices2, self.name)
-    if choice2 == "quanjian_damage" then
-      room:damage{
-        from = target,
-        to = room:getPlayerById(to),
-        damage = 1,
-        skillName = self.name,
-      }
-    elseif choice2 == "quanjian_draw" then
-      if #target.player_cards[Player.Hand] < math.min(target:getMaxCards(), 5) then
-        target:drawCards(math.min(target:getMaxCards(), 5) - #target.player_cards[Player.Hand])
+      local n = target:getMaxCards()
+      if room:askForSkillInvoke(target, self.name, nil, "#quanjian-draw") then
+        if target:getHandcardNum() > n then
+          n = target:getHandcardNum() - n
+          room:askForDiscard(target, n, n, false, self.name, false)
+        elseif target:getHandcardNum() < math.min(n, 5) then
+          target:drawCards(math.min(n, 5) - target:getHandcardNum())
+        end
+        if not target.dead then
+          room:setPlayerMark(target, "@@quanjian_prohibit-turn", 1)
+        end
+        return
       end
-      if #target.player_cards[Player.Hand] > target:getMaxCards() then
-        local n = #target.player_cards[Player.Hand] - target:getMaxCards()
-        room:askForDiscard(target, n, n, false, self.name, false)
-      end
-      room:addPlayerMark(target, "quanjian_prohibit-turn", 1)
-    else
-      room:addPlayerMark(target, "quanjian_damage-turn", 1)
     end
+    room:addPlayerMark(target, "@quanjian_damage-turn", 1)
   end,
 }
 local quanjian_prohibit = fk.CreateProhibitSkill{
   name = "#quanjian_prohibit",
   prohibit_use = function(self, player, card)
-    return player:getMark("quanjian_prohibit-turn") > 0
+    if player:getMark("@@quanjian_prohibit-turn") > 0 then
+      local subcards = Card:getIdList(card)
+      return #subcards > 0 and table.every(subcards, function(id)
+        return table.contains(player.player_cards[Player.Hand], id)
+      end)
+    end
   end,
 }
 local quanjian_record = fk.CreateTriggerSkill{
@@ -4267,11 +4265,11 @@ local quanjian_record = fk.CreateTriggerSkill{
 
   refresh_events = {fk.DamageInflicted},
   can_refresh = function(self, event, target, player, data)
-    return target:getMark("quanjian_damage-turn") > 0
+    return target:getMark("@quanjian_damage-turn") > 0
   end,
   on_refresh = function(self, event, target, player, data)
-    data.damage = data.damage + target:getMark("quanjian_damage-turn")
-    player.room:setPlayerMark(target, "quanjian_damage-turn", 0)
+    data.damage = data.damage + target:getMark("@quanjian_damage-turn")
+    player.room:setPlayerMark(target, "@quanjian_damage-turn", 0)
   end,
 }
 local tujue = fk.CreateTriggerSkill{
@@ -4286,20 +4284,22 @@ local tujue = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#tujue-choose", self.name, true)
     if #to > 0 then
-      self.cost_data = to[1]
+      self.cost_data = {tos = to}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = player:getCardIds("he")
-    room:moveCardTo(cards, Card.PlayerHand, room:getPlayerById(self.cost_data), fk.ReasonGive, self.name, nil, false, player.id)
+    room:moveCardTo(cards, Card.PlayerHand, room:getPlayerById(self.cost_data.tos[1]), fk.ReasonGive, self.name, nil, false, player.id)
+    if player.dead then return end
     room:recover({
       who = player,
       num = math.min(#cards, player.maxHp - player.hp),
       recoverBy = player,
       skillName = self.name
     })
+    if player.dead then return end
     player:drawCards(#cards, self.name)
   end,
 }
@@ -4317,12 +4317,15 @@ Fk:loadTranslationTable{
   "2.将手牌调整至手牌上限（最多摸到5张），其不能使用手牌直到回合结束。若其不执行，则其本回合下次受到的伤害+1。",
   ["tujue"] = "途绝",
   [":tujue"] = "限定技，当你处于濒死状态时，你可以将所有牌交给一名其他角色，然后你回复等量的体力值并摸等量的牌。",
-  ["quanjian1"] = "对一名其攻击范围内你指定的角色造成1点伤害",
-  ["quanjian2"] = "将手牌调整至手牌上限（最多摸到5张），其不能使用手牌直到回合结束",
+
+  ["#quanjian"] = "令一名其他角色执行造成伤害或调整手牌，若其不执行本回合下次受伤值+1",
+  ["quanjian1"] = "造成伤害",
+  ["quanjian2"] = "调整手牌",
   ["#quanjian-choose"] = "劝谏：选择一名其攻击范围内的角色",
-  ["quanjian_damage"] = "对指定的角色造成1点伤害",
-  ["quanjian_draw"] = "将手牌调整至手牌上限（最多摸到5张），不能使用手牌直到回合结束",
-  ["quanjian_cancel"] = "不执行，本回合下次受到的伤害+1",
+  ["#quanjian-damage"] = "劝谏：是否对 %src 造成1点伤害，若选否，本回合你下次受伤害+1",
+  ["#quanjian-draw"] = "劝谏：是否将手牌调整至手牌上限(至多摸至5张)，且本回合不能用手牌",
+  ["@quanjian_damage-turn"] = "劝谏:受伤+",
+  ["@@quanjian_prohibit-turn"] = "劝谏:封手牌",
   ["#tujue-choose"] = "途绝：你可以将所有牌交给一名其他角色，然后回复等量的体力值并摸等量的牌",
 
   ["$quanjian1"] = "陛下宜后镇，臣请为先锋！",

@@ -140,11 +140,12 @@ local waterSwordSkill = fk.CreateTriggerSkill{
   events = {fk.AfterCardTargetDeclared},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2 and
-      (data.card.trueName == "slash" or data.card:isCommonTrick()) and #U.getUseExtraTargets(player.room, data, false) > 0
+      (data.card.trueName == "slash" or data.card:isCommonTrick()) and #player.room:getUseExtraTargets(data) > 0
   end,
   on_cost = function(self, event, target, player, data)
-    local targets = U.getUseExtraTargets(player.room, data, false)
-    local to = player.room:askForChoosePlayers(player, targets, 1, 1, "#water_sword-invoke:::"..data.card:toLogString(), self.name, true)
+    local room = player.room
+    local to = room:askForChoosePlayers(player, room:getUseExtraTargets(data), 1, 1,
+      "#water_sword-invoke:::"..data.card:toLogString(), self.name, true)
     if #to > 0 then
       self.cost_data = to
       return true

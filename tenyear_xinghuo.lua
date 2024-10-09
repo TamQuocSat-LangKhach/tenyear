@@ -829,13 +829,14 @@ local jixu_trigger = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:usedSkillTimes("jixu", Player.HistoryTurn) > 0 and data.card.trueName == "slash" and
       table.find(player.room:getOtherPlayers(player), function(p)
-        return p:getMark("@@jixu-turn") > 0 and table.contains(U.getUseExtraTargets(player.room, data, true)) end)
+        return p:getMark("@@jixu-turn") > 0 and table.contains(player.room:getUseExtraTargets(data, true), p.id)
+      end)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     for _, p in ipairs(room:getOtherPlayers(player)) do
-      if p:getMark("@@jixu-turn") > 0 and table.contains(U.getUseExtraTargets(room, data, true)) then
+      if p:getMark("@@jixu-turn") > 0 and table.contains(room:getUseExtraTargets(data, true), p.id) then
         room:doIndicate(player.id, {p.id})
         TargetGroup:pushTargets(data.targetGroup, p.id)
       end

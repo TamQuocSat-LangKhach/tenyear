@@ -2312,7 +2312,7 @@ local fanyin_delay = fk.CreateTriggerSkill{
     local room = player.room
     local x = player:getMark("@fanyin-turn")
     room:setPlayerMark(player, "@fanyin-turn", 0)
-    local targets = U.getUseExtraTargets(room, data)
+    local targets = room:getUseExtraTargets(data)
     if #targets == 0 then return false end
     local tos = room:askForChoosePlayers(player, targets, 1, x,
     "#fanyin-choose:::"..data.card:toLogString() .. ":" .. tostring(x), fanyin.name, true)

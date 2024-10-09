@@ -867,7 +867,7 @@ local ruyi_trigger = fk.CreateTriggerSkill{
       if event == fk.AfterCardUseDeclared then
         return player:getMark("@ruyi") == 2 or player:getMark("@ruyi") == 3
       else
-        return player:getMark("@ruyi") == 4 and #U.getUseExtraTargets(player.room, data) > 0
+        return player:getMark("@ruyi") == 4 and #player.room:getUseExtraTargets(data) > 0
       end
     end
   end,
@@ -884,7 +884,7 @@ local ruyi_trigger = fk.CreateTriggerSkill{
       elseif player:getMark("@ruyi") == 3 then
         data.disresponsiveList = table.map(room.alive_players, Util.IdMapper)
       else
-        local to = room:askForChoosePlayers(player, U.getUseExtraTargets(room, data),
+        local to = room:askForChoosePlayers(player, room:getUseExtraTargets(data),
         1, 1, "#ruyi-choose:::"..data.card:toLogString(), ruyi.name, true)
         if #to > 0 then
           table.insert(data.tos, to)

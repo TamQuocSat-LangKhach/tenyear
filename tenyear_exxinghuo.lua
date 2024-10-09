@@ -666,14 +666,14 @@ local ty_ex__jixu_trigger = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:usedSkillTimes("ty_ex__jixu", Player.HistoryTurn) > 0 and data.card.trueName == "slash" and
       table.find(player.room:getOtherPlayers(player), function(p)
-        return p:getMark("@@ty_ex__jixu-turn") > 0 and table.contains(U.getUseExtraTargets(player.room, data, true), p.id) end)
+        return p:getMark("@@ty_ex__jixu-turn") > 0 and table.contains(player.room:getUseExtraTargets(data, true), p.id) end)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if room:askForSkillInvoke(player, "ty_ex__jixu", nil, "#ty_ex__jixu-invoke") then
       for _, p in ipairs(room:getOtherPlayers(player)) do
-        if p:getMark("@@ty_ex__jixu-turn") > 0 and table.contains(U.getUseExtraTargets(room, data, true), p.id) then
+        if p:getMark("@@ty_ex__jixu-turn") > 0 and table.contains(room:getUseExtraTargets(data, true), p.id) then
           room:doIndicate(player.id, {p.id})
           table.insertTable(data.tos, {{p.id}})
         end

@@ -549,7 +549,7 @@ local xunshi_trigger = fk.CreateTriggerSkill{
     if player:getMark("xunshi") < 4 then
       room:addPlayerMark(player, "xunshi", 1)
     end
-    local targets = U.getUseExtraTargets(room, data)
+    local targets = room:getUseExtraTargets(data)
     local n = #targets
     if n == 0 then return false end
     local tos = room:askForChoosePlayers(player, targets, 1, n, "#xunshi-choose:::"..data.card:toLogString(), xunshi.name, true)

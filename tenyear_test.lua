@@ -814,7 +814,7 @@ local tanluan_trigger = fk.CreateTriggerSkill{
         return player:getMark("@@tanluan-phase") > 0
       else
         return data.extra_data and data.extra_data.tanluan and data.extra_data.tanluan[1] == player.id and
-          data.tos and #U.getUseExtraTargets(player.room, data, false) > 0
+          data.tos and #player.room:getUseExtraTargets(data) > 0
       end
     end
   end,
@@ -823,7 +823,7 @@ local tanluan_trigger = fk.CreateTriggerSkill{
       return true
     else
       local n = data.extra_data.tanluan[2]
-      local tos = player.room:askForChoosePlayers(player, U.getUseExtraTargets(player.room, data, false), 1, n,
+      local tos = player.room:askForChoosePlayers(player, player.room:getUseExtraTargets(data), 1, n,
         "#tanluan-add:::"..data.card:toLogString()..":"..n, "tanluan", true)
       if #tos > 0 then
         self.cost_data = tos

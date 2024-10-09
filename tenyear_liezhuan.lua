@@ -860,7 +860,7 @@ local ty__jieying_delay = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.AfterCardTargetDeclared then
-      local tos = room:askForChoosePlayers(player, U.getUseExtraTargets(room, data), 1, 1,
+      local tos = room:askForChoosePlayers(player, room:getUseExtraTargets(data), 1, 1,
         "#ty__jieying-extra:::"..data.card:toLogString(), ty__jieying.name, true)
       if #tos == 1 then
         table.insert(data.tos, tos)

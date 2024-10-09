@@ -1642,7 +1642,7 @@ local ty_ex__lihuo = fk.CreateTriggerSkill{
       if event == fk.AfterCardUseDeclared then
         return data.card.name == "slash"
       elseif event == fk.AfterCardTargetDeclared then
-        return data.card.name == "fire__slash" and #U.getUseExtraTargets(player.room, data) > 0
+        return data.card.name == "fire__slash" and #player.room:getUseExtraTargets(data) > 0
       else
         if data.card.trueName ~= "slash" then return false end
         local cardlist = data.card:isVirtual() and data.card.subcards or {data.card.id}
@@ -1672,8 +1672,8 @@ local ty_ex__lihuo = fk.CreateTriggerSkill{
     if event == fk.AfterCardUseDeclared then
       return player.room:askForSkillInvoke(player, self.name, nil, "#ty_ex__lihuo1-invoke:::"..data.card:toLogString())
     elseif event == fk.AfterCardTargetDeclared then
-      local tos = player.room:askForChoosePlayers(player, U.getUseExtraTargets(player.room, data),
-      1, 1, "#lihuo-choose:::"..data.card:toLogString(), self.name, true)
+      local tos = player.room:askForChoosePlayers(player, player.room:getUseExtraTargets(data), 1, 1,
+        "#lihuo-choose:::"..data.card:toLogString(), self.name, true)
       if #tos > 0 then
         self.cost_data = tos
         return true
@@ -2719,7 +2719,7 @@ local ty_ex__qiaoshui_delay = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "@@ty_ex__qiaoshui-turn", 0)
-    local targets = U.getUseExtraTargets(room, data, true)
+    local targets = room:getUseExtraTargets(data, true)
     if #TargetGroup:getRealTargets(data.tos) > 1 then
       table.insertTable(targets, TargetGroup:getRealTargets(data.tos))
     end
@@ -3704,7 +3704,7 @@ local benxi_choice = fk.CreateTriggerSkill{
     if choice == "ty_ex__benxi_choice1" or choice2 == "ty_ex__benxi_choice1" then
       if (data.card.name == "collateral") then return end
 
-      local targets = U.getUseExtraTargets(room, data)
+      local targets = room:getUseExtraTargets(data)
       if #targets > 0 then
         local tos = room:askForChoosePlayers(player, targets, 1, 1,
         "#ty_ex__benxi-choose:::"..data.card:toLogString(), benxi.name, true)
@@ -4125,11 +4125,11 @@ local ty_ex__zenhui = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player:getMark("@@ty_ex__zenhui-turn") == 0 and
       (data.card.trueName == "slash" or data.card:isCommonTrick()) and data.firstTarget and
-      U.isOnlyTarget(player.room:getPlayerById(data.to), data, event) and #U.getUseExtraTargets(player.room, data, true, true) > 0
+      U.isOnlyTarget(player.room:getPlayerById(data.to), data, event) and #player.room:getUseExtraTargets(data, true, true) > 0
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local to = room:askForChoosePlayers(player, U.getUseExtraTargets(room, data, true, true), 1, 1,
+    local to = room:askForChoosePlayers(player, room:getUseExtraTargets(data, true, true), 1, 1,
     "#ty_ex__zenhui-choose:::"..data.card:toLogString(), self.name, true)
     if #to > 0 then
       self.cost_data = to[1]

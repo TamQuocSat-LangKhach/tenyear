@@ -2652,7 +2652,7 @@ local tongyuan_delay = fk.CreateTriggerSkill{
       if event == fk.CardUsing then
         return data.card:isCommonTrick()
       else
-        return data.card.type == Card.TypeBasic and #U.getUseExtraTargets(player.room, data) > 0
+        return data.card.type == Card.TypeBasic and #player.room:getUseExtraTargets(data) > 0
       end
     end
   end,
@@ -2662,7 +2662,7 @@ local tongyuan_delay = fk.CreateTriggerSkill{
     if event == fk.CardUsing then
       data.disresponsiveList = table.map(room.alive_players, Util.IdMapper)
     else
-      local targets = U.getUseExtraTargets(room, data)
+      local targets = room:getUseExtraTargets(data)
       if #targets == 0 then return false end
       local tos = room:askForChoosePlayers(player, targets, 1, 1, "#tongyuan-choose:::"..data.card:toLogString(), tongyuan.name, true)
       if #tos > 0 then
@@ -2741,12 +2741,12 @@ local guowu_delay = fk.CreateTriggerSkill{
   mute = true,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("guowu3-phase") > 0 and not player.dead and
-      (data.card:isCommonTrick() or data.card.trueName == "slash") and #U.getUseExtraTargets(player.room, data) > 0
+      (data.card:isCommonTrick() or data.card.trueName == "slash") and #player.room:getUseExtraTargets(data) > 0
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local targets = U.getUseExtraTargets(room, data)
+    local targets = room:getUseExtraTargets(data)
     if #targets == 0 then return false end
     local tos = room:askForChoosePlayers(player, targets, 1, 2, "#guowu-choose:::"..data.card:toLogString(), guowu.name, true)
     if #tos > 0 then
@@ -3014,7 +3014,7 @@ local shuangrui = fk.CreateTriggerSkill{
     room.logic:getCurrentEvent():findParent(GameEvent.Turn):addCleaner(function()
       room:handleAddLoseSkills(player, "-"..skill, nil, true, false)
     end)
-    if not player:isProhibited(to, card) then
+    if player:canUseTo(card, to, {bypass_distances = true, bypass_times = true}) then
       room:useCard(use)
     end
   end,
@@ -3063,31 +3063,28 @@ local fuxie = fk.CreateActiveSkill{
     end
   end,
 }
-local shouxing = fk.CreateActiveSkill{
+local shouxing = fk.CreateViewAsSkill{
   name = "shouxing",
   anim_type = "offensive",
+  pattern = "slash",
   prompt = "#shouxing",
-  min_card_num = 1,
-  target_num = 1,
-  can_use = function(self, player)
+  card_filter = Util.TrueFunc,
+  view_as = function(self, cards)
+    if #cards == 0 then return end
     local card = Fk:cloneCard("slash")
     card.skillName = self.name
-    return player:canUse(card)
+    card:addSubcards(cards)
+    return card
   end,
-  card_filter = Util.TrueFunc,
-  target_filter = function(self, to_select, selected, selected_cards)
-    if #selected == 0 and to_select ~= Self.id and #selected_cards > 0 then
-      local card = Fk:cloneCard("slash")
-      card.skillName = self.name
-      card:addSubcards(selected_cards)
-      local target = Fk:currentRoom():getPlayerById(to_select)
-      return not Self:inMyAttackRange(target) and Self:distanceTo(target) == #selected_cards and not Self:isProhibited(target, card)
-    end
+  enabled_at_play = Util.TrueFunc,
+  enabled_at_response = function (self, player, response)
+    return not response
   end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    room:useVirtualCard("slash", effect.cards, player, target, self.name, true)
+}
+local shouxing_prohibit = fk.CreateProhibitSkill{
+  name = "#shouxing_prohibit",
+  is_prohibited = function(self, from, to, card)
+    return table.contains(card.skillNames, "shouxing") and (from:distanceTo(to) ~= #card.subcards or from:inMyAttackRange(to))
   end,
 }
 local shouxing_targetmod = fk.CreateTargetModSkill{
@@ -3114,6 +3111,7 @@ local shaxue = fk.CreateTriggerSkill{
     room:askForDiscard(player, n, n, true, self.name, false)
   end,
 }
+shouxing:addRelatedSkill(shouxing_prohibit)
 shouxing:addRelatedSkill(shouxing_targetmod)
 huangwudie:addSkill(shuangrui)
 huangwudie:addSkill(fuxie)
@@ -3123,7 +3121,6 @@ Fk:loadTranslationTable{
   ["huangwudie"] = "黄舞蝶",
   ["#huangwudie"] = "刀弓双绝",
   ["illustrator:huangwudie"] = "黯荧岛",
-  ["~huangwudie"] = "谁说，战死沙场专属男儿？",
 
   ["shuangrui"] = "双锐",
   [":shuangrui"] = "准备阶段，你可以选择一名其他角色，视为对其使用一张【杀】。若其：不在你攻击范围内，此【杀】不可响应，你获得〖狩星〗"..
@@ -3148,6 +3145,7 @@ Fk:loadTranslationTable{
   ["$shouxing2"] = "柔荑挽雕弓，箭出大星落。",
   ["$shaxue1"] = "短兵奋进，杀人于无形。",
   ["$shaxue2"] = "霜刃映雪，三步之内，必取汝性命！",
+  ["~huangwudie"] = "谁说，战死沙场专属男儿？",
 }
 
 local wanniangongzhu = General(extension, "wanniangongzhu", "qun", 3, 3, General.Female)
@@ -3657,7 +3655,7 @@ local ty__neifa_trigger = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     player:broadcastSkillInvoke(ty__neifa.name)
     local room = player.room
-    local targets = U.getUseExtraTargets(room, data, true)
+    local targets = room:getUseExtraTargets(data, true)
     local can_minus = ""
     if data.card:isCommonTrick() then
       if #TargetGroup:getRealTargets(data.tos) > 1 then
@@ -3866,7 +3864,7 @@ local gonghu_delay = fk.CreateTriggerSkill{
       if event == fk.CardUsing then
         return data.card.type == Card.TypeBasic
       else
-        return data.card:isCommonTrick() and #U.getUseExtraTargets(player.room, data) > 0
+        return data.card:isCommonTrick() and #player.room:getUseExtraTargets(data) > 0
       end
     end
   end,
@@ -3876,7 +3874,7 @@ local gonghu_delay = fk.CreateTriggerSkill{
     if event == fk.CardUsing then
       data.disresponsiveList = table.map(room.alive_players, Util.IdMapper)
     else
-      local targets = U.getUseExtraTargets(room, data)
+      local targets = room:getUseExtraTargets(data)
       if #targets == 0 then return false end
       local tos = room:askForChoosePlayers(player, targets, 1, 1, "#gonghu-choose:::"..data.card:toLogString(), gonghu.name, true)
       if #tos > 0 then

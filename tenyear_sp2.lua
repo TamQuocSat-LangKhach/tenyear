@@ -1305,16 +1305,17 @@ local xiaoyin_active = fk.CreateActiveSkill{
   end,
   target_filter = function(self, to_select, selected, selected_cards)
     if #selected == 0 and to_select ~= Self.id then
+      local to = Fk:currentRoom():getPlayerById(to_select)
+      if to:isRemoved() then return false end
       local targets = Self:getTableMark("xiaoyin_targets")
       if #targets == 0 then return true end
       if table.contains(targets, to_select) then return false end
-      local target = Fk:currentRoom():getPlayerById(to_select)
-      if table.contains(targets, target:getNextAlive().id) then return true end
-      for _, p in ipairs(Fk:currentRoom().alive_players) do
-        if p:getNextAlive() == target then
-          return table.contains(targets, p.id)
-        end
-      end
+      return table.find(targets, function(pid)
+        local p = Fk:currentRoom():getPlayerById(pid)
+        return p:getNextAlive() == to or to:getNextAlive() == p
+        or (p:getNextAlive() == Self and Self:getNextAlive() == to)
+        or (to:getNextAlive() == Self and Self:getNextAlive() == p)
+      end)
     end
   end,
 }
@@ -1439,8 +1440,7 @@ Fk:loadTranslationTable{
   ["lima"] = "骊马",
   [":lima"] = "锁定技，场上每有一张坐骑牌，你计算与其他角色的距离-1（至少为1）。",
   ["xiaoyin"] = "硝引",
-  [":xiaoyin"] = "准备阶段，你可以亮出牌堆顶X张牌（X为你距离1以内的角色数），获得其中红色牌，将其中任意张黑色牌作为“硝引”放置在等量名连续其他角色的"..
-  "武将牌上。有“硝引”牌的角色受到伤害时：若为火焰伤害，伤害来源可以弃置一张与“硝引”同类别的牌并随机移去一张此类别的“硝引”牌令此伤害+1；"..
+  [":xiaoyin"] = "准备阶段，你可以亮出牌堆顶X张牌（X为你距离1以内的角色数），获得其中红色牌，将其中任意张黑色牌作为“硝引”放置在等量名连续（不计入你的座位）的其他角色的武将牌上。有“硝引”牌的角色受到伤害时：若为火焰伤害，伤害来源可以弃置一张与“硝引”同类别的牌并随机移去一张此类别的“硝引”牌令此伤害+1；"..
   "不为火焰伤害，伤害来源可以获得其一张“硝引”牌并将此伤害改为火焰伤害。",
   ["huahuo"] = "花火",
   [":huahuo"] = "出牌阶段限一次，你可以将一张红色手牌当无次数限制的【杀】使用。若目标有“硝引”牌，此【杀】可改为指定所有有“硝引”牌的角色为目标。",

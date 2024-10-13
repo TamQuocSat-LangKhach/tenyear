@@ -1939,9 +1939,7 @@ local diou = fk.CreateTriggerSkill{
 
   refresh_events = {fk.PreCardUse},
   can_refresh = function (self, event, target, player, data)
-    return target == player and player:hasSkill(self) and table.find(Card:getIdList(data.card), function (id)
-      return Fk:getCardById(id):getMark("@@tanban-inhand") > 0
-    end)
+    return target == player and player:hasSkill(self) and data.card:getMark("@@tanban-inhand") > 0
   end,
   on_refresh = function (self, event, target, player, data)
     data.extra_data = data.extra_data or {}

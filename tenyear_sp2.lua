@@ -6067,28 +6067,27 @@ local zhifou = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local x = player:usedSkillTimes(self.name, Player.HistoryTurn) + 1
-    local success, dat = room:askForUseActiveSkill(player, "zhifou_active", "#zhifou-invoke:::"..x, true)
-    if success and dat then
-      self.cost_data = {dat.targets[1], dat.cards, dat.interaction}
+    local cards = room:askForCard(player, x, 9999, false, self.name, true, ".|.|.|lingxi_wing", "#zhifou-invoke:::"..x, "lingxi_wing")
+    if #cards >= x then
+      self.cost_data = {cards = cards}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local choice = self.cost_data[3]
-    local mark = player:getTableMark("zhifou-turn")
-    table.insert(mark, choice)
-    room:setPlayerMark(player, "zhifou-turn", mark)
-    local to = room:getPlayerById(self.cost_data[1])
-    room:moveCards({
-      from = player.id,
-      ids = self.cost_data[2],
-      fromArea = Card.PlayerSpecial,
-      fromSpecialName = "lingxi_wing",
-      toArea = Card.DiscardPile,
-      moveReason = fk.ReasonPutIntoDiscardPile,
-    })
-    if to.dead then return end
+    room:moveCardTo(self.cost_data.cards, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name)
+    if player.dead then return end
+    local _, dat = room:askForUseActiveSkill(player, "zhifou_active", "#zhifou-active", false)
+    if not dat then
+      dat = {targets = {table.random(room.alive_players).id}}
+      local all_choices = {"zhifou_put", "zhifou_discard", "zhifou_losehp"}
+      dat.interaction = table.find(all_choices, function(choice)
+        return not table.contains(player:getTableMark("zhifou-turn"), choice)
+      end)
+    end
+    local choice = dat.interaction
+    local to = room:getPlayerById(dat.targets[1])
+    room:addTableMark(player, "zhifou-turn", choice)
     if choice == "zhifou_put" then
       if player.dead or to:isNude() then return end
       local card = room:askForCard(to, 1, 1, true, self.name, false, ".", "#zhifou-put")
@@ -6102,32 +6101,18 @@ local zhifou = fk.CreateTriggerSkill{
 }
 local zhifou_active = fk.CreateActiveSkill{
   name = "zhifou_active",
-  min_card_num = function ()
-    return (Self:usedSkillTimes("zhifou", Player.HistoryTurn) + 1)
-  end,
-  expand_pile = "lingxi_wing",
+  card_num = 0,
   target_num = 1,
   interaction = function()
-    local choices = {}
     local all_choices = {"zhifou_put", "zhifou_discard", "zhifou_losehp"}
-    local used = Self:getTableMark("zhifou-turn")
-    for _, choice in ipairs(all_choices) do
-      if not table.contains(used, choice) then
-        table.insert(choices, choice)
-      end
-    end
+    local choices = table.filter(all_choices, function(choice)
+      return not table.contains(Self:getTableMark("zhifou-turn"), choice)
+    end)
     return UI.ComboBox {choices = choices, all_choices = all_choices}
   end,
-  card_filter = function(self, to_select, selected)
-    return Self:getPileNameOfId(to_select) == "lingxi_wing"
-  end,
+  card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected, selected_cards)
-    if #selected > 0 or not self.interaction.data then return false end
-    if self.interaction.data == "zhifou_losehp" then
-      return true
-    else
-      return not Fk:currentRoom():getPlayerById(to_select):isNude()
-    end
+    return #selected == 0
   end,
 }
 Fk:addSkill(zhifou_active)
@@ -6141,9 +6126,10 @@ Fk:loadTranslationTable{
   ["#lingxi-put"] = "灵犀：将至多 %arg 张牌置入“翼”",
   ["lingxi_wing"] = "翼",
   ["zhifou"] = "知否",
-  [":zhifou"] = "当你使用牌结算结束后，你可以移去至少X张“翼”（X为你本回合发动此技能的次数），选择一名角色并选择一项（每回合每项限一次），令其执行之：1.将一张牌置入“翼”；2.弃置两张牌；3.失去1点体力。",
+  [":zhifou"] = "当你使用牌结算结束后，你可以移去至少X张“翼”（X为你本回合发动此技能的次数），若如此做，你选择一名角色并选择一项（每回合每项限一次），令其执行之：1.将一张牌置入“翼”；2.弃置两张牌；3.失去1点体力。",
   ["zhifou_active"] = "知否",
-  ["#zhifou-invoke"] = "知否：移去至少 %arg 张“翼”，令一名角色执行一个效果",
+  ["#zhifou-invoke"] = "知否：你可以移去至少 %arg 张“翼”",
+  ["#zhifou-active"] = "知否：选择一名角色，令其执行一项",
   ["zhifou_put"] = "将一张牌置入“翼”",
   ["zhifou_discard"] = "弃置两张牌",
   ["zhifou_losehp"] = "失去1点体力",

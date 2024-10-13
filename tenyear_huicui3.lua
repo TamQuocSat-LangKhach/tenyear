@@ -1853,6 +1853,120 @@ Fk:loadTranslationTable{
   ["~mu__zoushi"] = "雁归衡阳，良人当还……",
 }
 
+local diaochan = General(extension, "mu__diaochan", "qun", 3, 3, General.Female)
+local tanban = fk.CreateTriggerSkill{
+  name = "tanban",
+  anim_type = "special",
+  frequency = Skill.Compulsory,
+  events = {fk.GameStart, fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    if event == fk.GameStart then
+      return player:hasSkill(self) and not player:isKongcheng()
+    else
+      return target == player and player:hasSkill(self) and player.phase == Player.Draw and not player:isKongcheng()
+      and #table.filter(player.player_cards[Player.Hand], function (id)
+        return Fk:getCardById(id):getMark("@@tanban-inhand") > 0
+      end) < (player:getHandcardNum() / 2)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.GameStart then
+      local cards = player:getCardIds(Player.Hand)
+      for _, id in ipairs(cards) do
+        room:setCardMark(Fk:getCardById(id), "@@tanban-inhand", 1)
+      end
+    else
+      for _, id in ipairs(player.player_cards[Player.Hand]) do
+        room:setCardMark(Fk:getCardById(id), "@@tanban-inhand", Fk:getCardById(id):getMark("@@tanban-inhand") > 0 and 0 or 1)
+      end
+    end
+  end,
+}
+local tanban_maxcards = fk.CreateMaxCardsSkill{
+  name = "#tanban_maxcards",
+  exclude_from = function(self, player, card)
+    return player:hasSkill(tanban) and card:getMark("@@tanban-inhand") > 0
+  end,
+}
+tanban:addRelatedSkill(tanban_maxcards)
+diaochan:addSkill(tanban)
+
+local diou = fk.CreateTriggerSkill{
+  name = "diou",
+  anim_type = "offensive",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and not player:isKongcheng() and
+    (data.extra_data or {}).usingTanban
+  end,
+  on_cost = function (self, event, target, player, data)
+    local room = player.room
+    local ids, record = {}, player:getTableMark("diou-turn")
+    for _, id in ipairs(player.player_cards[Player.Hand]) do
+      if Fk:getCardById(id):getMark("@@tanban-inhand") == 0 then
+        table.insert(ids, id)
+        if table.contains(record, id) then
+          room:setCardMark(Fk:getCardById(id), "@@diou_showed", 1)
+        end
+      end
+    end
+    local cards = room:askForCard(player, 1, 1, false, self.name, true, tostring(Exppattern{ id = ids }), "#diou-card")
+    if #cards > 0 then
+      self.cost_data = {cards = cards}
+    end
+    for _, id in ipairs(ids) do
+      if Fk:getCardById(id):getMark("@@diou_showed") ~= 0 then
+        room:setCardMark(Fk:getCardById(id), "@@diou_showed", 0)
+      end
+    end
+    return #cards > 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local chosen = self.cost_data.cards[1]
+    local draw = not table.contains(player:getTableMark("diou-turn"), chosen)
+    room:addTableMark(player, "diou-turn", chosen)
+    player:showCards({chosen})
+    local card = Fk:getCardById(chosen)
+    if card.type == Card.TypeBasic or card:isCommonTrick() then
+      U.askForUseVirtualCard(room, player, card.name, nil, self.name, nil, false, true, true, true)
+    end
+    if draw and not player.dead then
+      player:drawCards(1, self.name)
+    end
+  end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function (self, event, target, player, data)
+    return target == player and player:hasSkill(self) and table.find(Card:getIdList(data.card), function (id)
+      return Fk:getCardById(id):getMark("@@tanban-inhand") > 0
+    end)
+  end,
+  on_refresh = function (self, event, target, player, data)
+    data.extra_data = data.extra_data or {}
+    data.extra_data.usingTanban = true
+  end,
+}
+diaochan:addSkill(diou)
+
+Fk:loadTranslationTable{
+  ["mu__diaochan"] = "乐貂蝉",
+  ["#mu__diaochan"] = "檀声向晚",
+  --["designer:mu__diaochan"] = "",
+  --["illustrator:mu__diaochan"] = "",
+
+  ["tanban"] = "檀板",
+  [":tanban"] = "锁定技，①游戏开始时，将初始手牌标记为“檀板”牌（“檀板”牌不计入你的手牌上限）；②摸牌阶段结束时，若你的“檀板”牌数小于其余手牌数，将“檀板”牌的标记交换给其余手牌。",
+  ["@@tanban-inhand"] = "檀板",
+
+  ["diou"] = "低讴",
+  [":diou"] = "当你使用“檀板”结算结束后，你可以展示一张不为“檀板”牌的手牌，若展示了基本牌或普通锦囊牌，你视为使用展示牌。若为你本回合第一次展示此牌，你摸一张牌。",
+  ["#diou-card"] = "低讴：你可以展示一张非“檀板”牌，视为使用之。初次展示此牌则摸一张牌",
+  ["@@diou_showed"] = "已展示",
+}
+
+
 local zhugeguo = General(extension, "mu__zhugeguo", "shu", 3, 3, General.Female)
 local xidi = fk.CreateTriggerSkill{
   name = "xidi",

@@ -1429,6 +1429,69 @@ Fk:loadTranslationTable{
 }
 
 --奇人异士：张宝 司马徽 蒲元 管辂 葛玄 杜夔 朱建平 吴范 赵直 周宣 笮融
+local zhangbao = General(extension, "ty__zhangbao", "qun", 3)
+local zhoufu = fk.CreateActiveSkill{
+  name = "ty__zhoufu",
+  anim_type = "control",
+  card_num = 1,
+  target_num = 1,
+  prompt = "#ty__zhoufu",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected, targets)
+    return #selected == 0 and table.contains(Self.player_cards[Player.Hand], to_select)
+  end,
+  target_filter = function(self, to_select, selected, cards)
+    return #selected == 0 and to_select ~= Self.id and #Fk:currentRoom():getPlayerById(to_select):getPile("ty__zhoufu_zhou") == 0
+  end,
+  on_use = function(self, room, effect)
+    local target = room:getPlayerById(effect.tos[1])
+    target:addToPile("ty__zhoufu_zhou", effect.cards, false, self.name, effect.from, {effect.from})
+  end,
+}
+local zhoufu_trigger = fk.CreateTriggerSkill{
+  name = "#ty__zhoufu_trigger",
+
+  refresh_events = {fk.StartJudge},
+  can_refresh = function(self, event, target, player, data)
+    return #target:getPile("ty__zhoufu_zhou") > 0 and target == player
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.card = Fk:getCardById(target:getPile("ty__zhoufu_zhou")[1])
+  end,
+}
+zhoufu:addRelatedSkill(zhoufu_trigger)
+zhangbao:addSkill(zhoufu)
+local yingbing = fk.CreateTriggerSkill{
+  name = "ty__yingbing",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target == player and #player.room:getPlayerById(data.to):getPile("ty__zhoufu_zhou") > 0
+    and not table.contains(player:getTableMark("ty__yingbing-turn"), data.to)
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:addTableMark(player, "ty__yingbing-turn", data.to)
+    player:drawCards(2, self.name)
+  end,
+}
+zhangbao:addSkill(yingbing)
+Fk:loadTranslationTable{
+  ["ty__zhangbao"] = "张宝",
+  ["#ty__zhangbao"] = "地公将军",
+
+  ["ty__zhoufu"] = "咒缚",
+  [":ty__zhoufu"] = "出牌阶段限一次，你可以将一张手牌置于一名没有“咒”的其他角色的武将牌旁，称为“咒”（当有“咒”的角色判定时，将“咒”作为判定牌）。",
+  ["#ty__zhoufu"] = "咒缚：将一张手牌置为一名角色的“咒缚”牌，其判定时改为将“咒缚”牌作为判定牌",
+  ["#ty__zhoufu_trigger"] = "咒缚",
+  ["ty__zhoufu_zhou"] = "咒",
+
+  ["ty__yingbing"] = "影兵",
+  [":ty__yingbing"] = "锁定技，每回合每名角色限一次，当你使用牌指定有“咒”的角色为目标后，你摸两张牌。",
+}
+
 local simahui = General(extension, "simahui", "qun", 3)
 local doJianjieMarkChange = function (room, player, mark, acquired, proposer)
   local skill = (mark == "@@dragon_mark") and "jj__huoji&" or "jj__lianhuan&"
@@ -2178,6 +2241,7 @@ local zhafu = fk.CreateActiveSkill{
   card_num = 0,
   target_num = 1,
   frequency = Skill.Limited,
+  prompt = "#zhafu",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
@@ -2209,7 +2273,7 @@ local zhafu_delay = fk.CreateTriggerSkill{
     room:notifySkillInvoked(src, "zhafu", "control")
     local card = room:askForCard(player, 1, 1, false, "zhafu", false, ".|.|.|hand", "#zhafu-invoke:"..src.id)[1]
     local cards = table.filter(player.player_cards[Player.Hand], function(id) return id ~= card end)
-    room:obtainCard(src, cards, false, fk.ReasonGive, player.id)
+    room:obtainCard(src, cards, false, fk.ReasonGive, player.id, "zhafu")
   end,
 }
 lianhua:addRelatedSkill(lianhua_trigger)
@@ -2236,6 +2300,7 @@ Fk:loadTranslationTable{
   ["#zhafu_delay"] = "札符",
   ["@lianhua"] = "丹血",
   ["@@zhafu"] = "札符",
+  ["#zhafu"] = "选择一名其他角色：其下个弃牌阶段选择保留一张手牌，其余手牌交给你",
   ["#zhafu-invoke"] = "札符：选择一张保留的手牌，其他手牌全部交给 %src ！",
 
   ["$lianhua1"] = "白日青山，飞升化仙。",

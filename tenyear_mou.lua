@@ -2583,7 +2583,7 @@ local gaojian = fk.CreateTriggerSkill{
   end,
   on_cost = function (self,event, target, player, data)
     local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1,
-      "#gaojian-choose", self.name, false)
+      "#gaojian-choose", self.name, true, false)
     if #to > 0 then
       self.cost_data = {tos = to}
       return true

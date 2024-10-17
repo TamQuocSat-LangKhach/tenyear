@@ -545,21 +545,14 @@ local shiming = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     if room:askForSkillInvoke(player, self.name, nil, "#shiming-invoke::"..target.id) then
-      room:doIndicate(player.id, {target.id})
+      self.cost_data = {tos = {target.id}}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local ids = room:getNCards(3)
-    local to_return = U.askforChooseCardsAndChoice(player, ids, {"OK"}, self.name, "#shiming-chooose", {"Cancel"})
-    if #to_return > 0 then
-      table.insert(room.draw_pile, to_return[1])
-      table.removeOne(ids, to_return[1])
-    end
-    for i = #ids, 1, -1 do
-      table.insert(room.draw_pile, 1, ids[i])
-    end
+    room:askForGuanxing(player, ids, {2, 3}, {0, 1}, self.name)
     if room:askForSkillInvoke(target, self.name, nil, "#shiming-damage") then
       room:damage{
         from = target,
@@ -581,17 +574,17 @@ local jiangxi = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
       local room = player.room
-      local seatOne = table.find(room.alive_players, function (p)
+      local seatOne = table.find(room.players, function (p)
         return p.seat == 1
       end)
-      if seatOne == nil  then return true end
+      if seatOne == nil then return false end
       local events = room.logic:getEventsOfScope(GameEvent.Dying, 1, function(e)
         local dying = e.data[1]
         return dying.who == seatOne.id
       end, Player.HistoryTurn)
       if #events > 0 then return true end
-      events = room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function(e)
-        local damage = e.data[5]
+      events = room.logic:getActualDamageEvents(1, function(e)
+        local damage = e.data[1]
         return damage and damage.to == seatOne
       end, Player.HistoryTurn)
       return #events == 0
@@ -603,9 +596,7 @@ local jiangxi = fk.CreateTriggerSkill{
     player:drawCards(1, self.name)
     if player.dead or target.dead then return false end
     local room = player.room
-    local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
-    if turn_event == nil then return false end
-    if #room.logic:getActualDamageEvents(1, Util.TrueFunc, turn_event.id) == 0 and
+    if #room.logic:getActualDamageEvents(1, Util.TrueFunc, Player.HistoryTurn) == 0 and
       room:askForSkillInvoke(player, self.name, nil, "#jiangxi-invoke::" .. target.id) then
       player:drawCards(1, self.name)
       if not target.dead then
@@ -622,7 +613,7 @@ Fk:loadTranslationTable{
   ["designer:ty__qiaozhou"] = "夜者之歌",
   ["illustrator:ty__qiaozhou"] = "鬼画府",
   ["shiming"] = "识命",
-  [":shiming"] = "每轮限一次，一名角色的摸牌阶段，你可以观看牌堆顶三张牌，然后可以将其中一张置于牌堆底，"..
+  [":shiming"] = "每轮限一次，一名角色的摸牌阶段开始时，你可以观看牌堆顶三张牌并调整顺序，且可以将其中一张置于牌堆底，"..
   "若如此做，当前回合角色可以放弃摸牌，改为对自己造成1点伤害，然后从牌堆底摸三张牌。",
   ["jiangxi"] = "将息",
   [":jiangxi"] = "一名角色回合结束时，若一号位本回合进入过濒死状态或未受到过伤害，你重置〖识命〗并摸一张牌。"..

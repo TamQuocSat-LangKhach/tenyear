@@ -5108,13 +5108,19 @@ Fk:loadTranslationTable{
   ["ty__jiangwanfeiyi"] = "蒋琬费祎",
   ["#ty__jiangwanfeiyi"] = "社稷股肱",
   ["designer:ty__jiangwanfeiyi"] = "淬毒",
-  --["illustrator:ty__jiangwanfeiyi"] = "",
+  ["illustrator:ty__jiangwanfeiyi"] = "",
 
   ["ty__shoucheng"] = "守成",
   [":ty__shoucheng"] = "当一名角色于其回合外失去手牌后，若其没有手牌且你于当前回合内未发动过此技能，你可令其摸两张牌。",
 
   ["#ty__shoucheng-draw"] = "守成：你可令 %dest 摸两张牌",
   ["#ty__shoucheng-choose"] = "守成：你可令一名失去最后手牌的角色摸两张牌",
+
+  ["$ty__shengxi1"] = "国之生计，在民生息。",
+  ["$ty__shengxi2"] = "安民止战，兴汉室！",
+  ["$ty__shoucheng1"] = "待吾等助将军一臂之力！",
+  ["$ty__shoucheng2"] = "国库盈余，可助军威。",
+  ["~ty__jiangwanfeiyi"] = "墨守成规，终为其害啊……",
 }
 
 local lifeng = General(extension, "ty__lifeng", "shu", 3)

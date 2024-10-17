@@ -2569,8 +2569,104 @@ local ty__mingshi = fk.CreateTriggerSkill{
     end
   end,
 }
+local ty__lirang = fk.CreateTriggerSkill{
+  name = "ty__lirang",
+  anim_type = "support",
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) then return false end
+    for _, move in ipairs(data) do
+      if move.from == player.id and move.moveReason == fk.ReasonDiscard and move.toArea == Card.DiscardPile then
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+            return true
+          end
+        end
+      end
+    end
+  end,
+  on_trigger = function(self, event, target, player, data)
+    for _, move in ipairs(data) do
+      if not player:hasSkill(self) then break end
+      if move.from == player.id and move.moveReason == fk.ReasonDiscard and move.toArea == Card.DiscardPile then
+        local cids = {}
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+            table.insertIfNeed(cids, info.cardId)
+          end
+        end
+        self:doCost(event, nil, player, cids)
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local ids = data
+    local room = player.room
+    local fakemove = {
+      toArea = Card.PlayerHand,
+      to = player.id,
+      moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.DiscardPile} end),
+      moveReason = fk.ReasonJustMove,
+    }
+    room:notifyMoveCards({player}, {fakemove})
+    for _, id in ipairs(ids) do
+      room:setCardMark(Fk:getCardById(id), "ty__lirang", 1)
+    end
+    while table.find(ids, function(id) return Fk:getCardById(id):getMark("ty__lirang") > 0 end) do
+      if not room:askForUseActiveSkill(player, "#ty__lirang_active", "#ty__lirang-give", true) then
+        for _, id in ipairs(ids) do
+          room:setCardMark(Fk:getCardById(id), "ty__lirang", 0)
+        end
+        ids = table.filter(ids, function(id) return room:getCardArea(id) ~= Card.PlayerHand end)
+        fakemove = {
+          from = player.id,
+          toArea = Card.DiscardPile,
+          moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
+          moveReason = fk.ReasonGive,
+        }
+        room:notifyMoveCards({player}, {fakemove})
+      end
+    end
+  end,
+}
+local ty__lirang_active = fk.CreateActiveSkill{
+  name = "#ty__lirang_active",
+  mute = true,
+  min_card_num = 1,
+  target_num = 1,
+  card_filter = function(self, to_select, selected, targets)
+    return Fk:getCardById(to_select):getMark("ty__lirang") > 0
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    room:doIndicate(player.id, {target.id})
+    for _, id in ipairs(effect.cards) do
+      room:setCardMark(Fk:getCardById(id), "ty__lirang", 0)
+    end
+    local fakemove = {
+      from = player.id,
+      toArea = Card.DiscardPile,
+      moveInfo = table.map(effect.cards, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
+      moveReason = fk.ReasonGive,
+    }
+    room:notifyMoveCards({player}, {fakemove})
+    room:moveCards({
+      fromArea = Card.DiscardPile,
+      ids = effect.cards,
+      to = target.id,
+      toArea = Card.PlayerHand,
+      moveReason = fk.ReasonGive,
+      skillName = self.name,
+    })
+  end,
+}
+ty__lirang:addRelatedSkill(ty__lirang_active)
 kongrong:addSkill(ty__mingshi)
-kongrong:addSkill("lirang")
+kongrong:addSkill(ty__lirang)
 Fk:loadTranslationTable{
   ["ty__kongrong"] = "孔融",
   ["#ty__kongrong"] = "凛然重义",
@@ -2578,7 +2674,17 @@ Fk:loadTranslationTable{
 
   ["ty__mingshi"] = "名士",
   [":ty__mingshi"] = "锁定技，当你受到伤害时，若伤害来源的手牌数大于你，其需弃置一张手牌，否则此伤害-1。",
+  ["ty__lirang"] = "礼让",
+  [":ty__lirang"] = "当你的牌因弃置而移至弃牌堆后，你可将其中的至少一张牌交给其他角色。",
   ["#ty__mingshi-invoke"] = "名士：请弃置一张手牌，否则你对 %src 造成的伤害-1",
+  ["#ty__lirang-give"] = "礼让：你可以将这些牌分配给任意角色，点“取消”仍弃置",
+  ["#ty__lirang_active"] = "礼让",
+
+  ["$ty__mingshi1"] = "孔门之后，忠孝为先。",
+  ["$ty__mingshi2"] = "名士之风，仁义高洁。",
+  ["$ty__lirang1"] = "夫礼先王以承天之道，以治人之情。",
+  ["$ty__lirang2"] = "谦者，德之柄也，让者，礼之逐也。",
+  ["~ty__kongrong"] = "覆巢之下，岂有完卵……",
 }
 
 --芝兰玉树：张虎 吕玲绮 刘永 黄舞蝶 万年公主 滕公主 庞会 赵统赵广 袁谭袁尚袁熙 乐綝 刘理
@@ -5419,6 +5525,10 @@ Fk:loadTranslationTable{
   [":ty__hengjiang"] = "当你受到1点伤害后，你可以令当前回合角色本回合手牌上限-1，此回合结束时，若其本回合弃牌阶段：没有弃置牌，你摸X张牌"..
   "（X为本回合你发动此技能次数）；弃置过牌，你摸一张牌。",
   ["#ty__hengjiang-invoke"] = "横江：是否令 %dest 本回合手牌上限-1？",
+
+  ["$ty__hengjiang1"] = "霸必奋勇杀敌，一雪夷陵之耻！",
+  ["$ty__hengjiang2"] = "江横索寒，阻敌绝境之中！",
+  ["~ty__zangba"] = "断刃沉江，负主重托……",
 }
 
 local yuejin = General(extension, "ty__yuejin", "wei", 4)
@@ -5465,6 +5575,10 @@ Fk:loadTranslationTable{
   [":ty__xiaoguo"] = "其他角色的结束阶段，你可以弃置一张手牌，然后其选择一项：1.弃置一张装备牌，然后你摸一张牌；2.你对其造成1点伤害。",
   ["#ty__xiaoguo-invoke"] = "骁果：你可以弃置一张手牌，%dest 需弃置一张装备牌并令你摸一张牌，否则你对其造成1点伤害",
   ["#ty__xiaoguo-discard"] = "骁果：你需弃置一张装备牌并令 %src 摸一张牌，否则其对你造成1点伤害",
+
+  ["$ty__xiaoguo1"] = "三军听我号令，不得撤退！",
+  ["$ty__xiaoguo2"] = "看我先登城头，立下首功！",
+  ["~ty__yuejin"] = "箭疮发作，吾命休矣。",
 }
 
 return extension

@@ -925,54 +925,6 @@ Fk:loadTranslationTable{
 
 local wangjun = General(extension, "ty__wangjun", "qun", 4)
 wangjun.subkingdom = "jin"
-local mianyao = fk.CreateTriggerSkill{
-  name = "mianyao",
-  anim_type = "drawcard",
-  events = {fk.EventPhaseEnd, fk.TurnEnd},
-  can_trigger = function(self, event, target, player, data)
-    if target == player then
-      if event == fk.EventPhaseEnd then
-        return player:hasSkill(self) and player.phase == player.Draw and not player:isKongcheng()
-      else
-        return player:getMark("mianyao-turn") > 0
-      end
-    end
-  end,
-  on_cost = function(self, event, target, player, data)
-    if event == fk.EventPhaseEnd then
-      local room = player.room
-      local ids = table.filter(player:getCardIds("h"), function(id)
-        return table.every(player:getCardIds("h"), function(id2)
-          return Fk:getCardById(id).number <= Fk:getCardById(id2).number end) end)
-      local cards = room:askForCard(player, 1, 1, false, self.name, true, ".|.|.|.|.|.|"..table.concat(ids, ","), "#mianyao-invoke")
-      if #cards > 0 then
-        self.cost_data = cards
-        return true
-      end
-    else
-      return true
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    if event == fk.EventPhaseEnd then
-      local room = player.room
-      player:showCards(self.cost_data)
-      if player.dead then return end
-      room:setPlayerMark(player, "mianyao-turn", Fk:getCardById(self.cost_data[1]).number)
-      room:moveCards({
-        ids = self.cost_data,
-        from = player.id,
-        fromArea = Card.PlayerHand,
-        toArea = Card.DrawPile,
-        moveReason = fk.ReasonJustMove,
-        skillName = self.name,
-        drawPilePosition = math.random(1, #room.draw_pile),
-      })
-    else
-      player:drawCards(player:getMark("mianyao-turn"), self.name)
-    end
-  end,
-}
 local changqu = fk.CreateActiveSkill{
   name = "changqu",
   anim_type = "control",
@@ -1149,15 +1101,13 @@ Fk:loadTranslationTable{
   ["ty__wangjun"] = "王濬",
   ["#ty__wangjun"] = "遏浪飞艨",
   ["illustrator:ty__wangjun"] = "错落宇宙",
-  ["mianyao"] = "免徭",
-  [":mianyao"] = "摸牌阶段结束时，你可以展示手牌中点数最小的一张牌并将之置于牌堆随机位置，若如此做，本回合结束时，你摸此牌点数张牌。",
+
   ["tongye"] = "统业",
   [":tongye"] = "锁定技，游戏开始时，或其他角色死亡后，你根据场上势力数获得对应效果（覆盖之前获得的效果）：不大于4，你的手牌上限+3；" ..
   "不大于3，你的攻击范围+3，摸牌阶段摸牌数增加4减去势力数；不大于2，你于出牌阶段内使用【杀】的次数上限+3；为1，你回复3点体力。",
   ["changqu"] = "长驱",
   [":changqu"] = "出牌阶段限一次，你可以<font color='red'>开一艘战舰</font>，从你的上家或下家开始选择任意名座次连续的其他角色，第一个目标角色获得战舰标记。"..
   "获得战舰标记的角色选择一项：1.交给你X张手牌，然后将战舰标记移动至下一个目标；2.下次受到的属性伤害+X，然后横置武将牌（X为本次选择1的次数，至少为1）。",
-  ["#mianyao-invoke"] = "免徭：你可以将点数最小的手牌洗入牌堆，回合结束时摸其点数的牌",
   ["@@battleship"] = "战舰",
   ["#changqu-card"] = "长驱：交给 %src %arg张手牌以使战舰驶向下一名角色",
   ["@changqu"] = "长驱",
@@ -1338,7 +1288,7 @@ ty__jiangqin:addSkill(ty__niaoxiang)
 Fk:loadTranslationTable{
   ["ty__jiangqin"] = "蒋钦",
   ["#ty__jiangqin"] = "祁奚之器",
-  --["illustrator:ty__jiangqin"] = "",
+  ["illustrator:ty__jiangqin"] = "君桓文化",
 
   ["ty__shangyi"] = "尚义",
   [":ty__shangyi"] = "出牌阶段限一次，你可以令一名其他角色观看你的手牌。若如此做，你观看其手牌并可以弃置其中的一张♠牌和一张♣牌。",
@@ -1346,6 +1296,12 @@ Fk:loadTranslationTable{
   [":ty__niaoxiang"] = "锁定技，当你使用【杀】指定目标后，若你在其攻击范围内，其响应此【杀】的方式改为依次使用两张【闪】。",
   ["#ty__shangyi"] = "尚义：令一名角色观看你的手牌，然后你观看其手牌并可以弃置其中一张♠牌和一张♣牌",
   ["#ty__shangyi-discard"] = "尚义：你可以弃置其中一张♠牌和一张♣牌",
+
+  ["$ty__shangyi1"] = "大丈夫为人坦荡，看下手牌算什么。",
+  ["$ty__shangyi2"] = "敌情已了然于胸，即刻出发！",
+  ["$ty__niaoxiang1"] = "此战，必是有死无生！",
+  ["$ty__niaoxiang2"] = "抢占先机，占尽优势！",
+  ["~ty__jiangqin"] = "竟破我阵法……",
 }
 
 local ty__zhangren = General(extension, "ty__zhangren", "qun", 4)
@@ -1414,7 +1370,7 @@ ty__zhangren:addSkill(ty__fengshi)
 Fk:loadTranslationTable{
   ["ty__zhangren"] = "张任",
   ["#ty__zhangren"] = "索命神射",
-  --["illustrator:ty__zhangren"] = "",
+  ["illustrator:ty__zhangren"] = "君桓文化",
 
   ["ty__chuanxin"] = "穿心",
   [":ty__chuanxin"] = "当你于出牌阶段内使用【杀】或【决斗】对目标角色造成伤害时，你可以防止此伤害。若如此做，该角色选择一项：1.弃置装备区内的"..
@@ -1426,6 +1382,12 @@ Fk:loadTranslationTable{
   ["ty__chuanxin2"] = "弃置两张手牌，非锁定技失效直到回合结束",
   ["@@ty__chuanxin-turn"] = "穿心",
   ["#ty__fengshi-invoke"] = "锋矢：是否弃置 %dest 的防具牌或防御坐骑牌？",
+
+  ["$ty__chuanxin1"] = "一箭穿心，哪里可逃？",
+  ["$ty__chuanxin2"] = "穿心之痛，细细品吧，哈哈哈哈！",
+  ["$ty__fengshi1"] = "大军压境，还不卸甲受降！",
+  ["$ty__fengshi2"] = "放下兵器，饶你不死！",
+  ["~ty__zhangren"] = "本将军败于诸葛，无憾……",
 }
 
 --奇人异士：张宝 司马徽 蒲元 管辂 葛玄 杜夔 朱建平 吴范 赵直 周宣 笮融
@@ -1481,6 +1443,7 @@ zhangbao:addSkill(yingbing)
 Fk:loadTranslationTable{
   ["ty__zhangbao"] = "张宝",
   ["#ty__zhangbao"] = "地公将军",
+  ["illustrator:ty__zhangbao"] = "小牛",
 
   ["ty__zhoufu"] = "咒缚",
   [":ty__zhoufu"] = "出牌阶段限一次，你可以将一张手牌置于一名没有“咒”的其他角色的武将牌旁，称为“咒”（当有“咒”的角色判定时，将“咒”作为判定牌）。",
@@ -1490,6 +1453,12 @@ Fk:loadTranslationTable{
 
   ["ty__yingbing"] = "影兵",
   [":ty__yingbing"] = "锁定技，每回合每名角色限一次，当你使用牌指定有“咒”的角色为目标后，你摸两张牌。",
+
+  ["$ty__zhoufu1"] = "这束缚，可不是你能挣脱的！",
+  ["$ty__zhoufu2"] = "咒术显灵，助我改运！",
+  ["$ty__yingbing1"] = "青龙白虎，队仗纷纭！",
+  ["$ty__yingbing2"] = "我有影兵三万，何惧你们！",
+  ["~ty__zhangbao"] = "你们，如何能破我咒术？",
 }
 
 local simahui = General(extension, "simahui", "qun", 3)
@@ -4538,6 +4507,43 @@ Fk:loadTranslationTable{
 }
 
 local ty__tianfeng = General(extension, "ty__tianfeng", "qun", 3)
+local ty__sijian = fk.CreateTriggerSkill{
+  name = "ty__sijian",
+  events = {fk.AfterCardsMove},
+  anim_type = "control",
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) or not player:isKongcheng() then return end
+    local ret = false
+    for _, move in ipairs(data) do
+      if move.from == player.id then
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand then
+            ret = true
+            break
+          end
+        end
+      end
+    end
+    if ret then
+      return table.find(player.room.alive_players, function(p) return not p:isNude() end)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.map(table.filter(room.alive_players, function(p) return not p:isNude() end), Util.IdMapper)
+    local target = room:askForChoosePlayers(player, targets, 1, 1, "#ty__sijian-ask", self.name, true)
+    if #target > 0 then
+      self.cost_data = target[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local id = room:askForCardChosen(player, to, "he", self.name)
+    room:throwCard({id}, self.name, to, player)
+  end,
+}
 local ty__suishi = fk.CreateTriggerSkill{
   name = "ty__suishi",
   frequency = Skill.Compulsory,
@@ -4564,16 +4570,25 @@ local ty__suishi = fk.CreateTriggerSkill{
     end
   end,
 }
-ty__tianfeng:addSkill("sijian")
+ty__tianfeng:addSkill(ty__sijian)
 ty__tianfeng:addSkill(ty__suishi)
 Fk:loadTranslationTable{
   ["ty__tianfeng"] = "田丰",
   ["#ty__tianfeng"] = "河北瑰杰",
   ["illustrator:ty__tianfeng"] = "君桓文化",
 
+  ["ty__sijian"] = "死谏",
+  [":ty__sijian"] = "当你失去手牌后，若你没有手牌，你可弃置一名其他角色的一张牌。",
   ["ty__suishi"] = "随势",
   [":ty__suishi"] = "锁定技，当其他角色进入濒死状态时，若伤害来源与你势力相同，你摸一张牌；当其他角色死亡时，若其与你势力相同，你弃置至少一张"..
   "手牌。",
+  ["#ty__sijian-ask"] = "死谏：你可弃置一名其他角色的一张牌",
+
+  ["$ty__sijian1"] = "且听我最后一言！",
+  ["$ty__sijian2"] = "忠言逆耳啊！",
+  ["$ty__suishi1"] = "一荣俱荣！",
+  ["$ty__suishi2"] = "一损俱损……",
+  ["~ty__tianfeng"] = "不纳吾言而反诛吾心，奈何奈何！！",
 }
 
 local lvfan = General(extension, "ty__lvfan", "wu", 3)

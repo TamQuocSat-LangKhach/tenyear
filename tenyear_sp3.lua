@@ -4149,12 +4149,13 @@ local yanzuo = fk.CreateActiveSkill{
       local use = U.askForUseRealCard(room, player, cards, nil, self.name,
         "#yanzuo-ask", {expand_pile = cards, bypass_times = true}, true, false)
       if use then
+        local card = Fk:cloneCard(use.card.name)
+        card.skillName = self.name
         room:useCard{
-          card = Fk:cloneCard(use.card.name),
+          card = card,
           from = player.id,
           tos = use.tos,
-          skillName = self.name,
-          extraUse = true
+          extraUse = true,
         }
       end
     end
@@ -4200,28 +4201,15 @@ local pijian = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:moveCardTo(player:getPile("yanzuo"), Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
-
-    local to = room:askForChoosePlayers(
-      player,
-      table.map(room.alive_players, Util.IdMapper),
-      1,
-      1,
-      "#pijian-choose",
-      self.name,
-      false
-    )
-    if #to > 0 then
-      to = room:getPlayerById(to[1])
-
-      if not to.dead then
-        room:damage{
-          from = player,
-          to = to,
-          damage = 2,
-          skillName = self.name,
-        }
-      end
-    end
+    if player.dead then return end
+    local to = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper), 1, 1,
+      "#pijian-choose", self.name, false)
+    room:damage{
+      from = player,
+      to = room:getPlayerById(to[1]),
+      damage = 2,
+      skillName = self.name,
+    }
   end,
 }
 zhugejing:addSkill(yanzuo)

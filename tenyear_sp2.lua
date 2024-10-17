@@ -4823,7 +4823,7 @@ Fk:loadTranslationTable{
   ["~ty__panshu"] = "有喜必忧，以为深戒！",
 }
 
---锦瑟良缘：曹金玉 孙翊 冯妤 来莺儿 曹华 张奋 诸葛梦雪 诸葛若雪 曹宪 柳婒
+--锦瑟良缘：曹金玉 孙翊 冯妤 来莺儿 曹华 张奋 诸葛梦雪 诸葛若雪 曹宪 柳婒 文鸳
 local caojinyu = General(extension, "caojinyu", "wei", 3, 3, General.Female)
 local yuqi = fk.CreateTriggerSkill{
   name = "yuqi",
@@ -6273,6 +6273,168 @@ Fk:loadTranslationTable{
   ["$chixing1"] = "孤鸿鸣晚林，泪垂大江流。",
   ["$chixing2"] = "若路的尽头是离别，妾宁愿蹒跚一世。",
   ["~liutan"] = "孤灯照长夜，羹熟唤何人？",
+}
+
+local wenyuan = General(extension, "wenyuan", "shu", 3, 3, General.Female)
+local kengqiang = fk.CreateTriggerSkill{
+  name = "kengqiang",
+  anim_type = "drawcard",
+  events = {fk.DamageCaused},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) then
+      if player:usedSkillTimes("shangjue", Player.HistoryGame) == 0 then
+        return player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and
+          player:getMark("kengqiang1-turn") == 0 and player:getMark("kengqiang2-turn") == 0
+      else
+        return player:getMark("kengqiang1-turn") == 0 or player:getMark("kengqiang2-turn") == 0
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local all_choices = {"kengqiang1", "kengqiang2", "Cancel"}
+    local choices = table.simpleClone(all_choices)
+    for i = 2, 1, -1 do
+      if player:getMark("kengqiang"..i.."-turn") > 0 then
+        table.remove(choices, i)
+      end
+    end
+    local choice = player.room:askForChoice(player, choices, self.name, "#kengqiang-invoke", false, all_choices)
+    if choice ~= "Cancel" then
+      self.cost_data = {choice = choice}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local choice = self.cost_data.choice
+    room:setPlayerMark(player, choice.."-turn", 1)
+    if choice == "kengqiang1" then
+      player:drawCards(player.maxHp, self.name)
+    else
+      data.damage = data.damage + 1
+      if data.card and room:getCardArea(data.card) == Card.Processing then
+        room:moveCardTo(data.card, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
+      end
+    end
+  end,
+}
+local kuichi = fk.CreateTriggerSkill{
+  name = "kuichi",
+  anim_type = "negative",
+  frequency = Skill.Compulsory,
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) then
+      local room = player.room
+      local n = 0
+      room.logic:getActualDamageEvents(1, function(e)
+        local damage = e.data[1]
+        if damage.from == player then
+          n = n + damage.damage
+        end
+      end, Player.HistoryTurn)
+      if n < player.maxHp then return false end
+      n = 0
+      room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
+        for _, move in ipairs(e.data) do
+          if move.to == player.id and move.moveReason == fk.ReasonDraw then
+            n = n + #move.moveInfo
+          end
+        end
+      end, Player.HistoryTurn)
+      return n >= player.maxHp
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:loseHp(player, 1, self.name)
+  end,
+}
+local shangjue = fk.CreateTriggerSkill{
+  name = "shangjue",
+  anim_type = "defensive",
+  events = {fk.EnterDying},
+  frequency = Skill.Wake,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and
+      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  can_wake = function(self, event, target, player, data)
+    return player.dying
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:recover({
+      who = player,
+      num = 1 - player.hp,
+      recoverBy = player,
+      skillName = self.name,
+    })
+    if not player.dead then
+      room:changeMaxHp(player, 1)
+    end
+    if not player.dead then
+      room:handleAddLoseSkills(player, "kunli", nil, true, false)
+    end
+  end,
+}
+local kunli = fk.CreateTriggerSkill{
+  name = "kunli",
+  anim_type = "defensive",
+  events = {fk.EnterDying},
+  frequency = Skill.Wake,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and
+      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  can_wake = function(self, event, target, player, data)
+    return player.dying
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:recover({
+      who = player,
+      num = math.min(2, player.maxHp) - player.hp,
+      recoverBy = player,
+      skillName = self.name,
+    })
+    if not player.dead then
+      room:changeMaxHp(player, 1)
+    end
+    if not player.dead then
+      room:handleAddLoseSkills(player, "-kuichi", nil, true, false)
+    end
+  end,
+}
+wenyuan:addSkill(kengqiang)
+wenyuan:addSkill(kuichi)
+wenyuan:addSkill(shangjue)
+wenyuan:addRelatedSkill(kunli)
+Fk:loadTranslationTable{
+  ["wenyuan"] = "文鸳",
+  ["#wenyuan"] = "揾泪红袖",
+  ["illustrator:wenyuan"] = "匠人绘",
+
+  ["kengqiang"] = "铿锵",
+  [":kengqiang"] = "每回合限一次，当你造成伤害时，你可以选择一项：1.摸X张牌（X为你的体力上限）；2.此伤害+1，你获得造成伤害的牌。",
+  ["kuichi"] = "匮饬",
+  [":kuichi"] = "锁定技，回合结束时，若你本回合摸牌数和造成的伤害值均不小于你的体力上限，你失去1点体力。",
+  ["shangjue"] = "殇决",
+  [":shangjue"] = "觉醒技，当你进入濒死状态时，你将体力值回复至1点，加1点体力上限，并获得〖困励〗，然后将〖铿锵〗改为每回合各限一次。",
+  ["kunli"] = "困励",
+  [":kunli"] = "觉醒技，当你进入濒死状态时，你将体力值回复至2点，加1点体力上限，并失去〖匮饬〗。",
+  ["#kengqiang-invoke"] = "铿锵：你可以选择一项",
+  ["kengqiang1"] = "摸体力上限张牌",
+  ["kengqiang2"] = "此伤害+1，你获得造成伤害的牌",
+
+  ["$kengqiang1"] = "女子着征袍，战意越关山。",
+  ["$kengqiang2"] = "兴武效妇好，挥钺断苍穹！",
+  ["$kuichi1"] = "久战沙场，遗伤无数。",
+  ["$kuichi2"] = "人无完人，千虑亦有一失。",
+  ["$shangjue1"] = "伯约，奈何桥畔，再等我片刻。",
+  ["$shangjue2"] = "与君同生共死，岂可空待黄泉！",
+  ["$kunli1"] = "回首万重山，难阻轻舟一叶。",
+  ["$kunli2"] = "已过山穷水尽，前有柳暗花明。",
+  ["~wenyuan"] = "伯约，回家了。",
 }
 
 return extension

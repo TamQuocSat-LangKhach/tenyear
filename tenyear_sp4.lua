@@ -3145,7 +3145,7 @@ huangfusong:addSkill(lianjie)
 huangfusong:addSkill(jiangxian)
 Fk:loadTranslationTable{
   ["wm__huangfusong"] = "武皇甫嵩",
-  ["#wm__huangfusong"] = "",
+  ["#wm__huangfusong"] = "襄武翼汉",
   ["illustrator:wm__huangfusong"] = "",
 
   ["chaozhen"] = "朝镇",

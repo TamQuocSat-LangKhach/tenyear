@@ -1303,13 +1303,13 @@ local huguan = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local suits = {"log_spade", "log_heart", "log_club", "log_diamond"}
-    local choices = table.map(suits, function(s) return Fk:translate(s) end)
+    local choices = table.map(suits, Util.TranslateMapper)
     local choice = room:askForChoice(player, choices, self.name, "#huguan-choice::"..target.id)
     local mark = target:getMark("huguan-turn")
     if mark == 0 then mark = {} end
     table.insertIfNeed(mark, suits[table.indexOf(choices, choice)])
     room:setPlayerMark(target, "huguan-turn", mark)
-    room:setPlayerMark(target, "@huguan-turn", table.concat(table.map(mark, function(s) return Fk:translate(s) end)))
+    room:setPlayerMark(target, "@huguan-turn", table.concat(table.map(mark, Util.TranslateMapper)))
   end,
 }
 local huguan_maxcards = fk.CreateMaxCardsSkill{
@@ -4039,7 +4039,7 @@ local liuliFuli = fk.CreateActiveSkill{
 
       local toIds = room:askForChoosePlayers(
         from, 
-        table.map(room.alive_players, function(p) return p.id end), 
+        table.map(room.alive_players, Util.IdMapper), 
         1, 
         1, 
         hasDMGCard and "#liuli__fuli_ex-choose" or "#liuli__fuli-choose", 

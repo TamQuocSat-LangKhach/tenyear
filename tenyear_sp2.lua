@@ -137,7 +137,7 @@ local zhanyuan = fk.CreateTriggerSkill{
       })
     end
     local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
-      return p.gender == General.Male and not p:hasSkill("xili", true) end), Util.IdMapper)
+      return p:isMale() and not p:hasSkill("xili", true) end), Util.IdMapper)
     if #targets == 0 then return end
     local to = room:askForChoosePlayers(player, targets, 1, 1, "#zhanyuan-choose", self.name, true)
     if #to > 0 then
@@ -239,7 +239,7 @@ local ty__zhongjian = fk.CreateActiveSkill{
     local to = room:getPlayerById(effect.tos[1])
     room:setPlayerMark(to, "ty__zhongjian_target-turn", 1)
     local choice = self.interaction.data
-    local mark = U.getMark(to, choice)
+    local mark = to:getTableMark(choice)
     table.insert(mark, player.id)
     room:setPlayerMark(to, choice, mark)
   end,
@@ -251,9 +251,9 @@ local ty__zhongjian_trigger = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if target ~= player then return false end
     if event == fk.Damage then
-      return target and not target.dead and #U.getMark(target, "ty__zhongjian_discard") > 0
+      return target and not target.dead and #target:getTableMark("ty__zhongjian_discard") > 0
     else
-      return not target.dead and #U.getMark(target, "ty__zhongjian_draw") > 0
+      return not target.dead and #target:getTableMark("ty__zhongjian_draw") > 0
     end
   end,
   on_cost = Util.TrueFunc,
@@ -2241,7 +2241,7 @@ local ligong = fk.CreateTriggerSkill{
       table.insert(same_g, general_name)
       same_g = table.filter(same_g, function (g_name)
         local general = Fk.generals[g_name]
-        return (general.kingdom == "wu" or general.subkingdom == "wu") and general.gender == General.Female
+        return (general.kingdom == "wu" or general.subkingdom == "wu") and general:isFemale()
       end)
       if #same_g > 0 then
         table.insert(generals, table.random(same_g))
@@ -3178,7 +3178,7 @@ local jujianc = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     room:drawCards(target, 1, self.name)
     if player.dead or target.dead then return end
-    local mark = U.getMark(target, "@@jujianc-round")
+    local mark = target:getTableMark("@@jujianc-round")
     table.insert(mark, player.id)
     room:setPlayerMark(target, "@@jujianc-round", mark)
   end,
@@ -3189,7 +3189,7 @@ local jujianc_delay = fk.CreateTriggerSkill{
   anim_type = "defensive",
   can_trigger = function(self, event, target, player, data)
     return not player.dead and player.id == data.to and data.card:isCommonTrick() and target and
-    table.contains(U.getMark(target, "@@jujianc-round"), player.id)
+    table.contains(target:getTableMark("@@jujianc-round"), player.id)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)

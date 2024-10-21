@@ -1996,7 +1996,7 @@ local busuan = fk.CreateActiveSkill {
       names = U.getAllCardNames("btd")
       room:setPlayerMark(player, "busuan_names", names)
     end
-    local mark = U.getMark(target, self.name)
+    local mark = target:getTableMark(self.name)
     table.insertTable(mark, room:askForChoices(player, names, 1, 2, self.name, "#busuan-choose::" .. target.id, false))
     room:setPlayerMark(target, self.name, mark)
   end,

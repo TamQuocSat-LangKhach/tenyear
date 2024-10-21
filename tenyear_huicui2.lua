@@ -3931,7 +3931,7 @@ local mingfa = fk.CreateTriggerSkill{
       end
       room:setPlayerMark(player, self.name, 0)
       if not target.dead then
-        local mark = U.getMark(target, "@@mingfa")
+        local mark = target:getTableMark("@@mingfa")
         table.removeOne(mark, player.id)
         room:setPlayerMark(target, "@@mingfa", #mark > 0 and mark or 0)
       end
@@ -3970,7 +3970,7 @@ local mingfa = fk.CreateTriggerSkill{
         specialName = self.name,
       })
       if not to.dead then
-        local mark = U.getMark(to, "@@mingfa")
+        local mark = to:getTableMark("@@mingfa")
         table.removeOne(mark, player.id)
         room:setPlayerMark(to, "@@mingfa", #mark > 0 and mark or 0)
       end
@@ -4133,7 +4133,7 @@ local liuzhuan = fk.CreateTriggerSkill{
       for _, id in ipairs(mark) do
         card = Fk:getCardById(id)
         if card:getMark("@@liuzhuan-inhand-turn") > 0 and table.every(room.alive_players, function (p)
-          return not table.contains(U.getMark(p, "liuzhuan_record-turn"), id)
+          return not table.contains(p:getTableMark("liuzhuan_record-turn"), id)
         end) then
           room:setCardMark(card, "@@liuzhuan-inhand-turn", 0)
         end
@@ -4145,7 +4145,7 @@ local liuzhuan_prohibit = fk.CreateProhibitSkill{
   name = "#liuzhuan_prohibit",
   is_prohibited = function(self, from, to, card)
     if not to:hasSkill(liuzhuan) then return false end
-    local mark = U.getMark(to, "liuzhuan_record-turn")
+    local mark = to:getTableMark("liuzhuan_record-turn")
     if #mark == 0 then return false end
     for _, id in ipairs(Card:getIdList(card)) do
       if table.contains(mark, id) and table.contains(from:getCardIds("he"), id) then

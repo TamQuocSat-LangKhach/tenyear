@@ -1647,7 +1647,7 @@ local ty__qingcheng = fk.CreateActiveSkill{
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     local target = Fk:currentRoom():getPlayerById(to_select)
-    return #selected == 0 and to_select ~= Self.id and target.gender == General.Male and Self:getHandcardNum() >= target:getHandcardNum()
+    return #selected == 0 and to_select ~= Self.id and target:isMale() and Self:getHandcardNum() >= target:getHandcardNum()
   end,
   on_use = function(self, room, effect)
     local cards1 = table.clone(room:getPlayerById(effect.from).player_cards[Player.Hand])

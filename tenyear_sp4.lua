@@ -434,7 +434,7 @@ local xionghuo_record = fk.CreateTriggerSkill{
           damageType = fk.FireDamage,
           skillName = "xionghuo",
         }
-        local mark = U.getMark(target, "xionghuo_prohibit-turn")
+        local mark = target:getTableMark("xionghuo_prohibit-turn")
         table.insert(mark, player.id)
         room:setPlayerMark(target, "xionghuo_prohibit-turn", mark)
 
@@ -472,7 +472,7 @@ local xionghuo_record = fk.CreateTriggerSkill{
 local xionghuo_prohibit = fk.CreateProhibitSkill{
   name = "#xionghuo_prohibit",
   is_prohibited = function(self, from, to, card)
-    return card.trueName == "slash" and table.contains(U.getMark(from, "xionghuo_prohibit-turn") ,to.id)
+    return card.trueName == "slash" and table.contains(from:getTableMark("xionghuo_prohibit-turn") ,to.id)
   end,
 }
 local shajue = fk.CreateTriggerSkill{
@@ -2821,7 +2821,7 @@ local wuyou_active = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.from)
     local player = room:getPlayerById(effect.tos[1])
     player:broadcastSkillInvoke("wuyou")
-    local targetRecorded = U.getMark(target, "wuyou_targets-phase")
+    local targetRecorded = target:getTableMark("wuyou_targets-phase")
     table.insertIfNeed(targetRecorded, player.id)
     room:setPlayerMark(target, "wuyou_targets-phase", targetRecorded)
     room:moveCardTo(effect.cards, Player.Hand, player, fk.ReasonGive, self.name, nil, false, target.id)

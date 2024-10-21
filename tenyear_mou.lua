@@ -2125,7 +2125,7 @@ local zhiwang = fk.CreateTriggerSkill{
     local room = player.room
     data.damage.from = nil
     local to = room:getPlayerById(self.cost_data)
-    local mark = U.getMark(to, "@@zhiwang-turn")
+    local mark = to:getTableMark("@@zhiwang-turn")
     table.insertIfNeed(mark, player.id)
     room:setPlayerMark(to, "@@zhiwang-turn", mark)
   end,
@@ -2985,11 +2985,11 @@ local zuojun = fk.CreateActiveSkill{
         end
       end)
       if #cards > 0 then
-        local mark = U.getMark(target, "zuojun_prohibit")
+        local mark = target:getTableMark("zuojun_prohibit")
         table.insertTableIfNeed(mark, cards)
         room:setPlayerMark(target, "zuojun_prohibit", mark)
         if target.phase ~= Player.NotActive then
-          mark = U.getMark(target, "zuojun_noclean-turn")
+          mark = target:getTableMark("zuojun_noclean-turn")
           table.insertTableIfNeed(mark, cards)
           room:setPlayerMark(target, "zuojun_noclean-turn", mark)
         end

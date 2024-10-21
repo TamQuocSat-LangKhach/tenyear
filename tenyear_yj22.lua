@@ -388,7 +388,7 @@ local sangu = fk.CreateTriggerSkill{
       table.insert(names, Fk:getCardById(result[1]).trueName)
     end
     if #names == 0 then return false end
-    local mark = U.getMark(to, "@$sangu")
+    local mark = to:getTableMark("@$sangu")
     table.insertTable(mark, names)
     room:setPlayerMark(to, "@$sangu", mark)
 
@@ -454,7 +454,7 @@ local sangu_delay = fk.CreateTriggerSkill{
           room:setPlayerMark(player, "@$sangu", 0)
           player:filterHandcards()
           for _, p in ipairs(room.alive_players) do
-            local mark = U.getMark(p, "sangu_avoid")
+            local mark = p:getTableMark("sangu_avoid")
             table.removeOne(mark, player.id)
             room:setPlayerMark(p, "sangu_avoid", #mark > 0 and mark or 0)
           end
@@ -666,7 +666,7 @@ local bushil = fk.CreateTriggerSkill{
       room:notifySkillInvoked(player, self.name, "special")
       local suits = {"log_spade", "log_heart", "log_club", "log_diamond"}
       for i = 1, 4, 1 do
-        local choices = table.map(suits, function(s) return Fk:translate(s) end)
+        local choices = table.map(suits, Util.TranslateMapper)
         local choice = room:askForChoice(player, choices, self.name, "#bushil"..i.."-choice")
         local str = suits[table.indexOf(choices, choice)]
         table.removeOne(suits, str)

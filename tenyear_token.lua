@@ -531,7 +531,7 @@ local leftArm = fk.CreateWeapon{
   end,
   dynamic_equip_skills = function(self, player)
     if player then
-      return table.map(player:getTableMark("qiexie_left_skills"), function(skillName) return Fk.skills[skillName] end)
+      return table.map(player:getTableMark("qiexie_left_skills"), Util.Name2SkillMapper)
     end
   end,
   on_uninstall = function(self, room, player)
@@ -565,7 +565,7 @@ local rightArm = fk.CreateWeapon{
   end,
   dynamic_equip_skills = function(self, player)
     if player then
-      return table.map(player:getTableMark("qiexie_right_skills"), function(skillName) return Fk.skills[skillName] end)
+      return table.map(player:getTableMark("qiexie_right_skills"), Util.Name2SkillMapper)
     end
   end,
   on_uninstall = function(self, room, player)

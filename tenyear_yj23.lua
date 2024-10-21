@@ -428,7 +428,7 @@ local ty__zhuijix = fk.CreateTriggerSkill{
           end
           if #cards > 0 then
             card = cards[math.random(1, #cards)]
-            local mark = U.getMark(to, self.name)
+            local mark = to:getTableMark(self.name)
             table.insert(mark, card)
             room:setPlayerMark(to, self.name, mark)
             room:useCard{

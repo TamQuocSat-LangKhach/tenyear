@@ -600,8 +600,7 @@ local ty_ex__jianyan = fk.CreateActiveSkill{
     get = Fk:getCardById(get)
     room:moveCardTo(get, Card.Processing, nil, fk.ReasonJustMove, self.name)
     room:delay(500)
-    local targets = table.map(table.filter(room.alive_players, function(p) return p.gender == General.Male 
-    or p.gender == General.Bigender end), Util.IdMapper)
+    local targets = table.map(table.filter(room.alive_players, function(p) return p:isMale() end), Util.IdMapper)
     if #targets > 0 then
       local to = room:askForChoosePlayers(player, targets, 1, 1,
       "#ty_ex__jianyan-give:::" .. get:toLogString(), self.name, false)[1]
@@ -3457,7 +3456,7 @@ local ty_ex__sidi = fk.CreateTriggerSkill{
         skillName = self.name,
         specialName = self.name,
       })
-      local mark = U.getMark(target, "@ty_ex__sidi-phase")
+      local mark = target:getTableMark("@ty_ex__sidi-phase")
       table.insertIfNeed(mark, color)
       room:setPlayerMark(target, "@ty_ex__sidi-phase", mark)
       room:setPlayerMark(player, "ty_ex__sidi_victim-phase", target.id)
@@ -4183,7 +4182,7 @@ local ty_ex__jiaojin = fk.CreateTriggerSkill{
     local list = data.extra_data.ty_ex__jiaojin or {}
     table.insertIfNeed(list, player.id)
     data.extra_data.ty_ex__jiaojin = list
-    if U.isFemale(room:getPlayerById(data.from)) then
+    if room:getPlayerById(data.from):isFemale() then
       room:setPlayerMark(player, "@@ty_ex__jiaojin-turn", 1)
     end
   end,
@@ -5333,7 +5332,7 @@ local ty_ex__yanyu_record = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local to = room:askForChoosePlayers(player, table.map(table.filter(room:getAlivePlayers(), function(p)
-      return p.gender == General.Male end), Util.IdMapper), 1, 1,
+      return p:isMale() end), Util.IdMapper), 1, 1,
       "#ty_ex__yanyu-draw:::"..math.min(3, player:usedSkillTimes("ty_ex__yanyu", Player.HistoryPhase)), self.name, true)
     if #to > 0 then
       self.cost_data = room:getPlayerById(to[1])

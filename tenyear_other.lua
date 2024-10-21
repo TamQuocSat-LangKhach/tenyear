@@ -1715,7 +1715,7 @@ local huanli = fk.CreateTriggerSkill {
 
         local to = room:getPlayerById(tos[1])
         local zhangzhao = table.filter({ "zhijian", "guzheng" }, function(skill) return not to:hasSkill(skill, true, true) end)
-        local skillsExist = U.getMark(to, "@@huanli")
+        local skillsExist = to:getTableMark("@@huanli")
         table.insertTableIfNeed(skillsExist, zhangzhao)
         room:setPlayerMark(to, "@@huanli", skillsExist)
 
@@ -1741,7 +1741,7 @@ local huanli = fk.CreateTriggerSkill {
       usedTimes = usedTimes + 1
       local to = room:getPlayerById(tos[1])
       local zhouyu = table.filter({ "ex__yingzi", "ex__fanjian" }, function(skill) return not to:hasSkill(skill, true, true) end)
-      local skillsExist = U.getMark(to, "@@huanli")
+      local skillsExist = to:getTableMark("@@huanli")
       table.insertTableIfNeed(skillsExist, zhouyu)
       room:setPlayerMark(to, "@@huanli", skillsExist)
 
@@ -1791,7 +1791,7 @@ local huanliNullify = fk.CreateInvaliditySkill {
   invalidity_func = function(self, from, skill)
     return
       from:getMark("@@huanli") ~= 0 and
-      not table.contains(U.getMark(from, "@@huanli"), skill.name) and
+      not table.contains(from:getTableMark("@@huanli"), skill.name) and
       skill:isPlayerSkill(from)
   end
 }
@@ -1906,7 +1906,7 @@ local lisao = fk.CreateActiveSkill{
     end
 
     for _, p in ipairs(targets) do
-      local owners = U.getMark(p, "@@lisao_debuff-turn")
+      local owners = p:getTableMark("@@lisao_debuff-turn")
       if not table.contains(owners, player.id) then
         table.insert(owners, player.id)
         room:setPlayerMark(p, "@@lisao_debuff-turn", owners)
@@ -1932,7 +1932,7 @@ local lisaoDebuff = fk.CreateTriggerSkill {
       target == player and
       table.find(
         player.room.alive_players,
-        function(p) return table.contains(U.getMark(p, "@@lisao_debuff-turn"), player.id) end
+        function(p) return table.contains(p:getTableMark("@@lisao_debuff-turn"), player.id) end
       )
   end,
   on_refresh = function(self, event, target, player, data)
@@ -1942,7 +1942,7 @@ local lisaoDebuff = fk.CreateTriggerSkill {
       table.map(
         table.filter(
           player.room.alive_players,
-          function(p) return table.contains(U.getMark(p, "@@lisao_debuff-turn"), player.id) end
+          function(p) return table.contains(p:getTableMark("@@lisao_debuff-turn"), player.id) end
         ),
         Util.IdMapper
       )
@@ -2267,7 +2267,7 @@ local chushan = fk.CreateTriggerSkill {
     data = json.encode({
       path = "packages/utility/qml/ChooseSkillBox.qml",
       data = {
-        skills, 2, 2, "#chushan-choose:::" .. tostring(2), table.map(generals, function(general) return general.name end)
+        skills, 2, 2, "#chushan-choose:::" .. tostring(2), table.map(generals, Util.NameMapper)
       },
     })
 
@@ -2281,7 +2281,7 @@ local chushan = fk.CreateTriggerSkill {
     end
 
     if #skills > 0 then
-      local realNames = table.map(skills, function(name) return Fk:translate(name) end)
+      local realNames = table.map(skills, Util.TranslateMapper)
       room:setPlayerMark(player, "@chushan_skills", "<font color='burlywood'>" .. table.concat(realNames, " ") .. "</font>")
       room:handleAddLoseSkills(player, table.concat(skills, "|"))
     end

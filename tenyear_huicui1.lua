@@ -1901,6 +1901,7 @@ local xiecui = fk.CreateTriggerSkill{
       end) == 0
   end,
   on_cost = function(self, event, target, player, data)
+    self.cost_data = {tos = {target.id}}
     return player.room:askForSkillInvoke(player, self.name, data, "#xiecui-invoke:"..data.from.id..":"..data.to.id)
   end,
   on_use = function(self, event, target, player, data)
@@ -1920,6 +1921,7 @@ local youxu = fk.CreateTriggerSkill{
     return player:hasSkill(self) and target:getHandcardNum() > target.hp and not target.dead
   end,
   on_cost = function(self, event, target, player, data)
+    self.cost_data = {tos = {target.id}}
     return player.room:askForSkillInvoke(player, self.name, data, "#youxu-invoke::"..target.id)
   end,
   on_use = function(self, event, target, player, data)
@@ -2193,13 +2195,13 @@ local xunjie = fk.CreateTriggerSkill{
     local targets = table.map(table.filter(player.room.alive_players, function(p) return p:getHandcardNum() ~= p.hp end), Util.IdMapper)
     local to = player.room:askForChoosePlayers(player, targets, 1, 1, "#xunjie-choose", self.name, true)
     if #to > 0 then
-      self.cost_data = to[1]
+      self.cost_data = {tos = to}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(self.cost_data)
+    local to = room:getPlayerById(self.cost_data.tos[1])
     local choices = {}
     for i = 1, 2, 1 do
       if player:getMark("xunjie"..i.."-round") == 0 then
@@ -2574,97 +2576,46 @@ local ty__lirang = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self) then return false end
+    if not player:hasSkill(self) or player.room:getOtherPlayers(player, false) == 0 then return false end
+    local cards = {}
     for _, move in ipairs(data) do
       if move.from == player.id and move.moveReason == fk.ReasonDiscard and move.toArea == Card.DiscardPile then
         for _, info in ipairs(move.moveInfo) do
           if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
-            return true
+            table.insertIfNeed(cards, info.cardId)
           end
         end
       end
     end
+    cards = table.filter(cards, function(id) return player.room:getCardArea(id) == Card.DiscardPile end)
+    cards = U.moveCardsHoldingAreaCheck(player.room, cards)
+    if #cards > 0 then
+      self.cost_data = {cards = cards}
+      return true
+    end
   end,
-  on_trigger = function(self, event, target, player, data)
-    for _, move in ipairs(data) do
-      if not player:hasSkill(self) then break end
-      if move.from == player.id and move.moveReason == fk.ReasonDiscard and move.toArea == Card.DiscardPile then
-        local cids = {}
-        for _, info in ipairs(move.moveInfo) do
-          if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
-            table.insertIfNeed(cids, info.cardId)
-          end
-        end
-        self:doCost(event, nil, player, cids)
+  on_cost = function (self, event, target, player, data)
+    local room = player.room
+    local cards = self.cost_data.cards
+    local move = room:askForYiji(player, cards, room:getOtherPlayers(player, false), self.name, 0, #cards,
+    "#ty__lirang-give", cards, true)
+    local check
+    for _, cds in pairs(move) do
+      if #cds > 0 then
+        check = true
+        break
       end
+    end
+    if check then
+      self.cost_data = move
+      return true
     end
   end,
   on_use = function(self, event, target, player, data)
-    local ids = data
     local room = player.room
-    local fakemove = {
-      toArea = Card.PlayerHand,
-      to = player.id,
-      moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.DiscardPile} end),
-      moveReason = fk.ReasonJustMove,
-    }
-    room:notifyMoveCards({player}, {fakemove})
-    for _, id in ipairs(ids) do
-      room:setCardMark(Fk:getCardById(id), "ty__lirang", 1)
-    end
-    while table.find(ids, function(id) return Fk:getCardById(id):getMark("ty__lirang") > 0 end) do
-      if not room:askForUseActiveSkill(player, "#ty__lirang_active", "#ty__lirang-give", true) then
-        for _, id in ipairs(ids) do
-          room:setCardMark(Fk:getCardById(id), "ty__lirang", 0)
-        end
-        ids = table.filter(ids, function(id) return room:getCardArea(id) ~= Card.PlayerHand end)
-        fakemove = {
-          from = player.id,
-          toArea = Card.DiscardPile,
-          moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
-          moveReason = fk.ReasonGive,
-        }
-        room:notifyMoveCards({player}, {fakemove})
-      end
-    end
+    room:doYiji(room, self.cost_data, player.id, self.name)
   end,
 }
-local ty__lirang_active = fk.CreateActiveSkill{
-  name = "#ty__lirang_active",
-  mute = true,
-  min_card_num = 1,
-  target_num = 1,
-  card_filter = function(self, to_select, selected, targets)
-    return Fk:getCardById(to_select):getMark("ty__lirang") > 0
-  end,
-  target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0 and to_select ~= Self.id
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    room:doIndicate(player.id, {target.id})
-    for _, id in ipairs(effect.cards) do
-      room:setCardMark(Fk:getCardById(id), "ty__lirang", 0)
-    end
-    local fakemove = {
-      from = player.id,
-      toArea = Card.DiscardPile,
-      moveInfo = table.map(effect.cards, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
-      moveReason = fk.ReasonGive,
-    }
-    room:notifyMoveCards({player}, {fakemove})
-    room:moveCards({
-      fromArea = Card.DiscardPile,
-      ids = effect.cards,
-      to = target.id,
-      toArea = Card.PlayerHand,
-      moveReason = fk.ReasonGive,
-      skillName = self.name,
-    })
-  end,
-}
-ty__lirang:addRelatedSkill(ty__lirang_active)
 kongrong:addSkill(ty__mingshi)
 kongrong:addSkill(ty__lirang)
 Fk:loadTranslationTable{
@@ -2678,7 +2629,6 @@ Fk:loadTranslationTable{
   [":ty__lirang"] = "当你的牌因弃置而移至弃牌堆后，你可将其中的至少一张牌交给其他角色。",
   ["#ty__mingshi-invoke"] = "名士：请弃置一张手牌，否则你对 %src 造成的伤害-1",
   ["#ty__lirang-give"] = "礼让：你可以将这些牌分配给任意角色，点“取消”仍弃置",
-  ["#ty__lirang_active"] = "礼让",
 
   ["$ty__mingshi1"] = "孔门之后，忠孝为先。",
   ["$ty__mingshi2"] = "名士之风，仁义高洁。",

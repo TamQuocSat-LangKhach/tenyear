@@ -3464,11 +3464,7 @@ local shijiz = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and target.phase == Player.Finish and not target:isNude() then
-      local events = player.room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function(e)
-        local damage = e.data[5]
-        return damage and target == damage.from
-      end, Player.HistoryTurn)
-      return #events == 0
+      return #player.room.logic:getActualDamageEvents(1, function(e) return e.data[1].from == target end) == 0
     end
   end,
   on_cost = function(self, event, target, player, data)

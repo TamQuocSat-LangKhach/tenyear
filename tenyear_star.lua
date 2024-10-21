@@ -206,20 +206,15 @@ local weilin = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and player.phase ~= Player.NotActive then
       local room = player.room
-      if #room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function(e)
-        local damage = e.data[5]
-        if damage and damage.to == data.to and e.id < room.logic:getCurrentEvent().id then
-          return true
-        end
-      end, Player.HistoryTurn) == 0 then
+      if #player.room.logic:getActualDamageEvents(1, function(e) return e.data[1].to == data.to end) == 0 then
         local n = 0
-        room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e)
+        return #room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e)
           local use = e.data[1]
           if use and use.from == player.id then
             n = n + 1
           end
-        end, Player.HistoryTurn)
-        return n >= data.to.hp
+          return n >= data.to.hp
+        end, Player.HistoryTurn) > 0
       end
     end
   end,
@@ -237,17 +232,17 @@ local zhangrong = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local _, dat = player.room:askForUseActiveSkill(player, "zhangrong_active", "#zhangrong-invoke", true)
     if dat then
-      self.cost_data = dat
+      local tos = dat.targets
+      player.room:sortPlayersByAction(tos)
+      self.cost_data = {tos = tos, choice = dat.interaction}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local targets = self.cost_data.targets
-    room:sortPlayersByAction(targets)
+    local targets = self.cost_data.tos
     room:setPlayerMark(player, "zhangrong-turn", targets)
-    room:doIndicate(player.id, targets)
-    local choice = self.cost_data.interaction
+    local choice = self.cost_data.choice
     player:drawCards(#targets, self.name)
     for _, id in ipairs(targets) do
       local p = room:getPlayerById(id)

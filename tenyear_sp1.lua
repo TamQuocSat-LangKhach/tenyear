@@ -6,7 +6,7 @@ Fk:loadTranslationTable{
   ["tenyear_sp1"] = "十周年-限定专属1",
 }
 
---百战虎贲：兀突骨 文鸯 夏侯霸 皇甫嵩 王双 留赞 黄祖 雷铜 吴兰 陈泰 王濬 杜预 蒋钦 张任 陈武董袭 丁奉（同OL）
+--百战虎贲：兀突骨 文鸯 夏侯霸 皇甫嵩 王双 留赞 黄祖 雷铜 吴兰 陈泰 王濬 杜预 蒋钦 张任 陈武董袭 丁奉（同OL） 凌操
 local wutugu = General(extension, "ty__wutugu", "qun", 15)
 local ty__ranshang = fk.CreateTriggerSkill{
   name = "ty__ranshang",
@@ -1389,6 +1389,85 @@ Fk:loadTranslationTable{
   ["$ty__fengshi2"] = "放下兵器，饶你不死！",
   ["~ty__zhangren"] = "本将军败于诸葛，无憾……",
 }
+
+local tyLingcao = General(extension, "ty__lingcao", "wu", 4, 5)
+Fk:loadTranslationTable{
+  ["ty__lingcao"] = "凌操",
+  ["#ty__lingcao"] = "激浪奋孤胆",
+  ["illustrator:ty__lingcao"] = "黯荧岛",
+  ["~ty__lingcao"] = "甘宁小儿，为何暗箭伤人！",
+}
+
+local dufeng = fk.CreateTriggerSkill{
+  name = "dufeng",
+  anim_type = "offensive",
+  events = {fk.EventPhaseStart},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and target:hasSkill(self) and player.phase == Player.Play
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local choiceList = { "dufeng_loseHp" }
+    if #player:getAvailableEquipSlots() > 0 then
+      table.insert(choiceList, "dufeng_abort")
+    end
+
+    local choices = room:askForChoices(player, choiceList, 1, 2, self.name, nil, false, false, { "dufeng_loseHp", "dufeng_abort" })
+    local toAbort
+    if table.contains(choices, "dufeng_abort") then
+      toAbort = room:askForChoice(player, player:getAvailableEquipSlots(), self.name, "#dufeng-abort")
+    end
+
+    if table.contains(choices, "dufeng_loseHp") then
+      room:loseHp(player, 1, self.name)
+    end
+    if not player:isAlive() then
+      return false
+    end
+
+    if toAbort then
+      room:abortPlayerArea(player, toAbort)
+    end
+
+    local num = math.min(player:getLostHp() + #player.sealedSlots, player.maxHp)
+    if player:isAlive() and num > 0 then
+      player:drawCards(num, self.name)
+      room:setPlayerMark(player, "dufeng_buff", num)
+    end
+  end,
+}
+local dufengAttackRange = fk.CreateAttackRangeSkill{
+  name = "#dufeng_attackrange",
+  fixed_func = function (self, from)
+    if from:getMark("dufeng_buff") > 0 then
+      return from:getMark("dufeng_buff")
+    end
+  end,
+}
+local dufengSlashTimes = fk.CreateTargetModSkill{
+  name = "#dufeng_slashtimes",
+  residue_func = function(self, player, skill, scope)
+    if skill.trueName == "slash_skill" and player:getMark("dufeng_buff") > 0 and scope == Player.HistoryPhase then
+      return player:getMark("dufeng_buff") - 1
+    end
+  end,
+}
+Fk:loadTranslationTable{
+  ["dufeng"] = "独锋",
+  [":dufeng"] = "锁定技，出牌阶段开始时，你选择至少一项：1.失去1点体力；2.废除一个装备栏。然后你摸X张牌，" ..
+  "并将你的攻击范围和出牌阶段使用【杀】的次数上限改为X（X为你已损失的体力值与已废除的装备栏数之和，且至多为你的体力上限）。",
+  ["dufeng_loseHp"] = "失去1点体力",
+  ["dufeng_abort"] = "废除一个装备栏",
+  ["#dufeng-abort"] = "独锋：请选择一个装备栏废除",
+
+  ["$dufeng1"] = "不畏死者，都随我来！",
+  ["$dufeng2"] = "大功当前，小损又何妨！",
+}
+
+dufeng:addRelatedSkill(dufengAttackRange)
+dufeng:addRelatedSkill(dufengSlashTimes)
+tyLingcao:addSkill(dufeng)
 
 --奇人异士：张宝 司马徽 蒲元 管辂 葛玄 杜夔 朱建平 吴范 赵直 周宣 笮融
 local zhangbao = General(extension, "ty__zhangbao", "qun", 3)

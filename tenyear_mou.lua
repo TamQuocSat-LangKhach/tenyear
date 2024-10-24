@@ -2525,7 +2525,112 @@ Fk:loadTranslationTable{
   ["~tymou__hucheer"] = "典，典将军，您还没睡呀？",
 }
 
---周郎将计：程昱
+--周郎将计：谋黄盖、程昱
+local mouHuanggai = General(extension, "tymou__huanggai", "wu", 4)
+Fk:loadTranslationTable{
+  ["tymou__huanggai"] = "谋黄盖",
+  ["#tymou__huanggai"] = "毁身纾难",
+  ["illustrator:tymou__huanggai"] = "白",
+  ["~tymou__huanggai"] = "被那曹贼看穿了。",
+}
+
+local lieji = fk.CreateTriggerSkill{
+  name = "lieji",
+  anim_type = "offensive",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and data.card.type == Card.TypeTrick and player:hasSkill(self)
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, data, "#lieji-invoke")
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, id in ipairs(player:getCardIds("h")) do
+      local card = Fk:getCardById(id)
+      if card.is_damage_card then
+        room:addCardMark(card, "@leiji_damage-inhand-turn")
+      end
+    end
+  end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function (self, event, target, player, data)
+    return target == player and data.card:getMark("@leiji_damage-inhand-turn") > 0
+  end,
+  on_refresh = function (self, event, target, player, data)
+    data.additionalDamage = (data.additionalDamage or 0) + data.card:getMark("@leiji_damage-inhand-turn")
+  end,
+}
+Fk:loadTranslationTable{
+  ["lieji"] = "烈计",
+  [":lieji"] = "当你使用锦囊牌结算结束后，你可以令你当前手牌中的所有伤害牌的伤害基数+1直到回合结束。",
+  ["#lieji-invoke"] = "烈计：你可令当前手牌中的伤害牌伤害基数+1直到回合结束",
+  ["@leiji_damage-inhand-turn"] = "伤害+",
+
+  ["$lieji1"] = "计烈如火，敌将休想逃脱！",
+  ["$lieji2"] = "计如风，势如火，烧尽万千逆贼！",
+}
+
+mouHuanggai:addSkill(lieji)
+
+local quzhou = fk.CreateActiveSkill{
+  name = "quzhou",
+  anim_type = "drawcard",
+  card_num = 0,
+  target_num = 0,
+  prompt = "#quzhou",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local idsRevealt = {}
+
+    while #idsRevealt <= #room.alive_players do
+      local ids = room:getNCards(1)
+      room:moveCardTo(ids, Card.Processing, nil, fk.ReasonJustMove, self.name, nil, true, player.id)
+      table.insert(idsRevealt, ids[1])
+
+      if Fk:getCardById(ids[1]).trueName == "slash" then
+        U.askForUseRealCard(room, player, ids, ".", self.name, nil, { expand_pile = ids, bypass_times = true }, false, false)
+        break
+      else
+        local choices = { "quzhou_gain" }
+        if #idsRevealt < #room.alive_players then
+          table.insert(choices, "quzhou_reveal")
+        end
+
+        local choice = room:askForChoice(player, choices, self.name)
+        if choice == "quzhou_gain" then
+          room:obtainCard(player, idsRevealt, true, fk.ReasonPrey, player.id, self.name)
+          break
+        end
+      end
+    end
+
+    local inProcessing = table.filter(idsRevealt, function(id) return room:getCardArea(id) == Card.Processing end)
+    if #inProcessing > 0 then
+      room:moveCardTo(inProcessing, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
+    end
+  end,
+}
+Fk:loadTranslationTable{
+  ["quzhou"] = "趋舟",
+  [":quzhou"] = "出牌阶段限一次，你可以亮出牌堆顶一张牌，若此牌为：【杀】，你使用之；不为【杀】，你选择一项：" ..
+  "1.获得此流程中亮出的所有牌；2.若此流程中亮出的牌数小于存活人数，你重复此流程。",
+  ["#quzhou"] = "趋舟：你可以亮出牌堆顶牌直到使用亮出的【杀】或选择获得亮出的牌",
+  ["quzhou_gain"] = "获得此流程中亮出的所有牌",
+  ["quzhou_reveal"] = "继续亮出牌堆顶一张牌，重复此流程",
+
+  ["$quzhou1"] = "冲！冲！",
+  ["$quzhou2"] = "靠近！靠近！",
+}
+
+mouHuanggai:addSkill(quzhou)
+
 local chengyu = General(extension, "tymou__chengyu", "wei", 3)
 local shizha = fk.CreateTriggerSkill{
   name = "shizha",

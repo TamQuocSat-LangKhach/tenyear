@@ -1459,7 +1459,7 @@ Fk:loadTranslationTable{
   ["~malingli"] = "花无百日好，人无再少年……",
 }
 
---皇家贵胄：孙皓 士燮 曹髦 刘辩 刘虞 全惠解 丁尚涴 袁姬 谢灵毓 孙瑜 甘夫人糜夫人 曹芳 朱佩兰 卞玥 甘夫人 糜夫人
+--皇家贵胄：孙皓 士燮 曹髦 刘辩 刘虞 全惠解 丁尚涴 袁姬 谢灵毓 孙瑜 甘夫人糜夫人 曹芳 朱佩兰 卞玥 甘夫人 糜夫人 清河公主
 local ty__sunhao = General(extension, "ty__sunhao", "wu", 5)
 local ty__canshi = fk.CreateTriggerSkill{
   name = "ty__canshi",
@@ -3780,6 +3780,111 @@ Fk:loadTranslationTable{
   ["$ty__yongjue1"] = "能救一个是一个！",
   ["$ty__yongjue2"] = "扶幼主，成霸业！",
   ["~ty__mifuren"] = "阿斗被救，妾身……再无牵挂……",
+}
+
+local qinghegongzhu = General(extension, "ty__qinghegongzhu", "wei", 3, 3, General.Female)
+local ty__zhangjiq = fk.CreateTriggerSkill{
+  name = "ty__zhangjiq",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.BeforeCardUseEffect},  --FIXME: 睿智描述，先胡乱结算
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and #TargetGroup:getRealTargets(data.tos) > 1 and
+      table.contains(TargetGroup:getRealTargets(data.tos), player.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local new_tos = {}
+    for _, info in ipairs(data.tos) do
+      if info[1] == player.id then
+        table.insert(new_tos, info)
+      end
+    end
+    for _, info in ipairs(data.tos) do
+      if info[1] ~= player.id then
+        table.insert(new_tos, info)
+      end
+    end
+    data.tos = new_tos
+    player:drawCards(#TargetGroup:getRealTargets(data.tos) - 1, self.name)
+  end,
+}
+local ty__zengou = fk.CreateActiveSkill{
+  name = "ty__zengou",
+  anim_type = "control",
+  min_card_num = 1,
+  target_num = 1,
+  prompt = function()
+    return "#ty__zengou:::"..Self.maxHp
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected < Self.maxHp
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local cards = effect.cards
+    room:setPlayerMark(target, "@@ty__zengou", 1)
+    room:moveCardTo(cards, Card.PlayerHand, target, fk.ReasonGive, self.name, nil, false, player.id, "@@ty__zengou-inhand")
+    if not player.dead then
+      player:drawCards(#cards, self.name)
+    end
+  end,
+}
+local ty__zengou_delay = fk.CreateTriggerSkill{
+  name = "#ty__zengou_delay",
+  mute = true,
+  events = {fk.HpChanged, fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:getMark("@@ty__zengou") > 0 then
+      if event == fk.HpChanged then
+        return data.num > 0
+      else
+        return true
+      end
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "@@ty__zengou", 0)
+    if player:isKongcheng() then return end
+    local cards = player:getCardIds("h")
+    local n = #table.filter(cards, function(id)
+      return Fk:getCardById(id):getMark("@@ty__zengou-inhand") > 0
+    end)
+    player:showCards(cards)
+    if player.dead or n == 0 then return end
+    room:loseHp(player, n, "ty__zengou")
+  end,
+}
+ty__zengou:addRelatedSkill(ty__zengou_delay)
+qinghegongzhu:addSkill(ty__zhangjiq)
+qinghegongzhu:addSkill(ty__zengou)
+Fk:loadTranslationTable{
+  ["ty__qinghegongzhu"] = "清河公主",
+  ["#ty__qinghegongzhu"] = "大魏长公主",
+  ["illustrator:ty__qinghegongzhu"] = "七兜豆",
+  ["~ty__qinghegongzhu"] = "夏侯楙，不能和好，为何不和离？",
+
+  ["ty__zhangjiq"] = "长姬",
+  [":ty__zhangjiq"] = "锁定技，一张牌指定包括你在内的多名角色为目标时，先结算对你产生的效果，然后你摸X张牌（X为剩余目标数）。",
+  ["ty__zengou"] = "谮构",
+  [":ty__zengou"] = "出牌阶段限一次，你可以交给一名其他角色至多你体力上限张牌并摸等量的牌，若如此做，其下次体力值增加或使用牌后展示所有手牌，"..
+  "每有一张“谮构”牌，其失去1点体力。",
+  ["#ty__zengou"] = "谮构：交给一名角色至多%arg张牌并摸等量牌，其下次体力增加或使用牌后失去体力",
+  ["@@ty__zengou"] = "谮构",
+  ["@@ty__zengou-inhand"] = "谮构",
+
+  ["$ty__zhangjiq1"] = "功赏过惩，此魏武所教我者。",
+  ["$ty__zhangjiq2"] = "长公主之言，谁敢不从？",
+  ["$ty__zengou1"] = "既已同床异梦，休怪妾身无情。",
+  ["$ty__zengou2"] = "我所恨者，唯夏侯子林一人耳。",
 }
 
 --往者可谏：大乔小乔 SP马超 SP赵云 SP甄姬 SP孙策

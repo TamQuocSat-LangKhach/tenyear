@@ -319,7 +319,7 @@ local mengmou = fk.CreateTriggerSkill{
       local count = 0
       for i = 1, n, 1 do
         if to.dead then return end
-        local cardResponded = room:askForResponse(to, "slash", "slash", "#mengmou-ask:::"..i..":"..n, false)
+        local cardResponded = room:askForResponse(to, "slash", "slash", "#mengmou-ask:::"..i..":"..n, true)
         if cardResponded then
           count = i
           room:responseCard({

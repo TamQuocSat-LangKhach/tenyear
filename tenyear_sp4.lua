@@ -2173,7 +2173,7 @@ local qingshi = fk.CreateTriggerSkill{
   events = {fk.CardUsing},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Play and player:getMark("qingshi_invalidity-turn") == 0 and
+    return target == player and player:hasSkill(self) and player.phase == Player.Play and not table.contains(player:getTableMark(MarkEnum.InvalidSkills), self.name) and
       table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id).trueName == data.card.trueName end) and
       not table.contains(player:getTableMark("qingshi-turn"), data.card.trueName)
   end,
@@ -2226,18 +2226,26 @@ local qingshi = fk.CreateTriggerSkill{
       room:notifySkillInvoked(player, self.name, "drawcard")
       player:broadcastSkillInvoke(self.name)
       player:drawCards(3, self.name)
-      room:setPlayerMark(player, "qingshi_invalidity-turn", 1)
+      room:addTableMark(player, MarkEnum.InvalidSkills, self.name)
     end
   end,
 
-  refresh_events = {fk.EventLoseSkill},
+  refresh_events = {fk.EventLoseSkill, fk.AfterTurnEnd},
   can_refresh = function(self, event, target, player, data)
-    return target == player and data == self
+    if target ~= player then return end
+    if event == fk.EventLoseSkill then
+      return data == self
+    else
+      return table.contains(player:getTableMark(MarkEnum.InvalidSkills), self.name)
+    end
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    room:setPlayerMark(player, "qingshi-turn", 0)
-    room:setPlayerMark(player, "qingshi_invalidity-turn", 0)
+    if event == fk.EventLoseSkill then
+      room:setPlayerMark(player, "qingshi-turn", 0)
+    else
+      room:removeTableMark(player, MarkEnum.InvalidSkills, self.name)
+    end
   end,
 }
 local qingshi_delay = fk.CreateTriggerSkill{
@@ -2402,7 +2410,6 @@ Fk:loadTranslationTable{
   ["zhizhe"] = "智哲",
   [":zhizhe"] = "限定技，出牌阶段，你可以复制一张手牌（衍生牌除外）。此牌因你使用或打出而进入弃牌堆后，你获得且本回合不能再使用或打出之。",
   ["qingshi-turn"] = "情势",
-  ["qingshi_invalidity-turn"] = "情势失效",
   ["#qingshi-invoke"] = "情势：请选择一项（当前使用牌为%arg）",
   ["qingshi1"] = "令此牌对其中一个目标伤害+1",
   ["qingshi2"] = "令任意名其他角色各摸一张牌",

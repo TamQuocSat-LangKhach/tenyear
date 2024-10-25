@@ -753,4 +753,135 @@ Fk:loadTranslationTable{
   ["#tanluan-add"] = "探乱：你可以为%arg额外指定%arg2个目标",
 }
 
+local pangfengyi = General(extension, "pangfengyi", "shu", 3, 3, General.Female)
+local yitong = fk.CreateTriggerSkill{
+  name = "yitong",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.GameStart, fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      if event == fk.GameStart then
+        return true
+      elseif event == fk.TargetConfirmed then
+        return target == player and data.card:getSuitString(true) == player:getMark("@yitong") and
+          #player.room.logic:getEventsOfScope(GameEvent.UseCard, 2, function(e)
+            local use = e.data[1]
+            return use.card:getSuitString(true) == player:getMark("@yitong") and use.tos and
+              table.contains(TargetGroup:getRealTargets(use.tos), player.id)
+          end, Player.HistoryTurn) == 1
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local all_suits = {"log_spade", "log_heart", "log_club", "log_diamond"}
+    if event == fk.GameStart then
+      local suit = room:askForChoice(player, all_suits, self.name, "#yitong-suit")
+      room:setPlayerMark(player, "@yitong", suit)
+    else
+      table.removeOne(all_suits, data.card:getSuitString(true))
+      local cards = {}
+      for _, suit in ipairs(all_suits) do
+        local pattern = ".|.|"..string.sub(suit, 5)
+        local card = room:getCardsFromPileByRule(pattern, 1, "drawPile")
+        if #card > 0 then
+          table.insert(cards, card[1])
+        end
+      end
+      if #cards > 0 then
+        room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, false, player.id)
+      end
+    end
+  end,
+}
+local peiniang = fk.CreateViewAsSkill{
+  name = "peiniang",
+  anim_type = "offensive",
+  pattern = "analeptic",
+  prompt = function ()
+    return "#peiniang:::"..Self:getMark("@yitong")
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:getCardById(to_select):getSuitString(true) == Self:getMark("@yitong")
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 then return nil end
+    local card = Fk:cloneCard("analeptic")
+    card.skillName = self.name
+    card:addSubcard(cards[1])
+    return card
+  end,
+  enabled_at_play = function (self, player)
+    return player:getMark("@yitong") ~= 0
+  end,
+  enabled_at_response = function (self, player, response)
+    return not response and player:getMark("@yitong") ~= 0
+  end,
+}
+local peiniang_targetmod = fk.CreateTargetModSkill{
+  name = "#peiniang_targetmod",
+  bypass_times = function(self, player, skill, scope, card)
+    return card and table.contains(card.skillNames, "peiniang")
+  end,
+}
+local peiniang_trigger = fk.CreateTriggerSkill{
+  name = "#peiniang_trigger",
+  events = {fk.EnterDying},
+  mute = true,
+  main_skill = peiniang,
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(peiniang) and
+      not player:prohibitUse(Fk:cloneCard("analeptic")) and
+      not player:isProhibited(target, Fk:cloneCard("analeptic"))
+  end,
+  on_cost = function (self, event, target, player, data)
+    local pattern = "analeptic"
+    if player:hasSkill(peiniang) and player:getMark("@yitong") ~= 0 then
+      pattern = "analeptic;.|.|"..string.sub(player:getMark("@yitong"), 5)
+    end
+    local card = player.room:askForCard(player, 1, 1, true, self.name, true, pattern,
+      "#peiniang-use::"..target.id..":"..(1 - target.hp))
+    if #card > 0 then
+      self.cost_data = {cards = card}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local card = Fk:getCardById(self.cost_data.cards[1])
+    if card:getSuitString(true) == player:getMark("@yitong") then
+      card = Fk:cloneCard("analeptic")
+      card.skillName = "peiniang"
+      card:addSubcard(self.cost_data.cards[1])
+    end
+    room:useCard{
+      from = player.id,
+      tos = {{target.id}},
+      extra_data = {analepticRecover = true},
+      card = card,
+    }
+    while not player.dead and not target.dead and target.hp < 1 do
+      self:doCost(event, target, player, data)
+    end
+  end,
+}
+peiniang:addRelatedSkill(peiniang_targetmod)
+peiniang:addRelatedSkill(peiniang_trigger)
+pangfengyi:addSkill(yitong)
+pangfengyi:addSkill(peiniang)
+Fk:loadTranslationTable{
+  ["pangfengyi"] = "庞凤衣",
+  ["#pangfengyi"] = "",
+
+  ["yitong"] = "异瞳",
+  [":yitong"] = "锁定技，游戏开始时，你选择一种花色。你每回合首次成为该花色牌的目标后，随机获得与该花色不同花色的牌各一张。",
+  ["peiniang"] = "醅酿",
+  [":peiniang"] = "你可以将“异瞳”花色的牌当【酒】使用（不计次数）。一名角色进入濒死状态时，你可以对其使用【酒】令其回复体力至1。",
+  ["#yitong-suit"] = "异瞳：请选择一种花色",
+  ["@yitong"] = "异瞳",
+  ["#peiniang"] = "醅酿：你可以将一张%arg牌当【酒】使用（不计次数）",
+  ["#peiniang-use"] = "醅酿：你可以对 %dest 使用【酒】（还需%arg张！）",
+}
+
 return extension

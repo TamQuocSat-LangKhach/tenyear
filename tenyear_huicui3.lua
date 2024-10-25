@@ -599,6 +599,15 @@ local anliao = fk.CreateActiveSkill{
   name = "anliao",
   anim_type = "control",
   card_num = 0,
+  times = function(self)
+    local n = 0
+    for _, p in ipairs(Fk:currentRoom().alive_players) do
+      if p.kingdom == "qun" then
+        n = n + 1
+      end
+    end
+    return n - Self:usedSkillTimes(self.name, Player.HistoryPhase)
+  end,
   target_num = 1,
   prompt = "#anliao-prompt",
   can_use = function(self, player)

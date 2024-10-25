@@ -2243,9 +2243,8 @@ local qingshi = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.EventLoseSkill then
       room:setPlayerMark(player, "qingshi-turn", 0)
-    else
-      room:removeTableMark(player, MarkEnum.InvalidSkills, self.name)
     end
+    room:removeTableMark(player, MarkEnum.InvalidSkills, self.name)
   end,
 }
 local qingshi_delay = fk.CreateTriggerSkill{

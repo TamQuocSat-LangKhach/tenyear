@@ -942,7 +942,7 @@ local ty_ex__pojun = fk.CreateTriggerSkill{
     local room = player.room
     local to = room:getPlayerById(data.to)
     local cards = room:askForCardsChosen(player, to, 1, to.hp, "he", self.name)
-    to:addToPile(self.name, cards, false, self.name)
+    to:addToPile("$ty_ex__pojun", cards, false, self.name)
     local equipC = table.filter(cards, function (id)
       return Fk:getCardById(id).type == Card.TypeEquip
     end)
@@ -962,11 +962,11 @@ local ty_ex__pojun_delay = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return not player.dead and #player:getPile("ty_ex__pojun") > 0
+    return not player.dead and #player:getPile("$ty_ex__pojun") > 0
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    player.room:obtainCard(player.id, player:getPile("ty_ex__pojun"), false)
+    player.room:obtainCard(player.id, player:getPile("$ty_ex__pojun"), false)
   end,
 }
 
@@ -5444,6 +5444,7 @@ Fk:loadTranslationTable{
   ["$shifei_ty_ex__guotupangji2"] = "先锋怯战，非谋策之过。",
   ["~ty_ex__guotupangji"] = "主公，我还有一计啊！",
 }
+
 local gongsunyuan = General(extension, "ty_ex__gongsunyuan", "qun", 4)
 local ty_ex__huaiyi = fk.CreateActiveSkill{
   name = "ty_ex__huaiyi",
@@ -5451,12 +5452,11 @@ local ty_ex__huaiyi = fk.CreateActiveSkill{
   card_num = 0,
   target_num = 0,
   can_use = function(self, player)
-    return player:getMark("huaiyi-phase") < 2 and not player:isKongcheng()
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 + player:getMark("huaiyi-phase") and not player:isKongcheng()
   end,
   card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    room:addPlayerMark(player, "huaiyi-phase", 2)
     local cards = table.clone(player:getCardIds("h"))
     player:showCards(cards)
     local colors = {}
@@ -5464,8 +5464,10 @@ local ty_ex__huaiyi = fk.CreateActiveSkill{
       table.insertIfNeed(colors, Fk:getCardById(id):getColorString())
     end
     if #colors < 2 then
+      if player:getMark("huaiyi-phase") == 0 then
+        room:setPlayerMark(player, "huaiyi-phase", 1)
+      end
       player:drawCards(1, self.name)
-      room:removePlayerMark(player, "huaiyi-phase", 1)
     else
       local color = room:askForChoice(player, colors, self.name)
       local throw = {}

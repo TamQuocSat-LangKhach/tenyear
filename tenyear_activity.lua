@@ -3167,7 +3167,7 @@ local shilie = fk.CreateActiveSkill{
   anim_type = "special",
   card_num = 0,
   target_num = 0,
-  derived_piles = "shilie",
+  derived_piles = "$shilie",
   prompt = function (self)
     return "#shilie-"..self.interaction.data
   end,
@@ -3194,18 +3194,18 @@ local shilie = fk.CreateActiveSkill{
         if #cards > 2 then
           cards = room:askForCard(player, 2, 2, true, self.name, false, ".", "#shilie-put")
         end
-        player:addToPile(self.name, cards, false, self.name)
-        local n = #player:getPile(self.name) - #room.players
+        player:addToPile("$shilie", cards, false, self.name)
+        local n = #player:getPile("$shilie") - #room.players
         if n > 0 then
-          local to_remove = table.slice(player:getPile(self.name), 1, n + 1)
+          local to_remove = table.slice(player:getPile("$shilie"), 1, n + 1)
           room:moveCardTo(to_remove, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
         end
       end
     else
       room:loseHp(player, 1, self.name)
       if player.dead then return end
-      local cards = room:askForCard(player, math.min(#player:getPile(self.name), 2), 2, false, self.name, false,
-        ".|.|.|shilie", "#shilie-get", self.name)
+      local cards = room:askForCard(player, math.min(#player:getPile("$shilie"), 2), 2, false, self.name, false,
+        ".|.|.|$shilie", "#shilie-get", "$shilie")
       room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, false, player.id)
     end
   end,
@@ -3216,7 +3216,7 @@ local shilie_trigger = fk.CreateTriggerSkill{
   main_skill = shilie,
   events = {fk.Death},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self, false, true) and #player:getPile("shilie") > 0
+    return target == player and player:hasSkill(self, false, true) and #player:getPile("$shilie") > 0
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -3235,7 +3235,7 @@ local shilie_trigger = fk.CreateTriggerSkill{
     player:broadcastSkillInvoke("shilie")
     room:notifySkillInvoked(player, "shilie", "support")
     local to = room:getPlayerById(self.cost_data)
-    room:moveCardTo(player:getPile("shilie"), Card.PlayerHand, to, fk.ReasonJustMove, "shilie", nil, false, player.id)
+    room:moveCardTo(player:getPile("$shilie"), Card.PlayerHand, to, fk.ReasonJustMove, "shilie", nil, false, player.id)
   end,
 }
 shilie:addRelatedSkill(shilie_trigger)
@@ -3253,6 +3253,7 @@ Fk:loadTranslationTable{
   "2.失去1点体力，然后获得两张“示烈”牌。<br>你死亡时，你可将“示烈”牌交给除伤害来源外的一名其他角色。",
   ["#ruizhan-invoke"] = "锐战：你可与 %dest 拼点，若赢或拼点牌中有【杀】，视为对其使用【杀】",
   ["#ruizhan-prey"] = "锐战：获得 %dest 一张牌",
+  ["$shilie"] = "示烈",
   ["#shilie-recover"] = "示烈：回复1点体力，将两张牌置为“示烈”牌",
   ["#shilie-loseHp"] = "示烈：失去1点体力，获得两张牌“示烈”牌",
   ["#shilie-put"] = "示烈：将两张牌置为“示烈”牌",

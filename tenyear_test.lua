@@ -862,7 +862,9 @@ local peiniang_trigger = fk.CreateTriggerSkill{
       card = card,
     }
     while not player.dead and not target.dead and target.hp < 1 do
-      self:doCost(event, target, player, data)
+      if not self:doCost(event, target, player, data) then
+        return
+      end
     end
   end,
 }

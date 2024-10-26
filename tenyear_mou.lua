@@ -3313,89 +3313,6 @@ Fk:loadTranslationTable{
 
 local chenlin = General(extension, "tymou__chenlin", "qun", 3)
 
---- 陈琳的特殊race，有获胜角色之后也不中断
----@param command string @ 请求类型
----@param players ServerPlayer[] @ 要竞争这次请求的玩家列表
----@param jsonData string @ 请求数据
----@return ServerPlayer[] @ 在这次竞争请求中获胜的角色列表
-local function doRaceRequest(src, command, players, jsonData)
-  local room = src.room
-  players = players or room.players
-  players = table.simpleClone(players)
-  local player_len = #players
-  room.room:setRequestTimer(room.timeout * 1000 + 500)
-  -- room:notifyMoveFocus(players, command)
-  room.request_queue = {}
-  room.race_request_list = players
-  for _, p in ipairs(players) do
-    p:doRequest(command, jsonData or p.request_data)
-  end
-
-  local remainTime = room.timeout
-  local currentTime = os.time()
-  local elapsed = 0
-  local confirmed_players, canceled_players = {}, {}
-  while true do
-    elapsed = os.time() - currentTime
-    if remainTime - elapsed <= 0 then
-      break
-    end
-    for i = #players, 1, -1 do
-      local p = players[i]
-      p:waitForReply(0)
-      if p.reply_ready == true then
-        table.insertIfNeed(confirmed_players, p)
-      end
-
-      if p.reply_cancel then
-        table.remove(players, i)
-        table.insertIfNeed(canceled_players, p)
-        room:setPlayerMark(p, "@@yaozuo-turn", src.id)  --谋陈琳专用
-      elseif p.id > 0 then
-        -- 骗过调度器让他以为自己尚未就绪
-        p.request_timeout = remainTime - elapsed
-        p.serverplayer:setThinking(true)
-      end
-    end
-
-    if player_len == #confirmed_players + #canceled_players then
-      break
-    end
-
-    coroutine.yield("__handleRequest", (remainTime - elapsed) * 1000)
-  end
-
-  for _, p in ipairs(room.players) do
-    p.serverplayer:setBusy(false)
-    p.serverplayer:setThinking(false)
-  end
-
-  room.room:destroyRequestTimer()
-
-  --surrenderCheck
-  if room.hasSurrendered then
-    local player = table.find(room.players, function(p)
-      return p.surrendered
-    end)
-    if not player then
-      room.hasSurrendered = false
-    else
-      room:broadcastProperty(player, "surrendered")
-      local mode = Fk.game_modes[room.settings.gameMode]
-      local win = Pcall(mode.getWinner, mode, player)
-      if win ~= "" then
-        room:gameOver(win)
-      end
-
-      -- 以防万一
-      player.surrendered = false
-      room:broadcastProperty(player, "surrendered")
-      room.hasSurrendered = false
-    end
-  end
-
-  return confirmed_players
-end
 local yaozuo = fk.CreateActiveSkill{
   name = "yaozuo",
   anim_type = "control",
@@ -3427,8 +3344,13 @@ local yaozuo = fk.CreateActiveSkill{
         pattern = ".",
       }
       local data = { "choose_cards_skill", "#yaozuo-give:"..player.id, true, extra_data }
-      room:notifyMoveFocus(targets, self.name)
-      local winners = doRaceRequest(player, "AskForUseActiveSkill", targets, json.encode(data))
+
+      local req = Request:new(targets, "AskForUseActiveSkill")
+      req.focus_text = self.name
+      for _, p in ipairs(targets) do req:setData(p, data) end
+      req:ask()
+      local winners = req.winners -- winners[1]就是最快的 别人其次
+
       for _, p in ipairs(room:getOtherPlayers(player)) do
         if not table.contains(winners, p) then
           room:setPlayerMark(p, "@@yaozuo-turn", player.id)
@@ -3444,7 +3366,7 @@ local yaozuo = fk.CreateActiveSkill{
         }
         local moves = {}
         for _, p in ipairs(winners) do
-          local replyCard = json.decode(p.client_reply).card
+          local replyCard = req:getResult(p).card
           local cards = json.decode(replyCard).subcards
           table.insert(moves, {
             ids = cards,

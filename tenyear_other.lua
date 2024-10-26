@@ -795,18 +795,14 @@ Fk:loadTranslationTable{
 }
 
 local sunwukong = General(extension, "sunwukong", "god", 3)
-local jinjing = fk.CreateTriggerSkill{
-  name = "jinjing",
+local jinjing = fk.CreateVisibilitySkill{
+  name = 'jinjing',
   frequency = Skill.Compulsory,
-  refresh_events = {fk.EventAcquireSkill},
-  can_refresh = function (self, event, target, player, data)
-    return data == self and player == target
-  end,
-  on_refresh = function (self, event, target, player, data)
-    for _, p in ipairs(player.room:getOtherPlayers(player)) do
-      player:addBuddy(p)
+  card_visible = function(self, player, card)
+    if player:hasSkill(self) and Fk:currentRoom():getCardArea(card) == Card.PlayerHand then
+      return true
     end
-  end,
+  end
 }
 sunwukong:addSkill(jinjing)
 local ruyi = fk.CreateActiveSkill{
@@ -922,7 +918,7 @@ sunwukong:addSkill(cibeis)
 Fk:loadTranslationTable{
   ["sunwukong"] = "孙悟空",
   ["jinjing"] = "金睛",
-  [":jinjing"] = "锁定技，其他角色的手牌对你可见（此技能失效或失去后仍生效）。",
+  [":jinjing"] = "锁定技，其他角色的手牌对你可见。",
   ["ruyi"] = "如意",
   [":ruyi"] = "锁定技，你手牌中的武器牌均视为【杀】，你废除武器栏。你的攻击范围基数为3，出牌阶段限一次，你可以调整攻击范围（1~4）。若你的攻击范围基数为：1，使用【杀】无次数限制；2，使用【杀】伤害+1；3，使用【杀】无法响应；4，使用【杀】可额外选择一个目标。",
   ["@ruyi"] = "如意",

@@ -2260,21 +2260,19 @@ local chushan = fk.CreateTriggerSkill {
       table.insertIfNeed(skills, table.random(general:getSkillNameList()))
     end
 
-    data = json.encode({
-      path = "packages/utility/qml/ChooseSkillBox.qml",
+    data = {
+      path = "/packages/utility/qml/ChooseSkillBox.qml",
       data = {
         skills, 2, 2, "#chushan-choose:::" .. tostring(2), table.map(generals, Util.NameMapper)
       },
-    })
+    }
 
-    room:notifyMoveFocus(player, self.name)
-    local result = room:doRequest(player, "CustomDialog", data)
-
-    if result == "" then
-      skills = table.random(skills, 2)
-    else
-      skills = json.decode(result)
-    end
+    local req = Request:new(player, "CustomDialog")
+    req:setData(player, data)
+    req:setDefaultReply(player, table.random(skills, 2))
+    req.focus_text = self.name
+    req:ask()
+    skills = req:getResult(player)
 
     if #skills > 0 then
       local realNames = table.map(skills, Util.TranslateMapper)

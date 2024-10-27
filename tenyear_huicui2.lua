@@ -5047,7 +5047,19 @@ Fk:loadTranslationTable{
 }
 
 local ty__jiangwanfeiyi = General(extension, "ty__jiangwanfeiyi", "shu", 3)
-ty__jiangwanfeiyi:addSkill("ld__shengxi")
+local shengxi = fk.CreateTriggerSkill{
+  name = "ty__shengxi",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return player == target and player:hasSkill(self) and player.phase == Player.Finish and
+    #player.room.logic:getActualDamageEvents(1, function(e) return e.data[1].from == player end) == 0
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(2, self.name)
+  end,
+}
+ty__jiangwanfeiyi:addSkill(shengxi)
 local shoucheng = fk.CreateTriggerSkill{
   name = "ty__shoucheng",
   anim_type = "support",
@@ -5087,18 +5099,17 @@ local shoucheng = fk.CreateTriggerSkill{
     if #targets > 1 then
       local tos = player.room:askForChoosePlayers(player, targets, 1, 1, "#ty__shoucheng-choose", self.name, true)
       if #tos > 0 then
-        self.cost_data = tos[1]
+        self.cost_data = {tos = tos}
         return true
       end
     else
-      self.cost_data = targets[1]
+      self.cost_data = {tos = targets}
       return player.room:askForSkillInvoke(player, self.name, nil, "#ty__shoucheng-draw::" .. targets[1])
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(self.cost_data)
-    room:doIndicate(player.id, {to.id})
+    local to = room:getPlayerById(self.cost_data.tos[1])
     player:broadcastSkillInvoke("shoucheng")
     to:drawCards(2, self.name)
   end,
@@ -5109,6 +5120,9 @@ Fk:loadTranslationTable{
   ["#ty__jiangwanfeiyi"] = "社稷股肱",
   ["designer:ty__jiangwanfeiyi"] = "淬毒",
   ["illustrator:ty__jiangwanfeiyi"] = "",
+
+  ["ty__shengxi"] = "生息",
+  [":ty__shengxi"] = "结束阶段，若你于此回合内未造成过伤害，你可摸两张牌。",
 
   ["ty__shoucheng"] = "守成",
   [":ty__shoucheng"] = "当一名角色于其回合外失去手牌后，若其没有手牌且你于当前回合内未发动过此技能，你可令其摸两张牌。",

@@ -2047,7 +2047,7 @@ local fuping_trigger = fk.CreateTriggerSkill{
 
   refresh_events = {fk.EventLoseSkill},
   can_refresh = function(self, event, target, player, data)
-    return target == player and data == self
+    return target == player and data == fuping
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room

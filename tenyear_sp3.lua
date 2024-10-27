@@ -521,7 +521,7 @@ local shencai_delay = fk.CreateTriggerSkill{
 
   refresh_events = {fk.EventLoseSkill},
   can_refresh = function(self, event, target, player, data)
-    return player == target and data == self
+    return player == target and data == shencai
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "xunshi", 0)

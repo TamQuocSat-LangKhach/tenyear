@@ -2003,6 +2003,9 @@ local wuwei = fk.CreateViewAsSkill{
     return player:usedSkillTimes(self.name, Player.HistoryPhase) <= player:getMark("wuwei_addtimes-turn") and
     not player:isKongcheng()
   end,
+  times = function(self)
+    return 1 + Self:getMark("wuwei_addtimes-turn") - Self:usedSkillTimes(self.name, Player.HistoryPhase)
+  end,
 }
 local wuwei_targetmod = fk.CreateTargetModSkill{
   name = "#wuwei_targetmod",

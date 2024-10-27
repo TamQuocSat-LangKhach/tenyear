@@ -443,6 +443,10 @@ local liji = fk.CreateActiveSkill{
   anim_type = "offensive",
   card_num = 1,
   target_num = 1,
+  times = function(self)
+    local mark = Self:getTableMark("@liji-turn")
+    return #mark > 0 and mark[1] or 0
+  end,
   can_use = function(self, player)
     local mark = player:getTableMark("@liji-turn")
     return #mark > 0 and mark[1] > 0
@@ -1729,6 +1733,9 @@ local jj__lianhuan = fk.CreateActiveSkill{
   name = "jj__lianhuan&",
   card_num = 1,
   min_target_num = 0,
+  times = function(self)
+    return 3 - Self:usedSkillTimes(self.name, Player.HistoryTurn)
+  end,
   can_use = function(self, player)
     return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryTurn) < 3
   end,
@@ -1758,6 +1765,9 @@ local jj__huoji = fk.CreateViewAsSkill{
   name = "jj__huoji&",
   anim_type = "offensive",
   pattern = "fire_attack",
+  times = function(self)
+    return 3 - Self:usedSkillTimes(self.name, Player.HistoryTurn)
+  end,
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:getCardById(to_select).color == Card.Red and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
   end,

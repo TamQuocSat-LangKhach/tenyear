@@ -4934,6 +4934,11 @@ local yuqi = fk.CreateTriggerSkill{
   name = "yuqi",
   anim_type = "masochism",
   events = {fk.Damaged},
+  --[[
+  times = function(self)
+    return 2 - Self:usedSkillTimes(self.name)
+  end,
+  ]]
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self) and not target.dead and player:usedSkillTimes(self.name) < 2 and
     (target == player or player:distanceTo(target) <= player:getMark("yuqi1"))

@@ -410,6 +410,9 @@ local shencai = fk.CreateActiveSkill{
   anim_type = "offensive",
   card_num = 0,
   target_num = 1,
+  times = function(self)
+    return 1 + Self:getMark("xunshi") - Self:usedSkillTimes(self.name, Player.HistoryPhase)
+  end,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 + player:getMark("xunshi")
   end,
@@ -514,6 +517,14 @@ local shencai_delay = fk.CreateTriggerSkill{
     elseif event == fk.TurnEnd then
       room:killPlayer({who = player.id})
     end
+  end,
+
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return player == target and data == self
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "xunshi", 0)
   end,
 }
 local shencai_maxcards = fk.CreateMaxCardsSkill {
@@ -3785,14 +3796,26 @@ local caixia = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.CardUsing then
       room:removePlayerMark(player, "@caixia")
+      if player:getMark("@caixia") < 1 then
+        room:removeTableMark(player, MarkEnum.InvalidSkills, self.name)
+      end
     else
       room:notifySkillInvoked(player, self.name, event == fk.Damaged and "masochism" or "drawcard")
       player:broadcastSkillInvoke(self.name)
       local x = tonumber(string.sub(self.cost_data, 12, 12))
       room:setPlayerMark(player, "@caixia", x)
+      room:addTableMark(player, MarkEnum.InvalidSkills, self.name)
       room:drawCards(player, x, self.name)
     end
-  end
+  end,
+
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and data == self
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:removeTableMark(player, MarkEnum.InvalidSkills, self.name)
+  end,
 }
 xujing:addSkill(shangyu)
 xujing:addSkill(caixia)
@@ -4123,6 +4146,9 @@ local yanzuo = fk.CreateActiveSkill{
   target_num = 0,
   prompt = "#yanzuo",
   derived_piles = "yanzuo",
+  times = function(self)
+    return 1 + Self:getMark("zuyin") - Self:usedSkillTimes(self.name, Player.HistoryPhase)
+  end,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 + player:getMark("zuyin")
   end,

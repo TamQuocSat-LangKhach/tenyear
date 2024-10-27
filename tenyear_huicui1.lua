@@ -1888,7 +1888,7 @@ Fk:loadTranslationTable{
   ["illustrator:zhangxuan"] = "匠人绘",
   ["tongli"] = "同礼",
   [":tongli"] = "当你于出牌阶段内使用基本牌或普通锦囊牌指定目标后，若你于此阶段内拥有此技能时使用过牌的次数为X，"..
-  "你可以令你于此牌结算后视为对此牌的原本目标使用X次牌名相同的牌。（X为你手牌中的花色数，包含无色）",
+  "你可以令你于此牌结算后视为对包含此牌的所有原本目标在内的角色使用X次牌名相同的牌。（X为你手牌中的花色数，包含无色）",
   ["shezang"] = "奢葬",
   [":shezang"] = "当你或你回合内有角色进入濒死状态时，若你于此轮内未发动过此技能，你可以从牌堆底获得不同花色的牌各一张。",
   ["@tongli-phase"] = "同礼",
@@ -1984,22 +1984,12 @@ local fuping = fk.CreateViewAsSkill{
   anim_type = "special",
   pattern = ".",
   prompt = "#fuping-viewas",
-  interaction = function()
-    if type(Self:getMark("@$fuping")) ~= "table" then return end
-    local all_names, names = Self:getMark("@$fuping"), {}
-    local used_names = type(Self:getMark("fuping-turn")) == "table" and Self:getMark("fuping-turn") or {}
-    for _, name in ipairs(all_names) do
-      if not table.contains(used_names, name) then
-        local to_use = Fk:cloneCard(name)
-        to_use.skillName = "fuping"
-        if ((Fk.currentResponsePattern == nil and Self:canUse(to_use) and not Self:prohibitUse(to_use)) or
-          (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use))) then
-          table.insertIfNeed(names, name)
-        end
-      end
+  interaction = function(self)
+    local all_names = Self:getTableMark("@$fuping")
+    local names = U.getViewAsCardNames(Self, self.name, all_names, {}, Self:getTableMark("fuping-turn"))
+    if #names > 0 then
+      return U.CardNameBox { choices = names, all_choices = all_names }
     end
-    if #names == 0 then return end
-    return UI.ComboBox {choices = names, all_choices = all_names}
   end,
   card_filter = function(self, to_select, selected)
     return #selected < 1 and Fk:getCardById(to_select).type ~= Card.TypeBasic
@@ -2012,37 +2002,13 @@ local fuping = fk.CreateViewAsSkill{
     return card
   end,
   enabled_at_play = function(self, player)
-    local names = player:getMark("@$fuping")
-    if type(names) ~= "table" then return false end
-    local used_names = type(player:getMark("fuping-turn")) == "table" and player:getMark("fuping-turn") or {}
-    for _, name in ipairs(names) do
-      if not table.contains(used_names, name) then
-        local to_use = Fk:cloneCard(name)
-        to_use.skillName = self.name
-        if player:canUse(to_use) and not player:prohibitUse(to_use) then
-          return true
-        end
-      end
-    end
+    return #U.getViewAsCardNames(player, self.name, player:getTableMark("@$fuping"), {}, player:getTableMark("fuping-turn")) > 0
   end,
   enabled_at_response = function(self, player, response)
-    local names = player:getMark("@$fuping")
-    if type(names) ~= "table" then return false end
-    local used_names = type(player:getMark("fuping-turn")) == "table" and player:getMark("fuping-turn") or {}
-    for _, name in ipairs(names) do
-      if not table.contains(used_names, name) then
-        local to_use = Fk:cloneCard(name)
-        to_use.skillName = self.name
-        if (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use)) then
-          return true
-        end
-      end
-    end
+    return #U.getViewAsCardNames(player, self.name, player:getTableMark("@$fuping"), {}, player:getTableMark("fuping-turn")) > 0
   end,
   before_use = function(self, player, useData)
-    local names = type(player:getMark("fuping-turn")) == "table" and player:getMark("fuping-turn") or {}
-    table.insert(names, useData.card.trueName)
-    player.room:setPlayerMark(player, "fuping-turn", names)
+    player.room:addTableMark(player, "fuping-turn", useData.card.trueName)
   end,
 }
 local fuping_trigger = fk.CreateTriggerSkill{
@@ -2052,8 +2018,7 @@ local fuping_trigger = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if target == player or not player:hasSkill(fuping.name) or #player:getAvailableEquipSlots() == 0 then return false end
     if data.card.type ~= Card.TypeEquip and table.contains(TargetGroup:getRealTargets(data.tos), player.id) then
-      local mark = player:getMark("@$fuping")
-      return type(mark) ~= "table" or not table.contains(mark, data.card.trueName)
+      return not table.contains(player:getTableMark("@$fuping"), data.card.trueName)
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -2077,27 +2042,36 @@ local fuping_trigger = fk.CreateTriggerSkill{
     local room = player.room
     player:broadcastSkillInvoke(fuping.name)
     room:abortPlayerArea(player, {self.cost_data})
-    local mark = type(player:getMark("@$fuping")) == "table" and player:getMark("@$fuping") or {}
-    table.insertIfNeed(mark, data.card.trueName)
-    room:setPlayerMark(player, "@$fuping", mark)
+    room:addTableMark(player, "@$fuping", data.card.trueName)
+  end,
+
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and data == self
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "@$fuping", 0)
+    room:setPlayerMark(player, "fuping-turn", 0)
   end,
 }
 local fuping_targetmod = fk.CreateTargetModSkill{
   name = "#fuping_targetmod",
   bypass_distances = function(self, player, skill, card, to)
-    return player:hasSkill(fuping.name) and #player:getAvailableEquipSlots() == 0
+    return player:hasSkill(fuping) and #player:getAvailableEquipSlots() == 0
   end,
 }
 local weilie = fk.CreateActiveSkill{
   name = "weilie",
   anim_type = "support",
   prompt = function ()
-    local max_times = type(Self:getMark("@$fuping")) == "table" and #Self:getMark("@$fuping") or 0
-    return "#weilie-active:::" .. tostring(max_times - Self:usedSkillTimes("weilie", Player.HistoryGame) + 1)
+    return "#weilie-active:::" .. tostring(Self:getTableMark("@$fuping") - Self:usedSkillTimes("weilie", Player.HistoryGame) + 1)
+  end,
+  times = function(self)
+    return 1 + #Self:getTableMark("@$fuping") - Self:usedSkillTimes(self.name, Player.HistoryGame)
   end,
   can_use = function(self, player)
-    local max_times = type(player:getMark("@$fuping")) == "table" and #player:getMark("@$fuping") or 0
-    return player:usedSkillTimes(self.name, Player.HistoryGame)  <= max_times
+    return player:usedSkillTimes(self.name, Player.HistoryGame)  <= #player:getTableMark("@$fuping")
   end,
   card_filter = function(self, to_select, selected, targets)
     return #selected == 0

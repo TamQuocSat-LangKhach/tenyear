@@ -609,7 +609,7 @@ local ty_ex__jixu = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     room:sortPlayersByAction(effect.tos)
     local targets = table.map(effect.tos, function(id) return room:getPlayerById(id) end)
-    local result = U.askForJointChoice(player, targets, {"yes", "no"}, self.name, "#ty_ex__jixu-choice:"..player.id, true)
+    local result = U.askForJointChoice(targets, {"yes", "no"}, self.name, "#ty_ex__jixu-choice:"..player.id, true)
     local right = table.find(player:getCardIds("h"), function(id)
       return Fk:getCardById(id).trueName == "slash" end) and "yes" or "no"
     local n = 0

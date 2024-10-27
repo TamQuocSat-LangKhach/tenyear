@@ -519,46 +519,19 @@ local xuzhi = fk.CreateActiveSkill{
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local target1 = room:getPlayerById(effect.tos[1])
-    local target2 = room:getPlayerById(effect.tos[2])
-    room:setPlayerMark(target1, "xuzhi-phase", 1)
-    room:setPlayerMark(target2, "xuzhi-phase", 1)
-    local targets = {target1, target2}
-    target1.request_data = json.encode({"choose_cards_skill", "#xuzhi-card::"..target2.id, false, {
-      num = target1:getHandcardNum(),
-      min_num = 1,
-      max_num = target1:getHandcardNum(),
-      include_equip = false,
-      pattern = ".",
-      reason = self.name,
-    }})
-    target2.request_data = json.encode({"choose_cards_skill", "#xuzhi-card::"..target1.id, false, {
-      num = target2:getHandcardNum(),
-      min_num = 1,
-      max_num = target2:getHandcardNum(),
-      include_equip = false,
-      pattern = ".",
-      reason = self.name,
-    }})
-    room:notifyMoveFocus(targets, self.name)
-    room:doBroadcastRequest("AskForUseActiveSkill", targets)
-    local cards = {}
-    for i = 1, 2, 1 do
-      if targets[i].reply_ready then
-        local replyCard = json.decode(targets[i].client_reply).card
-        cards[i] = json.decode(replyCard).subcards
-      else
-        cards[i] = {table.random(targets[i]:getCardIds("h"))}
-      end
-    end
-    U.swapCards(room, player, target1, target2, cards[1], cards[2], self.name)
-    local n1, n2 = #cards[1], #cards[2]
+    room:sortPlayersByAction(effect.tos)
+    local targets = table.map(effect.tos, Util.Id2PlayerMapper)
+    room:setPlayerMark(targets[1], "xuzhi-phase", 1)
+    room:setPlayerMark(targets[2], "xuzhi-phase", 1)
+    local result = U.askForJointCard(targets, 1, 999, false, self.name, false, nil, "#xuzhi-card")
+    U.swapCards(room, player, targets[1], targets[2], result[effect.tos[1]], result[effect.tos[2]], self.name)
+    local n1, n2 = #result[effect.tos[1]], #result[effect.tos[2]]
     if n1 == n2 then
       if player.dead then return end
       room:addPlayerMark(player, "xuzhi_times-phase")
       player:drawCards(2, self.name)
     else
-      local to = n2 > n1 and target2 or target1
+      local to = n2 > n1 and targets[2] or targets[1]
       if to.dead then return end
       U.askForUseVirtualCard(room, to, "slash", {}, self.name, "#xuzhi-use", true, true, true, true)
     end
@@ -576,7 +549,7 @@ Fk:loadTranslationTable{
   [":xuzhi"] = "出牌阶段限一次，你可以令两名角色同时选择至少一张手牌并交换这些牌，获得牌数较少的角色视为使用一张无距离限制的【杀】；"..
   "若获得牌数相等，你摸两张牌，且可以对本阶段未以此法选择过的角色再发动〖蓄志〗。",
   ["#xuzhi-active"] = "蓄志：选择两名角色，令他们同时选择至少一张手牌并交换",
-  ["#xuzhi-card"] = "蓄志：你须选择至少一张手牌与 %dest 交换",
+  ["#xuzhi-card"] = "蓄志：选择至少一张手牌进行交换",
   ["#xuzhi-use"] = "蓄志：你可以视为使用一张无距离限制的【杀】",
 
   ["$xuzhi1"] = "鹿复现于野，孰不可射乎？",

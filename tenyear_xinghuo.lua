@@ -523,31 +523,12 @@ local qiai = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local players = table.filter(player.room:getOtherPlayers(player), function(p) return not p:isNude() end)
-    local extra_data = {
-      num = 1,
-      min_num = 1,
-      include_equip = true,
-      skillName = self.name,
-      pattern = ".",
-      reason = self.name,
-    }
-    for _, p in ipairs(players) do
-      p.request_data = json.encode({ "choose_cards_skill", "#qiai-give::"..player.id, false, extra_data })
-    end
-    room:notifyMoveFocus(players, self.name)
-    room:doBroadcastRequest("AskForUseActiveSkill", players)
+    local players = table.filter(room:getOtherPlayers(player), function(p) return not p:isNude() end)
+    local result = U.askForJointCard(players, 1, 1, true, self.name, false, nil, "#qiai-give::"..player.id)
     local moveInfos = {}
     for _, p in ipairs(players) do
-      local cards
-      if p.reply_ready then
-        local replyCard = json.decode(p.client_reply).card
-        cards = json.decode(replyCard).subcards
-      else
-        cards = table.random(p:getCardIds("he"), 1)
-      end
       table.insert(moveInfos, {
-        ids = cards,
+        ids = result[p.id],
         from = p.id,
         to = player.id,
         toArea = Card.PlayerHand,
@@ -777,7 +758,7 @@ local jixu = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     room:sortPlayersByAction(effect.tos)
     local targets = table.map(effect.tos, Util.Id2PlayerMapper)
-    local result = U.askForJointChoice(player, targets, {"yes", "no"}, self.name, "#jixu-choice:"..player.id, true)
+    local result = U.askForJointChoice(targets, {"yes", "no"}, self.name, "#jixu-choice:"..player.id, true)
     local right = table.find(player:getCardIds("h"), function(id)
       return Fk:getCardById(id).trueName == "slash" end) and "yes" or "no"
     local n = 0

@@ -759,6 +759,7 @@ local jixu = fk.CreateActiveSkill{
   card_num = 0,
   min_target_num = 1,
   max_target_num = 999,
+  prompt = "#jixu",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
@@ -775,33 +776,13 @@ local jixu = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     room:sortPlayersByAction(effect.tos)
-    local targets = table.map(effect.tos, function(id) return room:getPlayerById(id) end)
-    for _, p in ipairs(targets) do
-      local choices = {"yes", "no"}
-      p.request_data = json.encode({choices, choices, self.name, "#jixu-choice:"..player.id})
-    end
-    room:notifyMoveFocus(room.alive_players, self.name)
-    room:doBroadcastRequest("AskForChoice", targets)
-
-    for _, p in ipairs(targets) do
-      local choice
-      if p.reply_ready then
-        choice = p.client_reply
-      else
-        p.client_reply = "yes"
-        choice = "yes"
-      end
-      room:sendLog{
-        type = "#jixu-quest",
-        from = p.id,
-        arg = choice,
-      }
-    end
-    local right = table.find(player.player_cards[Player.Hand], function(id)
+    local targets = table.map(effect.tos, Util.Id2PlayerMapper)
+    local result = U.askForJointChoice(player, targets, {"yes", "no"}, self.name, "#jixu-choice:"..player.id, true)
+    local right = table.find(player:getCardIds("h"), function(id)
       return Fk:getCardById(id).trueName == "slash" end) and "yes" or "no"
     local n = 0
     for _, p in ipairs(targets) do
-      local choice = p.client_reply
+      local choice = result[p.id]
       if choice ~= right then
         n = n + 1
         room:doIndicate(player.id, {p.id})
@@ -818,7 +799,7 @@ local jixu = fk.CreateActiveSkill{
     if n > 0 then
       player:drawCards(n, self.name)
     else
-      room.logic:getCurrentEvent():findParent(GameEvent.Phase):shutdown()
+      player._phase_end = true
     end
   end,
 }
@@ -849,12 +830,14 @@ Fk:loadTranslationTable{
   ["sp__taishici"] = "太史慈",
   ["#sp__taishici"] = "北海酬恩",
   ["illustrator:sp__taishici"] = "王立雄",
+
   ["jixu"] = "击虚",
   [":jixu"] = "出牌阶段限一次，你可令任意名体力值相同的其他角色同时猜测你的手牌中是否有【杀】。若有角色猜错，且你：有【杀】，你于本回合使用【杀】"..
   "额外指定所有猜错的角色为目标；没有【杀】，你弃置所有猜错的角色各一张牌。然后你摸等同于猜错的角色数的牌。若没有角色猜错，则你结束此阶段。",
+  ["#jixu"] = "击虚：令任意名体力值相同的角色猜测你手牌中是否有【杀】",
   ["#jixu-choice"] = "击虚：猜测 %src 的手牌中是否有【杀】",
-  ["#jixu-quest"] = "%from 猜测 %arg",
   ["@@jixu-turn"] = "击虚",
+  ["#jixu_trigger"] = "击虚",
 
   ["$jixu1"] = "击虚箭射，懈敌戒备。",
   ["$jixu2"] = "虚实难辨，方迷敌方之心！",

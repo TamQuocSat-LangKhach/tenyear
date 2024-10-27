@@ -1847,7 +1847,7 @@ local ty_ex__anxu = fk.CreateActiveSkill{
     end
     local id = room:askForCardChosen(from, to, "h", self.name)
     room:obtainCard(from.id, id, true, fk.ReasonPrey)
-    if room:getCardOwner(id) == from and room:getCardArea(id) == Card.PlayerHand then
+    if table.contains(from:getCardIds("h"), id) then
       from:showCards({id})
     end
     if Fk:getCardById(id).suit ~= Card.Spade then
@@ -1886,12 +1886,12 @@ local ty_ex__zhuiyi = fk.CreateTriggerSkill{
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
     to:drawCards(#room.alive_players, self.name)
-    if to:isWounded() then
+    if not to.dead and to:isWounded() then
       room:recover{
         who = to,
         num = 1,
         recoverBy = player,
-        skillName = self.name
+        skillName = self.name,
       }
     end
   end,

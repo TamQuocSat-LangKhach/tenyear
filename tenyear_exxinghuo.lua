@@ -278,7 +278,7 @@ local ty_ex__jiaozhao = fk.CreateActiveSkill{
       arg2 = self.name,
       toast = true,
     }
-    if room:getCardOwner(c) == player and room:getCardArea(c) == Card.PlayerHand then
+    if table.contains(player:getCardIds("h"), effect.cards[1]) then
       room:setCardMark(c, "ty_ex__jiaozhao-inhand", choice)
       room:setCardMark(c, "@ty_ex__jiaozhao-inhand", Fk:translate(choice)) --- FIXME : translate for visble card mark
       room:handleAddLoseSkills(player, "ty_ex__jiaozhao&", nil, false, true)
@@ -609,33 +609,13 @@ local ty_ex__jixu = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     room:sortPlayersByAction(effect.tos)
     local targets = table.map(effect.tos, function(id) return room:getPlayerById(id) end)
-    for _, p in ipairs(targets) do
-      local choices = {"yes", "no"}
-      p.request_data = json.encode({choices, choices, self.name, "#ty_ex__jixu-choice:"..player.id})
-    end
-    room:notifyMoveFocus(room.alive_players, self.name)
-    room:doBroadcastRequest("AskForChoice", targets)
-
-    for _, p in ipairs(targets) do
-      local choice
-      if p.reply_ready then
-        choice = p.client_reply
-      else
-        p.client_reply = "yes"
-        choice = "yes"
-      end
-      room:sendLog{
-        type = "#ty_ex__jixu-quest",
-        from = p.id,
-        arg = choice,
-      }
-    end
+    local result = U.askForJointChoice(player, targets, {"yes", "no"}, self.name, "#ty_ex__jixu-choice:"..player.id, true)
     local right = table.find(player:getCardIds("h"), function(id)
       return Fk:getCardById(id).trueName == "slash" end) and "yes" or "no"
     local n = 0
     for _, p in ipairs(targets) do
       if player.dead then return end
-      local choice = p.client_reply
+      local choice = result[p.id]
       if choice ~= right then
         n = n + 1
         if not p.dead then
@@ -696,13 +676,14 @@ Fk:loadTranslationTable{
   ["ty_ex__taishici"] = "界太史慈",
   ["#ty_ex__taishici"] = "北海酬恩",
   ["illustrator:ty_ex__taishici"] = "匠人绘",
+
   ["ty_ex__jixu"] = "击虚",
   [":ty_ex__jixu"] = "出牌阶段限一次，你可以令至多你体力值数量的其他角色各猜测你的手牌中是否有【杀】。若你的手牌中：有【杀】，此阶段你使用【杀】"..
   "次数上限+X且可以额外指定所有猜错的角色为目标；没有【杀】，你弃置所有猜错的角色各一张牌。然后你摸X张牌（X为猜错的角色数）。",
   ["#ty_ex__jixu"] = "击虚：令至多%arg名角色猜测你手牌中是否有【杀】",
   ["#ty_ex__jixu-choice"] = "击虚：猜测 %src 的手牌中是否有【杀】",
-  ["#ty_ex__jixu-quest"] = "%from 猜测 %arg",
   ["@@ty_ex__jixu-turn"] = "击虚",
+  ["#ty_ex__jixu_trigger"] = "击虚",
   ["#ty_ex__jixu-invoke"] = "击虚：是否额外指定所有“击虚”猜错的角色为目标？",
 
   ["$ty_ex__jixu1"] = "辨坚识钝，可解充栋之牛！",

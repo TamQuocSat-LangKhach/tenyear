@@ -1531,11 +1531,11 @@ local fuhaiw = fk.CreateActiveSkill{
       target:showCards(card2)
       if player.dead or target.dead then return end
       if n1 >= n2 then
-        if room:getCardOwner(card1[1]) == player and room:getCardArea(card1[1]) == Card.PlayerHand then
+        if table.contains(player:getCardIds("h"), card1[1]) then
           room:throwCard(card1, self.name, player, player)
         end
       else
-        if room:getCardOwner(card2[1]) == target and room:getCardArea(card2[1]) == Card.PlayerHand then
+        if table.contains(target:getCardIds("h"), card2[1]) then
           room:setPlayerMark(player, "fuhaiw_invalid-phase", 1)
           room:throwCard(card2, self.name, target, target)
           if not player.dead then
@@ -5212,32 +5212,25 @@ local difa = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and player:usedSkillTimes(self.name) == 0 and player.phase ~= Player.NotActive then
-      local room = player.room
+      local ids = {}
       for _, move in ipairs(data) do
-        if move.to == player.id and move.toArea == Card.PlayerHand and
-          table.find(move.moveInfo, function (info)
-          return player.room:getCardOwner(info.cardId) == player and player.room:getCardArea(info.cardId) == Player.Hand and
-          Fk:getCardById(info.cardId).color == Card.Red end) then
-          return true
+        if move.to == player.id and move.toArea == Card.PlayerHand then
+          for _, info in ipairs(move.moveInfo) do
+            if table.contains(player:getCardIds("h"), info.cardId) and Fk:getCardById(info.cardId).color == Card.Red then
+              table.insertIfNeed(ids, info.cardId)
+            end
+          end
         end
+      end
+      if #ids > 0 then
+        self.cost_data = ids
+        return true
       end
     end
   end,
   on_cost = function(self, event, target, player, data)
-    local ids = {}
-    local room = player.room
-    for _, move in ipairs(data) do
-      if move.to == player.id and move.toArea == Card.PlayerHand then
-        for _, info in ipairs(move.moveInfo) do
-          if room:getCardOwner(info.cardId) == player and room:getCardArea(info.cardId) == Player.Hand and
-          Fk:getCardById(info.cardId).color == Card.Red then
-            table.insert(ids, info.cardId)
-          end
-        end
-      end
-    end
-    if #ids == 0 then return false end
-    local card = player.room:askForDiscard(player, 1, 1, true, self.name, true, tostring(Exppattern{ id = ids }), "#difa-invoke", true)
+    local card = player.room:askForDiscard(player, 1, 1, true, self.name, true, tostring(Exppattern{ id = self.cost_data }),
+      "#difa-invoke", true)
     if #card > 0 then
       self.cost_data = card
       return true
@@ -5272,8 +5265,7 @@ Fk:loadTranslationTable{
   [":tianze"] = "当其他角色于其出牌阶段内使用第一张黑色牌结算结束后，你可以弃置一张黑色牌，对其造成1点伤害；"..
   "当其他角色的黑色判定牌生效后，你摸一张牌。",
   ["difa"] = "地法",
-  [":difa"] = "当你于回合内得到红色牌后，若你于此回合内未发动过此技能，你可以弃置其中一张牌，"..
-  "然后选择一种锦囊牌的牌名，从牌堆或弃牌堆获得一张此牌名的牌。",
+  [":difa"] = "每回合限一次，当你于回合内得到红色牌后，你可以弃置其中一张牌，然后选择一种锦囊牌的牌名，从牌堆或弃牌堆获得一张此牌名的牌。",
 
   ["#tianze-invoke"] = "是否发动 天则，弃置一张黑色牌来对%dest造成1点伤害",
   ["#difa-invoke"] = "是否发动 地法，弃置一张刚得到的红色牌，然后检索一张锦囊牌",

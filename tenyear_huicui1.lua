@@ -1030,6 +1030,9 @@ local qingtan = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     room:doIndicate(player.id, table.map(room.alive_players, Util.IdMapper))
     local targets = table.filter(room.alive_players, function(p) return not p:isKongcheng() end)
+
+    local req = Request:new(targets, "AskForUseActiveSkill")
+    req.focus_text = self.name
     local extraData = {
       num = 1,
       min_num = 1,
@@ -1037,18 +1040,28 @@ local qingtan = fk.CreateActiveSkill{
       pattern = ".",
       reason = self.name,
     }
+    local data = {
+      "choose_cards_skill",
+      "#qingtan-card",
+      false,
+      extraData,
+    }
     for _, p in ipairs(targets) do
-      p.request_data = json.encode({"choose_cards_skill", "#qingtan-card", false, extraData})
+      req:setData(p, data)
+      req:setDefaultReply(p, table.random(p:getCardIds("h")))
     end
-    room:notifyMoveFocus(room.alive_players, self.name)
-    room:doBroadcastRequest("AskForUseActiveSkill", targets)
+    req:ask()
+
     for _, p in ipairs(targets) do
       local id
-      if p.reply_ready then
-        local replyCard = json.decode(p.client_reply).card
-        id = json.decode(replyCard).subcards[1]
-      else
-        id = table.random(p:getCardIds("h"))
+      local result = req:getResult(p)
+      if result ~= "" then
+        if type(result) == "string" then
+          local replyCard = result.card
+          id = json.decode(replyCard).subcards[1]
+        else
+          id = result
+        end
       end
       room:setPlayerMark(p, "qingtan-tmp", id)
     end
@@ -1058,7 +1071,7 @@ local qingtan = fk.CreateActiveSkill{
       if not p.dead then
         local id = p:getMark("qingtan-tmp")
         p:showCards({id})
-        if room:getCardOwner(id) == p and room:getCardArea(id) == Card.PlayerHand then
+        if table.contains(p:getCardIds("h"), id) then
           table.insertIfNeed(cards, id)
         end
       end
@@ -1073,7 +1086,7 @@ local qingtan = fk.CreateActiveSkill{
       for _, p in ipairs(targets) do
         if not player.dead and not p.dead then
           local id = p:getMark("qingtan-tmp")
-          if Fk:getCardById(id):getSuitString(true) == choice and room:getCardOwner(id) == p and room:getCardArea(id) == Card.PlayerHand then
+          if p ~= player and Fk:getCardById(id):getSuitString(true) == choice and table.contains(p:getCardIds("h"), id) then
             room:setPlayerMark(p, "qingtan-tmp", 0)
             room:obtainCard(player.id, id, true, fk.ReasonPrey)
             if not p.dead then
@@ -1087,7 +1100,7 @@ local qingtan = fk.CreateActiveSkill{
     for _, p in ipairs(targets) do
       if not p.dead and p:getMark("qingtan-tmp") ~= 0 then
         local id = p:getMark("qingtan-tmp")
-        if room:getCardOwner(id) == p and room:getCardArea(id) == Card.PlayerHand then
+        if table.contains(p:getCardIds("h"), id) then
           room:setPlayerMark(p, "qingtan-tmp", 0)
           room:throwCard({id}, self.name, p, player)
         end
@@ -2613,7 +2626,7 @@ local ty__lirang = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:doYiji(room, self.cost_data, player.id, self.name)
+    room:doYiji(self.cost_data, player.id, self.name)
   end,
 }
 kongrong:addSkill(ty__mingshi)

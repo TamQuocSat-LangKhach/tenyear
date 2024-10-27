@@ -1139,7 +1139,7 @@ local mouni = fk.CreateTriggerSkill{
     local yes = true
     for _, id in ipairs(ids) do
       if player.dead or to.dead then return end
-      if room:getCardOwner(id) == player and room:getCardArea(id) == Card.PlayerHand then
+      if table.contains(player:getCardIds("h"), id) then
         local card = Fk:getCardById(id)
         if U.canUseCardTo(room, player, to, card, false, false) then
           local use = {

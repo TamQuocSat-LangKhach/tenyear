@@ -3411,39 +3411,54 @@ local libang = fk.CreateActiveSkill{
   anim_type = "control",
   card_num = 1,
   target_num = 2,
+  prompt = "#libang",
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isNude()
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0 and not Self:prohibitDiscard(Fk:getCardById(to_select))
   end,
-  target_filter = function(self, to_select, selected)
-    return #selected < 2 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isNude()
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected < 2 and to_select ~= Self.id and #selected_cards == 1
+    and not Fk:currentRoom():getPlayerById(to_select):isNude()
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    room:throwCard(effect.cards, self.name, player, player)
     room:sortPlayersByAction(effect.tos, false)
+    room:throwCard(effect.cards, self.name, player, player)
+    if player.dead then return end
+    local cards = {}
     local target1 = room:getPlayerById(effect.tos[1])
     local target2 = room:getPlayerById(effect.tos[2])
     local id1 = room:askForCardChosen(player, target1, "he", self.name)
-    local id2 = room:askForCardChosen(player, target2, "he", self.name)
-    room:obtainCard(player.id, id1, true, fk.ReasonPrey)
-    room:obtainCard(player.id, id2, true, fk.ReasonPrey)
-    player:showCards({id1, id2})
+    room:obtainCard(player, id1, true, fk.ReasonPrey)
+    table.insert(cards, id1)
+    if not player.dead and not target2:isNude() then
+      local id2 = room:askForCardChosen(player, target2, "he", self.name)
+      room:obtainCard(player.id, id2, true, fk.ReasonPrey)
+      table.insert(cards, id2)
+    end
+    if player.dead then return end
+    player:showCards(cards)
     local pattern = "."
-    if Fk:getCardById(id1, true).color == Fk:getCardById(id2, true).color then
-      if Fk:getCardById(id1, true).color == Card.Black then
-        pattern = ".|.|spade,club"
-      else
-        pattern = ".|.|heart,diamond"
+    local suits = {}
+    for _, id in ipairs(cards) do
+      if Fk:getCardById(id).color == Card.Red then
+        table.insertIfNeed(suits, "heart")
+        table.insertIfNeed(suits, "diamond")
+      elseif Fk:getCardById(id).color == Card.Black then
+        table.insertIfNeed(suits, "spade")
+        table.insertIfNeed(suits, "club")
       end
+    end
+    if #suits > 0 then
+      pattern = ".|.|"..table.concat(suits, ",")
     end
     local judge = {
       who = player,
       reason = self.name,
       pattern = pattern,
-      extra_data = {effect.tos, {id1, id2}},
+      extra_data = {effect.tos, cards},
     }
     room:judge(judge)
   end,
@@ -3465,8 +3480,7 @@ local libang_delay = fk.CreateTriggerSkill{
         table.removeOne(targets, targets[i])
       end
     end
-    if data.card.color ~= Fk:getCardById(data.extra_data[2][1], true).color and
-      data.card.color ~= Fk:getCardById(data.extra_data[2][2], true).color then
+    if not data.card:matchPattern(data.pattern) then
       if #targets == 0 or #player:getCardIds{Player.Hand, Player.Equip} < 2 then
         room:loseHp(player, 1, "libang")
       else
@@ -3509,7 +3523,7 @@ local wujie = fk.CreateTriggerSkill{
       if event == fk.AfterCardUseDeclared then
         return player:hasSkill(self) and data.card.color == Card.NoColor
       else
-        return player:hasSkill(self, false, true) and not player.room:getTag("SkipNormalDeathProcess")
+        return player:hasSkill(self, false, true)
       end
     end
   end,
@@ -3520,18 +3534,9 @@ local wujie = fk.CreateTriggerSkill{
         player:addCardUseHistory(data.card.trueName, -1)
       end
     else
-      player.room:setTag("SkipNormalDeathProcess", true)
-      player.room:setTag(self.name, true)
+      data.extra_data = data.extra_data or {}
+      data.extra_data.skip_reward_punish = true
     end
-  end,
-
-  refresh_events = {fk.Deathed},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player.room:getTag(self.name)
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:setTag("SkipNormalDeathProcess", false)
-    player.room:setTag(self.name, false)
   end,
 }
 local wujie_targetmod = fk.CreateTargetModSkill{
@@ -3557,6 +3562,7 @@ Fk:loadTranslationTable{
   [":wujie"] = "锁定技，你使用的无色牌不计入次数且无距离限制；其他角色杀死你后不执行奖惩。",
   ["#libang-card"] = "利傍：交给其中一名角色两张牌，否则失去1点体力",
   ["#libang-slash"] = "利傍：视为对其中一名角色使用一张【杀】",
+  ["#libang"] = "利傍：弃置一张牌，获得两名其他角色各一张牌，然后判定",
   ["libang_active"] = "利傍",
   ["#libang_delay"] = "利傍",
 

@@ -3340,7 +3340,7 @@ local tongdao = fk.CreateTriggerSkill{
       table.insertTableIfNeed(skills, Fk.generals[to.deputyGeneral]:getSkillNameList(true))
     end
     local skill
-    if not (table.contains({"aaa_role_mode", "aab_role_mode", "vanished_dragon"}, room.settings.gameMode) and
+    if not (room:isGameMode("role_mode") and
     to.role_shown and to.role == "lord") then
       skills = table.filter(skills, function (skill_name)
         skill = Fk.skills[skill_name]

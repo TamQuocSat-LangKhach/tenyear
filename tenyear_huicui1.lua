@@ -1028,52 +1028,16 @@ local qingtan = fk.CreateActiveSkill{
   card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    room:doIndicate(player.id, table.map(room.alive_players, Util.IdMapper))
     local targets = table.filter(room.alive_players, function(p) return not p:isKongcheng() end)
-
-    local req = Request:new(targets, "AskForUseActiveSkill")
-    req.focus_text = self.name
-    local extraData = {
-      num = 1,
-      min_num = 1,
-      include_equip = false,
-      pattern = ".",
-      reason = self.name,
-    }
-    local data = {
-      "choose_cards_skill",
-      "#qingtan-card",
-      false,
-      extraData,
-    }
-    for _, p in ipairs(targets) do
-      req:setData(p, data)
-      req:setDefaultReply(p, table.random(p:getCardIds("h")))
-    end
-    req:ask()
-
-    for _, p in ipairs(targets) do
-      local id
-      local result = req:getResult(p)
-      if result ~= "" then
-        if type(result) == "string" then
-          local replyCard = result.card
-          id = json.decode(replyCard).subcards[1]
-        else
-          id = result
-        end
-      end
-      room:setPlayerMark(p, "qingtan-tmp", id)
-    end
-
+    if #targets == 0 then return end
+    room:doIndicate(player.id, table.map(targets, Util.IdMapper))
+    local result = U.askForJointCard(targets, 1, 1, false, self.name, false, ".|.|.|hand", "#qingtan-card")
     local cards = {}
-    for _, p in ipairs(targets) do
-      if not p.dead then
-        local id = p:getMark("qingtan-tmp")
-        p:showCards({id})
-        if table.contains(p:getCardIds("h"), id) then
-          table.insertIfNeed(cards, id)
-        end
+    for pid, cds in pairs(result) do
+      local p = room:getPlayerById(pid)
+      if table.contains(p:getCardIds("h"), cds[1]) then
+        p:showCards(cds)
+        table.insert(cards, cds[1])
       end
     end
     if player.dead or #cards == 0 then return end
@@ -1085,23 +1049,23 @@ local qingtan = fk.CreateActiveSkill{
     if choice ~= "Cancel" then
       for _, p in ipairs(targets) do
         if not player.dead and not p.dead then
-          local id = p:getMark("qingtan-tmp")
-          if p ~= player and Fk:getCardById(id):getSuitString(true) == choice and table.contains(p:getCardIds("h"), id) then
-            room:setPlayerMark(p, "qingtan-tmp", 0)
-            room:obtainCard(player.id, id, true, fk.ReasonPrey)
+          local id = result[p.id][1]
+          if Fk:getCardById(id):getSuitString(true) == choice and table.contains(p:getCardIds("h"), id) then
+            table.removeOne(cards, id)
+            if p ~= player then
+              room:obtainCard(player, id, true, fk.ReasonPrey)
+            end
             if not p.dead then
               p:drawCards(1, self.name)
             end
-            table.removeOne(cards, id)
           end
         end
       end
     end
     for _, p in ipairs(targets) do
-      if not p.dead and p:getMark("qingtan-tmp") ~= 0 then
-        local id = p:getMark("qingtan-tmp")
-        if table.contains(p:getCardIds("h"), id) then
-          room:setPlayerMark(p, "qingtan-tmp", 0)
+      if not p.dead then
+        local id = result[p.id][1]
+        if table.contains(p:getCardIds("h"), id) and table.contains(cards, id) then
           room:throwCard({id}, self.name, p, player)
         end
       end

@@ -1926,7 +1926,7 @@ local tianjiang = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     local card = Fk:getCardById(effect.cards[1])
-    U.moveCardIntoEquip(room, target, card.id, self.name, true, player)
+    room:moveCardIntoEquip(target, card.id, self.name, true, player)
     if table.contains({"red_spear", "quenched_blade", "poisonous_dagger", "water_sword", "thunder_blade"}, card.name) then
       player:drawCards(2, self.name)
     end
@@ -1955,7 +1955,7 @@ local tianjiang_trigger = fk.CreateTriggerSkill{
 
     local put = U.getRandomCards(equipMap, 2)
     if #put > 0 then
-      U.moveCardIntoEquip(room, player, put, self.name, false, player)
+      room:moveCardIntoEquip(player, put, self.name, false, player)
     end
   end,
 }

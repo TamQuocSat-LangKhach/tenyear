@@ -5181,7 +5181,7 @@ local yijia = fk.CreateTriggerSkill{
     end)
     local id = room:askForCardsChosen(player, target, 1, 1, {card_data = {{to.general, cards}}}, self.name, "#yijia-move::"..target.id)[1]
     local orig = table.filter(room.alive_players, function(p) return p:inMyAttackRange(target) end)
-    U.moveCardIntoEquip(room, target, id, self.name, true, player)
+    room:moveCardIntoEquip(target, id, self.name, true, player)
     if player.dead or #orig == 0 then return end
     if table.find(orig, function(p) return not p:inMyAttackRange(target) end) then
       player:drawCards(1, self.name)

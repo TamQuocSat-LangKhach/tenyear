@@ -55,7 +55,7 @@ local ronghuo = fk.CreateTriggerSkill{
     if target == player and player:hasSkill(self) and data.card and
     table.contains({"fire_attack", "fire__slash"}, data.card.name) then
       local room = player.room
-      if not U.damageByCardEffect(room) then return false end
+      if not room.logic:damageByCardEffect() then return false end
       local kingdoms = {}
       for _, p in ipairs(room.alive_players) do
         table.insertIfNeed(kingdoms, p.kingdom)
@@ -2283,7 +2283,7 @@ local haoyi = fk.CreateTriggerSkill{
       return table.contains(cards, id)
     end)
     if #cards > 0 then
-      U.askForDistribution(player, cards, room:getOtherPlayers(player), self.name)
+      room:askForYiji(player, cards, room:getOtherPlayers(player), self.name)
     end
   end,
 }

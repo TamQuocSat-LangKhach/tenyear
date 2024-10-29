@@ -3251,7 +3251,7 @@ local ty_ex__zongxuan = fk.CreateTriggerSkill{
       return Fk:getCardById(id).type == Card.TypeTrick
     end)
     if #trick > 0 then
-      U.askForDistribution(player, trick, room:getOtherPlayers(player, false), self.name, 0, 1,
+      room:askForYiji(player, trick, room:getOtherPlayers(player, false), self.name, 0, 1,
       "#ty_ex__zongxuan-choose", trick, false)
       if player.dead then return false end
       cards = U.moveCardsHoldingAreaCheck(room, table.filter(cards, function (id)

@@ -583,8 +583,7 @@ local fazhu = fk.CreateTriggerSkill{
     to_give = table.filter(to_give, function(id)
       return table.contains(player:getCardIds("h"), id)
     end)
-    --FIXME: 要用moveCardsHoldingAreaCheck严格判断会很麻烦
-    local result = U.askForDistribution(player, to_give, room.alive_players, self.name, 0, #to_give, "#fazhu-give", "", false, 1)
+    local result = room:askForYiji(player, to_give, room.alive_players, self.name, 0, #to_give, "#fazhu-give", "", false, 1)
     local targets = {}
     if table.find(to_give, function (id)
       return table.contains(player:getCardIds("h"), id)

@@ -2129,7 +2129,7 @@ local liangxiu = fk.CreateActiveSkill{
     room:setPlayerMark(player, "liangxiu_"..types[1].."-phase", 1)
     local cards = room:getCardsFromPileByRule(".|.|.|.|.|"..types[1], 2)
     if #cards > 0 then
-      U.askForDistribution(player, cards, nil, self.name, #cards, #cards, nil, cards)
+      room:askForYiji(player, cards, nil, self.name, #cards, #cards, nil, cards)
     end
   end
 }

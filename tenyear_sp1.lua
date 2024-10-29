@@ -855,7 +855,7 @@ local jiuxianc_delay = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
-    return target == player and U.damageByCardEffect(player.room) and not player.dead and not data.to.dead
+    return target == player and player.room.logic:damageByCardEffect() and not player.dead and not data.to.dead
     and data.card and table.contains(data.card.skillNames, "jiuxianc")
   end,
   on_cost = Util.TrueFunc,
@@ -1315,7 +1315,7 @@ local ty__chuanxin = fk.CreateTriggerSkill{
   events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
     return target == player and target:hasSkill(self) and player.phase == Player.Play and
-      data.card and table.contains({"slash", "duel"}, data.card.trueName) and U.damageByCardEffect(player.room, true)
+      data.card and table.contains({"slash", "duel"}, data.card.trueName) and player.room.logic:damageByCardEffect()
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, data, "#ty__chuanxin-invoke::"..data.to.id)
@@ -1714,7 +1714,7 @@ local chenghao = fk.CreateTriggerSkill{
       end
     end
     local cards = room:getNCards(n)
-    U.askForDistribution(player, cards, room.alive_players, self.name, #cards, #cards, nil, cards)
+    room:askForYiji(player, cards, room.alive_players, self.name, #cards, #cards, nil, cards)
   end,
 }
 simahui:addSkill(chenghao)

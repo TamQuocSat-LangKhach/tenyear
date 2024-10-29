@@ -391,7 +391,8 @@ local shizong = fk.CreateViewAsSkill{
     if dat then
       local to = room:getPlayerById(dat.targets[1])
       if to ~= room.current then
-        room:setPlayerMark(player, "@@shizong_fail-turn", 1)
+        room:setPlayerMark(player, "shizong_fail-turn", 1)
+        room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
       end
       room:moveCardTo(dat.cards, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
       if not to.dead and not to:isNude() then
@@ -418,11 +419,11 @@ local shizong = fk.CreateViewAsSkill{
     return card
   end,
   enabled_at_play = function(self, player)
-    return player:getMark("@@shizong_fail-turn") == 0 and
+    return player:getMark("shizong_fail-turn") == 0 and
       #player:getCardIds("he") > player:usedSkillTimes(self.name, Player.HistoryTurn)
   end,
   enabled_at_response = function(self, player, response)
-    return not response and player:getMark("@@shizong_fail-turn") == 0 and
+    return not response and player:getMark("shizong_fail-turn") == 0 and
       #player:getCardIds("he") > player:usedSkillTimes(self.name, Player.HistoryTurn)
   end,
 }
@@ -461,7 +462,6 @@ Fk:loadTranslationTable{
   ["#shizong-give"] = "恃纵：交给一名其他角色%arg张牌",
   ["shizong_active"] = "恃纵",
   ["#shizong-put"] = "恃纵：你可以将一张牌置于牌堆底，视为 %src 使用【%arg】",
-  ["@@shizong_fail-turn"] = "恃纵失效",
 
   ["$ty__beini1"] = "臣等忠心耿耿，陛下何故谋反？",
   ["$ty__beini2"] = "公等养汝，正拟今日，复何疑？",
@@ -3027,7 +3027,7 @@ local shicao = fk.CreateActiveSkill{
   target_num = 0,
   prompt = "#shicao-active",
   can_use = function(self, player)
-    return player:getMark("@@shicao-turn") == 0 and player:usedSkillTimes(self.name) < 20
+    return player:getMark("shicao-turn") == 0 and player:usedSkillTimes(self.name) < 20
   end,
   interaction = function()
     return UI.ComboBox {choices = {
@@ -3053,7 +3053,8 @@ local shicao = fk.CreateActiveSkill{
         table.insert(room.draw_pile, 1, ids[1])
       end
       U.viewCards(player, ids, self.name)
-      room:setPlayerMark(player, "@@shicao-turn", 1)
+      room:setPlayerMark(player, "shicao-turn", 1)
+      room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
     end
   end,
 }
@@ -3074,7 +3075,6 @@ Fk:loadTranslationTable{
   ["@duanti"] = "锻体",
   ["#shicao-active"] = "发动 识草，选择牌的类别和摸牌的位置",
   ["shicao_type"] = "%arg | %arg2",
-  ["@@shicao-turn"] = "识草 无效",
 
   ["$duanti1"] = "流水不腐，户枢不蠹。",
   ["$duanti2"] = "五禽锻体，百病不侵。",
@@ -4709,6 +4709,9 @@ local kanji = fk.CreateActiveSkill{
       end
     end
     return "#kanji-active:::kanji_draw"
+  end,
+  times = function(self)
+    return Self.phase == Player.Play and 2 - Self:usedSkillTimes(self.name, Player.HistoryPhase) or -1
   end,
   can_use = function(self, player)
     return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) < 2

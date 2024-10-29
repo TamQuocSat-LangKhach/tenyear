@@ -896,7 +896,7 @@ local ty__weipo = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and player == target and player:getMark("@@ty__weipo_invalidity") == 0 and
+    return player:hasSkill(self) and player == target and player:getMark("ty__weipo_invalidity") == 0 and
       data.from ~= player.id and (data.card.trueName == "slash" or data.card:isCommonTrick()) and player:getHandcardNum() < player.maxHp
   end,
   on_use = function(self, event, target, player, data)
@@ -909,12 +909,15 @@ local ty__weipo = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.TurnStart},
+  refresh_events = {fk.TurnStart, fk.EventLoseSkill},
   can_refresh = function (self, event, target, player, data)
-    return target == player and player:getMark("@@ty__weipo_invalidity") > 0
+    if event == fk.EventLoseSkill and data ~= self then return false end
+    return target == player and player:getMark("ty__weipo_invalidity") > 0
   end,
   on_refresh = function (self, event, target, player, data)
-    player.room:setPlayerMark(player, "@@ty__weipo_invalidity", 0)
+    local room = player.room
+    room:setPlayerMark(player, "ty__weipo_invalidity", 0)
+    room:removeTableMark(player, MarkEnum.InvalidSkills, self.name)
   end,
 }
 local ty__weipo_delay = fk.CreateTriggerSkill{
@@ -937,7 +940,10 @@ local ty__weipo_delay = fk.CreateTriggerSkill{
         room:obtainCard(target.id, card[1], false, fk.ReasonGive)
       end
     end
-    room:setPlayerMark(player, "@@ty__weipo_invalidity", 1)
+    if player:hasSkill(ty__weipo, true) then
+      room:setPlayerMark(player, "ty__weipo_invalidity", 1)
+      room:addTableMark(player, MarkEnum.InvalidSkills, "ty__weipo")
+    end
   end,
 }
 ty__jieying:addRelatedSkill(ty__jieying_delay)
@@ -963,7 +969,7 @@ Fk:loadTranslationTable{
   ["#ty__jieying-choose"] = "节应：选择一名其他角色，令其下个回合<br>使用牌无距离限制且可多指定1个目标，造成伤害后不能使用牌",
   ["#ty__jieying-extra"] = "节应：可为此【%arg】额外指定1个目标",
   ["#ty__weipo-give"] = "危迫：必须选择一张手牌交给%src，且本回合危迫失效",
-  ["@@ty__weipo_invalidity"] = "危迫失效",
+
   ["$ty__jieying1"] = "秉志持节，应时而动。",
   ["$ty__jieying2"] = "授节于汝，随机应变！",
   ["$ty__weipo1"] = "临渊勒马，进退维谷！",

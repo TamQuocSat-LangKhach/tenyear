@@ -487,6 +487,7 @@ local anzhi = fk.CreateActiveSkill{
       room:setPlayerMark(player, "xialei-turn", 0)
     elseif judge.card.color == Card.Black then
       room:addPlayerMark(player, "anzhi-turn", 1)
+      room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
       local ids = {}
       room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
         for _, move in ipairs(e.data) do
@@ -6003,7 +6004,7 @@ Fk:loadTranslationTable{
   ["designer:zhugemengxue"] = "韩旭",
   --["illustrator:zhugemengxue"] = "",
   ["jichun"] = "寄春",
-  [":jichun"] = "出牌阶段各限一次，你可以展示一张牌，选择：1.将此牌交给一名手牌数小于你的角色，然后摸X张牌；"..
+  [":jichun"] = "出牌阶段限两次，你可以展示一张牌，选择于当前阶段内未选择过的项：1.将此牌交给一名手牌数小于你的角色，然后摸X张牌；"..
   "2.弃置此牌，然后弃置一名手牌数大于你的角色区域里至多X张牌。（X为此牌的牌名字数）",
   ["hanying"] = "寒英",
   [":hanying"] = "准备阶段，你可以展示牌堆顶第一张装备牌，然后令一名手牌数等于你的角色使用之。",

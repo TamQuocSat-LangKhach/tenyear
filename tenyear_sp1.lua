@@ -1734,10 +1734,10 @@ local jj__lianhuan = fk.CreateActiveSkill{
   card_num = 1,
   min_target_num = 0,
   times = function(self)
-    return 3 - Self:usedSkillTimes(self.name, Player.HistoryTurn)
+    return Self.phase == Player.Play and 3 - Self:usedSkillTimes(self.name, Player.HistoryTurn) or -1
   end,
   can_use = function(self, player)
-    return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryTurn) < 3
+    return player:usedSkillTimes(self.name, Player.HistoryTurn) < 3
   end,
   card_filter = function(self, to_select, selected, selected_targets)
     return #selected == 0 and Fk:getCardById(to_select).suit == Card.Club and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
@@ -1766,7 +1766,7 @@ local jj__huoji = fk.CreateViewAsSkill{
   anim_type = "offensive",
   pattern = "fire_attack",
   times = function(self)
-    return 3 - Self:usedSkillTimes(self.name, Player.HistoryTurn)
+    return Self.phase == Player.Play and 3 - Self:usedSkillTimes(self.name, Player.HistoryTurn) or -1
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:getCardById(to_select).color == Card.Red and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip

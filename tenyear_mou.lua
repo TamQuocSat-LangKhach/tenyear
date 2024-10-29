@@ -1007,6 +1007,7 @@ local yingshij = fk.CreateTriggerSkill{
     if equipNum > 0 and #room:askForDiscard(to, equipNum, equipNum, true, self.name, true, ".",
       "#yingshij-discard:" .. player.id .. "::" .. tostring(equipNum) .. ":" .. data.card:toLogString()) > 0 then
       room:setPlayerMark(player, "yingshij_nullified-turn", 1)
+      room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
     else
       data.extra_data = data.extra_data or {}
       data.extra_data.yingshij = {
@@ -1794,6 +1795,7 @@ local taozhou = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     local n = self.interaction.data
     room:setPlayerMark(player, self.name, n)
+    room:addTableMark(player, MarkEnum.InvalidSkills, self.name)
     local cards = room:askForCard(target, 1, 3, false, self.name, true, ".|.|.|hand", "#taozhou-give:"..player.id)
     if #cards > 0 then
       room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonGive, self.name, nil, false, player.id)
@@ -1828,12 +1830,22 @@ local taozhou_trigger = fk.CreateTriggerSkill{
     data.damage = data.damage + 1
   end,
 
-  refresh_events = {fk.RoundEnd},
+  refresh_events = {fk.RoundEnd, fk.EventLoseSkill},
   can_refresh = function(self, event, target, player, data)
+    if event == fk.EventLoseSkill and (player ~= target or data ~= self) then return false end
     return player:getMark("taozhou") ~= 0
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:removePlayerMark(player, "taozhou", 1)
+    local room = player.room
+    if event == fk.EventLoseSkill then
+      room:setPlayerMark(player, "taozhou", 0)
+      room:removeTableMark(player, MarkEnum.InvalidSkills, "taozhou")
+    else
+      room:removePlayerMark(player, "taozhou", 1)
+      if player:getMark("taozhou") < 1 then
+        room:removeTableMark(player, MarkEnum.InvalidSkills, "taozhou")
+      end
+    end
   end,
 }
 local houde = fk.CreateTriggerSkill{
@@ -2090,7 +2102,7 @@ local fengmin = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and player:getMark("@@fengmin-turn") == 0 then
+    if player:hasSkill(self) and player:getMark("fengmin-turn") == 0 then
       for _, move in ipairs(data) do
         for _, info in ipairs(move.moveInfo) do
           if info.fromArea == Card.PlayerEquip then
@@ -2103,8 +2115,9 @@ local fengmin = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     player:drawCards(5 - #player.room.current:getCardIds("e"), self.name)
-    if player:usedSkillTimes(self.name, Player.HistoryTurn) > player:getLostHp() then
-      player.room:setPlayerMark(player, "@@fengmin-turn", 1)
+    if player:usedSkillTimes(self.name, Player.HistoryTurn) > player:getLostHp() and player:hasSkill(self, true) then
+      player.room:setPlayerMark(player, "fengmin-turn", 1)
+      player.room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
     end
   end,
 }
@@ -2182,7 +2195,6 @@ Fk:loadTranslationTable{
   ["zhiwang"] = "质亡",
   [":zhiwang"] = "每回合限一次，当你受到牌造成的伤害进入濒死状态时，你可以将此伤害改为无来源伤害并选择一名其他角色，当前回合结束时，"..
   "其使用弃牌堆中令你进入濒死状态的牌。",
-  ["@@fengmin-turn"] = "丰愍失效",
   ["#zhiwang-choose"] = "质亡：将伤害改为无伤害来源，并令一名角色本回合结束可以使用使你进入濒死状态的牌",
   ["@@zhiwang-turn"] = "质亡",
   ["#zhiwang-use"] = "质亡：请使用这些牌",

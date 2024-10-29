@@ -1681,8 +1681,11 @@ local ty__gushe = fk.CreateActiveSkill{
   min_target_num = 1,
   max_target_num = 3,
   prompt = "#ty__gushe-active",
+  times = function(self)
+    return Self.phase ~= Player.NotActive and 7 - Self:getMark("ty__raoshe_win-turn") - Self:getMark("@ty__raoshe") or -1
+  end,
   can_use = function(self, player)
-    return not player:isKongcheng() and #player:getTableMark("@ty__gushe-turn") == 2
+    return not player:isKongcheng() and player:getMark("ty__raoshe_invalidity-turn") == 0
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
@@ -1731,35 +1734,29 @@ local ty__gushe_delay = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.PindianResultConfirmed, fk.TurnStart, fk.EventAcquireSkill, fk.EventLoseSkill},
+  refresh_events = {fk.PindianResultConfirmed, fk.EventLoseSkill},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.TurnStart then
-      return player == target and player:hasSkill(ty__gushe, true)
-    elseif event == fk.PindianResultConfirmed then
+    if event == fk.PindianResultConfirmed then
       return data.winner and data.winner == player and player:hasSkill(ty__gushe, true)
-    elseif event == fk.EventAcquireSkill then
-      return player == target and data == ty__gushe and player.phase ~= Player.NotActive
     elseif event == fk.EventLoseSkill then
       return player == target and data == ty__gushe
     end
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.TurnStart then
-      local x = 7 - player:getMark("@ty__raoshe")
-      room:setPlayerMark(player, "@ty__gushe-turn", x > 0 and {"times_left", x} or "invalidity")
-    elseif event == fk.PindianResultConfirmed then
-      local mark = player:getTableMark("@ty__gushe-turn")
-      if #mark == 2 then
-        local x = mark[2] - 1
-        room:setPlayerMark(player, "@ty__gushe-turn", x > 0 and {"times_left", x} or "invalidity")
+    if event == fk.PindianResultConfirmed then
+      room:addPlayerMark(player, "ty__raoshe_win-turn")
+      if player:getMark("@ty__raoshe") + player:getMark("ty__raoshe_win-turn") > 6 then
+        if player:getMark("ty__raoshe_invalidity-turn") == 0 then
+          room:setPlayerMark(player, "ty__raoshe_invalidity-turn", 1)
+          room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", "ty__gushe")
+        end
       end
-    elseif event == fk.EventAcquireSkill then
-      room:setPlayerMark(player, "@ty__raoshe", 0)
-      room:setPlayerMark(player, "@ty__gushe-turn", {"times_left", 7})
     elseif event == fk.EventLoseSkill then
       room:setPlayerMark(player, "@ty__raoshe", 0)
-      room:setPlayerMark(player, "@ty__gushe-turn", 0)
+      room:setPlayerMark(player, "ty__raoshe_win-turn", 0)
+      room:setPlayerMark(player, "ty__raoshe_invalidity-turn", 0)
+      room:removeTableMark(player, MarkEnum.InvalidSkills .. "-turn", "ty__gushe")
     end
   end,
 }
@@ -2173,7 +2170,8 @@ local qingshi = fk.CreateTriggerSkill{
   events = {fk.CardUsing},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Play and not table.contains(player:getTableMark(MarkEnum.InvalidSkills), self.name) and
+    return target == player and player:hasSkill(self) and player.phase == Player.Play and
+      not table.contains(player:getTableMark(MarkEnum.InvalidSkills .. "-turn"), self.name) and
       table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id).trueName == data.card.trueName end) and
       not table.contains(player:getTableMark("qingshi-turn"), data.card.trueName)
   end,
@@ -2226,25 +2224,18 @@ local qingshi = fk.CreateTriggerSkill{
       room:notifySkillInvoked(player, self.name, "drawcard")
       player:broadcastSkillInvoke(self.name)
       player:drawCards(3, self.name)
-      room:addTableMark(player, MarkEnum.InvalidSkills, self.name)
+      room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
     end
   end,
 
-  refresh_events = {fk.EventLoseSkill, fk.AfterTurnEnd},
+  refresh_events = {fk.EventLoseSkill},
   can_refresh = function(self, event, target, player, data)
-    if target ~= player then return end
-    if event == fk.EventLoseSkill then
-      return data == self
-    else
-      return table.contains(player:getTableMark(MarkEnum.InvalidSkills), self.name)
-    end
+    return target ~= player and data == SetInteractionDataOfSkill
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.EventLoseSkill then
-      room:setPlayerMark(player, "qingshi-turn", 0)
-    end
-    room:removeTableMark(player, MarkEnum.InvalidSkills, self.name)
+    room:setPlayerMark(player, "qingshi-turn", 0)
+    room:removeTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
   end,
 }
 local qingshi_delay = fk.CreateTriggerSkill{

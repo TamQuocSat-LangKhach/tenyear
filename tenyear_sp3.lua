@@ -411,7 +411,7 @@ local shencai = fk.CreateActiveSkill{
   card_num = 0,
   target_num = 1,
   times = function(self)
-    return 1 + Self:getMark("xunshi") - Self:usedSkillTimes(self.name, Player.HistoryPhase)
+    return Self.phase == Player.Play and 1 + Self:getMark("xunshi") - Self:usedSkillTimes(self.name, Player.HistoryPhase) or -1
   end,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 + player:getMark("xunshi")

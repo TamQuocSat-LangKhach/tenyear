@@ -1600,8 +1600,8 @@ Fk:loadTranslationTable{
   ["zixi"] = "姊希",
   [":zixi"] = "出牌阶段开始时和结束时，你可以将一张“琴”放置在一名角色的判定区"..
   "（牌名当做【兵粮寸断】、【乐不思蜀】或【闪电】使用，且判定阶段不执行效果）。"..
-  "你使用基本牌或普通锦囊牌指定唯一目标后，可根据其判定区牌的张数执行："..
-  "1张：此牌结算后，你视为对其使用一张牌名相同的牌；2张：你摸2张牌；3张：弃置其判定区所有牌，对其造成3点伤害。",
+  "你使用基本牌或普通锦囊牌指定唯一目标后，可根据其判定区里的牌数执行："..
+  "1张：此牌结算后，你视为对其使用一张牌名相同的牌；2张：你摸2张牌；3张：弃置其判定区里的所有牌，对其造成3点伤害。",
   ["@@qiqin-inhand"] = "琴",
   ["#zixi-cost"] = "是否发动 姊希，将一张“琴”放置在一名角色的判定区",
   ["zixi_active"] = "姊希",
@@ -1870,17 +1870,17 @@ local diaochan = General(extension, "mu__diaochan", "qun", 3, 3, General.Female)
 local tanban = fk.CreateTriggerSkill{
   name = "tanban",
   anim_type = "special",
-  frequency = Skill.Compulsory,
   events = {fk.GameStart, fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) or player:isKongcheng() then return false end
     if event == fk.GameStart then
-      return player:hasSkill(self) and not player:isKongcheng()
+      return true
     else
-      return target == player and player:hasSkill(self) and player.phase == Player.Draw and not player:isKongcheng()
-      and #table.filter(player.player_cards[Player.Hand], function (id)
-        return Fk:getCardById(id):getMark("@@tanban-inhand") > 0
-      end) < (player:getHandcardNum() / 2)
+      return target == player and player.phase == Player.Draw
     end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return event == fk.GameStart or player.room:askForSkillInvoke(player, self.name, nil, "#tanban-invoke")
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -1939,11 +1939,15 @@ local diou = fk.CreateTriggerSkill{
     local room = player.room
     local chosen = self.cost_data.cards[1]
     local draw = not table.contains(player:getTableMark("diou-turn"), chosen)
-    room:addTableMark(player, "diou-turn", chosen)
+    if draw then
+      room:addTableMark(player, "diou-turn", chosen)
+    else
+      draw = Fk:getCardById(chosen).trueName == data.card.trueName
+    end
     player:showCards({chosen})
     local card = Fk:getCardById(chosen)
     if card.type == Card.TypeBasic or card:isCommonTrick() then
-      U.askForUseVirtualCard(room, player, card.name, nil, self.name, nil, false, true, true, true)
+      U.askForUseVirtualCard(room, player, card.name, nil, self.name, nil, false, true, false, true)
     end
     if draw and not player.dead then
       player:drawCards(1, self.name)
@@ -1968,12 +1972,14 @@ Fk:loadTranslationTable{
   --["illustrator:mu__diaochan"] = "",
 
   ["tanban"] = "檀板",
-  [":tanban"] = "锁定技，①游戏开始时，将初始手牌标记为“檀板”牌（“檀板”牌不计入你的手牌上限）；②摸牌阶段结束时，若你的“檀板”牌数小于其余手牌数，将“檀板”牌的标记交换给其余手牌。",
-  ["@@tanban-inhand"] = "檀板",
-
+  [":tanban"] = "游戏开始时，你的初始手牌增加“檀板”标记且不计入手牌上限。"..
+  "摸牌阶段结束时，你可以交换手牌区里的“檀板”牌和非“檀板”牌的标记。",
   ["diou"] = "低讴",
-  [":diou"] = "当你使用“檀板”结算结束后，你可以展示一张不为“檀板”牌的手牌，若展示了基本牌或普通锦囊牌，你视为使用展示牌。若为你本回合第一次展示此牌，你摸一张牌。",
+  [":diou"] = "当你使用“檀板”牌结算结束后，你可以展示一张不为“檀板”牌的手牌，"..
+  "若展示了基本牌或普通锦囊牌，你视为使用展示牌。若为你本回合第一次展示此牌或与使用的“檀板”牌牌名相同，你摸一张牌。",
   ["#diou-card"] = "低讴：你可以展示一张非“檀板”牌，视为使用之。初次展示此牌则摸一张牌",
+  ["@@tanban-inhand"] = "檀板",
+  ["#tanban-invoke"] = "是否发动 檀板，改变手牌区里所有“檀板”牌和非“檀板”牌的标记状态",
   ["@@diou_showed"] = "已展示",
 }
 

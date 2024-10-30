@@ -3768,11 +3768,10 @@ local caixia = fk.CreateTriggerSkill{
   events = {fk.Damage, fk.Damaged, fk.CardUsing},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self) then return false end
     if event == fk.CardUsing then
-      return player == target and player:getMark("@caixia") > 0
+      return player == target and player:hasSkill(self, true) and player:getMark("@caixia") > 0
     else
-      return player == target and player:getMark("@caixia") == 0
+      return player == target and player:hasSkill(self) and player:getMark("@caixia") == 0
     end
   end,
   on_cost = function(self, event, target, player, data)
@@ -3814,7 +3813,9 @@ local caixia = fk.CreateTriggerSkill{
     return target == player and data == self
   end,
   on_refresh = function(self, event, target, player, data)
-    player.room:removeTableMark(player, MarkEnum.InvalidSkills, self.name)
+    local room = player.room
+    room:setPlayerMark(player, "@caixia", 0)
+    room:removeTableMark(player, MarkEnum.InvalidSkills, self.name)
   end,
 }
 xujing:addSkill(shangyu)

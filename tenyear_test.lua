@@ -765,11 +765,7 @@ local yitong = fk.CreateTriggerSkill{
         return true
       elseif event == fk.TargetConfirmed then
         return target == player and data.card:getSuitString(true) == player:getMark("@yitong") and
-          #player.room.logic:getEventsOfScope(GameEvent.UseCard, 2, function(e)
-            local use = e.data[1]
-            return use.card:getSuitString(true) == player:getMark("@yitong") and use.tos and
-              table.contains(TargetGroup:getRealTargets(use.tos), player.id)
-          end, Player.HistoryTurn) == 1
+          player:getMark("yitong_draw-turn") == 0
       end
     end
   end,
@@ -780,6 +776,7 @@ local yitong = fk.CreateTriggerSkill{
       local suit = room:askForChoice(player, all_suits, self.name, "#yitong-suit")
       room:setPlayerMark(player, "@yitong", suit)
     else
+      room:setPlayerMark(player, "yitong_draw-turn", 1)
       table.removeOne(all_suits, data.card:getSuitString(true))
       local cards = {}
       for _, suit in ipairs(all_suits) do
@@ -795,6 +792,41 @@ local yitong = fk.CreateTriggerSkill{
     end
   end,
 }
+
+local peiniang__analepticSkill = fk.CreateActiveSkill{
+  name = "peiniang__analeptic_skill",
+  prompt = "#analeptic_skill",
+  max_turn_use_time = 1,
+  mod_target_filter = function(self, to_select, _, _, card, _)
+    return not table.find(Fk:currentRoom().alive_players, function(p)
+      return p.dying
+    end)
+  end,
+  can_use = function(self, player, card, extra_data)
+    return not player:isProhibited(player, card) and ((extra_data and (extra_data.bypass_times or extra_data.analepticRecover)) or
+      self:withinTimesLimit(player, Player.HistoryTurn, card, "analeptic", player))
+  end,
+  on_use = function(_, _, use)
+    if not use.tos or #TargetGroup:getRealTargets(use.tos) == 0 then
+      use.tos = { { use.from } }
+    end
+
+    if use.extra_data and use.extra_data.analepticRecover then
+      use.extraUse = true
+    end
+  end,
+  on_effect = function(_, room, effect)
+    local to = room:getPlayerById(effect.to)
+    room:recover({
+      who = to,
+      num = math.max(1, 1 - to.hp),
+      recoverBy = room:getPlayerById(effect.from),
+      card = effect.card,
+    })
+  end
+}
+peiniang__analepticSkill.cardSkill = true
+Fk:addSkill(peiniang__analepticSkill)
 local peiniang = fk.CreateViewAsSkill{
   name = "peiniang",
   anim_type = "offensive",
@@ -836,11 +868,17 @@ local peiniang_trigger = fk.CreateTriggerSkill{
       not player:isProhibited(target, Fk:cloneCard("analeptic"))
   end,
   on_cost = function (self, event, target, player, data)
-    local pattern = "analeptic"
-    if player:hasSkill(peiniang) and player:getMark("@yitong") ~= 0 then
-      pattern = "analeptic;.|.|"..string.sub(player:getMark("@yitong"), 5)
-    end
-    local card = player.room:askForCard(player, 1, 1, true, self.name, true, pattern,
+    local analeptic
+    local ids = table.filter(player:getCardIds(Player.Hand), function (id)
+      analeptic = Fk:getCardById(id)
+      if analeptic.trueName == "analeptic" or analeptic:getSuitString(true) == player:getMark("@yitong") then
+        analeptic = Fk:cloneCard("analeptic")
+        analeptic.skillName = "peiniang"
+        analeptic:addSubcard(id)
+        return not player:prohibitUse(analeptic) and not player:isProhibited(target, analeptic)
+      end
+    end)
+    local card = player.room:askForCard(player, 1, 1, true, self.name, true, tostring(Exppattern{ id = ids }),
       "#peiniang-use::"..target.id..":"..(1 - target.hp))
     if #card > 0 then
       self.cost_data = {cards = card}
@@ -849,23 +887,16 @@ local peiniang_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local card = Fk:getCardById(self.cost_data.cards[1])
-    if card:getSuitString(true) == player:getMark("@yitong") then
-      card = Fk:cloneCard("analeptic")
-      card.skillName = "peiniang"
-      card:addSubcard(self.cost_data.cards[1])
-    end
+    local card = Fk:cloneCard("analeptic")
+    card.skillName = "peiniang"
+    card:addSubcard(self.cost_data.cards[1])
+    card.skill = peiniang__analepticSkill
     room:useCard{
       from = player.id,
       tos = {{target.id}},
       extra_data = {analepticRecover = true},
       card = card,
     }
-    while not player.dead and not target.dead and target.hp < 1 do
-      if not self:doCost(event, target, player, data) then
-        return
-      end
-    end
   end,
 }
 peiniang:addRelatedSkill(peiniang_targetmod)
@@ -874,16 +905,18 @@ pangfengyi:addSkill(yitong)
 pangfengyi:addSkill(peiniang)
 Fk:loadTranslationTable{
   ["pangfengyi"] = "庞凤衣",
-  ["#pangfengyi"] = "",
+  ["#pangfengyi"] = "瞳悉万机",
 
   ["yitong"] = "异瞳",
   [":yitong"] = "锁定技，游戏开始时，你选择一种花色。你每回合首次成为该花色牌的目标后，随机获得与该花色不同花色的牌各一张。",
   ["peiniang"] = "醅酿",
-  [":peiniang"] = "你可以将“异瞳”花色的牌当【酒】使用（不计次数）。一名角色进入濒死状态时，你可以对其使用【酒】令其回复体力至1。",
+  [":peiniang"] = "你可以将“异瞳”花色的牌当【酒】使用（不计次数）。"..
+  "当一名角色进入濒死状态时，你可以将一张【酒】或“异瞳”花色的牌当【酒】对其使用，"..
+  "此【酒】的作用效果改为：目标角色回复体力至1点（至少回复1点体力）。",
   ["#yitong-suit"] = "异瞳：请选择一种花色",
   ["@yitong"] = "异瞳",
   ["#peiniang"] = "醅酿：你可以将一张%arg牌当【酒】使用（不计次数）",
-  ["#peiniang-use"] = "醅酿：你可以对 %dest 使用【酒】（还需%arg张！）",
+  ["#peiniang-use"] = "醅酿：你可以对 %dest 使用【酒】（令其回复体力至1点）",
 }
 
 return extension

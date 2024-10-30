@@ -878,7 +878,7 @@ local peiniang_trigger = fk.CreateTriggerSkill{
         return not player:prohibitUse(analeptic) and not player:isProhibited(target, analeptic)
       end
     end)
-    local card = player.room:askForCard(player, 1, 1, true, self.name, true, tostring(Exppattern{ id = ids }),
+    local card = player.room:askForCard(player, 1, 1, true, "peiniang", true, tostring(Exppattern{ id = ids }),
       "#peiniang-use::"..target.id..":"..(1 - target.hp))
     if #card > 0 then
       self.cost_data = {cards = card}

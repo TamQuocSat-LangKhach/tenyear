@@ -238,7 +238,7 @@ local moyu = fk.CreateActiveSkill{
     return "#moyu-active:::" .. tostring((Self:getMark("@@moyu1-phase") > 0) and 2 or 1)
   end,
   can_use = function(self, player)
-    return player:getMark("@@moyu2-turn") == 0
+    return player:getMark("moyu2-turn") == 0
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
@@ -265,7 +265,8 @@ local moyu = fk.CreateActiveSkill{
       room:useCard(use)
       if player.dead then return end
       if use.damageDealt and use.damageDealt[player.id] then
-        room:setPlayerMark(player, "@@moyu2-turn", 1)
+        room:setPlayerMark(player, "moyu2-turn", 1)
+        room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
       else
         room:setPlayerMark(player, "@@moyu1-phase", 1)
       end
@@ -284,7 +285,6 @@ Fk:loadTranslationTable{
   ["#moyu-active"] = "发动 没欲，选择1名角色，获得其区域里的%arg张牌",
   ["#moyu-slash"] = "没欲：你可以对 %dest 使用一张【杀】",
   ["@@moyu1-phase"] = "没欲强化",
-  ["@@moyu2-turn"] = "没欲失效",
 
   ["$moyu1"] = "人之所有，我之所欲。",
   ["$moyu2"] = "胸有欲壑千丈，自当饥不择食。",

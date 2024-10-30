@@ -658,7 +658,7 @@ local ty_ex__xuanfeng = fk.CreateTriggerSkill{
           local logic = player.room.logic
           logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
             for _, move in ipairs(e.data) do
-              if move.from == player.id and move.moveReason == fk.ReasonDiscard and move.skillName == "game_rule" then
+              if move.from == player.id and move.moveReason == fk.ReasonDiscard and move.skillName == "phase_discard" then
                 x = x + #move.moveInfo
                 if x > 1 then return true end
               end

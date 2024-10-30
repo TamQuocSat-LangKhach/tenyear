@@ -1980,7 +1980,7 @@ local fuping_trigger = fk.CreateTriggerSkill{
   events = {fk.CardUseFinished},
   main_skill = fuping,
   can_trigger = function(self, event, target, player, data)
-    if target == player or not player:hasSkill(fuping.name) or #player:getAvailableEquipSlots() == 0 then return false end
+    if target == player or not player:hasSkill(fuping) or #player:getAvailableEquipSlots() == 0 then return false end
     if data.card.type ~= Card.TypeEquip and table.contains(TargetGroup:getRealTargets(data.tos), player.id) then
       return not table.contains(player:getTableMark("@$fuping"), data.card.trueName)
     end

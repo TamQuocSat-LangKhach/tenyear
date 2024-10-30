@@ -3328,7 +3328,7 @@ local cansi_draw = fk.CreateTriggerSkill{
   events = {fk.Damaged},
   main_skill = cansi,
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(cansi.name) or not data.card then return false end
+    if not player:hasSkill(cansi) or not data.card then return false end
     local use_event = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
     if use_event then
       local use = use_event.data[1]
@@ -3338,7 +3338,7 @@ local cansi_draw = fk.CreateTriggerSkill{
   end,
   on_trigger = function(self, event, target, player, data)
     for i = 1, data.damage do
-      if not player:hasSkill(cansi.name) then break end
+      if not player:hasSkill(cansi) then break end
       self:doCost(event, target, player, data)
     end
   end,

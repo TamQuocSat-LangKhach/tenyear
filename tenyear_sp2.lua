@@ -2433,7 +2433,7 @@ local fudao_delay = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     player.room:notifySkillInvoked(player, fudao.name, "offensive")
-    if player:hasSkill(fudao.name, true) then
+    if player:hasSkill(fudao, true) then
       player:broadcastSkillInvoke(fudao.name)
     end
     data.damage = data.damage + 1

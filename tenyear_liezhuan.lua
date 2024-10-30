@@ -588,9 +588,9 @@ local panshi = fk.CreateTriggerSkill{
     if player:hasSkill(self) and player == target then
       if event == fk.EventPhaseStart then
         return player.phase == Player.Start and table.find(player.room.alive_players, function (p)
-          return p ~= player and p:hasSkill(cixiao.name, true) end)
+          return p ~= player and p:hasSkill(cixiao, true) end)
       elseif event == fk.DamageCaused or event == fk.Damage then
-        return player.phase == Player.Play and data.to:hasSkill(cixiao.name, true) and
+        return player.phase == Player.Play and data.to:hasSkill(cixiao, true) and
         data.card and data.card.trueName =="slash" and not data.chain
       end
     end
@@ -600,7 +600,7 @@ local panshi = fk.CreateTriggerSkill{
     if event == fk.EventPhaseStart then
       room:notifySkillInvoked(player, self.name, "negative")
       player:broadcastSkillInvoke(self.name)
-      local fathers = table.filter(room.alive_players, function (p) return p ~= player and p:hasSkill(cixiao.name, true) end)
+      local fathers = table.filter(room.alive_players, function (p) return p ~= player and p:hasSkill(cixiao, true) end)
       if #fathers == 1 then
         room:doIndicate(player.id, {fathers[1].id})
         if player:isKongcheng() then return false end
@@ -1549,7 +1549,7 @@ local fuzhong_distance = fk.CreateDistanceSkill{
   name = "#fuzhong_distance",
   frequency = Skill.Compulsory,
   correct_func = function(self, from, to)
-    if from:hasSkill(fuzhong.name) and from:getMark("@fuzhong_weight") > 1 then
+    if from:hasSkill(fuzhong) and from:getMark("@fuzhong_weight") > 1 then
       return -2
     end
   end,
@@ -1557,7 +1557,7 @@ local fuzhong_distance = fk.CreateDistanceSkill{
 local fuzhong_maxcards = fk.CreateMaxCardsSkill{
   name = "#fuzhong_maxcards",
   correct_func = function(self, player)
-    if player:hasSkill(fuzhong.name) and player:getMark("@fuzhong_weight") > 2 then
+    if player:hasSkill(fuzhong) and player:getMark("@fuzhong_weight") > 2 then
       return 3
     end
   end,

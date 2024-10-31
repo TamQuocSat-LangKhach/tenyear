@@ -2029,7 +2029,7 @@ local weilie = fk.CreateActiveSkill{
   name = "weilie",
   anim_type = "support",
   prompt = function ()
-    return "#weilie-active:::" .. tostring(Self:getTableMark("@$fuping") - Self:usedSkillTimes("weilie", Player.HistoryGame) + 1)
+    return "#weilie-active:::" .. tostring(#Self:getTableMark("@$fuping") - Self:usedSkillTimes("weilie", Player.HistoryGame) + 1)
   end,
   times = function(self)
     return 1 + #Self:getTableMark("@$fuping") - Self:usedSkillTimes(self.name, Player.HistoryGame)
@@ -2037,8 +2037,8 @@ local weilie = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryGame)  <= #player:getTableMark("@$fuping")
   end,
-  card_filter = function(self, to_select, selected, targets)
-    return #selected == 0
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and not Self:prohibitDiscard(to_select)
   end,
   target_filter = function(self, to_select, selected, cards)
     return #selected == 0 and Fk:currentRoom():getPlayerById(to_select):isWounded()
@@ -2049,12 +2049,14 @@ local weilie = fk.CreateActiveSkill{
     local from = room:getPlayerById(effect.from)
     room:throwCard(effect.cards, self.name, from, from)
     local target = room:getPlayerById(effect.tos[1])
-    room:recover({
-      who = target,
-      num = 1,
-      recoverBy = from,
-      skillName = self.name
-    })
+    if not target.dead then
+      room:recover({
+        who = target,
+        num = 1,
+        recoverBy = from,
+        skillName = self.name
+      })
+    end
     if not target.dead and target:isWounded() then
       room:drawCards(target, 1, self.name)
     end
@@ -2081,7 +2083,7 @@ Fk:loadTranslationTable{
   ["#fuping-choice"] = "是否发动 浮萍，废除一个装备栏，记录牌名【%arg】",
   ["@$fuping"] = "浮萍",
   ["#fuping-viewas"] = "发动 浮萍，将一张非基本牌当记录过的牌使用",
-  ["#weilie-active"] = "发动 炜烈，弃置一张牌令一名已受伤的角色回复体力（剩余 %arg 次）",
+  ["#weilie-active"] = "炜烈：弃一张牌令一名已受伤的角色回复体力（剩余 %arg 次）",
 
   ["$fuping1"] = "有草生清池，无根碧波上。",
   ["$fuping2"] = "愿为浮萍草，托身寄清池。",

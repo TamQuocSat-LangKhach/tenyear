@@ -4091,7 +4091,7 @@ local poyuan = fk.CreateTriggerSkill{
       end)
       if catapult then
         room:setCardMark(Fk:getCardById(catapult), MarkEnum.DestructOutMyEquip, 1)
-        U.moveCardIntoEquip (room, player, catapult, self.name, true, player)
+        room:moveCardIntoEquip(player, catapult, self.name, true, player)
       end
     end
   end,

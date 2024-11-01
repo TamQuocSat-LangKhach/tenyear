@@ -5806,7 +5806,7 @@ local wanglu = fk.CreateTriggerSkill{
         for i = 1, 3, 1 do
           room:setPlayerMark(player, "xianzhu"..tostring(i), 0)
         end
-        U.moveCardIntoEquip (room, player, engine, self.name, true, player)
+        room:moveCardIntoEquip(player, engine, self.name, true, player)
       end
     end
   end,

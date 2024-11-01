@@ -2242,7 +2242,7 @@ local ligong = fk.CreateTriggerSkill{
       table.insert(same_g, general_name)
       same_g = table.filter(same_g, function (g_name)
         local general = Fk.generals[g_name]
-        return (general.kingdom == "wu" or general.subkingdom == "wu") and general:isFemale()
+        return (general.kingdom == "wu" or general.subkingdom == "wu") and general.gender == General.Female
       end)
       if #same_g > 0 then
         table.insert(generals, table.random(same_g))

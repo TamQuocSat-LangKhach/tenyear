@@ -1598,4 +1598,112 @@ Fk:loadTranslationTable{
   ["~tystar__sunshangxiang"] = "秋风冷，江水寒……",
 }
 
+local fazheng = General(extension, "tystar__fazheng", "shu", 3)
+local zhijif = fk.CreateTriggerSkill{
+  name = "zhijif",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Start
+  end,
+  on_cost = function(self, event, target, player, data)
+    local extraData = {
+      num = 999,
+      min_num = 0,
+      include_equip = false,
+      skillName = self.name,
+      pattern = ".",
+    }
+    local success, dat = player.room:askForUseActiveSkill(player, "discard_skill", "#zhijif-invoke", true, extraData)
+    if success then
+      self.cost_data = {cards = dat.cards}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if #self.cost_data.cards > 0 then
+      room:throwCard(self.cost_data.cards, self.name, player, player)
+    end
+    if player.dead then return end
+    local n = 5 - player:getHandcardNum()
+    if n > 0 then
+      player:drawCards(n, self.name)
+    end
+    if player.dead then return end
+    n = #self.cost_data.cards - math.max(n, 0)
+    if n > 0 then
+      local targets = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, n,
+        "#zhijif-choose:::"..n, self.name, true)
+      if #targets > 0 then
+        room:sortPlayersByAction(targets)
+        for _, id in ipairs(targets) do
+          local p = room:getPlayerById(id)
+          if not p.dead then
+            room:damage{
+              from = player,
+              to = p,
+              damage = 1,
+              skillName = self.name,
+            }
+          end
+        end
+      end
+    elseif n == 0 then
+      room:setPlayerMark(player, "@@zhijif-turn", 1)
+    elseif n < 0 then
+      room:addPlayerMark(player, MarkEnum.AddMaxCards.."-turn", 2)
+    end
+  end,
+
+  refresh_events = {fk.CardUsing},
+  can_refresh = function (self, event, target, player, data)
+    return target == player and player:getMark("@@zhijif-turn") > 0 and
+      (data.card.trueName == "slash" or data.card:isCommonTrick())
+  end,
+  on_refresh = function (self, event, target, player, data)
+    data.disresponsiveList = table.map(player.room.alive_players, Util.IdMapper)
+  end,
+}
+local anji = fk.CreateTriggerSkill{
+  name = "anji",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.CardUsing},
+  can_trigger = function (self, event, target, player, data)
+    if player:hasSkill(self) and data.card.suit ~= Card.NoSuit then
+      local dat = {}
+      player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+        local use = e.data[1]
+        if use.card.suit ~= Card.NoSuit then
+          dat[use.card.suit] = (dat[use.card.suit] or 0) + 1
+        end
+      end, Player.HistoryRound)
+      for _, n in pairs(dat) do
+        if dat[data.card.suit] < n then return end
+      end
+      return true
+    end
+  end,
+  on_use = function (self, event, target, player, data)
+    player:drawCards(1, self.name)
+  end,
+}
+fazheng:addSkill(zhijif)
+fazheng:addSkill(anji)
+Fk:loadTranslationTable{
+  ["tystar__fazheng"] = "星法正",
+  ["#tystar__fazheng"] = "",
+  ["illustrator:tystar__fazheng"] = "",
+
+  ["zhijif"] = "知机",
+  [":zhijif"] = "准备阶段，你可以弃置任意张手牌（可以不弃），然后将手牌摸至5张。若你因此弃牌数比摸牌数：多，你可以对至多X名其他角色各造成1点伤害"..
+  "（X为弃牌数比摸牌数多的数量）；相等，你本回合使用牌不能被响应；少，你本回合手牌上限+2。",
+  ["anji"] = "谙计",
+  [":anji"] = "锁定技，当一名角色使用牌时，若此牌花色是本轮中使用次数最少的，你摸一张牌。",
+  ["#zhijif-invoke"] = "知机：你可以弃置任意张手牌，然后将手牌摸至5张，根据弃牌数和摸牌数执行效果",
+  ["#zhijif-choose"] = "知机：你可以对至多%arg名其他角色各造成1点伤害",
+  ["@@zhijif-turn"] = "知机 不可响应",
+}
+
 return extension

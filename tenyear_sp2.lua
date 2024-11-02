@@ -5492,11 +5492,12 @@ local shawu_select = fk.CreateActiveSkill{
     return 2
   end,
   card_filter = function(self, to_select, selected)
-    return #selected < 2 and not Self:prohibitDiscard(Fk:getCardById(to_select)) and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
+    return #selected < 2 and not Self:prohibitDiscard(Fk:getCardById(to_select))
+    and table.contains(Self:getCardIds("h"), to_select)
   end,
   feasible = function (self, selected, selected_cards)
     if #selected_cards == 0 then
-      return #Self:getMark("@xiaowu_sand") > 0
+      return Self:getMark("@xiaowu_sand") > 0
     else
       return #selected_cards == 2
     end

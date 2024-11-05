@@ -2773,9 +2773,9 @@ local wuyou_refresh = fk.CreateTriggerSkill{
     if event == fk.PreCardUse then
       return player == target and not data.card:isVirtual() and data.card:getMark("@@wuyou-inhand") ~= 0
     elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == self
+      return data == wuyou
     elseif event == fk.BuryVictim then
-      return player:hasSkill(self, true, true)
+      return player:hasSkill(wuyou, true, true)
     end
   end,
   on_refresh = function(self, event, target, player, data)

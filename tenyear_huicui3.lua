@@ -1950,7 +1950,7 @@ local diou = fk.CreateTriggerSkill{
       U.askForUseVirtualCard(room, player, card.name, nil, self.name, nil, false, true, false, true)
     end
     if draw and not player.dead then
-      player:drawCards(1, self.name)
+      player:drawCards(2, self.name)
     end
   end,
 
@@ -1976,11 +1976,17 @@ Fk:loadTranslationTable{
   "摸牌阶段结束时，你可以交换手牌区里的“檀板”牌和非“檀板”牌的标记。",
   ["diou"] = "低讴",
   [":diou"] = "当你使用“檀板”牌结算结束后，你可以展示一张不为“檀板”牌的手牌，"..
-  "若展示了基本牌或普通锦囊牌，你视为使用展示牌。若为你本回合第一次展示此牌或与使用的“檀板”牌牌名相同，你摸一张牌。",
-  ["#diou-card"] = "低讴：你可以展示一张非“檀板”牌，视为使用之。初次展示此牌则摸一张牌",
+  "若展示了基本牌或普通锦囊牌，你视为使用展示牌。若为你本回合第一次展示此牌或与使用的“檀板”牌牌名相同，你摸两张牌。",
+  ["#diou-card"] = "低讴：你可以展示一张非“檀板”牌，视为使用之。初次展示此牌则摸两张牌",
   ["@@tanban-inhand"] = "檀板",
-  ["#tanban-invoke"] = "是否发动 檀板，改变手牌区里所有“檀板”牌和非“檀板”牌的标记状态",
+  ["#tanban-invoke"] = "檀板：你可以改变手牌区里所有“檀板”牌和非“檀板”牌的标记状态",
   ["@@diou_showed"] = "已展示",
+
+  ["$tanban1"] = "将军，妾身奏得如何？",
+  ["$tanban2"] = "将军还想再听一曲？",
+  ["$diou1"] = "一日不见兮，思之如狂。",
+  ["$diou2"] = "有一美人兮，见之不忘。",
+  ["~mu__diaochan"] = "红颜薄命，一曲离歌终……",
 }
 
 

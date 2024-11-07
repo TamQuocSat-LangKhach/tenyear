@@ -4343,11 +4343,15 @@ local youzhan = fk.CreateTriggerSkill{
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and player.phase ~= Player.NotActive then
+      local room = player.room
       for _, move in ipairs(data) do
         if move.from and move.from ~= player.id then
-          for _, info in ipairs(move.moveInfo) do
-            if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
-              return true
+          local from_player = room:getPlayerById(move.from)
+          if from_player and not from_player.dead then
+            for _, info in ipairs(move.moveInfo) do
+              if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+                return true
+              end
             end
           end
         end

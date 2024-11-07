@@ -4338,7 +4338,7 @@ Fk:loadTranslationTable{
 local wuban = General(extension, "ty__wuban", "shu", 4)
 local youzhan = fk.CreateTriggerSkill{
   name = "youzhan",
-  mute = true,
+  anim_type = "drawcard",
   frequency = Skill.Compulsory,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
@@ -4358,27 +4358,31 @@ local youzhan = fk.CreateTriggerSkill{
       end
     end
   end,
-  on_use = function(self, event, target, player, data)
+  on_trigger = function (self, event, target, player, data)
     local room = player.room
+    local numMap = {}
     for _, move in ipairs(data) do
       if move.from and move.from ~= player.id then
-        local yes = false
-        for _, info in ipairs(move.moveInfo) do
-          if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
-            yes = true
-          end
-        end
-        if yes then
-          player:broadcastSkillInvoke(self.name)
-          room:notifySkillInvoked(player, self.name, "drawcard")
-          player:drawCards(1, self.name, nil, "@@youzhan-inhand-turn")
-          local to = room:getPlayerById(move.from)
-          if not to.dead then
-            room:addPlayerMark(to, "@youzhan-turn", 1)
-            room:addPlayerMark(to, "youzhan-turn", 1)
-          end
+        local from = room:getPlayerById(move.from)
+        if from and not from.dead then
+          numMap[move.from] = (numMap[move.from] or 0) + #table.filter(move.moveInfo, function(info)
+            return info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip
+          end)
         end
       end
+    end
+    for pid, num in pairs(numMap) do
+      if not player:hasSkill(self) then break end
+      self.cost_data = {tos = {pid}}
+      self:doCost(event, room:getPlayerById(pid), player, num)
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:drawCards(1, self.name, nil, "@@youzhan-inhand-turn")
+    if not target.dead then
+      room:addPlayerMark(target, "@youzhan-turn", 1)
+      room:addPlayerMark(target, "youzhan-turn", 1)
     end
   end,
 }
@@ -4401,7 +4405,7 @@ local youzhan_trigger = fk.CreateTriggerSkill{
     if event == fk.DamageInflicted then
       if room.current then
         room.current:broadcastSkillInvoke("youzhan")
-        room:notifySkillInvoked(room.current, "youzhan", "offensive")
+        room:notifySkillInvoked(room.current, "youzhan", "offensive", {player.id})
         room:doIndicate(room.current.id, {player.id})
       end
       data.damage = data.damage + player:getMark("@youzhan-turn")

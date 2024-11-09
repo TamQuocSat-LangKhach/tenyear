@@ -2157,7 +2157,6 @@ local qingshi = fk.CreateTriggerSkill{
   mute = true,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Play and
-      not table.contains(player:getTableMark(MarkEnum.InvalidSkills .. "-turn"), self.name) and
       table.find(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id).trueName == data.card.trueName end) and
       not table.contains(player:getTableMark("qingshi-turn"), data.card.trueName)
   end,
@@ -2186,9 +2185,7 @@ local qingshi = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local mark = player:getTableMark("qingshi-turn")
-    table.insert(mark, data.card.trueName)
-    room:setPlayerMark(player, "qingshi-turn", mark)
+    room:addTableMark(player, "qingshi-turn", data.card.trueName)
     if self.cost_data[1] == "qingshi1" then
       room:notifySkillInvoked(player, self.name, "offensive")
       player:broadcastSkillInvoke(self.name)
@@ -2210,18 +2207,14 @@ local qingshi = fk.CreateTriggerSkill{
       room:notifySkillInvoked(player, self.name, "drawcard")
       player:broadcastSkillInvoke(self.name)
       player:drawCards(3, self.name)
-      room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
+      room:invalidateSkill(player, self.name, "-turn")
     end
   end,
 
-  refresh_events = {fk.EventLoseSkill},
-  can_refresh = function(self, event, target, player, data)
-    return target ~= player and data == SetInteractionDataOfSkill
-  end,
-  on_refresh = function(self, event, target, player, data)
+  on_lose = function(self, player)
     local room = player.room
     room:setPlayerMark(player, "qingshi-turn", 0)
-    room:removeTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
+    room:validateSkill(player, self.name, "-turn")
   end,
 }
 local qingshi_delay = fk.CreateTriggerSkill{

@@ -1309,6 +1309,17 @@ local dunshi = fk.CreateViewAsSkill{
       end
     end
   end,
+
+  on_acquire = function (self, player)
+    local UImark = {"slash", "jink", "peach", "analeptic"}
+    for _, name in ipairs(player:getTableMark("dunshi")) do
+      table.removeOne(UImark, name)
+    end
+    player.room:setPlayerMark(player, "@$dunshi", #UImark > 0 and UImark or 0)
+  end,
+  on_lose = function (self, player)
+    player.room:setPlayerMark(player, "@$dunshi", 0)
+  end,
 }
 local dunshi_record = fk.CreateTriggerSkill{
   name = "#dunshi_record",
@@ -1350,12 +1361,7 @@ local dunshi_record = fk.CreateTriggerSkill{
           player:drawCards(#player:getMark("dunshi"), "dunshi")
         end
       elseif choice == "dunshi3" then
-        local mark = player:getMark("dunshi")
-        if mark == 0 then
-          mark = {}
-        end
-        table.insert(mark, player:getMark("dunshi_name-turn"))
-        room:setPlayerMark(player, "dunshi", mark)
+        room:addTableMark(player, "dunshi", player:getMark("dunshi_name-turn"))
 
         local UImark = player:getMark("@$dunshi")
         if type(UImark) == "table" then
@@ -1366,23 +1372,6 @@ local dunshi_record = fk.CreateTriggerSkill{
     end
     if not table.contains(choices, "dunshi1") then
       return true
-    end
-  end,
-
-  refresh_events = {fk.EventLoseSkill, fk.EventAcquireSkill},
-  can_refresh = function(self, event, target, player, data)
-    return player == target and data == self
-  end,
-  on_refresh = function(self, event, target, player, data)
-    if event == fk.EventAcquireSkill then
-      local UImark = {"slash", "jink", "peach", "analeptic"}
-      for _, name in ipairs(player:getTableMark("dunshi")) do
-        table.removeOne(UImark, name)
-      end
-      player:getMark("@$dunshi")
-      player.room:setPlayerMark(player, "@$dunshi", #UImark > 0 and UImark or 0)
-    else
-      player.room:setPlayerMark(player, "@$dunshi", 0)
     end
   end,
 }

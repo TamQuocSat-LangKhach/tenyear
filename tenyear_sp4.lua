@@ -2784,7 +2784,7 @@ local wuyou_refresh = fk.CreateTriggerSkill{
       return false
     end
     local room = player.room
-    if table.every(room.alive_players, function(p) return not p:hasSkill(self, true) or p == player end) then
+    if table.every(room.alive_players, function(p) return not p:hasSkill(wuyou, true) or p == player end) then
       if player:hasSkill("wuyou&", true, true) then
         room:handleAddLoseSkills(player, "-wuyou&", nil, false, true)
       end

@@ -1311,14 +1311,12 @@ local dunshi = fk.CreateViewAsSkill{
   end,
 
   on_acquire = function (self, player)
-    local UImark = {"slash", "jink", "peach", "analeptic"}
-    for _, name in ipairs(player:getTableMark("dunshi")) do
-      table.removeOne(UImark, name)
-    end
-    player.room:setPlayerMark(player, "@$dunshi", #UImark > 0 and UImark or 0)
+    player.room:setPlayerMark(player, "@$dunshi", {"slash", "jink", "peach", "analeptic"})
+    player.room:setPlayerMark(player, "dunshi", 0)
   end,
   on_lose = function (self, player)
     player.room:setPlayerMark(player, "@$dunshi", 0)
+    player.room:setPlayerMark(player, "dunshi", 0)
   end,
 }
 local dunshi_record = fk.CreateTriggerSkill{

@@ -1969,7 +1969,7 @@ Fk:loadTranslationTable{
   ["mu__diaochan"] = "乐貂蝉",
   ["#mu__diaochan"] = "檀声向晚",
   --["designer:mu__diaochan"] = "",
-  --["illustrator:mu__diaochan"] = "",
+  ["illustrator:mu__diaochan"] = "鬼画府",
 
   ["tanban"] = "檀板",
   [":tanban"] = "游戏开始时，你的初始手牌增加“檀板”标记且不计入手牌上限。"..

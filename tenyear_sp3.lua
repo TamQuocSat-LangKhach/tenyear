@@ -51,11 +51,7 @@ local tianren = fk.CreateTriggerSkill {
     end
   end,
 
-  refresh_events = {fk.EventLoseSkill},
-  can_refresh = function(self, event, target, player, data)
-    return player == target and data == self and player:getMark("@tianren") ~= 0
-  end,
-  on_refresh = function(self, event, target, player, data)
+  on_lose = function (self, player)
     player.room:setPlayerMark(player, "@tianren", 0)
   end,
 }
@@ -129,11 +125,7 @@ local jiufa = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventLoseSkill},
-  can_refresh = function(self, event, target, player, data)
-    return player == target and data == self and player:getMark("@$jiufa") ~= 0
-  end,
-  on_refresh = function(self, event, target, player, data)
+  on_lose = function (self, player)
     player.room:setPlayerMark(player, "@$jiufa", 0)
   end,
 }
@@ -519,11 +511,7 @@ local shencai_delay = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventLoseSkill},
-  can_refresh = function(self, event, target, player, data)
-    return player == target and data == shencai
-  end,
-  on_refresh = function(self, event, target, player, data)
+  on_lose = function (self, player)
     player.room:setPlayerMark(player, "xunshi", 0)
   end,
 }
@@ -557,7 +545,7 @@ local xunshi_trigger = fk.CreateTriggerSkill{
     local room = player.room
     room:notifySkillInvoked(player, xunshi.name)
     player:broadcastSkillInvoke(xunshi.name)
-    if player:getMark("xunshi") < 4 then
+    if player:hasSkill(shencai, true) and player:getMark("xunshi") < 4 then
       room:addPlayerMark(player, "xunshi", 1)
     end
     local targets = room:getUseExtraTargets(data)
@@ -662,11 +650,7 @@ local yizhao = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventLoseSkill},
-  can_refresh = function(self, event, target, player, data)
-    return player == target and data == self and player:getMark("@zhangjiao_huang") ~= 0
-  end,
-  on_refresh = function(self, event, target, player, data)
+  on_lose = function (self, player)
     player.room:setPlayerMark(player, "@zhangjiao_huang", 0)
   end,
 }
@@ -973,12 +957,11 @@ local tuoyu = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventLoseSkill},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and data == self
-  end,
-  on_refresh = function(self, event, target, player, data)
+  on_lose = function (self, player)
     local room = player.room
+    room:setPlayerMark(player, "tuoyu1", 0)
+    room:setPlayerMark(player, "tuoyu2", 0)
+    room:setPlayerMark(player, "tuoyu3", 0)
     local card
     for _, id in ipairs(player.player_cards[Player.Hand]) do
       card = Fk:getCardById(id)
@@ -3111,6 +3094,10 @@ local fengying = fk.CreateViewAsSkill{
       player.room:setPlayerMark(player, "@$fengying", names)
     end
   end,
+
+  on_lose = function (self, player)
+    player.room:setPlayerMark(player, "@$fengying", 0)
+  end,
 }
 local fengying_trigger = fk.CreateTriggerSkill{
   name = "#fengying_trigger",
@@ -3130,14 +3117,6 @@ local fengying_trigger = fk.CreateTriggerSkill{
       end
     end
     room:setPlayerMark(player, "@$fengying", #names > 0 and names or 0)
-  end,
-
-  refresh_events = {fk.EventLoseSkill},
-  can_refresh = function(self, event, target, player, data)
-    return player == target and data == fengying
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:setPlayerMark(player, "@$fengying", 0)
   end,
 }
 local fengying_targetmod = fk.CreateTargetModSkill{
@@ -3252,11 +3231,7 @@ local ty__luochong = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventLoseSkill},
-  can_refresh = function(self, event, target, player, data)
-    return player == target and data == self
-  end,
-  on_refresh = function(self, event, target, player, data)
+  on_lose = function (self, player)
     player.room:setPlayerMark(player, self.name, 0)
   end,
 }
@@ -4183,6 +4158,10 @@ local yanzuo = fk.CreateActiveSkill{
       end
     end
   end,
+
+  on_lose = function (self, player)
+    player.room:setPlayerMark(player, "zuyin", 0)
+  end,
 }
 local zuyin = fk.CreateTriggerSkill{
   name = "zuyin",
@@ -4202,7 +4181,7 @@ local zuyin = fk.CreateTriggerSkill{
       data.nullifiedTargets = table.map(room:getAlivePlayers(), Util.IdMapper)
       room:moveCardTo(cards, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
     else
-      if player:getMark(self.name) < 2 then
+      if player:hasSkill(yanzuo, true) and player:getMark(self.name) < 2 then
         room:addPlayerMark(player, self.name, 1)
       end
       cards = room:getCardsFromPileByRule(data.card.trueName, 1, "allPiles")

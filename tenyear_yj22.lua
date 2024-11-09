@@ -67,23 +67,29 @@ local biejun = fk.CreateTriggerSkill{
     return true
   end,
 
-  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
-  can_refresh = function(self, event, target, player, data)
-    if event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == self
-    elseif event == fk.BuryVictim then
-      return player:hasSkill(self, true, true)
+  on_acquire = function(self, player)
+    local room = player.room
+    for _, p in ipairs(room.alive_players) do
+      if p ~= player and not p:hasSkill("biejun&", true, true) then
+        room:handleAddLoseSkills(p, "biejun&", nil, false, true)
+      end
     end
   end,
-  on_refresh = function(self, event, target, player, data)
+  on_lose = function(self, player)
     local room = player.room
-    if table.every(room.alive_players, function(p) return not p:hasSkill(self, true) or p == player end) then
-      if player:hasSkill("biejun&", true, true) then
-        room:handleAddLoseSkills(player, "-biejun&", nil, false, true)
+    local skill_owners = table.filter(room.alive_players, function (p)
+      return p:hasSkill(self, true)
+    end)
+    if #skill_owners == 0 then
+      for _, p in ipairs(room.alive_players) do
+        if p:hasSkill("biejun&", true, true) then
+          room:handleAddLoseSkills(p, "-biejun&", nil, false, true)
+        end
       end
-    else
-      if not player:hasSkill("biejun&", true, true) then
-        room:handleAddLoseSkills(player, "biejun&", nil, false, true)
+    elseif #skill_owners == 1 then
+      local p = skill_owners[1]
+      if p:hasSkill("biejun&", true, true) then
+        room:handleAddLoseSkills(p, "-biejun&", nil, false, true)
       end
     end
   end,

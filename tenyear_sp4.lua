@@ -396,6 +396,17 @@ local xionghuo = fk.CreateActiveSkill{
     room:removePlayerMark(player, "@baoli", 1)
     room:addPlayerMark(target, "@baoli", 1)
   end,
+
+  on_lose = function(self, player)
+    local room = player.room
+    if table.every(room.alive_players, function (p)
+      return not p:hasSkill(self, true)
+    end) then
+      for _, p in ipairs(room.alive_players) do
+        room:setPlayerMark(p, "@baoli", 0)
+      end
+    end
+  end,
 }
 local xionghuo_record = fk.CreateTriggerSkill{
   name = "#xionghuo_record",
@@ -444,27 +455,6 @@ local xionghuo_record = fk.CreateTriggerSkill{
       else
         local cards = table.random(target:getCardIds{Player.Hand, Player.Equip}, 2)
         room:moveCardTo(cards, Player.Hand, player, fk.ReasonPrey, "xionghuo", "", false, player.id)
-      end
-    end
-  end,
-
-  refresh_events = {fk.BuryVictim, fk.EventLoseSkill},
-  can_refresh = function(self, event, target, player, data)
-    if event == fk.BuryVictim then
-      return player == target and player:hasSkill(xionghuo, true, true) and table.every(player.room.alive_players, function (p)
-        return not p:hasSkill(xionghuo, true)
-      end)
-    elseif event == fk.EventLoseSkill then
-      return player == target and data == xionghuo and table.every(player.room.alive_players, function (p)
-        return not p:hasSkill(xionghuo, true)
-      end)
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    for _, p in ipairs(room.alive_players) do
-      if p:getMark("@baoli") > 0 then
-        room:setPlayerMark(p, "@baoli", 0)
       end
     end
   end,
@@ -636,11 +626,7 @@ local falu = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventLoseSkill},
-  can_refresh = function(self, event, target, player, data)
-    return player == target and data == self
-  end,
-  on_refresh = function(self, event, target, player, data)
+  on_lose = function(self, player)
     local room = player.room
     local suits = {"spade", "club", "heart", "diamond"}
     for i = 1, 4, 1 do

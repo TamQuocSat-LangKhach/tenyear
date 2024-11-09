@@ -969,6 +969,15 @@ local shuangjia = fk.CreateTriggerSkill{
       end
     end
   end,
+
+  on_lose = function(self, player)
+    local room = player.room
+    room:setPlayerMark(player, "beifen", 0)
+    room:setPlayerMark(player, "@shuangjia", 0)
+    for _, id in ipairs(player:getCardIds(Player.Hand)) do
+      room:setCardMark(Fk:getCardById(id), "@@shuangjia-inhand", 0)
+    end
+  end,
 }
 local shuangjia_maxcards = fk.CreateMaxCardsSkill{
   name = "#shuangjia_maxcards",
@@ -1142,6 +1151,13 @@ local lingkong = fk.CreateTriggerSkill{
       end
     end
   end,
+
+  on_lose = function(self, player)
+    local room = player.room
+    for _, id in ipairs(player:getCardIds(Player.Hand)) do
+      room:setCardMark(Fk:getCardById(id), "@@konghou-inhand", 0)
+    end
+  end,
 }
 local lingkong_maxcards = fk.CreateMaxCardsSkill{
   name = "#lingkong_maxcards",
@@ -1256,6 +1272,13 @@ local jigu = fk.CreateTriggerSkill{
     else
       room:addPlayerMark(player, "jiguused-round")
       player:drawCards(self.cost_data, self.name)
+    end
+  end,
+
+  on_lose = function(self, player)
+    local room = player.room
+    for _, id in ipairs(player:getCardIds(Player.Hand)) do
+      room:setCardMark(Fk:getCardById(id), "@@jigu-inhand", 0)
     end
   end,
 }
@@ -1376,6 +1399,13 @@ local qiqin = fk.CreateTriggerSkill{
       if card:getMark("@@qiqin-inhand") ~= value then
         room:setCardMark(card, "@@qiqin-inhand", value)
       end
+    end
+  end,
+
+  on_lose = function(self, player)
+    local room = player.room
+    for _, id in ipairs(player:getCardIds(Player.Hand)) do
+      room:setCardMark(Fk:getCardById(id), "@@qiqin-inhand", 0)
     end
   end,
 }
@@ -1781,6 +1811,20 @@ local yunzheng = fk.CreateTriggerSkill{
       room:setPlayerMark(player, "@yunzheng", x)
     end
   end,
+
+  on_lose = function(self, player)
+    local room = player.room
+    if table.every(room.alive_players, function (p)
+      return not p:hasSkill(self, true)
+    end) then
+      for _, p in ipairs(room.alive_players) do
+        for _, id in ipairs(p:getCardIds(Player.Hand)) do
+          room:setCardMark(Fk:getCardById(id), "@@yunzheng-inhand", 0)
+        end
+        room:setPlayerMark(p, "@yunzheng", 0)
+      end
+    end
+  end,
 }
 local yunzheng_maxcards = fk.CreateMaxCardsSkill{
   name = "#yunzheng_maxcards",
@@ -1893,6 +1937,13 @@ local tanban = fk.CreateTriggerSkill{
       for _, id in ipairs(player.player_cards[Player.Hand]) do
         room:setCardMark(Fk:getCardById(id), "@@tanban-inhand", Fk:getCardById(id):getMark("@@tanban-inhand") > 0 and 0 or 1)
       end
+    end
+  end,
+
+  on_lose = function(self, player)
+    local room = player.room
+    for _, id in ipairs(player:getCardIds(Player.Hand)) do
+      room:setCardMark(Fk:getCardById(id), "@@tanban-inhand", 0)
     end
   end,
 }
@@ -2019,6 +2070,13 @@ local xidi = fk.CreateTriggerSkill{
       end
     else
       room:askForGuanxing(player, room:getNCards(self.cost_data))
+    end
+  end,
+
+  on_lose = function(self, player)
+    local room = player.room
+    for _, id in ipairs(player:getCardIds(Player.Hand)) do
+      room:setCardMark(Fk:getCardById(id), "@@xidi-inhand", 0)
     end
   end,
 }

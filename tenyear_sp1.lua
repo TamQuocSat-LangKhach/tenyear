@@ -6,7 +6,7 @@ Fk:loadTranslationTable{
   ["tenyear_sp1"] = "十周年-限定专属1",
 }
 
---百战虎贲：兀突骨 文鸯 夏侯霸 皇甫嵩 王双 留赞 黄祖 雷铜 吴兰 陈泰 王濬 杜预 蒋钦 张任 陈武董袭 丁奉（同OL） 凌操
+--百战虎贲：兀突骨 文鸯 夏侯霸 皇甫嵩 王双 留赞 黄祖 雷铜 吴兰 陈泰 王濬 杜预 蒋钦 张任 陈武董袭 丁奉（同OL） 凌操 文钦
 local wutugu = General(extension, "ty__wutugu", "qun", 15)
 local ty__ranshang = fk.CreateTriggerSkill{
   name = "ty__ranshang",
@@ -1472,6 +1472,86 @@ Fk:loadTranslationTable{
 dufeng:addRelatedSkill(dufengAttackRange)
 dufeng:addRelatedSkill(dufengSlashTimes)
 tyLingcao:addSkill(dufeng)
+
+local wenqin = General(extension, "ty__wenqin", "wei", 4)
+wenqin.subkingdom = "wu"
+
+wenqin:addSkill("guangao")
+local huiqi = fk.CreateTriggerSkill{
+  name = "ty__huiqi",
+  frequency = Skill.Wake,
+  anim_type = "offensive",
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+  can_wake = function(self, event, target, player, data)
+    local room = player.room
+    local targets = {}
+    local events = room.logic:getEventsOfScope(GameEvent.UseCard, 999, function(e)
+      local use = e.data[1]
+      for _, id in ipairs(TargetGroup:getRealTargets(use.tos)) do
+        table.insertIfNeed(targets, id)
+      end
+    end, Player.HistoryTurn)
+    return #targets == 3 and table.contains(targets, player.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:handleAddLoseSkills(player, "ty__xieju")
+    player:gainAnExtraTurn(false, self.name)
+  end,
+}
+local xieju = fk.CreateActiveSkill{
+  name = "ty__xieju",
+  anim_type = "offensive",
+  card_num = 0,
+  min_target_num = 1,
+  prompt = "#ty__xieju",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and player:getMark("ty__xieju-turn") ~= 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    return table.contains(Self:getTableMark("ty__xieju-turn"), to_select)
+  end,
+  on_use = function(self, room, effect)
+    room:sortPlayersByAction(effect.tos)
+    for _, id in ipairs(effect.tos) do
+      local target = room:getPlayerById(id)
+      if not target.dead then
+        U.askForUseVirtualCard(room, target, "slash", nil, self.name, nil, true, true, true, true)
+      end
+    end
+  end,
+}
+local xieju_record = fk.CreateTriggerSkill{
+  name = "#ty__xieju_record",
+
+  refresh_events = {fk.TargetConfirmed},
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill(xieju, true)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local mark = player:getTableMark("ty__xieju-turn")
+    for _, id in ipairs(TargetGroup:getRealTargets(data.tos)) do
+      table.insertIfNeed(mark, id)
+    end
+    player.room:setPlayerMark(player, "ty__xieju-turn", mark)
+  end,
+}
+xieju:addRelatedSkill(xieju_record)
+wenqin:addSkill(huiqi)
+wenqin:addRelatedSkill(xieju)
+Fk:loadTranslationTable{
+  ["ty__wenqin"] = "文钦",
+  ["#ty__wenqin"] = "困兽鸱张",
+
+  ["ty__huiqi"] = "彗企",
+  [":ty__huiqi"] = "觉醒技，一名角色的回合结束时，若本回合成为过牌的目标的角色数为3且其中一名为你，你获得技能“偕举”，然后你执行一个额外的回合。",
+  ["ty__xieju"] = "偕举",
+  [":ty__xieju"] = "出牌阶段限一次，你可以选择任意名本回合成为过牌的目标的角色，这些角色依次可以视为使用一张【杀】。",
+  ["#ty__xieju"] = "偕举：令任意名本回合成为过牌的目标的角色视为使用【杀】",
+}
 
 --奇人异士：张宝 司马徽 蒲元 管辂 葛玄 杜夔 朱建平 吴范 赵直 周宣 笮融
 local zhangbao = General(extension, "ty__zhangbao", "qun", 3)

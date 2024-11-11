@@ -3382,7 +3382,7 @@ local yaozuo = fk.CreateActiveSkill{
         local moves = {}
         for _, p in ipairs(winners) do
           local replyCard = req:getResult(p).card
-          local cards = json.decode(replyCard).subcards
+          local cards = replyCard.subcards
           table.insert(moves, {
             ids = cards,
             from = p.id,

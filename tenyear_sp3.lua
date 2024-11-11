@@ -1889,6 +1889,7 @@ local ty__songci = fk.CreateActiveSkill{
   name = "ty__songci",
   anim_type = "control",
   mute = true,
+  prompt = "#songci-active",
   card_num = 0,
   target_num = 1,
   can_use = function(self, player)
@@ -1899,6 +1900,15 @@ local ty__songci = fk.CreateActiveSkill{
   target_filter = function(self, to_select, selected)
     local mark = Self:getTableMark(self.name)
     return #selected == 0 and not table.contains(mark, to_select)
+  end,
+  target_tip = function(self, to_select, selected, selected_cards, card, selectable, extra_data)
+    if not selectable then return end
+    local p = Fk:currentRoom():getPlayerById(to_select)
+    if p:getHandcardNum() > p.hp then
+      return { {content = "ty__songci_discard", type = "warning"} }
+    else
+      return { {content = "draw2", type = "normal"} }
+    end
   end,
   on_use = function(self, room, effect)
     local target = room:getPlayerById(effect.tos[1])
@@ -1942,8 +1952,11 @@ Fk:loadTranslationTable{
   ["#ty__chenlin"] = "破竹之咒",
   ["illustrator:ty__chenlin"] = "Thinking", -- 破竹之咒 皮肤
   ["ty__songci"] = "颂词",
-  [":ty__songci"] = "①出牌阶段，你可以选择一名角色（每名角色每局游戏限一次），若该角色的手牌数：不大于体力值，其摸两张牌；大于体力值，其弃置两张牌。②弃牌阶段结束时，若你对所有存活角色均发动过“颂词”，你摸一张牌。",
+  [":ty__songci"] = "①出牌阶段，你可以选择一名角色（每名角色每局游戏限一次），若该角色的手牌数：不大于体力值，其摸两张牌；"..
+  "大于体力值，其弃置两张牌。②弃牌阶段结束时，若你对所有存活角色均发动过“颂词”，你摸一张牌。",
   ["#ty__songci_trigger"] = "颂词",
+  ["#songci-active"] = "颂词：选择1名角色",
+  ["ty__songci_discard"] = "弃两张牌",
 
   ["$ty__songci1"] = "将军德才兼备，大汉之栋梁也！",
   ["$ty__songci2"] = "汝窃国奸贼，人人得而诛之！",
@@ -3919,20 +3932,10 @@ local fenhui = fk.CreateActiveSkill{
   anim_type = "offensive",
   frequency = Skill.Limited,
   prompt = "#fenhui-active",
-  interaction = function()
-    local choices = {"fenhui_count"}
-    local all_choices = {"fenhui_count"}
-    local x
-    for _, p in ipairs(Fk:currentRoom().alive_players) do
-      if p ~= Self then
-        x = math.min(p:getMark("fenhui_count"), 5)
-        table.insert(all_choices, "fenhui_target::" .. p.id .. ":".. tostring(x))
-        if x > 0 then
-          table.insert(choices, "fenhui_target::" .. p.id .. ":".. tostring(x))
-        end
-      end
-    end
-    return UI.ComboBox { choices = choices, all_choices = all_choices }
+  target_tip = function(self, to_select, selected, selected_cards, card, selectable, extra_data)
+    if not selectable then return end
+    local x = math.min(Fk:currentRoom():getPlayerById(to_select):getMark("fenhui_count"), 5)
+    return { {content = "fenhui_count:::".. tostring(x), type = "normal"} }
   end,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
@@ -4098,8 +4101,7 @@ Fk:loadTranslationTable{
   ["#shouzhi-draw"] = "是否发动 守执，摸两张牌",
   ["#shouzhi-discard"] = "是否发动 守执，弃置一张牌",
   ["#fenhui-active"] = "发动 奋恚，令一名角色获得“恨”标记",
-  ["fenhui_count"] = "查看数值",
-  ["fenhui_target"] = "%dest[%arg]",
+  ["fenhui_count"] = "奋恚 %arg",
   ["#fenhui_delay"] = "奋恚",
   ["@fenhui_hatred"] = "恨",
   ["@@xingmen-inhand"] = "兴门",

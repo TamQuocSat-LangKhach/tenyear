@@ -3431,18 +3431,13 @@ local bizu = fk.CreateActiveSkill{
   end,
   card_num = 0,
   target_num = 0,
-  can_use = function(self, player)
-    return player:getMark("bizu-turn") == 0
-  end,
-  card_filter = function() return false end,
-  target_filter = function(self, to_select, selected, selected_cards)
-    return Fk:currentRoom():getPlayerById(to_select):getHandcardNum() == Self:getHandcardNum()
-  end,
-  feasible = function(self, selected, selected_cards)
-    local x = Self:getHandcardNum()
-    return #selected == 0 or #selected == #table.filter(Fk:currentRoom().alive_players, function (p)
-      return p:getHandcardNum() == x
-    end)
+  can_use = Util.TrueFunc,
+  card_filter = Util.FalseFunc,
+  target_filter = Util.FalseFunc,
+  target_tip = function(self, to_select, selected, selected_cards, card, selectable, extra_data)
+    if Fk:currentRoom():getPlayerById(to_select):getHandcardNum() == Self:getHandcardNum() then
+      return { {content = "draw1", type = "normal"} }
+    end
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -3458,7 +3453,7 @@ local bizu = fk.CreateActiveSkill{
         return table.contains(tos2, pid)
       end)
     end) then
-      room:setPlayerMark(player, "bizu-turn", 1)
+      room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
     else
       table.insert(mark, tos)
       room:setPlayerMark(player, "bizu_targets-turn", mark)

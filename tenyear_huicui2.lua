@@ -1839,7 +1839,7 @@ local huagui = fk.CreateTriggerSkill{
       local id
       if p.reply_ready then
         local replyCard = json.decode(p.client_reply).card
-        id = json.decode(replyCard).subcards[1]
+        id = replyCard.subcards[1]
       else
         id = table.random(p:getCardIds{Player.Hand, Player.Equip})
       end
@@ -3828,8 +3828,8 @@ Fk:loadTranslationTable{
   ["qiao"] = "气傲",
   [":qiao"] = "每回合限两次，当你成为其他角色使用牌的目标后，你可以弃置其一张牌，然后你弃置一张牌。",
   ["chengshang"] = "承赏",
-  [":chengshang"] = "出牌阶段内限一次，你使用指定其他角色为目标的牌结算后，若此牌没有造成伤害，你可以获得牌堆中所有与此牌花色点数均相同的牌。"..
-  "若你没有因此获得牌，此技能视为未发动过。",
+  [":chengshang"] = "每阶段限一次，当你于出牌阶段内使用指定其他角色为目标的牌结算后，若此牌没有造成伤害，"..
+  "你可以获得牌堆中所有与此牌花色点数均相同的牌。若你没有因此获得牌，此技能视为未发动过。",
   ["#qiao-invoke"] = "气傲：你可以弃置 %dest 一张牌，然后你弃置一张牌",
   ["#chengshang-invoke"] = "承赏：你可以获得牌堆中所有的%arg%arg2牌",
   
@@ -5029,7 +5029,7 @@ Fk:loadTranslationTable{
   ["ty__juanxia"] = "狷狭",
   [":ty__juanxia"] = "结束阶段，你可以选择一名其他角色，视为依次使用至多三张牌名各不相同的仅指定唯一目标的普通锦囊牌（无距离限制）。若如此做，该角色的下一个结束阶段开始时，其可以视为对你使用等量张【杀】。",
   ["ty__dingcuo"] = "定措",
-  [":ty__dingcuo"] = "当你对其他角色造成伤害后，或当你受到其他角色造成的伤害后，若你于当前回合内未发动过此技能，你可摸两张牌，然后若这两张牌颜色不同，你须弃置一张手牌。",
+  [":ty__dingcuo"] = "每回合限一次，当你对其他角色造成伤害后，或当你受到其他角色造成的伤害后，你可摸两张牌，然后若这两张牌颜色不同，你须弃置一张手牌。",
   ["ty__juanxia_active"] = "狷狭",
   ["#ty__juanxia-choose"] = "狷狭：选择一名其他角色，视为对其使用至多三张仅指定唯一目标的普通锦囊",
   ["#ty__juanxia-invoke"] = "狷狭：你可以视为对 %dest 使用一张锦囊（第%arg张，至多3张）",
@@ -5123,7 +5123,7 @@ Fk:loadTranslationTable{
   [":ty__shengxi"] = "结束阶段，若你于此回合内未造成过伤害，你可摸两张牌。",
 
   ["ty__shoucheng"] = "守成",
-  [":ty__shoucheng"] = "当一名角色于其回合外失去手牌后，若其没有手牌且你于当前回合内未发动过此技能，你可令其摸两张牌。",
+  [":ty__shoucheng"] = "每回合限一次，当一名角色于其回合外失去手牌后，若其没有手牌，你可令其摸两张牌。",
 
   ["#ty__shoucheng-draw"] = "守成：你可令 %dest 摸两张牌",
   ["#ty__shoucheng-choose"] = "守成：你可令一名失去最后手牌的角色摸两张牌",

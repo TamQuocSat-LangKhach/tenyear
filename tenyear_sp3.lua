@@ -2532,10 +2532,10 @@ Fk:loadTranslationTable{
   ["ty__zhaohan"] = "昭汉",
   [":ty__zhaohan"] = "摸牌阶段，你可以多摸两张牌，然后选择一项：1.交给一名没有手牌的角色两张手牌；2.弃置两张手牌。",
   ["jinjie"] = "尽节",
-  [":jinjie"] = "一名角色进入濒死状态时，若你于此轮内未发动过此技能，你可以令其摸0-3张牌，"..
+  [":jinjie"] = "每轮限一次，一名角色进入濒死状态时，你可以令其摸0-3张牌，"..
   "然后你可以弃置等量的牌令其回复1点体力。",
   ["jue"] = "举讹",
-  [":jue"] = "一名角色的结束阶段，若你于此轮内未发动过此技能，你可以视为随机对其使用【过河拆桥】、【杀】或【五谷丰登】共计X次"..
+  [":jue"] = "每轮限一次，一名角色的结束阶段，你可以视为随机对其使用【过河拆桥】、【杀】或【五谷丰登】共计X次"..
   "（X为弃牌堆里于此回合内因弃置而移至此区域的牌数且至多为其体力上限，若其为你，改为你选择一名其他角色）。",
 
   ["#ty__zhaohan_delay"] = "昭汉",
@@ -2698,28 +2698,14 @@ local jiudun = fk.CreateTriggerSkill{
   end,
 }
 
+local jd_analeptic = Fk:cloneCard("analeptic")
 local jiudun__analepticSkill = fk.CreateActiveSkill{
   name = "jiudun__analepticSkill",
   prompt = "#analeptic_skill",
   max_turn_use_time = 1,
-  mod_target_filter = function(self, to_select, _, _, card, _)
-    return not table.find(Fk:currentRoom().alive_players, function(p)
-      return p.dying
-    end)
-  end,
-  can_use = function(self, player, card, extra_data)
-    return ((extra_data and (extra_data.bypass_times or extra_data.analepticRecover)) or
-      self:withinTimesLimit(player, Player.HistoryTurn, card, "analeptic", player))
-  end,
-  on_use = function(_, _, use)
-    if not use.tos or #TargetGroup:getRealTargets(use.tos) == 0 then
-      use.tos = { { use.from } }
-    end
-
-    if use.extra_data and use.extra_data.analepticRecover then
-      use.extraUse = true
-    end
-  end,
+  mod_target_filter = jd_analeptic.skill.modTargetFilter,
+  can_use = jd_analeptic.skill.canUse,
+  on_use = jd_analeptic.skill.onUse,
   on_effect = function(_, room, effect)
     local to = room:getPlayerById(effect.to)
     if to.dead then return end

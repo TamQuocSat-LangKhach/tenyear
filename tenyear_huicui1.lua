@@ -1854,7 +1854,7 @@ Fk:loadTranslationTable{
   [":tongli"] = "当你于出牌阶段内使用基本牌或普通锦囊牌指定目标后，若你于此阶段内拥有此技能时使用过牌的次数为X，"..
   "你可以令你于此牌结算后视为对包含此牌的所有原本目标在内的角色使用X次牌名相同的牌。（X为你手牌中的花色数，包含无色）",
   ["shezang"] = "奢葬",
-  [":shezang"] = "当你或你回合内有角色进入濒死状态时，若你于此轮内未发动过此技能，你可以从牌堆底获得不同花色的牌各一张。",
+  [":shezang"] = "每轮限一次，当你进入濒死状态时，或一名角色于你的回合内进入濒死状态时，你可以从牌堆底获得不同花色的牌各一张。",
   ["@tongli-phase"] = "同礼",
   ["#tongli_delay"] = "同礼",
 
@@ -3678,7 +3678,8 @@ local ty__neifa_trigger = fk.CreateTriggerSkill{
     end
     if #targets == 0 then return false end
     targets = room:askForChoosePlayers(player, targets, 1, 1,
-    "#ty__neifa-choose:::"..data.card:toLogString() .. ":" .. can_minus, ty__neifa.name, true)
+    "#ty__neifa-choose:::"..data.card:toLogString() .. ":" .. can_minus, ty__neifa.name, true, false,
+    "addandcanceltarget_tip", TargetGroup:getRealTargets(data.tos))
     if #targets == 0 then return false end
     if table.contains(TargetGroup:getRealTargets(data.tos), targets[1]) then
       TargetGroup:removeTarget(data.tos, targets[1])

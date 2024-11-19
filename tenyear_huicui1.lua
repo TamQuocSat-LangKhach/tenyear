@@ -3757,6 +3757,7 @@ local porui = fk.CreateTriggerSkill{
     local room = player.room
     local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
     local end_id = turn_event.id
+    local num_map = {}
     room.logic:getEventsByRule(GameEvent.MoveCards, 1, function (e)
       for _, move in ipairs(e.data) do
         if move.from ~= nil and move.from ~= player.id and move.from ~= target.id and
@@ -3765,9 +3766,8 @@ local porui = fk.CreateTriggerSkill{
           if not p.dead then
             for _, info in ipairs(move.moveInfo) do
               if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
-                if p:getMark("@porui_record") < 5 then
-                  room:addPlayerMark(p, "@porui_record")
-                end
+                num_map[tostring(move.from)] = num_map[tostring(move.from)] or 0
+                num_map[tostring(move.from)] = math.min(5, num_map[tostring(move.from)] + 1)
               end
             end
           end
@@ -3776,35 +3776,40 @@ local porui = fk.CreateTriggerSkill{
       return false
     end, end_id)
     local targets = table.filter(room.alive_players, function (p)
-      return p:getMark("@porui_record") > 0
+      return num_map[tostring(p.id)]
     end)
     if #targets == 0 then return false end
     local tar, card =  player.room:askForChooseCardAndPlayers(player, table.map(targets, Util.IdMapper), 1, 1, ".",
-      "#porui-choose", self.name, true)
+      "#porui-choose", self.name, true, false, "porui_tip", num_map)
     if #tar > 0 and card then
-      local to = room:getPlayerById(tar[1])
-      self.cost_data = {tar[1], card, to:getMark("@porui_record")}
+      self.cost_data = {tos = tar, cards = {card}, num = num_map[tostring(tar[1])]}
+      return true
     end
-    for _, p in ipairs(targets) do
-      room:setPlayerMark(p, "@porui_record", 0)
-    end
-    return #tar > 0 and card
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(self.cost_data[1])
-    local cid = self.cost_data[2]
-    local x = self.cost_data[3]
-    room:throwCard(cid, self.name, player, player)
-    for _ = 1, x+1, 1 do
+    local need_give_card = (player:getMark("gonghu2") == 0)
+    local to = room:getPlayerById(self.cost_data.tos[1])
+    local x = self.cost_data.num
+    room:throwCard(self.cost_data.cards, self.name, player, player)
+    for _ = 1, x + 1, 1 do
       if player.dead or to.dead or not room:useVirtualCard("slash", nil, player, to, self.name, true) then break end
     end
-    if not (player.dead or player:getMark("gonghu2") ~= 0 or player:isKongcheng() or to.dead) then
+    if need_give_card and not (player.dead or player:isKongcheng() or to.dead) then
       local cards = player:getCardIds(Player.Hand)
       if #cards > x then
         cards = room:askForCard(player, x, x, false, self.name, false, ".", "#porui-give::" .. to.id .. ":" .. tostring(x))
       end
       room:moveCardTo(cards, Player.Hand, to, fk.ReasonGive, self.name, nil, false, player.id)
+    end
+  end,
+}
+Fk:addTargetTip{
+  name = "porui_tip",
+  target_tip = function(self, to_select, selected, selected_cards, card, selectable, extra_data)
+    local porui_num = extra_data.extra_data[tostring(to_select)]
+    if porui_num then
+      return "#porui_tip:::"..tostring(porui_num)
     end
   end,
 }
@@ -3916,7 +3921,7 @@ Fk:loadTranslationTable{
   "你删除〖破锐〗中交给牌的效果。若以上两个效果均已触发，则你本局游戏使用红色基本牌无法响应，使用红色普通锦囊牌可以额外指定一个目标。",
 
   ["#porui-choose"] = "发动 破锐，弃置一张牌并选择本回合失去过牌的角色",
-  ["@porui_record"] = "失去牌数",
+  ["#porui_tip"] = "失去牌数 %arg",
   ["#porui-give"] = "破锐：选择%arg张手牌，交给%dest",
   ["@gonghu"] = "共护",
   ["gonghu1"] = "限两次",

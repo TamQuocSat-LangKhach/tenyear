@@ -1696,7 +1696,8 @@ local juetao = fk.CreateTriggerSkill{
     and player.hp == 1 and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   on_cost = function(self, event, target, player, data)
-    local to = player.room:askForChoosePlayers(player, table.map(player.room:getAlivePlayers(), Util.IdMapper), 1, 1, "#juetao-choose", self.name, true)
+    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player, false), Util.IdMapper),
+    1, 1, "#juetao-choose", self.name, true)
     if #to > 0 then
       self.cost_data = to[1]
       return true
@@ -1716,9 +1717,7 @@ local juetao = fk.CreateTriggerSkill{
         proposer = player.id,
       })
       local card = Fk:getCardById(id, true)
-      room:setPlayerMark(player, MarkEnum.BypassTimesLimit.."-tmp", 1)
-      local canUse = player:canUse(card) and not player:prohibitUse(card)
-      room:setPlayerMark(player, MarkEnum.BypassTimesLimit.."-tmp", 0)
+      local canUse = player:canUse(card, { bypass_times = true, bypass_distances = true }) and not player:prohibitUse(card)
       local tos
       if canUse then
         local targets = {}
@@ -1744,9 +1743,8 @@ local juetao = fk.CreateTriggerSkill{
           elseif card.skill:getMinTargetNum() == 2 then
             if table.contains(targets, to.id) then
               local seconds = {}
-              Self = player -- for targetFilter check
-              for _, second in ipairs(room:getOtherPlayers(to)) do
-                if card.skill:targetFilter(second.id, {to.id}, {}, card) then
+              for _, second in ipairs(room:getOtherPlayers(to, false)) do
+                if card.skill:modTargetFilter(second.id, {to.id}, player.id, card, false) then
                   table.insert(seconds, second.id)
                 end
               end

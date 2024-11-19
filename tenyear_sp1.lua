@@ -1890,6 +1890,20 @@ local jj__yeyan = fk.CreateActiveSkill{
       choices = {"small_yeyan", "middle_yeyan", "great_yeyan"}
     }
   end,
+  target_tip = function(self, to_select, selected, selected_cards, card, selectable, extra_data)
+    if not selectable then return end
+    if #selected == 0 then
+      return { {content = self.interaction.data, type = "normal"} }
+    else
+      if to_select == selected[1] then
+        return { {content = self.interaction.data, type = "warning"} }
+      elseif table.contains(selected, to_select) then
+        return { {content = "small_yeyan", type = "warning"} }
+      else
+        return { {content = "small_yeyan", type = "normal"} }
+      end
+    end
+  end,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,

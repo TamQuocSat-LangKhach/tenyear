@@ -4307,53 +4307,47 @@ local dunxi_delay = fk.CreateTriggerSkill{
       room:removePlayerMark(player, "@bianxi_dun")
       local orig_to = data.tos[1]
       local targets = {}
-      if #orig_to > 1 then
-        --target_filter check, for collateral,diversion...
-        local c_pid
-        --FIXME：借刀需要补modTargetFilter，不给targetFilter传使用者真是离大谱，目前只能通过强制修改Self来实现
-        local Notify_from = room:getPlayerById(data.from)
-        Self = Notify_from
-        for _, p in ipairs(room.alive_players) do
-          if not player:isProhibited(p, data.card) and data.card.skill:modTargetFilter(p.id, {}, data.from, data.card, false) then
-            local ho_spair_target = {}
-            local ho_spair_check = true
+      local c_pid
+      for _, p in ipairs(room.alive_players) do
+        if not player:isProhibited(p, data.card) and
+        (data.card.sub_type == Card.SubtypeDelayedTrick or data.card.skill:modTargetFilter(p.id, {}, data.from, data.card, true)) then
+          local ho_spair_check = true
+          if #orig_to > 1 then
+            --target_filter check, for collateral, diversion...
+            local ho_spair_target = {p.id}
             for i = 2, #orig_to, 1 do
               c_pid = orig_to[i]
-              if not data.card.skill:targetFilter(c_pid, ho_spair_target, {}, data.card) then
+              if not data.card.skill:modTargetFilter(c_pid, ho_spair_target, data.from, data.card, true) then
                 ho_spair_check = false
                 break
               end
               table.insert(ho_spair_target, c_pid)
             end
-            if ho_spair_check then
-              table.insert(targets, p.id)
-            end
           end
-        end
-      else
-        for _, p in ipairs(room.alive_players) do
-          if not player:isProhibited(p, data.card) and (data.card.sub_type == Card.SubtypeDelayedTrick or
-          data.card.skill:modTargetFilter(p.id, {}, data.from, data.card, false)) then
+          if ho_spair_check then
             table.insert(targets, p.id)
           end
         end
       end
       if #targets > 0 then
         local random_target = table.random(targets)
-
         for i = 1, 2, 1 do
           for _, p in ipairs(room:getAllPlayers()) do
-            room:setEmotion(p, "./image/anim/selectable")
-            room:notifyMoveFocus(p, self.name)
-            room:delay(300)
+            if table.contains(targets, p.id) then
+              room:setEmotion(p, "./image/anim/selectable")
+              room:notifyMoveFocus(p, self.name)
+              room:delay(300)
+            end
           end
         end
         for _, p in ipairs(room:getAllPlayers()) do
-          room:setEmotion(p, "./image/anim/selectable")
-          room:delay(600)
-          if p.id == random_target then
-            room:doIndicate(data.from, {random_target})
-            break
+          if table.contains(targets, p.id) then
+            room:setEmotion(p, "./image/anim/selectable")
+            room:delay(600)
+            if p.id == random_target then
+              room:doIndicate(data.from, {random_target})
+              break
+            end
           end
         end
 
@@ -4364,7 +4358,7 @@ local dunxi_delay = fk.CreateTriggerSkill{
           data.extra_data.dunxi_record = dunxi_record
         else
           orig_to[1] = random_target
-          data.tos = {orig_to}
+          data.tos = { orig_to }
         end
       else
         data.tos = {}

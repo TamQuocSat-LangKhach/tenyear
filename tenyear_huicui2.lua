@@ -2324,9 +2324,8 @@ local lieyi = fk.CreateActiveSkill{
       local tos = {{target.id}}
       if canUse and card.skill:getMinTargetNum() == 2 then
         local seconds = {}
-        Self = player
         for _, second in ipairs(room:getOtherPlayers(target)) do
-          if card.skill:targetFilter(second.id, {target.id}, {}, card) then
+          if card.skill:modTargetFilter(second.id, {target.id}, player.id, card, false) then
             table.insert(seconds, second.id)
           end
         end

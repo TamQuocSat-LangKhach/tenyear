@@ -401,14 +401,13 @@ local xiaoyan = fk.CreateTriggerSkill{
 }
 local getZongshiTargets = function (room, player, card)
   if player:prohibitUse(card) then return {} end
-
+  local extra_data = {
+    bypass_distances = true,
+    bypass_times = (player.phase == Player.NotActive)
+  }
+  if not player:canUse(card, extra_data) then return {} end
   if card.skill:getMinTargetNum() > 0 then
-    if not player:canUse(card) then return {} end
     local targets = {}
-    local extra_data = {
-      bypass_distances = true,
-      bypass_times = (player.phase == Player.NotActive)
-    }
     for _, p in ipairs(room.alive_players) do
       if not player:isProhibited(p, card) and card.skill:targetFilter(p.id, {}, {}, card, extra_data) then
         table.insert(targets, p.id)
@@ -419,7 +418,7 @@ local getZongshiTargets = function (room, player, card)
     local targets = {}
     for _, p in ipairs(room.alive_players) do
       if not player:isProhibited(p, card) and
-      card.skill:modTargetFilter(p.id, {}, player.id, card, player.phase == Player.NotActive) then
+      card.skill:modTargetFilter(p.id, {}, player.id, card, false) then
         table.insert(targets, p.id)
       end
     end

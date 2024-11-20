@@ -869,13 +869,19 @@ local peiniang_trigger = fk.CreateTriggerSkill{
   end,
   on_cost = function (self, event, target, player, data)
     local analeptic
-    local ids = table.filter(player:getCardIds(Player.Hand), function (id)
+    local ex_cards = {}
+    local ids = table.filter(player:getCardIds("he&"), function (id)
       analeptic = Fk:getCardById(id)
       if analeptic.trueName == "analeptic" or analeptic:getSuitString(true) == player:getMark("@yitong") then
         analeptic = Fk:cloneCard("analeptic")
         analeptic.skillName = "peiniang"
         analeptic:addSubcard(id)
-        return not player:prohibitUse(analeptic) and not player:isProhibited(target, analeptic)
+        if not player:prohibitUse(analeptic) and not player:isProhibited(target, analeptic) then
+          if player.room:getCardArea(id) == Player.Special then
+            table.insert(ex_cards, id)
+          end
+          return true
+        end
       end
     end)
     local card = player.room:askForCard(player, 1, 1, true, "peiniang", true, tostring(Exppattern{ id = ids }),

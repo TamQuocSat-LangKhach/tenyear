@@ -797,6 +797,18 @@ Fk:loadTranslationTable{
   ["#tanluan-add"] = "探乱：你可以为%arg额外指定%arg2个目标",
 }
 
+local godpangtong = General(extension, "godpangtong", "god", 3)
+godpangtong.hidden = true
+godpangtong:addSkill("tmp_illustrate")
+local peixiu = General(extension, "ty__peixiu", "qun", 3)
+peixiu.subkingdom = "jin"
+peixiu.hidden = true
+peixiu:addSkill("tmp_illustrate")
+Fk:loadTranslationTable{
+  ["godpangtong"] = "神庞统",
+  ["ty__peixiu"] = "裴秀",
+}
+
 local pangfengyi = General(extension, "pangfengyi", "shu", 3, 3, General.Female)
 local yitong = fk.CreateTriggerSkill{
   name = "yitong",
@@ -1030,7 +1042,7 @@ local porong = fk.CreateTriggerSkill{
         room:setPlayerMark(player, self.name, 1)
       end
     else
-      room:setPlayerMark(player, self.name, nil)
+      room:setPlayerMark(player, self.name, 0)
     end
   end,
 }

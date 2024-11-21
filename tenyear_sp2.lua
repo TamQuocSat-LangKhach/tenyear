@@ -2133,20 +2133,19 @@ local huishu = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventLoseSkill, fk.EventAcquireSkill},
-  can_refresh = function(self, event, target, player, data)
-    return player == target and data == self
-  end,
-  on_refresh = function(self, event, target, player, data)
+  on_acquire = function (self, player, is_start)
     local room = player.room
     room:setPlayerMark(player, "huishu1", 0)
     room:setPlayerMark(player, "huishu2", 0)
     room:setPlayerMark(player, "huishu3", 0)
-    if event == fk.EventAcquireSkill then
-      room:setPlayerMark(player, "@" .. self.name, {3, 1, 2})
-    else
-      room:setPlayerMark(player, "@" .. self.name, 0)
-    end
+    room:setPlayerMark(player, "@" .. self.name, {3, 1, 2})
+  end,
+  on_lose = function (self, player, is_death)
+    local room = player.room
+    room:setPlayerMark(player, "huishu1", 0)
+    room:setPlayerMark(player, "huishu2", 0)
+    room:setPlayerMark(player, "huishu3", 0)
+    room:setPlayerMark(player, "@" .. self.name, 0)
   end,
 }
 local yishu = fk.CreateTriggerSkill{
@@ -4984,21 +4983,21 @@ local yuqi = fk.CreateTriggerSkill{
     room:moveCards(table.unpack(moveInfos))
   end,
 
-  refresh_events = {fk.EventLoseSkill, fk.EventAcquireSkill},
-  can_refresh = function(self, event, target, player, data)
-    return player == target and data == self
-  end,
-  on_refresh = function(self, event, target, player, data)
+  on_acquire = function (self, player, is_start)
     local room = player.room
     room:setPlayerMark(player, "yuqi1", 0)
     room:setPlayerMark(player, "yuqi2", 0)
     room:setPlayerMark(player, "yuqi3", 0)
     room:setPlayerMark(player, "yuqi4", 0)
-    if event == fk.EventAcquireSkill then
-      room:setPlayerMark(player, "@" .. self.name, {0, 3, 1, 1})
-    else
-      room:setPlayerMark(player, "@" .. self.name, 0)
-    end
+    room:setPlayerMark(player, "@" .. self.name, {0, 3, 1, 1})
+  end,
+  on_lose = function (self, player, is_death)
+    local room = player.room
+    room:setPlayerMark(player, "yuqi1", 0)
+    room:setPlayerMark(player, "yuqi2", 0)
+    room:setPlayerMark(player, "yuqi3", 0)
+    room:setPlayerMark(player, "yuqi4", 0)
+    room:setPlayerMark(player, "@" .. self.name, 0)
   end,
 }
 local function AddYuqi(player, skillName, num)

@@ -132,14 +132,58 @@ Fk:loadTranslationTable{
 
 --嵇康 曹不兴 马良
 
+local yuanyin = General(extension, "yuanyin", "qun", 3)
+local moshou = fk.CreateTriggerSkill{
+  name = "moshou",
+  anim_type = "drawcard",
+  events = {fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.card.color == Card.Black
+  end,
+  on_use = function(self, event, target, player, data)
+    local n = player:getMark(self.name)
+    if n == 0 then
+      n = player.maxHp
+    end
+    local new_num = n > 1 and n - 1 or player.maxHp
+    player.room:setPlayerMark(player, self.name, new_num)
+    player:drawCards(n, self.name)
+  end,
+}
+local yunjiu = fk.CreateTriggerSkill{
+  name = "yunjiu",
+  anim_type = "support",
+  events = {fk.Death},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and not target:isAllNude() and #player.room:getOtherPlayers(player) > 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:askForYiji(player, target:getCardIds("hej"), room:getOtherPlayers(player), self.name, 1, 1,
+      "#yunjiu-give::"..target.id, target:getCardIds("hej"))
+    if player.dead then return end
+    room:changeMaxHp(player, 1)
+    if player:isWounded() and not player.dead then
+      room:recover{
+        who = player,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name,
+      }
+    end
+  end,
+}
+yuanyin:addSkill(moshou)
+yuanyin:addSkill(yunjiu)
 Fk:loadTranslationTable{
   ["yuanyin"] = "袁胤",
   ["#yuanyin"] = "载路素车",
 
   ["moshou"] = "墨守",
-  [":moshou"] = "当你成为其他角色使用黑色牌的目标后，你可以摸X张牌（X为1、2、3，依次循环）。",
+  [":moshou"] = "当你成为黑色牌的目标后，你可以摸体力上限张牌，然后下次以此法摸牌数-1。若你以此法摸牌数为1，则重置为体力上限。",
   ["yunjiu"] = "运柩",
-  [":yunjiu"] = "一名角色死亡时，你可以弃置其牌数的牌，将其所有牌交给一名其他角色，然后你加1点体力上限并回复1点体力。",
+  [":yunjiu"] = "当一名角色死亡时，你可以将其区域内一张牌交给一名其他角色。若如此做，你加1体力上限并回复1点体力。",
+  ["#yunjiu-give"] = "运柩：请将 %dest 的一张牌交给一名其他角色",
 }
 
 local tmp_illustrate = fk.CreateActiveSkill{name = "tmp_illustrate"}
@@ -923,6 +967,87 @@ Fk:loadTranslationTable{
   ["@yitong"] = "异瞳",
   ["#peiniang"] = "醅酿：你可以将一张%arg牌当【酒】使用（不计次数）",
   ["#peiniang-use"] = "醅酿：你可以对 %dest 使用【酒】（令其回复体力至1点）",
+}
+
+local zhangliao = General(extension, "ty_wei__zhangliao", "qun", 4)
+local yuxi = fk.CreateTriggerSkill{
+  name = "yuxi",
+  anim_type = "drawcard",
+  events = {fk.DamageCaused, fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function (self, event, target, player, data)
+    player:drawCards(1, self.name, nil, "@@yuxi-inhand")
+  end,
+}
+local yuxi_targetmod = fk.CreateTargetModSkill{
+  name = "#yuxi_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    return card and card:getMark("@@yuxi-inhand") > 0
+  end,
+}
+local porong = fk.CreateTriggerSkill{
+  name = "porong",
+  anim_type = "offensive",
+  events = {fk.TargetSpecified},  --先随便弄个时机，之后再改
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.card.trueName == "slash" and
+      data.extra_data and data.extra_data.combo_skill and data.extra_data.combo_skill[self.name]  --先随便弄个记录，之后再改
+  end,
+  on_cost = function (self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#porong-invoke::"..data.to)
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(data.to)
+    data.additionalEffect = (data.additionalEffect or 0) + 1
+    for _, p in ipairs(room:getOtherPlayers(player)) do
+      if player.dead then return end
+      if to:getNextAlive() == p or p:getNextAlive() == to then
+        room:doIndicate(player.id, {p.id})
+        if not p:isKongcheng() then
+          local card = room:askForCardChosen(player, p, "h", self.name, "#porong-prey::"..p.id)
+          room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, false, player.id)
+        end
+      end
+    end
+  end,
+
+  refresh_events = {fk.AfterCardUseDeclared},
+  can_refresh = function (self, event, target, player, data)
+    return target == player and player:hasSkill(self, true)
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local room = player.room
+    if data.card.is_damage_card then
+      if player:getMark(self.name) > 0 and data.card.trueName == "slash" then
+        data.extra_data = data.extra_data or {}
+        data.extra_data.combo_skill = data.extra_data.combo_skill or {}
+        data.extra_data.combo_skill[self.name] = true
+      else
+        room:setPlayerMark(player, self.name, 1)
+      end
+    else
+      room:setPlayerMark(player, self.name, nil)
+    end
+  end,
+}
+yuxi:addRelatedSkill(yuxi_targetmod)
+zhangliao:addSkill(yuxi)
+zhangliao:addSkill(porong)
+Fk:loadTranslationTable{
+  ["ty_wei__zhangliao"] = "威张辽",  --先随便弄个前缀，之后再改
+  ["ty_wei"] = "威",
+
+  ["yuxi"] = "驭袭",
+  [":yuxi"] = "你造成或受到伤害时，摸一张牌，以此法获得的牌无次数限制。",
+  ["porong"] = "破戎",
+  [":porong"] = "连招技（伤害牌+【杀】），你可以获得此【杀】目标与其相邻角色各一张手牌，并令此【杀】对其额外结算一次。",
+  ["@@yuxi-inhand"] = "驭袭",
+  ["#porong-invoke"] = "破戎：是否获得 %dest 相邻角色各一张手牌并令此【杀】额外结算一次？",
+  ["#porong-prey"] = "破戎：获得 %dest 一张手牌",
 }
 
 return extension

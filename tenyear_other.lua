@@ -2554,4 +2554,32 @@ Fk:loadTranslationTable{
   ["~xunyuxunyou"] = "",
 }
 
+local weiqing = General(extension, "weiqing", "qun", 3)
+local weiqing_skill = fk.CreateTriggerSkill{
+  name = "weiqing_skill",
+  anim_type = "drawcard",
+  events = {fk.DamageCaused, fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self)
+  end,
+  on_use = function (self, event, target, player, data)
+    player:drawCards(2, self.name, nil, "@@weiqing_skill-inhand")
+  end,
+}
+local weiqing_skill_targetmod = fk.CreateTargetModSkill{
+  name = "#weiqing_skill_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    return card and card:getMark("@@weiqing_skill-inhand") > 0
+  end,
+}
+weiqing_skill:addRelatedSkill(weiqing_skill_targetmod)
+weiqing:addSkill(weiqing_skill)
+Fk:loadTranslationTable{
+  ["weiqing"] = "卫青",
+
+  ["weiqing_skill"] = "威烈",  --先随便弄个技能名，之后再改
+  [":weiqing_skill"] = "你造成或受到伤害时，摸两张牌，以此法获得的牌无次数限制。",
+  ["@@weiqing_skill-inhand"] = "威烈",
+}
+
 return extension

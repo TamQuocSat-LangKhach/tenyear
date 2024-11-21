@@ -553,19 +553,23 @@ local bianzhuang_choices = {
   {"zhaoji","qin__shanwu"}, {"ol__dingfeng","ol__duanbing"}, {"ol_ex__jiaxu","ol_ex__wansha"},
   {"ol__fanchou","ol__xingluan"}, {"yingzheng","qin__yitong"}, {"ol__dengzhi","xiuhao"},
   {"qinghegongzhu","zengou"}, {"ol__wenqin","guangao"}, {"olz__zhonghui","xieshu"},{"olmou__yuanshao", "shenliy"},
+  {"macheng","chenglie"}, {"ol__lukai","jiane"}, {"yadan","qingya"}, {"ol__niufu","zonglue"}, {"olmou__sunjian","hulie"},
   --offline
-  {"es__chendao","jianglie"},
+  {"es__chendao","jianglie"}, {"ehuan","diwan"}, {"ofl__zhonghui","zizhong"}, {"shengongbao","zhuzhou"}, {"ofl__gongsunzan","qizhen"},
+  {"zhaorong","yuantao"},
   --mini
-  {"mini__weiyan","mini__kuanggu"},
+  {"mini__weiyan","mini__kuanggu"}, {"miniex__machao","mini_qipao"}, 
   --mobile
   {"mobile__gaolan", "dengli"}, {"mobile__wenyang","quedi"}, {"m_ex__xusheng","m_ex__pojun"},{"m_ex__sunluban","m_ex__zenhui"},
+  {"mobile__wenqin","choumang"},
   --mougong
   {"mou__machao", "mou__tieji"},{"mou__zhurong","mou__lieren"},
   --overseas
   {"yuejiu","os__cuijin"}, {"os__tianyu","os__zhenxi"}, {"os__fuwan","os__moukui"},{"zhangwei","os__huzhong"},
   {"os__zangba","os__hengjiang"}, {"os__wuban","os__jintao"}, {"os__haomeng","os__gongge"},
-  {"wangyue","os__yulong"}, {"liyan","os__zhenhu"}, {"os__wujing","os__fenghan"},
+  {"wangyue","os__yulong"}, {"liyan","os__zhenhu"}, {"os__wujing","os__fenghan"}, {"zhangwei","os__huzhong"},
   {"os_ex__caoxiu","os_ex__qingxi"}, {"os__mayunlu","os__fengpo"},
+  {"os_if__jiangwei","os__zhihuan"}, {"os_if__weiyan","os__piankuang"},
   --tenyear
   {"ty__baosanniang","ty__wuniang"}, {"wangshuang","zhuilie"}, {"ty__huangzu","xiaojun"},
   {"wm__zhugeliang","qingshi"}, {"mangyachang","jiedao"}, {"caimaozhangyun","jinglan"},
@@ -573,14 +577,13 @@ local bianzhuang_choices = {
   {"ty__huaxin","wanggui"}, {"guanhai","suoliang"}, {"ty_ex__zhangchunhua","ty_ex__jueqing"},
   {"ty_ex__panzhangmazhong","ty_ex__anjian"}, {"ty_ex__masu","ty_ex__zhiman"},
   {"wenyang","lvli"}, {"ty__luotong","jinjian"},{"tymou__simayi","pingliao"},
+  {"wenyuan","kengqiang"}, {"godhuangzhong","lieqiong"}, {"ty__tongyuan","chaofeng"}, {"qiuliju","koulue"},
+  {"sunchen","zuowei"}, {"tymou__simayi","pingliao"}, {"tymou__simashi","zhenrao"}, 
   --jsrg
   {"js__sunjian","juelie"}, {"js__zhujun","fendi"}, {"js__liubei","zhenqiao"}, {"js__lvbu","wuchang"},
+  {"js__machao","zhuiming"}, {"jiananfeng","liedu"},
   --yjtw
   {"tw__xiahouba","tw__baobian"},
-  --wandian
-  {"wd__hanlong","wd__ciqiu"}, {"wd__furongfuqian","wd__fenkai"},
-  --tuguo
-  {"tg__xuzhi", "tg__fenwei"}, {"tg__zhuyi","tg__danding"},
 }
 local bianzhuang = fk.CreateActiveSkill{
   name = "bianzhuang",
@@ -2562,6 +2565,7 @@ local weiqing_skill = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self)
   end,
+  on_cost = Util.TrueFunc,
   on_use = function (self, event, target, player, data)
     player:drawCards(2, self.name, nil, "@@weiqing_skill-inhand")
   end,

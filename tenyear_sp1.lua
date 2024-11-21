@@ -444,8 +444,11 @@ local liji = fk.CreateActiveSkill{
   card_num = 1,
   target_num = 1,
   times = function(self)
-    local mark = Self:getTableMark("@liji-turn")
-    return #mark > 0 and mark[1] or 0
+    if Self.phase == Player.Play then
+      local mark = Self:getTableMark("@liji-turn")
+      return #mark > 0 and mark[1] or 0
+    end
+    return -1
   end,
   can_use = function(self, player)
     local mark = player:getTableMark("@liji-turn")

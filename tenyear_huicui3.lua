@@ -237,9 +237,7 @@ local moyu = fk.CreateActiveSkill{
   prompt = function()
     return "#moyu-active:::" .. tostring((Self:getMark("@@moyu1-phase") > 0) and 2 or 1)
   end,
-  can_use = function(self, player)
-    return player:getMark("moyu2-turn") == 0
-  end,
+  can_use = Util.TrueFunc,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     return #selected == 0 and to_select ~= Self.id and not table.contains(Self:getTableMark("moyu_targets-phase"), to_select) and
@@ -265,8 +263,7 @@ local moyu = fk.CreateActiveSkill{
       room:useCard(use)
       if player.dead then return end
       if use.damageDealt and use.damageDealt[player.id] then
-        room:setPlayerMark(player, "moyu2-turn", 1)
-        room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
+        room:invalidateSkill(player, self.name, "-turn")
       else
         room:setPlayerMark(player, "@@moyu1-phase", 1)
       end
@@ -600,13 +597,16 @@ local anliao = fk.CreateActiveSkill{
   anim_type = "control",
   card_num = 0,
   times = function(self)
-    local n = 0
-    for _, p in ipairs(Fk:currentRoom().alive_players) do
-      if p.kingdom == "qun" then
-        n = n + 1
+    if Self.phase == Player.Play then
+      local n = 0
+      for _, p in ipairs(Fk:currentRoom().alive_players) do
+        if p.kingdom == "qun" then
+          n = n + 1
+        end
       end
+      return math.max(0, n - Self:usedSkillTimes(self.name, Player.HistoryPhase))
     end
-    return n - Self:usedSkillTimes(self.name, Player.HistoryPhase)
+    return -1
   end,
   target_num = 1,
   prompt = "#anliao-prompt",

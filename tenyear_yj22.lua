@@ -803,10 +803,10 @@ local shuojian = fk.CreateActiveSkill{
   target_num = 1,
   prompt = "#shuojian",
   times = function(self)
-    return Self.phase ~= Player.Play and 3 - Self:usedSkillTimes(self.name, Player.HistoryPhase) or -1
+    return Self.phase == Player.Play and 3 - Self:usedSkillTimes(self.name, Player.HistoryPhase) or -1
   end,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 3 and player:getMark("shuojian_invalid-turn") == 0
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 3
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0
@@ -835,8 +835,7 @@ local shuojian = fk.CreateActiveSkill{
         room:askForDiscard(player, n - 1, n - 1, true, self.name, false)
       end
     else
-      room:setPlayerMark(player, "shuojian_invalid-turn", 1)
-      room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
+      room:invalidateSkill(player, self.name, "-turn")
       for i = 1, n, 1 do
         if target.dead then return end
         local success, data = room:askForUseActiveSkill(target, "shuojian_viewas", "#shuojian-use:::"..i..":"..n, true)

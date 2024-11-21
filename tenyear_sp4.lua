@@ -1671,7 +1671,7 @@ local ty__gushe = fk.CreateActiveSkill{
     return Self.phase ~= Player.NotActive and 7 - Self:getMark("ty__raoshe_win-turn") - Self:getMark("@ty__raoshe") or -1
   end,
   can_use = function(self, player)
-    return not player:isKongcheng() and player:getMark("ty__raoshe_invalidity-turn") == 0
+    return not player:isKongcheng()
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
@@ -1733,16 +1733,11 @@ local ty__gushe_delay = fk.CreateTriggerSkill{
     if event == fk.PindianResultConfirmed then
       room:addPlayerMark(player, "ty__raoshe_win-turn")
       if player:getMark("@ty__raoshe") + player:getMark("ty__raoshe_win-turn") > 6 then
-        if player:getMark("ty__raoshe_invalidity-turn") == 0 then
-          room:setPlayerMark(player, "ty__raoshe_invalidity-turn", 1)
-          room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", "ty__gushe")
-        end
+        room:invalidateSkill(player, "ty__gushe")
       end
     elseif event == fk.EventLoseSkill then
       room:setPlayerMark(player, "@ty__raoshe", 0)
       room:setPlayerMark(player, "ty__raoshe_win-turn", 0)
-      room:setPlayerMark(player, "ty__raoshe_invalidity-turn", 0)
-      room:removeTableMark(player, MarkEnum.InvalidSkills .. "-turn", "ty__gushe")
     end
   end,
 }

@@ -4122,7 +4122,7 @@ local ty_ex__zenhui = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.TargetSpecifying},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player:getMark("ty_ex__zenhui-turn") == 0 and
+    return target == player and player:hasSkill(self) and
       (data.card.trueName == "slash" or data.card:isCommonTrick()) and data.firstTarget and
       U.isOnlyTarget(player.room:getPlayerById(data.to), data, event) and #player.room:getUseExtraTargets(data, true, true) > 0
   end,
@@ -4155,8 +4155,7 @@ local ty_ex__zenhui = fk.CreateTriggerSkill{
       end
     end
     AimGroup:addTargets(room, data, to.id)
-    room:setPlayerMark(player, "ty_ex__zenhui-turn", 1)
-    room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
+    room:invalidateSkill(player, self.name, "-turn")
     room:sendLog{ type = "#AddTargetsBySkill", from = player.id, to = {to.id}, arg = self.name, arg2 = data.card:toLogString() }
   end,
 }
@@ -4166,7 +4165,7 @@ local ty_ex__jiaojin = fk.CreateTriggerSkill{
   anim_type = "defensive",
   events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.from ~= player.id and (data.card.trueName == "slash" or data.card:isCommonTrick()) and not player:isNude() and player:getMark("ty_ex__jiaojin-turn") == 0
+    return target == player and player:hasSkill(self) and data.from ~= player.id and (data.card.trueName == "slash" or data.card:isCommonTrick()) and not player:isNude()
   end,
   on_cost = function(self, event, target, player, data)
     local cards = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".|.|.|.|.|equip", "#ty_ex__jiaojin-discard::"..data.from..":"..data.card:toLogString(), true)
@@ -4184,8 +4183,7 @@ local ty_ex__jiaojin = fk.CreateTriggerSkill{
     table.insertIfNeed(list, player.id)
     data.extra_data.ty_ex__jiaojin = list
     if room:getPlayerById(data.from):isFemale() then
-      room:setPlayerMark(player, "ty_ex__jiaojin-turn", 1)
-      room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
+      room:invalidateSkill(player, self.name, "-turn")
     end
   end,
 }

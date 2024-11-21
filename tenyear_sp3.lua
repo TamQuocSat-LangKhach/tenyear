@@ -3770,14 +3770,14 @@ local caixia = fk.CreateTriggerSkill{
     if event == fk.CardUsing then
       room:removePlayerMark(player, "@caixia")
       if player:getMark("@caixia") < 1 then
-        room:removeTableMark(player, MarkEnum.InvalidSkills, self.name)
+        room:validateSkill(Player, self.name)
       end
     else
       room:notifySkillInvoked(player, self.name, event == fk.Damaged and "masochism" or "drawcard")
       player:broadcastSkillInvoke(self.name)
       local x = tonumber(string.sub(self.cost_data, 12, 12))
       room:setPlayerMark(player, "@caixia", x)
-      room:addTableMark(player, MarkEnum.InvalidSkills, self.name)
+      room:invalidateSkill(player, self.name)
       room:drawCards(player, x, self.name)
     end
   end,
@@ -3789,7 +3789,6 @@ local caixia = fk.CreateTriggerSkill{
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "@caixia", 0)
-    room:removeTableMark(player, MarkEnum.InvalidSkills, self.name)
   end,
 }
 xujing:addSkill(shangyu)
@@ -4111,7 +4110,7 @@ local yanzuo = fk.CreateActiveSkill{
   prompt = "#yanzuo",
   derived_piles = "yanzuo",
   times = function(self)
-    return 1 + Self:getMark("zuyin") - Self:usedSkillTimes(self.name, Player.HistoryPhase)
+    return Self.phase == Player.Play and 1 + Self:getMark("zuyin") - Self:usedSkillTimes(self.name, Player.HistoryPhase) or -1
   end,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 1 + player:getMark("zuyin")

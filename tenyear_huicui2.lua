@@ -391,8 +391,7 @@ local shizong = fk.CreateViewAsSkill{
     if dat then
       local to = room:getPlayerById(dat.targets[1])
       if to ~= room.current then
-        room:setPlayerMark(player, "shizong_fail-turn", 1)
-        room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
+        room:invalidateSkill(player, self.name, "-turn")
       end
       room:moveCardTo(dat.cards, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, false, player.id)
       if not to.dead and not to:isNude() then
@@ -419,12 +418,10 @@ local shizong = fk.CreateViewAsSkill{
     return card
   end,
   enabled_at_play = function(self, player)
-    return player:getMark("shizong_fail-turn") == 0 and
-      #player:getCardIds("he") > player:usedSkillTimes(self.name, Player.HistoryTurn)
+    return #player:getCardIds("he") > player:usedSkillTimes(self.name, Player.HistoryTurn)
   end,
   enabled_at_response = function(self, player, response)
-    return not response and player:getMark("shizong_fail-turn") == 0 and
-      #player:getCardIds("he") > player:usedSkillTimes(self.name, Player.HistoryTurn)
+    return not response and #player:getCardIds("he") > player:usedSkillTimes(self.name, Player.HistoryTurn)
   end,
 }
 local shizong_active = fk.CreateActiveSkill{
@@ -3013,7 +3010,7 @@ local shicao = fk.CreateActiveSkill{
   target_num = 0,
   prompt = "#shicao-active",
   can_use = function(self, player)
-    return player:getMark("shicao-turn") == 0 and player:usedSkillTimes(self.name) < 20
+    return player:usedSkillTimes(self.name) < 20
   end,
   interaction = function()
     return UI.ComboBox {choices = {
@@ -3039,8 +3036,7 @@ local shicao = fk.CreateActiveSkill{
         table.insert(room.draw_pile, 1, ids[1])
       end
       U.viewCards(player, ids, self.name)
-      room:setPlayerMark(player, "shicao-turn", 1)
-      room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
+      room:invalidateSkill(player, self.name, "-turn")
     end
   end,
 }

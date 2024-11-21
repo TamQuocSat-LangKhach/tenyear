@@ -2224,8 +2224,7 @@ local caisi = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.CardUseFinished},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.card.type == Card.TypeBasic and
-    player:getMark("caisiInvalidity-turn") == 0
+    return target == player and player:hasSkill(self) and data.card.type == Card.TypeBasic
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -2240,8 +2239,7 @@ local caisi = fk.CreateTriggerSkill{
       room:moveCardTo(cards, Player.Hand, player, fk.ReasonPrey, self.name, nil, false, player.id)
     end
     if player:usedSkillTimes(self.name) > player.maxHp then
-      room:setPlayerMark(player, "caisiInvalidity-turn", 1)
-      room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
+      room:invalidateSkill(player, self.name, "-turn")
     end
   end,
 }

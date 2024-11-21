@@ -977,7 +977,6 @@ local yingshij = fk.CreateTriggerSkill{
     return
       target == player and
       player:hasSkill(self) and
-      player:getMark("yingshij_nullified-turn") == 0 and
       data.firstTarget and
       data.card:isCommonTrick() and
       not table.contains(data.card.skillNames, self.name) and
@@ -1006,8 +1005,7 @@ local yingshij = fk.CreateTriggerSkill{
     local equipNum = #player:getCardIds(Player.Equip)
     if equipNum > 0 and #room:askForDiscard(to, equipNum, equipNum, true, self.name, true, ".",
       "#yingshij-discard:" .. player.id .. "::" .. tostring(equipNum) .. ":" .. data.card:toLogString()) > 0 then
-      room:setPlayerMark(player, "yingshij_nullified-turn", 1)
-      room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
+      room:invalidateSkill(player, self.name, "-turn")
     else
       data.extra_data = data.extra_data or {}
       data.extra_data.yingshij = {
@@ -1795,7 +1793,7 @@ local taozhou = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     local n = self.interaction.data
     room:setPlayerMark(player, self.name, n)
-    room:addTableMark(player, MarkEnum.InvalidSkills, self.name)
+    room:invalidateSkill(player, self.name)
     local cards = room:askForCard(target, 1, 3, false, self.name, true, ".|.|.|hand", "#taozhou-give:"..player.id)
     if #cards > 0 then
       room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonGive, self.name, nil, false, player.id)
@@ -1839,11 +1837,10 @@ local taozhou_trigger = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.EventLoseSkill then
       room:setPlayerMark(player, "taozhou", 0)
-      room:removeTableMark(player, MarkEnum.InvalidSkills, "taozhou")
     else
       room:removePlayerMark(player, "taozhou", 1)
       if player:getMark("taozhou") < 1 then
-        room:removeTableMark(player, MarkEnum.InvalidSkills, "taozhou")
+        room:validateSkill(player, "taozhou")
       end
     end
   end,
@@ -2016,7 +2013,10 @@ local wuwei = fk.CreateViewAsSkill{
     not player:isKongcheng()
   end,
   times = function(self)
-    return 1 + Self:getMark("wuwei_addtimes-turn") - Self:usedSkillTimes(self.name, Player.HistoryPhase)
+    if Self.phase == Player.Play then
+      return 1 + Self:getMark("wuwei_addtimes-turn") - Self:usedSkillTimes(self.name, Player.HistoryPhase)
+    end
+    return -1
   end,
 }
 local wuwei_targetmod = fk.CreateTargetModSkill{
@@ -2102,7 +2102,7 @@ local fengmin = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and player:getMark("fengmin-turn") == 0 then
+    if player:hasSkill(self) then
       for _, move in ipairs(data) do
         for _, info in ipairs(move.moveInfo) do
           if info.fromArea == Card.PlayerEquip then
@@ -2116,8 +2116,7 @@ local fengmin = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     player:drawCards(5 - #player.room.current:getCardIds("e"), self.name)
     if player:usedSkillTimes(self.name, Player.HistoryTurn) > player:getLostHp() and player:hasSkill(self, true) then
-      player.room:setPlayerMark(player, "fengmin-turn", 1)
-      player.room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
+      player.room:invalidateSkill(player, self.name, "-turn")
     end
   end,
 }

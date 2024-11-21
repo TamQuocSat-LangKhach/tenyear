@@ -471,9 +471,7 @@ local anzhi = fk.CreateActiveSkill{
   prompt = "#anzhi-active",
   card_num = 0,
   target_num = 0,
-  can_use = function(self, player)
-    return player:getMark("anzhi-turn") == 0
-  end,
+  can_use = Util.TrueFunc,
   card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -486,8 +484,7 @@ local anzhi = fk.CreateActiveSkill{
     if judge.card.color == Card.Red then
       room:setPlayerMark(player, "xialei-turn", 0)
     elseif judge.card.color == Card.Black then
-      room:addPlayerMark(player, "anzhi-turn", 1)
-      room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
+      room:invalidateSkill(player, self.name, "-turn")
       local ids = {}
       room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
         for _, move in ipairs(e.data) do
@@ -536,7 +533,7 @@ local anzhi_trigger = fk.CreateTriggerSkill{
   events = {fk.Damaged},
   main_skill = anzhi,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player:getMark("anzhi-turn") == 0
+    return target == player and player:hasSkill(anzhi)
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#anzhi-invoke")
@@ -3450,7 +3447,7 @@ local bizu = fk.CreateActiveSkill{
         return table.contains(tos2, pid)
       end)
     end) then
-      room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
+      room:invalidateSkill(player, self.name, "-turn")
     else
       table.insert(mark, tos)
       room:setPlayerMark(player, "bizu_targets-turn", mark)

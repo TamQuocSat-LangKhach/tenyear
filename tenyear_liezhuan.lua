@@ -896,8 +896,8 @@ local ty__weipo = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and player == target and player:getMark("ty__weipo_invalidity") == 0 and
-      data.from ~= player.id and (data.card.trueName == "slash" or data.card:isCommonTrick()) and player:getHandcardNum() < player.maxHp
+    return player:hasSkill(self) and player == target and data.from ~= player.id and
+    (data.card.trueName == "slash" or data.card:isCommonTrick()) and player:getHandcardNum() < player.maxHp
   end,
   on_use = function(self, event, target, player, data)
     if player:getHandcardNum() < player.maxHp then
@@ -917,7 +917,7 @@ local ty__weipo = fk.CreateTriggerSkill{
   on_refresh = function (self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "ty__weipo_invalidity", 0)
-    room:removeTableMark(player, MarkEnum.InvalidSkills, self.name)
+    room:validateSkill(player, self.name)
   end,
 }
 local ty__weipo_delay = fk.CreateTriggerSkill{
@@ -940,9 +940,8 @@ local ty__weipo_delay = fk.CreateTriggerSkill{
         room:obtainCard(target.id, card[1], false, fk.ReasonGive)
       end
     end
-    if player:hasSkill(ty__weipo, true) then
-      room:setPlayerMark(player, "ty__weipo_invalidity", 1)
-      room:addTableMark(player, MarkEnum.InvalidSkills, "ty__weipo")
+    if player:hasSkill(ty__weipo, true) and player:getMark("ty__weipo_invalidity") == 0 then
+      room:invalidateSkill(player, ty__weipo.name)
     end
   end,
 }

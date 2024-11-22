@@ -1021,15 +1021,24 @@ local porong = fk.CreateTriggerSkill{
   on_use = function (self, event, target, player, data)
     local room = player.room
     data.additionalEffect = (data.additionalEffect or 0) + 1
-    local targets = table.filter(room:getOtherPlayers(player), function (p)
-      return table.find({p.id, p:getNextAlive().id, p:getLastAlive().id}, function (id)
-        return table.contains(TargetGroup:getRealTargets(data.tos), id)
-      end)
-    end)
+    local targets = {}
+    for _, id in ipairs(TargetGroup:getRealTargets(data.tos)) do
+      local p = room:getPlayerById(id)
+      if p:getLastAlive() ~= player then
+        table.insert(targets, p:getLastAlive().id)
+      end
+      if p ~= player then
+        table.insert(targets, p.id)
+      end
+      if p:getNextAlive() ~= player then
+        table.insert(targets, p:getNextAlive().id)
+      end
+    end
     if #targets == 0 then return end
-    room:doIndicate(player.id, table.map(targets, Util.IdMapper))
-    for _, p in ipairs(targets) do
+    room:doIndicate(player.id, targets)
+    for _, id in ipairs(targets) do
       if player.dead then return end
+      local p = room:getPlayerById(id)
       if not p:isKongcheng() then
         local card = room:askForCardChosen(player, p, "h", self.name, "#porong-prey::"..p.id)
         room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, false, player.id)

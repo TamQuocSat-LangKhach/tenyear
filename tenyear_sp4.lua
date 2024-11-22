@@ -2949,7 +2949,7 @@ local chaozhen = fk.CreateTriggerSkill{
   anim_type = "drawcard",
   events = {fk.EventPhaseStart, fk.EnterDying},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player:getMark("@@chaozhen-turn") == 0 and
+    return target == player and player:hasSkill(self) and
       (event == fk.EventPhaseStart and player.phase == Player.Start or event == fk.EnterDying)
   end,
   on_cost = function(self, event, target, player, data)
@@ -2988,7 +2988,7 @@ local chaozhen = fk.CreateTriggerSkill{
     room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
     if player.dead then return end
     if yes then
-      room:setPlayerMark(player, "@@chaozhen-turn", 1)
+      room:invalidateSkill(player, self.name, "-turn")
       if player:isWounded() then
         room:recover({
           who = player,
@@ -2997,8 +2997,6 @@ local chaozhen = fk.CreateTriggerSkill{
           skillName = self.name,
         })
       end
-    else
-      room:changeMaxHp(player, -1)
     end
   end,
 }
@@ -3035,43 +3033,19 @@ local jiangxian = fk.CreateActiveSkill{
   target_num = 0,
   frequency = Skill.Limited,
   prompt = "#jiangxian",
-  interaction = function()
-    local choices = {"jiangxian2"}
-    if Self:hasSkill(chaozhen, true) then
-      table.insert(choices, 1, "jiangxian1")
-    end
-    return UI.ComboBox {choices = choices}
-  end,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    if self.interaction.data == "jiangxian1" then
-      room:handleAddLoseSkills(player, "-chaozhen", nil, true, false)
-      if player.dead then return end
-      room:setPlayerMark(player, "jiangxian1", 1)
-      if player.maxHp < 5 then
-        room:changeMaxHp(player, 5 - player.maxHp)
-      end
-    else
-      room:setPlayerMark(player, "@@jiangxian-turn", 1)
-    end
+    room:setPlayerMark(player, "@@jiangxian-turn", 1)
   end,
-}
-local jiangxian_maxcards = fk.CreateMaxCardsSkill{
-  name = "#jiangxian_maxcards",
-  fixed_func = function(self, player)
-    if player:getMark("jiangxian1") > 0 then
-      return 5
-    end
-  end
 }
 local jiangxian_delay = fk.CreateTriggerSkill{
   name = "#jiangxian_delay",
   mute = true,
-  events = {fk.DamageCaused, fk.AfterTurnEnd},
+  events = {fk.DamageCaused, fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
     if target and target == player and player:getMark("@@jiangxian-turn") > 0 then
       if event == fk.DamageCaused then
@@ -3080,8 +3054,9 @@ local jiangxian_delay = fk.CreateTriggerSkill{
         local use = use_event.data[1]
         return (use.extra_data or {}).jiangxian == player.id
       end
-      elseif event == fk.AfterTurnEnd then
-        return player:hasSkill(lianjie, true)
+      elseif event == fk.TurnEnd then
+        return player:hasSkill(lianjie, true) and
+          (player:hasSkill(lianjie, true) or player:hasSkill(chaozhen, true))
       end
     end
   end,
@@ -3089,12 +3064,13 @@ local jiangxian_delay = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.DamageCaused then
-      data.damage = data.damage + math.min(5,
-      #player.room.logic:getActualDamageEvents(5, function(e)
-        return e.data[1].from == player
-      end, Player.HistoryTurn))
-    elseif event == fk.AfterTurnEnd then
-      room:handleAddLoseSkills(player, "-lianjie", nil, true, false)
+      data.damage = data.damage + 1
+    elseif event == fk.TurnEnd then
+      local choices = table.filter({"lianjie", "chaozhen"}, function (s)
+        return player:hasSkill(s, true)
+      end)
+      local choice = room:askForChoice(player, choices, "jiangxian", "#jiangxian-lose")
+      room:handleAddLoseSkills(player, "-"..choice, nil, true, false)
     end
   end,
 
@@ -3109,7 +3085,6 @@ local jiangxian_delay = fk.CreateTriggerSkill{
   end,
 }
 lianjie:addRelatedSkill(lianjie_targetmod)
-jiangxian:addRelatedSkill(jiangxian_maxcards)
 jiangxian:addRelatedSkill(jiangxian_delay)
 huangfusong:addSkill(chaozhen)
 huangfusong:addSkill(lianjie)
@@ -3120,20 +3095,17 @@ Fk:loadTranslationTable{
   ["illustrator:wm__huangfusong"] = "",
 
   ["chaozhen"] = "朝镇",
-  [":chaozhen"] = "准备阶段或当你进入濒死状态时，你可以选择从场上或牌堆中随机获得一张点数最小的牌，若此牌点数：为A，你回复1点体力，"..
-  "此技能本回合失效；不为A，你减1点体力上限。",
+  [":chaozhen"] = "准备阶段或当你进入濒死状态时，你可以选择从场上或牌堆中随机获得一张点数最小的牌，若此牌点数为A，你回复1点体力，"..
+  "此技能本回合失效。",
   ["lianjie"] = "连捷",
   [":lianjie"] = "当你使用手牌指定目标后，若你手牌的点数均不小于此牌点数（每个点数每回合限一次，无点数视为0），你可以将手牌摸至体力上限，"..
   "本回合使用以此法摸到的牌无距离次数限制。",
   ["jiangxian"] = "将贤",
-  [":jiangxian"] = "限定技，出牌阶段，你可以选择一项：<br>1.失去〖朝镇〗，将体力上限和手牌上限增加至5；<br>2.直到回合结束，当你使用因"..
-  "〖连捷〗获得的牌造成伤害时，此伤害+X（X为你本回合造成伤害次数，至多为5），此回合结束后你失去〖连捷〗。",
+  [":jiangxian"] = "限定技，出牌阶段，你可以令本回合使用因〖连捷〗摸的牌造成伤害时，此伤害+1。若如此做，回合结束后失去〖连捷〗或〖朝镇〗。",
   ["#chaozhen-invoke"] = "朝镇：你可以从场上或牌堆中随机获得一张点数最小的牌",
-  ["@@chaozhen-turn"] = "朝镇失效",
   ["@@lianjie-inhand-turn"] = "连捷",
-  ["#jiangxian"] = "将贤：选择一项",
-  ["jiangxian1"] = "失去“朝镇”，体力上限和手牌上限增加至5",
-  ["jiangxian2"] = "使用“连捷”牌伤害增加，回合结束失去“连捷”",
+  ["#jiangxian"] = "将贤：令你本回合使用〖连捷〗牌伤害+1，回合结束时失去““连捷”或“朝镇”！",
+  ["#jiangxian_delay"] = "将贤",
   ["@@jiangxian-turn"] = "将贤",
 }
 

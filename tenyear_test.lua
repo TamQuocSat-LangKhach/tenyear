@@ -814,14 +814,21 @@ local yitong = fk.CreateTriggerSkill{
   name = "yitong",
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
-  events = {fk.GameStart, fk.TargetConfirmed},
+  events = {fk.GameStart, fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
       if event == fk.GameStart then
         return true
-      elseif event == fk.TargetConfirmed then
-        return target == player and data.card:getSuitString(true) == player:getMark("@yitong") and
-          player:getMark("yitong_draw-turn") == 0
+      elseif event == fk.AfterCardsMove and player:getMark("@yitong") ~= 0 and player:getMark("yitong_draw-turn") == 0 then
+        for _, move in ipairs(data) do
+          if move.toArea == Card.DiscardPile and move.moveReason == fk.ReasonUse then
+            for _, info in ipairs(move.moveInfo) do
+              if Fk:getCardById(info.cardId):getSuitString(true) == player:getMark("@yitong") then
+                return true
+              end
+            end
+          end
+        end
       end
     end
   end,
@@ -833,7 +840,7 @@ local yitong = fk.CreateTriggerSkill{
       room:setPlayerMark(player, "@yitong", suit)
     else
       room:setPlayerMark(player, "yitong_draw-turn", 1)
-      table.removeOne(all_suits, data.card:getSuitString(true))
+      table.removeOne(all_suits, player:getMark("@yitong"))
       local cards = {}
       for _, suit in ipairs(all_suits) do
         local pattern = ".|.|"..string.sub(suit, 5)
@@ -970,7 +977,7 @@ Fk:loadTranslationTable{
   ["#pangfengyi"] = "瞳悉万机",
 
   ["yitong"] = "异瞳",
-  [":yitong"] = "锁定技，游戏开始时，你选择一种花色。你每回合首次成为该花色牌的目标后，随机获得与该花色不同花色的牌各一张。",
+  [":yitong"] = "锁定技，游戏开始时，你选择一种花色。每回合限一次，当此花色的牌因使用进入弃牌堆后，你随机获得与该花色不同花色的牌各一张。",
   ["peiniang"] = "醅酿",
   [":peiniang"] = "你可以将“异瞳”花色的牌当【酒】使用（不计次数）。"..
   "当一名角色进入濒死状态时，你可以将一张【酒】或“异瞳”花色的牌当【酒】对其使用，"..
@@ -1003,26 +1010,29 @@ local yuxi_targetmod = fk.CreateTargetModSkill{
 local porong = fk.CreateTriggerSkill{
   name = "porong",
   anim_type = "offensive",
-  events = {fk.TargetSpecified},  --先随便弄个时机，之后再改
+  events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.card.trueName == "slash" and
       data.extra_data and data.extra_data.combo_skill and data.extra_data.combo_skill[self.name]  --先随便弄个记录，之后再改
   end,
   on_cost = function (self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#porong-invoke::"..data.to)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#porong-invoke")
   end,
   on_use = function (self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(data.to)
     data.additionalEffect = (data.additionalEffect or 0) + 1
-    for _, p in ipairs(room:getOtherPlayers(player)) do
+    local targets = table.filter(room:getOtherPlayers(player), function (p)
+      return table.find({p.id, p:getNextAlive().id, p:getLastAlive().id}, function (id)
+        return table.contains(TargetGroup:getRealTargets(data.tos), id)
+      end)
+    end)
+    if #targets == 0 then return end
+    room:doIndicate(player.id, table.map(targets, Util.IdMapper))
+    for _, p in ipairs(targets) do
       if player.dead then return end
-      if to:getNextAlive() == p or p:getNextAlive() == to then
-        room:doIndicate(player.id, {p.id})
-        if not p:isKongcheng() then
-          local card = room:askForCardChosen(player, p, "h", self.name, "#porong-prey::"..p.id)
-          room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, false, player.id)
-        end
+      if not p:isKongcheng() then
+        local card = room:askForCardChosen(player, p, "h", self.name, "#porong-prey::"..p.id)
+        room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, false, player.id)
       end
     end
   end,
@@ -1056,9 +1066,9 @@ Fk:loadTranslationTable{
   ["yuxi"] = "驭袭",
   [":yuxi"] = "你造成或受到伤害时，摸一张牌，以此法获得的牌无次数限制。",
   ["porong"] = "破戎",
-  [":porong"] = "连招技（伤害牌+【杀】），你可以获得此【杀】目标与其相邻角色各一张手牌，并令此【杀】对其额外结算一次。",
+  [":porong"] = "连招技（伤害牌+【杀】），你可以获得此【杀】目标和其相邻角色各一张手牌，并令此【杀】额外结算一次。",
   ["@@yuxi-inhand"] = "驭袭",
-  ["#porong-invoke"] = "破戎：是否获得 %dest 相邻角色各一张手牌并令此【杀】额外结算一次？",
+  ["#porong-invoke"] = "破戎：是否令此【杀】额外结算一次，并获得目标及其相邻角色各一张手牌？",
   ["#porong-prey"] = "破戎：获得 %dest 一张手牌",
 }
 

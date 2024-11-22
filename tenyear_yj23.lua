@@ -591,7 +591,7 @@ local fazhu = fk.CreateTriggerSkill{
       table.insert(targets, player)
     end
     for _, p in ipairs(room:getOtherPlayers(player)) do
-      if #result[tostring(p.id)] > 0 then
+      if #result[p.id] > 0 then
         table.insert(targets, p)
       end
     end

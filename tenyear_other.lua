@@ -554,6 +554,7 @@ local bianzhuang_choices = {
   {"ol__fanchou","ol__xingluan"}, {"yingzheng","qin__yitong"}, {"ol__dengzhi","xiuhao"},
   {"qinghegongzhu","zengou"}, {"ol__wenqin","guangao"}, {"olz__zhonghui","xieshu"},{"olmou__yuanshao", "shenliy"},
   {"macheng","chenglie"}, {"ol__lukai","jiane"}, {"yadan","qingya"}, {"ol__niufu","zonglue"}, {"olmou__sunjian","hulie"},
+  {"zhangyan", "langdao"},
   --offline
   {"es__chendao","jianglie"}, {"ehuan","diwan"}, {"ofl__zhonghui","zizhong"}, {"shengongbao","zhuzhou"}, {"ofl__gongsunzan","qizhen"},
   {"zhaorong","yuantao"},
@@ -578,7 +579,7 @@ local bianzhuang_choices = {
   {"ty_ex__panzhangmazhong","ty_ex__anjian"}, {"ty_ex__masu","ty_ex__zhiman"},
   {"wenyang","lvli"}, {"ty__luotong","jinjian"},{"tymou__simayi","pingliao"},
   {"wenyuan","kengqiang"}, {"godhuangzhong","lieqiong"}, {"ty__tongyuan","chaofeng"}, {"qiuliju","koulue"},
-  {"sunchen","zuowei"}, {"tymou__simayi","pingliao"}, {"tymou__simashi","zhenrao"}, 
+  {"sunchen","zuowei"}, {"tymou__simashi","zhenrao"}, {"caoyi", "yinjun"},{"quyuan", "qiusuo"},
   --jsrg
   {"js__sunjian","juelie"}, {"js__zhujun","fendi"}, {"js__liubei","zhenqiao"}, {"js__lvbu","wuchang"},
   {"js__machao","zhuiming"}, {"jiananfeng","liedu"},

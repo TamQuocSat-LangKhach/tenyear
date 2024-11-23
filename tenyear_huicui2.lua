@@ -467,7 +467,7 @@ Fk:loadTranslationTable{
   ["~ty__jiachong"] = "诸公勿怪，充乃奉命行事……",
 }
 
---代汉涂高：马日磾 张勋 纪灵 雷薄 乐就 桥蕤 董绾
+--代汉涂高：马日磾 张勋 纪灵 雷薄 乐就 桥蕤 董绾 袁胤
 local ty__mamidi = General(extension, "ty__mamidi", "qun", 4, 6)
 local bingjie = fk.CreateTriggerSkill{
   name = "bingjie",
@@ -1248,6 +1248,61 @@ Fk:loadTranslationTable{
   ["$jieling1"] = "来人，送冯氏上路！",
   ["$jieling2"] = "我有一求，请姐姐赴之。",
   ["~dongwan"] = "陛下饶命，妾并无歹意……",
+}
+
+local yuanyin = General(extension, "yuanyin", "qun", 3)
+local moshou = fk.CreateTriggerSkill{
+  name = "moshou",
+  anim_type = "drawcard",
+  events = {fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.card.color == Card.Black
+  end,
+  on_use = function(self, event, target, player, data)
+    local n = player:getMark(self.name)
+    if n == 0 then
+      n = player.maxHp
+    end
+    local new_num = n > 1 and n - 1 or player.maxHp
+    player.room:setPlayerMark(player, self.name, new_num)
+    player:drawCards(n, self.name)
+  end,
+}
+local yunjiu = fk.CreateTriggerSkill{
+  name = "yunjiu",
+  anim_type = "support",
+  events = {fk.Death},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and not target:isAllNude() and #player.room:getOtherPlayers(player) > 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:askForYiji(player, target:getCardIds("hej"), room:getOtherPlayers(player), self.name, 1, 1,
+      "#yunjiu-give::"..target.id, target:getCardIds("hej"))
+    if player.dead then return end
+    room:changeMaxHp(player, 1)
+    if player:isWounded() and not player.dead then
+      room:recover{
+        who = player,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name,
+      }
+    end
+  end,
+}
+yuanyin:addSkill(moshou)
+yuanyin:addSkill(yunjiu)
+Fk:loadTranslationTable{
+  ["yuanyin"] = "袁胤",
+  ["#yuanyin"] = "载路素车",
+  ["illustrator:yuanyin"] = "错落宇宙",
+
+  ["moshou"] = "墨守",
+  [":moshou"] = "当你成为黑色牌的目标后，你可以摸体力上限张牌，然后下次以此法摸牌数-1。若你以此法摸牌数为1，则重置为体力上限。",
+  ["yunjiu"] = "运柩",
+  [":yunjiu"] = "当一名角色死亡时，你可以将其区域内一张牌交给一名其他角色。若如此做，你加1体力上限并回复1点体力。",
+  ["#yunjiu-give"] = "运柩：请将 %dest 的一张牌交给一名其他角色",
 }
 
 --江湖之远：管宁 黄承彦 胡昭 王烈 孟节

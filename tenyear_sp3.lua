@@ -3735,6 +3735,10 @@ local shangyu = fk.CreateTriggerSkill{
       room:setCardMark(Fk:getCardById(cid), "@@shangyu-inhand", 1)
     end
   end,
+
+  on_lose = function (self, player)
+    player.room:setPlayerMark(player, "shangyu_slash", 0)
+  end,
 }
 
 local caixia = fk.CreateTriggerSkill{
@@ -3770,7 +3774,7 @@ local caixia = fk.CreateTriggerSkill{
     if event == fk.CardUsing then
       room:removePlayerMark(player, "@caixia")
       if player:getMark("@caixia") < 1 then
-        room:validateSkill(Player, self.name)
+        room:validateSkill(player, self.name)
       end
     else
       room:notifySkillInvoked(player, self.name, event == fk.Damaged and "masochism" or "drawcard")
@@ -3782,13 +3786,8 @@ local caixia = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventLoseSkill},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and data == self
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    room:setPlayerMark(player, "@caixia", 0)
+  on_lose = function (self, player)
+    player.room:setPlayerMark(player, "@caixia", 0)
   end,
 }
 xujing:addSkill(shangyu)

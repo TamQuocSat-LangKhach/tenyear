@@ -399,32 +399,54 @@ local xiaoyan = fk.CreateTriggerSkill{
     end
   end,
 }
-local getZongshiTargets = function (room, player, card)
+
+---@param from Player @ 使用者
+---@param card Card @ 牌
+---@param to Player @ 目标角色
+---@return boolean
+local zongshiWithinTimesLimit = function(from, to, card)
+  --FIXME: 幽默手动判次数限制，直接摆
+  local limited_cards = {
+    {"slash"},
+    {"analeptic"},
+    {},
+    {},
+  }
+  local skill = card.skill
+  for i = 1, 4, 1 do
+    if table.contains(limited_cards[i], card.trueName) then
+      p(card.name)
+      if not skill:withinTimesLimit(from, i, card, card.trueName, to) then
+        return false
+      end
+    end
+  end
+  return true
+end
+
+---@param room Room @ 游戏房间
+---@param player Player @ 使用者
+---@param card Card @ 牌
+---@return string[] @ 返回合法目标的角色数组
+local getZongshiTargets = function(room, player, card)
   if player:prohibitUse(card) then return {} end
   local extra_data = {
     bypass_distances = true,
-    bypass_times = (player.phase == Player.NotActive)
+    bypass_times = (player.phase ~= Player.Play)
   }
   if not player:canUse(card, extra_data) then return {} end
-  if card.skill:getMinTargetNum() > 0 then
-    local targets = {}
-    for _, p in ipairs(room.alive_players) do
-      if not player:isProhibited(p, card) and card.skill:targetFilter(p.id, {}, {}, card, extra_data) then
+  local skill = card.skill
+  local targets = {}
+  for _, p in ipairs(room.alive_players) do
+    if not player:isProhibited(p, card) and skill:modTargetFilter(p.id, {}, player.id, card, false) then
+      if player.phase ~= Player.Play or zongshiWithinTimesLimit(player, p, card) then
         table.insert(targets, p.id)
       end
     end
-    return targets
-  else
-    local targets = {}
-    for _, p in ipairs(room.alive_players) do
-      if not player:isProhibited(p, card) and
-      card.skill:modTargetFilter(p.id, {}, player.id, card, false) then
-        table.insert(targets, p.id)
-      end
-    end
-    return targets
   end
+  return targets
 end
+
 local zongshiy = fk.CreateActiveSkill{
   name = "zongshiy",
   prompt = function (self, cards, selected_targets)
@@ -478,11 +500,8 @@ local zongshiy = fk.CreateActiveSkill{
     to_use.skillName = self.name
     to_use:addSubcards(cards)
     if player:prohibitUse(to_use) then return end
-    --FIXME：不给targetFilter传使用者真是离大谱，目前只能通过强制修改Self来实现
-    Self = player
     local targets = getZongshiTargets(room, player, to_use)
     if #targets == 0 then return end
-
     targets = room:askForChoosePlayers(player, targets, 1, #cards,
     "#zongshiy-target:::" .. to_use:toLogString() .. ":" .. tostring(#cards), self.name, false, true)
 

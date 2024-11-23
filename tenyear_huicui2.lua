@@ -1303,6 +1303,12 @@ Fk:loadTranslationTable{
   ["yunjiu"] = "运柩",
   [":yunjiu"] = "当一名角色死亡时，你可以将其区域内一张牌交给一名其他角色。若如此做，你加1体力上限并回复1点体力。",
   ["#yunjiu-give"] = "运柩：请将 %dest 的一张牌交给一名其他角色",
+
+  ["$moshou1"] = "好战必亡，此亘古之理。",
+  ["$moshou2"] = "天下汹汹之势，恪守方得自保。",
+  ["$yunjiu1"] = "此吾主之柩，请诸君勿扰。",
+  ["$yunjiu2"] = "故者为大，尔等欲欺大者乎？",
+  ["~yuanyin"] = "臣不负忠，虽死如是……",
 }
 
 --江湖之远：管宁 黄承彦 胡昭 王烈 孟节
@@ -4379,8 +4385,8 @@ local youzhan = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and player.phase ~= Player.NotActive then
-      local room = player.room
+    local room = player.room
+    if player:hasSkill(self) and room.current == player then
       for _, move in ipairs(data) do
         if move.from and move.from ~= player.id then
           local from_player = room:getPlayerById(move.from)
@@ -4400,18 +4406,18 @@ local youzhan = fk.CreateTriggerSkill{
     local numMap = {}
     for _, move in ipairs(data) do
       if move.from and move.from ~= player.id then
-        local from = room:getPlayerById(move.from)
-        if from and not from.dead then
-          numMap[move.from] = (numMap[move.from] or 0) + #table.filter(move.moveInfo, function(info)
-            return info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip
-          end)
-        end
+        numMap[move.from] = (numMap[move.from] or 0) + #table.filter(move.moveInfo, function(info)
+          return info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip
+        end)
       end
     end
     for pid, num in pairs(numMap) do
       if not player:hasSkill(self) then break end
-      self.cost_data = {tos = {pid}}
-      self:doCost(event, room:getPlayerById(pid), player, num)
+      local from = room:getPlayerById(pid)
+      if not from.dead then
+        self.cost_data = {tos = {pid}}
+        self:doCost(event, from, player, num)
+      end
     end
   end,
   on_use = function(self, event, target, player, data)

@@ -4801,6 +4801,7 @@ local ty__liehou = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     if event == fk.DrawNCards then
       player.room:notifySkillInvoked(player, self.name)
+      player:broadcastSkillInvoke(self.name)
       data.n = data.n + 1 + player:getMark("@ty__liehou")
     else
       local room = player.room

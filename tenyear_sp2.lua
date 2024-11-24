@@ -464,6 +464,10 @@ local xialei = fk.CreateTriggerSkill{
     end
     room:addPlayerMark(player, "xialei-turn", 1)
   end,
+
+  on_lose = function (self, player)
+    player.room:setPlayerMark(player, "xialei-turn", 0)
+  end,
 }
 local anzhi = fk.CreateActiveSkill{
   name = "anzhi",
@@ -3926,6 +3930,12 @@ local jijiez = fk.CreateTriggerSkill{
       }
     end
   end,
+
+  on_lose = function (self, player)
+    local room = player.room
+    room:setPlayerMark(player, "jijiez_draw-turn", 0)
+    room:setPlayerMark(player, "jijiez_recover-turn", 0)
+  end,
 }
 local huiji__amazingGraceSkill = fk.CreateActiveSkill{
   name = "huiji__amazing_grace_skill",
@@ -5660,12 +5670,8 @@ local caiyi = fk.CreateTriggerSkill{
     room:setPlayerMark(player, choice, 1)
     doCaiyi(player, to, choice, num)
   end,
-  
-  refresh_events = {fk.EventLoseSkill},
-  can_refresh = function(self, event, target, player, data)
-    return player == target and data == self
-  end,
-  on_refresh = function(self, event, target, player, data)
+
+  on_lose = function (self, player)
     local room = player.room
     room:setPlayerMark(player, "caiyiyang1", 0)
     room:setPlayerMark(player, "caiyiyang2", 0)
@@ -5931,6 +5937,12 @@ local jichun = fk.CreateActiveSkill{
         room:throwCard(cards, self.name, to, player)
       end
     end
+  end,
+
+  on_lose = function (self, player)
+    local room = player.room
+    room:setPlayerMark(player, "jichun1-phase", 0)
+    room:setPlayerMark(player, "jichun2-phase", 0)
   end,
 }
 local hanying = fk.CreateTriggerSkill{

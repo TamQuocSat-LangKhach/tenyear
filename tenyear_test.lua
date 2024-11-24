@@ -1016,6 +1016,7 @@ zhangliao:addSkill(yuxi)
 zhangliao:addSkill(porong)
 Fk:loadTranslationTable{
   ["ty_wei__zhangliao"] = "威张辽",  --先随便弄个前缀，之后再改
+  ["#ty_wei__zhangliao"] = "威锐镇西风",
   ["ty_wei"] = "威",
 
   ["yuxi"] = "驭袭",

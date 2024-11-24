@@ -1267,6 +1267,10 @@ local moshou = fk.CreateTriggerSkill{
     player.room:setPlayerMark(player, self.name, new_num)
     player:drawCards(n, self.name)
   end,
+
+  on_lose = function (self, player)
+    player.room:setPlayerMark(player, self.name, 0)
+  end,
 }
 local yunjiu = fk.CreateTriggerSkill{
   name = "yunjiu",

@@ -414,11 +414,8 @@ local zongshiWithinTimesLimit = function(from, to, card)
   }
   local skill = card.skill
   for i = 1, 4, 1 do
-    if table.contains(limited_cards[i], card.trueName) then
-      p(card.name)
-      if not skill:withinTimesLimit(from, i, card, card.trueName, to) then
-        return false
-      end
+    if table.contains(limited_cards[i], card.trueName) and not skill:withinTimesLimit(from, i, card, card.trueName, to) then
+      return false
     end
   end
   return true

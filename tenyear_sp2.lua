@@ -8,7 +8,7 @@ Fk:loadTranslationTable{
   ["ty_sp"] = "新服SP",
 }
 
---豆蔻梢头：花鬘 辛宪英 薛灵芸 芮姬 段巧笑 田尚衣 柏灵筠 马伶俐
+--豆蔻梢头：花鬘 辛宪英 薛灵芸 芮姬 段巧笑 田尚衣 柏灵筠 马伶俐 莫琼树
 local huaman = General(extension, "ty__huaman", "shu", 3, 3, General.Female)
 local manyi = fk.CreateTriggerSkill{
   name = "manyi",
@@ -1438,7 +1438,7 @@ Fk:loadTranslationTable{
   ["#malingli"] = "火树银花",
   ["designer:malingli"] = "星移",
   ["illustrator:malingli"] = "匠人绘",
-  
+
   ["lima"] = "骊马",
   [":lima"] = "锁定技，场上每有一张坐骑牌，你计算与其他角色的距离-1（至少为1）。",
   ["xiaoyin"] = "硝引",
@@ -1459,6 +1459,124 @@ Fk:loadTranslationTable{
   ["$huahuo1"] = "馏石漆取上清，可为胜爆竹之花火。",
   ["$huahuo2"] = "莫道繁花好颜色，此火犹胜二月黄。",
   ["~malingli"] = "花无百日好，人无再少年……",
+}
+
+local moqiongshu = General(extension, "moqiongshu", "wei", 3, 3, General.Female)
+local wanchan = fk.CreateActiveSkill{
+  name = "wanchan",
+  anim_type = "support",
+  prompt = "#wanchan-active",
+  card_num = 0,
+  target_num = 1,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local x = player:distanceTo(target)
+    if x > 0 then
+      room:drawCards(target, math.min(3, x), self.name)
+      if target.dead then return false end
+    end
+    local use = U.askForPlayCard(room, target, nil, ".|.|.|.|.|basic,normal_trick", self.name, "#wanchan-use",
+    { bypass_times = true, bypass_distances = true }, true)
+    if use then
+      use.extra_data = {wanchan_effect = true}
+      room:useCard(use)
+    end
+  end,
+}
+local wanchan_delay = fk.CreateTriggerSkill{
+  name = "#wanchan_delay",
+  events = {fk.AfterCardTargetDeclared},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return not player.dead and player == target and data.extra_data and data.extra_data.wanchan_effect
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local tos = table.map(TargetGroup:getRealTargets(data.tos), Util.Id2PlayerMapper)
+    local targets = room:getUseExtraTargets(data, true)
+    if #targets == 0 then return false end
+    targets = table.filter(targets, function (id)
+      local to = room:getPlayerById(id)
+      for _, p in ipairs(tos) do
+        if p:getNextAlive() == to or to:getNextAlive() == p then
+          return true
+        end
+      end
+    end)
+    if #targets == 0 then return false end
+    room:doIndicate(player.id, targets)
+    for _, pid in ipairs(targets) do
+      table.insert(data.tos, {pid})
+    end
+  end,
+}
+local runzhi = fk.CreateTriggerSkill{
+  name = "runzhi",
+  anim_type = "defensive",
+  events = {fk.TargetConfirmed},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and
+    (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) and not U.isOnlyTarget(player, data, event)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local judge = {
+      who = player,
+      reason = self.name,
+      pattern = ".|.|^nosuit",
+    }
+    room:judge(judge)
+    if player.dead then return false end
+    if judge.card.color == Card.Red then
+      room:drawCards(player, 2, self.name)
+    elseif judge.card.color == Card.Black then
+      local tos = AimGroup:getAllTargets(data.tos)
+      local targets = table.filter(room.alive_players, function(p)
+        return not (table.contains(tos, p.id) or p:isNude())
+      end)
+      if #targets == 0 then return false end
+      targets = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#runzhi-discard", self.name, false)
+      local to = room:getPlayerById(targets[1])
+      local cards = room:askForCardsChosen(player, to, 1, 2, "hej", self.name)
+      room:throwCard(cards, self.name, to, player)
+    end
+  end,
+}
+
+wanchan:addRelatedSkill(wanchan_delay)
+moqiongshu:addSkill(wanchan)
+moqiongshu:addSkill(runzhi)
+
+Fk:loadTranslationTable{
+  ["moqiongshu"] = "莫琼树",
+  ["#moqiongshu"] = "琼黛鬓墨雪",
+  --["illustrator:malingli"] = "alien",
+
+  ["wanchan"] = "宛蝉",
+  [":wanchan"] = "出牌阶段限一次，你可以选择一名角色，令其摸X张牌（X为你与其距离且最多为3），"..
+  "然后其可以使用一张基本牌或普通锦囊牌（无距离和次数限制），且此牌目标的相邻角色也成为此牌目标。",
+  ["runzhi"] = "润脂",
+  [":runzhi"] = "当你成为基本牌或普通锦囊牌的目标后，若你不是唯一目标，你可以判定，"..
+  "若结果为：红色，你摸两张牌；黑色，你弃置不为此牌的目标的一名角色的至多两张牌。",
+
+  ["#wanchan-active"] = "发动 宛蝉，选择一名角色，令其摸牌并可以使用牌",
+  ["#wanchan-use"] = "宛蝉：你可以使用手牌中的一张基本牌或普通锦囊牌",
+  ["#runzhi-discard"] = "润脂：选择1名角色，弃置其1-2张牌",
+
+  ["$wanchan1"] = "",
+  ["$wanchan2"] = "",
+  ["$runzhi1"] = "",
+  ["$runzhi2"] = "",
+  ["~moqiongshu"] = "",
 }
 
 --皇家贵胄：孙皓 士燮 曹髦 刘辩 刘虞 全惠解 丁尚涴 袁姬 谢灵毓 孙瑜 甘夫人糜夫人 曹芳 朱佩兰 卞玥 甘夫人 糜夫人 清河公主

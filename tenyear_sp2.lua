@@ -1486,34 +1486,58 @@ local wanchan = fk.CreateActiveSkill{
     local use = U.askForPlayCard(room, target, nil, ".|.|.|.|.|basic,normal_trick", self.name, "#wanchan-use",
     { bypass_times = true, bypass_distances = true }, true)
     if use then
-      use.extra_data = {wanchan_effect = true}
+      use.extra_data = {wanchan_source = player.id}
       room:useCard(use)
     end
   end,
 }
-local wanchan_delay = fk.CreateTriggerSkill{
-  name = "#wanchan_delay",
+local wanchan_trigger = fk.CreateTriggerSkill{
+  name = "#wanchan_trigger",
   events = {fk.AfterCardTargetDeclared},
-  mute = true,
+  main_skill = wanchan,
   can_trigger = function(self, event, target, player, data)
-    return not player.dead and player == target and data.extra_data and data.extra_data.wanchan_effect
+    if player:hasSkill(wanchan) and data.extra_data and data.extra_data.wanchan_source == player.id then
+      local room = player.room
+      local tos = table.map(TargetGroup:getRealTargets(data.tos), Util.Id2PlayerMapper)
+      local targets = room:getUseExtraTargets(data, true)
+      for _, pid in ipairs(targets) do
+        local to = room:getPlayerById(pid)
+        for _, p in ipairs(tos) do
+          if p:getNextAlive() == to or to:getNextAlive() == p then
+            return true
+          end
+        end
+      end
+    end
   end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local tos = table.map(TargetGroup:getRealTargets(data.tos), Util.Id2PlayerMapper)
     local targets = room:getUseExtraTargets(data, true)
-    if #targets == 0 then return false end
-    targets = table.filter(targets, function (id)
-      local to = room:getPlayerById(id)
+    targets = table.filter(targets, function (pid)
+      local to = room:getPlayerById(pid)
       for _, p in ipairs(tos) do
         if p:getNextAlive() == to or to:getNextAlive() == p then
           return true
         end
       end
     end)
-    if #targets == 0 then return false end
-    room:doIndicate(player.id, targets)
+    if #targets > 0 then
+      room:doIndicate(player.id, targets)
+      self.cost_data = {tos = targets}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local targets = self.cost_data.tos
+    room:sendLog{
+      type = "#AddTargetsBySkill",
+      from = data.from,
+      to = targets,
+      arg = wanchan.name,
+      arg2 = data.card:toLogString()
+    }
     for _, pid in ipairs(targets) do
       table.insert(data.tos, {pid})
     end
@@ -1544,7 +1568,8 @@ local runzhi = fk.CreateTriggerSkill{
         return not (table.contains(tos, p.id) or p:isNude())
       end)
       if #targets == 0 then return false end
-      targets = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#runzhi-discard", self.name, false)
+      targets = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#runzhi-discard", self.name)
+      if #targets == 0 then return false end
       local to = room:getPlayerById(targets[1])
       local cards = room:askForCardsChosen(player, to, 1, 2, "hej", self.name)
       room:throwCard(cards, self.name, to, player)
@@ -1552,7 +1577,7 @@ local runzhi = fk.CreateTriggerSkill{
   end,
 }
 
-wanchan:addRelatedSkill(wanchan_delay)
+wanchan:addRelatedSkill(wanchan_trigger)
 moqiongshu:addSkill(wanchan)
 moqiongshu:addSkill(runzhi)
 
@@ -1563,14 +1588,15 @@ Fk:loadTranslationTable{
 
   ["wanchan"] = "宛蝉",
   [":wanchan"] = "出牌阶段限一次，你可以选择一名角色，令其摸X张牌（X为你与其距离且最多为3），"..
-  "然后其可以使用一张基本牌或普通锦囊牌（无距离和次数限制），且此牌目标的相邻角色也成为此牌目标。",
+  "然后其可以使用一张基本牌或普通锦囊牌（无距离和次数限制），且你令与此牌的目标相邻的角色也成为此牌的目标。",
   ["runzhi"] = "润脂",
   [":runzhi"] = "当你成为基本牌或普通锦囊牌的目标后，若你不是唯一目标，你可以判定，"..
-  "若结果为：红色，你摸两张牌；黑色，你弃置不为此牌的目标的一名角色的至多两张牌。",
+  "若结果为：红色，你摸两张牌；黑色，你可以弃置不为此牌的目标的一名角色的至多两张牌。",
+  ["#wanchan_trigger"] = "宛蝉",
 
   ["#wanchan-active"] = "发动 宛蝉，选择一名角色，令其摸牌并可以使用牌",
   ["#wanchan-use"] = "宛蝉：你可以使用手牌中的一张基本牌或普通锦囊牌",
-  ["#runzhi-discard"] = "润脂：选择1名角色，弃置其1-2张牌",
+  ["#runzhi-discard"] = "润脂：可以选择1名角色，弃置其1-2张牌",
 
   ["$wanchan1"] = "",
   ["$wanchan2"] = "",

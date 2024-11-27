@@ -1334,12 +1334,17 @@ local sanshi = fk.CreateTriggerSkill{
           for _, info in ipairs(move.moveInfo) do
             local id = info.cardId
             if table.removeOne(cards, id) then
-              if move.toArea == Card.DiscardPile and move.moveReason ~= fk.ReasonUse then
+              if move.toArea == Card.DiscardPile then
                 if move.moveReason == fk.ReasonUse then
                   local use_event = e:findParent(GameEvent.UseCard)
                   if use_event == nil or use_event.data[1].from ~= player.id then
                     table.insert(ids, id)
                   end
+                elseif move.moveReason == fk.ReasonResonpse then
+                    local use_event = e:findParent(GameEvent.RespondCard)
+                    if use_event == nil or use_event.data[1].from ~= player.id then
+                      table.insert(ids, id)
+                    end
                 else
                   table.insert(ids, id)
                 end

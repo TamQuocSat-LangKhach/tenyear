@@ -1441,22 +1441,14 @@ local jingyu = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.SkillEffect},
   can_trigger = function(self, _, target, player, data)
-    return
-      player:hasSkill(self) and
-      data.visible and
-      data ~= self and
-      target and
-      target:hasSkill(data, true, true) and
-      not data:isEquipmentSkill(player) and
-      not table.contains({ "m_feiyang", "m_bahu" }, data.name) and
-      not table.contains(player:getTableMark("jingyu_skills-round"), data.name)
+    return player:hasSkill(self) and data.visible and data ~= self and target and target:hasSkill(data, true, true) and
+      data:isPlayerSkill(target) and not table.contains({ "m_feiyang", "m_bahu" }, data.name) and
+      not table.contains(player:getTableMark("jingyu_skills-round"), data.name) and
+      player.room.logic:getCurrentEvent():findParent(GameEvent.Round, true) ~= nil
   end,
   on_use = function(self, _, target, player, data)
     local room = player.room
-    local skills = player:getTableMark("jingyu_skills-round")
-    table.insertIfNeed(skills, data.name)
-    room:setPlayerMark(player, "jingyu_skills-round", skills)
-
+    room:addTableMark(player, "jingyu_skills-round", data.name)
     player:drawCards(1, self.name)
   end,
 }

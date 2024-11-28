@@ -1039,9 +1039,7 @@ local guyinz = fk.CreateTriggerSkill{
       for _, move in ipairs(data) do
         if move.toArea == Card.DiscardPile and (move.moveReason == fk.ReasonUse or move.moveReason == fk.ReasonDiscard) then
           for _, info in ipairs(move.moveInfo) do
-            if table.find(player.room:getBanner(self.name) or {}, function (inf)
-              return inf[1] ~= player.id and table.contains(inf[2], info.cardId)
-            end) then
+            if info.extra_data and info.extra_data.guyinz and info.extra_data.guyinz ~= player.id then
               return true
             end
           end
@@ -1054,9 +1052,7 @@ local guyinz = fk.CreateTriggerSkill{
     for _, move in ipairs(data) do
       if move.toArea == Card.DiscardPile and (move.moveReason == fk.ReasonUse or move.moveReason == fk.ReasonDiscard) then
         for _, info in ipairs(move.moveInfo) do
-          if table.find(player.room:getBanner(self.name) or {}, function (inf)
-            return inf[1] ~= player.id and table.contains(inf[2], info.cardId)
-          end) then
+          if info.extra_data and info.extra_data.guyinz and info.extra_data.guyinz ~= player.id then
             n = n + 1
           end
         end
@@ -1071,13 +1067,20 @@ local guyinz = fk.CreateTriggerSkill{
     player:drawCards(1, self.name)
   end,
 
-  refresh_events = {fk.DrawInitialCards, fk.AfterDrawInitialCards},
+  refresh_events = {fk.DrawInitialCards, fk.AfterDrawInitialCards, fk.AfterCardsMove},
   can_refresh = function (self, event, target, player, data)
     if player:hasSkill(self) then
       if event == fk.DrawInitialCards then
         return true
       elseif event == fk.AfterDrawInitialCards then
         return target ~= player and not target:isKongcheng()
+      end
+    end
+    if event == fk.AfterCardsMove and player.seat == 1 then
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile then
+          return true
+        end
       end
     end
   end,
@@ -1090,12 +1093,23 @@ local guyinz = fk.CreateTriggerSkill{
       end
     elseif event == fk.AfterDrawInitialCards then
       local room = player.room
-      local banner = room:getBanner(self.name) or {}
-      table.insert(banner, {target.id, table.simpleClone(target:getCardIds("h"))})
-      room:setBanner(self.name, banner)
-      --[[for _, id in ipairs(target:getCardIds("h")) do
-        room:setCardMark(Fk:getCardById(id), "@@guyinz-inhand", target.id)
-      end]]--
+      for _, id in ipairs(target:getCardIds("h")) do
+        room:setCardMark(Fk:getCardById(id), "@@guyinz", target.id)
+      end
+    elseif event == fk.AfterCardsMove then
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile then
+          for _, info in ipairs(move.moveInfo) do
+            if Fk:getCardById(info.cardId):getMark("@@guyinz") ~= 0 then
+              if move.moveReason == fk.ReasonUse or move.moveReason == fk.ReasonDiscard then
+                info.extra_data = info.extra_data or {}
+                info.extra_data.guyinz = Fk:getCardById(info.cardId):getMark("@@guyinz")
+              end
+              player.room:setCardMark(Fk:getCardById(info.cardId), "@@guyinz", 0)
+            end
+          end
+        end
+      end
     end
   end,
 }
@@ -1134,9 +1148,134 @@ Fk:loadTranslationTable{
   [":guyinz"] = "锁定技，你没有初始手牌，其他角色的初始手牌+1。其他角色的初始手牌被使用或弃置进入弃牌堆后，你摸一张牌。",
   ["pinglu"] = "平虏",
   [":pinglu"] = "出牌阶段，你可以获得攻击范围内每名其他角色各一张随机手牌。你此阶段不能再发动该技能直到这些牌离开你的手牌。",
-  ["@@guyinz-inhand"] = "顾音",
+  ["@@guyinz"] = "顾音",
   ["#pinglu"] = "平虏：获得攻击范围内每名角色各一张随机手牌",
   ["@@pinglu-inhand-phase"] = "平虏",
+}
+
+local menghuo = General(extension, "ty_sp__menghuo", "qun", 4)
+local function doManwang(player, i)
+  local room = player.room
+  if i == 1 then
+    room:handleAddLoseSkills(player, "panqin", nil, true, false)
+  elseif i == 2 then
+    player:drawCards(1, "ty__manwang")
+  elseif i == 3 then
+    if player:isWounded() then
+      room:recover{
+        who = player,
+        num = 1,
+        recoverBy = player,
+        skillName = "ty__manwang",
+      }
+    end
+  elseif i == 4 then
+    player:drawCards(2, "ty__manwang")
+    room:handleAddLoseSkills(player, "-ty__panqin", nil, true, false)
+  end
+end
+local manwang = fk.CreateActiveSkill{
+  name = "ty__manwang",
+  anim_type = "special",
+  min_card_num = 1,
+  target_num = 0,
+  can_use = function(self, player)
+    return not player:isNude()
+  end,
+  card_filter = function(self, to_select, selected)
+    return not Self:prohibitDiscard(Fk:getCardById(to_select))
+  end,
+  prompt = function ()
+    return "#ty__manwang-prompt:::"..(4 - Self:getMark("@ty__manwang"))
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:throwCard(effect.cards, self.name, player, player)
+    for i = 1, #effect.cards, 1 do
+      if i > 4 or player:getMark("@ty__manwang") > (4 - i) then return end
+      doManwang(player, i)
+    end
+  end,
+}
+local panqin = fk.CreateTriggerSkill{
+  name = "ty__panqin",
+  anim_type = "offensive",
+  events = {fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) and (player.phase == Player.Play or player.phase == Player.Discard) then
+      local ids = {}
+      player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
+        for _, move in ipairs(e.data) do
+          if move.toArea == Card.DiscardPile and move.from == player.id and move.moveReason == fk.ReasonDiscard then
+            for _, info in ipairs(move.moveInfo) do
+              if (info.fromArea == Card.PlayerEquip or info.fromArea == Card.PlayerHand) and
+                table.contains(player.room.discard_pile, info.cardId) then
+                table.insertIfNeed(ids, info.cardId)
+              end
+            end
+          end
+        end
+        return false
+      end, Player.HistoryPhase)
+      if #ids == 0 then return false end
+      local card = Fk:cloneCard("savage_assault")
+      card:addSubcards(ids)
+      local tos = table.filter(player.room:getOtherPlayers(player), function(p) return not player:isProhibited(p, card) end)
+      if not player:prohibitUse(card) and #tos > 0 then
+        self.cost_data = {ids, tos}
+        return true
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local cards_num = #self.cost_data[1]
+    local tos_num = #self.cost_data[2]
+    local promot = (player:getMark("@ty__manwang") < 4 and tos_num >= cards_num) and "#ty__panqin_delete-invoke" or "#ty__panqin-invoke"
+    if player.room:askForSkillInvoke(player, self.name, nil, promot) then
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = self.cost_data[1]
+    local tos = self.cost_data[2]
+    room:useVirtualCard("savage_assault", cards, player, tos, self.name)
+    if #tos >= #cards then
+      doManwang(player, 4 - player:getMark("@ty__manwang"))
+      if not player.dead then
+        if player:getMark("@ty__manwang") < 4 then
+          room:addPlayerMark(player, "ty__@manwang")
+        end
+        room:changeMaxHp(player, 1)
+        if player:isWounded() and not player.dead then
+          room:recover{
+            who = player,
+            num = 1,
+            recoverBy = player,
+            skillName = self.name,
+          }
+        end
+      end
+    end
+  end,
+}
+menghuo:addSkill(manwang)
+menghuo:addRelatedSkill(panqin)
+Fk:loadTranslationTable{
+  ["ty_sp__menghuo"] = "孟获",
+  ["#ty_sp__menghuo"] = "夷汉并服",
+  ["designer:ty_sp__menghuo"] = "玄蝶既白",
+  ["illustrator:ty_sp__menghuo"] = "",
+
+  ["ty__manwang"] = "蛮王",
+  [":ty__manwang"] = "出牌阶段，你可以弃置任意张牌依次执行前等量项：1.获得〖叛侵〗；2.摸一张牌；3.回复1点体力；4.摸两张牌并失去〖叛侵〗。",
+  ["ty__panqin"] = "叛侵",
+  [":ty__panqin"] = "出牌阶段或弃牌阶段结束时，你可以将本阶段你因弃置进入弃牌堆且仍在弃牌堆的牌当【南蛮入侵】使用，然后若此牌目标数不小于"..
+  "这些牌的数量，你执行并移除〖蛮王〗的最后一项，然后加1点体力上限并回复1点体力。",
+  ["@ty__manwang"] = "蛮王",
+  ["#ty__manwang-prompt"] = "蛮王：弃置任意张牌，依次执行〖蛮王〗的前等量项（剩余 %arg 项）",
+  ["#ty__panqin-invoke"] = "叛侵：你可将弃牌堆中你弃置的牌当【南蛮入侵】使用",
+  ["#ty__panqin_delete-invoke"] = "叛侵：将弃牌堆中你弃置的牌当【南蛮入侵】使用，然后执行并移除〖蛮王〗的最后一项，加1点体力上限并回复1点体力",
 }
 
 return extension

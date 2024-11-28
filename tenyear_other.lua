@@ -2559,32 +2559,71 @@ Fk:loadTranslationTable{
 }
 
 local weiqing = General(extension, "weiqing", "qun", 3)
-local weiqing_skill = fk.CreateTriggerSkill{
-  name = "weiqing_skill",
+local beijin = fk.CreateActiveSkill{
+  name = "beijin",
   anim_type = "drawcard",
-  events = {fk.DamageCaused, fk.DamageInflicted},
+  card_num = 0,
+  target_num = 0,
+  prompt = "#beijin",
+  can_use = Util.TrueFunc,
+  card_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local yes = table.find(player:getCardIds("h"), function (id)
+      return Fk:getCardById(id):getMark("@@beijin-inhand-turn") > 0
+    end)
+    player:drawCards(1, self.name, "top", "@@beijin-inhand-turn")
+    if yes and not player.dead then
+      room:loseHp(player, 1, self.name)
+    end
+  end,
+}
+local beijin_targetmod = fk.CreateTargetModSkill{
+  name = "#beijin_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    return card and card:getMark("@@beijin-inhand-turn") > 0
+  end,
+}
+local beijin_delay = fk.CreateTriggerSkill{
+  name = "#beijin_delay",
+  anim_type = "negative",
+  events = {fk.AfterCardUseDeclared},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
+    return target == player and data.extra_data and data.extra_data.beijin and not player.dead
   end,
   on_cost = Util.TrueFunc,
-  on_use = function (self, event, target, player, data)
-    player:drawCards(2, self.name, nil, "@@weiqing_skill-inhand")
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, id in ipairs(player:getCardIds("h")) do
+      room:setCardMark(Fk:getCardById(id), "@@beijin-inhand-turn", 0)
+    end
+    room:loseHp(player, 1, "beijin")
+  end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function (self, event, target, player, data)
+    return target == player and data.card:getMark("@@beijin-inhand-turn") == 0 and
+      table.find(player:getCardIds("h"), function (id)
+        return Fk:getCardById(id):getMark("@@beijin-inhand-turn") > 0
+      end)
+  end,
+  on_refresh = function (self, event, target, player, data)
+    data.extra_data = data.extra_data or {}
+    data.extra_data.beijin = true
   end,
 }
-local weiqing_skill_targetmod = fk.CreateTargetModSkill{
-  name = "#weiqing_skill_targetmod",
-  bypass_times = function(self, player, skill, scope, card, to)
-    return card and card:getMark("@@weiqing_skill-inhand") > 0
-  end,
-}
-weiqing_skill:addRelatedSkill(weiqing_skill_targetmod)
-weiqing:addSkill(weiqing_skill)
+beijin:addRelatedSkill(beijin_targetmod)
+beijin:addRelatedSkill(beijin_delay)
+weiqing:addSkill(beijin)
 Fk:loadTranslationTable{
   ["weiqing"] = "卫青",
 
-  ["weiqing_skill"] = "威烈",  --先随便弄个技能名，之后再改
-  [":weiqing_skill"] = "你造成或受到伤害时，摸两张牌，以此法获得的牌无次数限制。",
-  ["@@weiqing_skill-inhand"] = "威烈",
+  ["beijin"] = "北进",
+  [":beijin"] = "出牌阶段，你可以摸一张牌且此牌无次数限制。若你本回合使用的下一张牌不为以此法摸的牌，或你发动此技能时手牌中有以此法摸的牌，"..
+  "你失去1点体力。",
+  ["#beijin"] = "北进：摸一张牌，若你手牌中已有“北进”牌或使用下一张牌若不为“北进”牌，则失去体力",
+  ["@@beijin-inhand-turn"] = "北进",
+  ["#beijin_delay"] = "北进",
 }
 
 return extension

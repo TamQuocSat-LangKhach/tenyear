@@ -112,17 +112,23 @@ local ty__fanghun = fk.CreateViewAsSkill{
   enabled_at_response = function(self, player)
     return player:getMark("@meiying") > 0
   end,
-  before_use = function(self, player)
+  before_use = function(self, player, data)
     player.room:removePlayerMark(player, "@meiying")
-    player:drawCards(1, self.name)
+    data.extra_data = data.extra_data or {}
+    data.extra_data.ty__fanghun_user = player.id
+  end,
+
+  on_lose = function (self, player)
+    player.room:setPlayerMark(player, "@meiying", 0)
   end,
 }
 local ty__fanghun_trigger = fk.CreateTriggerSkill{
   name = "#ty__fanghun_trigger",
   events = {fk.TargetSpecified, fk.TargetConfirmed},
   mute = true,
+  main_skill = ty__fanghun,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.card.trueName == "slash"
+    return target == player and player:hasSkill(ty__fanghun) and data.card.trueName == "slash"
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
@@ -132,6 +138,18 @@ local ty__fanghun_trigger = fk.CreateTriggerSkill{
       player:broadcastSkillInvoke("ty__fanghun")
     end
     room:addPlayerMark(player, "@meiying")
+  end,
+}
+local ty__fanghun_delay = fk.CreateTriggerSkill{
+  name = "#ty__fanghun_delay",
+  events = {fk.CardUseFinished, fk.CardRespondFinished},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return not player.dead and data.extra_data and data.extra_data.ty__fanghun_user == player.id
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(1, ty__fanghun.name)
   end,
 }
 local ty__fuhan = fk.CreateTriggerSkill{
@@ -213,6 +231,7 @@ local ty__fuhan = fk.CreateTriggerSkill{
   end,
 }
 ty__fanghun:addRelatedSkill(ty__fanghun_trigger)
+ty__fanghun:addRelatedSkill(ty__fanghun_delay)
 zhaoxiang:addSkill(ty__fanghun)
 zhaoxiang:addSkill(ty__fuhan)
 Fk:loadTranslationTable{
@@ -227,6 +246,7 @@ Fk:loadTranslationTable{
   "武将牌中选择并获得至多两个技能（限定技、觉醒技、主公技除外）。若此时你是体力值最低的角色，你回复1点体力。",
   ["#ty__fanghun-viewas"] = "发动 芳魂，弃1枚”梅影“，将【杀】当【闪】、【闪】当【杀】使用或打出，并摸一张牌",
   ["#ty__fanghun_trigger"] = "芳魂",
+  ["#ty__fanghun_delay"] = "芳魂",
   ["#ty__fuhan-invoke"] = "扶汉：你可以移去“梅影”标记，获得两个蜀势力武将的技能！",
   ["#ty__fuhan-choice"] = "扶汉：选择你要获得的至多2个技能",
 

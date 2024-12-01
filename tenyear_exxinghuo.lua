@@ -849,13 +849,93 @@ Fk:loadTranslationTable{
   [":ty_ex__qiaomeng"] = "当你使用黑色牌指定目标后，你可以弃置其中一名其他目标角色的一张牌，若此牌为：锦囊牌，此黑色牌不能被响应；装备牌，你改为获得之。",
   ["#ty_ex__qiaomeng-choose"] = "趫猛：弃置一名其他目标角色的一张牌",
   ["ty_ex__yicong"] = "义从",
-  [":ty_ex__yicong"] = "锁定技，①你计算与其他角色的距离-1；②若你已损失的体力值不小于2，其他角色计算与你的距离+1。",
+  [":ty_ex__yicong"] = "锁定技，你计算与其他角色的距离-1；若你已损失的体力值不小于2，其他角色计算与你的距离+1。",
 
   ["$ty_ex__qiaomeng1"] = "猛士骁锐，可慑百蛮失蹄！",
   ["$ty_ex__qiaomeng2"] = "锐士志猛，可凭白手夺马！",
   ["$ty_ex__yicong1"] = "恩义聚骠骑，百战从公孙！",
   ["$ty_ex__yicong2"] = "义从呼啸至，白马抖精神！",
   ["~ty_ex__gongsunzan"] = "良弓断，白马亡。",
+}
+
+local mazhong = General(extension, "ty_ex__mazhong", "shu", 4)
+local fuman = fk.CreateActiveSkill{
+  name = "ty_ex__fuman",
+  anim_type = "support",
+  card_num = 1,
+  target_num = 1,
+  prompt = "#ty_ex__fuman",
+  can_use = Util.TrueFunc,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and not Self:prohibitDiscard(to_select)
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id and not table.contains(Self:getTableMark("ty_ex__fuman-turn"), to_select)
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    room:addTableMark(player, "ty_ex__fuman-turn", target.id)
+    room:throwCard(effect.cards, self.name, player, player)
+    if target.dead then return end
+    local card = room:getCardsFromPileByRule("slash", 1, "discardPile")
+    if #card > 0 then
+      room:addTableMark(target, self.name, {player.id, card[1]})
+      room:moveCardTo(card, Card.PlayerHand, target, fk.ReasonJustMove, self.name, nil, true, player.id, "@@ty_ex__fuman-inhand")
+    end
+  end,
+}
+local fuman_delay = fk.CreateTriggerSkill{
+  name = "#ty_ex__fuman_delay",
+  anim_type = "drawcard",
+  events = {fk.CardUsing, fk.CardResponding},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and
+      table.find(player:getTableMark("ty_ex__fuman"), function (info)
+        return info[2] == data.card.id
+      end)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    for _, info in ipairs(player:getTableMark("ty_ex__fuman")) do
+      if info[2] == data.card.id then
+        local p = room:getPlayerById(info[1])
+        if not p.dead then
+          p:drawCards(1, "ty_ex__fuman")
+        end
+        if not player.dead then
+          player:drawCards(1, self.name)
+        end
+      end
+    end
+  end,
+
+  refresh_events = {fk.TurnEnd},
+  can_refresh = function (self, event, target, player, data)
+    return target == player and player:getMark("ty_ex__fuman") ~= 0
+  end,
+  on_refresh = function (self, event, target, player, data)
+    player.room:setPlayerMark(player, "ty_ex__fuman", 0)
+  end,
+}
+fuman:addRelatedSkill(fuman_delay)
+mazhong:addSkill(fuman)
+Fk:loadTranslationTable{
+  ["ty_ex__mazhong"] = "马忠",
+  ["#ty_ex__mazhong"] = "笑合南中",
+  ["illustrator:ty_ex__mazhong"] = "君桓文化",
+
+  ["ty_ex__fuman"] = "抚蛮",
+  [":ty_ex__fuman"] = "出牌阶段每名角色限一次，你可以弃置一张牌，令一名其他角色随机获得弃牌堆一张【杀】。若如此做，直到其下回合结束，"..
+  "当其使用或打出此【杀】时，你与其各摸一张牌。",
+  ["#ty_ex__fuman"] = "抚蛮：弃一张牌，令一名角色获得一张【杀】，其使用或打出此【杀】时你与其各摸一张牌",
+  ["@@ty_ex__fuman"] = "抚蛮",
+  ["#ty_ex__fuman_delay"] = "抚蛮",
+
+  ["$ty_ex__fuman1"] = "蛮夷畏威，杀之积怨，抚之怀德。",
+  ["$ty_ex__fuman2"] = "以威镇夷，宜抚之，勿戾之。",
+  ["~ty_ex__mazhong"] = "愿付此生，见汉蛮一家。",
 }
 
 local ty_ex__zhugedan = General(extension, "ty_ex__zhugedan", "wei", 4)

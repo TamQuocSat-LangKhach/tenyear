@@ -2569,6 +2569,7 @@ local beijin = fk.CreateActiveSkill{
   card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
+    room:setPlayerMark(player, "beijin-turn", 1)
     local yes = table.find(player:getCardIds("h"), function (id)
       return Fk:getCardById(id):getMark("@@beijin-inhand-turn") > 0
     end)
@@ -2593,23 +2594,19 @@ local beijin_delay = fk.CreateTriggerSkill{
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    for _, id in ipairs(player:getCardIds("h")) do
-      room:setCardMark(Fk:getCardById(id), "@@beijin-inhand-turn", 0)
-    end
-    room:loseHp(player, 1, "beijin")
+    player.room:loseHp(player, 1, "beijin")
   end,
 
   refresh_events = {fk.PreCardUse},
   can_refresh = function (self, event, target, player, data)
-    return target == player and data.card:getMark("@@beijin-inhand-turn") == 0 and
-      table.find(player:getCardIds("h"), function (id)
-        return Fk:getCardById(id):getMark("@@beijin-inhand-turn") > 0
-      end)
+    return target == player and player:getMark("beijin-turn") > 0
   end,
   on_refresh = function (self, event, target, player, data)
-    data.extra_data = data.extra_data or {}
-    data.extra_data.beijin = true
+    player.room:setPlayerMark(player, "beijin-turn", 0)
+    if data.card:getMark("@@beijin-inhand-turn") == 0 then
+      data.extra_data = data.extra_data or {}
+      data.extra_data.beijin = true
+    end
   end,
 }
 beijin:addRelatedSkill(beijin_targetmod)

@@ -1263,7 +1263,7 @@ menghuo:addSkill(manwang)
 menghuo:addRelatedSkill(panqin)
 Fk:loadTranslationTable{
   ["ty_sp__menghuo"] = "孟获",
-  ["#ty_sp__menghuo"] = "夷汉并服",
+  ["#ty_sp__menghuo"] = "勒格诗惹",
   ["designer:ty_sp__menghuo"] = "玄蝶既白",
   ["illustrator:ty_sp__menghuo"] = "",
 

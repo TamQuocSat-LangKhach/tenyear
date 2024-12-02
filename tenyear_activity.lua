@@ -2384,7 +2384,139 @@ Fk:loadTranslationTable{
   ["~ty__lisu"] = "金银珠宝再多，也难买命啊。",
 }
 
---戚宦之争：何进 冯方 赵忠 穆顺
+--戚宦之争：张让 何进 何太后（OL下位） 冯方 赵忠 穆顺 伏完（同国际服）
+local zhangrang = General(extension, "ty__zhangrang", "qun", 3)
+Fk:addQmlMark{
+  name = "ty__taoluan",
+  how_to_show = function(_, value)
+    if type(value) ~= "table" then return " " end
+    if value.loseHp then return Fk:translate("lose_hp") end
+    if type(value.suits) ~= "table" or #value.suits == 0 then return " " end
+    return table.concat(table.map(value.suits, function(suit)
+      return Fk:translate(Card.getSuitString({ suit = suit }, true))
+    end), "")
+  end,
+  qml_path = "packages/utility/qml/ViewPile"
+}
+local taoluan = fk.CreateViewAsSkill{
+  name = "ty__taoluan",
+  pattern = ".",
+  prompt = "#ty__taoluan-prompt",
+  interaction = function()
+    local all_names = U.getAllCardNames("bt")
+    return U.CardNameBox {
+      choices = U.getViewAsCardNames(Self, "ty__taoluan", all_names, nil, Self:getTableMark("@[ty__taoluan]").value),
+      all_choices = all_names,
+      default_choice = "AskForCardsChosen",
+    }
+  end,
+  card_filter = function(self, to_select, selected)
+    if Fk.all_card_types[self.interaction.data] == nil then return false end
+    if #selected > 0 then return false end
+    local card = Fk:getCardById(to_select)
+    if card.suit == Card.NoSuit then return false end
+    local mark = Self:getMark("@[ty__taoluan]")
+    return type(mark) ~= "table" or not table.contains(mark.suits, card.suit)
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 or Fk.all_card_types[self.interaction.data] == nil then return end
+    local card = Fk:cloneCard(self.interaction.data)
+    card:addSubcard(cards[1])
+    card.skillName = self.name
+    return card
+  end,
+  before_use = function(self, player, use)
+    local mark = player:getMark("@[ty__taoluan]")
+    if type(mark) ~= "table" then
+      mark = {
+        value = {},
+        suits = {},
+        loseHp = false
+      }
+    end
+    table.insert(mark.value, use.card.trueName)
+    table.insert(mark.suits, use.card.suit)
+    player.room:setPlayerMark(player, "@[ty__taoluan]", mark)
+  end,
+  after_use = function (self, player, use)
+    local room = player.room
+    if player.dead or #room.alive_players < 2 then return end
+    local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
+    local type = use.card:getTypeString()
+    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#ty__taoluan-choose:::"..type, self.name, false)
+    local to = room:getPlayerById(tos[1])
+    local card = room:askForCard(to, 1, 1, true, self.name, true, ".|.|.|.|.|^"..type, "#ty__taoluan-card:"..player.id.."::"..type)
+    if #card > 0 then
+      room:obtainCard(player, card[1], false, fk.ReasonGive, to.id)
+    elseif player:hasSkill(self, true) then
+      room:invalidateSkill(player, "ty__taoluan", "-turn")
+      local mark = player:getTableMark("@[ty__taoluan]")
+      mark.loseHp = true
+      room:setPlayerMark(player, "@[ty__taoluan]", mark)
+    end
+  end,
+  enabled_at_play = function(self, player)
+    local mark = player:getMark("@[ty__taoluan]")
+    return type(mark) ~= "table" or #mark.suits < 4
+  end,
+  enabled_at_response = function(self, player, response)
+    local mark = player:getMark("@[ty__taoluan]")
+    return not response and type(mark) ~= "table" or
+      (#mark.suits < 4 and #U.getViewAsCardNames(player, "ty__taoluan",  U.getAllCardNames("bt"), nil, mark.value) > 0)
+  end,
+
+  on_lose = function (self, player)
+    player.room:setPlayerMark(player, "@[ty__taoluan]", 0)
+  end,
+}
+local taoluan_trigger = fk.CreateTriggerSkill{
+  name = "#ty__taoluan_trigger",
+  anim_type = "negative",
+  main_skill = taoluan,
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    local mark = player:getMark("@[ty__taoluan]")
+    return type(mark) == "table" and mark.loseHp
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    player.room:loseHp(player, 1, self.name)
+  end,
+
+  refresh_events = {fk.AfterTurnEnd},
+  can_refresh = function(self, event, target, player, data)
+    local mark = player:getMark("@[ty__taoluan]")
+    return type(mark) == "table" and (#mark.suits > 0 or mark.loseHp)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local mark = player:getMark("@[ty__taoluan]")
+    mark.suits = {}
+    mark.loseHp = false
+    player.room:setPlayerMark(player, "@[ty__taoluan]", mark)
+  end,
+}
+taoluan:addRelatedSkill(taoluan_trigger)
+zhangrang:addSkill(taoluan)
+Fk:loadTranslationTable{
+  ["ty__zhangrang"] = "张让",
+  ["#ty__zhangrang"] = "窃幸绝禋",
+  ["designer:ty__zhangrang"] = "千幻",
+  ["illustrator:ty__zhangrang"] = "zoo", -- 史诗*宦势控权
+
+  ["ty__taoluan"] = "滔乱",
+  [":ty__taoluan"] = "每种牌名限一次、每回合每种花色限一次，当你需要使用基本牌/普通锦囊牌时，你可以将一张牌当此基本牌/普通锦囊牌使用，"..
+  "然后你令一名其他角色选择：1.将一张不为基本牌/锦囊牌的牌交给你；2.此技能于当前回合内无效，且此回合结束时，你失去1点体力。",
+  ["#ty__taoluan_trigger"] = "滔乱",
+  ["@[ty__taoluan]"] = "滔乱",
+  ["#ty__taoluan-choose"] = "滔乱：令一名其他角色交给你一张非%arg，或你失去1点体力且本回合〖滔乱〗失效",
+  ["#ty__taoluan-card"] = "滔乱：你需交给 %src 一张非%arg，否则其失去1点体力且本回合〖滔乱〗失效",
+  ["#ty__taoluan-prompt"] = "滔乱：每牌名限一次，你可将一张牌当任意一张基本牌或普通锦囊牌使用",
+
+  ["$ty__taoluan1"] = "汉室动荡？莫来妖言惑众。",
+  ["$ty__taoluan2"] = "自打洒家进宫以来，就独得皇上恩宠。",
+  ["~ty__zhangrang"] = "尽失权柄，我等难容于天下！",
+}
+
 local hejin = General(extension, "ty__hejin", "qun", 4)
 local ty__mouzhu = fk.CreateActiveSkill{
   name = "ty__mouzhu",

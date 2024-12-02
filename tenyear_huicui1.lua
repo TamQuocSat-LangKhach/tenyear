@@ -3069,8 +3069,8 @@ local fuxie = fk.CreateActiveSkill{
     else
       room:handleAddLoseSkills(player, "-"..self.interaction.data, nil, true, false)
     end
-    if not target.dead and not target:isKongcheng() then
-      room:askForDiscard(target, 2, 2, false, self.name, false)
+    if not target.dead and not target:isNude() then
+      room:askForDiscard(target, 2, 2, true, self.name, false)
     end
   end,
 }
@@ -3086,6 +3086,9 @@ local shouxing = fk.CreateViewAsSkill{
     card.skillName = self.name
     card:addSubcards(cards)
     return card
+  end,
+  before_use = function (self, player, use)
+    use.extraUse = true
   end,
   enabled_at_play = Util.TrueFunc,
   enabled_at_response = function (self, player, response)
@@ -3137,7 +3140,7 @@ Fk:loadTranslationTable{
   [":shuangrui"] = "准备阶段，你可以选择一名其他角色，视为对其使用一张【杀】。若其：不在你攻击范围内，此【杀】不可响应，你获得〖狩星〗"..
   "直到回合结束；在你攻击范围内，此【杀】伤害+1，你获得〖铩雪〗直到回合结束。",
   ["fuxie"] = "伏械",
-  [":fuxie"] = "出牌阶段，你可以弃置一张武器牌或失去一个技能，令一名其他角色弃置两张手牌。",
+  [":fuxie"] = "出牌阶段，你可以弃置一张武器牌或失去一个技能，令一名其他角色弃置两张牌。",
   ["shouxing"] = "狩星",
   [":shouxing"] = "你可以将X张牌当一张不计次数的【杀】对一名攻击范围外的角色使用（X为你计算与该角色的距离）。",
   ["shaxue"] = "铩雪",

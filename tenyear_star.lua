@@ -76,11 +76,7 @@ local canxi = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventLoseSkill},
-  can_refresh = function(self, event, target, player, data)
-    return player == target and data == self
-  end,
-  on_refresh = function(self, event, target, player, data)
+  on_lose = function (self, player, is_death)
     local room = player.room
     room:setPlayerMark(player, "@canxi_exist_kingdoms", 0)
     room:setPlayerMark(player, "@canxi1-round", 0)

@@ -2603,9 +2603,13 @@ local beijin_delay = fk.CreateTriggerSkill{
   end,
   on_refresh = function (self, event, target, player, data)
     player.room:setPlayerMark(player, "beijin-turn", 0)
-    if data.card:getMark("@@beijin-inhand-turn") == 0 then
+    if not table.find(Card:getIdList(data.card), function (id)
+      return Fk:getCardById(id):getMark("@@beijin-inhand-turn") > 0
+    end) then
       data.extra_data = data.extra_data or {}
       data.extra_data.beijin = true
+    else
+      data.extraUse = true
     end
   end,
 }
@@ -2616,7 +2620,7 @@ Fk:loadTranslationTable{
   ["weiqing"] = "卫青",
 
   ["beijin"] = "北进",
-  [":beijin"] = "出牌阶段，你可以摸一张牌且此牌无次数限制。若你本回合使用的下一张牌不为以此法摸的牌，或你发动此技能时手牌中有以此法摸的牌，"..
+  [":beijin"] = "出牌阶段，你可以摸一张牌且此牌无次数限制。若你本回合使用的下一张牌不包含以此法摸的牌，或你发动此技能时手牌中有以此法摸的牌，"..
   "你失去1点体力。",
   ["#beijin"] = "北进：摸一张牌，若你手牌中已有“北进”牌或使用下一张牌若不为“北进”牌，则失去体力",
   ["@@beijin-inhand-turn"] = "北进",

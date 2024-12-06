@@ -1561,11 +1561,10 @@ local jiangzhi = fk.CreateTriggerSkill{
     room:judge(judge)
     if player.dead then return false end
     if judge.card.color == Card.Red then
-      room:drawCards(player, 2, self.name)
+      room:drawCards(player, 3, self.name)
     elseif judge.card.color == Card.Black then
-      local tos = AimGroup:getAllTargets(data.tos)
       local targets = table.filter(room.alive_players, function(p)
-        return not (table.contains(tos, p.id) or p:isNude())
+        return p ~= player and not p:isNude()
       end)
       if #targets == 0 then return false end
       targets = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#jiangzhi-discard", self.name)
@@ -1591,18 +1590,18 @@ Fk:loadTranslationTable{
   "然后其可以使用一张基本牌或普通锦囊牌（无距离和次数限制），且你令与此牌的目标相邻的角色也成为此牌的目标。",
   ["jiangzhi"] = "绛脂",
   [":jiangzhi"] = "当你成为基本牌或普通锦囊牌的目标后，若你不是唯一目标，你可以判定，"..
-  "若结果为：红色，你摸两张牌；黑色，你可以弃置不为此牌的目标的一名角色的至多两张牌。",
+  "若结果为：红色，你摸三张牌；黑色，你可以弃置一名其他角色的至多两张牌。",
   ["#wanchan_trigger"] = "宛蝉",
 
   ["#wanchan-active"] = "发动 宛蝉，选择一名角色，令其摸牌并可以使用牌",
   ["#wanchan-use"] = "宛蝉：你可以使用手牌中的一张基本牌或普通锦囊牌",
   ["#jiangzhi-discard"] = "绛脂：可以选择1名角色，弃置其1-2张牌",
 
-  ["$wanchan1"] = "",
-  ["$wanchan2"] = "",
-  ["$jiangzhi1"] = "",
-  ["$jiangzhi2"] = "",
-  ["~moqiongshu"] = "",
+  ["$wanchan1"] = "发如蝉翼轻扬，君王如何不偏爱？",
+  ["$wanchan2"] = "轻挽云鬓，可栖玉蝉。",
+  ["$jiangzhi1"] = "肌如凝脂，宛若晨露微沾之蕊。",
+  ["$jiangzhi2"] = "镜中容颜，肤白胜雪，可胜瑶池仙子否？",
+  ["~moqiongshu"] = "昔日桃花面，今朝已泛黄……",
 }
 
 --皇家贵胄：孙皓 士燮 曹髦 刘辩 刘虞 全惠解 丁尚涴 袁姬 谢灵毓 孙瑜 甘夫人糜夫人 曹芳 朱佩兰 卞玥 甘夫人 糜夫人 清河公主

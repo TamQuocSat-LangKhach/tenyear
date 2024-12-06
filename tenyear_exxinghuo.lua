@@ -935,7 +935,7 @@ Fk:loadTranslationTable{
 
   ["$ty_ex__fuman1"] = "蛮夷畏威，杀之积怨，抚之怀德。",
   ["$ty_ex__fuman2"] = "以威镇夷，宜抚之，勿戾之。",
-  ["~ty_ex__mazhong"] = "愿付此生，见汉蛮一家。",
+  ["~ty_ex__mazhong"] = "愿付此生，见汉蛮一家……",
 }
 
 local ty_ex__zhugedan = General(extension, "ty_ex__zhugedan", "wei", 4)

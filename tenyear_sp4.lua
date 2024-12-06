@@ -1816,6 +1816,7 @@ pangfengyi:addSkill(peiniang)
 Fk:loadTranslationTable{
   ["pangfengyi"] = "庞凤衣",
   ["#pangfengyi"] = "瞳悉万机",
+  ["illustrator:pangfengyi"] = "黯荧岛",
 
   ["yitong"] = "异瞳",
   [":yitong"] = "锁定技，游戏开始时，你选择一种花色。每回合限一次，当此花色的牌因使用而移至弃牌堆后，你随机获得除此花色外的不同花色的牌各一张。",
@@ -1909,7 +1910,7 @@ local ty__gushe_delay = fk.CreateTriggerSkill{
     if event == fk.PindianResultConfirmed then
       room:addPlayerMark(player, "ty__raoshe_win-turn")
       if player:getMark("@ty__raoshe") + player:getMark("ty__raoshe_win-turn") > 6 then
-        room:invalidateSkill(player, "ty__gushe")
+        room:invalidateSkill(player, "ty__gushe", "-turn")
       end
     elseif event == fk.EventLoseSkill then
       room:setPlayerMark(player, "@ty__raoshe", 0)

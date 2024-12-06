@@ -1583,7 +1583,7 @@ moqiongshu:addSkill(jiangzhi)
 Fk:loadTranslationTable{
   ["moqiongshu"] = "莫琼树",
   ["#moqiongshu"] = "琼黛鬓墨雪",
-  --["illustrator:malingli"] = "alien",
+  ["illustrator:malingli"] = "黯荧岛",
 
   ["wanchan"] = "宛蝉",
   [":wanchan"] = "出牌阶段限一次，你可以选择一名角色，令其摸X张牌（X为你与其距离且最多为3），"..

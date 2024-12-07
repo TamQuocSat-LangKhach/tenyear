@@ -167,7 +167,8 @@ local juying = fk.CreateTriggerSkill{
           if skill:bypassTimesCheck(player, card_skill, Player.HistoryPhase, card, nil) then return true end
         end
         local history = name == "slash" and Player.HistoryPhase or Player.HistoryTurn
-        if player:usedCardTimes(name, Player.HistoryPhase) < card_skill:getMaxUseTime(player, history, card, nil) then
+        local limit = card_skill:getMaxUseTime(player, history, card, nil)
+        if not limit or player:usedCardTimes(name, Player.HistoryPhase) < limit then
           return true
         end
       end

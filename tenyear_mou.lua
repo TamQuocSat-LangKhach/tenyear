@@ -2877,9 +2877,6 @@ local xianmou = fk.CreateTriggerSkill{
         end
       end
       local ids = room:getNCards(5)
-      for i = #ids, 1, -1 do
-        table.insert(room.draw_pile, 1, ids[i])
-      end
       local sum = self.cost_data
       local cards, choice = U.askforChooseCardsAndChoice(
         player,

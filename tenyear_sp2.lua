@@ -452,10 +452,12 @@ local xialei = fk.CreateTriggerSkill{
       if #ids > 0 then
         if choice == "xialei_top" then
           for i = #ids, 1, -1 do
+            table.removeOne(room.draw_pile, ids[i])
             table.insert(room.draw_pile, 1, ids[i])
           end
         else
           for _, id in ipairs(ids) do
+            table.removeOne(room.draw_pile, id)
             table.insert(room.draw_pile, id)
           end
         end
@@ -1098,9 +1100,6 @@ local linghui = fk.CreateTriggerSkill{
     {expand_pile = ids, bypass_times = true}, false, true)
     if use then
       table.removeOne(ids, use.card:getEffectiveId())
-    end
-    for i = #ids, 1, -1 do
-      table.insert(room.draw_pile, 1, ids[i])
     end
     if not player.dead and use then
       room:moveCards{
@@ -5123,11 +5122,6 @@ local yuqi = fk.CreateTriggerSkill{
       })
       for _, id in ipairs(bottom) do
         table.removeOne(cards, id)
-      end
-    end
-    if #cards > 0 then
-      for i = #cards, 1, -1 do
-        table.insert(room.draw_pile, 1, cards[i])
       end
     end
     room:moveCards(table.unpack(moveInfos))

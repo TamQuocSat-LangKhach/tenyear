@@ -3094,9 +3094,13 @@ local shicao = fk.CreateActiveSkill{
     if Fk:getCardById(ids[1]):getTypeString() ~= shicao_type[4] then
       if from_place == "top" then
         ids = room:getNCards(2, "bottom")
+        table.removeOne(room.draw_pile, ids[1])
+        table.removeOne(room.draw_pile, ids[2])
         table.insertTable(room.draw_pile, ids)
       else
         ids = room:getNCards(2)
+        table.removeOne(room.draw_pile, ids[1])
+        table.removeOne(room.draw_pile, ids[2])
         table.insert(room.draw_pile, 1, ids[2])
         table.insert(room.draw_pile, 1, ids[1])
       end

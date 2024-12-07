@@ -2164,6 +2164,7 @@ local tuiyan = fk.CreateTriggerSkill{
     local room = player.room
     local ids = room:getNCards(3)
     for i = 3, 1, -1 do
+      table.removeOne(room.draw_pile, ids[i])
       table.insert(room.draw_pile, 1, ids[i])
     end
     U.viewCards(player, ids, self.name)

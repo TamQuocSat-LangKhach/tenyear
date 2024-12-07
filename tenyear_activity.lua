@@ -1311,9 +1311,6 @@ local zhenxing = fk.CreateTriggerSkill{
     if get then
       table.removeOne(cards, get)
     end
-    for i = #cards, 1, -1 do
-      table.insert(room.draw_pile, 1, cards[i])
-    end
     room:doBroadcastNotify("UpdateDrawPile", #room.draw_pile)
     if get then
       room:obtainCard(player.id, card[1], false, fk.ReasonJustMove)
@@ -1376,7 +1373,6 @@ local tunan = fk.CreateActiveSkill{
       table.insert(choices, "tunan2:::"..card:toLogString())
     end
     if #choices == 0 then
-      table.insert(room.draw_pile, 1, cards[1])
       return
     end
     local choice = room:askForChoice(target, choices, self.name, nil, nil,
@@ -5082,7 +5078,6 @@ local guanyue = fk.CreateTriggerSkill{
     local room = player.room
     local result = room:askForGuanxing(player, room:getNCards(2), {1, 2}, {1, 1}, self.name, true, {"Top", "prey"})
     if #result.top > 0 then
-      table.insert(room.draw_pile, 1, result.top[1])
       room:sendLog{
         type = "#GuanxingResult",
         from = player.id,

@@ -1358,65 +1358,80 @@ local ty_ex__qianxi = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    player:drawCards(1, self.name)
-    if player:isNude() then return end
-    local card = room:askForDiscard(player, 1, 1, true, self.name, false, ".", "#qianxi-discard")
-    local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+    room:drawCards(player, 1, self.name)
+    if player.dead then return false end
+    local cards = room:askForDiscard(player, 1, 1, true, self.name, false, ".", "#qianxi-discard", true)
+    if #cards == 0 then return false end
+    local color = Fk:getCardById(cards[1]):getColorString()
+    room:throwCard(cards, self.name, player, player)
+    local targets = table.map(table.filter(room.alive_players, function(p)
       return player:distanceTo(p) == 1 end), Util.IdMapper)
     if #targets == 0 then return false end
-    local color = Fk:getCardById(card[1]):getColorString()
     local to = room:askForChoosePlayers(player, targets, 1, 1, "#ty_ex__qianxi-choose:::" .. color, self.name, false)
     if #to > 0 then
       room:setPlayerMark(room:getPlayerById(to[1]), "@ty_ex__qianxi-turn", color)
+      room:addTableMark(player, "ty_ex__qianxi_targets-turn", to[1])
     end
   end,
 }
 local ty_ex__qianxi_delay = fk.CreateTriggerSkill{
   name = "#ty_ex__qianxi_delay",
   mute = true,
-  events = {fk.TargetSpecified, fk.HpRecover},
+  events = {fk.HpRecover},
   can_trigger = function(self, event, target, player, data)
-    if event == fk.TargetSpecified then
-      if target == player and player:usedSkillTimes("ty_ex__qianxi", Player.HistoryTurn) > 0 and data.card and data.card.trueName == "slash" and player.room:getPlayerById(data.to):getMark("@ty_ex__qianxi-turn") ~= 0 then
-        local to = player.room:getPlayerById(data.to)
-        for _, id in ipairs(to:getEquipments(Card.SubtypeArmor)) do
-          if Fk:getCardById(id):getColorString() == to:getMark("@ty_ex__qianxi-turn") then
-            return true
-          end
-        end
-      end
-    else
-      return player:usedSkillTimes("ty_ex__qianxi", Player.HistoryTurn) > 0 and not player.dead
-      and target:getMark("@ty_ex__qianxi-turn") ~= 0
-    end
+    return not player.dead and table.contains(player:getTableMark("ty_ex__qianxi_targets-turn"), target.id)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.TargetSpecified then
-      room:addPlayerMark(room:getPlayerById(data.to), fk.MarkArmorNullified)
-      data.extra_data = data.extra_data or {}
-      data.extra_data.ty_ex__qianxi = data.extra_data.ty_ex__qianxi or {}
-      data.extra_data.ty_ex__qianxi[tostring(data.to)] = (data.extra_data.ty_ex__qianxi[tostring(data.to)] or 0) + 1
-    else
-      player:drawCards(2, "ty_ex__qianxi")
-    end
+    player:drawCards(2, "ty_ex__qianxi")
   end,
-
-  refresh_events = {fk.CardUseFinished},
-  can_refresh = function(self, event, target, player, data)
-    return data.extra_data and data.extra_data.ty_ex__qianxi
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    for key, num in pairs(data.extra_data.ty_ex__qianxi) do
-      local p = room:getPlayerById(tonumber(key))
-      if p:getMark(fk.MarkArmorNullified) > 0 then
-        room:removePlayerMark(p, fk.MarkArmorNullified, num)
+}
+local ty_ex__qianxi_armorInvalidity = fk.CreateInvaliditySkill {
+  name = "#ty_ex__qianxi_invalidity",
+  invalidity_func = function(self, player, skill)
+    local color = player:getMark("@ty_ex__qianxi-turn")
+    if color == 0 then return false end
+    local armors = player:getEquipments(Card.SubtypeArmor)
+    local falsy = true
+    for _, id in ipairs(armors) do
+      local card = Fk:getCardById(id)
+      if table.contains(card:getEquipSkills(player), skill) then
+        if card:getColorString() ~= color then return false end
+        falsy = false
       end
     end
-    data.extra_data.ty_ex__qianxi = nil
-  end,
+    if falsy then return false end
+
+    --无视防具（规则集版）！
+    if RoomInstance then
+      local logic = RoomInstance.logic
+      local event = logic:getCurrentEvent()
+      local from = nil
+      repeat
+        if event.event == GameEvent.SkillEffect then
+          if not event.data[3].cardSkill then
+            from = event.data[2]
+            break
+          end
+        elseif event.event == GameEvent.Damage then
+          local damage = event.data[1]
+          if damage.to.id ~= player.id then return false end
+          from = damage.from
+          break
+        elseif event.event == GameEvent.UseCard then
+          local use = event.data[1]
+          if not table.contains(TargetGroup:getRealTargets(use.tos), player.id) then return false end
+          from = RoomInstance:getPlayerById(use.from)
+          break
+        end
+        event = event.parent
+      until event == nil
+      if from then
+        return table.contains(from:getTableMark("ty_ex__qianxi_targets-turn"), player.id)
+      end
+    end
+
+  end
 }
 local ty_ex__qianxi_prohibit = fk.CreateProhibitSkill{
   name = "#ty_ex__qianxi_prohibit",
@@ -1435,6 +1450,7 @@ local ty_ex__qianxi_prohibit = fk.CreateProhibitSkill{
 }
 ty_ex__qianxi:addRelatedSkill(ty_ex__qianxi_prohibit)
 ty_ex__qianxi:addRelatedSkill(ty_ex__qianxi_delay)
+ty_ex__qianxi:addRelatedSkill(ty_ex__qianxi_armorInvalidity)
 ty_ex__madai:addSkill("mashu")
 ty_ex__madai:addSkill(ty_ex__qianxi)
 Fk:loadTranslationTable{
@@ -1444,6 +1460,7 @@ Fk:loadTranslationTable{
   ["ty_ex__qianxi"] = "潜袭",
   [":ty_ex__qianxi"] = "准备阶段，你可以摸一张牌，并弃置一张牌，然后选择一名距离为1的其他角色。若如此做，本回合：1.其不能使用或打出与你以此法弃置牌颜色相同的手牌；2.你无视其装备区里与你以此法弃置牌颜色相同的防具；3.你于该角色回复体力时摸两张牌。",
 
+  ["#ty_ex__qianxi_delay"] = "潜袭",
   ["#ty_ex__qianxi-choose"] = "潜袭：令距离为1的一名角色：本回合不能使用或打出 %arg 的手牌，你无视其此颜色的防具",
   ["@ty_ex__qianxi-turn"] = "潜袭",
 
@@ -3634,7 +3651,7 @@ local benxi_choice = fk.CreateTriggerSkill{
   events = {fk.AfterCardTargetDeclared},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(benxi) and player.phase ~= Player.NotActive then
-      for _, p in ipairs(player.room:getOtherPlayers(player)) do
+      for _, p in ipairs(player.room:getOtherPlayers(player, false)) do
         if player:distanceTo(p) > 1 then return end
       end
       return (data.card.trueName == "slash" or data.card:getSubtypeString() == "normal_trick") and
@@ -3681,27 +3698,18 @@ local benxi_choice = fk.CreateTriggerSkill{
     if not card_event then return end
 
     if choice == "ty_ex__benxi_choice2" or choice2 == "ty_ex__benxi_choice2" then
-      card_event.tybenxi_armor = true
       for _, p in ipairs(room.alive_players) do
-        room:addPlayerMark(p, fk.MarkArmorNullified)
+        room:addTableMark(p, fk.MarkArmorInvalidFrom, player.id)
       end
+      card_event:addCleaner(function()
+        for _, p in ipairs(room.alive_players) do
+          room:removeTableMark(p, fk.MarkArmorInvalidFrom, player.id)
+        end
+      end)
     end
 
     if choice == "ty_ex__benxi_choice4" or choice2 == "ty_ex__benxi_choice4" then
       card_event.tybenxi_draw = player
-    end
-  end,
-
-  refresh_events = {fk.CardUseFinished},
-  can_refresh = function(self, event, target, player, data)
-    if player ~= target then return false end
-    local card_event = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
-    return card_event and card_event.tybenxi_armor
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    for _, p in ipairs(room.alive_players) do
-      room:removePlayerMark(p, fk.MarkArmorNullified)
     end
   end,
 }

@@ -70,7 +70,7 @@ local quenchedBladeSkill = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:throwCard(self.cost_data, "quenched_blade", player, player)
+    player.room:throwCard(self.cost_data, self.name, player, player)
     data.damage = data.damage + 1
   end,
 }
@@ -78,7 +78,7 @@ local quenched_blade_targetmod = fk.CreateTargetModSkill{
   name = "#quenched_blade_targetmod",
   attached_equip = "quenched_blade",
   residue_func = function(self, player, skill, scope)
-    if player:hasSkill(self) and skill.trueName == "slash_skill" and scope == Player.HistoryPhase then
+    if player:hasSkill(quenchedBladeSkill) and skill.trueName == "slash_skill" and scope == Player.HistoryPhase then
       return 1
     end
   end,
@@ -91,6 +91,10 @@ local quenchedBlade = fk.CreateWeapon{
   number = 1,
   attack_range = 2,
   equip_skill = quenchedBladeSkill,
+  on_uninstall = function(self, room, player)
+    Weapon.onUninstall(self, room, player)
+    player:setSkillUseHistory(self.equip_skill.name, 0, Player.HistoryTurn)
+  end,
 }
 extension:addCard(quenchedBlade)
 Fk:loadTranslationTable{
@@ -106,14 +110,19 @@ local poisonousDaggerSkill = fk.CreateTriggerSkill{
   attached_equip = "poisonous_dagger",
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash"
+    return target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash" and
+      not player.room:getPlayerById(data.to).dead
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil,
-      "#poisonous_dagger-invoke::"..data.to..":"..math.min(player:usedSkillTimes(self.name, Player.HistoryTurn) + 1, 5))
+    if player.room:askForSkillInvoke(player, self.name, nil,
+      "#poisonous_dagger-invoke::"..data.to..":"..math.min(player:usedSkillTimes(self.name, Player.HistoryTurn) + 1, 5)) then
+      self.cost_data = { tos = { data.to } }
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:loseHp(player.room:getPlayerById(data.to), math.min(player:usedSkillTimes(self.name, Player.HistoryTurn), 5), self.name)
+    local room = player.room
+    room:loseHp(room:getPlayerById(self.cost_data.tos[1]), math.min(player:usedSkillTimes(self.name, Player.HistoryTurn), 5), self.name)
   end,
 }
 Fk:addSkill(poisonousDaggerSkill)
@@ -123,6 +132,10 @@ local poisonousDagger = fk.CreateWeapon{
   number = 1,
   attack_range = 1,
   equip_skill = poisonousDaggerSkill,
+  on_uninstall = function(self, room, player)
+    Weapon.onUninstall(self, room, player)
+    player:setSkillUseHistory(self.equip_skill.name, 0, Player.HistoryTurn)
+  end,
 }
 extension:addCard(poisonousDagger)
 Fk:loadTranslationTable{
@@ -137,22 +150,51 @@ local waterSwordSkill = fk.CreateTriggerSkill{
   name = "#water_sword_skill",
   attached_equip = "water_sword",
   anim_type = "offensive",
-  events = {fk.AfterCardTargetDeclared},
+  events = {fk.AfterCardTargetDeclared, fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) < 2 and
-      (data.card.trueName == "slash" or data.card:isCommonTrick()) and #player.room:getUseExtraTargets(data) > 0
+    if event == fk.AfterCardTargetDeclared then
+      return target == player and player:hasSkill(self) and player:getMark("water_sword_usedtimes-turn") < 2 and
+        (data.card.trueName == "slash" or data.card:isCommonTrick()) and #player.room:getUseExtraTargets(data) > 0
+    else
+      if player.dead or not player:isWounded() then return false end
+      for _, move in ipairs(data) do
+        if move.from == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerEquip and Fk:getCardById(info.cardId).name == self.attached_equip then
+              return self:isEffectable(player)
+            end
+          end
+        end
+      end
+    end
   end,
   on_cost = function(self, event, target, player, data)
-    local room = player.room
-    local to = room:askForChoosePlayers(player, room:getUseExtraTargets(data), 1, 1,
-      "#water_sword-invoke:::"..data.card:toLogString(), self.name, true)
-    if #to > 0 then
-      self.cost_data = to
+    if event == fk.AfterCardTargetDeclared then
+      local room = player.room
+      local to = room:askForChoosePlayers(player, room:getUseExtraTargets(data), 1, 1,
+        "#water_sword-invoke:::" .. data.card:toLogString(), self.name, true)
+      if #to > 0 then
+        room:addPlayerMark(player, "water_sword_usedtimes-turn")
+        self.cost_data = {tos = to}
+        return true
+      end
+    else
+      self.cost_data = {}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
-    table.insert(data.tos, self.cost_data)
+    if event == fk.AfterCardTargetDeclared then
+      table.insert(data.tos, self.cost_data.tos)
+    else
+      local room = player.room
+      room:recover({
+        who = player,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      })
+    end
   end,
 }
 Fk:addSkill(waterSwordSkill)
@@ -164,15 +206,7 @@ local waterSword = fk.CreateWeapon{
   equip_skill = waterSwordSkill,
   on_uninstall = function(self, room, player)
     Weapon.onUninstall(self, room, player)
-    if not player.dead and player:isWounded() and self.equip_skill:isEffectable(player) then
-      --room:broadcastPlaySound("./packages/tenyear/audio/card/&water_sword")
-      --room:setEmotion(player, "./packages/tenyear/image/anim/&water_sword")
-      room:recover{
-        who = player,
-        num = 1,
-        skillName = self.name
-      }
-    end
+    room:setPlayerMark(player, "water_sword_usedtimes-turn", 0)
   end,
 }
 extension:addCard(waterSword)
@@ -303,71 +337,54 @@ local siegeEngineSkill = fk.CreateTriggerSkill{
       local cards = room:askForCardsChosen(player, data.to, 1, 1 + player:getMark("xianzhu3"), "he", self.name)
       room:throwCard(cards, self.name, data.to, player)
     elseif event == fk.TargetSpecified then
-      room:addPlayerMark(room:getPlayerById(data.to), fk.MarkArmorNullified)
-      data.extra_data = data.extra_data or {}
-      data.extra_data.siege_engineNullified = data.extra_data.siege_engineNullified or {}
-      data.extra_data.siege_engineNullified[tostring(data.to)] = (data.extra_data.siege_engineNullified[tostring(data.to)] or 0) + 1
+      room:getPlayerById(data.to):addQinggangTag(data)
     end
   end,
 
-  refresh_events = {fk.CardUseFinished, fk.BeforeCardsMove},
+  refresh_events = {fk.BeforeCardsMove},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.BeforeCardsMove then
-      return table.find(player:getCardIds("e"), function (id)
-        return Fk:getCardById(id).name == "siege_engine"
-      end)
-    else
-      return data.extra_data and data.extra_data.siege_engineNullified
-    end
+    return table.find(player:getCardIds("e"), function (id)
+      return Fk:getCardById(id).name == "siege_engine"
+    end)
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.BeforeCardsMove then
-      local mirror_moves = {}
-      local to_void, cancel_move = {},{}
-      local no_updata = (player:getMark("xianzhu1") + player:getMark("xianzhu2") + player:getMark("xianzhu3")) == 0
-      for _, move in ipairs(data) do
-        if move.from == player.id and move.toArea ~= Card.Void then
-          local move_info = {}
-          local mirror_info = {}
-          for _, info in ipairs(move.moveInfo) do
-            local id = info.cardId
-            if Fk:getCardById(id).name == "siege_engine" and info.fromArea == Card.PlayerEquip then
-              if not player.dead and no_updata and move.moveReason == fk.ReasonDiscard then
-                table.insert(cancel_move, id)
-              else
-                table.insert(mirror_info, info)
-                table.insert(to_void, id)
-              end
+    local mirror_moves = {}
+    local to_void, cancel_move = {},{}
+    local no_updata = (player:getMark("xianzhu1") + player:getMark("xianzhu2") + player:getMark("xianzhu3")) == 0
+    for _, move in ipairs(data) do
+      if move.from == player.id and move.toArea ~= Card.Void then
+        local move_info = {}
+        local mirror_info = {}
+        for _, info in ipairs(move.moveInfo) do
+          local id = info.cardId
+          if Fk:getCardById(id).name == "siege_engine" and info.fromArea == Card.PlayerEquip then
+            if not player.dead and no_updata and move.moveReason == fk.ReasonDiscard then
+              table.insert(cancel_move, id)
             else
-              table.insert(move_info, info)
+              table.insert(mirror_info, info)
+              table.insert(to_void, id)
             end
-          end
-          move.moveInfo = move_info
-          if #mirror_info > 0 then
-            local mirror_move = table.clone(move)
-            mirror_move.to = nil
-            mirror_move.toArea = Card.Void
-            mirror_move.moveInfo = mirror_info
-            table.insert(mirror_moves, mirror_move)
+          else
+            table.insert(move_info, info)
           end
         end
-      end
-      if #cancel_move > 0 then
-        player.room:sendLog{ type = "#cancelDismantle", card = cancel_move, arg = "#siege_engine_skill"  }
-      end
-      if #to_void > 0 then
-        table.insertTable(data, mirror_moves)
-        player.room:sendLog{ type = "#destructDerivedCards", card = to_void, }
-      end
-    else
-      for key, num in pairs(data.extra_data.siege_engineNullified) do
-        local p = room:getPlayerById(tonumber(key))
-        if p:getMark(fk.MarkArmorNullified) > 0 then
-          room:removePlayerMark(p, fk.MarkArmorNullified, num)
+        move.moveInfo = move_info
+        if #mirror_info > 0 then
+          local mirror_move = table.clone(move)
+          mirror_move.to = nil
+          mirror_move.toArea = Card.Void
+          mirror_move.moveInfo = mirror_info
+          table.insert(mirror_moves, mirror_move)
         end
       end
-      data.siege_engineNullified = nil
+    end
+    if #cancel_move > 0 then
+      player.room:sendLog{ type = "#cancelDismantle", card = cancel_move, arg = "#siege_engine_skill"  }
+    end
+    if #to_void > 0 then
+      table.insertTable(data, mirror_moves)
+      player.room:sendLog{ type = "#destructDerivedCards", card = to_void, }
     end
   end,
 }

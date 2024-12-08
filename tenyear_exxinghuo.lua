@@ -462,7 +462,7 @@ local ty__linglong = fk.CreateTriggerSkill{
     if event == fk.CardUsing then
       return target == player and player:hasSkill(self) and (data.card.trueName == "slash" or data.card:isCommonTrick()) and
       table.every({Card.SubtypeArmor, Card.SubtypeOffensiveRide, Card.SubtypeDefensiveRide, Card.SubtypeTreasure}, function(type)
-        return player:getEquipment(type) == nil
+        return #player:getEquipments(type) == 0 and #player:getAvailableEquipSlots(type) > 0
       end)
     elseif event == fk.BeforeCardsMove then
       if player:hasSkill(self) and player:getEquipment(Card.SubtypeArmor) and not player:getEquipment(Card.SubtypeTreasure) then
@@ -479,12 +479,9 @@ local ty__linglong = fk.CreateTriggerSkill{
     else
       return target == player and player:hasSkill(self) and not player:isFakeSkill(self) and
       (data.cardName == "jink" or (data.pattern and Exppattern:Parse(data.pattern):matchExp("jink|0|nosuit|none"))) and
-      not player:getEquipment(Card.SubtypeArmor) and player:getMark(fk.MarkArmorNullified) == 0
+      #player:getEquipments(Card.SubtypeArmor) == 0 and #player:getAvailableEquipSlots(Card.SubtypeArmor) > 0 and
+      Fk.skills["#eight_diagram_skill"] ~= nil and Fk.skills["#eight_diagram_skill"]:isEffectable(player)
     end
-  end,
-  on_cost = function(self, event, target, player, data)
-    if event == fk.CardUsing or event == fk.BeforeCardsMove then return true end
-    return player.room:askForSkillInvoke(player, self.name, data)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -516,6 +513,8 @@ local ty__linglong = fk.CreateTriggerSkill{
         }
       end
     else
+      if not room:askForSkillInvoke(player, "#eight_diagram_skill", data) then return false end
+
       local judgeData = {
         who = player,
         reason = "eight_diagram",

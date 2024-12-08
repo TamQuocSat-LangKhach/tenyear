@@ -1008,6 +1008,7 @@ local ty_ex__xianzhen = fk.CreateActiveSkill{
     local pindian = player:pindian({target}, self.name)
     if pindian.results[target.id].winner == player then
       room:setPlayerMark(target, "@@ty_ex__xianzhen-turn", 1)
+      room:addTableMark(player, fk.MarkArmorInvalidTo .. "-turn", target.id)
     else
       room:setPlayerMark(player, "ty_ex__xianzhen_lose-turn", 1)
     end
@@ -1016,47 +1017,18 @@ local ty_ex__xianzhen = fk.CreateActiveSkill{
 local ty_ex__xianzhen_trigger = fk.CreateTriggerSkill{
   name = "#ty_ex__xianzhen_trigger",
   mute = true,
-  events = {fk.TargetSpecified, fk.DamageCaused},
+  events = {fk.DamageCaused},
   can_trigger = function(self, event, target, player, data)
-    if event == fk.TargetSpecified then
-      return target == player and player:usedSkillTimes("ty_ex__xianzhen", Player.HistoryTurn) > 0 and data.card and data.card.trueName == "slash" and player.room:getPlayerById(data.to):getMark("@@ty_ex__xianzhen-turn") > 0
-    else
-      if target == player and player:usedSkillTimes("ty_ex__xianzhen", Player.HistoryTurn) > 0 and data.card
-      and data.to:getMark("@@ty_ex__xianzhen-turn") > 0 then
-        local mark = player:getTableMark("ty_ex__xianzhen_damage-turn")
-        return not table.contains(mark, data.card.trueName)
-      end
+    if target == player and player:usedSkillTimes("ty_ex__xianzhen", Player.HistoryTurn) > 0 and data.card
+    and data.to:getMark("@@ty_ex__xianzhen-turn") > 0 then
+      local mark = player:getTableMark("ty_ex__xianzhen_damage-turn")
+      return not table.contains(mark, data.card.trueName)
     end
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.TargetSpecified then
-      room:addPlayerMark(room:getPlayerById(data.to), fk.MarkArmorNullified)
-      data.extra_data = data.extra_data or {}
-      data.extra_data.ty_ex__xianzhen = data.extra_data.ty_ex__xianzhen or {}
-      data.extra_data.ty_ex__xianzhen[tostring(data.to)] = (data.extra_data.ty_ex__xianzhen[tostring(data.to)] or 0) + 1
-    else
-      local mark = player:getTableMark("ty_ex__xianzhen_damage-turn")
-      table.insert(mark, data.card.trueName)
-      room:setPlayerMark(player, "ty_ex__xianzhen_damage-turn", mark)
-      data.damage = data.damage + 1
-    end
-  end,
-
-  refresh_events = {fk.CardUseFinished},
-  can_refresh = function(self, event, target, player, data)
-    return data.extra_data and data.extra_data.ty_ex__xianzhen
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    for key, num in pairs(data.extra_data.ty_ex__xianzhen) do
-      local p = room:getPlayerById(tonumber(key))
-      if p:getMark(fk.MarkArmorNullified) > 0 then
-        room:removePlayerMark(p, fk.MarkArmorNullified, num)
-      end
-    end
-    data.extra_data.ty_ex__xianzhen = nil
+    player.room:addTableMark(player, "ty_ex__xianzhen_damage-turn", data.card.trueName)
+    data.damage = data.damage + 1
   end,
 }
 local ty_ex__xianzhen_targetmod = fk.CreateTargetModSkill{
@@ -1471,7 +1443,7 @@ Fk:loadTranslationTable{
   ["illustrator:ty_ex__madai"] = "君桓文化",
   ["ty_ex__qianxi"] = "潜袭",
   [":ty_ex__qianxi"] = "准备阶段，你可以摸一张牌，并弃置一张牌，然后选择一名距离为1的其他角色。若如此做，本回合：1.其不能使用或打出与你以此法弃置牌颜色相同的手牌；2.你无视其装备区里与你以此法弃置牌颜色相同的防具；3.你于该角色回复体力时摸两张牌。",
-  
+
   ["#ty_ex__qianxi-choose"] = "潜袭：令距离为1的一名角色：本回合不能使用或打出 %arg 的手牌，你无视其此颜色的防具",
   ["@ty_ex__qianxi-turn"] = "潜袭",
 
@@ -3147,25 +3119,10 @@ local ty_ex__anjian = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     data.additionalDamage = (data.additionalDamage or 0) + 1
-    room:addPlayerMark(room:getPlayerById(data.to), fk.MarkArmorNullified)
+    room:getPlayerById(data.to):addQinggangTag(data)
     data.extra_data = data.extra_data or {}
     data.extra_data.ty_ex__anjian = data.extra_data.ty_ex__anjian or {}
     data.extra_data.ty_ex__anjian[tostring(data.to)] = (data.extra_data.ty_ex__anjian[tostring(data.to)] or 0) + 1
-  end,
-
-  refresh_events = {fk.CardUseFinished},
-  can_refresh = function(self, event, target, player, data)
-    return data.extra_data and data.extra_data.ty_ex__anjian
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    for key, num in pairs(data.extra_data.ty_ex__anjian) do
-      local p = room:getPlayerById(tonumber(key))
-      if p:getMark(fk.MarkArmorNullified) > 0 then
-        room:removePlayerMark(p, fk.MarkArmorNullified, num)
-      end
-    end
-    data.extra_data.ty_ex__anjian = nil
   end,
 }
 local ty_ex__anjian_delay = fk.CreateTriggerSkill{

@@ -514,7 +514,8 @@ local ty__linglong = fk.CreateTriggerSkill{
       end
     else
       if not room:askForSkillInvoke(player, "#eight_diagram_skill", data) then return false end
-
+      room:broadcastPlaySound("./packages/standard_cards/audio/card/eight_diagram")
+      room:setEmotion(player, "./packages/standard_cards/image/anim/eight_diagram")
       local judgeData = {
         who = player,
         reason = "eight_diagram",
@@ -921,7 +922,7 @@ local fuman_delay = fk.CreateTriggerSkill{
 fuman:addRelatedSkill(fuman_delay)
 mazhong:addSkill(fuman)
 Fk:loadTranslationTable{
-  ["ty_ex__mazhong"] = "马忠",
+  ["ty_ex__mazhong"] = "界马忠",
   ["#ty_ex__mazhong"] = "笑合南中",
   ["illustrator:ty_ex__mazhong"] = "君桓文化",
 

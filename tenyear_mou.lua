@@ -4,7 +4,7 @@ extension.extensionName = "tenyear"
 local U = require "packages/utility/utility"
 
 Fk:loadTranslationTable{
-  ["tenyear_mou"] = "十周年-谋定天下",
+  ["tenyear_mou"] = "十周年-谋",
   ["tymou"] = "新服谋",
   ["tymou2"] = "新服谋",
 }

@@ -525,7 +525,7 @@ local jiaowang = fk.CreateTriggerSkill{
   end,
 }
 local aoshi = fk.CreateTriggerSkill{
-  name = "aoshi",
+  name = "aoshi$",
   attached_skill_name = "aoshi_other&",
 
   refresh_events = {fk.AfterPropertyChange},

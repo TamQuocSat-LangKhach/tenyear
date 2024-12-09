@@ -2453,6 +2453,7 @@ Fk:loadTranslationTable{
 local liufeng = General(extension, "ty_ex__liufeng", "shu", 4)
 local ty_ex__xiansi = fk.CreateTriggerSkill{
   name = "ty_ex__xiansi",
+  attached_skill_name = "ty_ex__xiansi&",
   derived_piles = "ty_ex__xiansi_ni",
   anim_type = "control",
   events = {fk.EventPhaseStart},
@@ -2476,31 +2477,6 @@ local ty_ex__xiansi = fk.CreateTriggerSkill{
     for _, p in ipairs(self.cost_data) do
       local id = room:askForCardChosen(player, room:getPlayerById(p), "he", self.name)
       player:addToPile("ty_ex__xiansi_ni", id, true, self.name)
-    end
-  end,
-
-  refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
-  can_refresh = function(self, event, target, player, data)
-    if event == fk.GameStart then
-      return player:hasSkill(self, true)
-    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == self
-    else
-      return target == player and player:hasSkill(self, true, true)
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.GameStart or event == fk.EventAcquireSkill then
-      if player:hasSkill(self, true) then
-        for _, p in ipairs(room:getOtherPlayers(player)) do
-          room:handleAddLoseSkills(p, "ty_ex__xiansi&", nil, false, true)
-        end
-      end
-    elseif event == fk.EventLoseSkill or event == fk.Deathed then
-      for _, p in ipairs(room:getOtherPlayers(player, true, true)) do
-        room:handleAddLoseSkills(p, "-ty_ex__xiansi&", nil, false, true)
-      end
     end
   end,
 }

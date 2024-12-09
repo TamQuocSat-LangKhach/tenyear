@@ -835,6 +835,7 @@ local jiangji = General(extension, "tymou__jiangji", "wei", 3)
 local shiju = fk.CreateActiveSkill{
   name = "shiju",
   anim_type = "support",
+  attached_skill_name = "shiju&",
   prompt = "#shiju_self-active",
   card_num = 1,
   target_num = 0,
@@ -879,30 +880,6 @@ local shiju = fk.CreateActiveSkill{
     if not no_draw and player:isAlive() then
       room:drawCards(player, 2, self.name)
       room:drawCards(player, 2, self.name)
-    end
-  end,
-}
-local shijuTrigger = fk.CreateTriggerSkill{
-  name = "#shiju_trigger",
-
-  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
-  can_refresh = function(self, event, target, player, data)
-    if event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == shiju
-    elseif event == fk.BuryVictim then
-      return target:hasSkill(shiju, true, true)
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if table.every(room.alive_players, function(p) return not p:hasSkill(shiju, true) or p == player end) then
-      if player:hasSkill("shiju&", true, true) then
-        room:handleAddLoseSkills(player, "-shiju&", nil, false, true)
-      end
-    else
-      if not player:hasSkill("shiju&", true, true) then
-        room:handleAddLoseSkills(player, "shiju&", nil, false, true)
-      end
     end
   end,
 }
@@ -1052,7 +1029,6 @@ local yingshij_delay = fk.CreateTriggerSkill{
   end,
 }
 Fk:addSkill(shiju_active)
-shiju:addRelatedSkill(shijuTrigger)
 shiju:addRelatedSkill(shiju_attackrange)
 yingshij:addRelatedSkill(yingshij_delay)
 jiangji:addSkill(shiju)

@@ -524,32 +524,33 @@ local jiaowang = fk.CreateTriggerSkill{
     xiaoyan:use(event, target, player, data)
   end,
 }
-
 local aoshi = fk.CreateTriggerSkill{
-  name = "aoshi$",
-  mute = true,
+  name = "aoshi",
+  attached_skill_name = "aoshi_other&",
 
-  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim, fk.AfterPropertyChange},
+  refresh_events = {fk.AfterPropertyChange},
   can_refresh = function(self, event, target, player, data)
-    if event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == self
-    elseif event == fk.BuryVictim then
-      return target:hasSkill(self, true, true)
-    elseif event == fk.AfterPropertyChange then
-      return target == player
-    end
+    return target == player
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    local attached_aoshi = player.kingdom == "qun" and table.find(room.alive_players, function (p)
+    if player.kingdom == "qun" and table.find(room.alive_players, function (p)
       return p ~= player and p:hasSkill(self, true)
-    end)
-    if attached_aoshi and not player:hasSkill("aoshi_other&", true, true) then
+    end) then
       room:handleAddLoseSkills(player, "aoshi_other&", nil, false, true)
-    elseif not attached_aoshi and player:hasSkill("aoshi_other&", true, true) then
+    else
       room:handleAddLoseSkills(player, "-aoshi_other&", nil, false, true)
     end
   end,
+
+  on_acquire = function(self, player)
+    local room = player.room
+    for _, p in ipairs(room.alive_players) do
+      if p ~= player and p.kingdom == "qun" then
+        room:handleAddLoseSkills(p, self.attached_skill_name, nil, false, true)
+      end
+    end
+  end
 }
 local aoshi_other = fk.CreateActiveSkill{
   name = "aoshi_other&",

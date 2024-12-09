@@ -2870,6 +2870,7 @@ local juewu_filter = fk.CreateFilterSkill{
 }
 local wuyou = fk.CreateActiveSkill{
   name = "wuyou",
+  attached_skill_name = "wuyou&",
   prompt = "#wuyou-active",
   card_num = 0,
   target_num = 0,
@@ -2913,36 +2914,6 @@ local wuyou = fk.CreateActiveSkill{
       room:setCardMark(Fk:getCardById(id), "@@wuyou-inhand", card_name)
     else
       room:moveCardTo(id, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id, {"@@wuyou-inhand", card_name})
-    end
-  end,
-}
-local wuyou_refresh = fk.CreateTriggerSkill{
-  name = "#wuyou_refresh",
-
-  refresh_events = {fk.PreCardUse, fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
-  can_refresh = function(self, event, target, player, data)
-    if event == fk.PreCardUse then
-      return player == target and not data.card:isVirtual() and data.card:getMark("@@wuyou-inhand") ~= 0
-    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == wuyou
-    elseif event == fk.BuryVictim then
-      return player:hasSkill(wuyou, true, true)
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    if event == fk.PreCardUse then
-      data.extraUse = true
-      return false
-    end
-    local room = player.room
-    if table.every(room.alive_players, function(p) return not p:hasSkill(wuyou, true) or p == player end) then
-      if player:hasSkill("wuyou&", true, true) then
-        room:handleAddLoseSkills(player, "-wuyou&", nil, false, true)
-      end
-    else
-      if not player:hasSkill("wuyou&", true, true) then
-        room:handleAddLoseSkills(player, "wuyou&", nil, false, true)
-      end
     end
   end,
 }
@@ -3074,7 +3045,6 @@ Fk:addSkill(wuyou_active)
 Fk:addSkill(wuyou_declare)
 juewu:addRelatedSkill(juewu_trigger)
 juewu:addRelatedSkill(juewu_filter)
-wuyou:addRelatedSkill(wuyou_refresh)
 wuyou:addRelatedSkill(wuyou_filter)
 wuyou:addRelatedSkill(wuyou_targetmod)
 guanyu:addSkill(juewu)

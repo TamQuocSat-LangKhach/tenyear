@@ -1876,4 +1876,116 @@ Fk:loadTranslationTable{
   ["#beiyu-choose"] = "备预：选择一种花色，将所有此花色的手牌置于牌堆底",
 }
 
+local peixiu = General(extension, "ty__peixiu", "qun", 3)
+peixiu.subkingdom = "jin"
+local zhitu = fk.CreateTriggerSkill{
+  name = "zhitu",
+  anim_type = "offensive",
+  events = {fk.AfterCardTargetDeclared},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and
+      (data.card.type == Card.TypeBasic or (data.card:isCommonTrick() and data.card.skill.target_num == 1)) and
+      #player.room:getUseExtraTargets(data) > 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local success, dat = room:askForUseActiveSkill(player, "zhitu_active",
+      "#zhitu-choose:::"..data.card:toLogString(), true, room:getUseExtraTargets(data), false)
+    if success and dat then
+      room:sortPlayersByAction(dat.targets)
+      self.cost_data = {tos = dat.targets}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    for _, id in ipairs(self.cost_data.tos) do
+      table.insert(data.tos, {id})
+    end
+  end,
+}
+local zhitu_active = fk.CreateActiveSkill{
+  name = "zhitu_active",
+  card_num = 0,
+  min_target_num = 1,
+  card_filter = Util.FalseFunc,
+  target_filter = function (self, to_select, selected, selected_cards, card, extra_data)
+    if not table.contains(extra_data, to_select) then return end
+    if #selected == 0 then
+      return true
+    elseif #selected > 0 then
+      return Self:distanceTo(Fk:currentRoom():getPlayerById(to_select)) == Self:distanceTo(Fk:currentRoom():getPlayerById(selected[1]))
+    end
+  end,
+}
+local fujue = fk.CreateActiveSkill{
+  name = "fujue",
+  anim_type = "control",
+  card_num = 0,
+  target_num = 2,
+  prompt = "#fujue",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function (self, to_select, selected)
+    local target = Fk:currentRoom():getPlayerById(to_select)
+    if #selected == 0 then
+      return true
+    elseif #selected == 1 then
+      return Fk:currentRoom():getPlayerById(selected[1]):canMoveCardsInBoardTo(target)
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local targets = table.map(effect.tos, Util.Id2PlayerMapper)
+    local result = room:askForMoveCardInBoard(player, targets[1], targets[2], self.name)
+    if not result then return end
+    local yes1, yes2 = result.to == player.id, result.from == player.id
+    if player.dead then return end
+    local n = #player:getCardIds("he") - 5
+    if n > 0 then
+      if #room:askForDiscard(player, n, n, true, self.name, false) > 0 then
+        yes2 = true
+      end
+    elseif n < 0 then
+      yes1 = true
+      player:drawCards(-n, self.name)
+    end
+    if player.dead then return end
+    if yes1 and yes2 then
+      room:addPlayerMark(player, "fujue-turn", 1)
+    end
+  end,
+}
+local fujue_distance = fk.CreateDistanceSkill{
+  name = "#fujue_distance",
+  correct_func = function(self, from, to)
+    return -from:getMark("fujue-turn")
+  end,
+}
+Fk:addSkill(zhitu_active)
+fujue:addRelatedSkill(fujue_distance)
+peixiu:addSkill(zhitu)
+peixiu:addSkill(fujue)
+Fk:loadTranslationTable{
+  ["ty__peixiu"] = "裴秀",
+  ["#ty__peixiu"] = "玄静守真",
+  ["designer:ty__peixiu"] = "改名因为怕被喷",
+  ["illustrator:ty__peixiu"] = "君桓文化",
+
+  ["zhitu"] = "制图",
+  [":zhitu"] = "你使用基本牌和单目标普通锦囊牌可以指定任意名你与其距离相等的角色为目标。",
+  ["fujue"] = "复爵",
+  [":fujue"] = "出牌阶段限一次，你可以移动场上一张牌，然后将你的牌调整至五张。若此过程中你获得且失去过牌，本回合你计算与其他角色的距离-1。",
+  ["zhitu_active"] = "制图",
+  ["#zhitu-choose"] = "制图：你可以为%arg指定任意名距离相等的角色为额外目标",
+  ["#fujue"] = "复爵：你可以移动场上一张牌，然后将你的牌调整至五张",
+
+  ["$zhitu1"] = "辨广轮之度，正彼此之体，远近无所隐其形。",
+  ["$zhitu2"] = "地有六合，图有六体，可校其经纬。",
+  ["$fujue1"] = "《周礼》有言，爵分公、侯、伯、子、男。",
+  ["$fujue2"] = "复五等之爵，明尊卑之序。",
+  ["~ty__peixiu"] = "这酒，是冷的。",
+}
+
 return extension

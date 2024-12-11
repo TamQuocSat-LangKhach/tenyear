@@ -1883,37 +1883,31 @@ local zhitu = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.AfterCardTargetDeclared},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and
-      (data.card.type == Card.TypeBasic or (data.card:isCommonTrick() and data.card.skill.target_num == 1)) and
-      #player.room:getUseExtraTargets(data) > 0
+    if target == player and player:hasSkill(self) and
+      (data.card.type == Card.TypeBasic or (data.card:isCommonTrick() and #TargetGroup:getRealTargets(data.tos) == 1)) then
+      local to = player.room:getPlayerById(TargetGroup:getRealTargets(data.tos)[1])
+      return table.find(player.room:getUseExtraTargets(data), function (id)
+        return player:distanceTo(to) == player:distanceTo(player.room:getPlayerById(id))
+      end)
+    end
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local success, dat = room:askForUseActiveSkill(player, "zhitu_active",
-      "#zhitu-choose:::"..data.card:toLogString(), true, room:getUseExtraTargets(data), false)
-    if success and dat then
-      room:sortPlayersByAction(dat.targets)
-      self.cost_data = {tos = dat.targets}
+    local to = room:getPlayerById(TargetGroup:getRealTargets(data.tos)[1])
+    local targets = table.filter(room:getUseExtraTargets(data), function (id)
+      return player:distanceTo(to) == player:distanceTo(room:getPlayerById(id))
+    end)
+    local tos = room:askForChoosePlayers(player, targets, 1, 10,
+      "#zhitu-choose:::"..data.card:toLogString()..":"..player:distanceTo(to), self.name, true)
+    if #tos > 0 then
+      room:sortPlayersByAction(tos)
+      self.cost_data = {tos = tos}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     for _, id in ipairs(self.cost_data.tos) do
       table.insert(data.tos, {id})
-    end
-  end,
-}
-local zhitu_active = fk.CreateActiveSkill{
-  name = "zhitu_active",
-  card_num = 0,
-  min_target_num = 1,
-  card_filter = Util.FalseFunc,
-  target_filter = function (self, to_select, selected, selected_cards, card, extra_data)
-    if not table.contains(extra_data, to_select) then return end
-    if #selected == 0 then
-      return true
-    elseif #selected > 0 then
-      return Self:distanceTo(Fk:currentRoom():getPlayerById(to_select)) == Self:distanceTo(Fk:currentRoom():getPlayerById(selected[1]))
     end
   end,
 }
@@ -1963,7 +1957,6 @@ local fujue_distance = fk.CreateDistanceSkill{
     return -from:getMark("fujue-turn")
   end,
 }
-Fk:addSkill(zhitu_active)
 fujue:addRelatedSkill(fujue_distance)
 peixiu:addSkill(zhitu)
 peixiu:addSkill(fujue)
@@ -1978,7 +1971,7 @@ Fk:loadTranslationTable{
   ["fujue"] = "复爵",
   [":fujue"] = "出牌阶段限一次，你可以移动场上一张牌，然后将你的牌调整至五张。若此过程中你获得且失去过牌，本回合你计算与其他角色的距离-1。",
   ["zhitu_active"] = "制图",
-  ["#zhitu-choose"] = "制图：你可以为%arg指定任意名距离相等的角色为额外目标",
+  ["#zhitu-choose"] = "制图：你可以为%arg指定任意名距离为%arg2的角色为额外目标",
   ["#fujue"] = "复爵：你可以移动场上一张牌，然后将你的牌调整至五张",
 
   ["$zhitu1"] = "辨广轮之度，正彼此之体，远近无所隐其形。",

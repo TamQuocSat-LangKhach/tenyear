@@ -114,8 +114,6 @@ local ty__fanghun = fk.CreateViewAsSkill{
   end,
   before_use = function(self, player, data)
     player.room:removePlayerMark(player, "@meiying")
-    data.extra_data = data.extra_data or {}
-    data.extra_data.ty__fanghun_user = player.id
   end,
 
   on_lose = function (self, player)
@@ -145,7 +143,7 @@ local ty__fanghun_delay = fk.CreateTriggerSkill{
   events = {fk.CardUseFinished, fk.CardRespondFinished},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return not player.dead and data.extra_data and data.extra_data.ty__fanghun_user == player.id
+    return not player.dead and player == target and table.contains(data.card.skillNames, ty__fanghun.name)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)

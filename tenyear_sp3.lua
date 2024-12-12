@@ -2535,7 +2535,6 @@ Fk:loadTranslationTable{
   ["#zhaohan-discard"] = "昭汉：弃置两张手牌",
   ["#zhaohan-give"] = "昭汉：选择两张手牌交给 %dest",
   ["draw0"] = "摸零张牌",
-  ["draw3"] = "摸三张牌",
   ["#jinjie-invoke"] = "你可以发动 尽节，令 %dest 摸0-3张牌，然后你可以弃等量的牌令其回复体力",
   ["#jinjie-discard"] = "尽节：你可以弃置%arg张手牌，令 %dest 回复1点体力",
   ["#jue-choose"] = "你可以发动 举讹，选择一名其他角色，视为对其随机使用%arg张牌（【过河拆桥】、【杀】或【五谷丰登】）",

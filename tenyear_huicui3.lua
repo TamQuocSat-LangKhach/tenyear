@@ -1735,7 +1735,7 @@ local zixi_special_rule = fk.CreateTriggerSkill{
           if not card then
             card = Fk:getCardById(cards[i])
           end
-          
+
           room:moveCardTo(card, Card.Processing, nil, fk.ReasonPut, "game_rule")
 
           ---@type CardEffectEvent

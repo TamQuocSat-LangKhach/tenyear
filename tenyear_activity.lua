@@ -2782,9 +2782,6 @@ local jinjianm = fk.CreateTriggerSkill{
   name = "jinjianm",
   anim_type = "defensive",
   events = {fk.Damage, fk.Damaged},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -3176,9 +3173,6 @@ local funing = fk.CreateTriggerSkill{
   name = "funing",
   anim_type = "drawcard",
   events = {fk.CardUsing},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#funing-invoke:::"..player:usedSkillTimes(self.name, Player.HistoryTurn) + 1)
   end,

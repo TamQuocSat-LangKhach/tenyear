@@ -2166,9 +2166,6 @@ local zimu = fk.CreateTriggerSkill{
   anim_type = "masochism",
   frequency = Skill.Compulsory,
   events = {fk.Damaged},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     for _, p in ipairs(room:getAlivePlayers()) do
@@ -2672,9 +2669,6 @@ local jiexing = fk.CreateTriggerSkill{
   name = "jiexing",
   anim_type = "drawcard",
   events = {fk.HpChanged},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_use = function(self, event, target, player, data)
     player:drawCards(1, self.name, nil, "@@jiexing-inhand-turn")
   end,
@@ -3722,9 +3716,6 @@ local ty__shushen = fk.CreateTriggerSkill{
   name = "ty__shushen",
   anim_type = "support",
   events = {fk.HpRecover},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_trigger = function(self, event, target, player, data)
     self.cancel_cost = false
     for i = 1, data.num do

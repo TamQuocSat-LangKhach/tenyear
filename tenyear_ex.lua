@@ -1178,9 +1178,6 @@ local ty_ex__zhiyu = fk.CreateTriggerSkill{
   name = "ty_ex__zhiyu",
   anim_type = "masochism",
   events = {fk.Damaged},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(1, self.name)

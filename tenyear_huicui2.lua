@@ -2484,9 +2484,6 @@ local huiling = fk.CreateTriggerSkill{
   name = "huiling",
   frequency = Skill.Compulsory,
   events = {fk.CardUsing},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local red, black = 0, 0
@@ -3032,9 +3029,6 @@ local duanti = fk.CreateTriggerSkill{
   events = {fk.CardUseFinished, fk.CardRespondFinished},
   frequency = Skill.Compulsory,
   anim_type = "support",
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room

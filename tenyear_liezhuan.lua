@@ -708,9 +708,6 @@ local jijing = fk.CreateTriggerSkill{
   name = "jijing",
   anim_type = "defensive",
   events = {fk.Damaged},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local judge = {

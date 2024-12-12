@@ -296,9 +296,6 @@ local shixian = fk.CreateTriggerSkill{
   name = "shixian",
   anim_type = "special",
   events = {fk.CardUsing},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_trigger = function(self, event, target, player, data)
     local room = player.room
     if player:getMark("@shixian-turn") == 0 then
@@ -677,9 +674,6 @@ local tycl__jianxiong = fk.CreateTriggerSkill{
   name = "tycl__jianxiong",
   anim_type = "masochism",
   events = {fk.Damaged},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local n = math.min(player:usedSkillTimes(self.name, Player.HistoryGame), 5)
@@ -946,9 +940,6 @@ local santou = fk.CreateTriggerSkill{
   anim_type = "defensive",
   frequency = Skill.Compulsory,
   events = {fk.DamageInflicted},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if (player.hp >= 3 and data.from and player:getMark("santou_"..data.from.id.."-turn") > 0) or
@@ -1825,9 +1816,6 @@ local qiusuo = fk.CreateTriggerSkill {
   name = "qiusuo",
   events = {fk.Damage, fk.Damaged},
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local ironChain = room:getCardsFromPileByRule("iron_chain", 1, "allPiles")

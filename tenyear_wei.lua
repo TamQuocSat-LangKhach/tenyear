@@ -13,9 +13,6 @@ local yuxi = fk.CreateTriggerSkill{
   name = "yuxi",
   anim_type = "drawcard",
   events = {fk.DamageCaused, fk.DamageInflicted},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_cost = Util.TrueFunc,
   on_use = function (self, event, target, player, data)
     player:drawCards(1, self.name, nil, "@@yuxi-inhand")

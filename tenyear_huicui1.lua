@@ -4496,9 +4496,6 @@ local jinglan = fk.CreateTriggerSkill{
   anim_type = "special",
   frequency = Skill.Compulsory,
   events = {fk.Damage},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if player:getHandcardNum() > player.hp then

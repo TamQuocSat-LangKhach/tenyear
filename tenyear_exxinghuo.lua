@@ -1000,9 +1000,6 @@ local ty_ex__weizhong = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   anim_type = "drawcard",
   events = {fk.MaxHpChanged},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_use = function(self, event, target, player, data)
     player:drawCards(2, self.name)
   end,

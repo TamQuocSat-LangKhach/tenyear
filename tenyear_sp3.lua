@@ -658,9 +658,6 @@ local sanshou = fk.CreateTriggerSkill{
   name = "sanshou",
   anim_type = "defensive",
   events = {fk.DamageInflicted},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = room:getNCards(3)
@@ -2083,9 +2080,6 @@ local jinjian = fk.CreateTriggerSkill{
   name = "jinjian",
   mute = true,
   events = {fk.DamageCaused, fk.DamageInflicted},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_cost = function(self, event, target, player, data)
     if event == fk.DamageCaused then
       return player:getMark("@@jinjian_plus-turn") > 0 or player.room:askForSkillInvoke(player, self.name, nil, "#jinjian1-invoke::"..data.to.id)

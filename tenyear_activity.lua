@@ -3198,10 +3198,7 @@ local bingji = fk.CreateActiveSkill{
   card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local mark = player:getTableMark("@bingji-phase")
-    local suit = Fk:getCardById(player.player_cards[Player.Hand][1]):getSuitString(true)
-    table.insert(mark, suit)
-    room:setPlayerMark(player, "@bingji-phase", mark)
+    room:addTableMark(player, "@bingji-phase", Fk:getCardById(player.player_cards[Player.Hand][1]):getSuitString(true))
     player:showCards(player.player_cards[Player.Hand])
     local targets = {["peach"] = {}, ["slash"] = {}}
     local choices = {}

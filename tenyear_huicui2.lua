@@ -2920,8 +2920,7 @@ local minze = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local mark = player:getMark("@$minze-turn")
-    if mark == 0 then mark = {} end
+    local mark = player:getTableMark("@$minze-turn")
     for _, id in ipairs(effect.cards) do
       table.insertIfNeed(mark, Fk:getCardById(id).trueName)
     end
@@ -3157,9 +3156,7 @@ local zhente = fk.CreateTriggerSkill{
     if choice:startsWith("zhente_negate") then
       table.insertIfNeed(data.nullifiedTargets, player.id)
     else
-      local colorsRecorded = type(to:getMark("@zhente-turn")) == "table" and to:getMark("@zhente-turn") or {}
-      table.insertIfNeed(colorsRecorded, color)
-      room:setPlayerMark(to, "@zhente-turn", colorsRecorded)
+      room:addTableMark(to, "@zhente-turn", color)
     end
   end,
 }
@@ -3954,10 +3951,7 @@ local mingfa = fk.CreateTriggerSkill{
       player:addToPile(self.name, data.card, true, self.name)
       room:setPlayerMark(player, self.name, self.cost_data)
       local to = room:getPlayerById(self.cost_data)
-      local mark = to:getMark("@@mingfa")
-      if mark == 0 then mark = {} end
-      table.insert(mark, player.id)
-      room:setPlayerMark(to, "@@mingfa", mark)
+      room:addTableMark(to, "@@mingfa", player.id)
     else
       local card = Fk:cloneCard(Fk:getCardById(player:getPile(self.name)[1]).name)
       if card.trueName ~= "nullification" and card.skill:getMinTargetNum() < 2 and not player:isProhibited(target, card) then
@@ -3976,9 +3970,7 @@ local mingfa = fk.CreateTriggerSkill{
       end
       room:setPlayerMark(player, self.name, 0)
       if not target.dead then
-        local mark = target:getTableMark("@@mingfa")
-        table.removeOne(mark, player.id)
-        room:setPlayerMark(target, "@@mingfa", #mark > 0 and mark or 0)
+        room:removeTableMark(target, "@@mingfa", player.id)
       end
       room:moveCards({
         from = player.id,
@@ -4015,9 +4007,7 @@ local mingfa = fk.CreateTriggerSkill{
         specialName = self.name,
       })
       if not to.dead then
-        local mark = to:getTableMark("@@mingfa")
-        table.removeOne(mark, player.id)
-        room:setPlayerMark(to, "@@mingfa", #mark > 0 and mark or 0)
+        room:removeTableMark(to, "@@mingfa", to.id)
       end
     else
       local mark = target:getMark("@@mingfa")
@@ -5294,9 +5284,7 @@ local tunchuBreak = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return data[1].skillName == tunchu.name and data[1].moveReason == fk.ReasonDraw
   end,
-  on_trigger = function(self, event, target, player, data)
-    return true
-  end,
+  on_trigger = Util.TrueFunc,
 }
 Fk:loadTranslationTable{
   ["ty__tunchu"] = "囤储",

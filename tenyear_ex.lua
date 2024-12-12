@@ -3319,9 +3319,7 @@ local ty_ex__pindi = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local mark = player:getTableMark("ty_ex__pindi-phase")
-    table.insert(mark, Fk:getCardById(effect.cards[1]):getTypeString())
-    room:setPlayerMark(player, "ty_ex__pindi-phase", mark)
+    room:addTableMark(player, "ty_ex__pindi-phase", Fk:getCardById(effect.cards[1]):getTypeString())
     room:setPlayerMark(target, "ty_ex__pindi_target-phase", 1)
     room:throwCard(effect.cards, self.name, player)
     if not target.dead then
@@ -3403,9 +3401,7 @@ local ty_ex__sidi = fk.CreateTriggerSkill{
         skillName = self.name,
         specialName = self.name,
       })
-      local mark = target:getTableMark("@ty_ex__sidi-phase")
-      table.insertIfNeed(mark, color)
-      room:setPlayerMark(target, "@ty_ex__sidi-phase", mark)
+      room:addTableMark(target, "@ty_ex__sidi-phase", color)
       room:setPlayerMark(player, "ty_ex__sidi_victim-phase", target.id)
     end
   end,
@@ -4678,9 +4674,7 @@ local ty_ex__huomo = fk.CreateViewAsSkill{
   end,
   before_use = function (self, player, use)
     local room = player.room
-    local mark = player:getTableMark("ty_ex__huomo-turn")
-    table.insert(mark, use.card.trueName)
-    room:setPlayerMark(player, "ty_ex__huomo-turn", mark)
+    room:addTableMark(player, "ty_ex__huomo-turn", use.card.trueName)
     local put = use.card:getMark(self.name)
     if put ~= 0 and table.contains(player:getCardIds("he"), put) then
       room:moveCards({
@@ -4833,8 +4827,8 @@ local ty_ex__yanzhu = fk.CreateActiveSkill{
     end
     local choice = room:askForChoice(target, choices, self.name, "#ty_ex__yanzhu-choice:" .. player.id)
     if choice == "ty_ex__yanzhu_choice1" then
-       room:setPlayerMark(target, "@@yanzhudamage", 1)
-       room:askForDiscard(target, 1, 1, true, self.name, false)
+      room:setPlayerMark(target, "@@yanzhudamage", 1)
+      room:askForDiscard(target, 1, 1, true, self.name, false)
     elseif choice == "ty_ex__yanzhu_choice2" then
       room:obtainCard(player.id, target:getCardIds(Player.Equip), true, fk.ReasonGive, target.id)
       room:setPlayerMark(player, self.name, 1)
@@ -4857,7 +4851,7 @@ local ty_ex__yanzhu_trigger = fk.CreateTriggerSkill{
 
   refresh_events = {fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
-     return target:getMark("@@yanzhudamage") ~= 0
+    return target:getMark("@@yanzhudamage") ~= 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room

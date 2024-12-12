@@ -247,9 +247,7 @@ local moyu = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local mark = player:getTableMark("moyu_targets-phase")
-    table.insert(mark, target.id)
-    room:setPlayerMark(player, "moyu_targets-phase", mark)
+    room:addTableMark(player, "moyu_targets-phase", target.id)
     local x = 1
     if player:getMark("@@moyu1-phase") > 0 then
       x = 2
@@ -680,9 +678,7 @@ local manzhi = fk.CreateTriggerSkill{
     local _, dat = room:askForUseActiveSkill(player, "manzhi_active", "#manzhi-ask", true, nil, false)
     if dat then
       local choice = dat.interaction
-      local record = player:getTableMark("_manzhi-turn")
-      table.insertIfNeed(record, choice)
-      room:setPlayerMark(player, "_manzhi-turn", record)
+      room:addTableMark(player, "_manzhi-turn", choice)
       self.cost_data = {dat.targets[1], choice}
       return true
     end
@@ -1836,13 +1832,9 @@ local weiwan = fk.CreateActiveSkill{
       if #get == 1 then
         room:loseHp(to, 1, self.name)
       elseif #get == 2 then
-        local mark = player:getTableMark("weiwan_targetmod-turn")
-        table.insert(mark, to.id)
-        room:setPlayerMark(player, "weiwan_targetmod-turn", mark)
+        room:addTableMark(player, "weiwan_targetmod-turn", to.id)
       elseif #get == 3 then
-        local mark = player:getTableMark("weiwan_prohibit-turn")
-        table.insert(mark, to.id)
-        room:setPlayerMark(player, "weiwan_prohibit-turn", mark)
+        room:addTableMark(player, "weiwan_prohibit-turn", to.id)
       end
     end
   end,

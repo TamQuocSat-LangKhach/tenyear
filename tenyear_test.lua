@@ -1002,4 +1002,194 @@ Fk:loadTranslationTable{
   ["@@pinglu-inhand-phase"] = "平虏",
 }
 
+local lvju = General(extension, "lvju", "wu", 4)
+local zhengyue = fk.CreateTriggerSkill{
+  name = "zhengyue",
+  anim_type = "drawcard",
+  derived_piles = "#zhengyue",
+  events = {fk.TurnStart, fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) then
+      if event == fk.TurnStart then
+        return #player:getPile("#zhengyue") == 0
+      elseif event == fk.CardUseFinished and #player:getPile("#zhengyue") > 0 then
+        local c = Fk:getCardById(U.getPrivateMark(player, "$zhengyue")[1])
+        if c.number == data.card.number or c:compareSuitWith(data.card) or c.trueName == data.card.trueName then
+          return true
+        else
+          return player.room:getCardArea(data.card) == Card.Processing and #player:getPile("#zhengyue") < 5
+        end
+      end
+    end
+  end,
+  on_cost = function (self, event, target, player, data)
+    if event == fk.TurnStart then
+      local choice = player.room:askForChoice(player, {"1", "2", "3", "4", "5"}, self.name, "#zhengyue-invoke")
+      if choice ~= "Cancel" then
+        self.cost_data = {choice = tonumber(choice)}
+        return true
+      end
+    elseif event == fk.CardUseFinished then
+      return true
+    end
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    if event == fk.TurnStart then
+      local result = room:askForGuanxing(player, room:getNCards(self.cost_data.choice), nil, {0, 0}, self.name, true, {"#zhengyue", ""})
+      player:addToPile("#zhengyue", result.top, false, self.name, player.id)
+      U.setPrivateMark(player, "$zhengyue", result.top)
+    elseif event == fk.CardUseFinished then
+      local c = Fk:getCardById(U.getPrivateMark(player, "$zhengyue")[1])
+      if c.number == data.card.number or c:compareSuitWith(data.card) or c.trueName == data.card.trueName then
+        room:moveCardTo(c, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, self.name, nil, true, player.id)
+        if not player.dead then
+          player:drawCards(2, self.name)
+        end
+        if #player:getPile("#zhengyue") == 0 then
+          room:setPlayerMark(player, "@[private]$zhengyue", 0)
+        else
+          U.setPrivateMark(player, "$zhengyue", player:getPile("#zhengyue"))
+        end
+      else
+        room:addPlayerMark(player, "zhengyue-turn", 1)
+        local cards = table.simpleClone(player:getPile("#zhengyue"))
+        for i = 1, 5 - #cards, 1 do
+          table.insert(cards, Card:getIdList(data.card)[i])
+        end
+        local result = room:askForGuanxing(player, cards, nil, {0, 0}, self.name, true, {"#zhengyue", ""})
+        cards = table.filter(result.top, function (id)
+          return not table.contains(player:getPile("#zhengyue"), id)
+        end)
+        player:addToPile("#zhengyue", cards, false, self.name, player.id)
+        --player.special_cards["#zhengyue"] = result.top  --FIXME: 危险！！！
+        U.setPrivateMark(player, "$zhengyue", result.top)
+      end
+    end
+  end,
+
+  on_lose = function (self, player, is_death)
+    local room = player.room
+    room:setPlayerMark(player, "@[private]$zhengyue", 0)
+    room:moveCardTo(player:getPile("#zhengyue"), Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, "", nil, true)
+  end,
+}
+local zhengyue_prohibit = fk.CreateProhibitSkill{
+  name = "#zhengyue_prohibit",
+  prohibit_use = function(self, player, card)
+    if player:getMark("zhengyue-turn") > 1 then
+      local subcards = card:isVirtual() and card.subcards or {card.id}
+      return #subcards > 0 and table.every(subcards, function(id)
+        return table.contains(player:getCardIds("h"), id)
+      end)
+    end
+  end,
+}
+zhengyue:addRelatedSkill(zhengyue_prohibit)
+lvju:addSkill(zhengyue)
+Fk:loadTranslationTable{
+  ["lvju"] = "吕据",
+  ["#lvju"] = "",
+
+  ["zhengyue"] = "征越",
+  [":zhengyue"] = "回合开始时，若你的武将牌上没有“征越”牌，你可以将牌堆顶至多五张牌以任意顺序置于武将牌上。当你使用牌结算后，若与武将牌上第一张"..
+  "“征越”牌点数或花色或牌名相同，移去第一张“征越”牌并摸两张牌；若皆不同，将此牌置于武将牌上并任意调整顺序（至多5张“征越”牌），当你一回合内"..
+  "以此法将两张牌置为“征越”牌后，你不能使用手牌直到回合结束。",
+  ["#zhengyue"] = "征越",
+  ["@[private]$zhengyue"] = "征越",
+  ["#zhengyue-invoke"] = "征越：将牌堆顶至多五张牌置为“征越”牌",
+}
+
+local panghong = General(extension, "panghong", "shu", 3)
+local pingzhi = fk.CreateActiveSkill{
+  name = "pingzhi",
+  switch_skill_name = "pingzhi",
+  anim_type = "switch",
+  card_num = 0,
+  target_num = 1,
+  prompt = function (self, selected_cards, selected_targets)
+    return "#pingzhi-"..Self:getSwitchSkillState(self.name, false, true)
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local card = room:askForCard(target, 1, 1, false, self.name, false, nil,
+      "#pingzhi_show-"..player:getSwitchSkillState(self.name, true, true)..":"..player.id)
+    target:showCards(card)
+    if player.dead or not table.contains(target:getCardIds("h"), card[1]) then return end
+    if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
+      if not player:prohibitDiscard(card[1]) then
+        room:throwCard(card, self.name, target, player)
+        if not player.dead then
+          local use = room:useVirtualCard("fire_attack", nil, target, player, self.name)
+          if not (use and use.damageDealt) then
+            player:setSkillUseHistory(self.name, 0, Player.HistoryPhase)
+          end
+        end
+      end
+    else
+      card = Fk:getCardById(card[1])
+      if target:canUse(card, {bypass_times = true}) and
+        table.find(room.alive_players, function (p)
+          return target:canUseTo(card, p, {bypass_times = true})
+        end) then
+        local use = U.askForUseRealCard(room, target, {card.id}, nil, self.name, "#pingzhi-use", {
+          bypass_times = true,
+          extraUse = true,
+        }, false, false)
+        if not (use and use.damageDealt) then
+          player:setSkillUseHistory(self.name, 0, Player.HistoryPhase)
+        end
+      end
+    end
+  end,
+}
+local gangjian = fk.CreateTriggerSkill{
+  name = "gangjian",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and player:getMark("gangjian-turn") > 0 and
+      #player.room.logic:getActualDamageEvents(1, function (e)
+        return e.data[1].to == player
+      end, Player.HistoryTurn) == 0
+  end,
+  on_use = function (self, event, target, player, data)
+    player:drawCards(math.min(player:getMark("gangjian-turn"), 5), self.name)
+  end,
+
+  refresh_events = {fk.CardShown},
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill(self, true)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:addPlayerMark(player, "gangjian-turn", #data.cardIds)
+  end,
+}
+panghong:addSkill(pingzhi)
+panghong:addSkill(gangjian)
+Fk:loadTranslationTable{
+  ["panghong"] = "庞宏",
+  ["#panghong"] = "",
+
+  ["pingzhi"] = "评骘",
+  [":pingzhi"] = "转换技，出牌阶段限一次，你可以令一名角色展示一张手牌，阳：你弃置此牌，其视为对你使用【火攻】，若未造成伤害此技能视为未发动；"..
+  "阴：其使用此牌，若造成伤害则此技能视为未发动。",
+  ["gangjian"] = "刚简",
+  [":gangjian"] = "锁定技，每个回合结束时，若你本回合未受到过伤害，你摸X张牌。（X为本回合展示过的牌数，至多为5）。",
+  ["#pingzhi-yang"] = "评骘：令一名角色展示一张手牌，你弃置之，其视为对你使用【火攻】",
+  ["#pingzhi-yin"] = "评骘：令一名角色展示一张手牌，其使用之",
+  ["#pingzhi_show-yang"] = "评骘：请展示一张手牌，%src 弃置之，你视为对其使用【火攻】",
+  ["#pingzhi_show-yin"] = "评骘：请展示一张手牌，然后使用之",
+  ["#pingzhi-use"] = "评骘：请使用这张牌",
+}
+
 return extension

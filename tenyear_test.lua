@@ -849,7 +849,7 @@ local chengyan = fk.CreateTriggerSkill{
           end
         end
       end
-      U.clearRemainCards(room, cards, self.name)
+      room:cleanProcessingArea(cards, self.name)
     else
       room:moveCardTo(cards, Player.Hand, player, fk.ReasonJustMove, self.name, nil, true, player.id, "@@xidi-inhand")
     end

@@ -551,14 +551,7 @@ local denglou = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local cards = room:getNCards(4)
-    room:moveCards({
-      ids = cards,
-      toArea = Card.Processing,
-      moveReason = fk.ReasonPut,
-      skillName = self.name,
-      proposer = player.id,
-    })
+    local cards = U.turnOverCardsFromDrawPile(player, 4, self.name)
     room:delay(500)
     local get = {}
     for i = 4, 1, -1 do
@@ -577,14 +570,7 @@ local denglou = fk.CreateTriggerSkill{
         break
       end
     end
-    cards = table.filter(cards, function(id) return room:getCardArea(id) == Card.Processing end)
-    if #cards > 0 then
-      room:moveCards({
-        ids = cards,
-        toArea = Card.DiscardPile,
-        moveReason = fk.ReasonPutIntoDiscardPile,
-      })
-    end
+    room:cleanProcessingArea(cards, self.name)
   end,
 }
 ty__wangcan:addSkill(denglou)

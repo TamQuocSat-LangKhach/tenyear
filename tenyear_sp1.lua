@@ -2161,13 +2161,7 @@ local tuiyan = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and player.phase == Player.Play
   end,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    local ids = room:getNCards(3)
-    for i = 3, 1, -1 do
-      table.removeOne(room.draw_pile, ids[i])
-      table.insert(room.draw_pile, 1, ids[i])
-    end
-    U.viewCards(player, ids, self.name)
+    U.viewCards(player, player.room:getNCards(3), self.name)
   end,
 }
 local busuan = fk.CreateActiveSkill {

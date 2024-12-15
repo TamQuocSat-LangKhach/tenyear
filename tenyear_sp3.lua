@@ -86,16 +86,8 @@ local jiufa = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "@$jiufa", mark)
     if #mark < 9 or not room:askForSkillInvoke(player, self.name, nil, "#jiufa-invoke") then return false end
     room:setPlayerMark(player, "@$jiufa", 0)
-    local card_ids = room:getNCards(9)
+    local card_ids = U.turnOverCardsFromDrawPile(player, 9, self.name)
     local get, throw = {}, {}
-    room:moveCards({
-      ids = card_ids,
-      toArea = Card.Processing,
-      moveReason = fk.ReasonJustMove,
-      skillName = self.name,
-      proposer = player.id,
-    })
-
     local number_table = {}
     for _ = 1, 13, 1 do
       table.insert(number_table, 0)
@@ -116,13 +108,7 @@ local jiufa = fk.CreateTriggerSkill{
     if #get > 0 then
       room:moveCardTo(get, Player.Hand, player, fk.ReasonJustMove, self.name, "", true, player.id)
     end
-    if #throw > 0 then
-      room:moveCards({
-        ids = throw,
-        toArea = Card.DiscardPile,
-        moveReason = fk.ReasonPutIntoDiscardPile,
-      })
-    end
+    room:cleanProcessingArea(card_ids, self.name)
   end,
 
   on_lose = function (self, player)
@@ -660,14 +646,7 @@ local sanshou = fk.CreateTriggerSkill{
   events = {fk.DamageInflicted},
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local cards = room:getNCards(3)
-    room:moveCards({
-      ids = cards,
-      toArea = Card.Processing,
-      moveReason = fk.ReasonJustMove,
-      skillName = self.name,
-      proposer = player.id,
-    })
+    local cards = U.turnOverCardsFromDrawPile(player, 3, self.name)
     local mark = player:getTableMark("sanshou-turn")
     if #mark ~= 3 then
       mark = {0, 0, 0}
@@ -698,13 +677,7 @@ local sanshou = fk.CreateTriggerSkill{
       end
     end
     room:delay(1000)
-    room:moveCards({
-      ids = cards,
-      fromArea = Card.Processing,
-      toArea = Card.DiscardPile,
-      moveReason = fk.ReasonJustMove,
-      skillName = self.name,
-    })
+    room:cleanProcessingArea(cards, self.name)
     return yes
   end,
 }
@@ -2281,38 +2254,24 @@ local jingzao = fk.CreateActiveSkill{
     room:setPlayerMark(target, "jingzao-phase", 1)
     local n = 3 + player:getMark("jingzao-turn")
     if n < 1 then return false end
-    local cards = room:getNCards(n)
-    room:moveCards({
-      ids = cards,
-      toArea = Card.Processing,
-      moveReason = fk.ReasonJustMove,
-      skillName = self.name,
-      proposer = player.id,
-    })
-
+    local cards = U.turnOverCardsFromDrawPile(player, n, self.name)
     local pattern = table.concat(table.map(cards, function(id) return Fk:getCardById(id).trueName end), ",")
     if #room:askForDiscard(target, 1, 1, true, self.name, true, pattern, "#jingzao-discard:"..player.id) > 0 then
       room:addPlayerMark(player, "jingzao-turn", 1)
-      room:moveCards({
-        ids = cards,
-        toArea = Card.DiscardPile,
-        moveReason = fk.ReasonJustMove,
-        skillName = self.name,
-      })
-      return
+    else
+      local to_get = {}
+      while #cards > 0 do
+        local id = table.random(cards)
+        table.insert(to_get, id)
+        local name = Fk:getCardById(id).trueName
+        cards = table.filter(cards, function (id2)
+          return Fk:getCardById(id2).trueName ~= name
+        end)
+      end
+      room:setPlayerMark(player, "jingzao-turn", player:getMark("jingzao-turn") - #to_get)
+      room:moveCardTo(to_get, Player.Hand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
     end
-
-    local to_get = {}
-    while #cards > 0 do
-      local id = table.random(cards)
-      table.insert(to_get, id)
-      local name = Fk:getCardById(id).trueName
-      cards = table.filter(cards, function (id2)
-        return Fk:getCardById(id2).trueName ~= name
-      end)
-    end
-    room:setPlayerMark(player, "jingzao-turn", player:getMark("jingzao-turn") - #to_get)
-    room:moveCardTo(to_get, Player.Hand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
+    room:cleanProcessingArea(cards, self.name)
   end,
 }
 local enyu = fk.CreateTriggerSkill{

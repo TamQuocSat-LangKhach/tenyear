@@ -428,49 +428,13 @@ local xialei = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local ids = room:getNCards(3 - player:getMark("xialei-turn"))
-    room:moveCards {
-      ids = ids,
-      toArea = Card.Processing,
-      moveReason = fk.ReasonJustMove,
-      skillName = self.name,
-      proposer = player.id,
-      moveVisible = false,
-      visiblePlayers = player.id,
-    }
+    local ids = U.turnOverCardsFromDrawPile(player, 3 - player:getMark("xialei-turn"), self.name, false)
     if #ids == 1 then
       room:obtainCard(player, ids, false, fk.ReasonJustMove, player.id, self.name)
     else
       local to_return, choice = U.askforChooseCardsAndChoice(player, ids, {"xialei_top", "xialei_bottom"}, self.name, "#xialei-chooose")
       room:obtainCard(player, to_return, false, fk.ReasonJustMove, player.id, self.name)
-      ids = table.filter(ids, function (id)
-        return room:getCardArea(id) == Card.Processing
-      end)
-      if #ids > 0 then
-        if choice == "xialei_top" then
-          ids = table.reverse(ids)
-          room:moveCards {
-            ids = ids,
-            toArea = Card.DrawPile,
-            moveReason = fk.ReasonJustMove,
-            skillName = self.name,
-            proposer = player.id,
-            moveVisible = false,
-            visiblePlayers = player.id
-          }
-        else
-          room:moveCards {
-            ids = ids,
-            toArea = Card.DrawPile,
-            moveReason = fk.ReasonJustMove,
-            skillName = self.name,
-            proposer = player.id,
-            moveVisible = false,
-            visiblePlayers = player.id,
-            drawPilePosition = -1
-          }
-        end
-      end
+      U.returnCardsToDrawPile(player, ids, self.name, choice == "xialei_bottom", false)
     end
     room:addPlayerMark(player, "xialei-turn", 1)
   end,
@@ -1103,16 +1067,7 @@ local linghui = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local ids = room:getNCards(3)
-    room:moveCards {
-      ids = ids,
-      toArea = Card.Processing,
-      moveReason = fk.ReasonJustMove,
-      skillName = self.name,
-      proposer = player.id,
-      moveVisible = false,
-      visiblePlayers = player.id,
-    }
+    local ids = U.turnOverCardsFromDrawPile(player, 3, self.name, false)
     local use = U.askForUseRealCard(room, player, ids, ".", self.name, "#linghui-use",
     {expand_pile = ids, bypass_times = true}, false, true)
     if not player.dead and use then
@@ -1123,21 +1078,7 @@ local linghui = fk.CreateTriggerSkill{
         room:obtainCard(player, table.random(toObtain, 1), false, fk.ReasonJustMove, player.id, self.name)
       end
     end
-    ids = table.filter(ids, function (id)
-      return room:getCardArea(id) == Card.Processing
-    end)
-    if #ids > 0 then
-      ids = table.reverse(ids)
-      room:moveCards {
-        ids = ids,
-        toArea = Card.DrawPile,
-        moveReason = fk.ReasonJustMove,
-        skillName = self.name,
-        proposer = player.id,
-        moveVisible = false,
-        visiblePlayers = player.id,
-      }
-    end
+    U.returnCardsToDrawPile(player, ids, self.name, true, false)
   end,
 }
 local xiace = fk.CreateTriggerSkill{
@@ -1279,14 +1220,7 @@ local xiaoyin = fk.CreateTriggerSkill{
     local n = #table.filter(room.alive_players, function(p)
       return player == p or player:distanceTo(p) == 1
     end)
-    local ids = room:getNCards(n)
-    room:moveCards{
-      ids = ids,
-      toArea = Card.Processing,
-      moveReason = fk.ReasonJustMove,
-      skillName = self.name,
-      proposer = player.id,
-    }
+    local ids = U.turnOverCardsFromDrawPile(player, n, self.name)
     room:delay(2000)
     local to_get = {}
     for i = #ids, 1, -1 do
@@ -1310,14 +1244,7 @@ local xiaoyin = fk.CreateTriggerSkill{
       table.removeOne(ids, dat.cards[1])
       room:getPlayerById(dat.targets[1]):addToPile("xiaoyin", dat.cards[1], true, self.name)
     end
-    if #ids > 0 then
-      room:moveCards{
-        ids = ids,
-        toArea = Card.DiscardPile,
-        moveReason = fk.ReasonJustMove,
-        skillName = self.name,
-      }
-    end
+    room:cleanProcessingArea(ids, self.name)
   end,
 }
 local xiaoyin_active = fk.CreateActiveSkill{
@@ -1804,28 +1731,12 @@ local qianlong = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local cards = room:getNCards(3)
-    room:moveCards({
-      ids = cards,
-      toArea = Card.Processing,
-      moveReason = fk.ReasonJustMove,
-      skillName = self.name,
-      proposer = player.id,
-    })
+    local cards = U.turnOverCardsFromDrawPile(player, 3, self.name)
     local result = room:askForGuanxing(player, cards, {0, 3}, {0, player:getLostHp()}, self.name, true, {"Bottom", "toObtain"})
     if #result.bottom > 0 then
       room:moveCardTo(result.bottom, Player.Hand, player, fk.ReasonJustMove, self.name, "", true, player.id)
     end
-    if #result.top > 0 then
-      room:moveCards{
-        ids = result.top,
-        toArea = Card.DrawPile,
-        moveReason = fk.ReasonJustMove,
-        skillName = self.name,
-        drawPilePosition = -1,
-        moveVisible = true,
-      }
-    end
+    U.returnCardsToDrawPile(player, result.top, self.name, false, false)
   end,
 }
 local fensi = fk.CreateTriggerSkill{
@@ -1878,14 +1789,7 @@ local juetao = fk.CreateTriggerSkill{
     local to = room:getPlayerById(self.cost_data)
     while true do
       if player.dead or to.dead then return end
-      local id = room:getNCards(1, "bottom")[1]
-      room:moveCards({
-        ids = {id},
-        toArea = Card.Processing,
-        moveReason = fk.ReasonJustMove,
-        skillName = self.name,
-        proposer = player.id,
-      })
+      local id = U.turnOverCardsFromDrawPile(player, -1, self.name)[1]
       local card = Fk:getCardById(id, true)
       local canUse = player:canUse(card, { bypass_times = true, bypass_distances = true }) and not player:prohibitUse(card)
       local tos
@@ -1949,12 +1853,7 @@ local juetao = fk.CreateTriggerSkill{
         })
       else
         room:delay(800)
-        room:moveCards({
-          ids = {id},
-          fromArea = Card.Processing,
-          toArea = Card.DiscardPile,
-          moveReason = fk.ReasonPutIntoDiscardPile,
-        })
+        room:cleanProcessingArea({id}, self.name)
         return
       end
     end
@@ -5094,11 +4993,9 @@ local yuqi = fk.CreateTriggerSkill{
   name = "yuqi",
   anim_type = "masochism",
   events = {fk.Damaged},
-  --[[
   times = function(self)
     return 2 - Self:usedSkillTimes(self.name)
   end,
-  ]]
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self) and not target.dead and player:usedSkillTimes(self.name) < 2 and
     (target == player or player:distanceTo(target) <= player:getMark("yuqi1"))
@@ -5110,7 +5007,7 @@ local yuqi = fk.CreateTriggerSkill{
     if n1 < 2 and n2 < 1 and n3 < 1 then
       return false
     end
-    local cards = room:getNCards(n1)
+    local cards = U.turnOverCardsFromDrawPile(player, n1, self.name, false)
     local result = room:askForArrangeCards(player, self.name, {cards, "Top", target.general, player.general}, "#yuqi",
     false, 0, {n1, n2, n3}, {0, 1, 1})
     local top, bottom = result[2], result[3]
@@ -5125,9 +5022,6 @@ local yuqi = fk.CreateTriggerSkill{
         skillName = self.name,
         visiblePlayers = player.id,
       })
-      for _, id in ipairs(top) do
-        table.removeOne(cards, id)
-      end
     end
     if #bottom > 0 then
       table.insert(moveInfos, {
@@ -5138,11 +5032,9 @@ local yuqi = fk.CreateTriggerSkill{
         proposer = player.id,
         skillName = self.name,
       })
-      for _, id in ipairs(bottom) do
-        table.removeOne(cards, id)
-      end
     end
     room:moveCards(table.unpack(moveInfos))
+    U.returnCardsToDrawPile(player, cards, self.name, true, false)
   end,
 
   on_acquire = function (self, player, is_start)

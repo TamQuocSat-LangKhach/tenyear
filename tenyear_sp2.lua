@@ -5020,6 +5020,7 @@ local yuqi = fk.CreateTriggerSkill{
         moveReason = fk.ReasonGive,
         proposer = player.id,
         skillName = self.name,
+        moveVisible = false,
         visiblePlayers = player.id,
       })
     end
@@ -5030,6 +5031,7 @@ local yuqi = fk.CreateTriggerSkill{
         toArea = Card.PlayerHand,
         moveReason = fk.ReasonJustMove,
         proposer = player.id,
+        moveVisible = false,
         skillName = self.name,
       })
     end

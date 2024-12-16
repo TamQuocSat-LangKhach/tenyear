@@ -483,9 +483,7 @@ local quanmou = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local mark = player:getTableMark("quanmou_targets-phase")
-    table.insert(mark, target.id)
-    room:setPlayerMark(player, "quanmou_targets-phase", mark)
+    room:addTableMark(player, "quanmou_targets-phase", target.id)
 
     setTYMouSwitchSkillState(player, "simayi", self.name)
     local switch_state = player:getSwitchSkillState(self.name, true, true)
@@ -1428,9 +1426,7 @@ local zhenrao = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local mark = player:getTableMark("zhenrao-turn")
-    table.insert(mark, self.cost_data)
-    room:setPlayerMark(player, "zhenrao-turn", mark)
+    room:addTableMark(player, "zhenrao-turn", self.cost_data)
     room:damage{
       from = player,
       to = room:getPlayerById(self.cost_data),

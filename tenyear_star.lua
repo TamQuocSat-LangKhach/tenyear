@@ -39,21 +39,15 @@ local canxi = fk.CreateTriggerSkill{
     player:broadcastSkillInvoke(self.name)
     if event == fk.DamageCaused then
       room:notifySkillInvoked(player, self.name, "offensive")
-      local mark = player:getTableMark("canxi1-turn")
-      table.insert(mark, target.id)
-      room:setPlayerMark(player, "canxi1-turn", mark)
+      room:addTableMark(player, "canxi1-turn", target.id)
       data.damage = data.damage + 1
     elseif event == fk.HpRecover then
       room:notifySkillInvoked(player, self.name, "control")
-      local mark = player:getTableMark("canxi21-turn")
-      table.insert(mark, target.id)
-      room:setPlayerMark(player, "canxi21-turn", mark)
+      room:addTableMark(player, "canxi21-turn", target.id)
       room:loseHp(target, 1, self.name)
     elseif event == fk.TargetConfirmed then
       room:notifySkillInvoked(player, self.name, "defensive")
-      local mark = player:getTableMark("canxi22-turn")
-      table.insert(mark, data.from)
-      room:setPlayerMark(player, "canxi22-turn", mark)
+      room:addTableMark(player, "canxi22-turn", data.from)
       table.insertIfNeed(data.nullifiedTargets, player.id)
     elseif event == fk.RoundStart then
       room:notifySkillInvoked(player, self.name, "special")
@@ -1635,14 +1629,12 @@ local saying = fk.CreateViewAsSkill{
   end,
   before_use = function(self, player, use)
     local room = player.room
-    local mark = player:getTableMark("saying-round")
-    table.insert(mark, use.card.trueName)
-    room:setPlayerMark(player, "saying-round", mark)
+    room:addTableMark(player, "saying-round", use.card.trueName)
     local card_id = use.card:getMark(self.name)
     if use.card.trueName == "slash" or use.card.trueName == "jink" then
       room:useCard{
         from = player.id,
-        tos = {{player.id}},
+        tos = { {player.id} },
         card = Fk:getCardById(card_id),
       }
     elseif use.card.trueName == "peach" or use.card.trueName == "analeptic" then

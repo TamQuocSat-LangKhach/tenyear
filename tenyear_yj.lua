@@ -117,9 +117,7 @@ local biejun_active = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     target:broadcastSkillInvoke(biejun.name)
-    local targetRecorded = player:getTableMark("biejun_targets-phase")
-    table.insert(targetRecorded, target.id)
-    room:setPlayerMark(player, "biejun_targets-phase", targetRecorded)
+    room:addTableMark(player, "biejun_targets-phase", target.id)
     room:moveCardTo(effect.cards[1], Card.PlayerHand, target, fk.ReasonGive, "biejun", nil, false, player.id, "@@biejun-inhand-turn")
   end,
 }
@@ -1617,9 +1615,7 @@ local ty__zhuijix_delay = fk.CreateTriggerSkill{
         for _, info in ipairs(move.moveInfo) do
           if info.fromArea == Card.PlayerEquip and table.contains(player:getTableMark("ty__zhuijix"), info.cardId) and
             #player:getAvailableEquipSlots(Fk:getCardById(info.cardId).sub_type) > 0 then
-            local mark = player:getTableMark("ty__zhuijix")
-            table.removeOne(mark, info.cardId)
-            room:setPlayerMark(player, "ty__zhuijix", mark)
+            room:removeTableMark(player, "ty__zhuijix", info.cardId)
             room:abortPlayerArea(player, {Util.convertSubtypeAndEquipSlot(Fk:getCardById(info.cardId).sub_type)})
           end
         end

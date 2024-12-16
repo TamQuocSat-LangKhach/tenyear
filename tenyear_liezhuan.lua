@@ -119,7 +119,7 @@ local yujue = fk.CreateActiveSkill{
       end
     end
     if not to:hasSkill("zhihu",true) then
-      local mark = type(player:getMark("yujue_skill")) == "table" and player:getMark("yujue_skill") or {}
+      local mark = player:getTableMark("yujue_skill")
       table.insertIfNeed(mark, to.id)
       room:setPlayerMark(player, "yujue_skill", mark)
       room:handleAddLoseSkills(to, "zhihu", nil)
@@ -346,9 +346,7 @@ local removeTYPingjianSkill = function(player, skill_name)
   local skill = Fk.skills[skill_name]
   if skill == nil then return false end
   room:handleAddLoseSkills(player, "-" .. skill_name, nil)
-  local pingjian_skills = player:getTableMark("ty__pingjian_skills")
-  table.removeOne(pingjian_skills, skill_name)
-  room:setPlayerMark(player, "ty__pingjian_skills", pingjian_skills)
+  room:removeTableMark(player, "ty__pingjian_skills", skill_name)
   local invoked = false
   local pingjian_skill_times = player:getTableMark("ty__pingjian_skill_times")
   local record_copy = {}
@@ -420,9 +418,7 @@ local ty__pingjian = fk.CreateActiveSkill{
     if #skills == 0 then return false end
     local choices = table.random(skills, 3)
     local skill_name = room:askForChoice(player, choices, self.name, "#ty__pingjian-choice", true)
-    local used_skills = player:getTableMark("ty__pingjian_used_skills")
-    table.insert(used_skills, skill_name)
-    room:setPlayerMark(player, "ty__pingjian_used_skills", used_skills)
+    room:addTableMark(player, "ty__pingjian_used_skills", skill_name)
     local phase_event = room.logic:getCurrentEvent():findParent(GameEvent.Phase)
     if phase_event ~= nil then
       addTYPingjianSkill(player, skill_name)
@@ -453,9 +449,7 @@ local ty__pingjian_trigger = fk.CreateTriggerSkill{
     if #skills == 0 then return false end
     local choices = table.random(skills, 3)
     local skill_name = room:askForChoice(player, choices, ty__pingjian.name, "#ty__pingjian-choice", true)
-    local used_skills = player:getTableMark("ty__pingjian_used_skills")
-    table.insert(used_skills, skill_name)
-    room:setPlayerMark(player, "ty__pingjian_used_skills", used_skills)
+    room:addTableMark(player, "ty__pingjian_used_skills", skill_name)
     local skill = Fk.skills[skill_name]
     if skill == nil then return false end
 
@@ -1407,9 +1401,7 @@ local xuezhao = fk.CreateActiveSkill{
           end
           room:addPlayerMark(player, MarkEnum.SlashResidue.."-phase", 1)
         else
-          local mark = player:getTableMark("xuezhao-phase")
-          table.insert(mark, p.id)
-          room:setPlayerMark(player, "xuezhao-phase", mark)
+          room:addTableMark(player, "xuezhao-phase", p.id)
         end
       end
     end

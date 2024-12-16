@@ -992,7 +992,7 @@ local yuyun = fk.CreateTriggerSkill{
             }
             if not tar.dead then
               room:addPlayerMark(tar, "@@yuyun-turn")
-              local targetRecorded = type(player:getMark("yuyun2-turn")) == "table" and player:getMark("yuyun2-turn") or {}
+              local targetRecorded = player:getTableMark("yuyun2-turn")
               table.insertIfNeed(targetRecorded, to[1])
               room:setPlayerMark(player, "yuyun2-turn", targetRecorded)
             end

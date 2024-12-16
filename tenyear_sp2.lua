@@ -3037,9 +3037,7 @@ local chanjuan = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local use = self.cost_data
-    local mark = player:getTableMark("@$chanjuan")
-    table.insert(mark, data.card.trueName)
-    room:setPlayerMark(player, "@$chanjuan", mark)
+    room:addTableMark(player, "@$chanjuan", data.card.trueName)
     room:useCard(use)
     if not player.dead and #TargetGroup:getRealTargets(use.tos) == 1 and TargetGroup:getRealTargets(data.tos)[1] == TargetGroup:getRealTargets(use.tos)[1] then
       player:drawCards(1, self.name)
@@ -4810,10 +4808,7 @@ local zhuihuan_delay = fk.CreateTriggerSkill{
     return player == target and player:getMark("zhuihuan") ~= 0 and data.from
   end,
   on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    local mark = player:getTableMark("zhuihuan_record")
-    table.insert(mark, data.from.id)
-    room:setPlayerMark(player, "zhuihuan_record", mark)
+    player.room:addTableMark(player, "zhuihuan_record", data.from.id)
   end,
 }
 zhuihuan:addRelatedSkill(zhuihuan_delay)

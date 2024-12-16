@@ -426,7 +426,7 @@ local tongliao = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local id = self.cost_data
-    local mark = type(player:getMark("tongliao")) == "table" and player:getMark("tongliao") or {}
+    local mark = player:getTableMark("tongliao")
     table.insertIfNeed(mark, id)
     room:setPlayerMark(player, "tongliao", mark)
     room:setCardMark(Fk:getCardById(id), "@@tongliao-inhand", 1)
@@ -985,9 +985,7 @@ local faqi = fk.CreateTriggerSkill{
     local card_name = dat.interaction
     local card = Fk:cloneCard(card_name)
     card.skillName = self.name
-    local mark = player:getTableMark("faqi-turn")
-    table.insert(mark, card_name)
-    room:setPlayerMark(player, "faqi-turn", mark)
+    room:addTableMark(player, "faqi-turn", card_name)
     room:useCard{
       from = player.id,
       tos = table.map(dat.targets, function(id) return {id} end),
@@ -1217,9 +1215,7 @@ local benxi = fk.CreateTriggerSkill{
         }
       else
         room:handleAddLoseSkills(player, skill)
-        local skills = player:getTableMark(self.name)
-        table.insert(skills, skill)
-        room:setPlayerMark(player, self.name, skills)
+        room:addTableMark(player, self.name, skill)
       end
     end
   end,

@@ -1875,9 +1875,7 @@ local ty__songci = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local target = room:getPlayerById(effect.tos[1])
     local player = room:getPlayerById(effect.from)
-    local mark = player:getTableMark(self.name)
-    table.insert(mark, target.id)
-    room:setPlayerMark(player, self.name, mark)
+    room:addTableMark(player, self.name, target.id)
     if #target.player_cards[Player.Hand] <= target.hp then
       room:notifySkillInvoked(player, self.name, "support")
       player:broadcastSkillInvoke(self.name, 1)

@@ -1144,7 +1144,7 @@ local pingzhi = fk.CreateActiveSkill{
           bypass_times = true,
           extraUse = true,
         }, false, false)
-        if not (use and use.damageDealt) then
+        if use and use.damageDealt then
           player:setSkillUseHistory(self.name, 0, Player.HistoryPhase)
         end
       end
@@ -1190,6 +1190,112 @@ Fk:loadTranslationTable{
   ["#pingzhi_show-yang"] = "评骘：请展示一张手牌，%src 弃置之，你视为对其使用【火攻】",
   ["#pingzhi_show-yin"] = "评骘：请展示一张手牌，然后使用之",
   ["#pingzhi-use"] = "评骘：请使用这张牌",
+}
+
+local dingfeng = General(extension, "tystar__dingfeng", "wu", 4)
+local dangchen = fk.CreateTriggerSkill{
+  name = "dangchen",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Play and
+      table.find(player.room:getOtherPlayers(player), function(p)
+        return not p:isNude()
+      end)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.filter(room:getOtherPlayers(player), function(p)
+      return not p:isNude()
+    end)
+    local to = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#dangchen-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = {tos = to}
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data.tos[1])
+    local cards = room:askForCard(to, 1, 999, true, self.name, false, nil, "#dangchen-give:"..player.id)
+    room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonGive, self.name, nil, false, to.id)
+    if not player.dead then
+      room:setPlayerMark(player, "@dangchen-turn", #cards)
+    end
+  end,
+}
+local dangchen_delay = fk.CreateTriggerSkill{
+  name = "#dangchen_delay",
+  anim_type = "offensive",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:getMark("@dangchen-turn") > 0 and
+      (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) and data.tos
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, "dangchen", nil,
+      "#dangchen-invoke:::"..player:getMark("@dangchen-turn")..":"..data.card:toLogString())
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local numbers = {}
+    for i = 1, 13, 1 do
+      if i % player:getMark("@dangchen-turn") == 0 then
+        table.insert(numbers, tostring(i))
+      end
+    end
+    local judge = {
+      who = player,
+      reason = "dangchen",
+      pattern = ".|"..table.concat(numbers, ","),
+    }
+    room:judge(judge)
+    if judge.card:matchPattern(judge.pattern) then
+      data.additionalEffect = (data.additionalEffect or 0) + 1
+    end
+  end,
+}
+local jianyud = fk.CreateTriggerSkill{
+  name = "jianyud",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      local turn_event = player.room.logic:getCurrentEvent():findParent(GameEvent.Turn)
+      if turn_event == nil or turn_event.data[1] ~= player then return end
+      for _, move in ipairs(data) do
+        if move.from and move.from ~= player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerEquip then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(1, self.name)
+  end,
+}
+dangchen:addRelatedSkill(dangchen_delay)
+dingfeng:addSkill(dangchen)
+dingfeng:addSkill(jianyud)
+Fk:loadTranslationTable{
+  ["tystar__dingfeng"] = "星丁奉",
+  ["#tystar__dingfeng"] = "廓清阶陛",
+
+  ["dangchen"] = "荡尘",
+  [":dangchen"] = "出牌阶段开始时，你可以令一名角色交给你至少一张牌，然后你本回合使用牌时，可以进行一次判定，若判定的点数为其交给你"..
+  "牌数的倍数，此牌额外结算一次效果。",
+  ["jianyud"] = "翦羽",
+  [":jianyud"] = "锁定技，其他角色在你的回合内失去装备区的牌后，你摸一张牌。",
+  ["#dangchen-choose"] = "荡尘：你可以令一名角色交给你至少一张牌",
+  ["#dangchen-give"] = "荡尘：请交给 %src 至少一张牌",
+  ["@dangchen-turn"] = "荡尘",
+  ["#dangchen_delay"] = "荡尘",
+  ["#dangchen-invoke"] = "荡尘：是否进行判定？若为%arg的倍数，此%arg2额外结算一次",
 }
 
 return extension

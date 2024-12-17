@@ -434,7 +434,7 @@ local xialei = fk.CreateTriggerSkill{
     else
       local to_return, choice = U.askforChooseCardsAndChoice(player, ids, {"xialei_top", "xialei_bottom"}, self.name, "#xialei-chooose")
       room:obtainCard(player, to_return, false, fk.ReasonJustMove, player.id, self.name)
-      U.returnCardsToDrawPile(player, ids, self.name, choice == "xialei_bottom", false)
+      U.returnCardsToDrawPile(player, ids, self.name, choice == "xialei_top", false)
     end
     room:addPlayerMark(player, "xialei-turn", 1)
   end,
@@ -476,7 +476,7 @@ local anzhi = fk.CreateActiveSkill{
       end, Player.HistoryTurn)
       ids = table.filter(ids, function (id) return room:getCardArea(id) == Card.DiscardPile end)
       if #ids == 0 then return end
-      local to = room:askForChoosePlayers(player, table.map(table.filter(room:getAlivePlayers(), function(p)
+      local to = room:askForChoosePlayers(player, table.map(table.filter(room.alive_players, function(p)
         return p ~= room.current end), Util.IdMapper), 1, 1, "#anzhi-choose", self.name, true)
       if #to > 0 then
         local get = {}
@@ -537,7 +537,7 @@ Fk:loadTranslationTable{
   [":xialei"] = "当你的红色牌进入弃牌堆后，你可观看牌堆顶的三张牌，然后你获得一张并可将其他牌置于牌堆底，你本回合观看牌数-1。",
   ["anzhi"] = "暗织",
   ["#anzhi_trigger"] = "暗织",
-  [":anzhi"] = "出牌阶段或当你受到伤害后，你可以进行一次判定，若结果为：红色，重置〖霞泪〗；"..
+  [":anzhi"] = "出牌阶段，或当你受到伤害后，你可以判定，若结果为：红色，重置〖霞泪〗；"..
   "黑色，你可以令一名非当前回合角色获得本回合进入弃牌堆的两张牌，且你本回合不能再发动此技能。",
   ["#xialei-chooose"] = "霞泪：选择一张卡牌获得",
   ["xialei_top"] = "将剩余牌置于牌堆顶",
@@ -858,6 +858,7 @@ Fk:loadTranslationTable{
   [":caizhuang"] = "出牌阶段限一次，你可以弃置任意张牌，然后重复摸牌直到手牌中的花色数等同于弃牌花色数。",
   ["huayi"] = "华衣",
   [":huayi"] = "结束阶段，你可以判定，然后直到你的下回合开始时根据结果获得以下效果：红色，每个回合结束时摸一张牌；黑色，受到伤害后摸两张牌。",
+  ["#huayi_trigger"] = "华衣",
   ["#caizhuang-active"] = "发动 彩妆，弃置任意张牌（包含的花色数：%arg）",
   ["@huayi"] = "华衣",
 
@@ -1033,9 +1034,9 @@ Fk:loadTranslationTable{
   ["posuo"] = "婆娑",
   [":posuo"] = "出牌阶段每种花色限一次，若你本阶段未对其他角色造成过伤害，你可以将一张手牌当此花色有的一张伤害牌使用。",
   ["xiaoren"] = "绡刃",
-  [":xiaoren"] = "每回合限一次，当你造成伤害后，你可以进行一次判定，"..
-  "若结果为红色，你可令一名角色回复1点体力，然后若其满体力，其摸一张牌；"..
-  "若结果为黑色，对受伤角色的上家或下家造成1点伤害，然后你可以再次进行判定并执行对应结果直到有角色进入濒死状态。",
+  [":xiaoren"] = "每回合限一次，当你造成伤害后，你可以判定，"..
+  "若结果为：红色，你可以选择一名角色。其回复1点体力，若其未受伤，其摸一张牌；"..
+  "黑色，对受伤角色的上家或下家造成1点伤害，然后你可以再次判定并执行对应结果直到有角色进入濒死状态。",
 
   ["#posuo-viewas"] = "发动 婆娑，将一张手牌当此花色有的一张伤害牌来使用",
   ["posuo_name"] = "%arg [%arg2]",

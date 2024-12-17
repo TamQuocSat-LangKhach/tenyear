@@ -4662,11 +4662,11 @@ local wencan_refresh = fk.CreateTriggerSkill{
 local wencan_targetmod = fk.CreateTargetModSkill{
   name = "#wencan_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return player:usedSkillTimes("wencan", Player.HistoryTurn) > 0 and scope == Player.HistoryPhase and
+    return card and player:usedSkillTimes("wencan", Player.HistoryTurn) > 0 and scope == Player.HistoryPhase and
     to and to:getMark("@@wencan-turn") > 0
   end,
   bypass_distances =  function(self, player, skill, card, to)
-    return player:usedSkillTimes("wencan", Player.HistoryTurn) > 0 and to and to:getMark("@@wencan-turn") > 0
+    return card and player:usedSkillTimes("wencan", Player.HistoryTurn) > 0 and to and to:getMark("@@wencan-turn") > 0
   end,
 }
 Fk:addSkill(wencan_active)

@@ -6368,7 +6368,7 @@ local jingyin = fk.CreateTriggerSkill{
 local jingyin_targetmod = fk.CreateTargetModSkill{
   name = "#jingyin_targetmod",
   bypass_times = function(self, player, skill, scope, card)
-    return card:getMark("@@jingyin-inhand") > 0
+    return card and card:getMark("@@jingyin-inhand") > 0
   end,
 }
 local chixing = fk.CreateTriggerSkill{

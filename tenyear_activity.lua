@@ -130,10 +130,10 @@ local tanbei_prohibit = fk.CreateProhibitSkill{
 local tanbei_targetmod = fk.CreateTargetModSkill{
   name = "#tanbei_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return to and table.contains(player:getTableMark("tanbei2-turn"), to.id)
+    return card and to and table.contains(player:getTableMark("tanbei2-turn"), to.id)
   end,
   bypass_distances =  function(self, player, skill, card, to)
-    return to and table.contains(player:getTableMark("tanbei2-turn"), to.id)
+    return card and to and table.contains(player:getTableMark("tanbei2-turn"), to.id)
   end,
 }
 local sidao = fk.CreateTriggerSkill{
@@ -3448,7 +3448,7 @@ local douzhen_filter = fk.CreateFilterSkill{
 local douzhen_targetmod = fk.CreateTargetModSkill{
   name = "#douzhen_targetmod",
   bypass_times = function(self, player, skill, scope, card)
-    return card.trueName == "slash" and table.contains(card.skillNames, "douzhen") and scope == Player.HistoryPhase
+    return card and card.trueName == "slash" and table.contains(card.skillNames, "douzhen") and scope == Player.HistoryPhase
   end,
 }
 douzhen:addRelatedSkill(douzhen_filter)

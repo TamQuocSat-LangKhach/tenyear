@@ -1043,10 +1043,10 @@ local yuyun = fk.CreateTriggerSkill{
 local yuyun_targetmod = fk.CreateTargetModSkill{
   name = "#yuyun_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return card.trueName == "slash" and to and table.contains(player:getTableMark("yuyun2-turn"), to.id)
+    return card and card.trueName == "slash" and to and table.contains(player:getTableMark("yuyun2-turn"), to.id)
   end,
   bypass_distances =  function(self, player, skill, card, to)
-    return card.trueName == "slash" and to and table.contains(player:getTableMark("yuyun2-turn"), to.id)
+    return card and card.trueName == "slash" and to and table.contains(player:getTableMark("yuyun2-turn"), to.id)
   end,
 }
 local yuyun_maxcards = fk.CreateMaxCardsSkill{
@@ -2971,10 +2971,10 @@ local wuyou_filter = fk.CreateFilterSkill{
 local wuyou_targetmod = fk.CreateTargetModSkill{
   name = "#wuyou_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return not card:isVirtual() and card:getMark("@@wuyou-inhand") ~= 0
+    return card and not card:isVirtual() and card:getMark("@@wuyou-inhand") ~= 0
   end,
   bypass_distances =  function(self, player, skill, card, to)
-    return not card:isVirtual() and card:getMark("@@wuyou-inhand") ~= 0
+    return card and not card:isVirtual() and card:getMark("@@wuyou-inhand") ~= 0
   end,
 }
 local yixian = fk.CreateActiveSkill{
@@ -3165,10 +3165,10 @@ local lianjie = fk.CreateTriggerSkill{
 local lianjie_targetmod = fk.CreateTargetModSkill{
   name = "#lianjie_targetmod",
   bypass_times = function (self, player, skill, scope, card, to)
-    return card:getMark("@@lianjie-inhand-turn") > 0
+    return card and card:getMark("@@lianjie-inhand-turn") > 0
   end,
   bypass_distances = function(self, player, skill, card)
-    return card:getMark("@@lianjie-inhand-turn") > 0
+    return card and card:getMark("@@lianjie-inhand-turn") > 0
   end,
 }
 local jiangxian = fk.CreateActiveSkill{

@@ -3369,10 +3369,10 @@ local kuangcai = fk.CreateTriggerSkill{
 local kuangcai_targetmod = fk.CreateTargetModSkill{
   name = "#kuangcai_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return player:hasSkill(kuangcai) and player.phase ~= Player.NotActive
+    return card and player:hasSkill(kuangcai) and player.phase ~= Player.NotActive
   end,
   bypass_distances = function(self, player, skill, card, to)
-    return player:hasSkill(kuangcai) and player.phase ~= Player.NotActive
+    return card and player:hasSkill(kuangcai) and player.phase ~= Player.NotActive
   end,
 }
 local shejian = fk.CreateTriggerSkill{

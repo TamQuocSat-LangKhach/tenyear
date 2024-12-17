@@ -737,7 +737,7 @@ local bushil = fk.CreateTriggerSkill{
 local bushil_targetmod = fk.CreateTargetModSkill{
   name = "#bushil_targetmod",
   bypass_times = function(self, player, skill, scope, card)
-    return player:hasSkill(bushil) and player:getMark("bushil1") == "log_"..card:getSuitString()
+    return card and player:hasSkill(bushil) and player:getMark("bushil1") == "log_"..card:getSuitString()
   end,
 }
 local zhongzhuang = fk.CreateTriggerSkill{

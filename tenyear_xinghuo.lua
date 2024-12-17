@@ -340,10 +340,10 @@ local limu_refresh = fk.CreateTriggerSkill{
 local limu_targetmod = fk.CreateTargetModSkill{
   name = "#limu_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return player:hasSkill(limu) and #player:getCardIds(Player.Judge) > 0 and to and player:inMyAttackRange(to)
+    return card and player:hasSkill(limu) and #player:getCardIds(Player.Judge) > 0 and to and player:inMyAttackRange(to)
   end,
   bypass_distances =  function(self, player, skill, card, to)
-    return player:hasSkill(limu) and #player:getCardIds(Player.Judge) > 0 and to and player:inMyAttackRange(to)
+    return card and player:hasSkill(limu) and #player:getCardIds(Player.Judge) > 0 and to and player:inMyAttackRange(to)
   end,
 }
 limu:addRelatedSkill(limu_refresh)

@@ -255,7 +255,7 @@ local jiuxian = fk.CreateViewAsSkill{
 local jiuxian_targetmod = fk.CreateTargetModSkill{
   name = "#jiuxian_targetmod",
   bypass_times = function(self, player, skill, scope, card)
-    return player:hasSkill(jiuxian) and card.trueName == "analeptic" and scope == Player.HistoryTurn
+    return card and player:hasSkill(jiuxian) and card.trueName == "analeptic" and scope == Player.HistoryTurn
   end,
 }
 local shixian_pairs = {

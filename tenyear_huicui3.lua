@@ -441,7 +441,7 @@ local luecheng = fk.CreateActiveSkill{
 local luecheng_targetmod = fk.CreateTargetModSkill{
   name = "#luecheng_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return to and to:getMark("@@luecheng-turn") ~= 0 and card.trueName == "slash" and card:getMark("@@luecheng-inhand-phase") ~= 0
+    return card and to and to:getMark("@@luecheng-turn") ~= 0 and card.trueName == "slash" and card:getMark("@@luecheng-inhand-phase") ~= 0
   end,
 }
 local luecheng_delay = fk.CreateTriggerSkill{
@@ -1211,11 +1211,11 @@ local beifen = fk.CreateTriggerSkill{
 local beifen_targetmod = fk.CreateTargetModSkill{
   name = "#beifen_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return player:hasSkill(beifen) and player:usedSkillTimes("shuangjia", Player.HistoryGame) > 0 and
+    return card and player:hasSkill(beifen) and player:usedSkillTimes("shuangjia", Player.HistoryGame) > 0 and
     player:getHandcardNum() > 2 * player:getMark("@shuangjia")
   end,
   bypass_distances = function(self, player, skill, card, to)
-    return player:hasSkill(beifen) and player:usedSkillTimes("shuangjia", Player.HistoryGame) > 0 and
+    return card and player:hasSkill(beifen) and player:usedSkillTimes("shuangjia", Player.HistoryGame) > 0 and
     player:getHandcardNum() > 2 * player:getMark("@shuangjia")
   end,
 }
@@ -1858,10 +1858,10 @@ local weiwan_refresh = fk.CreateTriggerSkill{
 local weiwan_targetmod = fk.CreateTargetModSkill{
   name = "#weiwan_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return to and table.contains(player:getTableMark("weiwan_targetmod-turn"), to.id)
+    return card and to and table.contains(player:getTableMark("weiwan_targetmod-turn"), to.id)
   end,
   bypass_distances = function(self, player, skill, card, to)
-    return to and table.contains(player:getTableMark("weiwan_targetmod-turn"), to.id)
+    return card and to and table.contains(player:getTableMark("weiwan_targetmod-turn"), to.id)
   end,
 }
 local weiwan_prohibit = fk.CreateProhibitSkill{

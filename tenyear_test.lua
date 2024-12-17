@@ -260,7 +260,7 @@ local yinbi_maxcards = fk.CreateMaxCardsSkill{
 local yinbi_targetmod = fk.CreateTargetModSkill{
   name = "#yinbi_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    if player:hasSkill(yinbi) then
+    if card and player:hasSkill(yinbi) then
       local x = player:getHandcardNum()
       return table.every(Fk:currentRoom().alive_players, function (p)
         return p == player or p:getHandcardNum() ~= x
@@ -268,7 +268,7 @@ local yinbi_targetmod = fk.CreateTargetModSkill{
     end
   end,
   bypass_distances =  function(self, player, skill, card, to)
-    if player:hasSkill(yinbi) then
+    if card and player:hasSkill(yinbi) then
       local x = player:getHandcardNum()
       return table.every(Fk:currentRoom().alive_players, function (p)
         return p == player or p:getHandcardNum() ~= x

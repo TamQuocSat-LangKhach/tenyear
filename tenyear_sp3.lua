@@ -944,10 +944,10 @@ local tuoyu = fk.CreateTriggerSkill{
 local tuoyu_targetmod = fk.CreateTargetModSkill{
   name = "#tuoyu_targetmod",
   bypass_times = function(self, player, skill, scope, card)
-    return player:hasSkill(tuoyu) and card:getMark("@@tuoyu2-inhand") > 0
+    return card and player:hasSkill(tuoyu) and card:getMark("@@tuoyu2-inhand") > 0
   end,
   bypass_distances =  function(self, player, skill, card)
-    return player:hasSkill(tuoyu) and card:getMark("@@tuoyu2-inhand") > 0
+    return card and player:hasSkill(tuoyu) and card:getMark("@@tuoyu2-inhand") > 0
   end,
 }
 local tuoyu_trigger = fk.CreateTriggerSkill{

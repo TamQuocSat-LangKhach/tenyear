@@ -2467,7 +2467,7 @@ local xiyan = fk.CreateTriggerSkill{
 local xiyan_targetmod = fk.CreateTargetModSkill{
   name = "#xiyan_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return player:getMark("xiyan_targetmod-turn") > 0
+    return card and player:getMark("xiyan_targetmod-turn") > 0
   end,
 }
 local xiyan_prohibit = fk.CreateProhibitSkill{

@@ -239,9 +239,7 @@ local ty__zhongjian = fk.CreateActiveSkill{
     local to = room:getPlayerById(effect.tos[1])
     room:setPlayerMark(to, "ty__zhongjian_target-turn", 1)
     local choice = self.interaction.data
-    local mark = to:getTableMark(choice)
-    table.insert(mark, player.id)
-    room:setPlayerMark(to, choice, mark)
+    room:addTableMark(to, choice, player.id)
   end,
 }
 local ty__zhongjian_trigger = fk.CreateTriggerSkill{
@@ -3238,9 +3236,7 @@ local jujianc = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     room:drawCards(target, 1, self.name)
     if player.dead or target.dead then return end
-    local mark = target:getTableMark("@@jujianc-round")
-    table.insert(mark, player.id)
-    room:setPlayerMark(target, "@@jujianc-round", mark)
+    room:addTableMark(target, "@@jujianc-round", player.id)
   end,
 }
 local jujianc_delay = fk.CreateTriggerSkill{

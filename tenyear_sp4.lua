@@ -463,10 +463,7 @@ local xionghuo_record = fk.CreateTriggerSkill{
           damageType = fk.FireDamage,
           skillName = "xionghuo",
         }
-        local mark = target:getTableMark("xionghuo_prohibit-turn")
-        table.insert(mark, player.id)
-        room:setPlayerMark(target, "xionghuo_prohibit-turn", mark)
-
+        room:addTableMark(target, "xionghuo_prohibit-turn", player.id)
       elseif rand == 2 then
         room:loseHp(target, 1, "xionghuo")
         room:addPlayerMark(target, "MinusMaxCards-turn", 1)

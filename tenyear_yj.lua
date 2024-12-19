@@ -404,9 +404,7 @@ local sangu = fk.CreateTriggerSkill{
       return false
     end, end_id)
     if #names == 0 then
-      mark = player:getTableMark("sangu_avoid")
-      table.insert(mark, to.id)
-      room:setPlayerMark(player, "sangu_avoid", mark)
+      room:addTableMark(player, "sangu_avoid", to.id)
     end
   end,
 }
@@ -1570,9 +1568,7 @@ local ty__zhuijix = fk.CreateTriggerSkill{
           end
           if #cards > 0 then
             card = cards[math.random(1, #cards)]
-            local mark = to:getTableMark(self.name)
-            table.insert(mark, card)
-            room:setPlayerMark(to, self.name, mark)
+            room:addTableMark(to, self.name, card)
             room:useCard{
               from = to.id,
               card = Fk:getCardById(card),

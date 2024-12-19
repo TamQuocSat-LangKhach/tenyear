@@ -493,9 +493,7 @@ local quanmou = fk.CreateActiveSkill{
     if player.dead or target.dead then return false end
     room:setPlayerMark(target, "@quanmou-phase", switch_state)
     local mark_name = "quanmou_" .. switch_state .. "-phase"
-    mark = player:getTableMark(mark_name)
-    table.insert(mark, target.id)
-    room:setPlayerMark(player, mark_name, mark)
+    room:addTableMark(player, mark_name, target.id)
   end,
 }
 local quanmou_switch = fk.CreateTriggerSkill{

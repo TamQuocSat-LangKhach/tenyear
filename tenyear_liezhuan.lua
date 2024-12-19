@@ -119,9 +119,7 @@ local yujue = fk.CreateActiveSkill{
       end
     end
     if not to:hasSkill("zhihu",true) then
-      local mark = player:getTableMark("yujue_skill")
-      table.insertIfNeed(mark, to.id)
-      room:setPlayerMark(player, "yujue_skill", mark)
+      room:addTableMarkIfNeed(player, "yujue_skill", to.id)
       room:handleAddLoseSkills(to, "zhihu", nil)
     end
   end,
@@ -329,9 +327,7 @@ local addTYPingjianSkill = function(player, skill_name)
   local skill = Fk.skills[skill_name]
   if skill == nil or player:hasSkill(skill_name, true) then return false end
   room:handleAddLoseSkills(player, skill_name, nil)
-  local pingjian_skills = player:getTableMark("ty__pingjian_skills")
-  table.insertIfNeed(pingjian_skills, skill_name)
-  room:setPlayerMark(player, "ty__pingjian_skills", pingjian_skills)
+  room:addTableMarkIfNeed(player, "ty__pingjian_skills", skill_name)
   local pingjian_skill_times = player:getTableMark("ty__pingjian_skill_times")
   table.insert(pingjian_skill_times, {skill_name, player:usedSkillTimes(skill_name)})
   for _, s in ipairs(skill.related_skills) do

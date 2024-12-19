@@ -3963,9 +3963,7 @@ local ty__wenji = fk.CreateTriggerSkill{
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
     local card = room:askForCard(to, 1, 1, true, self.name, false, ".", "#ty__wenji-give::"..player.id)
-    local mark = player:getTableMark("@ty__wenji-turn")
-    table.insertIfNeed(mark, Fk:getCardById(card[1]):getTypeString().."_char")
-    room:setPlayerMark(player, "@ty__wenji-turn", mark)
+    room:addTableMarkIfNeed(player, "@ty__wenji-turn", Fk:getCardById(card[1]):getTypeString().."_char")
     room:obtainCard(player, card[1], false, fk.ReasonGive, to.id)
   end,
 }

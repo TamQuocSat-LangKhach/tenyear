@@ -4161,9 +4161,7 @@ local pianchong = fk.CreateTriggerSkill{
       })
     end
     local choice = room:askForChoice(player, {"red", "black"}, self.name, "#pianchong-choice")
-    local mark = player:getTableMark("@pianchong")
-    table.insertIfNeed(mark, choice)
-    room:setPlayerMark(player, "@pianchong", mark)
+    room:addTableMarkIfNeed(player, "@pianchong", choice)
     return true
   end,
   

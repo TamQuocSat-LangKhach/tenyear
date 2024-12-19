@@ -4125,9 +4125,7 @@ local dehua = fk.CreateTriggerSkill{
         room:handleAddLoseSkills(player, "-" .. self.name)
         room:setPlayerMark(player, "dehua_keep_damage", 1)
       else
-        local namesChosen = player:getTableMark("dehuaChosen")
-        table.insertIfNeed(namesChosen, use.card.trueName)
-        room:setPlayerMark(player, "dehuaChosen", namesChosen)
+        room:addTableMarkIfNeed(player, "dehuaChosen", use.card.trueName)
       end
     end
   end,

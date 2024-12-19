@@ -992,9 +992,7 @@ local yuyun = fk.CreateTriggerSkill{
             }
             if not tar.dead then
               room:addPlayerMark(tar, "@@yuyun-turn")
-              local targetRecorded = player:getTableMark("yuyun2-turn")
-              table.insertIfNeed(targetRecorded, to[1])
-              room:setPlayerMark(player, "yuyun2-turn", targetRecorded)
+              room:addTableMarkIfNeed(player, "yuyun2-turn", to[1])
             end
           end
         end
@@ -2938,12 +2936,10 @@ local wuyou_active = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.from)
     local player = room:getPlayerById(effect.tos[1])
     player:broadcastSkillInvoke("wuyou")
-    local targetRecorded = target:getTableMark("wuyou_targets-phase")
-    table.insertIfNeed(targetRecorded, player.id)
-    room:setPlayerMark(target, "wuyou_targets-phase", targetRecorded)
+    room:addTableMarkIfNeed(target, "wuyou_targets-phase", player.id)
     room:moveCardTo(effect.cards, Player.Hand, player, fk.ReasonGive, self.name, nil, false, target.id)
     if player.dead or player:isKongcheng() or target.dead then return end
-    wuyou:onUse(room, {from = player.id, tos = {target.id}})
+    wuyou:onUse(room, {from = player.id, tos = {target.id} })
   end,
 }
 local wuyou_declare = fk.CreateActiveSkill{

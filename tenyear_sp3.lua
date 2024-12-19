@@ -81,10 +81,8 @@ local jiufa = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local mark = player:getTableMark("@$jiufa")
-    table.insertIfNeed(mark, data.card.trueName)
-    room:setPlayerMark(player, "@$jiufa", mark)
-    if #mark < 9 or not room:askForSkillInvoke(player, self.name, nil, "#jiufa-invoke") then return false end
+    room:addTableMarkIfNeed(player, "@$jiufa", data.card.trueName)
+    if #player:getTableMark("@$jiufa") < 9 or not room:askForSkillInvoke(player, self.name, nil, "#jiufa-invoke") then return false end
     room:setPlayerMark(player, "@$jiufa", 0)
     local card_ids = U.turnOverCardsFromDrawPile(player, 9, self.name)
     local get, throw = {}, {}
@@ -1658,9 +1656,7 @@ local lieqiong = fk.CreateTriggerSkill{
       return false
     end
 
-    local hitters = player:getTableMark("lieqiong_hitter-turn")
-    table.insertIfNeed(hitters, victim.id)
-    room:setPlayerMark(player, "lieqiong_hitter-turn", hitters)
+    room:addTableMarkIfNeed(player, "lieqiong_hitter-turn", victim.id)
 
     local choice = self.cost_data.choice
     if choice == "lieqiong_head" and victim.hp > 0 then

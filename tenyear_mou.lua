@@ -904,9 +904,7 @@ local shiju_active = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
     target:broadcastSkillInvoke("shiju")
-    local targetRecorded = player:getTableMark("shiju_targets-phase")
-    table.insertIfNeed(targetRecorded, target.id)
-    room:setPlayerMark(player, "shiju_targets-phase", targetRecorded)
+    room:addTableMarkIfNeed(player, "shiju_targets-phase", target.id)
     local id = effect.cards[1]
     room:moveCardTo(effect.cards, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
     if target.dead or room:getCardArea(id) ~= Card.PlayerHand or room:getCardOwner(id) ~= target then return end
@@ -918,7 +916,7 @@ local shiju_active = fk.CreateActiveSkill{
     end)
     room:useCard({
       from = target.id,
-      tos = {{target.id}},
+      tos = { {target.id} },
       card = card,
     })
     if not player.dead and not target.dead then
@@ -2117,9 +2115,7 @@ local zhiwang = fk.CreateTriggerSkill{
     local room = player.room
     data.damage.from = nil
     local to = room:getPlayerById(self.cost_data)
-    local mark = to:getTableMark("@@zhiwang-turn")
-    table.insertIfNeed(mark, player.id)
-    room:setPlayerMark(to, "@@zhiwang-turn", mark)
+    room:addTableMarkIfNeed(to, "@@zhiwang-turn", player.id)
   end,
 }
 local zhiwang_delay = fk.CreateTriggerSkill{
@@ -2433,9 +2429,7 @@ local kongwu = fk.CreateActiveSkill{
     room:throwCard(effect.cards, self.name, player, player)
     if player.dead then return end
     local n = #effect.cards
-    local mark = player:getTableMark("kongwu-phase")
-    table.insertIfNeed(mark, target.id)
-    room:setPlayerMark(player, "kongwu-phase", mark)
+    room:addTableMarkIfNeed(player, "kongwu-phase", target.id)
     if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
       local cards = room:askForCardsChosen(player, target, 1, n, "he", self.name, "#kongwu-discard::"..target.id..":"..n)
       room:throwCard(cards, self.name, target, player)

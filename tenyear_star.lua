@@ -574,9 +574,7 @@ local aoshi_other = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     room:notifySkillInvoked(player, aoshi.name)
     target:broadcastSkillInvoke(aoshi.name)
-    local targetRecorded = player:getTableMark("aoshi_sources-phase")
-    table.insertIfNeed(targetRecorded, target.id)
-    room:setPlayerMark(player, "aoshi_sources-phase", targetRecorded)
+    room:addTableMarkIfNeed(player, "aoshi_sources-phase", target.id)
     room:moveCardTo(effect.cards, Player.Hand, target, fk.ReasonGive, self.name, nil, false, player.id)
     if target.dead then return end
     room:askForUseActiveSkill(target, "zongshiy", "#zongshiy-active", true)

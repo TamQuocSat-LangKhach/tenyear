@@ -426,9 +426,7 @@ local tongliao = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local id = self.cost_data
-    local mark = player:getTableMark("tongliao")
-    table.insertIfNeed(mark, id)
-    room:setPlayerMark(player, "tongliao", mark)
+    room:addTableMarkIfNeed(player, "tongliao", id)
     room:setCardMark(Fk:getCardById(id), "@@tongliao-inhand", 1)
   end,
 }
@@ -1517,9 +1515,7 @@ local cuijue = fk.CreateActiveSkill{
       return
     end
     local tos = room:askForChoosePlayers(player, targets, 1, 1, "#cuijue-choose", self.name, false)
-    local cuijueTargeted = player:getTableMark("cuijue_targeted-turn")
-    table.insertIfNeed(cuijueTargeted, tos[1])
-    room:setPlayerMark(player, "cuijue_targeted-turn", cuijueTargeted)
+    room:addTableMarkIfNeed(player, "cuijue_targeted-turn", tos[1])
     room:damage{
       from = player,
       to = room:getPlayerById(tos[1]),

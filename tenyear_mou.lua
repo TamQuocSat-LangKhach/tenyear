@@ -2934,6 +2934,8 @@ Fk:loadTranslationTable{
 
   ["$xianmou1"] = "绸缪于未雨，手握胜机，雨落何妨高歌？",
   ["$xianmou2"] = "此帆济沧海，彼岸日边，任他风雨飘摇！",
+  ["$ex__yiji_tymou__guojia1"] = "算无遗策，方能决胜于千里。",
+  ["$ex__yiji_tymou__guojia2"] = "吾身虽殒，然智计长存。",
 }
 
 local lunshi = fk.CreateViewAsSkill{
@@ -3026,6 +3028,7 @@ mouguojia:addSkill(lunshi)
 local tymou2Guojia = General(extension, "tymou2__guojia", "wei", 3)
 tymou2Guojia.hidden = true
 tymou2Guojia:addSkill("xianmou")
+tymou2Guojia:addRelatedSkill("ex__yiji")
 tymou2Guojia:addSkill("tymou__lunshi")
 
 Fk:loadTranslationTable{
@@ -3038,6 +3041,8 @@ Fk:loadTranslationTable{
   ["$xianmou_tymou2__guojia2"] = "九州为觞，风雨为酿，谁与我共饮此杯？",
   ["$tymou__lunshi_tymou2__guojia1"] = "公有此十胜，败绍非难事尔。",
   ["$tymou__lunshi_tymou2__guojia2"] = "嘉窃料之，绍有十败，公有十胜。",
+  ["$ex__yiji_tymou2__guojia1"] = "今生不借此身度，更向何生度此身？",
+  ["$ex__yiji_tymou2__guojia2"] = "胸怀丹心一颗，欲照山河万朵。",
 }
 
 local jvshou = General(extension, "tymou__jvshou", "qun", 3)

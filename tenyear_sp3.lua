@@ -1014,6 +1014,7 @@ local qijing = fk.CreateTriggerSkill{
   name = "qijing",
   frequency = Skill.Wake,
   events = {fk.TurnEnd},
+  priority = 2,
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
@@ -1032,24 +1033,20 @@ local qijing = fk.CreateTriggerSkill{
     if #tos > 0 then
       local to = room:askForChoosePlayers(player, table.map(tos, Util.IdMapper), 1, 1, "#qijing-choose", self.name, true, true)
       if #to > 0 then
-        to = room:getPlayerById(to[1])
+
+        --若在自己的额定回合角色，则记录自己当前的座次，由refresh来改变下个行动角色
+        if player == target and #player:getTableMark("_extra_turn_count") == 0 then
+          room:setBanner("qijing_destroyrulebook", player.seat)
+        end
+
         local players = table.simpleClone(room.players)
-        local n = 1
-        for i, v in ipairs(room.players) do
-          if v == to and i < #room.players then
-            n = i + 1
+        table.removeOne(players, player)
+        for index, value in ipairs(players) do
+          if value.id == to[1] then
+            table.insert(players, index + 1, player)
             break
           end
         end
-
-        players[n] = player
-        repeat
-          local nextIndex = n + 1 > #room.players and 1 or n + 1
-          players[nextIndex] = room.players[n]
-
-          n = nextIndex
-        until room.players[n] == player
-
         room.players = players
         local player_circle = {}
         for i = 1, #room.players do
@@ -1064,6 +1061,20 @@ local qijing = fk.CreateTriggerSkill{
       end
     end
     player:gainAnExtraTurn(true)
+  end,
+
+  refresh_events = {fk.EventTurnChanging},
+  can_refresh = function (self, event, target, player, data)
+    return player == target and player.room:getBanner("qijing_destroyrulebook") ~= nil
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local room = player.room
+    local index = room:getBanner("qijing_destroyrulebook")
+
+    data.to = room.players[index]
+    data.skipRoundPlus = true
+
+    room:setBanner("qijing_destroyrulebook", nil)
   end,
 }
 local cuixin = fk.CreateTriggerSkill{

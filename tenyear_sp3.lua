@@ -1033,17 +1033,21 @@ local qijing = fk.CreateTriggerSkill{
     if #tos > 0 then
       local to = room:askForChoosePlayers(player, table.map(tos, Util.IdMapper), 1, 1, "#qijing-choose", self.name, true, true)
       if #to > 0 then
-
-        --若在自己的额定回合角色，则记录自己当前的座次，由refresh来改变下个行动角色
-        if player == target and #player:getTableMark("_extra_turn_count") == 0 then
-          room:setBanner("qijing_destroyrulebook", player.seat)
-        end
-
         local players = table.simpleClone(room.players)
         table.removeOne(players, player)
         for index, value in ipairs(players) do
           if value.id == to[1] then
             table.insert(players, index + 1, player)
+            --若在自己的额定回合角色，则记录下个行动角色的座次，由refresh来改变下个行动角色
+            if player == target and #player:getTableMark("_extra_turn_count") == 0 then
+              local x = player.seat
+              if x == #players then
+                x = -1
+              elseif x > index then
+                x = x + 1
+              end
+              room:setBanner("qijing_destroyrulebook", x)
+            end
             break
           end
         end
@@ -1071,8 +1075,12 @@ local qijing = fk.CreateTriggerSkill{
     local room = player.room
     local index = room:getBanner("qijing_destroyrulebook")
 
-    data.to = room.players[index]
-    data.skipRoundPlus = true
+    if index == -1 then
+      data.to = room.players[1]
+    else
+      data.to = room.players[index]
+      data.skipRoundPlus = true
+    end
 
     room:setBanner("qijing_destroyrulebook", nil)
   end,

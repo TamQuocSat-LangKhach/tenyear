@@ -486,8 +486,7 @@ local shajue = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.EnterDying},
   can_trigger = function(self, event, target, player, data)
-    return target ~= player and player:hasSkill(self) and (player:getMark("@baoli") < 3 or
-    (target.hp < 0 and data.damage and data.damage.card and U.hasFullRealCard(player.room, data.damage.card)))
+    return target ~= player and player:hasSkill(self)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

@@ -8,7 +8,7 @@ Fk:loadTranslationTable{
   ["tystar"] = "新服星",
 }
 
---天枢：袁术 董卓 袁绍
+--天枢：袁术 董卓 袁绍 张昭
 local yuanshu = General(extension, "tystar__yuanshu", "qun", 4)
 local canxi = fk.CreateTriggerSkill{
   name = "canxi",
@@ -620,6 +620,146 @@ Fk:loadTranslationTable{
   ["~tystar__yuanshao"] = "骄兵必败，奈何不记前辙……",
 }
 
+local zhangzhao = General(extension, "tystar__zhangzhao", "wu", 3)
+local function DoZhongyanz(player, source, choice)
+  local room = player.room
+  if choice == "recover" then
+    if not player.dead and player:isWounded() then
+      room:recover{
+        who = player,
+        num = 1,
+        recoverBy = source,
+        skillName = "zhongyanz",
+      }
+    end
+  else
+    local targets = table.map(table.filter(room.alive_players, function(p)
+      return #p:getCardIds("ej") > 0
+    end), Util.IdMapper)
+    if not player.dead and #targets > 0 then
+      local to = room:askForChoosePlayers(player, targets, 1, 1, "#zhongyanz-choose", "zhongyanz", false)
+      to = room:getPlayerById(to[1])
+      local cards = room:askForCardsChosen(player, to, 1, 1, "ej", "zhongyanz")
+      room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonPrey, "zhongyanz", "", true, player.id)
+    end
+  end
+end
+local zhongyanz = fk.CreateActiveSkill{
+  name = "zhongyanz",
+  anim_type = "support",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_num = 0,
+  target_num = 1,
+  prompt = "#zhongyanz",
+  card_filter = Util.FalseFunc,
+  target_filter = function (self, to_select, selected)
+    return #selected == 0 and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local to = room:getPlayerById(effect.tos[1])
+    local cards = room:getNCards(3)
+    room:moveCards({
+      ids = cards,
+      toArea = Card.Processing,
+      moveReason = fk.ReasonJustMove,
+      skillName = self.name,
+      proposer = player.id,
+    })
+    if to.dead or to:isKongcheng() then
+      room:moveCards({
+        ids = cards,
+        toArea = Card.DrawPile,
+        moveReason = fk.ReasonJustMove,
+        skillName = self.name,
+      })
+      return
+    end
+    local results = U.askForExchange(to, "Top", "hand_card", cards, to:getCardIds("h"), "#zhongyanz-exchange", 1, false)
+    local to_hand = {}
+    if #results > 0 then
+      to_hand = table.filter(results, function(id)
+        return table.contains(cards, id)
+      end)
+      table.removeOne(results, to_hand[1])
+      for i = #cards, 1, -1 do
+        if cards[i] == to_hand[1] then
+          cards[i] = results[1]
+          break
+        end
+      end
+    else
+      to_hand, cards[1] = {cards[1]}, to:getCardIds("h")[1]
+    end
+    U.swapCardsWithPile(to, cards, to_hand, self.name, "Top", false, player.id)
+    if to.dead then return end
+    if table.every(cards, function(id)
+      return Fk:getCardById(id).color == Fk:getCardById(cards[1]).color
+    end) then
+      local choices = {"recover", "zhongyanz_prey"}
+      local choice = room:askForChoice(to, choices, self.name)
+      DoZhongyanz(to, player, choice)
+      if to ~= player then
+        table.removeOne(choices, choice)
+        DoZhongyanz(player, player, choices[1])
+      end
+    end
+  end,
+}
+local jinglun = fk.CreateTriggerSkill{
+  name = "jinglun",
+  anim_type = "support",
+  events = {fk.Damage},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and target and not target.dead and player:distanceTo(target) <= 1 and
+      player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#jinglun-invoke::"..target.id)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {target.id})
+    local n = #target:getCardIds("e")
+    if n > 0 then
+      target:drawCards(n, self.name)
+    end
+    if target.dead then return end
+    room:notifySkillInvoked(player, "zhongyanz")
+    player:broadcastSkillInvoke("zhongyanz")
+    zhongyanz:onUse(room, {
+      from = player.id,
+      tos = {target.id},
+    })
+  end,
+}
+zhangzhao:addSkill(zhongyanz)
+zhangzhao:addSkill(jinglun)
+Fk:loadTranslationTable{
+  ["tystar__zhangzhao"] = "星张昭",
+  ["#tystar__zhangzhao"] = "忠謇方直",
+  ["illustrator:tystar__zhangzhao"] = "君桓文化",
+
+  ["zhongyanz"] = "忠言",
+  [":zhongyanz"] = "出牌阶段限一次，你可展示牌堆顶三张牌，令一名角色将一张手牌交换其中一张牌。然后若这些牌颜色相同，"..
+  "其选择回复1点体力或获得场上一张牌；若该角色不为你，你执行另一项。",
+  ["jinglun"] = "经纶",
+  [":jinglun"] = "每回合限一次，你距离1以内的角色造成伤害后，你可以令其摸X张牌，并对其发动〖忠言〗（X为其装备区牌数）。",
+  ["#zhongyanz"] = "忠言：亮出牌堆顶三张牌，令一名角色用一张手牌交换其中一张牌",
+  ["#zhongyanz-exchange"] = "忠言：请用一张手牌交换其中一张牌",
+  ["zhongyanz_prey"] = "获得场上一张牌",
+  ["#zhongyanz-choose"] = "忠言：选择一名角色，获得其场上一张牌",
+  ["#jinglun-invoke"] = "经纶：是否令 %dest 摸牌并对其发动“忠言”？",
+
+  ["$zhongyanz1"] = "腹有珠玑，可坠在殿之玉盘。",
+  ["$zhongyanz2"] = "胸纳百川，当汇凌日之沧海。",
+  ["$jinglun1"] = "千夫诺诺，不如一士谔谔。",
+  ["$jinglun2"] = "忠言如药，苦口而利身。",
+  ["~tystar__zhangzhao"] = "曹公虎豹也，不如以礼早降。",
+}
+
 --天璇：荀彧 法正
 local xunyu = General(extension, "tystar__xunyu", "wei", 3)
 local anshu = fk.CreateTriggerSkill{
@@ -845,10 +985,20 @@ local kuangzuo = fk.CreateActiveSkill{
     to = room:getPlayerById(to[1])
     local success, dat = room:askForUseActiveSkill(to, "kuangzuo_active", "#kuangzuo-put::"..target.id, false)
     if success and dat then
-      if #dat.cards > 0 then
-        target:addToPile(self.name, dat.cards, true, self.name, to.id)
+    else
+      dat = {
+        cards = {},
+      }
+      for _, id in ipairs(to:getCardIds("he")) do
+        if Fk:getCardById(id).suit ~= Card.NoSuit and
+          not table.find(dat.cards, function (id2)
+            return Fk:getCardById(id):compareSuitWith(Fk:getCardById(id2))
+          end) then
+          table.insert(dat.cards, id)
+        end
       end
     end
+    target:addToPile(self.name, dat.cards, true, self.name, to.id)
   end,
 }
 local kuangzuo_active = fk.CreateActiveSkill{

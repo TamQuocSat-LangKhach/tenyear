@@ -809,7 +809,45 @@ Fk:loadTranslationTable{
   ["~ty__wangrongh"] = "谁能护妾身幼子……",
 }
 
---麹义
+local quyi = General(extension, "ty__quyi", "qun", 4)
+local fuji = fk.CreateTriggerSkill{
+  name = "ty__fuji",
+  anim_type = "offensive",
+  events = {fk.CardUsing},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and
+      (data.card.trueName == "slash" or data.card:isCommonTrick()) and
+      table.find(player.room:getOtherPlayers(player), function(p)
+        return player:distanceTo(p) == 1
+      end)
+  end,
+  on_use = function(self, event, target, player, data)
+    local targets = table.filter(player.room:getOtherPlayers(player), function(p)
+      return player:distanceTo(p) == 1
+    end)
+    data.disresponsiveList = data.disresponsiveList or {}
+    for _, p in ipairs(targets) do
+      table.insertIfNeed(data.disresponsiveList, p.id)
+    end
+  end,
+}
+quyi:addSkill(fuji)
+quyi:addSkill("jiaozi")
+Fk:loadTranslationTable{
+  ["ty__quyi"] = "麴义",
+  ["#ty__quyi"] = "名门的骁将",
+  ["illustrator:ty__quyi"] = "目游",
+
+  ["ty__fuji"] = "伏骑",
+  [":ty__fuji"] = "锁定技，你距离其为1的其他角色不能响应你使用的【杀】或普通锦囊牌。",
+
+  ["$ty__fuji1"] = "既来之，休走之！",
+  ["$ty__fuji2"] = "白马？哼！定叫他有来无回！",
+  ["$jiaozi_ty__quyi1"] = "今日之获，皆是吾之功劳。",
+  ["$jiaozi_ty__quyi2"] = "今吾于此，尔等皆为飞灰！",
+  ["~ty__quyi"] = "我为主公戎马一生，主公为何如此对我……",
+}
 
 local hanfu = General(extension, "hanfu", "qun", 4)
 

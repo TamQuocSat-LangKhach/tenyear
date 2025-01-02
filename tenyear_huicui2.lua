@@ -1171,6 +1171,7 @@ local jieling = fk.CreateActiveSkill{
       end),
       card = Fk:cloneCard("slash"),
       extra_data = {jielingUser = player.id},
+      extraUse = true,
     }
     local record = player:getTableMark("@jieling-phase")
     for _, cid in ipairs(effect.cards) do

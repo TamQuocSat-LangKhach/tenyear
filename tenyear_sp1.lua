@@ -1792,9 +1792,9 @@ local jianjie_trigger = fk.CreateTriggerSkill{
   mute = true,
   can_trigger = function(self, event, target, player, data)
     if event == fk.TurnStart then
-      return player:hasSkill(self) and player:getMark("jianjie-turn") > 0
+      return player:hasSkill(jianjie) and player:getMark("jianjie-turn") > 0
     else
-      return player:hasSkill(self) and (target:getMark("@@dragon_mark") > 0 or target:getMark("@@phoenix_mark") > 0)
+      return player:hasSkill(jianjie) and (target:getMark("@@dragon_mark") > 0 or target:getMark("@@phoenix_mark") > 0)
     end
   end,
   on_cost = function (self, event, target, player, data)

@@ -1855,6 +1855,7 @@ simafu:addSkill(duchi)
 Fk:loadTranslationTable{
   ["ty__simafu"] = "司马孚",
   ["#ty__simafu"] = "仁孝忠德",
+  ["illustrator:ty__simafu"] = "君桓文化",
   ["designer:ty__simafu"] = "坑坑",
 
   ["beiyu"] = "备预",
@@ -1863,6 +1864,12 @@ Fk:loadTranslationTable{
   [":duchi"] = "每回合限一次，当你成为其他角色使用牌的目标后，你可以从牌堆底摸一张牌并展示所有手牌，若颜色均相同，此牌对你无效。",
   ["#beiyu-active"] = "备预：将手牌摸至体力上限，然后将一种花色的手牌置于牌堆底",
   ["#beiyu-choose"] = "备预：选择一种花色，将所有此花色的手牌置于牌堆底",
+
+  ["$beiyu1"] = "备预不虞，善之大者也。",
+  ["$beiyu2"] = "宜选步骑二万，为讨贼之备。",
+  ["$duchi1"] = "今督众将临战，当使敌入寇无功。",
+  ["$duchi2"] = "吴军远道而来，彼疲军也。",
+  ["~ty__simafu"] = "臣死之日，固大魏之纯臣也。",
 }
 
 local peixiu = General(extension, "ty__peixiu", "qun", 3)

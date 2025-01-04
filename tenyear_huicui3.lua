@@ -2173,4 +2173,137 @@ Fk:loadTranslationTable{
   ["~mu__diaochan"] = "红颜薄命，一曲离歌终……",
 }
 
+local zhouyu = General(extension, "mu__zhouyu", "wu", 3)
+local guyinz = fk.CreateTriggerSkill{
+  name = "guyinz",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile and (move.moveReason == fk.ReasonUse or move.moveReason == fk.ReasonDiscard) then
+          for _, info in ipairs(move.moveInfo) do
+            if info.extra_data and info.extra_data.guyinz and info.extra_data.guyinz ~= player.id then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_trigger = function (self, event, target, player, data)
+    local n = 0
+    for _, move in ipairs(data) do
+      if move.toArea == Card.DiscardPile and (move.moveReason == fk.ReasonUse or move.moveReason == fk.ReasonDiscard) then
+        for _, info in ipairs(move.moveInfo) do
+          if info.extra_data and info.extra_data.guyinz and info.extra_data.guyinz ~= player.id then
+            n = n + 1
+          end
+        end
+      end
+    end
+    for _ = 1, n, 1 do
+      if not player:hasSkill(self) then return end
+      self:doCost(event, target, player, data)
+    end
+  end,
+  on_use = function (self, event, target, player, data)
+    player:drawCards(1, self.name)
+  end,
+
+  refresh_events = {fk.DrawInitialCards, fk.AfterDrawInitialCards, fk.AfterCardsMove},
+  can_refresh = function (self, event, target, player, data)
+    if player:hasSkill(self) then
+      if event == fk.DrawInitialCards then
+        return true
+      elseif event == fk.AfterDrawInitialCards then
+        return target ~= player and not target:isKongcheng()
+      end
+    end
+    if event == fk.AfterCardsMove and player.seat == 1 then
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile then
+          return true
+        end
+      end
+    end
+  end,
+  on_refresh = function (self, event, target, player, data)
+    if event == fk.DrawInitialCards then
+      if target == player then
+        data.num = 0
+      else
+        data.num = data.num + 1
+      end
+    elseif event == fk.AfterDrawInitialCards then
+      local room = player.room
+      for _, id in ipairs(target:getCardIds("h")) do
+        room:setCardMark(Fk:getCardById(id), "@@guyinz", target.id)
+      end
+    elseif event == fk.AfterCardsMove then
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile then
+          for _, info in ipairs(move.moveInfo) do
+            if Fk:getCardById(info.cardId):getMark("@@guyinz") ~= 0 then
+              if move.moveReason == fk.ReasonUse or move.moveReason == fk.ReasonDiscard then
+                info.extra_data = info.extra_data or {}
+                info.extra_data.guyinz = Fk:getCardById(info.cardId):getMark("@@guyinz")
+              end
+              player.room:setCardMark(Fk:getCardById(info.cardId), "@@guyinz", 0)
+            end
+          end
+        end
+      end
+    end
+  end,
+}
+local pinglu = fk.CreateActiveSkill{
+  name = "pinglu",
+  anim_type = "control",
+  card_num = 0,
+  target_num = 0,
+  prompt = "#pinglu",
+  can_use = function(self, player)
+    return not table.find(player:getCardIds("h"), function (id)
+      return Fk:getCardById(id):getMark("@@pinglu-inhand-phase") > 0
+    end) and
+    table.find(Fk:currentRoom().alive_players, function (p)
+      return player:inMyAttackRange(p) and not p:isKongcheng()
+    end)
+  end,
+  card_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    for _, p in ipairs(room:getOtherPlayers(player)) do
+      if player.dead then return end
+      if player:inMyAttackRange(p) and not p.dead and not p:isKongcheng() then
+        room:moveCardTo(table.random(p:getCardIds("h")), Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, false, player.id,
+          "@@pinglu-inhand-phase")
+      end
+    end
+  end,
+}
+zhouyu:addSkill(guyinz)
+zhouyu:addSkill(pinglu)
+Fk:loadTranslationTable{
+  ["mu__zhouyu"] = "乐周瑜",
+  ["#mu__zhouyu"] = "顾曲周郎",
+  ["illustrator:mu__zhouyu"] = "觉觉",
+
+  ["guyinz"] = "顾音",
+  [":guyinz"] = "锁定技，你没有初始手牌，其他角色的初始手牌+1。其他角色的初始手牌被使用或弃置进入弃牌堆后，你摸一张牌。",
+  ["pinglu"] = "平虏",
+  [":pinglu"] = "出牌阶段，你可以获得攻击范围内每名其他角色各一张随机手牌。你此阶段不能再发动该技能直到这些牌离开你的手牌。",
+  ["@@guyinz"] = "顾音",
+  ["#pinglu"] = "平虏：获得攻击范围内每名角色各一张随机手牌",
+  ["@@pinglu-inhand-phase"] = "平虏",
+
+  ["$guyinz1"] = "曲有误，不可不顾。",
+  ["$guyinz2"] = "兀音曳绕梁，愿君去芜存菁。",
+  ["$pinglu1"] = "惊涛卷千雪，如林敌舰今何存？",
+  ["$pinglu2"] = "羽扇摧樯橹，纶巾曳风流。",
+  ["~mu__zhouyu"] = "高山难觅流水意，曲终人散皆难违。",
+}
+
 return extension

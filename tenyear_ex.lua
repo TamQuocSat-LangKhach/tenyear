@@ -981,6 +981,7 @@ Fk:loadTranslationTable{
   "装备牌，你弃置其中一张牌；锦囊牌，你摸一张牌。若如此做，当前回合结束后，该角色获得其武将牌旁的所有牌。",
   ["#ty_ex__pojun-invoke"] = "破军：你可以扣置 %dest 至多 %arg 张牌",
   ["#ty_ex__pojun_delay"] = "破军",
+  ["$ty_ex__pojun"] = "破军",
   ["$Throw"] = "弃置",
   ["#ty_ex__pojun-throw"] = "破军：弃置其中一张牌",
 

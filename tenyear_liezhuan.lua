@@ -1172,10 +1172,10 @@ local mouni = fk.CreateTriggerSkill{
       if player.dead or to.dead then return end
       if table.contains(player:getCardIds("h"), id) then
         local card = Fk:getCardById(id)
-        if U.canUseCardTo(room, player, to, card, false, false) then
+        if player:canUseTo(card, to, { bypass_times = true, bypass_distances = true }) then
           local use = {
             from = player.id,
-            tos = {{to.id}},
+            tos = { {to.id} },
             card = card,
             extraUse = true,
           }

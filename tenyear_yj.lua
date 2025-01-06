@@ -1558,11 +1558,11 @@ local ty__zhuijix = fk.CreateTriggerSkill{
           local card
           cards = table.filter(room.draw_pile, function(id)
             card = Fk:getCardById(id)
-            return card.sub_type == subtype and U.canUseCardTo(room, to, to, card)
+            return card.sub_type == subtype and to:canUseTo(card, to, { bypass_times = true, bypass_distances = true })
           end)
           for _, id in ipairs(room.discard_pile) do
             card = Fk:getCardById(id)
-            if card.sub_type == subtype and U.canUseCardTo(room, to, to, card) then
+            if card.sub_type == subtype and to:canUseTo(card, to, { bypass_times = true, bypass_distances = true }) then
               table.insert(cards, id)
             end
           end

@@ -3250,10 +3250,10 @@ local ty_ex__zhiyan = fk.CreateTriggerSkill{
     if card.type == Card.TypeBasic and not player.dead then
       player:drawCards(1, self.name)
     end
-    if card.type == Card.TypeEquip and not to.dead and U.canUseCardTo(room, to, to, card) then
+    if card.type == Card.TypeEquip and not to.dead and to:canUseTo(card, to, { bypass_times = true, bypass_distances = true }) then
       room:useCard({
         from = to.id,
-        tos = {{to.id}},
+        tos = { {to.id} },
         card = card,
       })
       if to:isWounded() and not to.dead then

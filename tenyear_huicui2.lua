@@ -5037,11 +5037,11 @@ local ty__juanxia_delay = fk.CreateTriggerSkill{
     for i = 1, n, 1 do
       local slash = Fk:cloneCard("slash")
       slash.skillName = "ty__juanxia"
-      if U.canUseCardTo(room, target, player, slash, false, false) and
+      if target:canUseTo(slash, player, { bypass_times = true, bypass_distances = true }) and
       room:askForSkillInvoke(target, self.name, nil, "#ty__juanxia-slash:"..player.id.."::"..n..":"..i) then
         room:useCard{
           from = target.id,
-          tos = {{player.id}},
+          tos = { {player.id} },
           card = slash,
           extraUse = true,
         }
@@ -5379,7 +5379,7 @@ local shuliang = fk.CreateTriggerSkill{
       local p = room:getPlayerById(pid)
       local cardToUse = Fk:getCardById(GivenMap[pid])
       if p:isAlive() and room:getCardArea(cardToUse.id) == Card.PlayerHand and
-      U.canUseCardTo(room, p, p, cardToUse, true, false) and
+      p:canUseTo(cardToUse, p, { bypass_times = true}) and
       room:askForSkillInvoke(p, self.name, nil, "#ty__shuliang-use:::"..cardToUse:toLogString()) then
         local use = {
           from = p.id,

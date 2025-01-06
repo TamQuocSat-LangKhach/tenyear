@@ -4297,7 +4297,7 @@ local zunwei = fk.CreateActiveSkill{
           if player:hasEmptyEquipSlot(subtype) then
             cards = table.filter(room.draw_pile, function (id)
               card = Fk:getCardById(id)
-              return card.sub_type == subtype and U.canUseCardTo(room, player, player, card)
+              return card.sub_type == subtype and player:canUseTo(card, player, { bypass_times = true, bypass_distances = true })
             end)
             if #cards > 0 then
               room:useCard{

@@ -3513,7 +3513,7 @@ local cansi = fk.CreateTriggerSkill{
       if player.dead or to.dead then break end
       local card = Fk:cloneCard(card_name)
       card.skillName = self.name
-      if U.canUseCardTo(room, player, to, card) then
+      if player:canUseTo(card, to, { bypass_times = true, bypass_distances = true }) then
         room:useCard({
           from = player.id,
           tos = {{to.id}},

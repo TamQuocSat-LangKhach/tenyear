@@ -3611,6 +3611,7 @@ Fk:loadTranslationTable{
   ["bianyue"] = "卞玥",
   ["#bianyue"] = "暮辉映族",
   --["designer:bianyue"] = "",
+  ["cv:bianyue"] = "关云云月",
   ["illustrator:bianyue"] = "黯荧岛",
 
   ["bizu"] = "庇族",
@@ -4328,6 +4329,7 @@ guozhao:addSkill(zunwei)
 Fk:loadTranslationTable{
   ["guozhao"] = "郭照",
   ["#guozhao"] = "碧海青天",
+  ["cv:guozhao"] = "楼倾司",
   ["designer:guozhao"] = "世外高v狼",
   ["illustrator:guozhao"] = "杨杨和夏季",
   ["pianchong"] = "偏宠",

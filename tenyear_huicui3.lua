@@ -386,6 +386,7 @@ zhangchu:addSkill(guangshi)
 Fk:loadTranslationTable{
   ["zhangchu"] = "张楚",
   ["#zhangchu"] = "大贤后裔",
+  ["cv:zhangchu"] = "千欢欢",
   ["designer:zhangchu"] = "韩旭",
   ["illustrator:zhangchu"] = "黯荧岛工作室",
   ["jizhong"] = "集众",
@@ -2023,6 +2024,7 @@ Fk:loadTranslationTable{
   ["mu__zoushi"] = "乐邹氏",
   ["#mu__zoushi"] = "淯水吟",
   --["designer:mu__zoushi"] = "",
+  ["cv:mu__zoushi"] = "楼倾司",
   ["illustrator:mu__zoushi"] = "黯荧岛",
 
   ["yunzheng"] = "韵筝",

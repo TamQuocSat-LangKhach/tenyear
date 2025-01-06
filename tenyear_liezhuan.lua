@@ -478,6 +478,7 @@ Fk:loadTranslationTable{
   ["ty__xushao"] = "许劭",
   ["#ty__xushao"] = "识人读心",
   ["designer:ty__xushao"] = "韩旭",
+  ["cv:ty__xushao"] = "冷泉夜月",
   ["illustrator:ty__xushao"] = "Thinking",
   ["ty__pingjian"] = "评荐",
   ["#ty__pingjian_trigger"] = "评荐",

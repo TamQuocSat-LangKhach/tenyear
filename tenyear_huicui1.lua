@@ -1079,7 +1079,7 @@ Fk:loadTranslationTable{
   ["heyan"] = "何晏",
   ["#heyan"] = "傅粉何郎",
   ["designer:heyan"] = "梦魇狂朝",
-  ["cv:heyan"] = "宋国庆",
+  ["cv:heyan"] = "宋国庆", -- sgq宋十一
   ["illustrator:heyan"] = "MUMU",
 
   ["yachai"] = "崖柴",
@@ -3253,7 +3253,7 @@ wanniangongzhu:addSkill(xinghan)
 Fk:loadTranslationTable{
   ["wanniangongzhu"] = "万年公主",
   ["#wanniangongzhu"] = "还汉明珠",
-  ["cv:wanniangongzhu"] = "侯小菲",
+  ["cv:wanniangongzhu"] = "一口井", -- 即:侯小菲
   ["illustrator:wanniangongzhu"] = "匠人绘",
 
   ["zhenge"] = "枕戈",
@@ -3404,6 +3404,7 @@ tenggongzhu:addSkill(liunian)
 Fk:loadTranslationTable{
   ["tenggongzhu"] = "滕公主",
   ["#tenggongzhu"] = "芳华荏苒",
+  ["cv:tenggongzhu"] = "闲踏梧桐",
   ["designer:tenggongzhu"] = "步穗",
   ["illustrator:tenggongzhu"] = "君桓文化",
 
@@ -3511,6 +3512,7 @@ panghui:addSkill(suchou)
 Fk:loadTranslationTable{
   ["panghui"] = "庞会",
   ["#panghui"] = "临渭亭侯",
+  ["cv:panghui"] = "动辄",
   ["designer:panghui"] = "韩旭",
   ["illustrator:panghui"] = "秋呆呆",
 

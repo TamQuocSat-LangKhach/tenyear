@@ -2534,6 +2534,7 @@ Fk:loadTranslationTable{
   ["#wm__zhugeliang"] = "忠武良弼",
   ["designer:wm__zhugeliang"] = "韩旭",
   ["illustrator:wm__zhugeliang"] = "梦回唐朝",
+  ["cv:wm__zhugeliang"] = "马洋",
   ["jincui"] = "尽瘁",
   [":jincui"] = "锁定技，游戏开始时，你将手牌补至7张。准备阶段，你的体力值调整为与牌堆中点数为7的游戏牌数量相等（至少为1）。"..
   "然后你观看牌堆顶X张牌（X为你的体力值），将这些牌以任意顺序放回牌堆顶或牌堆底。",

@@ -651,6 +651,7 @@ tangji:addSkill(jielie)
 Fk:loadTranslationTable{
   ["tangji"] = "唐姬",
   ["#tangji"] = "弘农王妃",
+  ["cv:tangji"] = "Z君不吃番茄",
   ["illustrator:tangji"] = "福州明暗",
   ["kangge"] = "抗歌",
   [":kangge"] = "你的第一个回合开始时，你选择一名其他角色：<br>1.当该角色于其回合外获得手牌后，你摸等量的牌（每回合最多摸三张）；<br>"..

@@ -374,6 +374,7 @@ Fk:loadTranslationTable{
   ["ty_ex__guohuanghou"] = "界郭皇后",
   ["#ty_ex__guohuanghou"] = "月华驱霾",
   ["illustrator:ty_ex__guohuanghou"] = "匠人绘",
+  ["cv:ty_ex__guohuanghou"] = "水原",
   ["ty_ex__jiaozhao"] = "矫诏",
   [":ty_ex__jiaozhao"] = "出牌阶段限一次，你可以展示一张手牌并选择一名距离最近的其他角色，该角色声明一种基本牌或普通锦囊牌的牌名，"..
   "本回合你可以将此牌当声明的牌使用（不能指定自己为目标）。",

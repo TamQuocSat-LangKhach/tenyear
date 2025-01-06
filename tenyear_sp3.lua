@@ -356,7 +356,7 @@ godmachao:addSkill(hengwu)
 Fk:loadTranslationTable{
   ["godmachao"] = "神马超",
   ["#godmachao"] = "神威天将军",
-  ["cv:godmachao"] = "张桐铭",
+  ["cv:godmachao"] = "张桐铭", -- 新白张小虾
   ["designer:godmachao"] = "七哀",
   ["illustrator:godmachao"] = "君桓文化",
   ["shouli"] = "狩骊",
@@ -1418,6 +1418,7 @@ local godhuatuo = General(extension, "ty__godhuatuo", "god", 3)
 Fk:loadTranslationTable{
   ["ty__godhuatuo"] = "神华佗",
   ["#ty__godhuatuo"] = "灵魂的医者",
+  ["cv:ty__godhuatuo"] = "马洋",
   ["illustrator:ty__godhuatuo"] = "君桓文化",
   ["~ty__godhuatuo"] = "世无良医，枉死者半……",
 }

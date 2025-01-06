@@ -3291,6 +3291,7 @@ luyusheng:addSkill(zhiwei)
 Fk:loadTranslationTable{
   ["luyusheng"] = "陆郁生",
   ["#luyusheng"] = "义姑",
+  ["cv:luyusheng"] = "Z君不吃番茄",
   ["illustrator:luyusheng"] = "君桓文化",
   ["zhente"] = "贞特",
   [":zhente"] = "每名角色的回合限一次，当你成为其他角色使用基本牌或普通锦囊牌的目标后，你可令其选择一项：1.本回合不能再使用此颜色的牌；2.此牌对你无效。",
@@ -3520,6 +3521,7 @@ huaxin:addSkill(xibing)
 Fk:loadTranslationTable{
   ["ty__huaxin"] = "华歆",
   ["#ty__huaxin"] = "渊清玉洁",
+  ["cv:ty__huaxin"] = "张桐铭",
   ["illustrator:ty__huaxin"] = "秋呆呆",
   ["wanggui"] = "望归",
   [":wanggui"] = "当你造成伤害后，你可以对与你势力不同的一名角色造成1点伤害（每回合限一次）；当你受到伤害后，你可令一名与你势力相同的角色摸一张牌，"..

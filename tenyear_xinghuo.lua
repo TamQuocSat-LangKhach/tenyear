@@ -577,6 +577,7 @@ ty__wangcan:addSkill(denglou)
 Fk:loadTranslationTable{
   ["ty__wangcan"] = "王粲",
   ["#ty__wangcan"] = "七子之冠冕",
+  ["cv:ty__wangcan"] = "安臣杰Anson",
   ["illustrator:ty__wangcan"] = "ZOO",
 
   ["sanwen"] = "散文",

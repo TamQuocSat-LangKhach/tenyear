@@ -908,6 +908,7 @@ Fk:loadTranslationTable{
   ["ty_ex__wuguotai"] = "界吴国太",
   ["#ty_ex__wuguotai"] = "武烈皇后",
   ["illustrator:ty_ex__wuguotai"] = "匠人绘",
+  ["cv:ty_ex__wuguotai"] = "水原",
   ["ty_ex__ganlu"] = "甘露",
   [":ty_ex__ganlu"] = "出牌阶段限一次，你可以选择两名角色，交换其装备区内的所有牌，然后若其装备区牌数之差大于X，你需弃置两张手牌（X为你已损失体力值）。",
   ["ty_ex__buyi"] = "补益",
@@ -4141,6 +4142,7 @@ sunluban:addSkill(ty_ex__jiaojin)
 Fk:loadTranslationTable{
   ["ty_ex__sunluban"] = "界孙鲁班",
   ["#ty_ex__sunluban"] = "为虎作伥",
+  ["cv:ty_ex__sunluban"] = "神隐",
   ["illustrator:ty_ex__sunluban"] = "匠人绘",
   ["ty_ex__zenhui"] = "谮毁",
   [":ty_ex__zenhui"] = "当你使用【杀】或普通锦囊牌指定一名角色为唯一目标时，你可以令能成为此牌目标的另一名其他角色选择一项：1.交给你一张牌，然后代替你成为此牌的使用者；2.也成为此牌的目标，然后你的〖谮毁〗本回合失效。",

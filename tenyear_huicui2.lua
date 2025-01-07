@@ -14,13 +14,13 @@ local ty__qinqing = fk.CreateTriggerSkill{
   anim_type = "control",
   can_trigger = function(self, event, target, player, data)
     if target == player and player.phase == Player.Finish and player:hasSkill(self) then
-      local lord = table.filter(player.room.players, function(p) return p.seat == 1 end)[1]
+      local lord = player.room:getPlayerBySeat(1)
       return lord and not lord.dead and table.find(player.room.alive_players, function(p) return p:inMyAttackRange(lord) end)
     end
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local lord = table.filter(player.room.players, function(p) return p.seat == 1 end)[1]
+    local lord =  player.room:getPlayerBySeat(1)
     local targets = table.map(table.filter(room.alive_players, function(p)
       return p:inMyAttackRange(lord) and not p:isNude() end), Util.IdMapper)
     local to = room:askForChoosePlayers(player, targets, 1, 1, "#ty__qinqing-choose", self.name, true)
@@ -34,7 +34,7 @@ local ty__qinqing = fk.CreateTriggerSkill{
     local to = room:getPlayerById(self.cost_data)
     local cid = room:askForCardChosen(player, to, "he", self.name)
     room:throwCard({cid}, self.name, to, player)
-    local lord = table.filter(player.room.players, function(p) return p.seat == 1 end)[1]
+    local lord = player.room:getPlayerBySeat(1)
     if player.dead or to.dead or lord.dead then return end
     if to:getHandcardNum() > lord:getHandcardNum() then
       player:drawCards(1, self.name)

@@ -573,9 +573,7 @@ local jiangxi = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
       local room = player.room
-      local seatOne = table.find(room.players, function (p)
-        return p.seat == 1
-      end)
+      local seatOne = room:getPlayerBySeat(1)
       if seatOne == nil then return false end
       local events = room.logic:getEventsOfScope(GameEvent.Dying, 1, function(e)
         local dying = e.data[1]

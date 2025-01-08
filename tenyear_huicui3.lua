@@ -2194,22 +2194,6 @@ local guyinz = fk.CreateTriggerSkill{
       end
     end
   end,
-  on_trigger = function (self, event, target, player, data)
-    local n = 0
-    for _, move in ipairs(data) do
-      if move.toArea == Card.DiscardPile and (move.moveReason == fk.ReasonUse or move.moveReason == fk.ReasonDiscard) then
-        for _, info in ipairs(move.moveInfo) do
-          if info.extra_data and info.extra_data.guyinz and info.extra_data.guyinz ~= player.id then
-            n = n + 1
-          end
-        end
-      end
-    end
-    for _ = 1, n, 1 do
-      if not player:hasSkill(self) then return end
-      self:doCost(event, target, player, data)
-    end
-  end,
   on_use = function (self, event, target, player, data)
     player:drawCards(1, self.name)
   end,
@@ -2241,18 +2225,18 @@ local guyinz = fk.CreateTriggerSkill{
     elseif event == fk.AfterDrawInitialCards then
       local room = player.room
       for _, id in ipairs(target:getCardIds("h")) do
-        room:setCardMark(Fk:getCardById(id), "@@guyinz", target.id)
+        room:setCardMark(Fk:getCardById(id), "guyinz", target.id)
       end
     elseif event == fk.AfterCardsMove then
       for _, move in ipairs(data) do
         if move.toArea == Card.DiscardPile then
           for _, info in ipairs(move.moveInfo) do
-            if Fk:getCardById(info.cardId):getMark("@@guyinz") ~= 0 then
+            if Fk:getCardById(info.cardId):getMark("guyinz") ~= 0 then
               if move.moveReason == fk.ReasonUse or move.moveReason == fk.ReasonDiscard then
                 info.extra_data = info.extra_data or {}
-                info.extra_data.guyinz = Fk:getCardById(info.cardId):getMark("@@guyinz")
+                info.extra_data.guyinz = Fk:getCardById(info.cardId):getMark("guyinz")
               end
-              player.room:setCardMark(Fk:getCardById(info.cardId), "@@guyinz", 0)
+              player.room:setCardMark(Fk:getCardById(info.cardId), "guyinz", 0)
             end
           end
         end
@@ -2297,7 +2281,6 @@ Fk:loadTranslationTable{
   [":guyinz"] = "锁定技，你没有初始手牌，其他角色的初始手牌+1。其他角色的初始手牌被使用或弃置进入弃牌堆后，你摸一张牌。",
   ["pinglu"] = "平虏",
   [":pinglu"] = "出牌阶段，你可以获得攻击范围内每名其他角色各一张随机手牌。你此阶段不能再发动该技能直到这些牌离开你的手牌。",
-  ["@@guyinz"] = "顾音",
   ["#pinglu"] = "平虏：获得攻击范围内每名角色各一张随机手牌",
   ["@@pinglu-inhand-phase"] = "平虏",
 

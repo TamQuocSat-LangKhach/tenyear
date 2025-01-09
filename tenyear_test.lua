@@ -1066,12 +1066,7 @@ local woheng = fk.CreateActiveSkill{
   can_use = Util.TrueFunc,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected, selected_cards)
-    if #selected > 0 or not self.interaction.data or to_select == Self.id then return end
-    if self.interaction.data == "woheng_draw" then
-      return true
-    elseif self.interaction.data == "woheng_discard" then
-      return not Fk:currentRoom():getPlayerById(to_select):isNude()
-    end
+    return #selected == 0 and to_select ~= Self.id
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -1092,14 +1087,18 @@ local woheng = fk.CreateActiveSkill{
 local woheng_trigger = fk.CreateTriggerSkill{
   name = "#woheng_trigger",
   mute = true,
+  main_skill = woheng,
   events = {fk.Damaged},
   can_trigger = function (self, event, target, player, data)
     return target == player and player:hasSkill(woheng)
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
-    player.room:askForUseActiveSkill(player, "woheng",
-      "#woheng:::"..(player:usedSkillTimes("woheng", Player.HistoryRound) + 1), true, nil, false)
+  on_use = function (self, event, target, player, data)
+    local success = player.room:askForUseActiveSkill(player, "woheng",
+      "#woheng:::"..(player:usedSkillTimes("woheng", Player.HistoryRound)), true, nil, false)
+    if not success then
+      player:addSkillUseHistory("woheng", -1)
+    end
   end,
 }
 woheng:addRelatedSkill(woheng_trigger)

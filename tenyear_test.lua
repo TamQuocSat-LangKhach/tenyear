@@ -1066,17 +1066,11 @@ local woheng = fk.CreateActiveSkill{
   can_use = Util.TrueFunc,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected, selected_cards)
-    if #selected > 0 or not self.interaction.data then return end
+    if #selected > 0 or not self.interaction.data or to_select == Self.id then return end
     if self.interaction.data == "woheng_draw" then
       return true
     elseif self.interaction.data == "woheng_discard" then
-      if to_select == Self.id then
-        return table.find(Self:getCardIds("he"), function (id)
-          return not Self:prohibitDiscard(id)
-        end)
-      else
-        return not Fk:currentRoom():getPlayerById(to_select):isNude()
-      end
+      return not Fk:currentRoom():getPlayerById(to_select):isNude()
     end
   end,
   on_use = function(self, room, effect)
@@ -1088,9 +1082,10 @@ local woheng = fk.CreateActiveSkill{
     else
       room:askForDiscard(target, n, n, true, self.name, false)
     end
-    if not player:hasSkill(self, true) then return end
-    if target == player or target:getHandcardNum() ~= player:getHandcardNum() then
+    if player.dead then return end
+    if target:getHandcardNum() ~= player:getHandcardNum() or n > 4 then
       room:invalidateSkill(player, self.name, "-turn")
+      player:drawCards(2, self.name)
     end
   end,
 }
@@ -1114,8 +1109,8 @@ Fk:loadTranslationTable{
   ["#ty_wei__sunquan"] = "",
 
   ["woheng"] = "斡横",
-  [":woheng"] = "出牌阶段或当你受到伤害后，你可以令一名角色摸或弃置X张牌（X为此技能本轮发动次数）。若选择其他角色且其结算后手牌数与你不同，"..
-  "或选择你，此技能本回合失效。",
+  [":woheng"] = "出牌阶段或当你受到伤害后，你可以令一名其他角色摸或弃置X张牌（X为此技能本轮发动次数）。此技能结算后，若其手牌数与你不同或"..
+  "X不小于5，你摸两张牌且此技能本回合失效。",
   ["#woheng"] = "斡横：你可以令一名角色摸或弃置%arg张牌",
   ["woheng_draw"] = "摸牌",
   ["woheng_discard"] = "弃牌",
@@ -1181,6 +1176,10 @@ local yuhui_trigger = fk.CreateTriggerSkill{
         to:drawCards(1, "woheng")
       else
         room:askForDiscard(to, 1, 1, true, "woheng", false)
+      end
+      if target.dead then return end
+      if to:getHandcardNum() ~= target:getHandcardNum() then
+        target:drawCards(2, "woheng")
       end
     end
   end,

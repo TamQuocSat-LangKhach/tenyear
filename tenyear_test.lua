@@ -643,7 +643,7 @@ local luansuo_filter = fk.CreateFilterSkill{
   card_filter = function(self, card, player, isJudgeEvent)
     return table.contains(player:getCardIds("h"), card.id) and card.suit ~= Card.NoSuit and
       table.find(Fk:currentRoom().alive_players, function (p)
-        return p:hasSkill("luansuo") and table.contains(p:getTableMark("luansuo-turn"), card.suit)
+        return p:hasSkill("luansuo") and p.phase ~= Player.NotActive and not table.contains(p:getTableMark("luansuo-turn"), card.suit)
       end)
   end,
   view_as = function(self, card)
@@ -1108,10 +1108,10 @@ Fk:loadTranslationTable{
   ["ty_wei__sunquan"] = "威孙权",
   ["#ty_wei__sunquan"] = "",
 
-  ["woheng"] = "斡横",
+  ["woheng"] = "斡衡",
   [":woheng"] = "出牌阶段或当你受到伤害后，你可以令一名其他角色摸或弃置X张牌（X为此技能本轮发动次数）。此技能结算后，若其手牌数与你不同或"..
   "X不小于5，你摸两张牌且此技能本回合失效。",
-  ["#woheng"] = "斡横：你可以令一名角色摸或弃置%arg张牌",
+  ["#woheng"] = "斡衡：你可以令一名角色摸或弃置%arg张牌",
   ["woheng_draw"] = "摸牌",
   ["woheng_discard"] = "弃牌",
 }

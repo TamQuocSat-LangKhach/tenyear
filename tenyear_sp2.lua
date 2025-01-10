@@ -2455,7 +2455,7 @@ local fudao = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.GameStart then
       room:notifySkillInvoked(player, self.name)
-      local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+      local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
       local tos = room:askForChoosePlayers(player, targets, 1, 1, "#fudao-choose", self.name, false, true)
       if #tos > 0 then
         room:setPlayerMark(player, self.name, tos[1])
@@ -3647,7 +3647,7 @@ local ty__shushen = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#ty__shushen-choose", self.name, true)
+    local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, "#ty__shushen-choose", self.name, true)
     if #to > 0 then
       self.cost_data = {tos = to}
       return true
@@ -5486,7 +5486,7 @@ local huaping = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     if player == target then
-      local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#huaping-choose", self.name, true)
+      local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, "#huaping-choose", self.name, true)
       if #to > 0 then
         self.cost_data = to[1]
         return true
@@ -5774,7 +5774,7 @@ local guili = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.TurnStart then
-      local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+      local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
       local tos = room:askForChoosePlayers(player, targets, 1, 1, "#guili-choose", self.name, false, true)
       local to
       if #tos > 0 then

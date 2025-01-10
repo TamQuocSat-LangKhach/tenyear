@@ -1216,7 +1216,7 @@ local zhijif = fk.CreateTriggerSkill{
     if player.dead then return end
     n = #self.cost_data.cards - math.max(n, 0)
     if n > 0 then
-      local targets = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, n,
+      local targets = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, n,
         "#zhijif-choose:::"..n, self.name, true)
       if #targets > 0 then
         room:sortPlayersByAction(targets)

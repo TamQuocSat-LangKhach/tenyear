@@ -278,10 +278,10 @@ local zuowei = fk.CreateTriggerSkill{
     if n > 0 then
       return player.room:askForSkillInvoke(player, self.name, nil, "#zuowei-invoke:::"..data.card:toLogString())
     elseif n == 0 then
-      local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+      local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player, false), Util.IdMapper), 1, 1,
         "#zuowei-damage", self.name, true)
       if #to > 0 then
-        self.cost_data = to[1]
+        self.cost_data = {tos = to}
         return true
       end
     elseif n < 0 then
@@ -299,7 +299,7 @@ local zuowei = fk.CreateTriggerSkill{
       room:notifySkillInvoked(player, self.name, "offensive")
       room:damage{
         from = player,
-        to = room:getPlayerById(self.cost_data),
+        to = room:getPlayerById(self.cost_data.tos[1]),
         damage = 1,
         skillName = self.name,
       }
@@ -746,7 +746,7 @@ local silue = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     if event == fk.GameStart then
       local room = player.room
-      local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+      local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
       local to = room:askForChoosePlayers(player, targets, 1, 1, "#silue-choose", self.name)
       if #to > 0 then
         self.cost_data = to[1]
@@ -1567,7 +1567,7 @@ local zecai = fk.CreateTriggerSkill{
     if max_p and not max_p.dead then
       room:setPlayerMark(max_p, "@@zecai_extra", 1)
     end
-    local to = room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#zecai-choose", self.name, true)
+    local to = room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, "#zecai-choose", self.name, true)
     if max_p and not max_p.dead then
       room:setPlayerMark(max_p, "@@zecai_extra", 0)
     end
@@ -3939,9 +3939,9 @@ local mingfa = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     if event == fk.CardUseFinished then
       local room = player.room
-      local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#mingfa-choose:::"..data.card:toLogString(), self.name, true)
+      local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, "#mingfa-choose:::"..data.card:toLogString(), self.name, true)
       if #to > 0 then
-        self.cost_data = to[1]
+        self.cost_data = {tos = to}
         return true
       end
     else
@@ -3952,8 +3952,8 @@ local mingfa = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.CardUseFinished then
       player:addToPile(self.name, data.card, true, self.name)
-      room:setPlayerMark(player, self.name, self.cost_data)
-      local to = room:getPlayerById(self.cost_data)
+      room:setPlayerMark(player, self.name, self.cost_data.tos[1])
+      local to = room:getPlayerById(self.cost_data.tos[1])
       room:addTableMark(to, "@@mingfa", player.id)
     else
       local card = Fk:cloneCard(Fk:getCardById(player:getPile(self.name)[1]).name)
@@ -4320,7 +4320,7 @@ local tujue = fk.CreateTriggerSkill{
       player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   on_cost = function(self, event, target, player, data)
-    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#tujue-choose", self.name, true)
+    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, "#tujue-choose", self.name, true)
     if #to > 0 then
       self.cost_data = {tos = to}
       return true
@@ -4970,7 +4970,7 @@ local ty__juanxia = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#ty__juanxia-choose", self.name, true)
+    local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, "#ty__juanxia-choose", self.name, true)
     if #tos > 0 then
       self.cost_data = tos[1]
       return true

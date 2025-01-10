@@ -1479,7 +1479,7 @@ local jinhui = fk.CreateActiveSkill{
       skillName = self.name,
       proposer = player.id
     })
-    local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+    local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
     local tos = room:askForChoosePlayers(player, targets, 1, 1, "#jinhui-choose", self.name, false)
     local target = room:getPlayerById(tos[1])
 
@@ -2997,7 +2997,7 @@ local shuangrui = fk.CreateTriggerSkill{
   end,
   on_cost = function (self, event, target, player, data)
     local room = player.room
-    local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+    local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1,
       "#shuangrui-choose", self.name, true, true)
     if #to > 0 then
       self.cost_data = {tos = to}

@@ -2102,7 +2102,7 @@ local zhiwang = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+    local to = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1,
       "#zhiwang-choose", self.name, true)
     if #to > 0 then
       self.cost_data = to[1]
@@ -2670,7 +2670,7 @@ local gaojian = fk.CreateTriggerSkill{
       (not data.card:isVirtual() or data.card.subcards) and #player.room.alive_players > 1
   end,
   on_cost = function (self,event, target, player, data)
-    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player, false), Util.IdMapper), 1, 1,
       "#gaojian-choose", self.name, true, false)
     if #to > 0 then
       self.cost_data = {tos = to}
@@ -3311,7 +3311,7 @@ local yaozuo = fk.CreateActiveSkill{
   card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    room:doIndicate(player.id, table.map(room:getOtherPlayers(player), Util.IdMapper))
+    room:doIndicate(player.id, table.map(room:getOtherPlayers(player, false), Util.IdMapper))
     local targets = table.filter(room:getOtherPlayers(player), function (p)
       return not p:isNude()
     end)

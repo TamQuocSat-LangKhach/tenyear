@@ -1860,7 +1860,7 @@ local ty_ex__zhuiyi = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+    local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
     if data.damage and data.damage.from then
       table.removeOne(targets, data.damage.from.id)
     end
@@ -3923,17 +3923,17 @@ local ty_ex__pingkou = fk.CreateTriggerSkill{
       end
     end
     if n == 0 then return false end
-    local targets = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, n, "#ty_ex__pingkou-choose:::"..n, self.name, true)
+    local targets = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, n, "#ty_ex__pingkou-choose:::"..n, self.name, true)
     if #targets > 0 then
-      self.cost_data = {targets, n}
+      room:sortPlayersByAction(targets)
+      self.cost_data = {tos = targets, num = n}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local tos = self.cost_data[1]
-    room:sortPlayersByAction(tos)
-    local n = self.cost_data[2]
+    local tos = self.cost_data.tos
+    local n = self.cost_data.num
     for _, pid in ipairs(tos) do
       local p = room:getPlayerById(pid)
       if not p.dead then

@@ -4287,7 +4287,7 @@ local tuoxian = fk.CreateTriggerSkill{
     end
   end,
   on_cost = function(self, event, target, player, data)
-    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper),
+    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player, false), Util.IdMapper),
       1, 1, "#tuoxian-choose", self.name, true)
     if #to > 0 then
       self.cost_data = to[1]
@@ -4748,7 +4748,7 @@ local longsong = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local tos, cards = player.room:askForChooseCardsAndPlayers(player, 0, 1,
-    table.map(player.room:getOtherPlayers(player), Util.IdMapper),
+    table.map(player.room:getOtherPlayers(player, false), Util.IdMapper),
     1, 1, ".|.|heart,diamond", "#longsong-invoke", self.name, true)
     if #tos == 1 then
       self.cost_data = {tos = tos, cards = cards}
@@ -5214,7 +5214,7 @@ local chuanshu = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+    local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1,
       "#chuanshu-choose", self.name, true)
     if #tos > 0 then
       self.cost_data = tos[1]

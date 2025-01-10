@@ -509,22 +509,22 @@ local cixiao = fk.CreateTriggerSkill{
       local tos, id = room:askForChooseCardAndPlayers(player, table.map(table.filter(room.alive_players, function (p)
         return p ~= player and not p:hasSkill("panshi", true) end), Util.IdMapper), 1, 1, ".", "#cixiao-discard", self.name, true)
       if #tos > 0 and id then
-        self.cost_data = {tos[1], id}
+        self.cost_data = {tos = tos, cards = {id} }
         return true
       end
     else
-      local tos = room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#cixiao-choose", self.name, true)
+      local tos = room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, "#cixiao-choose", self.name, true)
       if #tos > 0 then
-        self.cost_data = {tos[1]}
+        self.cost_data = {tos = tos}
         return true
       end
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(self.cost_data[1])
-    if #self.cost_data > 1 then
-      room:throwCard(self.cost_data[2], self.name, player, player)
+    local to = room:getPlayerById(self.cost_data.tos[1])
+    if self.cost_data.cards then
+      room:throwCard(self.cost_data.cards, self.name, player, player)
     end
     for _, p in ipairs(room.alive_players) do
       room:handleAddLoseSkills(p, "-panshi", nil, true, false)
@@ -637,11 +637,11 @@ Fk:loadTranslationTable{
   [":xianshuai"] = "锁定技，一名角色造成伤害后，若此伤害是本轮第一次造成伤害，你摸一张牌。若伤害来源为你，你对受到伤害的角色造成1点伤害。",
   ["panshi"] = "叛弑",
   [":panshi"] = "锁定技，准备阶段，你将一张手牌交给拥有技能〖慈孝〗的角色；你于出牌阶段使用的【杀】对其造成伤害时，此伤害+1且你于造成伤害后结束出牌阶段。",
-  ["#cixiao-choose"] = "慈孝：可选择一名其他角色，令其获得义子标记",
-  ["#cixiao-discard"] = "慈孝：可弃置一张牌来转移将义子标记",
+  ["#cixiao-choose"] = "慈孝：可选择一名其他角色，令其获得“义子”标记",
+  ["#cixiao-discard"] = "慈孝：可弃置一张牌来转移“义子”标记",
   ["@@panshi_son"] = "义子",
   ["#panshi-give-to"] = "叛弑：必须选择一张手牌交给%src",
-  ["#panshi-give"] = "叛弑：必须选择一张手牌交给一名拥有慈孝的角色",
+  ["#panshi-give"] = "叛弑：必须选择一张手牌交给一名拥有〖慈孝〗的角色",
 
   ["$cixiao1"] = "吾儿奉先，天下无敌！",
   ["$cixiao2"] = "父慈子孝，义理为先！",
@@ -755,7 +755,7 @@ local zhuide = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+    local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
     local tos = room:askForChoosePlayers(player, targets, 1, 1, "#zhuide-choose", self.name, true)
     if #tos > 0 then
       self.cost_data = tos[1]
@@ -860,7 +860,7 @@ local ty__jieying = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and player.phase == Player.Finish
   end,
   on_cost = function(self, event, target, player, data)
-    local tos = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#ty__jieying-choose", self.name, true)
+    local tos = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, "#ty__jieying-choose", self.name, true)
     if #tos > 0 then
       self.cost_data = tos[1]
       return true
@@ -1154,7 +1154,7 @@ local mouni = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and player.phase == Player.Start and not player:isKongcheng()
   end,
   on_cost = function(self, event, target, player, data)
-    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper),
+    local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player, false), Util.IdMapper),
       1, 1, "#mouni-invoke", self.name, true)
     if #to > 0 then
       self.cost_data = to[1]
@@ -1555,7 +1555,7 @@ local fuzhong = fk.CreateTriggerSkill{
     elseif event == fk.EventPhaseStart then
       room:notifySkillInvoked(player, self.name, "offensive")
       player:broadcastSkillInvoke(self.name)
-      local targets = room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#fuzhong-choose", self.name, false)
+      local targets = room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, "#fuzhong-choose", self.name, false)
       if #targets > 0 then
         room:damage{
           from = player,
@@ -1768,7 +1768,7 @@ local xianwei = fk.CreateTriggerSkill{
         player:drawCards(#player:getAvailableEquipSlots(), self.name)
       end
       if player.dead then return end
-      local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+      local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
       local mapper = {
         [Player.WeaponSlot] = "weapon",
         [Player.ArmorSlot] = "armor",

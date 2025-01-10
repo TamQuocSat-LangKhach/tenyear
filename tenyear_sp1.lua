@@ -3880,7 +3880,7 @@ local ty__lianji = fk.CreateActiveSkill{
       end
     end
     if target.dead then return end
-    local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+    local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
     local use = room:askForUseCard(target, "slash", "slash", "#ty__lianji-slash:"..player.id, true, {exclusive_targets = targets})
     if use then
       room:setPlayerMark(player, "ty__lianji1", 1)

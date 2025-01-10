@@ -114,7 +114,7 @@ local ty__sitian = fk.CreateActiveSkill{
       end
     end
     if choice == "sitian4" then
-      local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1,
+      local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1,
         "#sitian-choose", self.name, true)
       local to
       if #tos > 0 then
@@ -1685,7 +1685,7 @@ local huanli = fk.CreateTriggerSkill {
     if (aimedList[player.id] or 0) > 2 then
       local tos = room:askForChoosePlayers(
         player,
-        table.map(room:getOtherPlayers(player), Util.IdMapper),
+        table.map(room:getOtherPlayers(player, false), Util.IdMapper),
         1,
         1,
         "#huanli_zhangzhao-choose",

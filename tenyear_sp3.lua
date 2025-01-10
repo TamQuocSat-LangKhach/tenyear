@@ -2756,7 +2756,7 @@ local ty__zhengbi = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local success, dat = room:askForUseActiveSkill(player, "ex__choose_skill", "#ty__zhengbi-choose", true, {
-      targets = table.map(room:getOtherPlayers(player), Util.IdMapper),
+      targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper),
       min_c_num = 0,
       max_c_num = 1,
       min_t_num = 1,
@@ -2916,7 +2916,7 @@ local lianzhi = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+    local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
     if event == fk.GameStart then
       local to = room:askForChoosePlayers(player, targets, 1, 1, "#lianzhi-choose", self.name, false, true)
       if #to > 0 then

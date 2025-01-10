@@ -1874,7 +1874,7 @@ local xiecui = fk.CreateTriggerSkill{
     return player:hasSkill(self) and target and not target.dead and target == player.room.current and data.card and
       player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and
       #player.room.logic:getActualDamageEvents(1, function(e)
-        return e.data[1].from == target
+        return e.data[1].from == target and e.data[1].card
       end) == 0
   end,
   on_cost = function(self, event, target, player, data)
@@ -1884,9 +1884,11 @@ local xiecui = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     data.damage = data.damage + 1
-    if not target.dead and target.kingdom == "wu" and room:getCardArea(data.card) == Card.Processing then
+    if not target.dead and target.kingdom == "wu" then
       room:addPlayerMark(target, MarkEnum.AddMaxCardsInTurn, 1)
-      room:moveCardTo(data.card, Card.PlayerHand, target, fk.ReasonPrey, self.name)
+      if room:getCardArea(data.card) == Card.Processing then
+        room:moveCardTo(data.card, Card.PlayerHand, target, fk.ReasonPrey, self.name)
+      end
     end
   end,
 }
@@ -2620,7 +2622,7 @@ local cuijian = fk.CreateActiveSkill{
         return Fk:getCardById(id).sub_type == Card.SubtypeArmor
       end))
       local x = #cards
-      room:obtainCard(player, cards, true, fk.ReasonGive)
+      room:obtainCard(player, cards, true, fk.ReasonGive, target.id, self.name)
       if player.dead or player:isNude() or player:getMark("tongyuan2") ~= 0 or target.dead then return end
       cards = player:getCardIds({Player.Hand, Player.Equip})
       if #cards > x then
@@ -4700,7 +4702,7 @@ local yongbi = fk.CreateActiveSkill{
         table.insertIfNeed(suits, Fk:getCardById(id, true).suit)
       end
     end
-    room:obtainCard(target.id, cards, false, fk.ReasonGive)
+    room:obtainCard(target.id, cards, false, fk.ReasonGive, player.id, self.name)
     if #suits > 1 then
       room:addPlayerMark(player, MarkEnum.AddMaxCards, 2)
       room:addPlayerMark(target, MarkEnum.AddMaxCards, 2)

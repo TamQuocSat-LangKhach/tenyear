@@ -720,7 +720,7 @@ godpangtong:addSkill(fengliao)
 godpangtong:addSkill(kunyu)
 Fk:loadTranslationTable{
   ["godpangtong"] = "神庞统",
-  ["#godpangtong"] = "",
+  ["#godpangtong"] = "丹血浴火",
   ["designer:godpangtong"] = "拔都沙皇",
   ["illustrator:godpangtong"] = "",
 
@@ -729,7 +729,7 @@ Fk:loadTranslationTable{
   ["fengliao"] = "凤燎",
   [":fengliao"] = "锁定技，转换技，当你使用牌指定唯一目标后，阳：你令其摸一张牌；阴：你对其造成1点火焰伤害。",
   ["kunyu"] = "鹍浴",
-  [":kunyu"] = "锁定技，当你濒死求桃完成后，若体力值仍小于1，你将牌堆中的一张火属性伤害牌移出游戏，然后复活并将体力值回复至1点。",
+  [":kunyu"] = "锁定技，当你濒死求桃结算后，若体力值仍小于1，你将牌堆中的一张火属性伤害牌移出游戏，然后复活并将体力值回复至1点。",
   ["#luansuo_filter"] = "鸾锁",
 }
 
@@ -1105,7 +1105,7 @@ woheng:addRelatedSkill(woheng_trigger)
 sunquan:addSkill(woheng)
 Fk:loadTranslationTable{
   ["ty_wei__sunquan"] = "威孙权",
-  ["#ty_wei__sunquan"] = "",
+  ["#ty_wei__sunquan"] = "坐断东南",
 
   ["woheng"] = "斡衡",
   [":woheng"] = "出牌阶段或当你受到伤害后，你可以令一名其他角色摸或弃置X张牌（X为此技能本轮发动次数）。此技能结算后，若其手牌数与你不同或"..
@@ -1397,7 +1397,7 @@ sunba:addSkill(jiedang)
 sunba:addSkill(jidi)
 Fk:loadTranslationTable{
   ["sunba"] = "孙霸",
-  ["#sunba"] = "",
+  ["#sunba"] = "庶怨嫡位",
 
   ["jiedang"] = "结党",
   [":jiedang"] = "回合开始时，你可以令所有角色将任意张牌置于你的武将牌上，因此失去牌的角色摸一张牌。你在以下时机须移去武将牌上一种类别的牌"..
@@ -1477,17 +1477,23 @@ local lianzhan_delay = fk.CreateTriggerSkill{
     if n == nil or n == 0 then
       self.cost_data = {choice = "negative"}
       return true
-    elseif n == 2 and player:isWounded() and
-      player.room:askForSkillInvoke(player, "lianzhan", nil, "#lianzhan-recover") then
-      self.cost_data = {choice = "recover"}
-      return true
+    elseif n == 2 then
+      if player:isWounded() then
+        if player.room:askForSkillInvoke(player, "lianzhan", nil, "#lianzhan-recover") then
+          self.cost_data = {choice = "recover"}
+          return true
+        end
+      elseif player.room:askForSkillInvoke(player, "lianzhan", nil, "#lianzhan-draw") then
+        self.cost_data = {choice = "draw"}
+        return true
+      end
     end
   end,
   on_use = function (self, event, target, player, data)
     local room = player.room
     local choice = self.cost_data.choice
     if choice == "recover" then
-      if player:isWounded() and not player.dead then
+      if player:isWounded() then
         player:broadcastSkillInvoke("lianzhan")
         room:notifySkillInvoked(player, "lianzhan", "support")
         room:recover({
@@ -1497,7 +1503,11 @@ local lianzhan_delay = fk.CreateTriggerSkill{
           skillName = "lianzhan",
         })
       end
-    else
+    elseif choice == "draw" then
+      player:broadcastSkillInvoke("lianzhan")
+      room:notifySkillInvoked(player, "lianzhan", "drawcard")
+      player:drawCards(2, "lianzhan")
+    elseif choice == "negative" then
       player:broadcastSkillInvoke("lianzhan")
       room:notifySkillInvoked(player, "lianzhan", "negative")
       room:sortPlayersByAction(TargetGroup:getRealTargets(data.tos))
@@ -1566,17 +1576,18 @@ wenchou:addSkill(lianzhan)
 wenchou:addSkill(weimingw)
 Fk:loadTranslationTable{
   ["tystar__wenchou"] = "星文丑",
-  ["#tystar__wenchou"] = "",
+  ["#tystar__wenchou"] = "夔威天下",
 
   ["lianzhan"] = "连战",
   [":lianzhan"] = "当你使用伤害牌指定唯一目标时，你可以选择一项：1.额外指定一个目标；2.此牌额外结算一次。然后，若此牌对目标造成伤害次数为2，"..
-  "你可以回复1点体力；为0，目标角色视为对你使用同名牌。",
+  "你可以回复1点体力（若你未受伤改为摸两张牌）；为0，目标角色视为对你使用同名牌。",
   ["weimingw"] = "威名",
   [":weimingw"] = "锁定技，体力值小于你或本轮受到过你造成伤害的其他角色对你使用牌时，随机弃置一张手牌，若皆满足，你摸一张牌。",
   ["lianzhan_active"] = "连战",
   ["#lianzhan-choose"] = "连战：你可以为此%arg额外指定一个目标，或直接点“确定”额外结算一次",
   ["#lianzhan_delay"] = "连战",
   ["#lianzhan-recover"] = "连战：是否回复1点体力？",
+  ["#lianzhan-draw"] = "连战：是否摸两张牌？",
 }
 
 return extension

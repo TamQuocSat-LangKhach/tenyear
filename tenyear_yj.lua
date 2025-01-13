@@ -1445,15 +1445,14 @@ Fk:loadTranslationTable{
 }
 
 local xuangongzhu = General(extension, "ty__xuangongzhu", "wei", 3, 3, General.Female)
-local ty__qimei = fk.CreateActiveSkill{
+local qimei = fk.CreateActiveSkill{
   name = "ty__qimei",
   anim_type = "drawcard",
   card_num = 0,
   target_num = 1,
-  prompt = "#ty__qimei-active",
+  prompt = "#ty__qimei",
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 or
-      (player:getMark("ty__qimei-phase") > 0 and player:usedSkillTimes(self.name, Player.HistoryPhase) == 1)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
@@ -1466,31 +1465,54 @@ local ty__qimei = fk.CreateActiveSkill{
     if not target.dead then
       target:drawCards(2, self.name)
     end
-    local cards = {}
-    if not player.dead and not player:isNude() then
-      local c = room:askForDiscard(player, 2, 2, true, self.name, false)
-      table.insertTableIfNeed(cards, c)
+    local cards1 = {}
+    if not player.dead and not player:isKongcheng() then
+      cards1 = room:askForCard(player, math.min(player:getHandcardNum(), 2), 2, false, self.name, false, nil, "#ty__qimei-show")
     end
-    if not target.dead and not target:isNude() then
-      local c = room:askForDiscard(target, 2, 2, true, self.name, false)
-      table.insertTableIfNeed(cards, c)
+    local cards2 = {}
+    if not target.dead and not target:isKongcheng() then
+      cards2 = room:askForCard(target, math.min(player:getHandcardNum(), 2), 2, false, self.name, false, nil, "#ty__qimei-show")
     end
-    if #cards == 0 then return end
+    if #cards1 + #cards2 == 0 then return end
     local suits = {}
-    for _, id in ipairs(cards) do
+    for _, id in ipairs(cards1) do
       if Fk:getCardById(id).suit ~= Card.NoSuit then
         table.insertIfNeed(suits, Fk:getCardById(id).suit)
       end
     end
+    for _, id in ipairs(cards2) do
+      if Fk:getCardById(id).suit ~= Card.NoSuit then
+        table.insertIfNeed(suits, Fk:getCardById(id).suit)
+      end
+    end
+    if #cards1 > 0 then
+      player:showCards(cards1)
+    end
+    cards2 = table.filter(cards2, function (id)
+      return table.contains(target:getCardIds("h"), id)
+    end)
+    if #cards2 > 0 then
+      target:showCards(cards2)
+    end
     if #suits == 1 then
-      cards = table.filter(cards, function(id)
-        return room:getCardArea(id) == Card.DiscardPile
+      local cards = table.filter(cards1, function(id)
+        return table.contains(player:getCardIds("h"), id)
       end)
-      while not player.dead and #cards > 0 do
-        local use = U.askForUseRealCard(room, player, cards, ".", self.name, "#ty__qimei-use",
-          {expand_pile = cards, bypass_times = false, extraUse = true}, true)
+      table.insertTableIfNeed(cards, table.filter(cards2, function(id)
+        return table.contains(target:getCardIds("h"), id)
+      end))
+      while not player.dead do
+        cards = table.filter(cards, function(id)
+          return table.contains(player:getCardIds("h"), id) or table.contains(target:getCardIds("h"), id)
+        end)
+        if #cards == 0 then return end
+        local use = U.askForUseRealCard(room, player, cards, nil, self.name, "#ty__qimei-use",
+          {
+            bypass_times = false,
+            extraUse = true,
+            expand_pile = cards,
+          }, true)
         if use then
-          table.removeOne(cards, use.card:getEffectiveId())
           room:useCard(use)
         else
           return
@@ -1504,11 +1526,17 @@ local ty__qimei = fk.CreateActiveSkill{
         target:reset()
       end
     elseif #suits == 3 then
-      if not player.dead and not player.chained then
-        player:setChainState(true)
+      cards1 = table.filter(cards1, function (id)
+        return table.contains(player:getCardIds("h"), id)
+      end)
+      if #cards1 > 0 and not player.dead then
+        room:recastCard(cards1, player, self.name)
       end
-      if not target.dead and not target.chained then
-        target:setChainState(true)
+      cards2 = table.filter(cards2, function (id)
+        return table.contains(target:getCardIds("h"), id)
+      end)
+      if #cards2 > 0 and not target.dead then
+        room:recastCard(cards2, target, self.name)
       end
     elseif #suits == 4 then
       if not player.dead then
@@ -1521,7 +1549,7 @@ local ty__qimei = fk.CreateActiveSkill{
     end
   end,
 }
-local ty__zhuijix = fk.CreateTriggerSkill{
+local zhuijix = fk.CreateTriggerSkill{
   name = "ty__zhuijix",
   anim_type = "support",
   events = {fk.Deathed},
@@ -1533,13 +1561,13 @@ local ty__zhuijix = fk.CreateTriggerSkill{
     local to = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper), 1, 1,
       "#ty__zhuijix-choose", self.name, true)
     if #to > 0 then
-      self.cost_data = to[1]
+      self.cost_data = {tos = to}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(self.cost_data)
+    local to = room:getPlayerById(self.cost_data.tos[1])
     local subtypes = {
       Card.SubtypeWeapon,
       Card.SubtypeArmor,
@@ -1579,7 +1607,7 @@ local ty__zhuijix = fk.CreateTriggerSkill{
     end
   end,
 }
-local ty__zhuijix_delay = fk.CreateTriggerSkill{
+local zhuijix_delay = fk.CreateTriggerSkill{
   name = "#ty__zhuijix_delay",
   mute = true,
   events = {fk.AfterCardsMove},
@@ -1617,21 +1645,26 @@ local ty__zhuijix_delay = fk.CreateTriggerSkill{
     end
   end,
 }
-ty__zhuijix:addRelatedSkill(ty__zhuijix_delay)
-xuangongzhu:addSkill(ty__qimei)
-xuangongzhu:addSkill(ty__zhuijix)
+zhuijix:addRelatedSkill(zhuijix_delay)
+xuangongzhu:addSkill(qimei)
+xuangongzhu:addSkill(zhuijix)
 Fk:loadTranslationTable{
   ["ty__xuangongzhu"] = "宣公主",
   --["#ty__xuangongzhu"] = "",
   ["designer:ty__xuangongzhu"] = "谜城惊雨声",
+}
+Fk:loadTranslationTable{
   ["ty__qimei"] = "齐眉",
-  [":ty__qimei"] = "出牌阶段限一次，你可以选择一名其他角色，你与其各摸两张牌并各弃置两张牌，根据弃置牌的花色数，你执行以下效果：<br>"..
-  "1，你可以依次使用这些牌；<br>2，你与其复原武将牌；<br>3，你与其横置；<br>4，你与其各摸一张牌，然后本回合此技能改为“限两次”。",
+  [":ty__qimei"] = "出牌阶段限一次，你可以选择一名其他角色，你与其各摸两张牌并各展示两张手牌，根据展示牌的花色数，你执行以下效果：<br>"..
+  "1，你可以依次使用这些牌；<br>2，你与其复原武将牌；<br>3，你与其重铸这些牌；<br>4，你与其各摸一张牌。",
+  ["#ty__qimei"] = "齐眉：与一名角色各摸两张牌然后各展示两张牌，根据展示牌花色数执行效果",
+  ["#ty__qimei-show"] = "齐眉：请展示两张手牌",
+  ["#ty__qimei-use"] = "齐眉：你可以使用这些牌",
+}
+Fk:loadTranslationTable{
   ["ty__zhuijix"] = "追姬",
   [":ty__zhuijix"] = "当你死亡后，你可以令一名角色从牌堆和弃牌堆中随机使用有空余栏位的装备牌，直至其装备区满，若如此做，当其失去以此法使用的"..
   "装备牌后，废除对应的装备栏。",
-  ["#ty__qimei-active"] = "齐眉：与一名角色各摸两张牌然后弃两张牌，根据弃牌花色数执行效果",
-  ["#ty__qimei-use"] = "齐眉：你可以使用这些牌",
   ["#ty__zhuijix-choose"] = "追姬：你可以令一名角色随机使用装备牌至装备区满",
   ["#ty__zhuijix_delay"] = "追姬",
 }
@@ -1878,9 +1911,12 @@ local zhitu = fk.CreateTriggerSkill{
   events = {fk.AfterCardTargetDeclared},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and
-      (data.card.type == Card.TypeBasic or (data.card:isCommonTrick() and #TargetGroup:getRealTargets(data.tos) == 1)) then
+      (data.card.type == Card.TypeBasic or (data.card:isCommonTrick() and not data.card.multiple_targets)) then
       local to = player.room:getPlayerById(TargetGroup:getRealTargets(data.tos)[1])
-      return table.find(player.room:getUseExtraTargets(data), function (id)
+      return table.every(TargetGroup:getRealTargets(data.tos), function (id)
+        return player:distanceTo(player.room:getPlayerById(id)) == player:distanceTo(to)
+      end) and
+      table.find(player.room:getUseExtraTargets(data), function (id)
         return player:distanceTo(to) == player:distanceTo(player.room:getPlayerById(id))
       end)
     end

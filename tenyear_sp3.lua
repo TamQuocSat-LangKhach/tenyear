@@ -958,17 +958,16 @@ local tuoyu_trigger = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     if data.card:getMark("@@tuoyu1-inhand") > 0 then
-      if data.card.is_damage_card then
-        data.additionalDamage = (data.additionalDamage or 0) + 1
-      elseif data.card.name == "peach" then
-        data.additionalRecover = (data.additionalRecover or 0) + 1
-      elseif data.card.name == "analeptic" then
+      if data.card.name == "analeptic" then
         if data.extra_data and data.extra_data.analepticRecover then
           data.additionalRecover = (data.additionalRecover or 0) + 1
         else
           data.extra_data = data.extra_data or {}
           data.extra_data.additionalDrank = (data.extra_data.additionalDrank or 0) + 1
         end
+      else
+        data.additionalDamage = (data.additionalDamage or 0) + 1
+        data.additionalRecover = (data.additionalRecover or 0) + 1
       end
     elseif data.card:getMark("@@tuoyu2-inhand") > 0 then
       data.extraUse = true

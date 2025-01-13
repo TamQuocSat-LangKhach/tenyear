@@ -609,7 +609,48 @@ Fk:loadTranslationTable{
 local godpangtong = General(extension, "godpangtong", "god", 1)
 local luansuo = fk.CreateTriggerSkill{
   name = "luansuo",
+  mute = true,
   frequency = Skill.Compulsory,
+  events = {fk.BeforeCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) then return end
+    local turn_event = player.room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
+    if turn_event == nil or turn_event.data[1] ~= player then return end
+    for _, move in ipairs(data) do
+      if move.from and move.moveReason == fk.ReasonDiscard and not player.room:getPlayerById(move.from).dead then
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand then
+            return true
+          end
+        end
+      end
+    end
+  end,
+  on_use = function (self, event, target, player, data)
+    local ids = {}
+    for _, move in ipairs(data) do
+      if move.from and move.moveReason == fk.ReasonDiscard and not player.room:getPlayerById(move.from).dead then
+        local moveInfos = {}
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand then
+            table.insert(ids, info.cardId)
+          else
+            table.insert(moveInfos, info)
+          end
+        end
+        if #ids > 0 then
+          move.moveInfo = moveInfos
+        end
+      end
+    end
+    if #ids > 0 then
+      player.room:sendLog{
+        type = "#cancelDismantle",
+        card = ids,
+        arg = self.name,
+      }
+    end
+  end,
 
   refresh_events = {fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)

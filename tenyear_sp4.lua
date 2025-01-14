@@ -1865,10 +1865,6 @@ local ty__gushe_delay = fk.CreateTriggerSkill{
     local room = player.room
     if not player.dead and data.winner ~= player then
       room:addPlayerMark(player, "@ty__raoshe", 1)
-      local mark = player:getTableMark("@ty__gushe-turn")
-      if #mark == 2 and mark[2] > 1 then
-        room:setPlayerMark(player, "@ty__gushe-turn", {"times_left", mark[2] - 1})
-      end
       if player:getMark("@ty__raoshe") >= 7 then
         room:killPlayer({who = player.id,})
       end
@@ -1987,10 +1983,8 @@ Fk:loadTranslationTable{
   ["#ty__gushe-discard"] = "鼓舌：你需弃置一张牌，否则 %src 摸一张牌",
   ["#ty__gushe2-discard"] = "鼓舌：你需弃置一张牌",
   ["#ty__gushe_delay"] = "鼓舌",
-  ["@ty__gushe-turn"] = "鼓舌",
   ["@ty__raoshe"] = "饶舌",
   ["times_left"] = "剩余",
-  ["invalidity"] = "失效",
 
   ["$ty__gushe1"] = "承寇贼之要，相时而后动，择地而后行，一举更无余事。",
   ["$ty__gushe2"] = "春秋之义，求诸侯莫如勤王。今天王在魏都，宜遣使奉承王命。",

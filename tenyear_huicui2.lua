@@ -2905,7 +2905,7 @@ local minze = fk.CreateActiveSkill{
   max_card_num = 2,
   target_num = 1,
   can_use = function(self, player)
-    return player:getMark("@@minze-phase") == 0 and not player:isNude()
+    return not player:isNude()
   end,
   card_filter = function(self, to_select, selected)
     if #selected == 0 then
@@ -3010,7 +3010,6 @@ Fk:loadTranslationTable{
   ["jini"] = "击逆",
   [":jini"] = "当你受到伤害后，你可以重铸任意张手牌（每回合以此法重铸的牌数不能超过你的体力上限），若你以此法获得了【杀】，"..
   "你可以对伤害来源使用一张无距离限制且不可响应的【杀】。",
-  ["@@minze-phase"] = "悯泽失效",
   ["@$minze-turn"] = "悯泽",
   ["#jini1-invoke"] = "击逆：你可以重铸至多%arg张手牌",
   ["#jini2-invoke"] = "击逆：你可以重铸至多%arg张手牌，若摸到了【杀】，你可以对 %dest 使用一张无距离限制且不可响应的【杀】",
@@ -4536,7 +4535,7 @@ local sigong = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and target ~= player and player:getMark("@@sigong-round") == 0 and
+    if player:hasSkill(self) and target ~= player and
       target and not target.dead and not player:isProhibited(target, Fk:cloneCard("slash")) then
       local events = player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e)
         local use = e.data[1]
@@ -4590,7 +4589,7 @@ local sigong = fk.CreateTriggerSkill{
     use.additionalDamage = (use.additionalDamage or 0) + 1
     room:useCard(use)
     if not player.dead and use.damageDealt then
-      room:setPlayerMark(player, "@@sigong-round", 1)
+      room:invalidateSkill(player, self.name, "-round")
     end
   end,
 
@@ -4617,7 +4616,6 @@ Fk:loadTranslationTable{
   [":sigong"] = "其他角色的回合结束时，若其本回合内使用牌被响应过，你可以将手牌调整至一张，视为对其使用一张需要X张【闪】抵消且伤害+1的【杀】"..
   "（X为你以此法弃置牌数且至少为1）。若此【杀】造成伤害，此技能本轮失效。",
   ["#gue"] = "孤扼：你可以展示所有手牌，若【杀】【闪】总数不大于1，视为你使用或打出之",
-  ["@@sigong-round"] = "伺攻失效",
   ["#sigong-discard"] = "伺攻：你可以将手牌弃至一张，视为对 %dest 使用【杀】",
   ["#sigong-invoke"] = "伺攻：你可以视为对 %dest 使用【杀】",
   ["#sigong-draw"] = "伺攻：你可以摸一张牌，视为对 %dest 使用【杀】",

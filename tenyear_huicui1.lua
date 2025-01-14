@@ -430,11 +430,14 @@ local zhuangdan = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and target ~= player and player:getMark("@@zhuangdan") == 0 and
-      table.every(player.room:getOtherPlayers(player), function(p) return player:getHandcardNum() > p:getHandcardNum() end)
+    return player:hasSkill(self) and target ~= player and player:hasSkill("liedan") and
+      table.every(player.room:getOtherPlayers(player), function(p)
+        return player:getHandcardNum() > p:getHandcardNum()
+      end)
   end,
   on_use = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@@zhuangdan", 1)
+    player.room:invalidateSkill(player, "liedan")
   end,
 
   refresh_events = {fk.TurnEnd},
@@ -443,6 +446,7 @@ local zhuangdan = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@@zhuangdan", 0)
+    player.room:validateSkill(player, "liedan")
   end,
 }
 xiahoujie:addSkill(liedan)

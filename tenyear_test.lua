@@ -1763,8 +1763,9 @@ local jiduan_active = fk.CreateActiveSkill{
   name = "jiduan_active",
   min_card_num = 1,
   target_num = 0,
-  card_filter = function (self, to_select, selected)
-    return not table.find(selected, function (id)
+  card_filter = function (self, to_select, selected, user)
+    return table.contains(Self:getCardIds("h"), to_select) and
+    not table.find(selected, function (id)
       return Fk:getCardById(to_select):compareSuitWith(Fk:getCardById(id))
     end) and not Self:prohibitDiscard(to_select)
   end,

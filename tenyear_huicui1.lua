@@ -1494,7 +1494,7 @@ local jinhui = fk.CreateActiveSkill{
         local card = Fk:getCardById(id)
         if not playerA:canUse(card) or playerA:prohibitUse(card) then return false end
         local to = card.skill:getMinTargetNum() == 0 and playerA or playerB
-        return not playerA:isProhibited(to, card) and card.skill:modTargetFilter(to.id, {}, playerA.id, card, false)
+        return not playerA:isProhibited(to, card) and card.skill:modTargetFilter(to.id, {}, playerA, card, false)
       end)
       if #to_use == 0 then return false end
         local ids = room:askForCardsChosen(playerA, playerB, cancelable and 0 or 1, 1, {
@@ -1772,7 +1772,7 @@ local parseTongliUseStruct = function (player, name, targetGroup)
       local target = room:getPlayerById(to)
       if target.dead then return nil end
       if #passed_target == 0 and player:isProhibited(target, card) then return nil end
-      if not card.skill:modTargetFilter(to, passed_target, player.id, card, false) then return nil end
+      if not card.skill:modTargetFilter(to, passed_target, player, card, false) then return nil end
       table.insert(passed_target, to)
       table.insert(all_tos, {to})
     end
@@ -4104,7 +4104,7 @@ local dehua = fk.CreateTriggerSkill{
         card.skillName = self.name
         return card.skill:canUse(player, card) and not player:prohibitUse(card)
           and table.find(player.room.alive_players, function (p)
-            return not player:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, player.id, card, false)
+            return not player:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, player, card, false)
           end)
       end)
   end,

@@ -625,7 +625,7 @@ local lingyin_trigger = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     if event == fk.EventPhaseStart then
-      local n = player.room:getTag("RoundCount")
+      local n = player.room:getBanner("RoundCount")
       local cards = player.room:askForCard(player, 1, n, false, "liying", true,
         ".|.|.|ruiji_wang|.|.", "#lingyin-invoke:::"..tostring(n), "ruiji_wang")
       if #cards > 0 then
@@ -1796,7 +1796,7 @@ local juetao = fk.CreateTriggerSkill{
         local targets = {}
         for _, p in ipairs({player, to}) do
           if not player:isProhibited(p, card) then
-            if card.skill:modTargetFilter(p.id, {}, player.id, card, false) then
+            if card.skill:modTargetFilter(p.id, {}, player, card, false) then
               table.insert(targets, p.id)
             end
           end
@@ -1817,7 +1817,7 @@ local juetao = fk.CreateTriggerSkill{
             if table.contains(targets, to.id) then
               local seconds = {}
               for _, second in ipairs(room:getOtherPlayers(to, false)) do
-                if card.skill:modTargetFilter(second.id, {to.id}, player.id, card, false) then
+                if card.skill:modTargetFilter(second.id, {to.id}, player, card, false) then
                   table.insert(seconds, second.id)
                 end
               end
@@ -2848,7 +2848,7 @@ local shexue = fk.CreateTriggerSkill{
             card.skillName = "shexue"
             return card.skill:canUse(player, card, extra_data) and not player:prohibitUse(card)
             and table.find(room.alive_players, function (p)
-              return not player:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, player.id, card, false)
+              return not player:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, player, card, false)
             end)
           end)
           if #names > 0 then
@@ -2866,7 +2866,7 @@ local shexue = fk.CreateTriggerSkill{
             card.skillName = "shexue"
             return card.skill:canUse(target, card, extra_data) and not target:prohibitUse(card)
             and table.find(room.alive_players, function (p)
-              return not target:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, target.id, card, not bypass_distances)
+              return not target:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, target, card, not bypass_distances)
             end)
           end)
           if #names > 0 then
@@ -2932,7 +2932,7 @@ local shexue = fk.CreateTriggerSkill{
           card.skillName = "shexue"
           return card.skill:canUse(player, card, extra_data) and not player:prohibitUse(card)
           and table.find(room.alive_players, function (p)
-            return not player:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, player.id, card, not bypass_distances)
+            return not player:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, player, card, not bypass_distances)
           end)
         end)
         if #names == 0 then return false end

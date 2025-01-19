@@ -1469,7 +1469,7 @@ local lvxin = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
 
     room:obtainCard(target, effect.cards[1], false, fk.ReasonGive, player.id)
-    local round = math.min(5, room:getTag("RoundCount"))
+    local round = math.min(5, room:getBanner("RoundCount"))
     local choice = room:askForChoice(
       player,
       { "lvxin_draw:::" .. round, "lvxin_discard:::" .. round },

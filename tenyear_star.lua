@@ -140,7 +140,7 @@ local zhonggu = fk.CreateTriggerSkill{
     local room = player.room
     player:broadcastSkillInvoke(self.name)
     local n = #table.filter(room.alive_players, function(p) return p.kingdom == "qun" end)
-    if room:getTag("RoundCount") >= n then
+    if room:getBanner("RoundCount") >= n then
       room:notifySkillInvoked(player, self.name, "drawcard")
       data.n = data.n + 2
     else
@@ -425,7 +425,7 @@ local getZongshiTargets = function(room, player, card)
   local skill = card.skill
   local targets = {}
   for _, p in ipairs(room.alive_players) do
-    if not player:isProhibited(p, card) and skill:modTargetFilter(p.id, {}, player.id, card, false) then
+    if not player:isProhibited(p, card) and skill:modTargetFilter(p.id, {}, player, card, false) then
       if player.phase ~= Player.Play or zongshiWithinTimesLimit(player, p, card) then
         table.insert(targets, p.id)
       end

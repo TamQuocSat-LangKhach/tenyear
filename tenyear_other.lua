@@ -851,7 +851,7 @@ local ruyi_trigger = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     if event == fk.EventAcquireSkill then
-      return data == ruyi and target == player and player.room:getTag("RoundCount")
+      return data == ruyi and target == player and player.room:getBanner("RoundCount")
     elseif event == fk.GameStart then
       return player:hasShownSkill(ruyi, true)
     end

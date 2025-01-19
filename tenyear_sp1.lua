@@ -51,7 +51,7 @@ local ty__hanyong = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     data.additionalDamage = (data.additionalDamage or 0) + 1
-    if player.hp > room:getTag("RoundCount") then
+    if player.hp > room:getBanner("RoundCount") then
       room:addPlayerMark(player, "@wutugu_ran", 1)
     end
   end,
@@ -1860,7 +1860,7 @@ local jianjie_trigger = fk.CreateTriggerSkill{
     if event == fk.TurnStart then
       return player:hasSkill(self,true) and target == player
     elseif event == fk.EventAcquireSkill then
-      return target == player and data == self and player.room:getTag("RoundCount")
+      return target == player and data == self and player.room:getBanner("RoundCount")
     elseif event == fk.EventLoseSkill then
       return data == self and (player:getMark("@@dragon_mark") > 0 or player:getMark("@@phoenix_mark") > 0)
     elseif event == fk.BuryVictim then
@@ -2859,7 +2859,7 @@ local tianyun = fk.CreateTriggerSkill{
       end
       return #suits > 0
     elseif event == fk.TurnStart then
-      return target.seat == player.room:getTag("RoundCount") and not player:isKongcheng()
+      return target.seat == player.room:getBanner("RoundCount") and not player:isKongcheng()
     end
   end,
   on_cost = function(self, event, target, player, data)

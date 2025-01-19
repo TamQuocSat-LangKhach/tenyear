@@ -1428,7 +1428,7 @@ local pandi_refresh = fk.CreateTriggerSkill{
     if event == fk.Damage then
       return player == target and player:getMark("pandi_damaged-turn") == 0
     elseif event == fk.EventAcquireSkill then
-      return player == target and data == self and player.room.current == player and player.room:getTag("RoundCount")
+      return player == target and data == self and player.room.current == player and player.room:getBanner("RoundCount")
     elseif event == fk.PreCardUse then
       return player:getMark("pandi_prohibit-phase") > 0
     end
@@ -1469,11 +1469,10 @@ local pandi_use = fk.CreateActiveSkill{
     local card = Fk:getCardById(selected_cards[1])
     local card_skill = card.skill
     local room = Fk:currentRoom()
-    local target_id = Self:getMark("pandi_target")
-    local target = room:getPlayerById(target_id)
+    local target = room:getPlayerById(Self:getMark("pandi_target"))
     if card_skill:getMinTargetNum() == 0 or #selected >= card_skill:getMaxTargetNum(target, card) then return false end
     return not target:isProhibited(room:getPlayerById(to_select), card) and
-      card_skill:modTargetFilter(to_select, selected, target_id, card, true)
+      card_skill:modTargetFilter(to_select, selected, target, card, true)
   end,
   feasible = function(self, selected, selected_cards)
     if #selected_cards ~= 1 then return false end

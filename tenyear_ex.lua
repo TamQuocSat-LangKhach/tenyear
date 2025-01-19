@@ -534,7 +534,7 @@ local ty_ex__zhuhai_active = fk.CreateActiveSkill{
       card.skillName = "ty_ex__zhuhai"
       local to = Fk:currentRoom():getPlayerById(self.ty_ex__zhuhai_victim)
       return not Self:prohibitUse(card) and not Self:isProhibited(to, card)
-      and card.skill:modTargetFilter(to.id, {}, Self.id, card, false)
+      and card.skill:modTargetFilter(to.id, {}, Self, card, false)
     end
   end,
 }
@@ -1989,7 +1989,7 @@ local ty_ex__jiefan_trigger = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:usedSkillTimes("ty_ex__jiefan", Player.HistoryTurn) > 0 and player.room:getTag("RoundCount") == 1
+    return player:usedSkillTimes("ty_ex__jiefan", Player.HistoryTurn) > 0 and player.room:getBanner("RoundCount") == 1
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)

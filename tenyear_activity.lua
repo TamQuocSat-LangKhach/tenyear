@@ -3853,7 +3853,7 @@ local zuojian = fk.CreateTriggerSkill{
       if event == fk.CardUsing then
         return target == player
       else
-        return data == self and player.room:getTag("RoundCount")
+        return data == self and player.room:getBanner("RoundCount")
       end
     end
   end,
@@ -4430,14 +4430,14 @@ local dunxi_delay = fk.CreateTriggerSkill{
       local c_pid
       for _, p in ipairs(room.alive_players) do
         if not player:isProhibited(p, data.card) and
-        (data.card.sub_type == Card.SubtypeDelayedTrick or data.card.skill:modTargetFilter(p.id, {}, data.from, data.card, true)) then
+        (data.card.sub_type == Card.SubtypeDelayedTrick or data.card.skill:modTargetFilter(p.id, {}, player, data.card, true)) then
           local ho_spair_check = true
           if #orig_to > 1 then
             --target_filter check, for collateral, diversion...
             local ho_spair_target = {p.id}
             for i = 2, #orig_to, 1 do
               c_pid = orig_to[i]
-              if not data.card.skill:modTargetFilter(c_pid, ho_spair_target, data.from, data.card, true) then
+              if not data.card.skill:modTargetFilter(c_pid, ho_spair_target, player, data.card, true) then
                 ho_spair_check = false
                 break
               end
@@ -5484,7 +5484,7 @@ local heqia_viewas = fk.CreateActiveSkill{
     local to_use = Fk:cloneCard(self.interaction.data)
     to_use.skillName = "heqia"
     if Self:isProhibited(Fk:currentRoom():getPlayerById(to_select), to_use) then return false end
-    return to_use.skill:modTargetFilter(to_select, selected, Self.id, to_use, false)
+    return to_use.skill:modTargetFilter(to_select, selected, Self, to_use, false)
   end,
   feasible = function(self, selected, selected_cards)
     if not self.interaction.data or #selected_cards ~= 1 then return false end

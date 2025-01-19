@@ -4988,6 +4988,14 @@ local yuqi = fk.CreateTriggerSkill{
   times = function(self)
     return 2 - Self:usedSkillTimes(self.name)
   end,
+  dynamic_desc = function(self, player)
+    return
+      "yuqi_inner:" ..
+      player:getMark("yuqi1") .. ":" ..
+      (player:getMark("yuqi2") + 3) .. ":" ..
+      (player:getMark("yuqi3") + 1) .. ":" ..
+      (player:getMark("yuqi4") + 1)
+  end,
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self) and not target.dead and player:usedSkillTimes(self.name) < 2 and
     (target == player or player:distanceTo(target) <= player:getMark("yuqi1"))
@@ -5126,6 +5134,8 @@ Fk:loadTranslationTable{
   ["yuqi"] = "隅泣",
   [":yuqi"] = "每回合限两次，当一名角色受到伤害后，若你与其距离0或者更少，你可以观看牌堆顶的3张牌，将其中至多1张交给受伤角色，"..
   "至多1张自己获得，剩余的牌放回牌堆顶。",
+  [":yuqi_inner"] = "每回合限两次，当一名角色受到伤害后，若你与其距离{1}或者更少，你可以观看牌堆顶的{2}张牌，将其中至多{3}张交给受伤角色，"..
+  "至多{4}张自己获得，剩余的牌放回牌堆顶。",
   ["shanshen"] = "善身",
   [":shanshen"] = "当一名角色死亡时，你可令〖隅泣〗中的一个数字+2（单项不能超过5）。若你没有对其造成过伤害，你回复1点体力。",
   ["xianjing"] = "娴静",

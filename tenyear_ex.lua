@@ -527,14 +527,14 @@ local ty_ex__zhuhai_active = fk.CreateActiveSkill{
   interaction = function()
     return UI.ComboBox {choices = {"slash", "dismantlement"} }
   end,
-  card_filter = function(self, to_select, selected)
+  card_filter = function(self, to_select, selected, player)
     if #selected == 0 and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip then
       local card = Fk:cloneCard(self.interaction.data)
       card:addSubcard(to_select)
       card.skillName = "ty_ex__zhuhai"
       local to = Fk:currentRoom():getPlayerById(self.ty_ex__zhuhai_victim)
-      return not Self:prohibitUse(card) and not Self:isProhibited(to, card)
-      and card.skill:modTargetFilter(to.id, {}, Self, card, false)
+      return not player:prohibitUse(card) and not player:isProhibited(to, card)
+      and card.skill:modTargetFilter(to.id, {}, player, card, false)
     end
   end,
 }

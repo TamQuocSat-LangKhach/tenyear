@@ -4935,7 +4935,7 @@ local ty__juanxia_active = fk.CreateActiveSkill{
   card_filter = function(self, to_select, selected)
     return #selected == 0 and table.contains(self.ty__juanxia_names or {}, to_select)
   end,
-  target_filter = function(self, to_select, selected, selected_cards)
+  target_filter = function(self, to_select, selected, selected_cards, _, _, player)
     if #selected_cards == 0 then return false end
     local to = self.ty__juanxia_target
     if #selected == 0 then
@@ -4944,11 +4944,11 @@ local ty__juanxia_active = fk.CreateActiveSkill{
       local card = Fk:cloneCard(Fk:getCardById(selected_cards[1]).name)
       card.skillName = "ty__juanxia"
       if card.skill:getMinTargetNum() == 2 and selected[1] == to then
-        return card.skill:targetFilter(to_select, selected, {}, card)
+        return card.skill:targetFilter(to_select, selected, {}, card, nil, player)
       end
     end
   end,
-  feasible = function(self, selected, selected_cards)
+  feasible = function(self, selected, selected_cards, player)
     if #selected_cards == 0 then return false end
     local to_use = Fk:cloneCard(Fk:getCardById(selected_cards[1]).name)
     to_use.skillName = "ty__juanxia"
@@ -4956,7 +4956,7 @@ local ty__juanxia_active = fk.CreateActiveSkill{
     if #selected_copy == 0 then
       table.insert(selected_copy, self.ty__juanxia_target)
     end
-    return to_use.skill:feasible(selected_copy, {}, Self, to_use)
+    return to_use.skill:feasible(selected_copy, {}, player, to_use)
   end,
 }
 local ty__juanxia = fk.CreateTriggerSkill{
@@ -4970,13 +4970,13 @@ local ty__juanxia = fk.CreateTriggerSkill{
     local room = player.room
     local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, "#ty__juanxia-choose", self.name, true)
     if #tos > 0 then
-      self.cost_data = tos[1]
+      self.cost_data = {tos = tos}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(self.cost_data)
+    local to = room:getPlayerById(self.cost_data.tos[1])
     local x = 0
     local all = table.filter(U.getUniversalCards(room, "t"), function(id)
       local trick = Fk:getCardById(id)

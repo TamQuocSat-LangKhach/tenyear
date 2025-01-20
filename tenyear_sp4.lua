@@ -2734,7 +2734,7 @@ local juewu = fk.CreateViewAsSkill{
     end
     local choices = U.getViewAsCardNames(Self, "juewu", names, nil, Self:getTableMark("juewu-turn"))
     if #choices == 0 then return end
-    return UI.ComboBox { choices = choices, all_choices = names }
+    return U.CardNameBox { choices = choices, all_choices = names }
   end,
   card_filter = function(self, to_select, selected)
     if self.interaction.data == nil or #selected > 0 then return false end

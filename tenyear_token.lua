@@ -489,10 +489,7 @@ local ty__drowningSkill = fk.CreateActiveSkill{
   min_target_num = 1,
   max_target_num = 2,
   mod_target_filter = Util.TrueFunc,
-  target_filter = function(self, to_select, selected, _, card, extra_data, player)
-    return Util.TargetFilter(self, to_select, selected, _, card, extra_data, player) and
-      self:modTargetFilter(to_select, selected, player, card)
-  end,
+  target_filter = Util.TargetFilter,
   on_use = function(self, room, cardUseEvent)
     if cardUseEvent.tos == nil or #cardUseEvent.tos == 0 then return end
     cardUseEvent.extra_data = cardUseEvent.extra_data or {}

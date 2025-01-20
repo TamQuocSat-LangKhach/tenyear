@@ -2140,6 +2140,13 @@ local quanhuijie = General(extension, "quanhuijie", "wu", 3, 3, General.Female)
 local huishu = fk.CreateTriggerSkill{
   name = "huishu",
   anim_type = "drawcard",
+  dynamic_desc = function(self, player)
+    return
+      "huishu_inner:" ..
+      (player:getMark("huishu1") + 3) .. ":" ..
+      (player:getMark("huishu2") + 1) .. ":" ..
+      (player:getMark("huishu3") + 2)
+  end,
   events = {fk.EventPhaseEnd, fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(self) then return false end
@@ -2359,6 +2366,8 @@ Fk:loadTranslationTable{
   ["huishu"] = "慧淑",
   [":huishu"] = "摸牌阶段结束时，你可以摸3张牌然后弃置1张手牌。"..
   "若如此做，你本回合弃置超过2张牌时，从弃牌堆中随机获得等量的非基本牌。",
+  [":huishu_inner"] = "摸牌阶段结束时，你可以摸{1}张牌然后弃置{2}张手牌。"..
+  "若如此做，你本回合弃置超过{3}张牌时，从弃牌堆中随机获得等量的非基本牌。",
   ["yishu"] = "易数",
   [":yishu"] = "锁定技，当你于出牌阶段外失去牌后，〖慧淑〗中最小的一个数字+2且最大的一个数字-1。",
   ["ligong"] = "离宫",

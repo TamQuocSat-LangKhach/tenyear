@@ -2603,6 +2603,16 @@ local zhanghu = General(extension, "zhanghu", "wei", 4)
 local cuijian = fk.CreateActiveSkill{
   name = "cuijian",
   anim_type = "control",
+  dynamic_desc = function(self, player)
+    local texts = {"cuijian_inner", "cuijian_give", ""}
+    if player:getMark("tongyuan1") > 0 then
+      texts[3] = "cuijian_draw"
+    end
+    if player:getMark("tongyuan2") > 0 then
+      texts[2] = ""
+    end
+    return table.concat(texts, ":")
+  end,
   prompt = "#cuijian-active",
   card_num = 0,
   target_num = 1,
@@ -2704,6 +2714,10 @@ Fk:loadTranslationTable{
   [":tongyuan"] = "锁定技，你使用红色锦囊牌后，〖摧坚〗增加效果“若其没有【闪】，你摸两张牌”；<br>"..
   "你使用或打出红色基本牌后，〖摧坚〗将“交给”的效果删除；<br>"..
   "若以上两个效果均已触发，则你本局游戏接下来你使用红色普通锦囊牌无法被响应，使用红色基本牌可以额外指定一个目标。",
+
+  [":cuijian_inner"] = "出牌阶段限一次，你可以选择一名有手牌的其他角色，若其手牌中有【闪】，其将所有【闪】和防具牌交给你{1}{2}。",
+  ["cuijian_draw"] = "；若其没有【闪】，你摸两张牌",
+  ["cuijian_give"] = "，然后你交给其等量的牌",
 
   ["#cuijian-active"] = "发动 摧坚，选择一名有手牌的其他角色",
   ["#cuijian-card"] = "摧坚：交给 %dest %arg张牌",
@@ -3740,6 +3754,16 @@ local yuechen = General(extension, "yuechen", "wei", 4)
 local porui = fk.CreateTriggerSkill{
   name = "porui",
   anim_type = "offensive",
+  dynamic_desc = function(self, player)
+    local text = "porui_inner:".. tostring(player:getMark("gonghu1") + 1) .. ":"
+    if player:getMark("gonghu2") == 0 then
+      text = text .. "porui_give"
+    end
+    return text
+  end,
+  times = function(self)
+    return 1 + Self:getMark("gonghu1") - Self:usedSkillTimes(self.name, Player.HistoryRound)
+  end,
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and not player:isNude() and target ~= player and target.phase == Player.Finish and
@@ -3924,10 +3948,14 @@ Fk:loadTranslationTable{
 
   ["porui"] = "破锐",
   [":porui"] = "每轮限一次，其他角色的结束阶段，你可以弃置一张牌并选择本回合内失去过牌的另一名其他角色，你视为对该角色依次使用X+1张【杀】，"..
-  "然后你交给其X张手牌（X为其本回合失去的牌数且最多为5，不足则全交给）。",
+  "然后你交给其X张手牌。（X为其本回合失去的牌数且最多为5）",
   ["gonghu"] = "共护",
   [":gonghu"] = "锁定技，当你于回合外一回合失去超过一张基本牌后，〖破锐〗改为“每轮限两次”；当你于回合外一回合造成或受到伤害超过1点伤害后，"..
   "你删除〖破锐〗中交给牌的效果。若以上两个效果均已触发，则你本局游戏使用红色基本牌无法响应，使用红色普通锦囊牌可以额外指定一个目标。",
+
+  [":porui_inner"] = "每轮限{1}次，其他角色的结束阶段，你可以弃置一张牌并选择本回合内失去过牌的另一名其他角色，"..
+  "你视为对该角色依次使用X+1张【杀】{2}。（X为其本回合失去的牌数且最多为5）",
+  ["porui_give"] = "，然后你交给其X张手牌",
 
   ["#porui-choose"] = "发动 破锐，弃置一张牌并选择本回合失去过牌的角色",
   ["#porui_tip"] = "失去牌数 %arg",

@@ -17,6 +17,14 @@ local yuxi = fk.CreateTriggerSkill{
   on_use = function (self, event, target, player, data)
     player:drawCards(1, self.name, nil, "@@yuxi-inhand")
   end,
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function (self, event, target, player, data)
+    return target == player and data.card:getMark("@@yuxi-inhand") > 0
+  end,
+  on_refresh = function (self, event, target, player, data)
+    data.extraUse = true
+  end,
 }
 local yuxi_targetmod = fk.CreateTargetModSkill{
   name = "#yuxi_targetmod",

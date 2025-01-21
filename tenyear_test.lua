@@ -1714,4 +1714,153 @@ Fk:loadTranslationTable{
   ["#aoren-prey"] = "鏖刃：是否收回此%arg？",
 }
 
+local lvbu = General(extension, "ty_wei__lvbu", "qun", 5)
+local xiaowul = fk.CreateActiveSkill{
+  name = "xiaowul",
+  anim_type = "drawcard",
+  prompt = "#xiaowul",
+  card_num = 0,
+  target_num = 0,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and
+      table.find(Fk:currentRoom().draw_pile, function (id)
+        return string.find(Fk:translate(":" .. Fk:getCardById(id).name, "zh_CN"), "【杀】") ~= nil
+      end)
+  end,
+  card_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local cards = table.filter(room.draw_pile, function (id)
+      return string.find(Fk:translate(":" .. Fk:getCardById(id).name, "zh_CN"), "【杀】") ~= nil
+    end)
+    if #cards > 0 then
+      room:moveCardTo(table.random(cards), Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, false, player.id,
+        "@@xiaowul-inhand")
+    end
+  end,
+}
+local xiaowul_trigger = fk.CreateTriggerSkill{
+  name = "#xiaowul_trigger",
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function (self, event, target, player, data)
+    return target == player and data.card:getMark("@@xiaowul-inhand") > 0
+  end,
+  on_refresh = function (self, event, target, player, data)
+    data.extraUse = true
+  end,
+}
+local xiaowul_delay = fk.CreateTriggerSkill{
+  name = "#xiaowul_delay",
+
+  refresh_events = {fk.Damage},
+  can_refresh = function (self, event, target, player, data)
+    return target == player and player:usedSkillTimes("xiaowul", Player.HistoryPhase) > 0
+  end,
+  on_refresh = function (self, event, target, player, data)
+    player:setSkillUseHistory("xiaowul", 0, Player.HistoryPhase)
+  end,
+}
+local xiaowul_targetmod = fk.CreateTargetModSkill{
+  name = "#xiaowul_targetmod",
+  bypass_times = function(self, player, skill, scope, card, to)
+    return card and card:getMark("@@xiaowul-inhand") > 0
+  end,
+}
+xiaowul:addRelatedSkill(xiaowul_trigger)
+xiaowul:addRelatedSkill(xiaowul_delay)
+xiaowul:addRelatedSkill(xiaowul_targetmod)
+lvbu:addSkill(xiaowul)
+Fk:loadTranslationTable{
+  ["ty_wei__lvbu"] = "威吕布",
+  ["#ty_wei__lvbu"] = "",
+}
+Fk:loadTranslationTable{
+  ["xiaowul"] = "骁武",
+  [":xiaowul"] = "出牌阶段限一次，你可从牌堆获得一张牌面信息中有【杀】字的牌（以此法获得的牌不计次数）。当你造成伤害后，此技能视为未发动过。",
+  ["#xiaowul"] = "骁武：获得一张描述包含“【杀】”的牌",
+  ["@@xiaowul-inhand"] = "骁武",
+}
+
+local baguan = fk.CreateViewAsSkill{
+  name = "baguan",
+  anim_type = "offensive",
+  prompt = function (self, selected_cards, selected)
+    local n = 0
+    for _, id in ipairs(Self:getEquipments(Card.SubtypeWeapon)) do
+      n = math.max(n, Fk:translate(Fk:getCardById(id).name, "zh_CN"):len())
+    end
+    return "#baguan:::"..n
+  end,
+  pattern = "slash",
+  handly_pile = true,
+  card_filter = function(self, to_select, selected, player)
+    local n = 0
+    for _, id in ipairs(Self:getEquipments(Card.SubtypeWeapon)) do
+      n = math.max(n, Fk:translate(Fk:getCardById(id).name, "zh_CN"):len())
+    end
+    return #selected < n and table.contains(player:getHandlyIds(), to_select)
+  end,
+  view_as = function(self, cards)
+    if #cards == 0 then return end
+    local c = Fk:cloneCard("slash")
+    c.skillName = self.name
+    c:addSubcards(cards)
+    return c
+  end,
+  before_use = function (self, player, use)
+    local n = 0
+    for _, id in ipairs(player:getEquipments(Card.SubtypeWeapon)) do
+      n = math.max(n, Fk:translate(Fk:getCardById(id).name, "zh_CN"):len())
+    end
+    use.additionalDamage = n - 1
+    player.room:setPlayerMark(player, "baguan", 0)
+  end,
+  enabled_at_play = function(self, player)
+    return player:getMark("baguan") == 2 and #player:getEquipments(Card.SubtypeWeapon) > 0
+  end,
+  enabled_at_response = function (self, player, response)
+    return not response and player:getMark("baguan") == 2 and #player:getEquipments(Card.SubtypeWeapon) > 0
+  end,
+}
+local baguan_trigger = fk.CreateTriggerSkill{
+  name = "#baguan_trigger",
+
+  refresh_events = {fk.AfterCardUseDeclared},
+  can_refresh = function (self, event, target, player, data)
+    return target == player and player:hasSkill("baguan", true)
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local room = player.room
+    if data.card.sub_type == Card.SubtypeWeapon then
+      room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
+        if e ~= room.logic:getCurrentEvent() then
+          local use = e.data[1]
+          if use.from == player.id then
+            if use.tos and table.contains(TargetGroup:getRealTargets(use.tos), player.id) then
+              room:setPlayerMark(player, "baguan", 2)
+            else
+              room:setPlayerMark(player, "baguan", 0)
+            end
+            return true
+          end
+        end
+      end, 1)
+      if player:getMark("baguan") == 0 and
+        table.contains(TargetGroup:getRealTargets(data.tos), player.id) then
+        room:setPlayerMark(player, "baguan", 1)
+      end
+    else
+      room:setPlayerMark(player, "baguan", 0)
+    end
+  end,
+}
+baguan:addRelatedSkill(baguan_trigger)
+lvbu:addSkill(baguan)
+Fk:loadTranslationTable{
+  ["baguan"] = "霸关",
+  [":baguan"] = "连招技（指定自己为目标的牌+武器牌）你可以将至多X张手牌当伤害基数值为X的【杀】使用（X为你武器牌的牌名字数）。",
+  ["#baguan"] = "霸关：将至多%arg张手牌当伤害基数值为%arg的【杀】使用",
+}
+
 return extension

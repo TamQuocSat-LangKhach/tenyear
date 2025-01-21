@@ -2607,4 +2607,111 @@ Fk:loadTranslationTable{
   ["#beijin_delay"] = "北进",
 }
 
+local cenhun = General(extension, "tycl__cenhun", "wu", 3)
+local baoshi = fk.CreateTriggerSkill{
+  name = "baoshi",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Draw
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    local cards = room:getNCards(2)
+    room:moveCardTo(cards, Card.Processing, nil, fk.ReasonJustMove, self.name, nil, true, player.id)
+    local n = 0
+    for _, id in ipairs(cards) do
+      local name = Fk:getCardById(id).trueName
+      if not table.contains({"peach", "analeptic"}, name)  then
+        n = n + Fk:translate(name, "zh_CN"):len()
+      end
+    end
+    if n <= 10 then
+      room:setCardEmotion(cards[2], "judgegood")
+      room:delay(600)
+    end
+    while n <= 10 do
+      local choice = room:askForChoice(player, {"baoshi_prey", "baoshi_show"}, self.name, "#baoshi-choice:::"..n)
+      if choice == "baoshi_prey" then
+        room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
+        return
+      else
+        local id = room:getNCards(1)[1]
+        table.insert(cards, id)
+        room:moveCardTo(id, Card.Processing, nil, fk.ReasonJustMove, self.name, nil, true, player.id)
+        local name = Fk:getCardById(id).trueName
+        if not table.contains({"peach", "analeptic"}, name)  then
+          n = n + Fk:translate(name, "zh_CN"):len()
+        end
+        if n <= 10 then
+          room:setCardEmotion(id, "judgegood")
+        else
+          room:setCardEmotion(id, "judgebad")
+        end
+        room:delay(600)
+      end
+    end
+    room:cleanProcessingArea(cards, self.name)
+  end,
+}
+cenhun:addSkill(baoshi)
+Fk:loadTranslationTable{
+  ["tycl__cenhun"] = "食岑昏",
+}
+Fk:loadTranslationTable{
+  ["baoshi"] = "暴食",
+  [":baoshi"] = "摸牌阶段结束时，你可以亮出牌堆顶的两张牌。若亮出牌的牌名字数之和小于等于10（【桃】或【酒】不计入牌名字数统计），你选择一项："..
+  "1.获得所有亮出的牌；2.再亮出一张。",
+  ["#baoshi-choice"] = "暴食：现在总字数为%arg，若超过10则不能获得！",
+  ["baoshi_prey"] = "获得这些牌",
+  ["baoshi_show"] = "再亮出一张",
+}
+local xinggong = fk.CreateActiveSkill{
+  name = "xinggong",
+  anim_type = "drawcard",
+  prompt = "#xinggong",
+  card_num = 0,
+  target_num = 0,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local all_cards = {}
+    room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
+      for _, move in ipairs(e.data) do
+        if move.toArea == Card.DiscardPile then
+          for _, info in ipairs(move.moveInfo) do
+            if table.contains(room.discard_pile, info.cardId) then
+              table.insertIfNeed(all_cards, info.cardId)
+            end
+          end
+        end
+      end
+    end, Player.HistoryTurn)
+    if #all_cards == 0 then return end
+    local cards = room:askForCardsChosen(player, player, 1, #all_cards, {
+      card_data = {
+        { "pile_discard", all_cards }
+      }
+    }, self.name, "#xinggong")
+    room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
+    if not player.dead and #cards > player.hp then
+      room:damage{
+        from = player,
+        to = player,
+        damage = #cards - player.hp,
+        skillName = self.name,
+      }
+    end
+  end,
+}
+cenhun:addSkill(xinggong)
+Fk:loadTranslationTable{
+  ["xinggong"] = "兴功",
+  [":xinggong"] = "出牌阶段限一次，你可以选择获得任意张本回合进入弃牌堆的牌，若张数大于当前体力值，每超出一张对自己造成1点伤害。",
+  ["#xinggong"] = "兴功：获得任意张本回合进入弃牌堆的牌，若大于体力值则受到超出张数的伤害！",
+}
+
 return extension

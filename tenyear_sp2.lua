@@ -3946,6 +3946,135 @@ Fk:loadTranslationTable{
 }
 
 --往者可谏：大乔小乔 SP马超 SP赵云 SP甄姬 SP孙策
+local machao = General(extension, "ty_sp__machao", "qun", 4)
+Fk:loadTranslationTable{
+  ["ty_sp__machao"] = "马超",
+  ["#ty_sp__machao"] = "威震西凉",
+  ["illustrator:ty_sp__machao"] = "匠人绘",
+  ["~ty_sp__machao"] = "西凉众将离心，父仇难报",
+}
+local zhuiji = fk.CreateTriggerSkill{
+  name = "ty__zhuiji",
+  anim_type = "offensive",
+  frequency = Skill.Compulsory,
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.tos and
+      table.find(TargetGroup:getRealTargets(data.tos), function (id)
+        return id ~= player.id and not table.contains(player:getTableMark("ty__zhuiji-turn"), id) and
+          not player.room:getPlayerById(id).dead
+      end)
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    for _, id in ipairs(TargetGroup:getRealTargets(data.tos)) do
+      if id ~= player.id and not room:getPlayerById(id).dead then
+        room:addTableMark(player, "ty__zhuiji-turn", id)
+      end
+    end
+  end,
+}
+local zhuiji_distance = fk.CreateDistanceSkill{
+  name = "#ty__zhuiji_distance",
+  fixed_func = function(self, from, to)
+    if table.contains(from:getTableMark("ty__zhuiji-turn"), to.id) then
+      return 1
+    end
+  end,
+}
+zhuiji:addRelatedSkill(zhuiji_distance)
+machao:addSkill(zhuiji)
+Fk:loadTranslationTable{
+  ["ty__zhuiji"] = "追击",
+  [":ty__zhuiji"] = "锁定技，你对其他角色使用牌结算后，本回合你计算与其距离视为1。",
+}
+local shichou = fk.CreateActiveSkill{
+  name = "ty__shichou",
+  anim_type = "offensive",
+  prompt = "#ty__shichou",
+  card_num = 1,
+  target_num = 1,
+  can_use = function(self, player)
+    return #player:getTableMark("ty__shichou-turn") < 2
+  end,
+  handly_pile = true,
+  card_filter = function(self, to_select, selected, player)
+    if #selected == 0 then
+      local color = Fk:getCardById(to_select).color
+      if color == Card.NoColor or table.contains(player:getTableMark("ty__shichou-turn"), color) then return end
+      local card = Fk:cloneCard("slash")
+      card.skillName = self.name
+      card:addSubcard(to_select)
+      return not player:prohibitUse(card)
+    end
+  end,
+  target_filter = function(self, to_select, selected, selected_cards, _, _, player)
+    if #selected > 0 or to_select == player.id then return end
+    local card = Fk:cloneCard("slash")
+    card.skillName = self.name
+    card:addSubcards(selected_cards)
+    if player:getMark("ty__shichou_to-turn") == 0 then
+      return player:canUseTo(card, Fk:currentRoom():getPlayerById(to_select), {bypass_times = true})
+    else
+      if to_select ~= player:getMark("ty__shichou_to-turn") then return end
+      return player:canUseTo(card, Fk:currentRoom():getPlayerById(player:getMark("ty__shichou_to-turn")), {bypass_times = true})
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:addTableMark(player, "ty__shichou-turn", Fk:getCardById(effect.cards[1]).color)
+    room:setPlayerMark(player, "ty__shichou_to-turn", effect.tos[1])
+    local card = Fk:cloneCard("slash")
+    card:addSubcards(effect.cards)
+    card.skillName = self.name
+    local use = {
+      from = player.id,
+      tos = table.map(effect.tos, function (id) return {id} end),
+      card = card,
+      extraUse = true,
+    }
+    room:useCard(use)
+  end,
+}
+local shichou_trigger = fk.CreateTriggerSkill{
+  name = "#ty__shichou_trigger",
+  mute = true,
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and table.contains(data.card.skillNames, "ty__shichou") and
+      data.card.color ~= Card.NoColor and
+      not player.room:getPlayerById(data.to).dead
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(data.to)
+    local pattern, prompt = ".|.|.|.|.|equip", "#ty__shichou1-discard"
+    if data.card.color == Card.Black then
+      pattern = ".|.|spade,club|hand"
+      prompt = "#ty__shichou2-discard"
+    end
+    if #room:askForDiscard(to, 1, 1, false, "ty__shichou", true, pattern, prompt) == 0 then
+      data.disresponsiveList = data.disresponsiveList or {}
+      table.insertIfNeed(data.disresponsiveList, data.to)
+    end
+  end,
+}
+shichou:addRelatedSkill(shichou_trigger)
+machao:addSkill(shichou)
+Fk:loadTranslationTable{
+  ["ty__shichou"] = "誓仇",
+  [":ty__shichou"] = "出牌阶段，你可以将一张牌当不计次数的【杀】使用：若为红色，目标需弃置一张装备牌；若为黑色，"..
+  "目标需弃置一张黑色手牌。否则此【杀】不能被其响应。每种颜色每回合各限一次，且必须指定同一个目标。",
+  ["#ty__shichou"] = "誓仇：将一张牌当不计次数的【杀】使用",
+  ["#ty__shichou_trigger"] = "誓仇",
+  ["#ty__shichou1-discard"] = "誓仇：请弃置一张装备牌，否则不能响应此【杀】",
+  ["#ty__shichou2-discard"] = "誓仇：请弃置一张黑色手牌，否则不能响应此【杀】",
+
+  ["$ty__shichou1"] = "去地下忏悔你们的罪行吧！",
+  ["$ty__shichou2"] = "以尔等之血，祭我族人。",
+}
+
 local zhenji = General(extension, "ty_sp__zhenji", "qun", 3, 3, General.Female)
 local jijiez = fk.CreateTriggerSkill{
   name = "jijiez",

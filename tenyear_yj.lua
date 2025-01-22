@@ -1650,8 +1650,9 @@ xuangongzhu:addSkill(qimei)
 xuangongzhu:addSkill(zhuijix)
 Fk:loadTranslationTable{
   ["ty__xuangongzhu"] = "宣公主",
-  --["#ty__xuangongzhu"] = "",
+  ["#ty__xuangongzhu"] = "高陵翩蝶",
   ["designer:ty__xuangongzhu"] = "谜城惊雨声",
+  ["~ty__xuangongzhu"] = "夫君，妾身先行一步……",
 }
 Fk:loadTranslationTable{
   ["ty__qimei"] = "齐眉",
@@ -1660,6 +1661,8 @@ Fk:loadTranslationTable{
   ["#ty__qimei"] = "齐眉：与一名角色各摸两张牌然后各展示两张牌，根据展示牌花色数执行效果",
   ["#ty__qimei-show"] = "齐眉：请展示两张手牌",
   ["#ty__qimei-use"] = "齐眉：你可以使用这些牌",
+  ["$ty__qimei1"] = "此生愿作比翼鸟，双宿双飞不分离。",
+  ["$ty__qimei2"] = "与君共度晨昏，此生之所愿。",
 }
 Fk:loadTranslationTable{
   ["ty__zhuijix"] = "追姬",
@@ -1667,6 +1670,8 @@ Fk:loadTranslationTable{
   "装备牌后，废除对应的装备栏。",
   ["#ty__zhuijix-choose"] = "追姬：你可以令一名角色随机使用装备牌至装备区满",
   ["#ty__zhuijix_delay"] = "追姬",
+  ["$ty__zhuijix1"] = "此生与君相遇，足以含笑九泉。",
+  ["$ty__zhuijix2"] = "夫君珍重，万望保重身体。",
 }
 
 local linghuyu = General(extension, "linghuyu", "wei", 4)

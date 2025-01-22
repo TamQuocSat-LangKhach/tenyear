@@ -3152,6 +3152,9 @@ local tengfanglan = General(extension, "ty__tengfanglan", "wu", 3, 3, General.Fe
 local ty__luochong = fk.CreateTriggerSkill{
   name = "ty__luochong",
   anim_type = "control",
+  dynamic_desc = function(self, player)
+    return "ty__luochong_inner:" .. tostring(4-player:getMark(self.name))
+  end,
   events = {fk.RoundStart},
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self) and player:getMark(self.name) < 4 and
@@ -3195,6 +3198,19 @@ local ty__aichen = fk.CreateTriggerSkill{
   name = "ty__aichen",
   mute = true,
   frequency = Skill.Compulsory,
+  dynamic_desc = function(self, player)
+    local x = #Fk:currentRoom().draw_pile
+    local texts = {"ty__aichen_inner", "", "", ""}
+    if x > 80 then
+      texts[2] = "<font color='#E0DB2F'>"
+    end
+    if x > 40 then
+      texts[3] = "<font color='#E0DB2F'>"
+    elseif x < 40 then
+      texts[4] = "<font color='#E0DB2F'>"
+    end
+    return table.concat(texts, ":")
+  end,
   events = {fk.AfterCardsMove, fk.EventPhaseChanging, fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
@@ -3242,6 +3258,10 @@ Fk:loadTranslationTable{
   [":ty__aichen"] = "锁定技，若剩余牌堆数大于80，当你发动〖落宠〗弃置自己区域内的牌后，你摸两张牌；"..
   "若剩余牌堆数大于40，你跳过弃牌阶段；若剩余牌堆数小于40，当你成为♠牌的目标后，你不能响应此牌。",
   ["#ty__luochong-choose"] = "落宠：你可以依次选择角色，弃置其区域内的牌（共计至多%arg张，还剩%arg2张）",
+
+  [":ty__luochong_inner"] = "每轮开始时，你可以弃置任意名角色区域内共计至多{1}张牌，若你一次性弃置了一名角色区域内至少3张牌，〖落宠〗弃置牌数-1。",
+  [":ty__aichen_inner"] = "锁定技，{1}若剩余牌堆数大于80，当你发动〖落宠〗弃置自己区域内的牌后，你摸两张牌；</font>"..
+  "{2}若剩余牌堆数大于40，你跳过弃牌阶段；</font>{3}若剩余牌堆数小于40，当你成为♠牌的目标后，你不能响应此牌。",
 
   ["$ty__luochong1"] = "陛下独宠她人，奈何雨露不均。",
   ["$ty__luochong2"] = "妾贵于佳丽，然宠不及三千。",

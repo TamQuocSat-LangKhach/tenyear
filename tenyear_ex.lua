@@ -745,6 +745,7 @@ lingtong:addSkill(ex__yongjin)
 Fk:loadTranslationTable{
   ["ty_ex__lingtong"] = "界凌统",
   ["#ty_ex__lingtong"] = "豪情烈胆",
+  ["cv:ty_ex__lingtong"] = "清水浊流",
   ["illustrator:ty_ex__lingtong"] = "聚一",
   ["ty_ex__xuanfeng"] = "旋风",
   [":ty_ex__xuanfeng"] = "当你失去装备区里的牌，或于弃牌阶段弃掉两张或更多的牌时，若没有角色处于濒死状态，你可以依次弃置一至两名其他角色的共计两张牌。若此时是你的回合内，则你可以对其中一名角色造成1点伤害。",
@@ -4647,6 +4648,7 @@ caoxiu:addSkill(ty_ex__qingxi)
 Fk:loadTranslationTable{
   ["ty_ex__caoxiu"] = "界曹休",
   ["#ty_ex__caoxiu"] = "千里骐骥",
+  ["cv:ty_ex__caoxiu"] = "清水浊流",
   ["illustrator:ty_ex__caoxiu"] = "写之火工作室",
   ["ty_ex__qingxi"] = "倾袭",
   [":ty_ex__qingxi"] = "当你使用【杀】或【决斗】指定一名角色为目标后，你可以令其选择一项：1.弃置等同于你攻击范围内的角色数张手牌（至多为2，若你武器区里有武器牌则改为至多为4），然后弃置你装备区里的武器牌；2.令此牌对其造成的基础伤害值+1且你进行一次判定，若结果为红色，该角色不能响应此牌。",
@@ -4911,6 +4913,7 @@ sunxiu:addSkill("zhaofu")
 Fk:loadTranslationTable{
   ["ty_ex__sunxiu"] = "界孙休",
   ["ty_ex__yanzhu"] = "宴诛",
+  ["cv:ty_ex__yanzhu"] = "清水浊流",
   ["#ty_ex__yanzhu_trigger"] = "宴诛",
   [":ty_ex__yanzhu"] = "出牌阶段限一次，你可以令一名其他角色选择一项：1.弃置一张牌，其下次受到伤害的+1直到其下个回合开始；2.交给你装备区内所有的牌，"..
   "你修改〖宴诛〗为 “出牌阶段限一次，你可以选择一名其他角色，令其下次受到的伤害+1直到其下个回合开始。”和修改〖兴学〗为“X为你的体力上限”。",

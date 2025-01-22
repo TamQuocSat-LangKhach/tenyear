@@ -86,6 +86,7 @@ Fk:loadTranslationTable{
   ["yanjun"] = "严畯",
   ["#yanjun"] = "志存补益",
   ["illustrator:yanjun"] = "YanBai",
+  ["cv:yanjun"] = "小思无邪强",
   ["guanchao"] = "观潮",
   [":guanchao"] = "出牌阶段开始时，你可以选择一项直到回合结束：1.当你使用牌时，若你此阶段使用过的所有牌的点数为严格递增，你摸一张牌；"..
   "2.当你使用牌时，若你此阶段使用过的所有牌的点数为严格递减，你摸一张牌。",
@@ -295,13 +296,15 @@ local limu = fk.CreateActiveSkill{
   prompt = "#limu",
   card_num = 1,
   target_num = 0,
-  can_use = function(self, player) return not player:hasDelayedTrick("indulgence") end,
+  can_use = function(self, player)
+    return not player:hasDelayedTrick("indulgence") and not table.contains(player.sealedSlots, Player.JudgeSlot)
+  end,
   target_filter = Util.FalseFunc,
-  card_filter = function(self, to_select, selected)
+  card_filter = function(self, to_select, selected, player)
     if #selected == 0 and Fk:getCardById(to_select).suit == Card.Diamond then
       local card = Fk:cloneCard("indulgence")
       card:addSubcard(to_select)
-      return not Self:prohibitUse(card) and not Self:isProhibited(Self, card)
+      return not player:prohibitUse(card) and not player:isProhibited(player, card)
     end
   end,
   on_use = function(self, room, use)
@@ -314,7 +317,7 @@ local limu = fk.CreateActiveSkill{
       tos = {{use.from}},
       card = card,
     }
-    if player:isWounded() then
+    if player:isWounded() and not player.dead then
       room:recover{
         who = player,
         num = 1,
@@ -354,6 +357,7 @@ Fk:loadTranslationTable{
   ["liuyan"] = "刘焉",
   ["#liuyan"] = "裂土之宗",
   ["cv:liuyan"] = "金垚",
+  ["designer:liuyan"] = "桃花僧",
   ["illustrator:liuyan"] = "明暗交界", -- 传说皮 雄踞益州
   ["tushe"] = "图射",
   [":tushe"] = "当你使用非装备牌指定目标后，若你没有基本牌，则你可以摸X张牌（X为此牌指定的目标数）。",

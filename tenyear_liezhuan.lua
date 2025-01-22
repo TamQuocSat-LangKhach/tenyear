@@ -198,6 +198,7 @@ ty__liuhong:addRelatedSkill(zhihu)
 Fk:loadTranslationTable{
   ["ty__liuhong"] = "刘宏",
   ["#ty__liuhong"] = "汉灵帝",
+  ["cv:ty__liuhong"] = "贾志超219",
   ["illustrator:ty__liuhong"] = "凝聚永恒",
   ["designer:ty__liuhong"] = "笔枔",
 
@@ -630,6 +631,7 @@ dingyuan:addRelatedSkill(panshi)
 Fk:loadTranslationTable{
   ["ty__dingyuan"] = "丁原",
   ["#ty__dingyuan"] = "养虎为患",
+  ["cv:ty__dingyuan"] = "贾志超219",
   ["illustrator:ty__dingyuan"] = "秋呆呆",
   ["cixiao"] = "慈孝",
   [":cixiao"] = "准备阶段，若场上没有“义子”，你可以令一名其他角色获得一个“义子”标记；若场上有“义子”标记，你可以弃置一张牌移动“义子”标记。拥有“义子”标记的角色获得技能〖叛弑〗。",
@@ -2014,6 +2016,7 @@ yanfuren:addSkill(nifu)
 Fk:loadTranslationTable{
   ["yanfuren"] = "严夫人",
   ["#yanfuren"] = "霜天薄裳",
+  ["cv:yanfuren"] = "亦喵酱",
   ["illustrator:yanfuren"] = "君桓文化",
   ["channi"] = "谗逆",
   [":channi"] = "出牌阶段限一次，你可以交给一名其他角色任意张手牌，然后该角色可以将X张手牌当一张【决斗】使用（X至多为你以此法交给其的牌数）。"..

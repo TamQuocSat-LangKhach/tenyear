@@ -132,6 +132,7 @@ xingdaorong:addSkill(xuhe)
 Fk:loadTranslationTable{
   ["xingdaorong"] = "邢道荣",
   ["#xingdaorong"] = "零陵上将",
+  ["cv:xingdaorong"] = "曹真",
   ["designer:xingdaorong"] = "梦魇狂朝",
   ["illustrator:xingdaorong"] = "尼乐小丑&三道纹",
 
@@ -235,7 +236,7 @@ caoxing:addSkill(zhanwan)
 Fk:loadTranslationTable{
   ["caoxing"] = "曹性",
   ["#caoxing"] = "健儿",
-  ["cv:caoxing"] = "曹真",
+  ["cv:caoxing"] = "曹真", -- 艺名REAL-Jason
   ["illustrator:caoxing"] = "匠人绘",
   ["designer:caoxing"] = "五月y",
 
@@ -1380,6 +1381,7 @@ Fk:loadTranslationTable{
   ["#wangtao"] = "晔兮如华",
   ["designer:wangtao"] = "七哀",
   ["illustrator:wangtao"] = "alien",
+  ["cv:wangtao"] = "亦喵酱",
 
   ["huguan"] = "护关",
   [":huguan"] = "一名角色于其出牌阶段内使用第一张牌时，若为红色，你可以声明一个花色，本回合此花色的牌不计入其手牌上限。",
@@ -1432,6 +1434,7 @@ Fk:loadTranslationTable{
   ["#wangyues"] = "温乎如莹",
   ["designer:wangyues"] = "七哀",
   ["illustrator:wangyues"] = "alien",
+  ["cv:wangyues"] = "單人徐",
 
   ["mingluan"] = "鸣鸾",
   [":mingluan"] = "其他角色的结束阶段，若本回合有角色回复过体力，你可以弃置任意张牌，然后摸等同于当前回合角色手牌数的牌（最多摸至五张）。",

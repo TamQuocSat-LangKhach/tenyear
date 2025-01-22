@@ -2047,6 +2047,7 @@ Fk:loadTranslationTable{
   ["tymou__guanping"] = "谋关平",
   ["#tymou__guanping"] = "百战烈烈",
   --["designer:tymou__guanping"] = "",
+  ["cv:tymou__guanping"] = "清水浊流",
   ["illustrator:tymou__guanping"] = "黯荧岛",
 
   ["wuwei"] = "武威",

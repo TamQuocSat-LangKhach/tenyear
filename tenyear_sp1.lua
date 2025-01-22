@@ -2074,7 +2074,7 @@ Fk:addSkill(jj__yeyan)
 Fk:loadTranslationTable{
   ["simahui"] = "司马徽",
   ["#simahui"] = "水镜先生",
-  ["cv:simahui"] = "于松涛",
+  ["cv:simahui"] = "于松涛", -- 艺名：爱恰饭的漠桀
   ["illustrator:simahui"] = "黑桃J",
   ["jianjie"] = "荐杰",
   [":jianjie"] = "①你的第一个回合开始时，你令一名其他角色获得“龙印”，然后令另一名其他角色获得“凤印”；②出牌阶段限一次（你的第一个回合除外），或当拥有“龙印”/“凤印”的角色死亡时，你可以转移“龙印”/“凤印”。"..
@@ -2549,6 +2549,7 @@ gexuan:addRelatedSkill("gongxin")
 Fk:loadTranslationTable{
   ["gexuan"] = "葛玄",
   ["#gexuan"] = "太极仙翁",
+  ["cv:gexuan"] = "-安志-",
   ["illustrator:gexuan"] = "F.源",
   ["lianhua"] = "炼化",
   [":lianhua"] = "你的回合外，当其他角色受到伤害后，你获得一枚“丹血”标记（阵营与你相同为红色，不同则为黑色，颜色不可见）直到你的出牌阶段开始。<br>"..
@@ -4492,6 +4493,7 @@ yanghong:addSkill(yuanmo)
 Fk:loadTranslationTable{
   ["yanghong"] = "杨弘",
   ["#yanghong"] = "柔迩驭远",
+  ["cv:yanghong"] = "于松涛",
   ["designer:yanghong"] = "黑寡妇无敌",
   ["illustrator:yanghong"] = "虫师网络",
   ["ty__jianji"] = "间计",

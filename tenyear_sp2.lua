@@ -1388,6 +1388,7 @@ malingli:addSkill(huahuo)
 Fk:loadTranslationTable{
   ["malingli"] = "马伶俐",
   ["#malingli"] = "火树银花",
+  ["cv:malingli"] = "寂言_zttt", -- 本名：曾彤
   ["designer:malingli"] = "星移",
   ["illustrator:malingli"] = "匠人绘",
 
@@ -1996,6 +1997,7 @@ Fk:loadTranslationTable{
   ["liubian"] = "刘辩",
   ["#liubian"] = "弘农怀王",
   ["designer:liubian"] = "韩旭",
+  ["cv:liubian"] = "-安志-",
   ["illustrator:liubian"] = "zoo",
   ["shiyuan"] = "诗怨",
   [":shiyuan"] = "每回合每项限一次，当你成为其他角色使用牌的目标后：1.若其体力值比你多，你摸三张牌；2.若其体力值与你相同，你摸两张牌；"..
@@ -5269,6 +5271,7 @@ Fk:loadTranslationTable{
   ["#caojinyu"] = "金乡公主",
   ["designer:caojinyu"] = "韩旭",
   ["illustrator:caojinyu"] = "MUMU",
+  ["cv:caojinyu"] = "亦喵酱",
   ["yuqi"] = "隅泣",
   [":yuqi"] = "每回合限两次，当一名角色受到伤害后，若你与其距离0或者更少，你可以观看牌堆顶的3张牌，将其中至多1张交给受伤角色，"..
   "至多1张自己获得，剩余的牌放回牌堆顶。",

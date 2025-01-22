@@ -988,6 +988,7 @@ gongsunxiu:addSkill(kuizhen)
 Fk:loadTranslationTable{
   ["gongsunxiu"] = "公孙修",
   ["#gongsunxiu"] = "寸莛击钟",
+  ["cv:gongsunxiu"] = "李陌上同学",
   ["illustrator:gongsunxiu"] = "鬼画府",
   ["gangu"] = "干蛊",
   [":gangu"] = "锁定技，每回合限一次，当一名角色失去体力后，你摸三张牌，失去1点体力。",

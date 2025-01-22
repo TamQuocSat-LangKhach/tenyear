@@ -207,6 +207,7 @@ Fk:addSkill(sidao_vs)
 Fk:loadTranslationTable{
   ["guosi"] = "郭汜",
   ["#guosi"] = "党豺为虐",
+  ["cv:guosi"] = "曹真",
   ["illustrator:guosi"] = "秋呆呆",
   ["tanbei"] = "贪狈",
   [":tanbei"] = "出牌阶段限一次，你可以令一名其他角色选择一项：1.令你随机获得其区域内的一张牌，此回合不能再对其使用牌；"..
@@ -2764,6 +2765,7 @@ zhaozhong:addSkill(huangkong)
 Fk:loadTranslationTable{
   ["zhaozhong"] = "赵忠",
   ["#zhaozhong"] = "骄纵窃幸",
+  ["cv:zhaozhong"] = "贾志超219",
   ["illustrator:zhaozhong"] = "mumu",
   ["yangzhong"] = "殃众",
   [":yangzhong"] = "当你造成或受到伤害后，伤害来源可以弃置两张牌，令受到伤害的角色失去1点体力。",
@@ -5133,6 +5135,7 @@ Fk:loadTranslationTable{
   ["ty__nanhualaoxian"] = "南华老仙",
   ["#ty__nanhualaoxian"] = "仙人指路",
   ["illustrator:ty__nanhualaoxian"] = "君桓文化",
+  ["cv:ty__nanhualaoxian"] = "大许哥",
 
   ["gongxiu"] = "共修",
   [":gongxiu"] = "结束阶段，若你本回合发动过〖经合〗，你可以选择一项：1.令所有本回合因〖经合〗获得过技能的角色摸一张牌；"..
@@ -5254,6 +5257,7 @@ Fk:loadTranslationTable{
   ["ty__tongyuan"] = "童渊",
   ["#ty__tongyuan"] = "蓬莱枪神散人",
   ["illustrator:ty__tongyuan"] = "目游",
+  ["cv:ty__tongyuan"] = "大白siro",
   ["chaofeng"] = "朝凤",
   [":chaofeng"] = "每阶段限一次，当你于出牌阶段使用牌造成伤害时，你可以弃置一张手牌，然后摸一张牌。若弃置的牌与造成伤害的牌：颜色相同，则多摸一张牌；"..
   "类型相同，则此伤害+1。",
@@ -5516,6 +5520,7 @@ pangdegong:addSkill(yinyi)
 Fk:loadTranslationTable{
   ["ty__pangdegong"] = "庞德公",
   ["#ty__pangdegong"] = "友睦风疏",
+  ["cv:ty__pangdegong"] = "大白siro", -- 本名：陈伟
   ["designer:ty__pangdegong"] = "步穗",
   ["illustrator:ty__pangdegong"] = "君桓文化",
   ["heqia"] = "和洽",

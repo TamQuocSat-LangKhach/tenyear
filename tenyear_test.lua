@@ -1782,53 +1782,52 @@ Fk:loadTranslationTable{
   ["@@xiaowul-inhand"] = "骁武",
 }
 
-local baguan = fk.CreateViewAsSkill{
+local baguan = fk.CreateTriggerSkill{
   name = "baguan",
-  anim_type = "offensive",
-  prompt = function (self, selected_cards, selected)
-    local n = 0
-    for _, id in ipairs(Self:getEquipments(Card.SubtypeWeapon)) do
-      n = math.max(n, Fk:translate(Fk:getCardById(id).name, "zh_CN"):len())
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return
+      target == player and
+      player:hasSkill(self) and
+      data.card.sub_type == Card.SubtypeWeapon and
+      player:getMark("baguan") == 2 and
+      table.contains(player:getEquipments(Card.SubtypeWeapon), data.card.id) and
+      #player:getHandlyIds() > 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local wordsNum = Fk:translate(data.card.name, "zh_CN"):len()
+    room:setPlayerMark(player, "baguanWeaponNum", wordsNum)
+    local success, dat = room:askForUseActiveSkill(player, "baguan_viewas", "#baguan-use:::" .. wordsNum, true, {bypass_times = true})
+    room:setPlayerMark(player, "baguanWeaponNum", 0)
+
+    if success and dat then
+      self.cost_data = dat
+      room:setPlayerMark(player, "baguan", 0)
+      return true
     end
-    return "#baguan:::"..n
+
+    return false
   end,
-  pattern = "slash",
-  handly_pile = true,
-  card_filter = function(self, to_select, selected, player)
-    local n = 0
-    for _, id in ipairs(Self:getEquipments(Card.SubtypeWeapon)) do
-      n = math.max(n, Fk:translate(Fk:getCardById(id).name, "zh_CN"):len())
-    end
-    return #selected < n and table.contains(player:getHandlyIds(), to_select)
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local dat = self.cost_data
+
+    room:sortPlayersByAction(dat.targets)
+    local use = {
+      from = player.id,
+      tos = table.map(dat.targets, function(p) return { p } end),
+      card = Fk.skills["baguan_viewas"]:viewAs(dat.cards),
+      extraUse = true,
+      additionalDamage = #dat.cards - 1
+    }
+
+    room:useCard(use)
   end,
-  view_as = function(self, cards)
-    if #cards == 0 then return end
-    local c = Fk:cloneCard("slash")
-    c.skillName = self.name
-    c:addSubcards(cards)
-    return c
-  end,
-  before_use = function (self, player, use)
-    local n = 0
-    for _, id in ipairs(player:getEquipments(Card.SubtypeWeapon)) do
-      n = math.max(n, Fk:translate(Fk:getCardById(id).name, "zh_CN"):len())
-    end
-    use.additionalDamage = n - 1
-    player.room:setPlayerMark(player, "baguan", 0)
-  end,
-  enabled_at_play = function(self, player)
-    return player:getMark("baguan") == 2 and #player:getEquipments(Card.SubtypeWeapon) > 0
-  end,
-  enabled_at_response = function (self, player, response)
-    return not response and player:getMark("baguan") == 2 and #player:getEquipments(Card.SubtypeWeapon) > 0
-  end,
-}
-local baguan_trigger = fk.CreateTriggerSkill{
-  name = "#baguan_trigger",
 
   refresh_events = {fk.AfterCardUseDeclared},
   can_refresh = function (self, event, target, player, data)
-    return target == player and player:hasSkill("baguan", true)
+    return target == player and player:hasSkill(self, true)
   end,
   on_refresh = function (self, event, target, player, data)
     local room = player.room
@@ -1855,12 +1854,28 @@ local baguan_trigger = fk.CreateTriggerSkill{
     end
   end,
 }
-baguan:addRelatedSkill(baguan_trigger)
+local baguanViewAs = fk.CreateViewAsSkill{
+  name = "baguan_viewas",
+  anim_type = "offensive",
+  handly_pile = true,
+  card_filter = function(self, to_select, selected, player)
+    return #selected < Self:getMark("baguanWeaponNum") and table.contains(Self:getHandlyIds(), to_select)
+  end,
+  view_as = function(self, cards)
+    if #cards == 0 then return end
+    local c = Fk:cloneCard("slash")
+    c.skillName = self.name
+    c:addSubcards(cards)
+    return c
+  end,
+}
+Fk:addSkill(baguanViewAs)
 lvbu:addSkill(baguan)
 Fk:loadTranslationTable{
   ["baguan"] = "霸关",
-  [":baguan"] = "连招技（指定自己为目标的牌+武器牌）你可以将至多X张手牌当伤害基数值为X的【杀】使用（X为你武器牌的牌名字数）。",
-  ["#baguan"] = "霸关：将至多%arg张手牌当伤害基数值为%arg的【杀】使用",
+  [":baguan"] = "连招技（指定自己为目标的牌+武器牌）你可以将至多X张手牌当伤害基数等同于你以此法用于转化的牌数的【杀】使用（X为你武器牌的牌名字数）。",
+  ["baguan_viewas"] = "霸关",
+  ["#baguan-use"] = "霸关：你可将至多%arg张手牌当【杀】使用（伤害基数为你选择的牌数）",
 }
 
 return extension

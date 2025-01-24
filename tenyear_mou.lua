@@ -575,6 +575,7 @@ tymou2__simayi:addSkill("quanmou")
 Fk:loadTranslationTable{
   ["tymou__simayi"] = "谋司马懿",
   ["#tymou__simayi"] = "韬谋韫势",
+  ["designer:tymou__simayi"] = "星移",
   ["illustrator:tymou__simayi"] = "米糊PU",
   ["pingliao"] = "平辽",
   [":pingliao"] = "锁定技，当你使用【杀】时，不公开指定的目标，你攻击范围内的角色依次选择是否打出一张红色基本牌，"..
@@ -776,6 +777,7 @@ tymou2__jiaxu:addRelatedSkill("rushi")
 Fk:loadTranslationTable{
   ["tymou__jiaxu"] = "谋贾诩",
   ["#tymou__jiaxu"] = "晦谋独善",
+  ["designer:tymou__jiaxu"] = "星移",
   ["illustrator:tymou__jiaxu"] = "鬼画府",
   ["sushen"] = "肃身",
   [":sushen"] = "限定技，出牌阶段，你可以记录你的体力值、手牌数和〖覆谋〗的阴阳状态，然后获得〖入世〗。",

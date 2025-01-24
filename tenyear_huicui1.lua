@@ -3157,6 +3157,7 @@ huangwudie:addRelatedSkill(shaxue)
 Fk:loadTranslationTable{
   ["huangwudie"] = "黄舞蝶",
   ["#huangwudie"] = "刀弓双绝",
+  ["designer:huangwudie"] = "星移",
   ["illustrator:huangwudie"] = "黯荧岛",
 
   ["shuangrui"] = "双锐",

@@ -1476,7 +1476,7 @@ mu__miheng:addSkill(sirui)
 Fk:loadTranslationTable{
   ["mu__miheng"] = "乐祢衡",
   ["#mu__miheng"] = "鹗立鸷群",
-  --["designer:mu__miheng"] = "",
+  ["designer:mu__miheng"] = "星移",
   ["illustrator:mu__miheng"] = "君桓文化",
   ["cv:mu__miheng"] = "虞晓旭",
 
@@ -2024,7 +2024,7 @@ zoushi:addSkill(huoxin)
 Fk:loadTranslationTable{
   ["mu__zoushi"] = "乐邹氏",
   ["#mu__zoushi"] = "淯水吟",
-  --["designer:mu__zoushi"] = "",
+  ["designer:mu__zoushi"] = "星移",
   ["cv:mu__zoushi"] = "楼倾司",
   ["illustrator:mu__zoushi"] = "黯荧岛",
 
@@ -2155,7 +2155,7 @@ diaochan:addSkill(diou)
 Fk:loadTranslationTable{
   ["mu__diaochan"] = "乐貂蝉",
   ["#mu__diaochan"] = "檀声向晚",
-  --["designer:mu__diaochan"] = "",
+  ["designer:mu__diaochan"] = "星移",
   ["illustrator:mu__diaochan"] = "鬼画府",
 
   ["tanban"] = "檀板",

@@ -3447,7 +3447,7 @@ zhupeilan:addSkill(tongdao)
 Fk:loadTranslationTable{
   ["zhupeilan"] = "朱佩兰",
   ["#zhupeilan"] = "景皇后",
-  --["designer:zhupeilan"] = "",
+  ["designer:zhupeilan"] = "星移",
   ["illustrator:zhupeilan"] = "匠人绘",
 
   ["cilv"] = "辞虑",
@@ -3930,6 +3930,7 @@ Fk:loadTranslationTable{
   ["ty__qinghegongzhu"] = "清河公主",
   ["#ty__qinghegongzhu"] = "大魏长公主",
   ["illustrator:ty__qinghegongzhu"] = "七兜豆",
+  ["designer:ty__qinghegongzhu"] = "星移",
   ["~ty__qinghegongzhu"] = "夏侯楙，不能和好，为何不和离？",
 
   ["ty__zhangjiq"] = "长姬",
@@ -4247,6 +4248,7 @@ zhenji:addSkill(huiji)
 Fk:loadTranslationTable{
   ["ty_sp__zhenji"] = "甄姬",
   ["#ty_sp__zhenji"] = "善言贤女",
+  ["designer:ty_sp__zhenji"] = "星移",
   ["illustrator:ty_sp__zhenji"] = "匠人绘",
 
   ["jijiez"] = "己诫",
@@ -6250,7 +6252,7 @@ zhugemengxue:addSkill(hanying)
 Fk:loadTranslationTable{
   ["zhugemengxue"] = "诸葛梦雪",
   ["#zhugemengxue"] = "仙苑停云",
-  ["designer:zhugemengxue"] = "韩旭",
+  ["designer:zhugemengxue"] = "星移",
   --["illustrator:zhugemengxue"] = "",
   ["jichun"] = "寄春",
   [":jichun"] = "出牌阶段限两次，你可以展示一张牌，选择于当前阶段内未选择过的项：1.将此牌交给一名手牌数小于你的角色，然后摸X张牌；"..

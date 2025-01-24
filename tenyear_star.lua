@@ -1865,6 +1865,7 @@ sunshangxiang:addSkill(jiaohao)
 Fk:loadTranslationTable{
   ["tystar__sunshangxiang"] = "星孙尚香",
   ["#tystar__sunshangxiang"] = "鸳袖衔剑珮",
+  ["designer:tystar__sunshangxiang"] = "食饿不赦",
   ["illustrator:tystar__sunshangxiang"] = "匠人绘",
 
   ["saying"] = "飒影",

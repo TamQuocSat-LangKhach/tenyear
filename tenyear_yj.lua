@@ -1832,33 +1832,25 @@ local beiyu = fk.CreateActiveSkill{
         table.insertIfNeed(choices, Fk:getCardById(id):getSuitString(true))
       end
     end
+    if #choices == 0 then return end
     local choice = room:askForChoice(player, choices, self.name, "#beiyu-choose", false,
       {"log_spade", "log_heart", "log_club", "log_diamond"})
     local cards = table.filter(player:getCardIds("h"), function(id)
       return Fk:getCardById(id):getSuitString(true) == choice
     end)
-    if #cards == 1 then
-      room:moveCards({
-        ids = cards,
-        from = player.id,
-        toArea = Card.DrawPile,
-        moveReason = fk.ReasonJustMove,
-        skillName = self.name,
-        proposer = player.id,
-        drawPilePosition = -1,
-      })
-    else
-      local result = room:askForGuanxing(player, cards, {}, {0, 0}, self.name, true, {"$Hand", ""})
-      room:moveCards({
-        ids = result.top,
-        from = player.id,
-        toArea = Card.DrawPile,
-        moveReason = fk.ReasonJustMove,
-        skillName = self.name,
-        proposer = player.id,
-        drawPilePosition = -1,
-      })
+    if #cards > 1 then
+      local result = room:askForGuanxing(player, cards, nil, {0, 0}, self.name, true, {"Bottom", ""})
+      cards = result.top
     end
+    room:moveCards({
+      ids = cards,
+      from = player.id,
+      toArea = Card.DrawPile,
+      moveReason = fk.ReasonJustMove,
+      skillName = self.name,
+      proposer = player.id,
+      drawPilePosition = -1,
+    })
   end,
 }
 local duchi = fk.CreateTriggerSkill{

@@ -1807,6 +1807,7 @@ pangfengyi:addSkill(peiniang)
 Fk:loadTranslationTable{
   ["pangfengyi"] = "庞凤衣",
   ["#pangfengyi"] = "瞳悉万机",
+  ["designer:pangfengyi"] = "星移",
   ["illustrator:pangfengyi"] = "黯荧岛",
 
   ["yitong"] = "异瞳",

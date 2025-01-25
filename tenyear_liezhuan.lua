@@ -2108,35 +2108,26 @@ local ty__zhanyi_trigger = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    player:broadcastSkillInvoke("ty__zhanyi")
     if event == fk.CardUsing then
       if data.card.type == Card.TypeBasic then
         if data.card.is_damage_card then
-          player:broadcastSkillInvoke("ty__zhanyi")
           room:notifySkillInvoked(player, "ty__zhanyi", "offensive")
           data.additionalDamage = (data.additionalDamage or 0) + 1
         elseif data.card.name == "peach" then
-          player:broadcastSkillInvoke("ty__zhanyi")
           room:notifySkillInvoked(player, "ty__zhanyi", "support")
           data.additionalRecover = (data.additionalRecover or 0) + 1
-        elseif data.card.name == "analeptic" then
-          if data.extra_data and data.extra_data.analepticRecover then
-            player:broadcastSkillInvoke("ty__zhanyi")
-            room:notifySkillInvoked(player, "ty__zhanyi", "support")
-            data.additionalRecover = (data.additionalRecover or 0) + 1
-          else
-            player:broadcastSkillInvoke("ty__zhanyi")
-            room:notifySkillInvoked(player, "ty__zhanyi", "offensive")
-            data.extra_data = data.extra_data or {}
-            data.extra_data.additionalDrank = (data.extra_data.additionalDrank or 0) + 1
-          end
+        elseif data.card.name == "analeptic" and data.extra_data and data.extra_data.analepticRecover then
+          room:notifySkillInvoked(player, "ty__zhanyi", "support")
+          data.additionalRecover = (data.additionalRecover or 0) + 1
+        else
+          room:notifySkillInvoked(player, "ty__zhanyi", "special")
         end
       elseif data.card.type == Card.TypeTrick then
-        player:broadcastSkillInvoke("ty__zhanyi")
         room:notifySkillInvoked(player, "ty__zhanyi", "drawcard")
         player:drawCards(1, "ty__zhanyi")
       end
     else
-      player:broadcastSkillInvoke("ty__zhanyi")
       room:notifySkillInvoked(player, "ty__zhanyi", "control")
       local targets = table.map(table.filter(room.alive_players, function(p)
         return p ~= player and not p:isNude() end), Util.IdMapper)

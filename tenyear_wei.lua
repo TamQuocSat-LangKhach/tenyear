@@ -183,16 +183,16 @@ local yuhui = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function (self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Finish and
-      table.find(player.room:getOtherPlayers(player), function (p)
-        return p.kingdom == "wu"
+      table.find(player.room.alive_players, function (p)
+        return p ~= player and p.kingdom == "wu"
       end)
   end,
   on_cost = function (self, event, target, player, data)
     local room = player.room
-    local targets = table.filter(room:getOtherPlayers(player), function (p)
-      return p.kingdom == "wu"
+    local targets = table.filter(room.alive_players, function (p)
+      return p ~= player and p.kingdom == "wu"
     end)
-    local tos = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 9, "#yuhui-choose", self.name, true)
+    local tos = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#yuhui-choose", self.name, true)
     if #tos > 0 then
       self.cost_data = {tos = tos}
       return true
@@ -273,7 +273,7 @@ yuhui:addRelatedSkill(yuhui_trigger)
 sunquan:addSkill(yuhui)
 Fk:loadTranslationTable{
   ["yuhui"] = "御麾",
-  [":yuhui"] = "结束阶段，你可以选择任意名其他吴势力角色，其出牌阶段开始时可以交给你一张红色基本牌并发动一次X为1的〖斡衡〗。",
+  [":yuhui"] = "结束阶段，你可以选择一名吴势力的其他角色，其出牌阶段开始时可以交给你一张红色基本牌并发动一次X为1的〖斡衡〗。",
   ["#yuhui-choose"] = "御麾：选择任意名吴势力角色，其出牌阶段开始时可以交给你一张牌发动“斡衡”",
   ["#yuhui_trigger"] = "御麾",
   ["#yuhui-active"] = "御麾：是否交给 %src 一张红色基本牌，令一名角色摸或弃一张牌？",

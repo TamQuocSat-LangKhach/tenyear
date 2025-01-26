@@ -1033,7 +1033,7 @@ Fk:loadTranslationTable{
   ["tymou__jiangji"] = "谋蒋济",
   ["#tymou__jiangji"] = "策论万机",
   ["illustrator:tymou__jiangji"] = "错落宇宙",
-  ["designer:tymou__jiangji"] = "坑坑",
+  ["designer:tymou__jiangji"] = "黑寡妇",
 
   ["shiju"] = "势举",
   [":shiju"] = "一名角色的出牌阶段限一次，其可以将一张牌交给你（若其为你，则改为你选择你的一张牌，若此牌为你装备区里的牌，你获得之），" ..
@@ -1257,6 +1257,7 @@ Fk:loadTranslationTable{
   ["tymou__wangling"] = "谋王凌",
   ["#tymou__wangling"] = "风节格尚",
   ["illustrator:tymou__wangling"] = "鬼画府",
+  ["designer:tymou__wangling"] = "韩旭",
 
   ["jichouw"] = "集筹",
   [":jichouw"] = "结束阶段，若你于此回合内使用过的牌的牌名各不相同，你可以将弃牌堆中的这些牌交给你选择的角色各一张。"..
@@ -1487,6 +1488,7 @@ Fk:loadTranslationTable{
   ["tymou__simashi"] = "谋司马师",
   ["#tymou__simashi"] = "唯几成务",
   ["illustrator:tymou__simashi"] = "鬼画府",
+  ["designer:tymou__simashi"] = "韩旭",
 
   ["sanshi"] = "散士",
   [":sanshi"] = "锁定技，游戏开始时，你将牌堆里每个点数的随机一张牌标记为“死士”牌。"..
@@ -1902,7 +1904,7 @@ Fk:loadTranslationTable{
   ["tymou__zhugejin"] = "谋诸葛瑾",
   ["#tymou__zhugejin"] = "清雅德纯",
   ["illustrator:tymou__zhugejin"] = "君桓文化",
-  --["designer:tymou__zhugejin"] = "",
+  ["designer:tymou__zhugejin"] = "银蛋",
 
   ["taozhou"] = "讨州",
   [":taozhou"] = "出牌阶段，你可以选择一名有手牌的其他角色并从1-3中秘密选择一个数字，此技能失效至对应轮数后恢复，"..
@@ -2048,7 +2050,7 @@ guanping:addSkill(wuwei)
 Fk:loadTranslationTable{
   ["tymou__guanping"] = "谋关平",
   ["#tymou__guanping"] = "百战烈烈",
-  --["designer:tymou__guanping"] = "",
+  ["designer:tymou__guanping"] = "银蛋",
   ["cv:tymou__guanping"] = "清水浊流",
   ["illustrator:tymou__guanping"] = "黯荧岛",
 
@@ -2278,6 +2280,7 @@ Fk:loadTranslationTable{
   ["tymou__zhangxiu"] = "谋张绣",
   ["#tymou__zhangxiu"] = "凌枪破宛",
   ["illustrator:tymou__zhangxiu"] = "君桓文化",
+  ["designer:tymou__zhangxiu"] = "银蛋",
 
   ["fuxi"] = "附袭",
   [":fuxi"] = "其他角色的出牌阶段开始时，若其为手牌数最多的角色，你可以选择："..
@@ -2376,6 +2379,7 @@ Fk:loadTranslationTable{
   ["tymou__dianwei"] = "谋典韦",
   ["#tymou__dianwei"] = "狂战怒莽",
   ["illustrator:tymou__dianwei"] = "黯荧岛",
+  ["designer:tymou__dianwei"] = "银蛋",
 
   ["kuangzhan"] = "狂战",
   [":kuangzhan"] = "出牌阶段限一次，你可以将手牌摸至体力上限并依次拼点X次（X为你以此法摸牌数），"..
@@ -2751,6 +2755,7 @@ local mouguojia = General(extension, "tymou__guojia", "wei", 3)
 Fk:loadTranslationTable{
   ["tymou__guojia"] = "谋郭嘉",
   ["#tymou__guojia"] = "翼谋奇佐",
+  ["designer:tymou__guojia"] = "懵萌猛梦",
   ["illustrator:tymou__guojia"] = "鬼画府",
   ["~tymou__guojia"] = "生如夏花，死亦何憾？",
 }
@@ -3276,6 +3281,7 @@ Fk:loadTranslationTable{
   ["tymou__jvshou"] = "谋沮授",
   ["#tymou__jvshou"] = "忠不逢时",
   ["illustrator:tymou__jvshou"] = "鬼画府",
+  ["designer:tymou__jvshou"] = "步穗",
   ["~tymou__jvshou"] = "身虽死，忠魂不灭。",
 
   ["zuojun"] = "佐军",
@@ -3468,6 +3474,7 @@ Fk:loadTranslationTable{
   ["tymou__chenlin"] = "谋陈琳",
   ["#tymou__chenlin"] = "文翻云海",
   ["illustrator:tymou__chenlin"] = "鬼画府",
+  ["designer:tymou__chenlin"] = "银蛋",
 
   ["yaozuo"] = "邀作",
   [":yaozuo"] = "出牌阶段限一次，你可以令所有其他角色选择是否交给你一张牌。然后交给你牌最快者选择另一名其他角色，你对其所选角色发动〖撰文〗；"..

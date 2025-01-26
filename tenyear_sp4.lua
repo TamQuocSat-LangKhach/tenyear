@@ -3039,6 +3039,7 @@ Fk:loadTranslationTable{
   ["wm__guanyu"] = "武关羽",
   ["#wm__guanyu"] = "义武千秋",
   ["illustrator:wm__guanyu"] = "黯荧岛_小董",
+  ["designer:wm__guanyu"] = "韩旭",
   ["juewu"] = "绝武",
   [":juewu"] = "你可以将点数为2的牌当伤害牌或【水淹七军】使用（每回合每种牌名限一次）。当你得到其他角色的牌后，这些牌的点数视为2。",
   ["wuyou"] = "武佑",

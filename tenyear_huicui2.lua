@@ -1312,6 +1312,7 @@ Fk:loadTranslationTable{
   ["yuanyin"] = "袁胤",
   ["#yuanyin"] = "载路素车",
   ["illustrator:yuanyin"] = "错落宇宙",
+  ["designer:yuanyin"] = "韩旭",
 
   ["moshou"] = "墨守",
   [":moshou"] = "当你成为黑色牌的目标后，你可以摸体力上限张牌，然后下次以此法摸牌数-1。若你以此法摸牌数为1，则重置为体力上限。",
@@ -3118,7 +3119,7 @@ wupu:addSkill(shicao)
 Fk:loadTranslationTable{
   ["wupu"] = "吴普",
   ["#wupu"] = "健体养魄",
-  --["designer:wupu"] = "",
+  ["designer:wupu"] = "银蛋",
   --["illustrator:wupu"] = "",
   ["duanti"] = "锻体",
   [":duanti"] = "锁定技，当你每使用或打出五张牌结算结束后，你回复1点体力，加1点体力上限（最多加5）。",

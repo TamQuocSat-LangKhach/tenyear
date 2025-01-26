@@ -1683,6 +1683,7 @@ zhangyiy:addSkill(murui)
 Fk:loadTranslationTable{
   ["ty__zhangyiy"] = "张翼",
   ["#ty__zhangyiy"] = "执忠守义",
+  ["designer:ty__zhangyiy"] = "步穗",
 }
 Fk:loadTranslationTable{
   ["murui"] = "暮锐",

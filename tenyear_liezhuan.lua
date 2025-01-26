@@ -1596,6 +1596,7 @@ Fk:loadTranslationTable{
   ["ty__hucheer"] = "胡车儿",
   ["#ty__hucheer"] = "惩奸除恶",
   ["illustrator:ty__hucheer"] = "游漫美绘",
+  ["designer:ty__hucheer"] = "韩旭",
   ["ty__daoji"] = "盗戟",
   [":ty__daoji"] = "当其他角色本局游戏第一次使用武器牌时，你可以选择一项：1.获得此武器牌；2.其本回合不能使用或打出【杀】。",
   ["fuzhong"] = "负重",

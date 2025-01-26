@@ -1653,6 +1653,7 @@ lvju:addSkill(zhengyue)
 Fk:loadTranslationTable{
   ["lvju"] = "吕据",
   ["#lvju"] = "仗钺征镇",
+  ["designer:lvju"] = "银蛋",
   ["illustrator:lvju"] = "君桓文化",
 
   ["zhengyue"] = "征越",

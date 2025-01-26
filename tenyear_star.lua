@@ -590,6 +590,7 @@ yuanshao:addSkill(aoshi)
 Fk:loadTranslationTable{
   ["tystar__yuanshao"] = "星袁绍",
   ["#tystar__yuanshao"] = "熏灼群魔",
+  ["designer:tystar__yuanshao"] = "步穗",
   ["illustrator:tystar__yuanshao"] = "鬼画府",
   ["xiaoyan"] = "硝焰",
   [":xiaoyan"] = "游戏开始时，所有其他角色各受到你造成的1点火焰伤害，然后这些角色可以依次交给你一张牌并回复1点体力。",
@@ -1304,6 +1305,7 @@ Fk:loadTranslationTable{
   ["tystar__fazheng"] = "星法正",
   ["#tystar__fazheng"] = "定军佐功",
   ["illustrator:tystar__fazheng"] = "匠人绘",
+  ["designer:tystar__fazheng"] = "懵萌猛梦",
 
   ["zhijif"] = "知机",
   [":zhijif"] = "准备阶段，你可以弃置任意张手牌（可以不弃），然后将手牌摸至5张。若你因此弃牌数比摸牌数：多，你可以对至多X名其他角色各造成1点伤害"..
@@ -1543,6 +1545,7 @@ zhangchunhua:addSkill(minghui)
 Fk:loadTranslationTable{
   ["tystar__zhangchunhua"] = "星张春华",
   ["#tystar__zhangchunhua"] = "皑雪皎月",
+  ["designer:tystar__zhangchunhua"] = "黑寡妇",
   ["illustrator:tystar__zhangchunhua"] = "七兜豆",
 
   ["liangyan"] = "梁燕",
@@ -1722,6 +1725,7 @@ Fk:loadTranslationTable{
   ["tystar__sunjian"] = "星孙坚",
   ["#tystar__sunjian"] = "破虏将军",
   ["illustrator:tystar__sunjian"] = "鬼画府",
+  ["designer:tystar__sunjian"] = "韩旭",
   ["ruijun"] = "锐军",
   [":ruijun"] = "当你于出牌阶段内第一次使用牌指定其他角色为目标后，你可以摸X张牌（X为你已损失的体力值+1），"..
   "此阶段内：除其外的其他角色视为不在你的攻击范围内；你对其使用牌无距离限制；当你对其造成伤害时，伤害值比上次增加1（至多为5）。",

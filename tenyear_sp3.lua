@@ -1419,6 +1419,7 @@ Fk:loadTranslationTable{
   ["#ty__godhuatuo"] = "灵魂的医者",
   ["cv:ty__godhuatuo"] = "马洋",
   ["illustrator:ty__godhuatuo"] = "君桓文化",
+  ["designer:ty__godhuatuo"] = "韩旭",
   ["~ty__godhuatuo"] = "世无良医，枉死者半……",
 }
 
@@ -1637,6 +1638,7 @@ Fk:loadTranslationTable{
   ["godhuangzhong"] = "神黄忠",
   ["#godhuangzhong"] = "战意破苍穹",
   ["illustrator:godhuangzhong"] = "第七个桔子",
+  ["designer:godhuangzhong"] = "韩旭",
   ["~godhuangzhong"] = "箭雨曾蔽日，今夕却成绝响。",
 }
 
@@ -4043,7 +4045,7 @@ guanyueg:addRelatedSkill(xingmen)
 Fk:loadTranslationTable{
   ["guanyueg"] = "关樾",
   ["#guanyueg"] = "动心忍性",
-  --["designer:guanyueg"] = "",
+  ["designer:guanyueg"] = "韩旭",
   ["illustrator:guanyueg"] = "匠人绘",
   ["shouzhi"] = "守执",
   [":shouzhi"] = "锁定技，一名角色的回合结束时，若你的手牌数：大于此回合开始时的手牌数，你弃置一张手牌；"..
@@ -4183,7 +4185,7 @@ zhugejing:addSkill(pijian)
 Fk:loadTranslationTable{
   ["zhugejing"] = "诸葛京",
   ["#zhugejing"] = "武侯遗秀",
-  --["designer:zhugejing"] = "",
+  ["designer:zhugejing"] = "月尘",
   ["illustrator:zhugejing"] = "匠人绘",
   ["~zhugejing"] = "子孙不肖，徒遗泪胡尘。",
 

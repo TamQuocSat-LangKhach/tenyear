@@ -240,6 +240,7 @@ local thunderBladeSkill = fk.CreateTriggerSkill{
     if judge.card.suit == Card.Spade then
       if not to.dead then
         room:damage{
+          from = player,
           to = to,
           damage = 3,
           damageType = fk.ThunderDamage,
@@ -249,6 +250,7 @@ local thunderBladeSkill = fk.CreateTriggerSkill{
     elseif judge.card.suit == Card.Club then
       if not to.dead then
         room:damage{
+          from = player,
           to = to,
           damage = 1,
           damageType = fk.ThunderDamage,
@@ -282,7 +284,7 @@ Fk:loadTranslationTable{
   ["thunder_blade"] = "天雷刃",
   ["#thunder_blade_skill"] = "天雷刃",
   [":thunder_blade"] = "装备牌·武器<br /><b>攻击范围</b>：4<br /><b>武器技能</b>：当你使用【杀】指定目标后，可以令其判定，"..
-  "若结果为：♠，其受到3点雷电伤害；♣，其受到1点雷电伤害，你回复1点体力并摸一张牌。",
+  "若结果为：♠，你对其造成3点雷电伤害；♣，你对其造成1点雷电伤害，你回复1点体力并摸一张牌。",
   ["#thunder_blade-invoke"] = "天雷刃：你可以令 %dest 判定<br>♠，其受到3点雷电伤害；♣，其受到1点雷电伤害，你回复1点体力并摸一张牌",
 }
 

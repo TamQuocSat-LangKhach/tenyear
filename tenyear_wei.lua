@@ -98,6 +98,7 @@ Fk:loadTranslationTable{
   ["ty_wei__zhangliao"] = "威张辽",
   ["#ty_wei__zhangliao"] = "威锐镇西风",
   ["illustrator:ty_wei__zhangliao"] = "鬼画府",
+  ["designer:ty_wei__zhangliao"] = "银蛋",
 
   ["yuxi"] = "驭袭",
   [":yuxi"] = "你造成或受到伤害时，摸一张牌，以此法获得的牌无次数限制。",

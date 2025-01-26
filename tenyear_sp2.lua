@@ -1537,6 +1537,7 @@ Fk:loadTranslationTable{
   ["moqiongshu"] = "莫琼树",
   ["#moqiongshu"] = "琼黛鬓墨雪",
   ["illustrator:malingli"] = "黯荧岛",
+  ["designer:moqiongshu"] = "韩旭",
 
   ["wanchan"] = "宛蝉",
   [":wanchan"] = "出牌阶段限一次，你可以选择一名角色，令其摸X张牌（X为你与其距离且最多为3），"..
@@ -3272,6 +3273,7 @@ Fk:loadTranslationTable{
   ["caofang"] = "曹芳",
   ["#caofang"] = "迷瞑终觉",
   ["cv:caofang"] = "陆泊云",
+  ["designer:caofang"] = "银蛋",
   ["illustrator:caofang"] = "鬼画府",
 
   ["zhimin"] = "置民",
@@ -3621,7 +3623,7 @@ bianyue:addSkill(wuxie)
 Fk:loadTranslationTable{
   ["bianyue"] = "卞玥",
   ["#bianyue"] = "暮辉映族",
-  --["designer:bianyue"] = "",
+  ["designer:bianyue"] = "银蛋",
   ["cv:bianyue"] = "关云云月",
   ["illustrator:bianyue"] = "黯荧岛",
 
@@ -6623,7 +6625,7 @@ liutan:addSkill(chixing)
 Fk:loadTranslationTable{
   ["liutan"] = "柳婒",
   ["#liutan"] = "维情所止",
-  --["designer:liutan"] = "",
+  ["designer:liutan"] = "韩旭",
   ["illustrator:liutan"] = "黯荧岛",
 
   ["jingyin"] = "经音",
@@ -6782,6 +6784,7 @@ Fk:loadTranslationTable{
   ["wenyuan"] = "文鸳",
   ["#wenyuan"] = "揾泪红袖",
   ["illustrator:wenyuan"] = "匠人绘",
+  ["designer:wenyuan"] = "韩旭",
 
   ["kengqiang"] = "铿锵",
   [":kengqiang"] = "每回合限一次，当你造成伤害时，你可以选择一项：1.摸X张牌（X为你的体力上限）；2.此伤害+1，你获得造成伤害的牌。",

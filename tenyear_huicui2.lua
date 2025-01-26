@@ -243,7 +243,7 @@ local zigu = fk.CreateActiveSkill{
     room:throwCard(effect.cards, self.name, player, player)
     if player.dead then return end
     local targets = table.map(table.filter(room.alive_players, function(p)
-      return #p:getCardIds("e") > 0 end), function (p) return p.id end)
+      return #p:getCardIds("e") > 0 end), Util.IdMapper)
     if #targets > 0 then
       local to = room:askForChoosePlayers(player, targets, 1, 1, "#zigu-choose", self.name, false)
       to = room:getPlayerById(to[1])
@@ -276,26 +276,32 @@ local zuowei = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local n = player:getHandcardNum() - math.max(#player:getCardIds("e"), 1)
     if n > 0 then
-      return player.room:askForSkillInvoke(player, self.name, nil, "#zuowei-invoke:::"..data.card:toLogString())
+      if player.room:askForSkillInvoke(player, self.name, nil, "#zuowei-invoke:::"..data.card:toLogString()) then
+        self.cost_data = { choice = "disresponsive" }
+        return true
+      end
     elseif n == 0 then
       local to = player.room:askForChoosePlayers(player, table.map(player.room:getOtherPlayers(player, false), Util.IdMapper), 1, 1,
         "#zuowei-damage", self.name, true)
       if #to > 0 then
-        self.cost_data = {tos = to}
+        self.cost_data = { tos = to, choice = "damage" }
         return true
       end
     elseif n < 0 then
-      return player.room:askForSkillInvoke(player, self.name, nil, "#zuowei-draw")
+      if player.room:askForSkillInvoke(player, self.name, nil, "#zuowei-draw") then
+        self.cost_data = { choice = "draw" }
+        return true
+      end
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(self.name)
-    local n = player:getHandcardNum() - math.max(#player:getCardIds("e"), 1)
-    if n > 0 then
+    local choice = self.cost_data.choice
+    if choice == "disresponsive" then
       room:notifySkillInvoked(player, self.name, "offensive")
       data.disresponsiveList = table.map(room.alive_players, Util.IdMapper)
-    elseif n == 0 then
+    elseif choice == "damage" then
       room:notifySkillInvoked(player, self.name, "offensive")
       room:damage{
         from = player,
@@ -303,11 +309,15 @@ local zuowei = fk.CreateTriggerSkill{
         damage = 1,
         skillName = self.name,
       }
-    elseif n < 0 then
+    elseif choice == "draw" then
       room:notifySkillInvoked(player, self.name, "drawcard")
       room:setPlayerMark(player, "zuowei-turn", 1)
       player:drawCards(2, self.name)
     end
+  end,
+
+  on_lose = function (self, player)
+    player.room:setPlayerMark(player, "zuowei-turn", 0)
   end,
 }
 sunchen:addSkill(zigu)

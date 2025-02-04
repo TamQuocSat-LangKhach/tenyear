@@ -933,6 +933,7 @@ Fk:loadTranslationTable{
 }
 
 local nezha = General(extension, "nezha", "god", 3)
+nezha.fixMaxHp = 3
 local santou = fk.CreateTriggerSkill{
   name = "santou",
   anim_type = "defensive",
@@ -949,17 +950,6 @@ local santou = fk.CreateTriggerSkill{
       room:setPlayerMark(player, "santou_"..data.from.id.."-turn", 1)
     end
     return true
-  end,
-
-  refresh_events = {fk.GameStart},
-  can_refresh = function (self, event, target, player, data)
-    return player:hasSkill(self, true) and player.maxHp > 3
-  end,
-  on_refresh = function (self, event, target, player, data)
-    player.maxHp = 3
-    player.hp = math.min(player.hp, 3)
-    player.room:broadcastProperty(player, "maxHp")
-    player.room:broadcastProperty(player, "hp")
   end,
 }
 local faqi = fk.CreateTriggerSkill{
@@ -1013,11 +1003,10 @@ nezha:addSkill(faqi)
 Fk:loadTranslationTable{
   ["nezha"] = "哪吒",
   ["santou"] = "三头",
-  [":santou"] = "锁定技，防止你受到的所有伤害。"..
+  [":santou"] = "锁定技，你的体力上限始终为3，防止你受到的所有伤害。"..
   "<br>若你体力值不小于3且你本回合已因此技能防止过该伤害来源的伤害，你失去1体力；"..
   "<br>若你体力值为2且防止的伤害为属性伤害，你失去1体力；"..
-  "<br>若你体力值为1且防止的伤害为红色牌造成的伤害，你失去1体力。"..
-  "<br>（村）游戏开始时，若你的体力上限大于3，调整为3。",
+  "<br>若你体力值为1且防止的伤害为红色牌造成的伤害，你失去1体力。",
   ["faqi"] = "法器",
   [":faqi"] = "出牌阶段，当你使用装备牌后，你可以视为使用一张普通锦囊牌（每回合每种牌名限一次）。",
   ["faqi_viewas"] = "法器",
@@ -2660,7 +2649,7 @@ Fk:loadTranslationTable{
 }
 Fk:loadTranslationTable{
   ["baoshi"] = "暴食",
-  [":baoshi"] = "摸牌阶段结束时，你可以亮出牌堆顶的两张牌。若亮出牌的牌名字数之和小于等于10（【桃】或【酒】不计入牌名字数统计），你选择一项："..
+  [":baoshi"] = "摸牌阶段结束时，你可以亮出牌堆顶的两张牌。若亮出牌的牌名字数之和不大于10（【桃】或【酒】不计入牌名字数统计），你选择一项："..
   "1.获得所有亮出的牌；2.再亮出一张。",
   ["#baoshi-choice"] = "暴食：现在总字数为%arg，若超过10则不能获得！",
   ["baoshi_prey"] = "获得这些牌",

@@ -4305,13 +4305,27 @@ local gangjian = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and player:getMark("gangjian-turn") > 0 and
+    return player:hasSkill(self) and
       #player.room.logic:getActualDamageEvents(1, function (e)
         return e.data[1].to == player
-      end, Player.HistoryTurn) == 0
+      end, Player.HistoryTurn) == 0 and
+      (player:getMark("gangjian-turn") > 0 or
+        #player.room.logic:getEventsOfScope(GameEvent.Pindian, 1, Util.TrueFunc, Player.HistoryTurn) > 0)
   end,
   on_use = function (self, event, target, player, data)
-    player:drawCards(math.min(player:getMark("gangjian-turn"), 5), self.name)
+    local n = player:getMark("gangjian-turn")
+    player.room.logic:getEventsOfScope(GameEvent.Pindian, 1, function(e)
+      local pindian = e.data[1]
+      if pindian.fromCard then
+        n = n + 1
+      end
+      for _, result in pairs(pindian.results) do
+        if result.toCard then
+          n = n + 1
+        end
+      end
+    end, Player.HistoryTurn)
+    player:drawCards(math.min(n, 5), self.name)
   end,
 
   refresh_events = {fk.CardShown},
@@ -4333,7 +4347,7 @@ Fk:loadTranslationTable{
   [":pingzhi"] = "转换技，出牌阶段限一次，你可以观看一名角色手牌并选择其中一张牌，阳：你弃置此牌，其视为对你使用【火攻】，若未造成伤害此技能"..
   "视为未发动；阴：其使用此牌，若造成伤害则此技能视为未发动。",
   ["gangjian"] = "刚简",
-  [":gangjian"] = "锁定技，每个回合结束时，若你本回合未受到过伤害，你摸X张牌。（X为本回合展示过的牌数，至多为5）。",
+  [":gangjian"] = "锁定技，每个回合结束时，若你本回合未受到过伤害，你摸X张牌。（X为本回合展示或因拼点亮出的牌数，至多为5）。",
   ["#pingzhi-yang"] = "评骘：观看并选择一名角色一张手牌，你弃置之，其视为对你使用【火攻】",
   ["#pingzhi-yin"] = "评骘：观看并选择一名角色一张手牌，其使用之",
   ["#pingzhi_show-yang"] = "评骘：弃置 %dest 的一张手牌，其视为对你使用【火攻】",

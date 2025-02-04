@@ -1863,6 +1863,7 @@ zhanjue:addRelatedSkill(zhanjueUnlimited)
 godhuangzhong:addSkill(zhanjue)
 
 local godpangtong = General(extension, "godpangtong", "god", 1)
+godpangtong.fixMaxHp = 1
 local luansuo = fk.CreateTriggerSkill{
   name = "luansuo",
   mute = true,
@@ -2026,7 +2027,7 @@ Fk:loadTranslationTable{
   ["fengliao"] = "凤燎",
   [":fengliao"] = "锁定技，转换技，当你使用牌指定唯一目标后，阳：你令其摸一张牌；阴：你对其造成1点火焰伤害。",
   ["kunyu"] = "鹍浴",
-  [":kunyu"] = "锁定技，当你濒死求桃结算后，若体力值仍小于1，你将牌堆中的一张火属性伤害牌移出游戏，然后复活并将体力值回复至1点。",
+  [":kunyu"] = "锁定技，你的体力上限始终为1，当你濒死求桃结算后，若体力值仍小于1，你将牌堆中的一张火属性伤害牌移出游戏，然后将体力值回复至1点。",
   ["#luansuo_filter"] = "鸾锁",
 
   ["$luansuo1"] = "六道锁凡尘，死生皆如逆旅。",

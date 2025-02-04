@@ -1762,6 +1762,10 @@ local tongli = fk.CreateTriggerSkill{
       data.extra_data.tongli_target = table.simpleClone(data.tos)
     end
   end,
+
+  on_lose = function (self, player)
+    player.room:setPlayerMark(player, "@tongli-phase", 0)
+  end,
 }
 local parseTongliUseStruct = function (player, name, targetGroup)
   local card = Fk:cloneCard(name)
@@ -2601,7 +2605,7 @@ Fk:loadTranslationTable{
   ["~ty__kongrong"] = "覆巢之下，岂有完卵……",
 }
 
---芝兰玉树：张虎 吕玲绮 刘永 黄舞蝶 万年公主 滕公主 庞会 赵统赵广 袁谭袁尚袁熙 乐綝 刘理
+--芝兰玉树：张虎 吕玲绮 刘永 黄舞蝶 万年公主 滕公主 庞会 赵统赵广 袁谭袁尚袁熙 乐綝 刘理 庞宏
 local zhanghu = General(extension, "zhanghu", "wei", 4)
 local cuijian = fk.CreateActiveSkill{
   name = "cuijian",
@@ -4235,6 +4239,113 @@ Fk:loadTranslationTable{
 dehua:addRelatedSkill(dehuaBuff)
 dehua:addRelatedSkill(dehuaProhibited)
 liuli:addSkill(dehua)
+
+local panghong = General(extension, "panghong", "shu", 3)
+local pingzhi = fk.CreateActiveSkill{
+  name = "pingzhi",
+  switch_skill_name = "pingzhi",
+  anim_type = "switch",
+  card_num = 0,
+  target_num = 1,
+  prompt = function (self, selected_cards, selected_targets)
+    return "#pingzhi-"..Self:getSwitchSkillState(self.name, false, true)
+  end,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local card
+    local prompt = "#pingzhi_show-"..player:getSwitchSkillState(self.name, true, true).."::"..target.id
+    if target == player then
+      if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
+        card = room:askForDiscard(player, 1, 1, false, self.name, false, nil, prompt, true)
+        if #card == 0 then return end
+      else
+        card = room:askForCard(player, 1, 1, false, self.name, false, nil, prompt)
+      end
+    else
+      card = U.askforChooseCardsAndChoice(player, target:getCardIds("h"), {"OK"}, self.name, prompt)
+    end
+    if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
+      if not player:prohibitDiscard(card[1]) then
+        room:throwCard(card, self.name, target, player)
+        if not player.dead and not target.dead then
+          local use = room:useVirtualCard("fire_attack", nil, target, player, self.name)
+          if not (use and use.damageDealt) then
+            player:setSkillUseHistory(self.name, 0, Player.HistoryPhase)
+          end
+        end
+      end
+    else
+      card = Fk:getCardById(card[1])
+      if target:canUse(card, {bypass_times = true}) and
+        table.find(room.alive_players, function (p)
+          return target:canUseTo(card, p, {bypass_times = true})
+        end) then
+        local use = U.askForUseRealCard(room, target, {card.id}, nil, self.name, "#pingzhi-use", {
+          bypass_times = true,
+          extraUse = true,
+        }, false, false)
+        if use and use.damageDealt then
+          player:setSkillUseHistory(self.name, 0, Player.HistoryPhase)
+        end
+      end
+    end
+  end,
+}
+local gangjian = fk.CreateTriggerSkill{
+  name = "gangjian",
+  anim_type = "drawcard",
+  frequency = Skill.Compulsory,
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and player:getMark("gangjian-turn") > 0 and
+      #player.room.logic:getActualDamageEvents(1, function (e)
+        return e.data[1].to == player
+      end, Player.HistoryTurn) == 0
+  end,
+  on_use = function (self, event, target, player, data)
+    player:drawCards(math.min(player:getMark("gangjian-turn"), 5), self.name)
+  end,
+
+  refresh_events = {fk.CardShown},
+  can_refresh = function(self, event, target, player, data)
+    return player:hasSkill(self, true)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    player.room:addPlayerMark(player, "gangjian-turn", #data.cardIds)
+  end,
+}
+panghong:addSkill(pingzhi)
+panghong:addSkill(gangjian)
+Fk:loadTranslationTable{
+  ["panghong"] = "庞宏",
+  ["#panghong"] = "针砭时弊",
+  ["illustrator:panghong"] = "钟於",
+
+  ["pingzhi"] = "评骘",
+  [":pingzhi"] = "转换技，出牌阶段限一次，你可以观看一名角色手牌并选择其中一张牌，阳：你弃置此牌，其视为对你使用【火攻】，若未造成伤害此技能"..
+  "视为未发动；阴：其使用此牌，若造成伤害则此技能视为未发动。",
+  ["gangjian"] = "刚简",
+  [":gangjian"] = "锁定技，每个回合结束时，若你本回合未受到过伤害，你摸X张牌。（X为本回合展示过的牌数，至多为5）。",
+  ["#pingzhi-yang"] = "评骘：观看并选择一名角色一张手牌，你弃置之，其视为对你使用【火攻】",
+  ["#pingzhi-yin"] = "评骘：观看并选择一名角色一张手牌，其使用之",
+  ["#pingzhi_show-yang"] = "评骘：弃置 %dest 的一张手牌，其视为对你使用【火攻】",
+  ["#pingzhi_show-yin"] = "评骘：选择 %dest 的一张手牌，其使用之",
+  ["#pingzhi-use"] = "评骘：请使用这张牌",
+
+  ["$pingzhi1"] = "陈祗何许人也？我等当重其虚！",
+  ["$pingzhi2"] = "这满朝朱紫，鲜有非酒囊饭袋之徒。",
+  ["$gangjian1"] = "道同则谋，道不同则不相为谋。",
+  ["$gangjian2"] = "怎么，陈尚书要教我几句道德仁义？",
+  ["~panghong"] = "不孝子宏，泉下无颜见父祖……",
+}
 
 --天下归心：阚泽 魏贾诩 陈登 蔡瑁张允 高览 尹夫人 吕旷吕翔 陈珪 陈矫 秦朗 董昭 唐咨 臧霸 乐进 曹洪
 local jiaxu = General(extension, "ty__jiaxu", "wei", 3)

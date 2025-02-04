@@ -7,7 +7,7 @@ Fk:loadTranslationTable{
   ["tenyear_sp3"] = "十周年-限定专属3",
 }
 
---神·武：姜维 马超 张飞 张角 邓艾 典韦 许褚
+--神·武：姜维 马超 张飞 张角 邓艾 典韦 许褚 华佗 黄忠 庞统
 local godjiangwei = General(extension, "godjiangwei", "god", 4)
 local tianren = fk.CreateTriggerSkill {
   name = "tianren",
@@ -1861,6 +1861,182 @@ Fk:loadTranslationTable{
 zhanjue:addRelatedSkill(zhanjueBuff)
 zhanjue:addRelatedSkill(zhanjueUnlimited)
 godhuangzhong:addSkill(zhanjue)
+
+local godpangtong = General(extension, "godpangtong", "god", 1)
+local luansuo = fk.CreateTriggerSkill{
+  name = "luansuo",
+  mute = true,
+  frequency = Skill.Compulsory,
+  events = {fk.BeforeCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) then return end
+    local turn_event = player.room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
+    if turn_event == nil or turn_event.data[1] ~= player then return end
+    for _, move in ipairs(data) do
+      if move.from and move.moveReason == fk.ReasonDiscard and not player.room:getPlayerById(move.from).dead then
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand then
+            return true
+          end
+        end
+      end
+    end
+  end,
+  on_use = function (self, event, target, player, data)
+    local ids = {}
+    for _, move in ipairs(data) do
+      if move.from and move.moveReason == fk.ReasonDiscard and not player.room:getPlayerById(move.from).dead then
+        local moveInfos = {}
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerHand then
+            table.insert(ids, info.cardId)
+          else
+            table.insert(moveInfos, info)
+          end
+        end
+        if #ids > 0 then
+          move.moveInfo = moveInfos
+        end
+      end
+    end
+    if #ids > 0 then
+      player.room:sendLog{
+        type = "#cancelDismantle",
+        card = ids,
+        arg = self.name,
+      }
+    end
+  end,
+
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function(self, event, target, player, data)
+    if player:hasSkill(self, true) then
+      local turn_event = player.room.logic:getCurrentEvent():findParent(GameEvent.Turn)
+      if turn_event == nil or turn_event.data[1] ~= player then return end
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile then
+          return true
+        end
+      end
+    end
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local room = player.room
+    for _, move in ipairs(data) do
+      if move.toArea == Card.DiscardPile then
+        for _, info in ipairs(move.moveInfo) do
+          room:addTableMark(player, "luansuo-turn", Fk:getCardById(info.cardId).suit)
+        end
+      end
+    end
+    for _, p in ipairs(room.players) do
+      p:filterHandcards()
+    end
+  end,
+}
+local luansuo_filter = fk.CreateFilterSkill{
+  name = "#luansuo_filter",
+  anim_type = "special",
+  card_filter = function(self, card, player, isJudgeEvent)
+    return table.contains(player:getCardIds("h"), card.id) and card.suit ~= Card.NoSuit and
+      table.find(Fk:currentRoom().alive_players, function (p)
+        return p:hasSkill("luansuo") and p.phase ~= Player.NotActive and not table.contains(p:getTableMark("luansuo-turn"), card.suit)
+      end)
+  end,
+  view_as = function(self, card)
+    return Fk:cloneCard("iron_chain", card.suit, card.number)
+  end,
+}
+local luansuo_prohibit = fk.CreateProhibitSkill{
+  name = "#luansuo_prohibit",
+  prohibit_discard = function(self, player, card)
+    return table.contains(player:getCardIds("h"), card.id) and
+      table.find(Fk:currentRoom().alive_players, function (p)
+        return p:hasSkill("luansuo") and p.phase ~= Player.NotActive
+      end)
+  end,
+}
+local fengliao = fk.CreateTriggerSkill{
+  name = "fengliao",
+  switch_skill_name = "fengliao",
+  anim_type = "switch",
+  frequency = Skill.Compulsory,
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.tos and #AimGroup:getAllTargets(data.tos) == 1
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(data.to)
+    if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
+      to:drawCards(1, self.name)
+    else
+      room:damage{
+        from = player,
+        to = to,
+        damage = 1,
+        damageType = fk.FireDamage,
+        skillName = self.name,
+      }
+    end
+  end,
+}
+local kunyu = fk.CreateTriggerSkill{
+  name = "kunyu",
+  anim_type = "defensive",
+  frequency = Skill.Compulsory,
+  events = {fk.AskForPeachesDone},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.hp <= 0 and
+      table.find(player.room.draw_pile, function (id)
+        return Fk:getCardById(id).is_damage_card and
+          table.contains({"fire__slash", "fire_attack", "burning_camps"}, Fk:getCardById(id).name)
+      end)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = table.filter(room.draw_pile, function (id)
+      return Fk:getCardById(id).is_damage_card and
+        table.contains({"fire__slash", "fire_attack", "burning_camps"}, Fk:getCardById(id).name)
+    end)
+    room:moveCardTo(table.random(cards), Card.Void, nil, fk.ReasonJustMove, self.name, nil, true, player.id)
+    if not player.dead and player.hp < 1 then
+      room:recover{
+        who = player,
+        num = 1 - player.hp,
+        recoverBy = player,
+        skillName = self.name,
+      }
+    end
+  end,
+}
+luansuo:addRelatedSkill(luansuo_filter)
+luansuo:addRelatedSkill(luansuo_prohibit)
+godpangtong:addSkill(luansuo)
+godpangtong:addSkill(fengliao)
+godpangtong:addSkill(kunyu)
+Fk:loadTranslationTable{
+  ["godpangtong"] = "神庞统",
+  ["#godpangtong"] = "丹血浴火",
+  ["designer:godpangtong"] = "拔都沙皇",
+  ["illustrator:godpangtong"] = "第七个桔子",
+
+  ["luansuo"] = "鸾锁",
+  [":luansuo"] = "锁定技，你的回合内，所有角色不能弃置手牌，与本回合进入弃牌堆的牌花色均不同的手牌视为【铁索连环】。",
+  ["fengliao"] = "凤燎",
+  [":fengliao"] = "锁定技，转换技，当你使用牌指定唯一目标后，阳：你令其摸一张牌；阴：你对其造成1点火焰伤害。",
+  ["kunyu"] = "鹍浴",
+  [":kunyu"] = "锁定技，当你濒死求桃结算后，若体力值仍小于1，你将牌堆中的一张火属性伤害牌移出游戏，然后复活并将体力值回复至1点。",
+  ["#luansuo_filter"] = "鸾锁",
+
+  ["$luansuo1"] = "六道锁凡尘，死生皆如逆旅。",
+  ["$luansuo2"] = "命数如织网，无人不坠因果。",
+  ["$fengliao1"] = "乘丹凤者，不堪其炙，何堪其远？",
+  ["$fengliao2"] = "我以天地为炉，诸君敢入局否？",
+  ["$kunyu1"] = "君岂不闻，山皆有其愚公乎？",
+  ["$kunyu2"] = "衰桐凤不栖，昆山玉已碎！",
+  ["~godpangtong"] = "心怀英雄志，何堪寂寥乡……",
+}
 
 --笔舌如椽：陈琳 杨修 骆统 王昶 程秉 杨彪 阮籍 崔琰毛玠
 local ty__chenlin = General(extension, "ty__chenlin", "wei", 3)

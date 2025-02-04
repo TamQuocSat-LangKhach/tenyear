@@ -170,6 +170,8 @@ sunquan:addSkill(woheng)
 Fk:loadTranslationTable{
   ["ty_wei__sunquan"] = "威孙权",
   ["#ty_wei__sunquan"] = "坐断东南",
+  ["illustrator:ty_wei__sunquan"] = "鬼画府",
+  ["~ty_wei__sunquan"] = "自古许多忧，英雄老来愁……",
 
   ["woheng"] = "斡衡",
   [":woheng"] = "出牌阶段或当你受到伤害后，你可以令一名其他角色摸或弃置X张牌（X为此技能本轮发动次数）。此技能结算后，若其手牌数与你不同或"..
@@ -177,6 +179,9 @@ Fk:loadTranslationTable{
   ["#woheng"] = "斡衡：你可以令一名角色摸或弃置%arg张牌",
   ["woheng_draw"] = "摸牌",
   ["woheng_discard"] = "弃牌",
+
+  ["$woheng1"] = "壁立以千仞，非蚍蜉可撼。",
+  ["$woheng2"] = "朕德载后土，焉不容天下风雨。",
 }
 local yuhui = fk.CreateTriggerSkill{
   name = "yuhui",
@@ -279,74 +284,8 @@ Fk:loadTranslationTable{
   ["#yuhui_trigger"] = "御麾",
   ["#yuhui-active"] = "御麾：是否交给 %src 一张红色基本牌，令一名角色摸或弃一张牌？",
   ["yuhui_active"] = "斡衡",
-}
-local jizheng = fk.CreateTriggerSkill{
-  name = "jizheng$",
-  attached_skill_name = "jizheng_active&",
 
-  refresh_events = {fk.PreCardUse},
-  can_refresh = function (self, event, target, player, data)
-    return target == player and player:getMark("jizheng-turn") > 0
-  end,
-  on_refresh = function (self, event, target, player, data)
-    player.room:setPlayerMark(player, "jizheng-turn", 0)
-  end,
+  ["$yuhui1"] = "惠用张仪，昭得范雎，朕拥卿足矣！",
+  ["$yuhui2"] = "南靖交越，北复荆襄，使吴成帝业。",
 }
-local jizheng_active = fk.CreateActiveSkill{
-  name = "jizheng_active&",
-  mute = true,
-  prompt = "#jizheng_active",
-  card_num = 1,
-  target_num = 0,
-  can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and
-      table.find(Fk:currentRoom().alive_players, function(p)
-        return p:hasSkill("jizheng") and p ~= player
-      end)
-  end,
-  card_filter = function(self, to_select, selected)
-    return #selected == 0
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local targets = table.filter(room:getOtherPlayers(player), function(p)
-      return p:hasSkill("jizheng")
-    end)
-    local target
-    if #targets == 1 then
-      target = targets[1]
-    else
-      target = room:getPlayerById(room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, nil, self.name, false)[1])
-    end
-    if not target then return end
-    room:notifySkillInvoked(player, "jizheng", "support")
-    player:broadcastSkillInvoke("jizheng")
-    room:doIndicate(effect.from, {target.id})
-    if player.kingdom == "wu" then
-      room:setPlayerMark(player, "jizheng_wu-turn", 1)
-    else
-      room:setPlayerMark(player, "jizheng-turn", 1)
-    end
-    room:moveCardTo(effect.cards, Card.PlayerHand, target, fk.ReasonGive, self.name, nil, true)
-  end,
-}
-local jizheng_targetmod = fk.CreateTargetModSkill{
-  name = "#jizheng_targetmod",
-  bypass_distances =  function(self, player, skill)
-    return player:getMark("jizheng-turn") > 0 or player:getMark("jizheng_wu-turn") > 0
-  end,
-}
---jizheng:addRelatedSkill(jizheng_targetmod)
---Fk:addSkill(jizheng_active)
---sunquan:addSkill(jizheng)
-Fk:loadTranslationTable{
-  ["jizheng"] = "集征",
-  [":jizheng"] = "威主技，其他角色出牌阶段限一次，其可以交给你一张牌，则其本回合使用的下一张牌无距离限制（若为吴势力角色，改为本回合使用牌"..
-  "无距离限制）。",
-  ["jizheng_active"] = "集征",
-  [":jizheng_active"] = "出牌阶段限一次，你可以交给威孙权一张牌，则你本回合使用的下一张牌无距离限制（若你为吴势力，改为本回合使用牌"..
-  "无距离限制）。",
-  ["#jizheng_active"] = "集征：交给威孙权一张牌，本回合你使用下一张牌无距离限制（若你为吴势力，改为本回合无距离限制）",
-}
-
 return extension

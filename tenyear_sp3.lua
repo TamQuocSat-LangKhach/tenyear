@@ -1866,83 +1866,111 @@ local godpangtong = General(extension, "godpangtong", "god", 1)
 godpangtong.fixMaxHp = 1
 local luansuo = fk.CreateTriggerSkill{
   name = "luansuo",
-  mute = true,
   frequency = Skill.Compulsory,
-  events = {fk.BeforeCardsMove},
+  events = {fk.TurnStart, fk.BeforeCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(self) then return end
-    local turn_event = player.room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
-    if turn_event == nil or turn_event.data[1] ~= player then return end
-    for _, move in ipairs(data) do
-      if move.from and move.moveReason == fk.ReasonDiscard and not player.room:getPlayerById(move.from).dead then
-        for _, info in ipairs(move.moveInfo) do
-          if info.fromArea == Card.PlayerHand then
-            return true
+    if event == fk.BeforeCardsMove then
+      if player.room:getCurrent() ~= player or not player:hasSkill(self) then return false end
+      for _, move in ipairs(data) do
+        if move.from and move.moveReason == fk.ReasonDiscard and not player.room:getPlayerById(move.from).dead then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand then
+              return true
+            end
           end
         end
       end
+    elseif event == fk.TurnStart then
+      return player == target and player:hasSkill(self)
     end
   end,
+  on_cost = function (self, event, target, player, data)
+    if event == fk.TurnStart then
+      self.cost_data = { tos = table.map(player.room.alive_players, Util.IdMapper) }
+    else
+      self.cost_data = nil
+    end
+    return true
+  end,
   on_use = function (self, event, target, player, data)
-    local ids = {}
-    for _, move in ipairs(data) do
-      if move.from and move.moveReason == fk.ReasonDiscard and not player.room:getPlayerById(move.from).dead then
-        local moveInfos = {}
-        for _, info in ipairs(move.moveInfo) do
-          if info.fromArea == Card.PlayerHand then
-            table.insert(ids, info.cardId)
-          else
-            table.insert(moveInfos, info)
+    if event == fk.BeforeCardsMove then
+      local ids = {}
+      for _, move in ipairs(data) do
+        if move.from and move.moveReason == fk.ReasonDiscard and not player.room:getPlayerById(move.from).dead then
+          local moveInfos = {}
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand then
+              table.insert(ids, info.cardId)
+            else
+              table.insert(moveInfos, info)
+            end
+          end
+          if #ids > 0 then
+            move.moveInfo = moveInfos
           end
         end
-        if #ids > 0 then
-          move.moveInfo = moveInfos
-        end
       end
-    end
-    if #ids > 0 then
-      player.room:sendLog{
-        type = "#cancelDismantle",
-        card = ids,
-        arg = self.name,
-      }
+      if #ids > 0 then
+        player.room:sendLog{
+          type = "#cancelDismantle",
+          card = ids,
+          arg = self.name,
+        }
+      end
+    else
+      local room = player.room
+      room:setBanner("luansuo-turn", {})
+      for _, p in ipairs(room.alive_players) do
+        for _, id in ipairs(p:getCardIds(Player.Hand)) do
+          room:setCardMark(Fk:getCardById(id), "luansuo-inhand-turn", 1)
+        end
+        p:filterHandcards()
+      end
     end
   end,
 
-  refresh_events = {fk.AfterCardsMove},
+  refresh_events = {fk.AfterCardsMove, fk.AfterTurnEnd},
   can_refresh = function(self, event, target, player, data)
-    if player:hasSkill(self, true) then
-      local turn_event = player.room.logic:getCurrentEvent():findParent(GameEvent.Turn)
-      if turn_event == nil or turn_event.data[1] ~= player then return end
-      for _, move in ipairs(data) do
-        if move.toArea == Card.DiscardPile then
-          return true
-        end
-      end
-    end
+    return player == player.room.current and player.room:getBanner("luansuo-turn") ~= nil
   end,
   on_refresh = function (self, event, target, player, data)
     local room = player.room
-    for _, move in ipairs(data) do
-      if move.toArea == Card.DiscardPile then
-        for _, info in ipairs(move.moveInfo) do
-          room:addTableMark(player, "luansuo-turn", Fk:getCardById(info.cardId).suit)
+    if event == fk.AfterCardsMove then
+      local mark = room:getBanner("luansuo-turn")
+      if type(mark) ~= "table" then
+        mark = {}
+      elseif #mark == 4 then
+        return
+      end
+      local suit
+      local mark_change = false
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile then
+          for _, info in ipairs(move.moveInfo) do
+            suit = Fk:getCardById(info.cardId, true).suit
+            if suit ~= Card.NoSuit and table.insertIfNeed(mark, suit) then
+              mark_change = true
+            end
+          end
         end
       end
-    end
-    for _, p in ipairs(room.players) do
-      p:filterHandcards()
+      if mark_change then
+        room:setBanner("luansuo-turn", mark)
+        for _, p in ipairs(room.alive_players) do
+          p:filterHandcards()
+        end
+      end
+    else
+      room:setBanner("luansuo-turn", 0)
     end
   end,
 }
 local luansuo_filter = fk.CreateFilterSkill{
   name = "#luansuo_filter",
-  anim_type = "special",
+  mute = true,
   card_filter = function(self, card, player, isJudgeEvent)
     return table.contains(player:getCardIds("h"), card.id) and card.suit ~= Card.NoSuit and
-      table.find(Fk:currentRoom().alive_players, function (p)
-        return p:hasSkill("luansuo") and p.phase ~= Player.NotActive and not table.contains(p:getTableMark("luansuo-turn"), card.suit)
-      end)
+      card:getMark("luansuo-inhand-turn") > 0 and not table.contains(Fk:currentRoom():getBanner("luansuo-turn"), card.suit)
   end,
   view_as = function(self, card)
     return Fk:cloneCard("iron_chain", card.suit, card.number)
@@ -1951,10 +1979,10 @@ local luansuo_filter = fk.CreateFilterSkill{
 local luansuo_prohibit = fk.CreateProhibitSkill{
   name = "#luansuo_prohibit",
   prohibit_discard = function(self, player, card)
-    return table.contains(player:getCardIds("h"), card.id) and
-      table.find(Fk:currentRoom().alive_players, function (p)
-        return p:hasSkill("luansuo") and p.phase ~= Player.NotActive
-      end)
+    if table.contains(player:getCardIds("h"), card.id) then
+      local currentPlayer = Fk:currentRoom():getCurrent()
+      return currentPlayer and currentPlayer:hasSkill("luansuo")
+    end
   end,
 }
 local fengliao = fk.CreateTriggerSkill{
@@ -1964,11 +1992,18 @@ local fengliao = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.tos and #AimGroup:getAllTargets(data.tos) == 1
+    if target == player and player:hasSkill(self) then
+      local to = player.room:getPlayerById(data.to)
+      return not to.dead and U.isOnlyTarget(to, data, event)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    self.cost_data = { tos = { data.to } }
+    return true
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(data.to)
+    local to = room:getPlayerById(self.cost_data.tos[1])
     if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
       to:drawCards(1, self.name)
     else

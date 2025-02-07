@@ -1876,4 +1876,196 @@ Fk:loadTranslationTable{
   ["#xianniang_filter"] = "献酿",
 }
 
+local zhanghuai = General(extension, "zhanghuai", "wu", 3, 3, General.Female)
+
+Fk:loadTranslationTable{
+  ["zhanghuai"] = "张怀",
+  --["#zhanghuai"] = "",
+  ["~zhanghuai"] = "",
+}
+
+local laoyan = fk.CreateTriggerSkill{
+  name = "laoyan",
+  anim_type = "defensive",
+  events = {fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    return data.firstTarget and player:hasSkill(self) and
+      table.contains(AimGroup:getAllTargets(data.tos), player.id) and not AimGroup:isOnlyTarget(player, data)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local targets = AimGroup:getAllTargets(data.tos)
+    local tos = {}
+    for _, p in ipairs(player.room.alive_players) do
+      if p ~= player and table.contains(targets, p.id) then
+        table.insert(tos, p.id)
+      end
+    end
+    self.cost_data = { tos = tos }
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, to in ipairs(self.cost_data.tos) do
+      table.insertIfNeed(data.nullifiedTargets, to)
+    end
+  end,
+}
+
+zhanghuai:addSkill(laoyan)
+
+Fk:loadTranslationTable{
+  ["laoyan"] = "劳燕",
+  [":laoyan"] = "锁定技，当牌指定第一个目标后，若目标包含你及你以外的角色，你令此牌对除你以外的目标均无效。",
+}
+
+local jueyan = fk.CreateTriggerSkill{
+  name = "jueyanz",
+  anim_type = "control",
+  dynamic_desc = function(self, player)
+    return
+      "jueyanz_inner:" ..
+      ((#player:getTableMark("jueyanz_choices") > 2) and ":" or "jueyanz_pindian:jueyanz_update") .. ":" ..
+      (player:getMark("jueyanz_damage") + 1) .. ":" ..
+      (player:getMark("jueyanz_recover") + 1) .. ":" ..
+      (player:getMark("jueyanz_prey") + 1)
+  end,
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    if player ~= target or not player:hasSkill(self) then return false end
+    local tos = TargetGroup:getRealTargets(data.tos)
+    if #tos ~= 1 then return false end
+    if player.id == tos[1] then return false end
+    local mark = player:getTableMark("jueyanz_choices")
+    local to = player.room:getPlayerById(tos[1])
+    if #mark > 2 then
+      return player:isWounded() or not to.dead
+    else
+      return not to.dead and player:canPindian(to)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local mark = player:getTableMark("jueyanz_choices")
+    local to = room:getPlayerById(TargetGroup:getRealTargets(data.tos)[1])
+    if #mark > 2 then
+      local all_choices = {
+        "jueyanz_damage::" .. to.id .. ":" .. tostring(player:getMark("jueyanz_damage") + 1),
+        "jueyanz_recover:::" .. tostring(player:getMark("jueyanz_recover") + 1),
+        "jueyanz_prey::" .. to.id .. ":" .. tostring(player:getMark("jueyanz_prey") + 1),
+        "Cancel"
+      }
+      local choices = {all_choices[1], "Cancel"}
+      if player:isWounded() then
+        table.insert(choices, all_choices[2])
+      end
+      if not to:isKongcheng() then
+        table.insert(choices, all_choices[3])
+      end
+      local choice = room:askForChoice(player, choices, self.name, nil, false, all_choices)
+      if choice == "Cancel" then return false end
+      self.cost_data = { tos = { to.id }, choice = choice:split(":")[1] }
+      return true
+    elseif room:askForSkillInvoke(player, self.name, nil, "#jueyanz-invoke::" .. to.id) then
+      self.cost_data = { tos = { to.id } }
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local choice = self.cost_data.choice
+    local to = room:getPlayerById(self.cost_data.tos[1])
+    if choice == nil then
+      local pindian = player:pindian({to}, self.name)
+      if pindian.results[to.id].winner ~= player or player.dead then return false end
+      local all_choices = {
+        "jueyanz_damage::" .. to.id .. ":" .. tostring(player:getMark("jueyanz_damage") + 1),
+        "jueyanz_recover:::" .. tostring(player:getMark("jueyanz_recover") + 1),
+        "jueyanz_prey::" .. to.id .. ":" .. tostring(player:getMark("jueyanz_prey") + 1)
+      }
+      local choices = {}
+      if not to.dead then
+        table.insert(choices, all_choices[1])
+        if not to:isKongcheng() then
+          table.insert(choices, all_choices[3])
+        end
+      end
+      if player:isWounded() then
+        table.insert(choices, all_choices[2])
+      end
+      if #choices == 0 then return false end
+      choice = room:askForChoice(player, choices, self.name, nil, false, all_choices):split(":")[1]
+    end
+    local x = player:getMark(choice) + 1
+    if choice == "jueyanz_damage" then
+      room:damage{
+        from = player,
+        to = player,
+        damage = x,
+        skillName = self.name,
+      }
+      if not to.dead then
+        room:damage{
+          from = player,
+          to = to,
+          damage = x,
+          skillName = self.name,
+        }
+      end
+    elseif choice == "jueyanz_recover" then
+      room:recover{
+        who = player,
+        num = x,
+        recoverBy = player,
+        skillName = self.name
+      }
+    else
+      x = math.max(x, #to:getCardIds(Player.Hand))
+      local ids = room:askForCardsChosen(player, to, x, x, "h", self.name)
+      room:obtainCard(player.id, ids, false, fk.ReasonPrey)
+    end
+    if not player:hasSkill(self, true) then return false end
+    for _, choice_name in ipairs({"jueyanz_damage", "jueyanz_recover", "jueyanz_prey"}) do
+      if choice_name == choice then
+        room:setPlayerMark(player, choice_name, 0)
+      else
+        room:addPlayerMark(player, choice_name, 1)
+      end
+    end
+    local mark = player:getTableMark("jueyanz_choices")
+    if #mark > 2 then return false end
+    room:addTableMarkIfNeed(player, "jueyanz_choices", choice)
+  end,
+
+  on_lose = function (self, player)
+    local room = player.room
+    for _, name in ipairs({"jueyanz_damage", "jueyanz_recover", "jueyanz_prey", "jueyanz_choices"}) do
+      room:setPlayerMark(player, name, 0)
+    end
+  end,
+}
+
+zhanghuai:addSkill(jueyan)
+
+Fk:loadTranslationTable{
+  ["jueyanz"] = "诀言",
+  [":jueyanz"] = "当你使用的牌结算结束后，若目标数为1，你可以与其拼点，若你赢，你选择："..
+    "1.对你和其各造成1点伤害；2.回复1点体力；3.获得其的1张手牌。"..
+    "然后，此次选择的选项的数值改为1，其他选项的数值均+1，"..
+    "若三个选项均被选择过，你修改此技能（跳过拼点步骤直接选择选项）。",
+
+  ["#jueyanz-invoke"] = "是否发动 诀言，与 %dest 拼点，若你赢则可选择一项效果",
+  ["jueyanz_damage"] = "对你和%dest各造成%arg点伤害",
+  ["jueyanz_recover"] = "回复%arg点体力",
+  ["jueyanz_prey"] = "获得%dest的%arg张手牌",
+
+  [":jueyanz_inner"] = "当你使用的牌结算结束后，若目标数为1，你可以{1}选择："..
+    "1.对你和其各造成{3}点伤害；2.回复{4}点体力；3.获得其的{5}张手牌。"..
+    "然后，此次选择的选项的数值改为1，其他选项的数值均+1{2}。",
+  ["jueyanz_pindian"] = "与其拼点，若你赢，你",
+  ["jueyanz_update"] = "，若三个选项均被选择过，你修改此技能（跳过拼点步骤直接选择选项）",
+}
+
+
+
+
 return extension

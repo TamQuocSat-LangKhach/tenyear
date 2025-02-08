@@ -1900,6 +1900,199 @@ Fk:loadTranslationTable{
   ["~ty__simafu"] = "臣死之日，固大魏之纯臣也。",
 }
 
+local gongqiao = fk.CreateActiveSkill{
+  name = "gongqiao",
+  anim_type = "support",
+  prompt = "#gongqiao-active",
+  max_phase_use_time = 1,
+  card_num = 1,
+  target_num = 0,
+  can_use = function(self, player)
+    return player:getMark("gongqiao-phase") == 0
+  end,
+  interaction = function(self, player)
+    local all_choices = {
+      "WeaponSlot",
+      "ArmorSlot",
+      "DefensiveRideSlot",
+      "OffensiveRideSlot",
+      "TreasureSlot"
+    }
+    local subtypes = {
+      Card.SubtypeWeapon,
+      Card.SubtypeArmor,
+      Card.SubtypeDefensiveRide,
+      Card.SubtypeOffensiveRide,
+      Card.SubtypeTreasure
+    }
+    local choices = {}
+    for i = 1, 5, 1 do
+      if #player:getAvailableEquipSlots(subtypes[i]) > 0 then
+        table.insert(choices, all_choices[i])
+      end
+    end
+    if #choices == 0 then
+      return UI.ComboBox { choices = { "gongqiao_prohibit" } }
+    else
+      return UI.ComboBox { choices = choices, all_choices = all_choices }
+    end
+  end,
+  card_filter = function(self, to_select, selected)
+    return self.interaction.data ~= "gongqiao_prohibit" and
+      #selected == 0 and Fk:currentRoom():getCardArea(to_select) == Card.PlayerHand
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:addPlayerMark(player, "gongqiao-phase", 1)
+
+  end,
+
+  on_lose = function (self, player)
+    player.room:setPlayerMark(player, "gongqiao-phase", 0)
+  end,
+}
+
+local gongqiao_trigger = fk.CreateTriggerSkill{
+  name = "#gongqiao_trigger",
+  main_skill = gongqiao,
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    return player.id == data.from and data.card.type == Card.TypeBasic and player:hasSkill(gongqiao)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    data.additionalDamage = (data.additionalDamage or 0) + 1
+    data.additionalRecover = (data.additionalRecover or 0) + 1
+    if data.card.name == "analeptic" and not (data.extra_data and data.extra_data.analepticRecover) then
+      data.extra_data = data.extra_data or {}
+      data.extra_data.additionalDrank = (data.extra_data.additionalDrank or 0) + 1
+    end
+  end,
+}
+
+local gongqiao_trigger2 = fk.CreateTriggerSkill{
+  name = "#gongqiao_trigger2",
+  anim_type = "drawcard",
+  main_skill = gongqiao,
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    if player.id ~= data.from or not player:hasSkill(gongqiao) then return false end
+    local card_type = data.card.type
+    local room = player.room
+    local logic = room.logic
+    local use_event = logic:getCurrentEvent()
+    local mark_name = "gongqiao_" .. data.card:getTypeString() .. "-turn"
+    local mark = player:getMark(mark_name)
+    if mark == 0 then
+      logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+        local last_use = e.data[1]
+        if last_use.from == player.id and last_use.card.type == card_type then
+          mark = e.id
+          room:setPlayerMark(player, mark_name, mark)
+          return true
+        end
+        return false
+      end, Player.HistoryTurn)
+    end
+    return mark == use_event.id
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(1, "gongqiao")
+  end,
+}
+
+local gongqiao_maxcards = fk.CreateMaxCardsSkill{
+  name = "#gongqiao_maxcards",
+  correct_func = function(self, player)
+    if player:hasSkill(gongqiao) then
+      return 3
+    else
+      return 0
+    end
+  end,
+}
+
+gongqiao:addRelatedSkill(gongqiao_trigger)
+gongqiao:addRelatedSkill(gongqiao_trigger2)
+gongqiao:addRelatedSkill(gongqiao_maxcards)
+
+Fk:loadTranslationTable{
+  ["gongqiao"] = "工巧",
+  [":gongqiao"] = "出牌阶段限一次，你可以将一张手牌置入你的装备区（替换原装备，离开你的装备区时移出游戏）。"..
+    "若你的装备区里有以此法置入的：基本牌，你使用基本牌的数值+1；锦囊牌，你每回合首次使用一种类别的牌后摸一张牌；装备牌，你的手牌上限+3。",
+
+  ["#gongqiao_trigger"] = "工巧",
+  ["#gongqiao_trigger2"] = "工巧",
+  ["#gongqiao-active"] = "发动 工巧，将一张手牌置入你的装备区",
+  ["gongqiao_prohibit"] = "没有可用装备栏",
+
+  ["$gongqiao1"] = "怀兼爱之心，琢世间百器。",
+  ["$gongqiao2"] = "机巧用尽，方化腐朽为神奇！",
+}
+
+local jingyi = fk.CreateTriggerSkill{
+  name = "jingyi",
+  anim_type = "drawcard",
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if not player:hasSkill(self) or player.room:getCurrent() == nil then return false end
+    local mark = player:getTableMark("jingyi-turn")
+    for _, move in ipairs(data) do
+      if move.to == player.id and move.toArea == Card.PlayerEquip then
+        for _, info in ipairs(move.moveInfo) do
+          if not table.contains(mark, Fk:getCardById(info.cardId).sub_type) then
+            return true
+          end
+        end
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local mark = player:getTableMark("jingyi-turn")
+    for _, move in ipairs(data) do
+      if move.to == player.id and move.toArea == Card.PlayerEquip then
+        for _, info in ipairs(move.moveInfo) do
+          table.insertIfNeed(mark, Fk:getCardById(info.cardId).sub_type)
+        end
+      end
+    end
+    player.room:setPlayerMark(player, "jingyi-turn", mark)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local x = #player:getCardIds(Player.Equip)
+    if x > 0 then
+      player:drawCards(x, self.name)
+      if player.dead then return false end
+    end
+    player.room:askForDiscard(player, 2, 2, true, self.name, false)
+  end,
+
+  on_lose = function (self, player)
+    player.room:setPlayerMark(player, "jingyi-turn", 0)
+  end,
+}
+Fk:loadTranslationTable{
+  ["jingyi"] = "精益",
+  [":jingyi"] = "锁定技，每个装备栏每回合限一次，当牌进入你的装备区后，你摸X张牌（X为你装备区里的牌数），然后弃置两张牌。",
+
+  ["$jingyi1"] = "精益求精，工如道，途无穷。",
+  ["$jingyi2"] = "木可伐，石可破，技不可失。",
+}
+
+--local majun = General(extension, "ty__majun", "wei", 3)
+--majun:addSkill(gongqiao)
+--majun:addSkill(jingyi)
+
+Fk:loadTranslationTable{
+  ["ty__majun"] = "马钧",
+  ["#ty__majun"] = "名巧天下",
+  ["illustrator:ty__majun"] = "鬼画府",
+  ["designer:ty__majun"] = "白日梦花",
+  ["~ty__majun"] = "龙骨坍夜陌，水尽百戏枯……",
+}
+
 local peixiu = General(extension, "ty__peixiu", "qun", 3)
 peixiu.subkingdom = "jin"
 local zhitu = fk.CreateTriggerSkill{

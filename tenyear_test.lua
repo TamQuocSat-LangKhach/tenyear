@@ -1887,21 +1887,22 @@ Fk:loadTranslationTable{
 local laoyan = fk.CreateTriggerSkill{
   name = "laoyan",
   anim_type = "defensive",
-  events = {fk.TargetSpecified},
+  frequency = Skill.Compulsory,
+  events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
-    return data.firstTarget and player:hasSkill(self) and
-      table.contains(AimGroup:getAllTargets(data.tos), player.id) and not AimGroup:isOnlyTarget(player, data)
-  end,
-  on_cost = function(self, event, target, player, data)
-    local targets = AimGroup:getAllTargets(data.tos)
-    local tos = {}
-    for _, p in ipairs(player.room.alive_players) do
-      if p ~= player and table.contains(targets, p.id) then
-        table.insert(tos, p.id)
+    if player == target and player:hasSkill(self) then
+      local targets = AimGroup:getAllTargets(data.tos)
+      local tos = {}
+      for _, p in ipairs(player.room.alive_players) do
+        if p ~= player and table.contains(targets, p.id) then
+          table.insert(tos, p.id)
+        end
+      end
+      if #tos > 0 then
+        self.cost_data = { tos = tos }
+        return true
       end
     end
-    self.cost_data = { tos = tos }
-    return true
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -1915,7 +1916,7 @@ zhanghuai:addSkill(laoyan)
 
 Fk:loadTranslationTable{
   ["laoyan"] = "劳燕",
-  [":laoyan"] = "锁定技，当牌指定第一个目标后，若目标包含你及你以外的角色，你令此牌对除你以外的目标均无效。",
+  [":laoyan"] = "锁定技，当你成为牌的目标后，若有其他目标，你令此牌对这些目标均无效。",
 }
 
 local jueyan = fk.CreateTriggerSkill{
@@ -1936,32 +1937,22 @@ local jueyan = fk.CreateTriggerSkill{
     if #tos ~= 1 then return false end
     if player.id == tos[1] then return false end
     local mark = player:getTableMark("jueyanz_choices")
+    if #mark > 2 then return true end
     local to = player.room:getPlayerById(tos[1])
-    if #mark > 2 then
-      return player:isWounded() or not to.dead
-    else
-      return not to.dead and player:canPindian(to)
-    end
+    return not to.dead and player:canPindian(to)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local mark = player:getTableMark("jueyanz_choices")
     local to = room:getPlayerById(TargetGroup:getRealTargets(data.tos)[1])
     if #mark > 2 then
-      local all_choices = {
+      local choices = {
         "jueyanz_damage::" .. to.id .. ":" .. tostring(player:getMark("jueyanz_damage") + 1),
         "jueyanz_recover:::" .. tostring(player:getMark("jueyanz_recover") + 1),
         "jueyanz_prey::" .. to.id .. ":" .. tostring(player:getMark("jueyanz_prey") + 1),
         "Cancel"
       }
-      local choices = {all_choices[1], "Cancel"}
-      if player:isWounded() then
-        table.insert(choices, all_choices[2])
-      end
-      if not to:isKongcheng() then
-        table.insert(choices, all_choices[3])
-      end
-      local choice = room:askForChoice(player, choices, self.name, nil, false, all_choices)
+      local choice = room:askForChoice(player, choices, self.name, nil, false)
       if choice == "Cancel" then return false end
       self.cost_data = { tos = { to.id }, choice = choice:split(":")[1] }
       return true
@@ -1977,23 +1968,15 @@ local jueyan = fk.CreateTriggerSkill{
     if choice == nil then
       local pindian = player:pindian({to}, self.name)
       if pindian.results[to.id].winner ~= player or player.dead then return false end
-      local all_choices = {
+      local choices = {
         "jueyanz_damage::" .. to.id .. ":" .. tostring(player:getMark("jueyanz_damage") + 1),
         "jueyanz_recover:::" .. tostring(player:getMark("jueyanz_recover") + 1),
-        "jueyanz_prey::" .. to.id .. ":" .. tostring(player:getMark("jueyanz_prey") + 1)
+        "jueyanz_prey::" .. to.id .. ":" .. tostring(player:getMark("jueyanz_prey") + 1),
+        "Cancel"
       }
-      local choices = {}
-      if not to.dead then
-        table.insert(choices, all_choices[1])
-        if not to:isKongcheng() then
-          table.insert(choices, all_choices[3])
-        end
-      end
-      if player:isWounded() then
-        table.insert(choices, all_choices[2])
-      end
-      if #choices == 0 then return false end
-      choice = room:askForChoice(player, choices, self.name, nil, false, all_choices):split(":")[1]
+      choice = room:askForChoice(player, choices, self.name, nil, false)
+      if choice == "Cancel" then return false end
+      choice = choice:split(":")[1]
     end
     local x = player:getMark(choice) + 1
     if choice == "jueyanz_damage" then
@@ -2012,16 +1995,20 @@ local jueyan = fk.CreateTriggerSkill{
         }
       end
     elseif choice == "jueyanz_recover" then
-      room:recover{
-        who = player,
-        num = x,
-        recoverBy = player,
-        skillName = self.name
-      }
+      if player:isWounded() then
+        room:recover{
+          who = player,
+          num = x,
+          recoverBy = player,
+          skillName = self.name
+        }
+      end
     else
       x = math.max(x, #to:getCardIds(Player.Hand))
-      local ids = room:askForCardsChosen(player, to, x, x, "h", self.name)
-      room:obtainCard(player.id, ids, false, fk.ReasonPrey)
+      if x > 0 then
+        local ids = room:askForCardsChosen(player, to, x, x, "h", self.name)
+        room:obtainCard(player.id, ids, false, fk.ReasonPrey)
+      end
     end
     if not player:hasSkill(self, true) then return false end
     for _, choice_name in ipairs({"jueyanz_damage", "jueyanz_recover", "jueyanz_prey"}) do
@@ -2048,7 +2035,7 @@ zhanghuai:addSkill(jueyan)
 
 Fk:loadTranslationTable{
   ["jueyanz"] = "诀言",
-  [":jueyanz"] = "当你使用的牌结算结束后，若目标数为1且不为你，你可以与其拼点，若你赢，你选择："..
+  [":jueyanz"] = "当你使用的牌结算结束后，若目标数为1且此目标不为你，你可以与其拼点，若你赢，你选择："..
     "1.对你和其各造成1点伤害；2.回复1点体力；3.获得其的1张手牌。"..
     "然后，此次选择的选项的数值改为1，其他选项的数值均+1，"..
     "若三个选项均被选择过，你修改此技能（跳过拼点步骤直接选择选项）。",
@@ -2058,7 +2045,7 @@ Fk:loadTranslationTable{
   ["jueyanz_recover"] = "回复%arg点体力",
   ["jueyanz_prey"] = "获得%dest的%arg张手牌",
 
-  [":jueyanz_inner"] = "当你使用的牌结算结束后，若目标数为1且不为你，你可以{1}选择："..
+  [":jueyanz_inner"] = "当你使用的牌结算结束后，若目标数为1且此目标不为你，你可以{1}选择："..
     "1.对你和其各造成{3}点伤害；2.回复{4}点体力；3.获得其的{5}张手牌。"..
     "然后，此次选择的选项的数值改为1，其他选项的数值均+1{2}。",
   ["jueyanz_pindian"] = "与其拼点，若你赢，你",

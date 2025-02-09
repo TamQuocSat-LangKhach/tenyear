@@ -13,7 +13,6 @@ local yuxi = fk.CreateTriggerSkill{
   name = "yuxi",
   anim_type = "drawcard",
   events = {fk.DamageCaused, fk.DamageInflicted},
-  on_cost = Util.TrueFunc,
   on_use = function (self, event, target, player, data)
     player:drawCards(1, self.name, nil, "@@yuxi-inhand")
   end,
@@ -101,7 +100,7 @@ Fk:loadTranslationTable{
   ["designer:ty_wei__zhangliao"] = "银蛋",
 
   ["yuxi"] = "驭袭",
-  [":yuxi"] = "你造成或受到伤害时，摸一张牌，以此法获得的牌无次数限制。",
+  [":yuxi"] = "当你造成或受到伤害时，你可以摸一张牌，以此法获得的牌无次数限制。",
   ["porong"] = "破戎",
   [":porong"] = "连招技（伤害牌+【杀】），你可以获得此【杀】目标和其相邻角色各一张手牌，并令此【杀】额外结算一次。",
   ["@@yuxi-inhand"] = "驭袭",

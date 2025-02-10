@@ -1629,7 +1629,9 @@ local chenjian = fk.CreateTriggerSkill{
             end
           end
         elseif choice == "chenjian2" then
-          U.askForUseRealCard(room, player, ids, ".", self.name, "#chenjian-use", {expand_pile = ids}, false, false)
+          room:askForUseRealCard(player, ids, self.name, "#chenjian-use", {
+            expand_pile = ids,
+          }, false)
         end
       end
       ids = table.filter(ids, function(id) return room:getCardArea(id) == Card.Processing end)
@@ -2888,8 +2890,10 @@ local zhuning = fk.CreateActiveSkill{
       local cards = table.filter(U.getUniversalCards(room, "bt", false), function (id)
         return Fk:getCardById(id).is_damage_card
       end)
-      local use = U.askForUseRealCard(room, player, cards, nil, self.name, "#zhuning-use",
-        {expand_pile = cards, bypass_times = true}, true, true)
+      local use = room:askForUseRealCard(player, cards, self.name, "#zhuning-use", {
+        expand_pile = cards,
+        bypass_times = true,
+      }, true, true)
       if use then
         local use = {
           card = Fk:cloneCard(use.card.name),
@@ -4288,10 +4292,10 @@ local pingzhi = fk.CreateActiveSkill{
         table.find(room.alive_players, function (p)
           return target:canUseTo(card, p, {bypass_times = true})
         end) then
-        local use = U.askForUseRealCard(room, target, {card.id}, nil, self.name, "#pingzhi-use", {
+        local use = room:askForUseRealCard(target, {card.id}, self.name, "#pingzhi-use", {
           bypass_times = true,
           extraUse = true,
-        }, false, false)
+        }, true, false)
         if use and use.damageDealt then
           player:setSkillUseHistory(self.name, 0, Player.HistoryPhase)
         end

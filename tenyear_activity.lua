@@ -998,8 +998,11 @@ local jiaoxia = fk.CreateTriggerSkill{
       room:addTableMark(player, "jiaoxia_target-phase", data.to)
     elseif event == fk.CardUseFinished then
       local ids = Card:getIdList(data.card)
-      U.askForUseRealCard(room, player, ids, ".", self.name, "#jiaoxia-use:::"..Fk:getCardById(ids[1]):toLogString(),
-      { expand_pile = ids, bypass_times = false, extraUse = false })
+      room:askForUseRealCard(player, ids, self.name, "#jiaoxia-use:::"..Fk:getCardById(ids[1]):toLogString(), {
+        expand_pile = ids,
+        bypass_times = false,
+        extraUse = false,
+      })
     elseif event == fk.EventPhaseStart then
       room:setPlayerMark(player, "@@jiaoxia-phase", 1)
       player:filterHandcards()
@@ -1380,7 +1383,12 @@ local tunan = fk.CreateActiveSkill{
     local choice = room:askForChoice(target, choices, self.name, nil, nil,
       {"tunan1:::"..card:toLogString(), "tunan2:::"..card:toLogString()})
     if choice[6] == "1" then
-      U.askForUseRealCard(room, target, cards, ".", self.name, nil, {expand_pile = cards, bypass_distances = true}, false, false)
+      room:askForUseRealCard(target, cards, self.name, nil, {
+        expand_pile = cards,
+        bypass_distances = true,
+        bypass_times = true,
+        extraUse = true,
+      }, false)
     else
       U.askForUseVirtualCard(room, target, "slash", cards, self.name, "#tunan2-use:::"..card:toLogString(), false, true, false, true)
     end
@@ -3499,7 +3507,10 @@ local niji = fk.CreateTriggerSkill{
     else
       local cards = table.filter(player.player_cards[Player.Hand], function(id) return Fk:getCardById(id):getMark("@@niji-inhand-turn") > 0 end)
       if player:hasSkill(self) then
-        U.askForUseRealCard(room, player, cards, ".", self.name, "#niji-use")
+        room:askForUseRealCard(player, cards, self.name, "#niji-use", {
+          bypass_times = true,
+          extraUse = true,
+        })
       end
       cards = table.filter(cards, function(id) return table.contains(player.player_cards[Player.Hand], id) end)
       if #cards > 0 then

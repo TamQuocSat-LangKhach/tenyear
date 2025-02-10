@@ -4321,8 +4321,10 @@ local yanzuo = fk.CreateActiveSkill{
       end)
     end)
     if #cards > 0 then
-      local use = U.askForUseRealCard(room, player, cards, nil, self.name,
-        "#yanzuo-ask", {expand_pile = cards, bypass_times = true}, true, false)
+      local use = room:askForUseRealCard(player, cards, self.name, "#yanzuo-ask", {
+        expand_pile = cards,
+        bypass_times = true,
+      }, true, true)
       if use then
         local card = Fk:cloneCard(use.card.name)
         card.skillName = self.name

@@ -186,7 +186,10 @@ local weidang = fk.CreateTriggerSkill{
       skillName = self.name,
     })
     if table.contains(player:getCardIds("h"), id) then
-      U.askForUseRealCard(room, player, {id}, ".", self.name, nil, nil, false, false)
+      room:askForUseRealCard(player, {id}, self.name, "#weidang-use:::"..Fk:getCardById(id):toLogString(), {
+        bypass_times = true,
+        extraUse = true,
+      }, false, false)
     end
   end,
 }

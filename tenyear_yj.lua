@@ -1506,15 +1506,11 @@ local qimei = fk.CreateActiveSkill{
           return table.contains(player:getCardIds("h"), id) or table.contains(target:getCardIds("h"), id)
         end)
         if #cards == 0 then return end
-        local use = U.askForUseRealCard(room, player, cards, nil, self.name, "#ty__qimei-use",
-          {
+        if not room:askForUseRealCard(player, cards, self.name, "#ty__qimei-use", {
             bypass_times = false,
             extraUse = true,
             expand_pile = cards,
-          }, true)
-        if use then
-          room:useCard(use)
-        else
+          }) then
           return
         end
       end

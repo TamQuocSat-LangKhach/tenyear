@@ -672,8 +672,7 @@ local fumouj = fk.CreateActiveSkill{
         if table.contains(target:getCardIds(Player.Hand), id) then
           card = Fk:getCardById(id)
           if U.getDefaultTargets(target, card, true, true) then
-            local use = U.askForUseRealCard(room, target, {id}, nil, self.name,
-            "#fumouj-use:::"..card:toLogString(), extra_data, true, false)
+            local use = room:askForUseRealCard(target, {id}, self.name, "#fumouj-use:::"..card:toLogString(), extra_data, true, true)
             if use then
               use.disresponsiveList = disresponsive_list
               room:useCard(use)
@@ -2146,8 +2145,11 @@ local zhiwang_delay = fk.CreateTriggerSkill{
     end
     if #cards == 0 then return false end
     while not player.dead and #cards > 0 do
-      local use = U.askForUseRealCard(room, player, cards, ".", "zhiwang", "#zhiwang-use",
-        {expand_pile = cards, bypass_times = true, extraUse = true}, true)
+      local use = room:askForUseRealCard(player, cards, "zhiwang", "#zhiwang-use", {
+        expand_pile = cards,
+        bypass_times = true,
+        extraUse = true,
+      }, true, true)
       if use then
         table.removeOne(cards, use.card:getEffectiveId())
         room:useCard(use)
@@ -2585,7 +2587,11 @@ local quzhou = fk.CreateActiveSkill{
       table.insert(idsRevealt, ids[1])
 
       if Fk:getCardById(ids[1]).trueName == "slash" then
-        U.askForUseRealCard(room, player, ids, ".", self.name, nil, { expand_pile = ids, bypass_times = true }, false, false)
+        room:askForUseRealCard(player, ids, self.name, nil, {
+          expand_pile = ids,
+          bypass_times = true,
+          extraUse = true,
+        }, false)
         break
       else
         local choices = { "quzhou_gain" }
@@ -2699,8 +2705,11 @@ local gaojian = fk.CreateTriggerSkill{
     local yes = false
     if Fk:getCardById(cards[#cards]).type == Card.TypeTrick then
       local card = cards[#cards]
-      if U.askForUseRealCard(room, to, {card}, ".", self.name, "#gaojian-use:::"..Fk:getCardById(card):toLogString(),
-        {expand_pile = {card}, extraUse = true}) then
+      if room:askForUseRealCard(to, {card}, self.name, "#gaojian-use:::"..Fk:getCardById(card):toLogString(), {
+        expand_pile = {card},
+        bypass_times = true,
+        extraUse = true,
+      }) then
         yes = true
       end
     end
@@ -3107,7 +3116,10 @@ local zuojun = fk.CreateActiveSkill{
         end
       end)
       if #cards == 0 then return false end
-      while U.askForUseRealCard(room, target, cards, ".", self.name, "#zuojun-use", {extraUse = true, bypass_times = true}) do
+      while room:askForUseRealCard(target, cards, self.name, "#zuojun-use", {
+        bypass_times = true,
+        extraUse = true,
+      }) do
         if target.dead then return end
         cards = table.filter(target:getCardIds(Player.Hand), function (id)
           return Fk:getCardById(id):getMark("@@zuojun-inhand") > 0

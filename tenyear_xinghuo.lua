@@ -567,7 +567,11 @@ local denglou = fk.CreateTriggerSkill{
       room:moveCardTo(get, Card.PlayerHand, player, fk.ReasonPrey, self.name)
     end
     while not player.dead and #cards > 0 do
-      local use = U.askForUseRealCard(room, player, cards, ".", self.name, nil, {expand_pile = cards})
+      local use = room:askForUseRealCard(player, cards, self.name, nil, {
+        bypass_times = true,
+        extraUse = true,
+        expand_pile = cards,
+      })
       if use then
         table.removeOne(cards, use.card.id)
       else

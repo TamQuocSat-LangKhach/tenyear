@@ -1067,8 +1067,11 @@ local linghui = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local ids = U.turnOverCardsFromDrawPile(player, 3, self.name, false)
-    local use = U.askForUseRealCard(room, player, ids, ".", self.name, "#linghui-use",
-    {expand_pile = ids, bypass_times = true}, false, true)
+    local use = room:askForUseRealCard(player, ids, self.name, "#linghui-use", {
+      expand_pile = ids,
+      bypass_times = true,
+      extraUse = true,
+    }, true)
     if not player.dead and use then
       local toObtain = table.filter(ids, function (id)
         return room:getCardArea(id) == Card.Processing
@@ -6609,13 +6612,14 @@ local chixing = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = room:drawCards(player, self.cost_data, self.name)
-    local handcards = player:getCardIds(Player.Hand)
     cards = table.filter(cards, function (id)
-      return table.contains(cards, id) and Fk:getCardById(id).trueName == "slash"
+      return table.contains(player:getCardIds("h"), id) and Fk:getCardById(id).trueName == "slash"
     end)
     if #cards > 0 then
-      local use = U.askForUseRealCard(room, player, cards, ".", self.name, "#chixing-use",
-      {bypass_times = true}, false, true)
+      room:askForUseRealCard(player, cards, self.name, "#chixing-use", {
+        bypass_times = true,
+        extraUse = true,
+      }, true)
     end
   end,
 }

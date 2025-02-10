@@ -2602,7 +2602,6 @@ local fanyin = fk.CreateTriggerSkill{
     if #cards == 0 then return false end
     cards = table.random(cards, 1)
     while true do
-      local to_use = Fk:getCardById(cards[1])
       room:moveCards({
         ids = cards,
         toArea = Card.Processing,
@@ -2610,8 +2609,10 @@ local fanyin = fk.CreateTriggerSkill{
         proposer = player.id,
         moveReason = fk.ReasonJustMove,
       })
-      if U.askForUseRealCard(room, player, cards, ".", self.name, "#fanyin-ask:::"..Fk:getCardById(cards[1]):toLogString(),
-      { expand_pile = cards, bypass_distances = true }) == nil then
+      if not room:askForUseRealCard(player, cards, self.name, "#fanyin-ask:::"..Fk:getCardById(cards[1]):toLogString(), {
+        expand_pile = cards,
+        bypass_distances = true,
+      }) then
         room:moveCards({
           ids = cards,
           toArea = Card.DiscardPile,
@@ -2620,11 +2621,11 @@ local fanyin = fk.CreateTriggerSkill{
         })
         room:addPlayerMark(player, "@fanyin-turn")
       end
-      if player.dead then break end
+      if player.dead then return end
       x = 2*x
-      if x > 13 then break end
+      if x > 13 then return end
       cards = room:getCardsFromPileByRule(".|" .. x)
-      if #cards == 0 then break end
+      if #cards == 0 then return end
     end
   end,
 }
@@ -4549,11 +4550,12 @@ local jianzheng = fk.CreateActiveSkill{
       room:obtainCard(player.id, id, false, fk.ReasonPrey)
       local card = Fk:getCardById(id)
       if not player.dead and table.contains(player:getCardIds("h"), id) and U.getDefaultTargets(player, card, true, false) then
-        local use = U.askForUseRealCard(room, player, {id}, ".", self.name, "#jianzheng-use:::"..card:toLogString(), nil, false, false)
-        if use then
-          if table.contains(TargetGroup:getRealTargets(use.tos), target.id) then
-            yes = true
-          end
+        local use = room:askForUseRealCard(player, {id}, self.name, "#jianzheng-use:::"..card:toLogString(), {
+          bypass_times = true,
+          extraUse = true,
+        })
+        if use and table.contains(TargetGroup:getRealTargets(use.tos), target.id) then
+          yes = true
         end
       end
     end

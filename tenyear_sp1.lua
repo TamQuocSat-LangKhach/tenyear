@@ -1260,7 +1260,7 @@ local huiqi = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     player.room:handleAddLoseSkills(player, "ty__xieju")
-    player:gainAnExtraTurn(false, self.name)
+    player:gainAnExtraTurn(true, self.name)
   end,
 }
 local xieju = fk.CreateActiveSkill{

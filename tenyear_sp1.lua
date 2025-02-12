@@ -1281,7 +1281,7 @@ local xieju = fk.CreateActiveSkill{
     for _, id in ipairs(effect.tos) do
       local target = room:getPlayerById(id)
       if not target.dead then
-        U.askForUseVirtualCard(room, target, "slash", nil, self.name, nil, true, true, true, true)
+        U.askForUseVirtualCard(room, target, "slash", nil, self.name, nil, true, true, false, true)
       end
     end
   end,
@@ -1313,7 +1313,7 @@ Fk:loadTranslationTable{
   [":ty__huiqi"] = "觉醒技，一名角色的回合结束时，若本回合成为过牌的目标的角色数为3且其中一名为你，你获得技能“偕举”，然后你执行一个额外的回合。",
   ["ty__xieju"] = "偕举",
   [":ty__xieju"] = "出牌阶段限一次，你可以选择任意名本回合成为过牌的目标的角色，这些角色依次可以视为使用一张【杀】。",
-  ["#ty__xieju"] = "偕举：令任意名本回合成为过牌的目标的角色视为使用【杀】",
+  ["#ty__xieju"] = "偕举：令任意名本回合成为过牌的目标的角色视为使用【杀】(有距离限制)",
 
   ["$guangao_ty__wenqin1"] = "群士言虚而无功，非吾在麾之宾。",
   ["$guangao_ty__wenqin2"] = "吾欲捕虏擒俘，以邀策勋之赏。",

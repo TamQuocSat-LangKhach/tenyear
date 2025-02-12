@@ -1940,7 +1940,7 @@ local gongqiao = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     room:addPlayerMark(player, "gongqiao-phase", 1)
-
+    room:moveCardTo(effect.cards, Card.Void, nil, fk.ReasonPut, self.name, "", true, player.id)
   end,
 
   on_lose = function (self, player)
@@ -2077,9 +2077,10 @@ Fk:loadTranslationTable{
   ["$jingyi2"] = "木可伐，石可破，技不可失。",
 }
 
---local majun = General(extension, "ty__majun", "wei", 3)
---majun:addSkill(gongqiao)
---majun:addSkill(jingyi)
+local majun = General(extension, "ty__majun", "wei", 3)
+majun.hidden = true
+majun:addSkill(gongqiao)
+majun:addSkill(jingyi)
 
 Fk:loadTranslationTable{
   ["ty__majun"] = "马钧",

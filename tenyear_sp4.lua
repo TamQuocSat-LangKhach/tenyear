@@ -2721,43 +2721,8 @@ local juewu = fk.CreateViewAsSkill{
   prompt = "#juewu-viewas",
   anim_type = "offensive",
   pattern = ".",
-  interaction = function()
-    local names = Self:getMark("juewu_names")
-    if type(names) ~= "table" then
-      names = {}
-      for _, id in ipairs(Fk:getAllCardIds()) do
-        local card = Fk:getCardById(id, true)
-        if card.is_damage_card and not card.is_derived then
-          table.insertIfNeed(names, card.name)
-        end
-      end
-      table.insertIfNeed(names, "ty__drowning")
-      Self:setMark("juewu_names", names)
-    end
-    local choices = U.getViewAsCardNames(Self, "juewu", names, nil, Self:getTableMark("juewu-turn"))
-    if #choices == 0 then return end
-    return U.CardNameBox { choices = choices, all_choices = names }
-  end,
-  card_filter = function(self, to_select, selected)
-    if self.interaction.data == nil or #selected > 0 then return false end
-    local card = Fk:getCardById(to_select)
-    if card.number == 2 then
-      return true
-    end
-  end,
-  view_as = function(self, cards)
-    if #cards ~= 1 or not self.interaction.data then return nil end
-    local card = Fk:cloneCard(self.interaction.data)
-    card:addSubcard(cards[1])
-    card.skillName = self.name
-    return card
-  end,
-  before_use = function(self, player, use)
-    local mark = player:getTableMark("juewu-turn")
-    table.insert(mark, use.card.trueName)
-    player.room:setPlayerMark(player, "juewu-turn", mark)
-  end,
-  enabled_at_play = function(self, player)
+  handly_pile = true,
+  interaction = function(self, player)
     local names = player:getMark("juewu_names")
     if type(names) ~= "table" then
       names = {}
@@ -2770,16 +2735,33 @@ local juewu = fk.CreateViewAsSkill{
       table.insertIfNeed(names, "ty__drowning")
       player:setMark("juewu_names", names)
     end
-    local mark = player:getTableMark("juewu-turn")
-    local choices = {}
-    for _, name in pairs(names) do
-      local to_use = Fk:cloneCard(name)
-      to_use.skillName = self.name
-      if not table.contains(mark, to_use.trueName) and player:canUse(to_use) then
-        return true
-      end
+    local choices = U.getViewAsCardNames(player, "juewu", names, nil, player:getTableMark("juewu-turn"))
+    return U.CardNameBox {
+      choices = choices,
+      all_choices = names,
+      default_choice = "juewu"
+    }
+  end,
+  card_filter = function(self, to_select, selected)
+    if Fk.all_card_types[self.interaction.data] == nil or #selected > 0 then return false end
+    local card = Fk:getCardById(to_select)
+    if card.number == 2 then
+      return true
     end
   end,
+  view_as = function(self, cards)
+    if #cards ~= 1 or Fk.all_card_types[self.interaction.data] == nil then return nil end
+    local card = Fk:cloneCard(self.interaction.data)
+    card:addSubcard(cards[1])
+    card.skillName = self.name
+    return card
+  end,
+  before_use = function(self, player, use)
+    local mark = player:getTableMark("juewu-turn")
+    table.insert(mark, use.card.trueName)
+    player.room:setPlayerMark(player, "juewu-turn", mark)
+  end,
+  enabled_at_play = Util.TrueFunc,
   enabled_at_response = function(self, player, response)
     if response then return false end
     if Fk.currentResponsePattern == nil then return false end
@@ -2805,6 +2787,10 @@ local juewu = fk.CreateViewAsSkill{
       end
     end
   end,
+
+  on_lose = function (self, player, is_death)
+    player.room:setPlayerMark(player, "juewu-turn", 0)
+  end
 }
 local juewu_trigger = fk.CreateTriggerSkill{
   name = "#juewu_trigger",
@@ -2836,14 +2822,6 @@ local juewu_trigger = fk.CreateTriggerSkill{
     for _, id in ipairs(self.cost_data) do
       room:setCardMark(Fk:getCardById(id), "@@juewu-inhand", 1)
     end
-  end,
-
-  refresh_events = {fk.EventLoseSkill},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and data == juewu and player:getMark("juewu-turn") ~= 0
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:setPlayerMark(player, "juewu-turn", 0)
   end,
 }
 local juewu_filter = fk.CreateFilterSkill{
@@ -2920,9 +2898,9 @@ local wuyou_active = fk.CreateActiveSkill{
   card_filter = function(self, to_select, selected)
     return #selected == 0
   end,
-  target_filter = function(self, to_select, selected)
-    return #selected == 0 and to_select ~= Self.id and Fk:currentRoom():getPlayerById(to_select):hasSkill(wuyou) and
-    not table.contains(Self:getTableMark("wuyou_targets-phase"), to_select)
+  target_filter = function(self, to_select, selected, selected_cards, card, extra_data, player)
+    return #selected == 0 and to_select ~= player.id and Fk:currentRoom():getPlayerById(to_select):hasSkill(wuyou) and
+    not table.contains(player:getTableMark("wuyou_targets-phase"), to_select)
   end,
   on_use = function(self, room, effect)
     local target = room:getPlayerById(effect.from)
@@ -2931,7 +2909,7 @@ local wuyou_active = fk.CreateActiveSkill{
     room:addTableMarkIfNeed(target, "wuyou_targets-phase", player.id)
     room:moveCardTo(effect.cards, Player.Hand, player, fk.ReasonGive, self.name, nil, false, target.id)
     if player.dead or player:isKongcheng() or target.dead then return end
-    wuyou:onUse(room, {from = player.id, tos = {target.id} })
+    wuyou:onUse(room, {from = player.id, tos = { target.id } })
   end,
 }
 local wuyou_declare = fk.CreateActiveSkill{
@@ -2939,11 +2917,15 @@ local wuyou_declare = fk.CreateActiveSkill{
   card_num = 1,
   target_num = 0,
   interaction = function(self)
-    return UI.ComboBox { choices = self.interaction_choices}
+    return U.CardNameBox {
+      choices = self.interaction_choices,
+      default_choice = "wuyou"
+    }
   end,
   can_use = Util.FalseFunc,
   card_filter = function(self, to_select, selected)
-    return #selected == 0 and self.interaction.data and Fk:currentRoom():getCardArea(to_select) == Card.PlayerHand
+    return #selected == 0 and Fk.all_card_types[self.interaction.data] ~= nil and
+      Fk:currentRoom():getCardArea(to_select) == Card.PlayerHand
   end,
 }
 local wuyou_filter = fk.CreateFilterSkill{
@@ -2965,6 +2947,17 @@ local wuyou_targetmod = fk.CreateTargetModSkill{
     return card and not card:isVirtual() and card:getMark("@@wuyou-inhand") ~= 0
   end,
 }
+local wuyou_refresh = fk.CreateTriggerSkill{
+  name = "#wuyou_refresh",
+
+  refresh_events = {fk.PreCardUse},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and not data.card:isVirtual() and data.card:getMark("@@wuyou-inhand") ~= 0
+  end,
+  on_refresh = function(self, event, target, player, data)
+    data.extraUse = true
+  end,
+}
 local yixian = fk.CreateActiveSkill{
   name = "yixian",
   anim_type = "control",
@@ -2976,7 +2969,7 @@ local yixian = fk.CreateActiveSkill{
   end,
   interaction = function()
     return UI.ComboBox {
-      choices = {"yixian_field", "yixian_discard"}
+      choices = { "yixian_field", "yixian_discard" }
     }
   end,
   prompt = function(self)
@@ -3033,6 +3026,7 @@ juewu:addRelatedSkill(juewu_trigger)
 juewu:addRelatedSkill(juewu_filter)
 wuyou:addRelatedSkill(wuyou_filter)
 wuyou:addRelatedSkill(wuyou_targetmod)
+wuyou:addRelatedSkill(wuyou_refresh)
 guanyu:addSkill(juewu)
 guanyu:addSkill(wuyou)
 guanyu:addSkill(yixian)

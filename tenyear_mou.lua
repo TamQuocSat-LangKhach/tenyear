@@ -360,7 +360,8 @@ tymou2__lusu:addSkill("mengmou")
 Fk:loadTranslationTable{
   ["tymou__lusu"] = "谋鲁肃",
   ["#tymou__lusu"] = "鸿谋翼远",
-  --["illustrator:tymou__lusu"] = "",
+  ["illustrator:tymou__lusu"] = "鬼画府",
+
   ["mingshil"] = "明势",
   [":mingshil"] = "摸牌阶段结束时，你可以摸两张牌，然后展示三张手牌并令一名其他角色获得其中一张。",
   ["mengmou"] = "盟谋",
@@ -386,7 +387,8 @@ Fk:loadTranslationTable{
   --阴形态
   ["tymou2__lusu"] = "谋鲁肃",
   ["#tymou2__lusu"] = "鸿谋翼远",
-  --["illustrator:tymou2__lusu"] = "",
+  ["illustrator:tymou2__lusu"] = "鬼画府",
+
   ["$mingshil_tymou2__lusu1"] = "今天下春秋已定，君不见南北沟壑乎？",
   ["$mingshil_tymou2__lusu2"] = "善谋者借势而为，其化万物为己用。",
   ["$mengmou_tymou2__lusu1"] = "合左抑右，定两家之盟。",

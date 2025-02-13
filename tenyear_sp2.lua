@@ -1539,7 +1539,7 @@ moqiongshu:addSkill(jiangzhi)
 Fk:loadTranslationTable{
   ["moqiongshu"] = "莫琼树",
   ["#moqiongshu"] = "琼黛鬓墨雪",
-  ["illustrator:malingli"] = "黯荧岛",
+  ["illustrator:moqiongshu"] = "黯荧岛",
   ["designer:moqiongshu"] = "韩旭",
 
   ["wanchan"] = "宛蝉",
@@ -6257,8 +6257,9 @@ zhugemengxue:addSkill(hanying)
 Fk:loadTranslationTable{
   ["zhugemengxue"] = "诸葛梦雪",
   ["#zhugemengxue"] = "仙苑停云",
+  ["illustrator:zhugemengxue"] = "匠人绘",
   ["designer:zhugemengxue"] = "星移",
-  --["illustrator:zhugemengxue"] = "",
+
   ["jichun"] = "寄春",
   [":jichun"] = "出牌阶段限两次，你可以展示一张牌，选择于当前阶段内未选择过的项：1.将此牌交给一名手牌数小于你的角色，然后摸X张牌；"..
   "2.弃置此牌，然后弃置一名手牌数大于你的角色区域里至多X张牌。（X为此牌的牌名字数）",
@@ -6355,6 +6356,7 @@ zhugeruoxue:addSkill(nuanhui)
 Fk:loadTranslationTable{
   ["zhugeruoxue"] = "诸葛若雪",
   ["#zhugeruoxue"] = "玉榭霑露",
+  ["illustrator:zhugeruoxue"] = "匠人绘",
   ["designer:zhugeruoxue"] = "星移",
 
   ["qiongying"] = "琼英",
@@ -6494,7 +6496,9 @@ caoxian:addSkill(zhifou)
 Fk:loadTranslationTable{
   ["caoxian"] = "曹宪",
   ["#caoxian"] = "蝶步韶华",
+  ["illustrator:caoxian"] = "君桓文化",
   ["designer:caoxian"] = "快雪时晴",
+
   ["lingxi"] = "灵犀",
   [":lingxi"] = "出牌阶段开始时或结束时，你可以将至多体力上限张牌置于你的武将牌上，称为“翼”。当你的“翼”被移去后，你将手牌摸至或弃置至“翼”包含的花色数的两倍。",
   ["#lingxi-put"] = "灵犀：将至多 %arg 张牌置入“翼”",

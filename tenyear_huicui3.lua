@@ -1763,6 +1763,7 @@ daqiao:addSkill(zixi)
 Fk:loadTranslationTable{
   ["mu__daqiao"] = "乐大乔",
   ["#mu__daqiao"] = "玉桐姊韵",
+  ["illustrator:mu__daqiao"] = "匠人绘",
   ["designer:mu__daqiao"] = "星移",
 
   ["qiqin"] = "绮琴",
@@ -1881,6 +1882,7 @@ xiaoqiao:addSkill(weiwan)
 Fk:loadTranslationTable{
   ["mu__xiaoqiao"] = "乐小乔",
   ["#mu__xiaoqiao"] = "绿绮嫒媛",
+  ["illustrator:mu__xiaoqiao"] = "匠人绘",
   ["designer:mu__xiaoqiao"] = "星移",
 
   ["weiwan"] = "媦婉",

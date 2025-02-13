@@ -328,6 +328,7 @@ sunchen:addSkill(zuowei)
 Fk:loadTranslationTable{
   ["sunchen"] = "孙綝",
   ["#sunchen"] = "凶竖盈溢",
+  ["illustrator:sunchen"] = "君桓文化",
   ["designer:sunchen"] = "朔方的雪",
 
   ["zigu"] = "自固",
@@ -5178,9 +5179,9 @@ local shoucheng = fk.CreateTriggerSkill{
 ty__jiangwanfeiyi:addSkill(shoucheng)
 Fk:loadTranslationTable{
   ["ty__jiangwanfeiyi"] = "蒋琬费祎",
-  ["#ty__jiangwanfeiyi"] = "社稷股肱",
+  ["#ty__jiangwanfeiyi"] = "蜀汉名相",
+  ["illustrator:ty__jiangwanfeiyi"] = "君桓文化",
   ["designer:ty__jiangwanfeiyi"] = "淬毒",
-  ["illustrator:ty__jiangwanfeiyi"] = "",
 
   ["ty__shengxi"] = "生息",
   [":ty__shengxi"] = "结束阶段，若你于此回合内未造成过伤害，你可摸两张牌。",

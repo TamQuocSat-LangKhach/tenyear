@@ -1648,6 +1648,7 @@ caoyi:addSkill(yinjun)
 Fk:loadTranslationTable{
   ["caoyi"] = "曹轶",
   ["#caoyi"] = "飒姿缔燹",
+  ["illustrator:caoyi"] = "匠人绘",
   ["designer:caoyi"] = "星移",
   ["miyi"] = "蜜饴",
   [":miyi"] = "准备阶段，你可以选择一项令任意名角色执行：1.回复1点体力；2.你对其造成1点伤害。若如此做，结束阶段，这些角色执行另一项。",

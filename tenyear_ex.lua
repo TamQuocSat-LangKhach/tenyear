@@ -4391,54 +4391,6 @@ Fk:loadTranslationTable{
 }
 --yj2015
 local caorui = General(extension, "ty_ex__caorui", "wei", 3)
-local ty_ex__xingshuai = fk.CreateTriggerSkill{
-  name = "ty_ex__xingshuai$",
-  anim_type = "defensive",
-  frequency = Skill.Limited,
-  events = {fk.EnterDying},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and
-      not table.every(player.room:getOtherPlayers(player), function(p) return p.kingdom ~= "wei" end)
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local targets = {}
-    for _, p in ipairs(room:getOtherPlayers(player)) do
-      if p.kingdom == "wei" and room:askForSkillInvoke(p, self.name, data, "#xingshuai-invoke::"..player.id) then
-        table.insert(targets, p)
-      end
-    end
-    if #targets > 0 then
-      for _, p in ipairs(targets) do
-        room:recover{
-          who = player,
-          num = 1,
-          recoverBy = p,
-          skillName = self.name
-        }
-      end
-    end
-    if not player.dying then
-      for _, p in ipairs(targets) do
-        room:damage{
-          to = p,
-          damage = 1,
-          skillName = self.name,
-        }
-      end
-    end
-  end,
-
-  refresh_events = {fk.Deathed},
-  can_refresh = function(self, event, target, player, data)
-    return player:usedSkillTimes(self.name, Player.HistoryGame) > 0 and data.damage and data.damage.from and
-      data.damage.from:getMark("@@mingjian-turn") > 0 and data.damage.from.phase ~= Player.NotActive
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player:setSkillUseHistory(self.name, 0, Player.HistoryGame)
-  end,
-}
-
 local ty_ex__mingjian = fk.CreateActiveSkill{
   name = "ty_ex__mingjian",
   anim_type = "support",
@@ -4549,12 +4501,11 @@ ty_ex__mingjian:addRelatedSkill(ty_ex__mingjian_record)
 caorui:addSkill(ty_ex__huituo)
 caorui:addSkill(ty_ex__mingjian)
 caorui:addSkill("xingshuai")
---caorui:addSkill(ty_ex__xingshuai)
-
 Fk:loadTranslationTable{
   ["ty_ex__caorui"] = "界曹叡",
   ["#ty_ex__caorui"] = "天资的明君",
   ["illustrator:ty_ex__caorui"] = "君桓文化",
+
   ["ty_ex__huituo"] = "恢拓",
   [":ty_ex__huituo"] = "当你受到伤害后，你可以令一名角色判定，若结果为：红色，其回复1点体力；黑色，其摸X张牌（X为伤害值）。",
   ["ty_ex__mingjian"] = "明鉴",
@@ -4912,8 +4863,11 @@ sunxiu:addSkill(ty_ex__xingxue)
 sunxiu:addSkill("zhaofu")
 Fk:loadTranslationTable{
   ["ty_ex__sunxiu"] = "界孙休",
+  ["#ty_ex__sunxiu"] = "弥殇的景君",
+  ["cv:ty_ex__sunxiu"] = "清水浊流",
+  ["illustrator:ty_ex__sunxiu"] = "写之火工作室",
+
   ["ty_ex__yanzhu"] = "宴诛",
-  ["cv:ty_ex__yanzhu"] = "清水浊流",
   ["#ty_ex__yanzhu_trigger"] = "宴诛",
   [":ty_ex__yanzhu"] = "出牌阶段限一次，你可以令一名其他角色选择一项：1.弃置一张牌，其下次受到伤害的+1直到其下个回合开始；2.交给你装备区内所有的牌，"..
   "你修改〖宴诛〗为 “出牌阶段限一次，你可以选择一名其他角色，令其下次受到的伤害+1直到其下个回合开始。”和修改〖兴学〗为“X为你的体力上限”。",

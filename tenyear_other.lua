@@ -1528,7 +1528,7 @@ goddianwei:addSkill(cuijue)
 local xiaosunquan = General(extension, "child__sunquan", "wu", 3)
 Fk:loadTranslationTable{
   ["child__sunquan"] = "小孙权",
-  ["#child__sunquan"] = "未知",
+  ["#child__sunquan"] = "牌堆的掌控者",
   ["~child__sunquan"] = "阿娘，大哥抢我糖人！",
 }
 

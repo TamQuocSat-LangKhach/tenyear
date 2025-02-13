@@ -2213,6 +2213,7 @@ kuaiqi:addSkill(xunjie)
 Fk:loadTranslationTable{
   ["kuaiqi"] = "蒯祺",
   ["#kuaiqi"] = "依云睦月",
+  ["illustrator:kuaiqi"] = "黯荧岛工作室",
   ["designer:kuaiqi"] = "星移",
 
   ["liangxiu"] = "良秀",
@@ -2305,6 +2306,7 @@ pangshanmin:addSkill(zhuoli)
 Fk:loadTranslationTable{
   ["pangshanmin"] = "庞山民",
   ["#pangshanmin"] = "抱玉向晚",
+  ["illustrator:pangshanmin"] = "错落宇宙",
   ["designer:pangshanmin"] = "星移",
 
   ["caisi"] = "才思",

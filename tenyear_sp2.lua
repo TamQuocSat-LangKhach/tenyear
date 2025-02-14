@@ -3649,6 +3649,142 @@ Fk:loadTranslationTable{
   ["~bianyue"] = "空怀悲怆之心，未有杀贼之力……",
 }
 
+local sunba = General(extension, "sunba", "wu", 3)
+local jiedang = fk.CreateTriggerSkill{
+  name = "jiedang",
+  derived_piles = "jiedang",
+  anim_type = "support",
+  events = {fk.TurnStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and
+      table.find(player.room.alive_players, function (p)
+        return not p:isNude()
+      end)
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, table.map(room.alive_players, Util.IdMapper))
+    for _, p in ipairs(room:getAlivePlayers()) do
+      if not player:hasSkill(self) then return end
+      if not p.dead and not p:isNude() then
+        local cards = room:askForCard(p, 1, 999, true, self.name, true, nil, "#jiedang-ask:"..player.id)
+        if #cards > 0 then
+          player:addToPile(self.name, cards, true, self.name, p.id)
+          if not p.dead then
+            p:drawCards(1, self.name)
+          end
+        end
+      end
+    end
+  end,
+}
+local jiedang_trigger = fk.CreateTriggerSkill{
+  name = "#jiedang_trigger",
+  anim_type = "drawcard",
+  events = {fk.EnterDying, fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and #player:getPile("jiedang") > 0 then
+      if event == fk.EnterDying then
+        return true
+      elseif event == fk.EventPhaseStart then
+        return player.phase == Player.Play or player.phase == Player.Finish
+      end
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    local cards = table.map({Card.TypeBasic, Card.TypeTrick, Card.TypeEquip}, function (t)
+      return table.filter(player:getPile("jiedang"), function (id)
+        return t == Fk:getCardById(id).type
+      end)
+    end)
+    local all_choices = {
+      "jiedang_basic:::"..#cards[1],
+      "jiedang_trick:::"..#cards[2],
+      "jiedang_equip:::"..#cards[3],
+    }
+    local choices = {}
+    if #cards[1] > 0 then
+      table.insert(choices, "jiedang_basic:::"..#cards[1])
+    end
+    if #cards[2] > 0 then
+      table.insert(choices, "jiedang_trick:::"..#cards[2])
+    end
+    if #cards[3] > 0 then
+      table.insert(choices, "jiedang_equip:::"..#cards[3])
+    end
+    local choice = room:askForChoice(player, choices, "jiedang", "#jiedang-choice")
+    local ids = cards[table.indexOf(all_choices, choice)]
+    room:moveCardTo(ids, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, "jiedang", nil, true, player.id)
+    if not player.dead then
+      player:drawCards(#ids, "jiedang")
+    end
+  end,
+}
+local jidi = fk.CreateTriggerSkill{
+  name = "jidi",
+  anim_type = "masochism",
+  frequency = Skill.Compulsory,
+  events = {fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.from and
+      (data.from.hp > player.hp or data.from:getHandcardNum() > player:getHandcardNum())
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    room:doIndicate(player.id, {data.from.id})
+    local choices = {}
+    if data.from.hp > player.hp then
+      table.insert(choices, 1)
+    end
+    if data.from:getHandcardNum() > player:getHandcardNum() then
+      table.insert(choices, 2)
+    end
+    if table.contains(choices, 1) then
+      room:loseHp(data.from, 1, self.name)
+    end
+    if table.contains(choices, 2) and not data.from.dead then
+      local cards = table.filter(data.from:getCardIds("he"), function (id)
+        return not data.from:prohibitDiscard(id)
+      end)
+      if #cards > 0 then
+        room:throwCard(table.random(cards, 2), self.name, data.from, data.from)
+      end
+    end
+  end,
+}
+jiedang:addRelatedSkill(jiedang_trigger)
+sunba:addSkill(jiedang)
+sunba:addSkill(jidi)
+Fk:loadTranslationTable{
+  ["sunba"] = "孙霸",
+  ["#sunba"] = "庶怨嫡位",
+  ["illustrator:sunba"] = "君桓文化",
+  ["~sunba"] = "殿陛之争，非胜即死。",
+}
+Fk:loadTranslationTable{
+  ["jiedang"] = "结党",
+  [":jiedang"] = "回合开始时，你可以令所有角色将任意张牌置于你的武将牌上，因此失去牌的角色摸一张牌。你在以下时机须移去武将牌上一种类别的牌"..
+  "并摸等量的牌：1.进入濒死状态时；2.出牌阶段开始时；3.结束阶段。",
+  ["#jiedang-ask"] = "结党：你可以将任意张牌置于 %src 武将牌上，摸一张牌",
+  ["#jiedang_trigger"] = "结党",
+  ["jiedang_basic"] = "基本牌（%arg张）",
+  ["jiedang_trick"] = "锦囊牌（%arg张）",
+  ["jiedang_equip"] = "装备牌（%arg张）",
+  ["#jiedang-choice"] = "结党：请移去一种类别的“结党”牌，摸等量的牌",
+
+  ["$jiedang1"] = "我固君子，亦群亦党。",
+  ["$jiedang2"] = "众卿拥立，霸当仁不让。",
+}
+Fk:loadTranslationTable{
+  ["jidi"] = "觊嫡",
+  [":jidi"] = "锁定技，体力值大于你的角色对你造成伤害时，其失去1点体力；手牌数大于你的角色对你造成伤害时，其随机弃置两张牌。",
+
+  ["$jidi1"] = "这太子之位，他孙和坐得，我亦坐得！",
+  ["$jidi2"] = "自古唯贤愚之分，无庶嫡之别！",
+}
+
 local ganfuren = General(extension, "ty__ganfuren", "shu", 3, 3, General.Female)
 local ty__shushen = fk.CreateTriggerSkill{
   name = "ty__shushen",

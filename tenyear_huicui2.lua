@@ -5108,6 +5108,103 @@ Fk:loadTranslationTable{
   ["~ty__yangyi"] = "幼主昏聩，群臣无谋，国将亡。",
 }
 
+local zhangyiy = General(extension, "ty__zhangyiy", "shu", 4)
+local murui = fk.CreateTriggerSkill{
+  name = "murui",
+  anim_type = "offensive",
+  events = {fk.RoundStart, fk.TurnEnd, fk.TurnStart},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) then
+      if event == fk.RoundStart then
+        return player:getMark("@murui")[1] == 1
+      elseif event == fk.TurnEnd and player:getMark("@murui")[2] == 1 then
+        return #player.room.logic:getEventsOfScope(GameEvent.Death, 1, Util.TrueFunc, Player.HistoryTurn) > 0
+      elseif event == fk.TurnStart then
+        return target == player and player:getMark("@murui")[3] == 1
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local use = U.askForPlayCard(room, player, nil, nil, self.name, "#murui-use", {
+      bypass_times = true,
+      extraUse = true
+    }, true)
+    if use then
+      self.cost_data = use
+      return true
+    end
+  end,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    local use = table.simpleClone(self.cost_data)
+    room:useCard(use)
+    if use and use.damageDealt and not player.dead then
+      local mark = player:getMark("@murui")
+      local index = 1
+      if event == fk.TurnEnd then
+        index = 2
+      elseif event == fk.TurnStart then
+        index = 3
+      end
+      mark[index] = "<font color='grey'>-</font>"
+      room:setPlayerMark(player, "@murui", mark)
+      room:addPlayerMark(player, "aoren", 1)
+      player:drawCards(2, self.name)
+    end
+  end,
+
+  on_acquire = function (self, player, is_start)
+    player.room:setPlayerMark(player, "@murui", {1, 1, 1})
+  end,
+  on_lose = function (self, player, is_start)
+    player.room:setPlayerMark(player, "@murui", 0)
+  end,
+}
+zhangyiy:addSkill(murui)
+Fk:loadTranslationTable{
+  ["ty__zhangyiy"] = "张翼",
+  ["#ty__zhangyiy"] = "执忠守义",
+  ["illustrator:ty__zhangyiy"] = "匠人绘",
+  ["designer:ty__zhangyiy"] = "步穗",
+  ["~ty__zhangyiy"] = "大汉，万胜！",
+}
+Fk:loadTranslationTable{
+  ["murui"] = "暮锐",
+  [":murui"] = "你可以于以下时机使用一张牌：1.每轮开始时；2.有角色死亡的回合结束时；3.你的回合开始时。若此牌造成了伤害，则你摸两张牌并"..
+  "删除对应选项。",
+  ["#murui-use"] = "暮锐：你可以使用一张牌，若造成伤害则摸两张牌并删除此时机",
+  ["@murui"] = "暮锐",
+
+  ["$murui1"] = "背水一战，将至绝地而何畏死。",
+  ["$murui2"] = "破釜沉舟，置之死地而后生。",
+}
+local aoren = fk.CreateTriggerSkill{
+  name = "aoren",
+  anim_type = "drawcard",
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and data.card.type == Card.TypeBasic and
+      player:usedSkillTimes(self.name, Player.HistoryRound) < player:getMark(self.name) and
+      player.room:getCardArea(data.card) == Card.Processing
+  end,
+  on_cost = function (self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#aoren-prey:::"..data.card:toLogString())
+  end,
+  on_use = function (self, event, target, player, data)
+    player.room:moveCardTo(data.card, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
+  end,
+}
+zhangyiy:addSkill(aoren)
+Fk:loadTranslationTable{
+  ["aoren"] = "鏖刃",
+  [":aoren"] = "每轮限X次（为〖暮锐〗已删除选项数），你使用基本牌结算完毕后，可以将之收回手牌。",
+  ["#aoren-prey"] = "鏖刃：是否收回此%arg？",
+
+  ["$aoren1"] = "为国效死，百战不殆。",
+  ["$aoren2"] = "血染沙场，一往无前。",
+}
+
 local ty__jiangwanfeiyi = General(extension, "ty__jiangwanfeiyi", "shu", 3)
 local shengxi = fk.CreateTriggerSkill{
   name = "ty__shengxi",

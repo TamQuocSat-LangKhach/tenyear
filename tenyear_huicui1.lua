@@ -3074,12 +3074,14 @@ local fuxie = fk.CreateActiveSkill{
       return "#fuxie_skill"
     end
   end,
-  interaction = function()
+  interaction = function(self, player)
     local choices = {"fuxie_weapon"}
-    local skills = table.map(table.filter(Self.player_skills, function (s)
-      return s:isPlayerSkill(Self) and s.visible
+    local skills = table.map(table.filter(player.player_skills, function (s)
+      return s:isPlayerSkill(player) and s.visible and s.name ~= "fuxie"
     end), Util.NameMapper)
-    table.insertTable(choices, skills)
+    if #skills > 0 then
+      table.insertTable(choices, skills)
+    end
     return UI.ComboBox { choices = choices }
   end,
   can_use = Util.TrueFunc,
@@ -3174,7 +3176,7 @@ Fk:loadTranslationTable{
   [":shuangrui"] = "准备阶段，你可以选择一名其他角色，视为对其使用一张【杀】。若其：不在你攻击范围内，此【杀】不可响应，你获得〖狩星〗"..
   "直到回合结束；在你攻击范围内，此【杀】伤害+1，你获得〖铩雪〗直到回合结束。",
   ["fuxie"] = "伏械",
-  [":fuxie"] = "出牌阶段，你可以弃置一张武器牌或失去一个技能，令一名其他角色弃置两张牌。",
+  [":fuxie"] = "出牌阶段，你可以弃置一张武器牌或失去一个其他技能，令一名其他角色弃置两张牌。",
   ["shouxing"] = "狩星",
   [":shouxing"] = "你可以将X张牌当一张不计次数的【杀】对一名攻击范围外的角色使用（X为你计算与该角色的距离）。",
   ["shaxue"] = "铩雪",
@@ -3366,13 +3368,14 @@ local xingchong_delay = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.AfterCardsMove},
   can_trigger = function(self, event, target, player, data)
-    if player.dead or type(player:getMark("xingchong-round")) ~= "table" then return false end
-    local mark = player:getMark("xingchong-round")
-    for _, move in ipairs(data) do
-      if move.from == player.id then
-        for _, info in ipairs(move.moveInfo) do
-          if info.fromArea == Card.PlayerHand and table.contains(mark, info.cardId) then
-            return true
+    if player:hasSkill("xingchong") and player:getMark("xingchong-round") ~= 0 then
+      local mark = player:getMark("xingchong-round")
+      for _, move in ipairs(data) do
+        if move.from == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand and table.contains(mark, info.cardId) then
+              return true
+            end
           end
         end
       end
@@ -4278,6 +4281,7 @@ local pingzhi = fk.CreateActiveSkill{
     else
       card = U.askforChooseCardsAndChoice(player, target:getCardIds("h"), {"OK"}, self.name, prompt)
     end
+    room:showCards(card, target)
     if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
       if not player:prohibitDiscard(card[1]) then
         room:throwCard(card, self.name, target, player)
@@ -4297,7 +4301,7 @@ local pingzhi = fk.CreateActiveSkill{
         local use = room:askForUseRealCard(target, {card.id}, self.name, "#pingzhi-use", {
           bypass_times = true,
           extraUse = true,
-        }, true, false)
+        }, false, false)
         if use and use.damageDealt then
           player:setSkillUseHistory(self.name, 0, Player.HistoryPhase)
         end
@@ -4350,8 +4354,8 @@ Fk:loadTranslationTable{
   ["illustrator:panghong"] = "钟於",
 
   ["pingzhi"] = "评骘",
-  [":pingzhi"] = "转换技，出牌阶段限一次，你可以观看一名角色手牌并选择其中一张牌，阳：你弃置此牌，其视为对你使用【火攻】，若未造成伤害此技能"..
-  "视为未发动；阴：其使用此牌，若造成伤害则此技能视为未发动。",
+  [":pingzhi"] = "转换技，出牌阶段限一次，你可以观看一名角色手牌并选择其中一张牌令其展示，阳：你弃置此牌，其视为对你使用【火攻】，若未造成伤害"..
+  "此技能视为未发动；阴：其使用此牌，若造成伤害则此技能视为未发动。",
   ["gangjian"] = "刚简",
   [":gangjian"] = "锁定技，每个回合结束时，若你本回合未受到过伤害，你摸X张牌。（X为本回合展示或因拼点亮出的牌数，至多为5）。",
   ["#pingzhi-yang"] = "评骘：观看并选择一名角色一张手牌，你弃置之，其视为对你使用【火攻】",

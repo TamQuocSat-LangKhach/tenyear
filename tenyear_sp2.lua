@@ -1342,8 +1342,8 @@ local xiaoyin_trigger = fk.CreateTriggerSkill{
 local huahuo = fk.CreateViewAsSkill{
   name = "huahuo",
   anim_type = "offensive",
-  pattern = "fire__slash",
   prompt = "#huahuo",
+  handly_pile = true,
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:getCardById(to_select).color == Card.Red and Fk:currentRoom():getCardArea(to_select) ~= Player.Equip
   end,
@@ -1372,9 +1372,6 @@ local huahuo = fk.CreateViewAsSkill{
   enabled_at_play = function (self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
-  enabled_at_response = function(self, player, response)
-    return false
-  end,
 }
 local huahuo_targetmod = fk.CreateTargetModSkill{
   name = "#huahuo_targetmod",
@@ -1398,8 +1395,9 @@ Fk:loadTranslationTable{
   ["lima"] = "骊马",
   [":lima"] = "锁定技，场上每有一张坐骑牌，你计算与其他角色的距离-1（至少为1）。",
   ["xiaoyin"] = "硝引",
-  [":xiaoyin"] = "准备阶段，你可以亮出牌堆顶X张牌（X为你距离1以内的角色数），获得其中红色牌，将其中任意张黑色牌作为“硝引”放置在等量名连续（不计入你的座位）的其他角色的武将牌上。有“硝引”牌的角色受到伤害时：若为火焰伤害，伤害来源可以弃置一张与“硝引”同类别的牌并随机移去一张此类别的“硝引”牌令此伤害+1；"..
-  "不为火焰伤害，伤害来源可以获得其一张“硝引”牌并将此伤害改为火焰伤害。",
+  [":xiaoyin"] = "准备阶段，你可以亮出牌堆顶X张牌（X为你距离1以内的角色数），获得其中红色牌，将其中任意张黑色牌作为“硝引”放置在等量名座次连续"..
+  "（不计入你的座位）的其他角色的武将牌上。有“硝引”牌的角色受到伤害时：若为火焰伤害，伤害来源可以弃置一张与“硝引”同类别的牌并随机移去一张"..
+  "此类别的“硝引”牌令此伤害+1；不为火焰伤害，伤害来源可以获得其一张“硝引”牌并将此伤害改为火焰伤害。",
   ["huahuo"] = "花火",
   [":huahuo"] = "出牌阶段限一次，你可以将一张红色手牌当无次数限制的【杀】使用。若目标有“硝引”牌，此【杀】可改为指定所有有“硝引”牌的角色为目标。",
   ["xiaoyin_active"] = "硝引",
@@ -3649,7 +3647,7 @@ Fk:loadTranslationTable{
   ["~bianyue"] = "空怀悲怆之心，未有杀贼之力……",
 }
 
-local sunba = General(extension, "sunba", "wu", 3)
+local sunba = General(extension, "sunba", "wu", 4)
 local jiedang = fk.CreateTriggerSkill{
   name = "jiedang",
   derived_piles = "jiedang",

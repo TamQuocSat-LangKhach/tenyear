@@ -4585,6 +4585,9 @@ local fumou = fk.CreateTriggerSkill{
     local tos = room:askForChoosePlayers(player, targets, 1, player:getLostHp(), "#fumou-choose:::"..player:getLostHp(), self.name, true)
     if #tos > 0 then
       room:sortPlayersByAction(tos)
+      if table.removeOne(tos, player.id) then
+        table.insert(tos, 1, player.id)
+      end
       self.cost_data = {tos = tos}
       return true
     end

@@ -528,6 +528,10 @@ local manhou = fk.CreateActiveSkill{
       end
     end
   end,
+
+  on_lose = function (self, player)
+    player:setSkillUseHistory(self.name, 0, Player.HistoryPhase)
+  end,
 }
 
 local tanluan = fk.CreateActiveSkill{
@@ -546,13 +550,13 @@ local tanluan = fk.CreateActiveSkill{
       for _, move in ipairs(e.data) do
         for _, info in ipairs(move.moveInfo) do
           local id = info.cardId
-          if not table.contains(cards, id) then
-            table.insert(cards, id)
+          --if not table.contains(cards, id) then
+          --  table.insert(cards, id)
             if move.toArea == Card.DiscardPile and move.moveReason == fk.ReasonDiscard and
                 room:getCardArea(id) == Card.DiscardPile then
-              table.insert(ids, id)
+              table.insertIfNeed(ids, id)
             end
-          end
+          --end
         end
       end
       return false
@@ -566,7 +570,11 @@ local tanluan = fk.CreateActiveSkill{
     if use and use.damageDealt then
       player:setSkillUseHistory("manhou", 0, Player.HistoryPhase)
     end
-  end
+  end,
+
+  on_lose = function (self, player)
+    player:setSkillUseHistory(self.name, 0, Player.HistoryPhase)
+  end,
 }
 
 zhurong:addSkill(manhou)

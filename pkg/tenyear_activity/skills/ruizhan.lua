@@ -1,0 +1,57 @@
+local ruizhan = fk.CreateSkill {
+  name = "ruizhan"
+}
+
+Fk:loadTranslationTable{
+  ['ruizhan'] = '锐战',
+  ['#ruizhan-invoke'] = '锐战：你可与 %dest 拼点，若赢或拼点牌中有【杀】，视为对其使用【杀】',
+  ['#ruizhan-prey'] = '锐战：获得 %dest 一张牌',
+  [':ruizhan'] = '其他角色准备阶段，若其手牌数不小于体力值，你可以与其拼点：若你赢或者拼点牌中有【杀】，你视为对其使用一张【杀】；若两项均满足且此【杀】造成伤害，你获得其一张牌。',
+  ['$ruizhan1'] = '敌势汹汹，当急攻以挫其锐。',
+  ['$ruizhan2'] = '威愿领骑兵千人，以破敌前军。',
+}
+
+ruizhan:addEffect(fk.EventPhaseStart, {
+  can_trigger = function(self, event, target, player)
+    return player:hasSkill(ruizhan.name) and target ~= player and target.phase == Player.Start and
+      target:getHandcardNum() >= target.hp and not player:isKongcheng() and not target:isKongcheng()
+  end,
+  on_cost = function(self, event, target, player)
+    return player.room:askToSkillInvoke(player, {
+      skill_name = ruizhan.name,
+      prompt = "#ruizhan-invoke::" .. target.id
+    })
+  end,
+  on_use = function(self, event, target, player)
+    local room = player.room
+    room:doIndicate(player.id, {target.id})
+    local pindian = player:pindian({target}, ruizhan.name)
+    if target.dead or player:isProhibited(target, Fk:cloneCard("slash")) then return end
+
+    if pindian.results[target.id].winner == player or
+      pindian.fromCard.trueName == "slash" or pindian.results[target.id].toCard.trueName == "slash" then
+      local card = Fk:cloneCard("slash")
+      card.skillName = ruizhan.name
+      local use = {
+        from = player.id,
+        tos = {{target.id}},
+        card = card,
+      }
+      room:useCard(use)
+
+      if pindian.results[target.id].winner == player and
+        (pindian.fromCard.trueName == "slash" or pindian.results[target.id].toCard.trueName == "slash") and
+        use.damageDealt and use.damageDealt[target.id] and not player.dead and not target.dead and not target:isNude() then
+        local id = room:askToChooseCard(player, {
+          target = target,
+          flag = "he",
+          skill_name = ruizhan.name,
+          prompt = "#ruizhan-prey::" .. target.id
+        })
+        room:moveCardTo(Fk:getCardById(id), Card.PlayerHand, player, fk.ReasonPrey, ruizhan.name, nil, false, player.id)
+      end
+    end
+  end,
+})
+
+return ruizhan

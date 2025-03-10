@@ -1,0 +1,119 @@
+local changqu = fk.CreateSkill {
+  name = "changqu"
+}
+
+Fk:loadTranslationTable{
+  ['changqu'] = '长驱',
+  ['@@battleship'] = '战舰',
+  ['#changqu-card'] = '长驱：交给 %src %arg张手牌以使战舰驶向下一名角色',
+  ['@changqu'] = '长驱',
+  ['#changqu_trigger'] = '长驱',
+  [':changqu'] = '出牌阶段限一次，你可以<font color=>开一艘战舰</font>，从你的上家或下家开始选择任意名座次连续的其他角色，第一个目标角色获得战舰标记。获得战舰标记的角色选择一项：1.交给你X张手牌，然后将战舰标记移动至下一个目标；2.下次受到的属性伤害+X，然后横置武将牌（X为本次选择1的次数，至少为1）。',
+  ['$changqu1'] = '布横江之铁索，徒自缚耳。',
+  ['$changqu2'] = '艨艟击浪，可下千里江陵。',
+}
+
+-- 主动技能
+changqu:addEffect('active', {
+  name = "changqu",
+  anim_type = "control",
+  card_num = 0,
+  min_target_num = 1,
+  can_use = function(self, player)
+    return player:usedSkillTimes(changqu.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, player, to_select, selected)
+    if to_select == player.id then return false end
+    local target = Fk:currentRoom():getPlayerById(to_select)
+    if #selected == 0 then
+      return target:getNextAlive() == player or player:getNextAlive() == target
+    else
+      if table.contains(selected, player:getNextAlive().id) then
+        if Fk:currentRoom():getPlayerById(selected[#selected]):getNextAlive() == target then
+          return true
+        end
+      end
+      if Fk:currentRoom():getPlayerById(selected[1]):getNextAlive() == player then
+        if target:getNextAlive().id == selected[#selected] then
+          return true
+        end
+      end
+    end
+  end,
+  feasible = function(self, player, selected, selected_cards)
+    if #selected > 0 then
+      local p1 = Fk:currentRoom():getPlayerById(selected[1])
+      if not (p1:getNextAlive() == player or player:getNextAlive() == p1) then return false end
+      if #selected == 1 then return true end
+      if p1:getNextAlive() == player then
+        for i = 1, #selected - 1, 1 do
+          if Fk:currentRoom():getPlayerById(selected[i+1]):getNextAlive() ~= Fk:currentRoom():getPlayerById(selected[i]) then
+            return false
+          end
+        end
+        return true
+      end
+      if player:getNextAlive() == p1 then
+        for i = 1, #selected - 1, 1 do
+          if Fk:currentRoom():getPlayerById(selected[i]):getNextAlive() ~= Fk:currentRoom():getPlayerById(selected[i+1]) then
+            return false
+          end
+        end
+        return true
+      end
+    end
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local n = 0
+    for _, id in ipairs(effect.tos) do
+      local target = room:getPlayerById(id)
+      if not target.dead then
+        room:setPlayerMark(target, "@@battleship", 1)
+        local cards = {}
+        local x = math.max(n, 1)
+        if target:getHandcardNum() >= x then
+          cards = room:askToDiscard(target, {
+            min_num = x,
+            max_num = x,
+            include_equip = false,
+            skill_name = changqu.name,
+            cancelable = true,
+            prompt = "#changqu-card:"..player.id.."::"..x
+          })
+        end
+        if #cards > 0 then
+          room:obtainCard(player, cards, false, fk.ReasonGive, id)
+          n = n + 1
+        else
+          room:doIndicate(player.id, {target.id})
+          if not target.chained then
+            target:setChainState(true)
+          end
+          room:addPlayerMark(target, "@changqu", x)
+          room:setPlayerMark(target, "@@battleship", 0)
+          break
+        end
+        room:setPlayerMark(target, "@@battleship", 0)
+      end
+      if player.dead then return end
+    end
+  end,
+})
+
+-- 触发技能
+changqu:addEffect(fk.DamageInflicted, {
+  name = "#changqu_trigger",
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:getMark("@changqu") > 0 and data.damageType ~= fk.NormalDamage
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    data.damage = data.damage + player:getMark("@changqu")
+    player.room:setPlayerMark(player, "@changqu", 0)
+  end,
+})
+
+return changqu

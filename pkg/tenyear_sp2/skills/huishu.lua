@@ -1,5 +1,12 @@
 local huishu = fk.CreateSkill {
-  name = "huishu"
+  name = "huishu",
+  dynamic_desc = function(self, player)
+    return
+      "huishu_inner:" ..
+      (player:getMark("huishu1") + 3) .. ":" ..
+      (player:getMark("huishu2") + 1) .. ":" ..
+      (player:getMark("huishu3") + 2)
+  end,
 }
 
 Fk:loadTranslationTable{
@@ -14,13 +21,6 @@ Fk:loadTranslationTable{
 
 huishu:addEffect(fk.EventPhaseEnd, {
   anim_type = "drawcard",
-  dynamic_desc = function(self, player)
-    return
-      "huishu_inner:" ..
-      (player:getMark("huishu1") + 3) .. ":" ..
-      (player:getMark("huishu2") + 1) .. ":" ..
-      (player:getMark("huishu3") + 2)
-  end,
   can_trigger = function(self, event, target, player)
     return target == player and player.phase == Player.Draw
   end,

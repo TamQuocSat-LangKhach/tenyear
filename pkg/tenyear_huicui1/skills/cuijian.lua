@@ -1,5 +1,15 @@
 local cuijian = fk.CreateSkill {
-  name = "cuijian"
+  name = "cuijian",
+  dynamic_desc = function(self, player)
+    local texts = {"cuijian_inner", "cuijian_give", ""}
+    if player:getMark("tongyuan1") > 0 then
+      texts[3] = "cuijian_draw"
+    end
+    if player:getMark("tongyuan2") > 0 then
+      texts[2] = ""
+    end
+    return table.concat(texts, ":")
+  end,
 }
 
 Fk:loadTranslationTable{
@@ -17,16 +27,6 @@ Fk:loadTranslationTable{
 
 cuijian:addEffect("active", {
   anim_type = "control",
-  dynamic_desc = function(self, player)
-    local texts = {"cuijian_inner", "cuijian_give", ""}
-    if player:getMark("tongyuan1") > 0 then
-      texts[3] = "cuijian_draw"
-    end
-    if player:getMark("tongyuan2") > 0 then
-      texts[2] = ""
-    end
-    return table.concat(texts, ":")
-  end,
   prompt = "#cuijian-active",
   card_num = 0,
   target_num = 1,

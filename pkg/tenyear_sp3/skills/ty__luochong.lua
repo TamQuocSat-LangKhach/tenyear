@@ -1,5 +1,8 @@
 local ty__luochong = fk.CreateSkill {
-  name = "ty__luochong"
+  name = "ty__luochong",
+  dynamic_desc = function(self, player)
+    return "ty__luochong_inner:" .. tostring(4 - player:getMark(ty__luochong.name))
+  end,
 }
 
 Fk:loadTranslationTable{
@@ -12,9 +15,6 @@ Fk:loadTranslationTable{
 
 ty__luochong:addEffect(fk.RoundStart, {
   anim_type = "control",
-  dynamic_desc = function(self, player)
-    return "ty__luochong_inner:" .. tostring(4 - player:getMark(ty__luochong.name))
-  end,
   can_trigger = function(self, event, target, player)
     return player:hasSkill(ty__luochong) and player:getMark(ty__luochong.name) < 4 and
       not table.every(player.room.alive_players, function (p) return p:isAllNude() end)

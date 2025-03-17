@@ -1,5 +1,13 @@
 local yuqi = fk.CreateSkill {
-  name = "yuqi"
+  name = "yuqi",
+  dynamic_desc = function(player)
+    return
+      "yuqi_inner:" ..
+      player:getMark("yuqi1") .. ":" ..
+      (player:getMark("yuqi2") + 3) .. ":" ..
+      (player:getMark("yuqi3") + 1) .. ":" ..
+      (player:getMark("yuqi4") + 1)
+  end,
 }
 
 Fk:loadTranslationTable{
@@ -17,14 +25,6 @@ Fk:loadTranslationTable{
 yuqi:addEffect(fk.Damaged, {
   times = function(self)
     return 2 - self.player:usedSkillTimes(yuqi.name)
-  end,
-  dynamic_desc = function(player)
-    return
-      "yuqi_inner:" ..
-      player:getMark("yuqi1") .. ":" ..
-      (player:getMark("yuqi2") + 3) .. ":" ..
-      (player:getMark("yuqi3") + 1) .. ":" ..
-      (player:getMark("yuqi4") + 1)
   end,
   can_trigger = function(event, target, player, data)
     return player:hasSkill(yuqi.name) and not target.dead and player:usedSkillTimes(yuqi.name) < 2 and

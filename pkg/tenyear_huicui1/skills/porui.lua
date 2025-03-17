@@ -1,5 +1,12 @@
 local porui = fk.CreateSkill {
-  name = "porui"
+  name = "porui",
+  dynamic_desc = function(self, player)
+    local text = "porui_inner:".. tostring(player:getMark("gonghu1") + 1) .. ":"
+    if player:getMark("gonghu2") == 0 then
+      text = text .. "porui_give"
+    end
+    return text
+  end,
 }
 
 Fk:loadTranslationTable{
@@ -16,13 +23,6 @@ Fk:loadTranslationTable{
 
 porui:addEffect(fk.EventPhaseStart, {
   anim_type = "offensive",
-  dynamic_desc = function(self, player)
-    local text = "porui_inner:".. tostring(player:getMark("gonghu1") + 1) .. ":"
-    if player:getMark("gonghu2") == 0 then
-      text = text .. "porui_give"
-    end
-    return text
-  end,
   times = function(self, player)
     return 1 + player:getMark("gonghu1") - player:usedSkillTimes(porui.name, Player.HistoryRound)
   end,

@@ -1,5 +1,62 @@
 local caiyi = fk.CreateSkill {
-  name = "caiyi"
+  name = "caiyi",
+  dynamic_desc = function (self, player)
+    if table.every({1,2,3,4}, function(i)
+      return player:getMark("caiyiyang" .. i) > 0 and player:getMark("caiyiyinn" .. i) > 0
+    end) then
+      return "dummyskill"
+    end
+
+    local highlight_color = "<font color='#E0DB2F'>"
+    local gray_color = "<font color='gray'>"
+    local clean_color = "</font>"
+    local texts = {"caiyi_inner"}
+    local isYang = player:getSwitchSkillState(caiyi.name, false) == fk.SwitchYang
+    local colors = {clean_color, gray_color}
+
+    if isYang then
+      table.insert(texts, highlight_color)
+      colors = {clean_color .. highlight_color, clean_color .. gray_color}
+    else
+      table.insert(texts, "")
+    end
+
+    local x = 1
+    for i = 1, 4 do
+      if player:getMark("caiyiyang" .. i) == x then
+        table.insert(texts, colors[x+1])
+        x = 1-x
+      else
+        table.insert(texts, "")
+      end
+    end
+
+    if not isYang then
+      if x == 0 then
+        table.insert(texts, clean_color .. highlight_color)
+      else
+        table.insert(texts, highlight_color)
+      end
+      colors = {clean_color .. highlight_color, clean_color .. gray_color}
+    else
+      table.insert(texts, clean_color)
+      colors = {clean_color, gray_color}
+    end
+
+    x = 1
+    for i = 1, 4 do
+      if player:getMark("caiyiyinn" .. i) == x then
+        table.insert(texts, colors[x+1])
+        x = 1-x
+      else
+        table.insert(texts, "")
+      end
+    end
+
+    table.insert(texts, clean_color)
+
+    return table.concat(texts, ":")
+  end,
 }
 
 Fk:loadTranslationTable{
@@ -20,68 +77,9 @@ Fk:loadTranslationTable{
   ['$caiyi2'] = '身披彩翼，心有灵犀。',
 }
 
-function dynamic_desc(skill, player)
-  if table.every({1,2,3,4}, function(i)
-    return player:getMark("caiyiyang" .. i) > 0 and player:getMark("caiyiyinn" .. i) > 0
-  end) then
-    return "dummyskill"
-  end
-
-  local highlight_color = "<font color='#E0DB2F'>"
-  local gray_color = "<font color='gray'>"
-  local clean_color = "</font>"
-  local texts = {"caiyi_inner"}
-  local isYang = player:getSwitchSkillState(caiyi.name, false) == fk.SwitchYang
-  local colors = {clean_color, gray_color}
-
-  if isYang then
-    table.insert(texts, highlight_color)
-    colors = {clean_color .. highlight_color, clean_color .. gray_color}
-  else
-    table.insert(texts, "")
-  end
-
-  local x = 1
-  for i = 1, 4 do
-    if player:getMark("caiyiyang" .. i) == x then
-      table.insert(texts, colors[x+1])
-      x = 1-x
-    else
-      table.insert(texts, "")
-    end
-  end
-
-  if not isYang then
-    if x == 0 then
-      table.insert(texts, clean_color .. highlight_color)
-    else
-      table.insert(texts, highlight_color)
-    end
-    colors = {clean_color .. highlight_color, clean_color .. gray_color}
-  else
-    table.insert(texts, clean_color)
-    colors = {clean_color, gray_color}
-  end
-
-  x = 1
-  for i = 1, 4 do
-    if player:getMark("caiyiyinn" .. i) == x then
-      table.insert(texts, colors[x+1])
-      x = 1-x
-    else
-      table.insert(texts, "")
-    end
-  end
-
-  table.insert(texts, clean_color)
-
-  return table.concat(texts, ":")
-end
-
 caiyi:addEffect(fk.EventPhaseStart, {
   anim_type = "switch",
   switch_skill_name = caiyi.name,
-  dynamic_desc = dynamic_desc,
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(caiyi) and player.phase == Player.Finish then
       local state = "yang"

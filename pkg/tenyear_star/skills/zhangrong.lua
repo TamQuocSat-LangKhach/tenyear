@@ -15,10 +15,10 @@ Fk:loadTranslationTable{
 
 zhangrong:addEffect(fk.EventPhaseStart, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player.phase == Player.Start and player:hasSkill(zhangrong.name) and player.hp > 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local _, dat = player.room:askToUseActiveSkill(player, {
       skill_name = "zhangrong_active",
       prompt = "#zhangrong-invoke",
@@ -31,7 +31,7 @@ zhangrong:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local targets = event:getCostData(self).tos
     room:setPlayerMark(player, "zhangrong-turn", targets)
@@ -58,7 +58,7 @@ zhangrong:addEffect(fk.EventPhaseStart, {
 
 zhangrong:addEffect(fk.TurnEnd, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and not player.dead and player:getMark("zhangrong-turn") ~= 0 then
       local playerIds = table.filter(player:getMark("zhangrong-turn"), function (pid)
         return not player.room:getPlayerById(pid).dead
@@ -71,7 +71,7 @@ zhangrong:addEffect(fk.TurnEnd, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke("zhangrong")
     room:notifySkillInvoked(player, "zhangrong", "negative")

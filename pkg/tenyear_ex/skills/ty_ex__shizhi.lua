@@ -20,11 +20,11 @@ ty_ex__shizhi:addEffect('filter', {
 ty_ex__shizhi:addEffect(fk.Damage, {
   mute = true,
   frequency = Skill.Compulsory,
-  can_trigger = function (skill, event, target, player, data)
+  can_trigger = function (self, event, target, player, data)
     return player == target and player:hasSkill(ty_ex__shizhi.name) and data.card and player:isWounded()
       and table.contains(data.card.skillNames, ty_ex__shizhi.name)
   end,
-  on_use = function (skill, event, target, player, data)
+  on_use = function (self, event, target, player, data)
     player:broadcastSkillInvoke("ty_ex__shizhi")
     player.room:notifySkillInvoked(player, "ty_ex__shizhi", "defensive")
     player.room:recover { num = 1, skillName = ty_ex__shizhi.name, who = player, recoverBy = player}

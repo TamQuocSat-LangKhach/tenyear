@@ -12,12 +12,12 @@ Fk:loadTranslationTable{
 }
 
 ty__biluan:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(ty__biluan) and player.phase == Player.Finish then
       return table.find(player.room:getOtherPlayers(player), function(p) return p:distanceTo(player) == 1 end)
     end
   end,
-  on_cost = function (self, event, target, player)
+  on_cost = function (self, event, target, player, data)
     local x = math.min(4, #player.room.alive_players)
     local card = player.room:askToDiscard(player, {
       min_num = 1,
@@ -32,7 +32,7 @@ ty__biluan:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:throwCard(event:getCostData(self), ty__biluan.name, player, player)
     local x = math.min(4, #player.room.alive_players)

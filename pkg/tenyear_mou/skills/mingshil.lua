@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 
 mingshil:addEffect(fk.EventPhaseEnd, {
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player.phase == Player.Draw and player:hasSkill(mingshil.name)
   end,
-  on_use = function (skill, event, target, player)
+  on_use = function (self, event, target, player, data)
     local room = player.room
     room:drawCards(player, 2, mingshil.name)
     if player.dead or player:getHandcardNum() < 3 or #room.alive_players < 2 then return false end

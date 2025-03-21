@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 }
 
 guili:addEffect(fk.TurnStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(guili) then
       local room = player.room
       if target == player and event == fk.TurnStart then
@@ -35,7 +35,7 @@ guili:addEffect(fk.TurnStart, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.TurnStart then
       local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
@@ -61,7 +61,7 @@ guili:addEffect(fk.TurnStart, {
 })
 
 guili:addEffect(fk.TurnEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(guili) then
       local room = player.room
       if event == fk.TurnEnd and not target.dead and player:getMark(guili.name) == target.id then
@@ -88,7 +88,7 @@ guili:addEffect(fk.TurnEnd, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.TurnEnd then
       player:gainAnExtraTurn(true)

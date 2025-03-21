@@ -15,10 +15,10 @@ Fk:loadTranslationTable{
 }
 
 xiaoyin:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(xiaoyin) and player.phase == Player.Start
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local n = #table.filter(room.alive_players, function(p)
       return player == p or player:distanceTo(p) == 1

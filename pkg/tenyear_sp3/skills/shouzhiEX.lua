@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 }
 
 shouzhiEX:addEffect(fk.TurnEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(shouzhiEX.name) then
       local x = player:getMark("@shouzhi-turn")
       if x == 0 then return false end
@@ -20,7 +20,7 @@ shouzhiEX:addEffect(fk.TurnEnd, {
       return x ~= player:getHandcardNum()
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local x = player:getMark("@shouzhi-turn")
     if x == 0 then return false end
     if type(x) == "string" then x = 0 end
@@ -46,7 +46,7 @@ shouzhiEX:addEffect(fk.TurnEnd, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(shouzhiEX.name)
     local cost_data = event:getCostData(skill)
@@ -61,10 +61,10 @@ shouzhiEX:addEffect(fk.TurnEnd, {
 })
 
 shouzhiEX:addEffect(fk.TurnStart, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return player:hasSkill(shouzhiEX.name, true)
   end,
-  on_refresh = function (skill, event, target, player)
+  on_refresh = function (self, event, target, player, data)
     local x = player:getHandcardNum()
     player.room:setPlayerMark(player, "@shouzhi-turn", x > 0 and x or "0")
   end,

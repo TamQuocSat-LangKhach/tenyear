@@ -15,15 +15,15 @@ Fk:loadTranslationTable{
 -- Effect for the first part of zhengxu
 zhengxu:addEffect(fk.DamageInflicted, {
   anim_type = "defensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(zhengxu.name) and player:getMark("zhengxu1-turn") > 0 and
       player:usedSkillTimes(zhengxu.name, Player.HistoryTurn) == 0
   end,
-  on_trigger = function(self, event, target, player)
+  on_trigger = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "zhengxu1-turn", 0)
     return self:doCost(event, target, player)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = zhengxu.name,
       prompt = "#zhengxu1-invoke"
@@ -31,7 +31,7 @@ zhengxu:addEffect(fk.DamageInflicted, {
   end,
   on_use = Util.TrueFunc,
 
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     for _, move in ipairs(target) do
       if move.from == player.id and player:usedSkillTimes(zhengxu.name, Player.HistoryTurn) == 0 then
         for _, info in ipairs(move.moveInfo) do
@@ -42,7 +42,7 @@ zhengxu:addEffect(fk.DamageInflicted, {
       end
     end
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "zhengxu1-turn", 1)
   end,
 })
@@ -50,7 +50,7 @@ zhengxu:addEffect(fk.DamageInflicted, {
 -- Effect for the second part of zhengxu
 zhengxu:addEffect(fk.AfterCardsMove, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(zhengxu.name) and player:getMark("zhengxu2-turn") > 0 and player:usedSkillTimes(zhengxu.name, Player.HistoryTurn) == 0 then
       event:setCostData(self, 0)
       for _, move in ipairs(target) do
@@ -66,25 +66,25 @@ zhengxu:addEffect(fk.AfterCardsMove, {
       return event:getCostData(self) > 0
     end
   end,
-  on_trigger = function(self, event, target, player)
+  on_trigger = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "zhengxu2-turn", 0)
     return self:doCost(event, target, player)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = zhengxu.name,
       prompt = "#zhengxu2-invoke:::"..event:getCostData(self)
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local cost_data = event:getCostData(self)
     player:drawCards(cost_data, zhengxu.name)
   end,
 
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and player:usedSkillTimes(zhengxu.name, Player.HistoryTurn) == 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "zhengxu2-turn", 1)
   end,
 })

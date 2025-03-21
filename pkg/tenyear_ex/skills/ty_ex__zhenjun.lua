@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 
 ty_ex__zhenjun:addEffect(fk.EventPhaseStart, {
   events = {fk.EventPhaseStart},
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty_ex__zhenjun) and (player.phase == Player.Start or player.phase == Player.Finish)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local targets = table.filter(player.room.alive_players, function(p) return not p:isNude() end)
     if #targets == 0 then return false end
     local tos = player.room:askToChoosePlayers(player, {
@@ -32,7 +32,7 @@ ty_ex__zhenjun:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(self))
     local num = math.min(math.max(1, to:getHandcardNum() - to.hp), #to:getCardIds("he"))

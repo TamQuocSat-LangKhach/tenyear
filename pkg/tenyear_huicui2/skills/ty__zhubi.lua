@@ -3,11 +3,11 @@ local ty__zhubi = fk.CreateSkill {
 }
 
 Fk:loadTranslationTable{
-  ['ty__zhubi'] = '铸币',
-  ['#ty__zhubi-invoke'] = '铸币：是否将一张【无中生有】置于牌堆顶？',
-  [':ty__zhubi'] = '当<font color=>♦</font>牌因弃置而进入弃牌堆后，你可从牌堆或弃牌堆将一张【无中生有】置于牌堆顶。',
-  ['$ty__zhubi1'] = '铸币平市，百货可居。',
-  ['$ty__zhubi2'] = '做钱直百，府库皆实。',
+  ["ty__zhubi"] = "铸币",
+  ["#ty__zhubi-invoke"] = "铸币：是否将一张【无中生有】置于牌堆顶？",
+  [":ty__zhubi"] = "当<font color='red'>♦</font>牌因弃置而进入弃牌堆后，你可从牌堆或弃牌堆将一张【无中生有】置于牌堆顶。",
+  ["$ty__zhubi1"] = "铸币平市，百货可居。",
+  ["$ty__zhubi2"] = "做钱直百，府库皆实。",
 }
 
 ty__zhubi:addEffect(fk.AfterCardsMove, {

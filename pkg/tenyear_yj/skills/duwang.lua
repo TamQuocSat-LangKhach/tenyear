@@ -15,7 +15,7 @@ duwang:addEffect(fk.AfterDrawInitialCards, {
   anim_type = "special",
   derived_piles = "hanlong_ci",
   frequency = Skill.Compulsory,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = {}
     local n = 0

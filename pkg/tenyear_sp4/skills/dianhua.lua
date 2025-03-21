@@ -10,13 +10,13 @@ Fk:loadTranslationTable{
 }
 
 dianhua:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(dianhua.name) and (player.phase == Player.Start or player.phase == Player.Finish) and
       not table.every({"spade", "club", "heart", "diamond"}, function(suit)
         return player:getMark("@@falu"..suit) == 0
       end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local n = 0
     for _, suit in ipairs({"spade", "club", "heart", "diamond"}) do
       if player:getMark("@@falu"..suit) > 0 then
@@ -28,7 +28,7 @@ dianhua:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:askToGuanxing(player, {
       cards = room:getNCards(event:getCostData(skill))

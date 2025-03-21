@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 
 ty_ex__qieting:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(ty_ex__qieting.name) and target ~= player and target.phase == Player.Finish
   end,
-  on_cost = function (self, event, target, player)
+  on_cost = function (self, event, target, player, data)
     local room = player.room
     local choices = {}
     if #player.room.logic:getEventsOfScope(GameEvent.Damage, 1, function(e)
@@ -42,7 +42,7 @@ ty_ex__qieting:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if table.contains(event:getCostData(self), "move") then
       room:askToMoveCardInBoard(player, {target_one = target, target_two = player, skill_name = ty_ex__qieting.name, flag = "e", move_from = target})

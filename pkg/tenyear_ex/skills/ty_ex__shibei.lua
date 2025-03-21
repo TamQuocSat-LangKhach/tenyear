@@ -13,7 +13,7 @@ ty_ex__shibei:addEffect(fk.Damaged, {
   mute = true,
   anim_type = "defensive",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target ~= player or not player:hasSkill(ty_ex__shibei.name) then return false end
     local room = player.room
     local damage_event = room.logic:getCurrentEvent()
@@ -40,7 +40,7 @@ ty_ex__shibei:addEffect(fk.Damaged, {
     end
     return table.contains(mark, damage_event.id) and not (mark[1] == damage_event.id and not player:isWounded())
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local mark = player:getMark("ty_ex__shibei_record-turn")
     if type(mark) ~= "table" or #mark == 0 then return false end

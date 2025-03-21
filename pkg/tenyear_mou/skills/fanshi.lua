@@ -12,11 +12,11 @@ Fk:loadTranslationTable{
 
 fanshi:addEffect(fk.EventPhaseStart, {
   frequency = Skill.Wake,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player.phase == Player.Finish and player:hasSkill(fanshi) 
       and player:usedSkillTimes(fanshi.name, Player.HistoryGame) == 0
   end,
-  can_wake = function(self, event, target, player)
+  can_wake = function(self, event, target, player, data)
     if player:hasSkill(jianzhuan, true) then
       local x = 0
       for i = 1, 4 do
@@ -27,7 +27,7 @@ fanshi:addEffect(fk.EventPhaseStart, {
       return x < 2
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local choice = ""
     for i = 1, 4 do

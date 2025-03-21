@@ -14,14 +14,14 @@ Fk:loadTranslationTable{
 
 ty_ex__jingce:addEffect(fk.EventPhaseStart, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player.phase == Player.Finish and player:hasSkill(ty_ex__jingce) and
       #player.room.logic:getEventsOfScope(GameEvent.UseCard, 998, function(e)
         local use = e.data[1]
         return use.from == player.id
       end, Player.HistoryTurn) >= player.hp
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local suits = {}
     local room = player.room
     room.logic:getEventsOfScope(GameEvent.UseCard, 998, function(e)

@@ -11,7 +11,7 @@ Fk:loadTranslationTable{
 }
 
 tianjie:addEffect(fk.TurnEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(tianjie) then
       if player:getMark(tianjie.name) > 0 then
         player.room:setPlayerMark(player, tianjie.name, 0)
@@ -19,7 +19,7 @@ tianjie:addEffect(fk.TurnEnd, {
       end
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local tos = room:askToChoosePlayers(player, {
       targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper),
@@ -35,7 +35,7 @@ tianjie:addEffect(fk.TurnEnd, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     for _, id in ipairs(event:getCostData(self).tos) do
       local p = room:getPlayerById(id)
@@ -54,10 +54,10 @@ tianjie:addEffect(fk.TurnEnd, {
 })
 
 tianjie:addEffect(fk.AfterDrawPileShuffle, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return player:hasSkill(tianjie, true)
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     player.room:addPlayerMark(player, tianjie.name, 1)
   end,
 })

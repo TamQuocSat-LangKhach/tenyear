@@ -10,7 +10,7 @@ Fk:loadTranslationTable{
 }
 
 ty_ex__zhiyu:addEffect(fk.Damaged, {
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(1, skill.name)
     local cards = player:getCardIds("h")
@@ -35,14 +35,14 @@ ty_ex__zhiyu:addEffect(fk.Damaged, {
 })
 
 ty_ex__zhiyu:addEffect({fk.TurnStart, fk.AfterSkillEffect}, {
-  can_refresh = function (skill, event, target, player, data)
+  can_refresh = function (self, event, target, player, data)
     if event == fk.TurnStart then
       return player == target and player:getMark("ty_ex__zhiyu") > 0
     else
       return player == target and player:getMark("ty_ex__zhiyu-turn") > 0 and data.name == "qice"
     end
   end,
-  on_refresh = function (skill, event, target, player)
+  on_refresh = function (self, event, target, player, data)
     local room = player.room
     if event == fk.TurnStart then
       room:setPlayerMark(player, "ty_ex__zhiyu-turn", player:getMark("ty_ex__zhiyu"))

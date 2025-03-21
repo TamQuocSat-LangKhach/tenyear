@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 
 linghui:addEffect(fk.EventPhaseStart, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(linghui.name) and target.phase == Player.Finish then
       if player == target then return true end
       local logic = player.room.logic
@@ -21,7 +21,7 @@ linghui:addEffect(fk.EventPhaseStart, {
       return #dyingevents > 0 and #turnevents > 0 and dyingevents[#dyingevents].id > turnevents[#turnevents].id
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local ids = U.turnOverCardsFromDrawPile(player, 3, linghui.name, false)
     local use = room:askToUseRealCard(player, {

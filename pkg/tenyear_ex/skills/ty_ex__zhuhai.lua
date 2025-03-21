@@ -13,12 +13,12 @@ Fk:loadTranslationTable{
 
 ty_ex__zhuhai:addEffect(fk.EventPhaseStart, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(ty_ex__zhuhai.name) and player ~= target and target.phase == Player.Finish and not player:isKongcheng() and not target.dead then
       return #player.room.logic:getActualDamageEvents(1, function(e) return e.data[1].from == target end) > 0
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local success, dat = player.room:askToUseActiveSkill(player, {
       skill_name = "ty_ex__zhuhai_active",
       prompt = "#ty_ex__zhuhai-use:"..target.id,
@@ -30,7 +30,7 @@ ty_ex__zhuhai:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local card = Fk:cloneCard(event:getCostData(self)[2])
     card:addSubcard(event:getCostData(self)[1])

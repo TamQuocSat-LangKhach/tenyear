@@ -3,25 +3,25 @@ local biaozhao = fk.CreateSkill {
 }
 
 Fk:loadTranslationTable{
-  ['biaozhao'] = '表召',
-  ['biaozhao_message'] = '表',
-  ['#biaozhao-cost'] = '你可以发动表召，选择一张牌作为表置于武将牌上',
-  ['#biaozhao-choose'] = '表召：选择一名角色，令其回复1点体力并补充手牌',
-  ['#biaozhao-target'] = '表召：选择一名角色，令其获得你的“表”%arg',
-  [':biaozhao'] = '结束阶段，你可将一张牌置于武将牌上，称为“表”。当一张与“表”花色点数均相同的牌移至弃牌堆后，若此牌是其他角色弃置的牌，则其获得“表”，否则你移去“表”并失去1点体力。准备阶段，你移去“表”，令一名角色回复1点体力，其将手牌摸至与手牌最多的角色相同（至多摸五张）。',
-  ['$biaozhao1'] = '此人有祸患之像，望丞相慎之。',
-  ['$biaozhao2'] = '孙策宜加贵宠，须召还京邑！',
+  ["biaozhao"] = "表召",
+  ["biaozhao_message"] = "表",
+  ["#biaozhao-cost"] = "你可以发动表召，选择一张牌作为表置于武将牌上",
+  ["#biaozhao-choose"] = "表召：选择一名角色，令其回复1点体力并补充手牌",
+  ["#biaozhao-target"] = "表召：选择一名角色，令其获得你的“表”%arg",
+  [":biaozhao"] = "结束阶段，你可将一张牌置于武将牌上，称为“表”。当一张与“表”花色点数均相同的牌移至弃牌堆后，若此牌是其他角色弃置的牌，则其获得“表”，否则你移去“表”并失去1点体力。准备阶段，你移去“表”，令一名角色回复1点体力，其将手牌摸至与手牌最多的角色相同（至多摸五张）。",
+  ["$biaozhao1"] = "此人有祸患之像，望丞相慎之。",
+  ["$biaozhao2"] = "孙策宜加贵宠，须召还京邑！",
 }
 
 biaozhao:addEffect(fk.EventPhaseStart, {
   mute = true,
   derived_piles = "biaozhao_message",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(biaozhao.name) then return false end
     return (player.phase == Player.Finish and #player:getPile("biaozhao_message") == 0) or
       (player.phase == Player.Start and #player:getPile("biaozhao_message") > 0)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     if event == fk.EventPhaseStart and player.phase == Player.Finish then
       local cards = room:askToCards(player, {
@@ -40,7 +40,7 @@ biaozhao:addEffect(fk.EventPhaseStart, {
     end
     return false
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.EventPhaseStart then
       room:notifySkillInvoked(player, biaozhao.name, "support")
@@ -91,7 +91,7 @@ biaozhao:addEffect(fk.EventPhaseStart, {
 biaozhao:addEffect(fk.AfterCardsMove, {
   mute = true,
   derived_piles = "biaozhao_message",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(biaozhao.name) then return false end
     local pile = Fk:getCardById(player:getPile("biaozhao_message")[1])
     for _, move in ipairs(data) do

@@ -10,10 +10,10 @@ Fk:loadTranslationTable{
 
 yanzhengn:addEffect(fk.EventPhaseStart, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(yanzhengn.name) and player.phase == Player.Start and player:getHandcardNum() > 1
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local targets = table.map(player.room.alive_players, Util.IdMapper)
     local tos, card = player.room:askToChooseCardsAndPlayers(player, {
       min_card_num = 1,
@@ -32,7 +32,7 @@ yanzhengn:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local ids = player:getCardIds("h")
     table.removeOne(ids, event:getCostData(self)[2])

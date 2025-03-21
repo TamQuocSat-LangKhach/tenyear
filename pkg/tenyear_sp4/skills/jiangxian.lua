@@ -62,11 +62,11 @@ jiangxian:addEffect(fk.DamageCaused + fk.TurnEnd, {
       room:handleAddLoseSkills(player, "-"..choice, nil, true, false)
     end
   end,
-  can_refresh = function (skill, event, target, player, data)
+  can_refresh = function (self, event, target, player, data)
     return target == player and player:getMark("@@jiangxian-turn") > 0 and data.card.is_damage_card and
       data.card:getMark("@@lianjie-inhand-turn") > 0
   end,
-  on_refresh = function (skill, event, target, player, data)
+  on_refresh = function (self, event, target, player, data)
     data.extra_data = data.extra_data or {}
     data.extra_data.jiangxian = player.id
   end,

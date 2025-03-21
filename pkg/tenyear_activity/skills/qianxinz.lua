@@ -61,12 +61,12 @@ qianxinz:addEffect('active', {
 -- 触发技能
 qianxinz:addEffect(fk.EventPhaseStart, {
   mute = true,
-  can_trigger = function (skill, event, target, player)
+  can_trigger = function (self, event, target, player, data)
     return player:getMark("qianxinz_using") > 0 and target:getMark("@@zhanggong_mail") > 0 and target.phase == Player.Discard and
       table.find(target:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@zhanggong_mail") > 0 end)
   end,
   on_cost = Util.TrueFunc,
-  on_use = function (skill, event, target, player)
+  on_use = function (self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke("qianxinz")
     room:notifySkillInvoked(player, "qianxinz", "control")
@@ -116,7 +116,7 @@ qianxinz:addEffect({
       return data == qianxinz.name and player:getMark("qianxinz_using") > 0
     end
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     if event == fk.StartPlayCard then
       if table.find(room.draw_pile, function(id) return Fk:getCardById(id):getMark("@@zhanggong_mail") > 0 end) then

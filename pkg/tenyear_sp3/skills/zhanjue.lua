@@ -18,10 +18,10 @@ Fk:loadTranslationTable{
 -- 主技能效果
 zhanjue:addEffect(fk.EventPhaseStart, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player.phase == Player.Play and player:hasSkill(zhanjue.name)
   end,
-  on_cost = function (self, event, target, player)
+  on_cost = function (self, event, target, player, data)
     local choice = player.room:askToChoice(player, {
       choices = { "ty_god__zhanjue_hp", "ty_god__zhanjue_losthp", "Cancel" },
       skill_name = zhanjue.name
@@ -33,7 +33,7 @@ zhanjue:addEffect(fk.EventPhaseStart, {
 
     return false
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if event:getCostData(self) == "ty_god__zhanjue_hp" then
       player:drawCards(player.hp, zhanjue.name)
@@ -48,11 +48,11 @@ zhanjue:addEffect(fk.EventPhaseStart, {
 -- buff效果
 zhanjue:addEffect(fk.CardUsing, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and data.card.trueName == "slash" and player:getMark("@ty_god__zhanjue-phase") == "ty_god__zhanjue_aim"
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "@ty_god__zhanjue-phase", 0)
     data.disresponsiveList = table.map(room.players, Util.IdMapper)
@@ -62,11 +62,11 @@ zhanjue:addEffect(fk.CardUsing, {
 -- 恢复效果
 zhanjue:addEffect(fk.Damage, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("@ty_god__zhanjue-phase") == "ty_god__zhanjue_recover"
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "@ty_god__zhanjue-phase", 0)
     room:recover{

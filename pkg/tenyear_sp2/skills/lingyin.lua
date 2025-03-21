@@ -38,12 +38,12 @@ lingyin:addEffect('viewas', {
 lingyin:addEffect(fk.EventPhaseStart, {
   mute = true,
   expand_pile = "ruiji_wang",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(lingyin.name) then
       return player.phase == Player.PhasePlay and #player:getPile("ruiji_wang") > 0
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local n = player.room:getBanner("RoundCount")
     local cards = player.room:askToCards(player, {
       min_num = 1,
@@ -58,7 +58,7 @@ lingyin:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke("lingyin")
     room:notifySkillInvoked(player, "lingyin", "drawcard")

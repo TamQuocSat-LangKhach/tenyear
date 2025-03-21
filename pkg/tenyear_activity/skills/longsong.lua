@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 
 longsong:addEffect(fk.EventPhaseStart, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(longsong) and player.phase == Player.Play
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local tos, cards = player.room:askToChooseCardsAndPlayers(player, {
       min_card_num = 0,
       max_card_num = 1,
@@ -32,7 +32,7 @@ longsong:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cost_data = event:getCostData(skill)
     local to = room:getPlayerById(cost_data.tos[1])

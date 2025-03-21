@@ -71,7 +71,7 @@ jijiao:addEffect('active', {
 jijiao:addEffect(fk.TurnEnd, {
   name = "#jijiao_delay",
   anim_type = "special",
-  can_trigger = function(self, event, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(jijiao) and player:usedSkillTimes("jijiao", Player.HistoryGame) > 0 then
       if player:getMark("jijiao-turn") > 0 then return true end
       local logic = player.room.logic
@@ -81,17 +81,17 @@ jijiao:addEffect(fk.TurnEnd, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, player)
+  on_use = function(self, event, target, player, data)
     player:setSkillUseHistory("jijiao", 0, Player.HistoryGame)
   end,
-  can_refresh = function(self, event, player)
+  can_refresh = function(self, event, target, player, data)
     if event == fk.PreCardUse then
       return not data.card:isVirtual() and data.card:getMark("@@jijiao-inhand") > 0
     else
       return player:getMark("jijiao-turn") == 0
     end
   end,
-  on_refresh = function(self, event, player)
+  on_refresh = function(self, event, target, player, data)
     if event == fk.PreCardUse then
       local room = player.room
       data.unoffsetableList = table.map(room.alive_players, Util.IdMapper)

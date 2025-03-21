@@ -10,10 +10,10 @@ Fk:loadTranslationTable{
 }
 
 qingjiao:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(qingjiao.name) and player.phase == Player.Play and not player:isKongcheng()
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:throwAllCards("h")
 
@@ -67,10 +67,10 @@ qingjiao:addEffect(fk.EventPhaseStart, {
     end
   end,
 
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and player.phase == Player.Finish and player:usedSkillTimes(qingjiao.name, Player.HistoryTurn) > 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     player:throwAllCards("he")
   end,
 })

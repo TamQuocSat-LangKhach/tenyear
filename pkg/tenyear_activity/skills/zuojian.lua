@@ -13,7 +13,7 @@ Fk:loadTranslationTable{
 }
 
 zuojian:addEffect(fk.EventPhaseEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(zuojian.name) and player.phase == Player.Play and
       player:getMark("zuojian-phase") >= player.hp and
       (#table.filter(player.room:getOtherPlayers(player), function(p)
@@ -23,7 +23,7 @@ zuojian:addEffect(fk.EventPhaseEnd, {
         return #p.player_cards[Player.Equip] < #player.player_cards[Player.Equip] and not p:isKongcheng()
       end) > 0)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local choices = {}
     local targets1 = table.filter(player.room:getOtherPlayers(player), function(p)
@@ -66,7 +66,7 @@ zuojian:addEffect(fk.EventPhaseEnd, {
     end
   end,
 
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     if target == player and player.phase == Player.Play then
       if event == fk.CardUsing then
         return target == player
@@ -76,7 +76,7 @@ zuojian:addEffect(fk.EventPhaseEnd, {
     end
   end,
 
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
 
     if event == fk.CardUsing then

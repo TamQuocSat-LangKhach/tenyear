@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 }
 
 shuangrui:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(shuangrui.name) and player.phase == Player.Start and #player.room.alive_players > 1
   end,
-  on_cost = function (self, event, target, player)
+  on_cost = function (self, event, target, player, data)
     local room = player.room
     local to = room:askToChoosePlayers(player, {
       targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper),
@@ -31,7 +31,7 @@ shuangrui:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local data = event:getCostData(self)
     local to = room:getPlayerById(data.tos[1])

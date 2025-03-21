@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 
 liangying:addEffect(fk.EventPhaseStart, {
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(liangying.name) and target == player and player.phase == Player.Discard and player:getMark("@cangchu") > 0
   end,
-  on_cost = function (self, event, target, player)
+  on_cost = function (self, event, target, player, data)
     local room = player.room
     local n = player:getMark("@cangchu")
     local tos = player.room:askToChoosePlayers(player, {
@@ -33,7 +33,7 @@ liangying:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local tos = event:getCostData(self)
     room:sortPlayersByAction(tos)

@@ -12,13 +12,13 @@ Fk:loadTranslationTable{
 
 mingluan:addEffect(fk.EventPhaseStart, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target ~= player and player:hasSkill(mingluan.name) and target.phase == Player.Finish
       and #player.room.logic:getEventsOfScope(GameEvent.Recover, 1, function(e)
         return true
       end, Player.HistoryTurn) > 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local card = player.room:askToDiscard(player, {
       min_num = 0,
       max_num = 999,
@@ -33,7 +33,7 @@ mingluan:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:throwCard(event:getCostData(skill).cards, mingluan.name, player, player)
     if player.dead or target:isKongcheng() or player:getHandcardNum() > 4 then return end

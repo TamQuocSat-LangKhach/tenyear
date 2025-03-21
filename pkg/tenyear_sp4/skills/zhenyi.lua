@@ -3,25 +3,25 @@ local zhenyi = fk.CreateSkill {
 }
 
 Fk:loadTranslationTable{
-  ['zhenyi'] = '真仪',
-  ['#zhenyi2'] = '真仪：你可以弃置♣后土，将一张牌当【桃】使用',
-  ['@@faluclub'] = '♣后土',
-  ['#zhenyi_trigger'] = '真仪',
-  ['@@faluspade'] = '♠紫微',
-  ['@@faluheart'] = '<font color=>♥</font>玉清',
-  ['@@faludiamond'] = '<font color=>♦</font>勾陈',
-  ['#zhenyi1'] = '真仪：你可以弃置♠紫微，将 %dest 的判定结果改为♠5或<font color=>♥5</font>',
-  ['#zhenyi3'] = '真仪：你可以弃置<font color=>♥</font>玉清，对 %dest 造成的伤害+1',
-  ['#zhenyi4'] = '真仪：你可以弃置<font color=>♦</font>勾陈，从牌堆中随机获得三种类型的牌各一张',
-  ['zhenyi_spade'] = '将判定结果改为♠5',
-  ['zhenyi_heart'] = '将判定结果改为<font color=>♥5</font>',
-  [':zhenyi'] = '你可以在以下时机弃置相应的标记来发动以下效果：<br>当一张判定牌生效前，你可以弃置“紫微”，然后将判定结果改为♠5或<font color=>♥5</font>；<br>当你于回合外需要使用【桃】时，你可以弃置“后土”，然后将你的一张牌当【桃】使用；<br>当你造成伤害时，你可以弃置“玉清”，此伤害+1；<br>当你受到属性伤害后，你可以弃置“勾陈”，然后你从牌堆中随机获得三种类型的牌各一张。',
-  ['$zhenyi1'] = '不疾不徐，自爱自重。',
-  ['$zhenyi2'] = '紫薇星辰，斗数之仪。',
+  ["zhenyi"] = "真仪",
+  ["#zhenyi2"] = "真仪：你可以弃置♣后土，将一张牌当【桃】使用",
+  ["@@faluclub"] = "♣后土",
+  ["#zhenyi_trigger"] = "真仪",
+  ["@@faluspade"] = "♠紫微",
+  ["@@faluheart"] = "<font color='red'>♥</font>玉清",
+  ["@@faludiamond"] = "<font color='red'>♦</font>勾陈",
+  ["#zhenyi1"] = "真仪：你可以弃置♠紫微，将 %dest 的判定结果改为♠5或<font color=>♥5</font>",
+  ["#zhenyi3"] = "真仪：你可以弃置<font color='red'>♥</font>玉清，对 %dest 造成的伤害+1",
+  ["#zhenyi4"] = "真仪：你可以弃置<font color='red'>♦</font>勾陈，从牌堆中随机获得三种类型的牌各一张",
+  ["zhenyi_spade"] = "将判定结果改为♠5",
+  ["zhenyi_heart"] = "将判定结果改为<font color=>♥5</font>",
+  [":zhenyi"] = "你可以在以下时机弃置相应的标记来发动以下效果：<br>当一张判定牌生效前，你可以弃置“紫微”，然后将判定结果改为♠5或<font color=>♥5</font>；<br>当你于回合外需要使用【桃】时，你可以弃置“后土”，然后将你的一张牌当【桃】使用；<br>当你造成伤害时，你可以弃置“玉清”，此伤害+1；<br>当你受到属性伤害后，你可以弃置“勾陈”，然后你从牌堆中随机获得三种类型的牌各一张。",
+  ["$zhenyi1"] = "不疾不徐，自爱自重。",
+  ["$zhenyi2"] = "紫薇星辰，斗数之仪。",
 }
 
 -- ViewAsSkill
-zhenyi:addEffect('viewas', {
+zhenyi:addEffect("viewas", {
   anim_type = "support",
   pattern = "peach",
   prompt = "#zhenyi2",
@@ -49,7 +49,7 @@ zhenyi:addEffect('viewas', {
 zhenyi:addEffect({fk.AskForRetrial, fk.DamageCaused, fk.Damaged}, {
   main_skill = zhenyi,
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(zhenyi.name) then
       if event == fk.AskForRetrial then
         return player:getMark("@@faluspade") > 0
@@ -60,7 +60,7 @@ zhenyi:addEffect({fk.AskForRetrial, fk.DamageCaused, fk.Damaged}, {
       end
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local prompt
     if event == fk.AskForRetrial then

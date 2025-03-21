@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 cangchu:addEffect(fk.GameStart, {
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(skill.name)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "@cangchu", math.min(#room.alive_players, player:getMark("@cangchu") + 3))
     room:broadcastProperty(player, "MaxCards")
@@ -37,7 +37,7 @@ cangchu:addEffect(fk.AfterCardsMove, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:addPlayerMark(player, "@cangchu")
     room:broadcastProperty(player, "MaxCards")
@@ -45,10 +45,10 @@ cangchu:addEffect(fk.AfterCardsMove, {
 })
 
 cangchu:addEffect(fk.Death, {
-  can_refresh = function (skill, event, target, player)
+  can_refresh = function (self, event, target, player, data)
     return player:hasSkill(skill.name,true) and player:getMark("@cangchu") > #player.room.alive_players
   end,
-  on_refresh = function (skill, event, target, player)
+  on_refresh = function (self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "@cangchu", #room.alive_players)
     room:broadcastProperty(player, "MaxCards")

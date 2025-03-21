@@ -13,7 +13,7 @@ Fk:loadTranslationTable{
 shouzhi:addEffect(fk.TurnEnd, {
   frequency = Skill.Compulsory,
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(shouzhi) then
       local x = player:getMark("@shouzhi-turn")
       if x == 0 then return false end
@@ -21,7 +21,7 @@ shouzhi:addEffect(fk.TurnEnd, {
       return x ~= player:getHandcardNum()
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local x = player:getMark("@shouzhi-turn")
     if x == 0 then return false end
@@ -45,10 +45,10 @@ shouzhi:addEffect(fk.TurnEnd, {
 })
 
 shouzhi:addEffect(fk.TurnStart, {
-  can_refresh = function (skill, event, target, player)
+  can_refresh = function (self, event, target, player, data)
     return player:hasSkill(shouzhi, true)
   end,
-  on_refresh = function (skill, event, target, player)
+  on_refresh = function (self, event, target, player, data)
     local x = player:getHandcardNum()
     player.room:setPlayerMark(player, "@shouzhi-turn", x > 0 and x or "0")
   end,

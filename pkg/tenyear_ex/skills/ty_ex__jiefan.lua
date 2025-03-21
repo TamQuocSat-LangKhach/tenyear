@@ -46,11 +46,11 @@ ty_ex__jiefan:addEffect('active', {
 
 ty_ex__jiefan:addEffect(fk.TurnEnd, {
   mute = true,
-  can_trigger = function(self, event, player)
+  can_trigger = function(self, event, target, player, data)
     return player:usedSkillTimes(ty_ex__jiefan.name, Player.HistoryTurn) > 0 and player.room:getBanner("RoundCount") == 1
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, player)
+  on_use = function(self, event, target, player, data)
     player:setSkillUseHistory(ty_ex__jiefan.name, 0, Player.HistoryGame)
   end,
 })

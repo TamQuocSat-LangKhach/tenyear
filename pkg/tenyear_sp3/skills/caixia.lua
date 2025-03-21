@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 
 caixia:addEffect(fk.Damage, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player == target and player:hasSkill(caixia.name) and player:getMark("@caixia") == 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local choices = {}
     for i = 1, math.min(5, #room.players), 1 do
@@ -32,7 +32,7 @@ caixia:addEffect(fk.Damage, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, caixia.name, "masochism")
     player:broadcastSkillInvoke(caixia.name)
@@ -45,13 +45,13 @@ caixia:addEffect(fk.Damage, {
 
 caixia:addEffect(fk.CardUsing, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player == target and player:hasSkill(caixia.name, true) and player:getMark("@caixia") > 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return true
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:removePlayerMark(player, "@caixia")
     if player:getMark("@caixia") < 1 then

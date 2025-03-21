@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 jijiez:addEffect(fk.AfterCardsMove, {
   frequency = Skill.Compulsory,
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(jijiez.name) then
       if player:getMark("jijiez_draw-turn") > 0 then return false end
       local ban_players = {player.id}
@@ -31,7 +31,7 @@ jijiez:addEffect(fk.AfterCardsMove, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(jijiez.name)
     room:notifySkillInvoked(player, jijiez.name, "drawcard")
@@ -43,13 +43,13 @@ jijiez:addEffect(fk.AfterCardsMove, {
 jijiez:addEffect(fk.HpRecover, {
   frequency = Skill.Compulsory,
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(jijiez.name) then
       return player:getMark("jijiez_recover-turn") == 0 and player:isWounded() and
         target ~= player and target.phase == Player.NotActive
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(jijiez.name)
     room:notifySkillInvoked(player, jijiez.name, "support")

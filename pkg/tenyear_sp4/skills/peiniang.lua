@@ -51,12 +51,12 @@ peiniang:addEffect('targetmod', {
 peiniang:addEffect(fk.EnterDying, {
   mute = true,
   main_skill = peiniang,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(peiniang) and
       not player:prohibitUse(Fk:cloneCard("analeptic")) and
       not player:isProhibited(target, Fk:cloneCard("analeptic"))
   end,
-  on_cost = function (skill, event, target, player)
+  on_cost = function (self, event, target, player, data)
     local analeptic
     local ex_cards = {}
     local room = player.room
@@ -88,7 +88,7 @@ peiniang:addEffect(fk.EnterDying, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, "peiniang", "support")
     player:broadcastSkillInvoke("peiniang")

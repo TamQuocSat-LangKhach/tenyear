@@ -12,15 +12,15 @@ Fk:loadTranslationTable{
 
 ty__longyuan:addEffect(fk.EventPhaseStart, {
   frequency = Skill.Wake,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(ty__longyuan.name) and
       target.phase == Player.Finish and
       player:usedSkillTimes(ty__longyuan.name, Player.HistoryGame) == 0
   end,
-  can_wake = function(self, event, target, player)
+  can_wake = function(self, event, target, player, data)
     return player:usedSkillTimes("ty__yizan", Player.HistoryGame) > 2
   end,
-  on_use = function (self, event, target, player)
+  on_use = function (self, event, target, player, data)
     player:drawCards(2, ty__longyuan.name)
     if not player.dead and player:isWounded() then
       player.room:recover { num = 1, skillName = ty__longyuan.name, who = player, recoverBy = player}

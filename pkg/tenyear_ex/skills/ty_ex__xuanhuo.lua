@@ -16,11 +16,11 @@ Fk:loadTranslationTable{
 
 ty_ex__xuanhuo:addEffect(fk.EventPhaseEnd, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty_ex__xuanhuo) and player.phase == Player.Draw and player:getHandcardNum() > 1
       and #player.room.alive_players > 2
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local _, dat = player.room:askToUseActiveSkill(player, {
       skill_name = "ty_ex__xuanhuo_choose",
       prompt = "#ty_ex__xuanhuo-invoke",
@@ -31,7 +31,7 @@ ty_ex__xuanhuo:addEffect(fk.EventPhaseEnd, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(self).tos[1])
     room:moveCardTo(event:getCostData(self).cards, Card.PlayerHand, to, fk.ReasonGive, ty_ex__xuanhuo.name, nil, false, player.id)

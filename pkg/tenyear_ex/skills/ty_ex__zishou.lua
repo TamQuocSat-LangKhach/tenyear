@@ -16,10 +16,10 @@ Fk:loadTranslationTable{
 -- Effect for DrawNCards and EventPhaseStart
 ty_ex__zishou:addEffect(fk.DrawNCards, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty_ex__zishou.name)
   end,
-  on_cost = function (skill, event, target, player)
+  on_cost = function (self, event, target, player, data)
     local room = player.room
     local kingdoms = {}
     for _, p in ipairs(room.alive_players) do
@@ -31,7 +31,7 @@ ty_ex__zishou:addEffect(fk.DrawNCards, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     data.n = data.n + event:getCostData(skill)
     room:setPlayerMark(player, "@@ty_ex__zishou-turn", 1)
@@ -40,7 +40,7 @@ ty_ex__zishou:addEffect(fk.DrawNCards, {
 
 ty_ex__zishou:addEffect(fk.EventPhaseStart, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty_ex__zishou.name) and player.phase == Player.Finish and not player:isKongcheng() and
       #player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e)
         local use = e.data[1]
@@ -53,7 +53,7 @@ ty_ex__zishou:addEffect(fk.EventPhaseStart, {
       end, Player.HistoryTurn) == 0
   end,
   on_cost = Util.TrueFunc,
-  on_use = function (skill, event, target, player)
+  on_use = function (self, event, target, player, data)
     local room = player.room
     local success, dat = room:askToUseActiveSkill(player, {
       skill_name = "ty_ex__zishou_active",
@@ -71,11 +71,11 @@ ty_ex__zishou:addEffect(fk.EventPhaseStart, {
 ty_ex__zishou:addEffect(fk.DamageCaused, {
   name = "#ty_ex__zishou_delay",
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and data.to ~= player and player:getMark("@@ty_ex__zishou-turn") > 0
   end,
   on_cost = Util.TrueFunc,
-  on_use = function (skill, event, target, player)
+  on_use = function (self, event, target, player, data)
     player:broadcastSkillInvoke("ty_ex__zishou")
     return true
   end,

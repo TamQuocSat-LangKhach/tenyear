@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 }
 
 jue:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(jue.name) and not target.dead and target.phase == Player.Finish
       and player:usedSkillTimes(jue.name, Player.HistoryRound) < 1 then
       local room = player.room
@@ -39,7 +39,7 @@ jue:addEffect(fk.EventPhaseStart, {
       end
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local x = event:getCostData(self)
     if target == player then
@@ -67,7 +67,7 @@ jue:addEffect(fk.EventPhaseStart, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(self)[1])
     local x = math.min(event:getCostData(self)[2], to.maxHp)

@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 
 -- 触发技效果
 shengdu:addEffect(fk.TurnStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(shengdu.name)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local p = room:askToChoosePlayers(player, {
       targets = table.map(table.filter(room.alive_players, function (p)
@@ -32,7 +32,7 @@ shengdu:addEffect(fk.TurnStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:addPlayerMark(room:getPlayerById(event:getCostData(self)), "@shengdu")
   end,
@@ -52,13 +52,13 @@ shengdu:addEffect(fk.AfterDrawNCards, {
 
 -- 刷新效果
 shengdu:addEffect(fk.BuryVictim, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     if player ~= target then return false end
     return table.every(player.room.alive_players, function (p)
       return not p:hasSkill(shengdu.name, true)
     end)
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     for _, p in ipairs(room.alive_players) do
       room:setPlayerMark(p, "@shengdu", 0)
@@ -68,13 +68,13 @@ shengdu:addEffect(fk.BuryVictim, {
 
 -- 刷新效果
 shengdu:addEffect(fk.EventLoseSkill, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     if player ~= target then return false end
     return table.every(player.room.alive_players, function (p)
       return not p:hasSkill(shengdu.name, true)
     end)
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     for _, p in ipairs(room.alive_players) do
       room:setPlayerMark(p, "@shengdu", 0)

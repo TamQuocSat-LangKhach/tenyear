@@ -14,11 +14,11 @@ Fk:loadTranslationTable{
 zhimin:addEffect(fk.RoundStart, {
   frequency = Skill.Compulsory,
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(zhimin.name) then return false end
     return true
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local targets = table.filter(room.alive_players, function (p)
       return p ~= player and not p:isKongcheng()
@@ -93,7 +93,7 @@ zhimin:addEffect(fk.AfterCardsMove, {
     end
     return false
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local zhimin_data = table.simpleClone(event:getCostData(self))
     local mark = player:getTableMark("zhimin_record")

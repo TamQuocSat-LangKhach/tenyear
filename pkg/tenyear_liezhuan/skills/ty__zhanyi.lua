@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 
 ty__zhanyi:addEffect(fk.EventPhaseStart, {
   anim_type = "special",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__zhanyi) and player.phase == Player.Play and not player:isNude()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local all_choices = {"basic", "trick", "equip", "Cancel"}
     local choices = {"Cancel"}
     for _, id in ipairs(player:getCardIds("he")) do
@@ -39,7 +39,7 @@ ty__zhanyi:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local types = {"basic", "trick", "equip"}
     local card_type = event:getCostData(skill)
@@ -63,22 +63,22 @@ ty__zhanyi:addEffect(fk.EventPhaseStart, {
 })
 
 ty__zhanyi:addEffect(fk.TurnStart, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and player:getMark("@[cardtypes]ty__zhanyi") ~= 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@[cardtypes]ty__zhanyi", 0)
   end,
 })
 
 ty__zhanyi:addEffect(fk.CardUsing, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and not player.dead and
       player:getCardTypeString(target:getTableMark("@[cardtypes]ty__zhanyi")) < 3 and table.contains(player:getTableMark("@[cardtypes]ty__zhanyi"), target:getTableMark("@[cardtypes]ty__zhanyi"))
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke("ty__zhanyi")
     if event == fk.CardUsing then
@@ -128,14 +128,14 @@ ty__zhanyi:addEffect(fk.CardUsing, {
 
 ty__zhanyi:addEffect(fk.AfterCardsMove, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return table.contains(player:getTableMark("@[cardtypes]ty__zhanyi"), 3) and 
       table.any(data, function(move)
         return move.to and move.to == player.id and move.toArea == Player.Equip and #move.moveInfo > 0
       end)
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke("ty__zhanyi")
     room:notifySkillInvoked(player, "ty__zhanyi", "control")

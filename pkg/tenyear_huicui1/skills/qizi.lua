@@ -10,10 +10,10 @@ Fk:loadTranslationTable{
 qizi:addEffect(fk.EnterDying, {
   anim_type = "negative",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(skill.name) and player:distanceTo(target) > 2
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:broadcastSkillInvoke(qizi.name)
     player.room:notifySkillInvoked(player, qizi.name)
   end,

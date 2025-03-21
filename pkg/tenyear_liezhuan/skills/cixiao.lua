@@ -14,11 +14,11 @@ Fk:loadTranslationTable{
 
 cixiao:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(cixiao.name) and player.phase == Player.Start and
       table.find(player.room.alive_players, function (p) return p ~= player and not p:hasSkill("panshi", true) end)
   end,
-  on_cost = function(self, event, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     if table.find(room.alive_players, function (p) return p:hasSkill("panshi", true) end) then
       local tos, id = room:askToChooseCardsAndPlayers(player, {
@@ -52,7 +52,7 @@ cixiao:addEffect(fk.EventPhaseStart, {
       end
     end
   end,
-  on_use = function(self, event, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cost_data = event:getCostData(self)
     local to = room:getPlayerById(cost_data.tos[1])

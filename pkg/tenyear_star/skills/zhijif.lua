@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 }
 
 zhijif:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(zhijif.name) and player.phase == Player.Start
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local success, dat = player.room:askToUseActiveSkill(player, {
       skill_name = "discard_skill",
       prompt = "#zhijif-invoke",
@@ -34,7 +34,7 @@ zhijif:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cost_data = event:getCostData(self)
     if #cost_data.cards > 0 then

@@ -13,11 +13,11 @@ Fk:loadTranslationTable{
 
 dangzai:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(dangzai) and player.phase == Player.Play and
       table.find(player.room:getOtherPlayers(player), function(p) return p:canMoveCardsInBoardTo(player, "j") end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local targets = table.map(table.filter(player.room:getOtherPlayers(player), function(p)
       return p:canMoveCardsInBoardTo(player, "j")
     end), Util.IdMapper)
@@ -33,7 +33,7 @@ dangzai:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local src = room:getPlayerById(event:getCostData(self))
     local cards = table.filter(src:getCardIds("j"), function(id)

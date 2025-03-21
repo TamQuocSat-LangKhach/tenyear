@@ -15,10 +15,10 @@ Fk:loadTranslationTable{
 dufeng:addEffect(fk.EventPhaseStart, {
   anim_type = "offensive",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and target:hasSkill(dufeng.name) and player.phase == Player.Play
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local choiceList = { "dufeng_loseHp" }
     if #player:getAvailableEquipSlots() > 0 then

@@ -11,7 +11,7 @@ Fk:loadTranslationTable{
 }
 
 aishou:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(aishou.name) then
       if target == player and (player.phase == Player.Finish or 
         (player.phase == Player.Start and table.find(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@aishou-inhand") > 0 end)))) then
@@ -19,13 +19,13 @@ aishou:addEffect(fk.EventPhaseStart, {
       end
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     if player.phase == Player.Finish then
       return player.room:askToSkillInvoke(player, { skill_name = aishou.name })
     end
     return true
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(aishou.name)
     if player.phase == Player.Finish then
@@ -53,7 +53,7 @@ aishou:addEffect(fk.AfterCardsMove, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, aishou.name, "negative")
     room:changeMaxHp(player, -1)
@@ -61,10 +61,10 @@ aishou:addEffect(fk.AfterCardsMove, {
 })
 
 aishou:addEffect(fk.BeforeCardsMove, {
-  can_refresh = function (skill, event, target, player, data)
+  can_refresh = function (self, event, target, player, data)
     return player:hasSkill(aishou.name) and player.phase == Player.NotActive
   end,
-  on_refresh = function (skill, event, target, player, data)
+  on_refresh = function (self, event, target, player, data)
     for _, move in ipairs(data) do
       if move.from == player.id then
         for _, info in ipairs(move.moveInfo) do

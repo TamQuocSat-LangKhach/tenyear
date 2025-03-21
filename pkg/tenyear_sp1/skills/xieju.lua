@@ -41,10 +41,10 @@ xieju:addEffect('active', {
 })
 
 xieju:addEffect(fk.TargetConfirmed, {
-  can_refresh = function(self, event, player, data)
+  can_refresh = function(self, event, target, player, data)
     return player:hasSkill(xieju, true)
   end,
-  on_refresh = function(self, event, player, data)
+  on_refresh = function(self, event, target, player, data)
     local mark = player:getTableMark("ty__xieju-turn")
     for _, id in ipairs(TargetGroup:getRealTargets(data.tos)) do
       table.insertIfNeed(mark, id)

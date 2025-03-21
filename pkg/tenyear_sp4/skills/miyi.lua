@@ -16,10 +16,10 @@ Fk:loadTranslationTable{
 
 miyi:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player.phase == Player.Start and player:hasSkill(miyi.name)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local _, dat = player.room:askToUseActiveSkill(player, {
       skill_name = "miyi_active",
       prompt = "#miyi-invoke",
@@ -30,7 +30,7 @@ miyi:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local targets = event:getCostData(self).targets
     room:sortPlayersByAction(targets)
@@ -63,14 +63,14 @@ miyi:addEffect(fk.EventPhaseStart, {
 miyi:addEffect(fk.EventPhaseStart, {
   name = "#miyi_delay",
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and not player.dead and player.phase == Player.Finish
       and table.find(player.room.alive_players, function (p)
         return p:getMark("@@miyi1-turn") > 0 or p:getMark("@@miyi2-turn") > 0
       end)
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     for _, p in ipairs(room:getAlivePlayers()) do
       if not p.dead then

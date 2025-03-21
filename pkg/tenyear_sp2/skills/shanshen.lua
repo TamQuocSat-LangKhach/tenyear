@@ -10,10 +10,10 @@ Fk:loadTranslationTable{
 }
 
 shanshen:addEffect(fk.Death, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(shanshen.name)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     AddYuqi(player, shanshen.name, 2)
     if player:isWounded() and #player.room.logic:getActualDamageEvents(1, function(e)

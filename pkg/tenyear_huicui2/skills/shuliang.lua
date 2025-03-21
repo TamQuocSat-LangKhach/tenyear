@@ -13,13 +13,13 @@ Fk:loadTranslationTable{
 
 shuliang:addEffect(fk.TurnEnd, {
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return
       player:hasSkill(shuliang.name) and
       not player:isNude() and
       table.find(player.room.alive_players, function(p) return p ~= player and p:isKongcheng() end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local availableTargets = table.filter(room.alive_players, function(p) return p ~= player and p:isKongcheng() end)
     if #availableTargets > 0 then
@@ -45,7 +45,7 @@ shuliang:addEffect(fk.TurnEnd, {
 
     return false
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:moveCardTo(event:getCostData(self)[2], Player.Hand, room:getPlayerById(event:getCostData(self)[1]), fk.ReasonGive, shuliang.name, nil, false, player.id)
 

@@ -15,13 +15,13 @@ Fk:loadTranslationTable{
 
 fazhu:addEffect(fk.EventPhaseStart, {
   anim_type = "drawCard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(fazhu) and player.phase == Player.Start and
       table.find(player:getCardIds("hej"), function(id)
         return not Fk:getCardById(id).is_damage_card
       end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "fazhu_cards", player:getCardIds("j"))
     local success, dat = room:askToUseActiveSkill(player, {
@@ -34,7 +34,7 @@ fazhu:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = event:getCostData(self).cards
     if #cards == 0 then return end

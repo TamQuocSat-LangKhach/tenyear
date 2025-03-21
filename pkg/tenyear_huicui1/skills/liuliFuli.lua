@@ -89,14 +89,14 @@ liuliFuli:addEffect('active', {
 
 liuliFuli:addEffect('trigger', {
   events = {fk.TurnStart, fk.Death},
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     local room = player.room
     return
       target == player and
       player.tag["liuliFuliPlayers"] and
       table.find(room.alive_players, function(p) return p:getMark("@liuli__fuli") ~= 0 end)
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     for playerId, num in pairs(player.tag["liuliFuliPlayers"]) do
       local player = room:getPlayerById(playerId)

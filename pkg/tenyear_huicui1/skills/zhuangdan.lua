@@ -14,21 +14,21 @@ Fk:loadTranslationTable{
 zhuangdan:addEffect(fk.TurnEnd, {
   anim_type = "special",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(zhuangdan.name) and target ~= player and player:hasSkill("liedan") and
       table.every(player.room:getOtherPlayers(player), function(p)
         return player:getHandcardNum() > p:getHandcardNum()
       end)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@@zhuangdan", 1)
     player.room:invalidateSkill(player, "liedan")
   end,
 
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and player:getMark("@@zhuangdan") > 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@@zhuangdan", 0)
     player.room:validateSkill(player, "liedan")
   end,

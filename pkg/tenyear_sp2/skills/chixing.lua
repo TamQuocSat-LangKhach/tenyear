@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 
 chixing:addEffect(fk.EventPhaseEnd, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(chixing.name) and target.phase == Player.Play then
       local room = player.room
       local phase_event = room.logic:getCurrentEvent():findParent(GameEvent.Phase, true)
@@ -36,7 +36,7 @@ chixing:addEffect(fk.EventPhaseEnd, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = room:drawCards(player, event:getCostData(skill), chixing.name)
     cards = table.filter(cards, function (id)

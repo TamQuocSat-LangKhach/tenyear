@@ -38,7 +38,7 @@ ty__wuniang:addEffect({fk.CardUsing, fk.CardResponding}, {
       return true
     end
   end,
-  on_use = function(self, event, player, target, data)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(self))
     local id = room:askToChooseCard(player, {

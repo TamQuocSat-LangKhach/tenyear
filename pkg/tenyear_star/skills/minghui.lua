@@ -13,7 +13,7 @@ Fk:loadTranslationTable{
 }
 
 minghui:addEffect(fk.TurnEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(minghui.name) then
       local x = player:getHandcardNum()
       if x == 0 then return true end
@@ -36,7 +36,7 @@ minghui:addEffect(fk.TurnEnd, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local x = player:getHandcardNum()
     if table.every(room.alive_players, function (p)

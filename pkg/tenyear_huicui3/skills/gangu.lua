@@ -11,10 +11,10 @@ Fk:loadTranslationTable{
 
 gangu:addEffect(fk.HpLost, {
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(gangu.name) and player:usedSkillTimes(gangu.name) == 0
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:drawCards(3, gangu.name)
     if not player.dead then
       player.room:loseHp(player, 1, {

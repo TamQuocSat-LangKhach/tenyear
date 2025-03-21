@@ -13,17 +13,17 @@ Fk:loadTranslationTable{
 
 youxu:addEffect(fk.TurnEnd, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(youxu.name) and target:getHandcardNum() > target.hp and not target.dead
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     event:setCostData(player, {tos = {target.id}})
     return player.room:askToSkillInvoke(player, {
       skill_name = youxu.name,
       prompt = "#youxu-invoke::" .. target.id
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local id = room:askToChooseCard(player, {
       target = target,

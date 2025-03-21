@@ -57,7 +57,7 @@ pandi:addEffect('active', {
 
 -- Trigger Skill Effect for Refresh Events
 pandi:addEffect(fk.EventAcquireSkill | fk.Damage | fk.PreCardUse, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     if event == fk.Damage then
       return player == target and player:getMark("pandi_damaged-turn") == 0
     elseif event == fk.EventAcquireSkill then
@@ -66,7 +66,7 @@ pandi:addEffect(fk.EventAcquireSkill | fk.Damage | fk.PreCardUse, {
       return player:getMark("pandi_prohibit-phase") > 0
     end
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     if event == fk.Damage then
       player.room:addPlayerMark(player, "pandi_damaged-turn")
     elseif event == fk.EventAcquireSkill then

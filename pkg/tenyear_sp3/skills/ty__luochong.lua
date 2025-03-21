@@ -15,7 +15,7 @@ Fk:loadTranslationTable{
 
 ty__luochong:addEffect(fk.RoundStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(ty__luochong) and player:getMark(ty__luochong.name) < 4 and
       not table.every(player.room.alive_players, function (p) return p:isAllNude() end)
   end,

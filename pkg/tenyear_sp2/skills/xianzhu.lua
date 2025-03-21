@@ -19,7 +19,7 @@ xianzhu:addEffect(fk.Damage, {
       table.find(player:getEquipments(Card.SubtypeTreasure), function(id) return Fk:getCardById(id).name == "siege_engine" end) and
       (player:getMark("xianzhu1") + player:getMark("xianzhu2") + player:getMark("xianzhu3")) < 5
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local choices = {"xianzhu2", "xianzhu3"}
     if player:getMark("xianzhu1") == 0 then

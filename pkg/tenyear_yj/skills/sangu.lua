@@ -15,10 +15,10 @@ Fk:loadTranslationTable{
 }
 
 sangu:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player == target and player:hasSkill(sangu.name) and player.phase == Player.Finish
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local to = room:askToChoosePlayers(player, {
       targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper),
@@ -33,7 +33,7 @@ sangu:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(skill))
     local cards = player:getMark("sangu_cards")
@@ -85,11 +85,11 @@ sangu:addEffect(fk.EventPhaseStart, {
 
 sangu:addEffect(fk.EventPhaseStart, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:isAlive() and player.phase == Player.Play and #player:getTableMark("@$sangu") > 0 and player == target
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.EventPhaseStart then
       local phase_event = room.logic:getCurrentEvent():findParent(GameEvent.Phase)
@@ -112,14 +112,14 @@ sangu:addEffect(fk.EventPhaseStart, {
 
 sangu:addEffect(fk.CardUsing, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:isAlive() and player.phase == Player.Play and #player:getTableMark("@$sangu") > 0 then
       local mark = player:getTableMark("sangu_effect-phase")
       return mark ~= 0
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local mark = player:getTableMark("@$sangu")
     table.remove(mark, 1)
@@ -133,14 +133,14 @@ sangu:addEffect(fk.CardUsing, {
 
 sangu:addEffect(fk.CardResponding, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:isAlive() and player.phase == Player.Play and #player:getTableMark("@$sangu") > 0 then
       local mark = player:getTableMark("sangu_effect-phase")
       return mark ~= 0
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local mark = player:getTableMark("@$sangu")
     table.remove(mark, 1)
@@ -154,14 +154,14 @@ sangu:addEffect(fk.CardResponding, {
 
 sangu:addEffect(fk.AfterCardsMove, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:isAlive() and player.phase == Player.Play and #player:getTableMark("@$sangu") > 0 then
       local mark = player:getTableMark("sangu_effect-phase")
       return mark ~= 0
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     for _, move in ipairs(event.data) do
       if move.from == player.id and move.moveReason == fk.ReasonRecast then
@@ -177,14 +177,14 @@ sangu:addEffect(fk.AfterCardsMove, {
 
 sangu:addEffect(fk.DamageInflicted, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:isAlive() and player.phase == Player.Play then
       local data = event.data[1]
       return player == target and data.card and table.contains(data.card.skillNames, sangu.name)
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.DamageInflicted then
       local card_event = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)

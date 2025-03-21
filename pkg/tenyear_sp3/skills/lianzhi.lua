@@ -16,7 +16,7 @@ Fk:loadTranslationTable{
 
 -- GameStart and Deathed events
 lianzhi:addEffect({fk.GameStart, fk.Deathed}, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(lianzhi.name) then
       if event == fk.GameStart then
         return true
@@ -26,7 +26,7 @@ lianzhi:addEffect({fk.GameStart, fk.Deathed}, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
     if event == fk.GameStart then
@@ -66,12 +66,12 @@ lianzhi:addEffect({fk.GameStart, fk.Deathed}, {
 
 -- EnterDying event for #lianzhi_trigger
 lianzhi:addEffect(fk.EnterDying, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(lianzhi.name) and player:getMark("lianzhi") ~= 0 and
       not player.room:getPlayerById(player:getMark("lianzhi")).dead and player:usedSkillTimes("#lianzhi_trigger", Player.HistoryTurn) == 0
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(lianzhi.name)
     room:notifySkillInvoked(player, lianzhi.name, "support")

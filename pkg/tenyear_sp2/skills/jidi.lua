@@ -15,7 +15,7 @@ jidi:addEffect(fk.DamageInflicted, {
     return target == player and player:hasSkill(jidi.name) and data.from and
       (data.from.hp > player.hp or data.from:getHandcardNum() > player:getHandcardNum())
   end,
-  on_use = function (skill, event, target, player, data)
+  on_use = function (self, event, target, player, data)
     local room = player.room
     room:doIndicate(player.id, {data.from.id})
     local choices = {}

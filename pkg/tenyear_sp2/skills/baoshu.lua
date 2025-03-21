@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 }
 
 baoshu:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(baoshu.name) and player.phase == Player.Start
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = room:askToChoosePlayers(player, {
       targets = table.map(room:getAlivePlayers(), Util.IdMapper),
@@ -30,7 +30,7 @@ baoshu:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local x = player.maxHp - #event:getCostData(skill) + 1
     for _, id in ipairs(event:getCostData(skill)) do
@@ -46,7 +46,7 @@ baoshu:addEffect(fk.EventPhaseStart, {
 })
 
 baoshu:addEffect(fk.DrawNCards, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("@fengyu_shu") > 0
   end,
   on_cost = Util.TrueFunc,

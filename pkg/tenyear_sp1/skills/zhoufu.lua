@@ -33,10 +33,10 @@ zhoufu:addEffect('active', {
 })
 
 zhoufu:addEffect(fk.StartJudge, {
-  can_refresh = function(self, event, player, data)
+  can_refresh = function(self, event, target, player, data)
     return #player:getPile("ty__zhoufu_zhou") > 0
   end,
-  on_refresh = function(self, event, player, data)
+  on_refresh = function(self, event, target, player, data)
     data.card = Fk:getCardById(player:getPile("ty__zhoufu_zhou")[1])
   end,
 })

@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 
 zhuide:addEffect(fk.Death, {
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(zhuide.name, false, true)
   end,
   on_cost = function(self, event, target, player, data)

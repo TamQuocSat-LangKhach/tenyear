@@ -15,11 +15,11 @@ Fk:loadTranslationTable{
 
 gongxiu:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(gongxiu.name) and player.phase == Player.Finish and
       player:usedSkillTimes("jinghe", Player.HistoryTurn) > 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local choices = {"Cancel"}
     local all_choices = {"gongxiu_draw", "gongxiu_discard", "Cancel"}
     if table.find(player.room.alive_players, function(p) return p:getMark("jinghe-turn") == 0 and not p:isKongcheng() end) then
@@ -39,7 +39,7 @@ gongxiu:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if event:getCostData(self)[10] == "r" then
       for _, p in ipairs(room:getAlivePlayers()) do

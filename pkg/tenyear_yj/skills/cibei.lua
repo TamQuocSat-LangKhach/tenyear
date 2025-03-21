@@ -23,7 +23,7 @@ cibei:addEffect(fk.CardUseFinished, {
         Fk:getCardById(data.card:getEffectiveId(), true).trueName == "slash" and player.room:getCardArea(data.card) == Card.Processing
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, { skill_name = skill.name, prompt = "#cibei-invoke" })
   end,
   on_use = function(self, event, target, player, data)
@@ -68,10 +68,10 @@ cibei:addEffect(fk.CardUseFinished, {
 })
 
 cibei:addEffect(fk.TurnEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return table.every(player:getPile("hanlong_ci"), function(id) return Fk:getCardById(id).trueName == "slash" end)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:moveCardTo(player:getPile("hanlong_ci"), Card.PlayerHand, player, fk.ReasonPrey, skill.name, "", true, player.id, "@@cibei-inhand")
   end,

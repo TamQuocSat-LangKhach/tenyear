@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 
 zhuijix:addEffect(fk.Deathed, {
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(skill.name, false, true)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local to = room:askToChoosePlayers(player, {
       targets = table.map(room.alive_players, Util.IdMapper),
@@ -31,7 +31,7 @@ zhuijix:addEffect(fk.Deathed, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(skill).tos[1])
     local subtypes = {
@@ -76,7 +76,7 @@ zhuijix:addEffect(fk.Deathed, {
 
 zhuijix:addEffect(fk.AfterCardsMove, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:getMark("ty__zhuijix") ~= 0 and not player.dead then
       for _, move in ipairs(event.data) do
         if move.from == player.id then
@@ -95,7 +95,7 @@ zhuijix:addEffect(fk.AfterCardsMove, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     for _, move in ipairs(event.data) do
       if move.from == player.id then

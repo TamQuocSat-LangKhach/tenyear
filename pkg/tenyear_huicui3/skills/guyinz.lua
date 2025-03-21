@@ -31,12 +31,12 @@ guyinz:addEffect(fk.AfterCardsMove, {
 
 guyinz:addEffect(fk.DrawInitialCards, {
   global = true,
-  can_refresh = function (skill, event, target, player, data)
+  can_refresh = function (self, event, target, player, data)
     if player:hasSkill(guyinz.name) then
       return true
     end
   end,
-  on_refresh = function (skill, event, target, player, data)
+  on_refresh = function (self, event, target, player, data)
     if target == player then
       data.num = 0
     else
@@ -47,12 +47,12 @@ guyinz:addEffect(fk.DrawInitialCards, {
 
 guyinz:addEffect(fk.AfterDrawInitialCards, {
   global = true,
-  can_refresh = function (skill, event, target, player, data)
+  can_refresh = function (self, event, target, player, data)
     if player:hasSkill(guyinz.name) then
       return target ~= player and not target:isKongcheng()
     end
   end,
-  on_refresh = function (skill, event, target, player, data)
+  on_refresh = function (self, event, target, player, data)
     local room = player.room
     for _, id in ipairs(target:getCardIds("h")) do
       room:setCardMark(Fk:getCardById(id), "guyinz", target.id)
@@ -62,7 +62,7 @@ guyinz:addEffect(fk.AfterDrawInitialCards, {
 
 guyinz:addEffect(fk.AfterCardsMove, {
   global = true,
-  can_refresh = function (skill, event, target, player, data)
+  can_refresh = function (self, event, target, player, data)
     if player:hasSkill(guyinz.name) and player.seat == 1 then
       for _, move in ipairs(data) do
         if move.toArea == Card.DiscardPile then
@@ -71,7 +71,7 @@ guyinz:addEffect(fk.AfterCardsMove, {
       end
     end
   end,
-  on_refresh = function (skill, event, target, player, data)
+  on_refresh = function (self, event, target, player, data)
     for _, move in ipairs(data) do
       if move.toArea == Card.DiscardPile then
         for _, info in ipairs(move.moveInfo) do

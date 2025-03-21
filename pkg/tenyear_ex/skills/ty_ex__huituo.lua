@@ -13,7 +13,7 @@ Fk:loadTranslationTable{
 
 ty_ex__huituo:addEffect({fk.Damaged, fk.Damage}, {
   anim_type = "masochism",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(ty_ex__huituo.name) then return false end
     if event == fk.Damaged then
       return target == player

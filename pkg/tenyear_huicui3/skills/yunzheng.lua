@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 }
 
 yunzheng:addEffect(fk.GameStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(yunzheng) and not player:isKongcheng()
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = player:getCardIds(Player.Hand)
     local card
@@ -40,7 +40,7 @@ yunzheng:addEffect(fk.GameStart, {
       end
     end
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     local card
     local x = #table.filter(player:getCardIds(Player.Hand), function (id)

@@ -81,7 +81,7 @@ humei:addEffect('active', {
 
 -- Trigger Skill
 humei:addEffect(fk.Damage, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(humei) and player.phase == Player.Play
   end,
   on_cost = Util.TrueFunc,

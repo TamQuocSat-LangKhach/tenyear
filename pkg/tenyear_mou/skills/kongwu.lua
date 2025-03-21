@@ -75,7 +75,7 @@ kongwu:addEffect(fk.EventPhaseEnd, {
     return target == player and player.phase == Player.Play and player:getMark("kongwu-phase") ~= 0
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local mark = player:getTableMark("kongwu-phase")
     for _, id in ipairs(mark) do
@@ -88,7 +88,7 @@ kongwu:addEffect(fk.EventPhaseEnd, {
       end
     end
   end,
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     if target == player then
       if event == fk.TurnStart then
         return player:getMark("kongwu") > 0
@@ -97,7 +97,7 @@ kongwu:addEffect(fk.EventPhaseEnd, {
       end
     end
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     if event == fk.TurnStart then
       room:setPlayerMark(player, "@@kongwu-turn", player:getMark("kongwu"))

@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 }
 
 chongyi:addEffect(fk.CardUsing, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(chongyi.name) and target.phase == Player.Play and not target.dead then
       local room = player.room
       local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
@@ -31,7 +31,7 @@ chongyi:addEffect(fk.CardUsing, {
       return x == use_event.id
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local prompt = "#chongyi-draw::"
     local room = player.room
     if room:askToSkillInvoke(player, {skill_name=chongyi.name, prompt=prompt .. target.id}) then
@@ -39,7 +39,7 @@ chongyi:addEffect(fk.CardUsing, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.CardUsing then
       target:drawCards(2, chongyi.name)
@@ -49,7 +49,7 @@ chongyi:addEffect(fk.CardUsing, {
 })
 
 chongyi:addEffect(fk.EventPhaseEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(chongyi.name) and target.phase == Player.Play and not target.dead then
       local logic = player.room.logic
       local phase_event = logic:getCurrentEvent():findParent(GameEvent.Phase, true)
@@ -69,7 +69,7 @@ chongyi:addEffect(fk.EventPhaseEnd, {
       end
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local prompt = "#chongyi-maxcards::"
     local room = player.room
     if room:askToSkillInvoke(player, {skill_name=chongyi.name, prompt=prompt .. target.id}) then
@@ -77,7 +77,7 @@ chongyi:addEffect(fk.EventPhaseEnd, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.EventPhaseEnd then
       room:addPlayerMark(target, MarkEnum.AddMaxCardsInTurn, 1)

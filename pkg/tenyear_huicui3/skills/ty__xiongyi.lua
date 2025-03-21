@@ -45,10 +45,10 @@ ty__xiongyi:addEffect('active', {
 })
 
 ty__xiongyi:addEffect(fk.AfterDying, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and not player.dead and player:usedSkillTimes("ty__xiongyi", Player.HistoryGame) > 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     player:setSkillUseHistory(ty__xiongyi.name, 0, Player.HistoryGame)
     player.room:setPlayerMark(player, "ty__xiongyi", 1)
   end,

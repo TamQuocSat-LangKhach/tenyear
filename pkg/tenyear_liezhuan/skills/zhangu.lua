@@ -11,10 +11,10 @@ Fk:loadTranslationTable{
 
 zhangu:addEffect(fk.TurnStart, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(zhangu.name) and player.maxHp > 1 and (player:isKongcheng() or #player:getCardIds("e") == 0)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeMaxHp(player, -1)
     if player.dead then return end

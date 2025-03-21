@@ -15,13 +15,13 @@ Fk:loadTranslationTable{
 -- 主技能
 xizhen:addEffect(fk.EventPhaseStart, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(xizhen.name) and player.phase == Player.Play and
       table.find(player.room:getOtherPlayers(player), function (p)
         return not (player:isProhibited(p, Fk:cloneCard("slash")) and player:isProhibited(p, Fk:cloneCard("duel")))
       end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.filter(room:getOtherPlayers(player), function (p)
       return not (player:isProhibited(p, Fk:cloneCard("slash")) and player:isProhibited(p, Fk:cloneCard("duel")))
@@ -39,7 +39,7 @@ xizhen:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cost_data = event:getCostData(self)
     local to = room:getPlayerById(cost_data.tos[1])
@@ -62,11 +62,11 @@ xizhen:addEffect(fk.EventPhaseStart, {
 -- 触发技
 xizhen:addEffect(fk.CardUsing, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:getMark("xizhen-phase") ~= 0 and player.data.responseToEvent and player.data.responseToEvent.from == player.id
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(player:getMark("xizhen-phase"))
     if not to.dead then
@@ -89,11 +89,11 @@ xizhen:addEffect(fk.CardUsing, {
 
 xizhen:addEffect(fk.CardResponding, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:getMark("xizhen-phase") ~= 0 and player.data.responseToEvent and player.data.responseToEvent.from == player.id
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(player:getMark("xizhen-phase"))
     if not to.dead then

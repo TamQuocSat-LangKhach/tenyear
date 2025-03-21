@@ -11,11 +11,11 @@ Fk:loadTranslationTable{
 
 ty__liewei:addEffect(fk.EnterDying, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(ty__liewei.name) and
       (player.phase ~= Player.NotActive or player:usedSkillTimes(ty__liewei.name) < player.hp)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:drawCards(1, ty__liewei.name)
   end,
 })

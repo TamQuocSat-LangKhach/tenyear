@@ -3,13 +3,13 @@ local ty_ex__enyuan = fk.CreateSkill {
 }
 
 Fk:loadTranslationTable{
-  ['ty_ex__enyuan'] = '恩怨',
-  ['#ty_ex__enyuan-en-invoke'] = '恩怨：你可以令 %dest 摸一张牌',
-  ['#ty_ex__enyuan-yuan-invoke'] = '是否对 %dest 发动 恩怨',
-  ['#ty_ex__enyuan-give'] = '恩怨：你需交给 %src 一张手牌，否则失去1点体力',
-  [':ty_ex__enyuan'] = '当你得到一名其他角色的牌后，若这些牌数大于1，你可以令其摸一张牌；当你受到1点伤害后，你可以令来源选择：1.将一张手交给你，若不为<font color=>♥</font>，你摸一张牌；2.失去1点体力。',
-  ['$ty_ex__enyuan1'] = '善因得善果，恶因得恶报！',
-  ['$ty_ex__enyuan2'] = '私我者赠之琼瑶，厌我者报之斧钺！',
+  ["ty_ex__enyuan"] = "恩怨",
+  ["#ty_ex__enyuan-en-invoke"] = "恩怨：你可以令 %dest 摸一张牌",
+  ["#ty_ex__enyuan-yuan-invoke"] = "是否对 %dest 发动 恩怨",
+  ["#ty_ex__enyuan-give"] = "恩怨：你需交给 %src 一张手牌，否则失去1点体力",
+  [":ty_ex__enyuan"] = "当你得到一名其他角色的牌后，若这些牌数大于1，你可以令其摸一张牌；当你受到1点伤害后，你可以令来源选择：1.将一张手交给你，若不为<font color='red'>♥</font>，你摸一张牌；2.失去1点体力。",
+  ["$ty_ex__enyuan1"] = "善因得善果，恶因得恶报！",
+  ["$ty_ex__enyuan2"] = "私我者赠之琼瑶，厌我者报之斧钺！",
 }
 
 ty_ex__enyuan:addEffect(fk.AfterCardsMove, {

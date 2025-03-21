@@ -14,7 +14,7 @@ Fk:loadTranslationTable{
 
 shexue:addEffect(fk.EventPhaseStart, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target.phase == Player.Play and player:hasSkill(shexue.name) then
       if target:isNude() then return false end
       local room = player.room
@@ -96,7 +96,7 @@ shexue:addEffect(fk.EventPhaseStart, {
       end
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     if player == target then
       local success, dat = room:askToUseActiveSkill(player, {
@@ -114,7 +114,7 @@ shexue:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if player == target then
       local dat = table.simpleClone(event:getCostData(skill))
@@ -166,7 +166,7 @@ shexue:addEffect(fk.EventPhaseStart, {
 
 shexue:addEffect(fk.EventPhaseEnd, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player.phase == Player.Play and player:hasSkill(shexue.name) then
       local room = player.room
       if not player.dead then
@@ -191,14 +191,14 @@ shexue:addEffect(fk.EventPhaseEnd, {
       end
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     return room:askToSkillInvoke(player, {
       skill_name = shexue.name,
       prompt = "#shexue-invoke",
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "shexue_invoking", table.simpleClone(event:getCostData(skill)))
   end,
@@ -206,10 +206,10 @@ shexue:addEffect(fk.EventPhaseEnd, {
 
 shexue:addEffect(fk.TurnStart, {
   global = false,
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return player:getMark("shexue_invoking") ~= 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "shexue_invoking-turn", player:getMark("shexue_invoking"))
     room:setPlayerMark(player, "shexue_invoking", 0)

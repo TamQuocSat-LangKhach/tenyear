@@ -15,10 +15,10 @@ Fk:loadTranslationTable{
 
 huaping:addEffect(fk.Death, {
   frequency = Skill.Limited,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(huaping.name, false, player == target) and player:usedSkillTimes(huaping.name, Player.HistoryGame) == 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     if player == target then
       local to = player.room:askToChoosePlayers(player, {
         targets = table.map(player.room:getOtherPlayers(player, false), Util.IdMapper),
@@ -39,7 +39,7 @@ huaping:addEffect(fk.Death, {
       })
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if player == target then
       local to = room:getPlayerById(event:getCostData(self))

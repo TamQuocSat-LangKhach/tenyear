@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 
 wanglu:addEffect(fk.EventPhaseStart, {
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(wanglu.name) and player.phase == Player.Start
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if table.find(player:getEquipments(Card.SubtypeTreasure), function(id) return Fk:getCardById(id).name == "siege_engine" end) then
       player:gainAnExtraPhase(Player.Play)

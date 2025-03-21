@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 }
 
 yitong:addEffect(fk.GameStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(yitong.name)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local all_suits = {"log_spade", "log_heart", "log_club", "log_diamond"}
     if event == fk.GameStart then
@@ -43,7 +43,7 @@ yitong:addEffect(fk.AfterCardsMove, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local all_suits = {"log_spade", "log_heart", "log_club", "log_diamond"}
     if player:getMark("@yitong") ~= 0 and player:getMark("yitong_draw-turn") == 0 then

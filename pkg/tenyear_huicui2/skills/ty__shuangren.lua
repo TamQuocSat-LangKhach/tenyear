@@ -16,10 +16,10 @@ Fk:loadTranslationTable{
 
 ty__shuangren:addEffect(fk.EventPhaseStart, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(ty__shuangren.name) and player.phase == Player.Play and not player:isKongcheng() and table.find(player.room:getOtherPlayers(player), function(p) return not p:isKongcheng() end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.filter(room:getOtherPlayers(player), function(p) return not p:isKongcheng() end)
     if #targets == 0 then return false end
@@ -37,7 +37,7 @@ ty__shuangren:addEffect(fk.EventPhaseStart, {
     end
     return false
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(self))
     local pindian = player:pindian({to}, ty__shuangren.name)

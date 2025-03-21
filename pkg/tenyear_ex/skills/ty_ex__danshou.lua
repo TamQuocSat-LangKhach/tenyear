@@ -14,7 +14,7 @@ Fk:loadTranslationTable{
 }
 
 ty_ex__danshou:addEffect(fk.TargetConfirmed, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(skill.name) and player:usedSkillTimes(ty_ex__danshou.name, Player.HistoryTurn) == 0 then
       if target == player and data.card.type ~= Card.TypeEquip then
         local n = 0
@@ -28,7 +28,7 @@ ty_ex__danshou:addEffect(fk.TargetConfirmed, {
       end
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     if event == fk.TargetConfirmed then
       local n = 0
@@ -47,7 +47,7 @@ ty_ex__danshou:addEffect(fk.TargetConfirmed, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(ty_ex__danshou.name)
     if event == fk.TargetConfirmed then
@@ -57,11 +57,11 @@ ty_ex__danshou:addEffect(fk.TargetConfirmed, {
       player:drawCards(n, ty_ex__danshou.name)
     end
   end,
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and data.card.type ~= Card.TypeEquip
       and player:hasSkill(ty_ex__danshou.name, true) and player:usedSkillTimes("ty_ex__danshou", Player.HistoryTurn) == 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     local events = player.room.logic:getEventsOfScope(GameEvent.UseCard, 999, function(e)
       local use = e.data[1]
@@ -72,12 +72,12 @@ ty_ex__danshou:addEffect(fk.TargetConfirmed, {
 })
 
 ty_ex__danshou:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(ty_ex__danshou.name) and player:usedSkillTimes(ty_ex__danshou.name, Player.HistoryTurn) == 0 then
       return target.phase == Player.Finish and #player:getCardIds("he") >= target:getHandcardNum()
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local n = target:getHandcardNum()
     local cards = {}
@@ -108,7 +108,7 @@ ty_ex__danshou:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(ty_ex__danshou.name)
     room:notifySkillInvoked(player, ty_ex__danshou.name, "offensive")

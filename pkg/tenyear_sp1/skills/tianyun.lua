@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 
 tianyun:addEffect(fk.GameStart, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(tianyun) then return false end
     local suits = {"spade", "heart", "club", "diamond"}
     for _, id in ipairs(player:getCardIds(Player.Hand)) do
@@ -20,14 +20,14 @@ tianyun:addEffect(fk.GameStart, {
     end
     return #suits > 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     if event == fk.GameStart then
       return true
     elseif event == fk.TurnStart then
       return player.room:askToSkillInvoke(player, { skill_name = tianyun.name })
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local suits = {"spade", "heart", "club", "diamond"}
     for _, id in ipairs(player:getCardIds(Player.Hand)) do
@@ -76,18 +76,18 @@ tianyun:addEffect(fk.GameStart, {
 
 tianyun:addEffect(fk.TurnStart, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(tianyun) then return false end
     return target.seat == player.room:getBanner("RoundCount") and not player:isKongcheng()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     if event == fk.GameStart then
       return true
     elseif event == fk.TurnStart then
       return player.room:askToSkillInvoke(player, { skill_name = tianyun.name })
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local suits = {"spade", "heart", "club", "diamond"}
     for _, id in ipairs(player:getCardIds(Player.Hand)) do

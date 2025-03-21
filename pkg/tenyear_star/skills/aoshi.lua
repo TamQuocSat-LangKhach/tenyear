@@ -7,10 +7,10 @@ Fk:loadTranslationTable{
 }
 
 aoshi:addEffect(fk.AfterPropertyChange, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     if player.kingdom == "qun" and table.find(room.alive_players, function (p)
       return p ~= player and p:hasSkill(aoshi.name, true)

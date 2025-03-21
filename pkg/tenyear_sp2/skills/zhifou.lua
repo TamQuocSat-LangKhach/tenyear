@@ -18,11 +18,11 @@ Fk:loadTranslationTable{
 }
 
 zhifou:addEffect(fk.CardUseFinished, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(zhifou.name) and #player:getTableMark("zhifou-turn") < 3
       and #player:getPile("lingxi_wing") > player:usedSkillTimes(zhifou.name, Player.HistoryTurn)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local x = player:usedSkillTimes(zhifou.name, Player.HistoryTurn) + 1
     local cards = room:askToCards(player, {
@@ -38,7 +38,7 @@ zhifou:addEffect(fk.CardUseFinished, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:moveCardTo(event:getCostData(self).cards, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, zhifou.name)
     if player.dead then return end

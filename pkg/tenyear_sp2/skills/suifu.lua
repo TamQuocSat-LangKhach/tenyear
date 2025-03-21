@@ -11,7 +11,7 @@ Fk:loadTranslationTable{
 }
 
 suifu:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(skill.name) and target ~= player and target.phase == Player.Finish and not target:isKongcheng() then
       local count = 0
       return #player.room.logic:getActualDamageEvents(1, function (e)
@@ -23,13 +23,13 @@ suifu:addEffect(fk.EventPhaseStart, {
       end, Player.HistoryTurn) > 0
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = skill.name,
       prompt = "#suifu-invoke::"..target.id
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = table.reverse(target.player_cards[Player.Hand])
     room:moveCards({

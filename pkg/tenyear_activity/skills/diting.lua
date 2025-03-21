@@ -12,17 +12,17 @@ Fk:loadTranslationTable{
 
 diting:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(diting.name) and target ~= player and target.phase == Player.Play and not target:isKongcheng() and
       target:inMyAttackRange(player) and player.hp > 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = diting.name,
       prompt = "#diting-invoke::"..target.id
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:doIndicate(player.id, {target.id})
     local cards = table.random(target:getCardIds("h"), math.min(target:getHandcardNum(), player.hp))
@@ -39,7 +39,7 @@ diting:addEffect(fk.EventPhaseStart, {
 
 diting:addEffect({fk.TargetSpecified, fk.CardUsing, fk.EventPhaseEnd}, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:usedSkillTimes(diting.name, Player.HistoryPhase) > 0 and target:getMark("diting_"..player.id.."-phase") ~= 0 and not player.dead then
       if event == fk.TargetSpecified then
         return data.card:getEffectiveId() == target:getMark("diting_"..player.id.."-phase") and
@@ -53,7 +53,7 @@ diting:addEffect({fk.TargetSpecified, fk.CardUsing, fk.EventPhaseEnd}, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(diting.name)
     if event == fk.TargetSpecified then

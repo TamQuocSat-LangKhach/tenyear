@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 
 qinshen:addEffect(fk.EventPhaseEnd, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(qinshen.name) and player.phase == Player.Discard
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local suits = {1,2,3,4}
     room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
@@ -38,7 +38,7 @@ qinshen:addEffect(fk.EventPhaseEnd, {
       })
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:drawCards(event:getCostData(self), qinshen.name)
   end,
 })

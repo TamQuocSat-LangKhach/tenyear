@@ -13,15 +13,15 @@ Fk:loadTranslationTable{
 beishui:addEffect(fk.EventPhaseStart, {
   anim_type = "special",
   frequency = Skill.Wake,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(skill.name) and
       player.phase == Player.Start and
       player:usedSkillTimes(beishui.name, Player.HistoryGame) == 0
   end,
-  can_wake = function(self, event, target, player)
+  can_wake = function(self, event, target, player, data)
     return player:getHandcardNum() < 2 or player.hp < 2
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:addPlayerMark(player, beishui.name, 1)
     room:changeMaxHp(player, -1)

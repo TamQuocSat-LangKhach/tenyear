@@ -16,10 +16,10 @@ Fk:loadTranslationTable{
 
 chenjian:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(chenjian.name) and player.phase == Player.Start
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local ids = room:getNCards(3 + player:getMark("@chenjian"))
     room:moveCards({

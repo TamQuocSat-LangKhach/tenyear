@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 
 pijing:addEffect(fk.EventPhaseStart, {
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(pijing.name) and player.phase == Player.Finish
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local success, dat = room:askToUseActiveSkill(player, {
       skill_name = "choose_players_skill",
@@ -38,7 +38,7 @@ pijing:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cost_data = event:getCostData(self)
     local tos = table.simpleClone(cost_data.tos)

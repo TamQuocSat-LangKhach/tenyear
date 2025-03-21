@@ -11,7 +11,7 @@ haoshou:addEffect(fk.CardUsing, {
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(haoshou.name) and data.card.trueName == "analeptic" and target ~= player and target.kingdom == "qun" and player:isWounded()
   end,
-  on_cost = function (skill, event, target, player, data)
+  on_cost = function (self, event, target, player, data)
     return player.room:askToSkillInvoke(target, {
       skill_name = haoshou.name,
       prompt = "#haoshou-invoke:"..player.id

@@ -11,7 +11,7 @@ Fk:loadTranslationTable{
 
 ty__diancai:addEffect(fk.EventPhaseEnd, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(ty__diancai.name) and target ~= player and target.phase == Player.Play and player:getHandcardNum() < player.maxHp then
       local num = 0
       player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
@@ -32,7 +32,7 @@ ty__diancai:addEffect(fk.EventPhaseEnd, {
       return num >= math.min(player.hp, 5)
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(player.maxHp - player:getHandcardNum(), ty__diancai.name)
     if not player.dead and table.find(room.alive_players, function(p)

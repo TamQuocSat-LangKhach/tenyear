@@ -12,13 +12,13 @@ Fk:loadTranslationTable{
 
 ty__qinqing:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player.phase == Player.Finish and player:hasSkill(ty__qinqing.name) then
       local lord = player.room:getPlayerBySeat(1)
       return lord and not lord.dead and table.find(player.room.alive_players, function(p) return p:inMyAttackRange(lord) end)
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local lord =  player.room:getPlayerBySeat(1)
     local targets = table.map(table.filter(room.alive_players, function(p)
@@ -36,7 +36,7 @@ ty__qinqing:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(self))
     local cid = room:askToChooseCard(player, {

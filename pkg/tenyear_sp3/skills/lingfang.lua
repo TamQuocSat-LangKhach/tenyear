@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 
 lingfang:addEffect(fk.EventPhaseStart, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(lingfang.name) and player == target and player.phase == Player.Start
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player.room:addPlayerMark(player, "@dongguiren_jiao", 1)
   end,
 })
@@ -42,7 +42,7 @@ lingfang:addEffect(fk.CardUseFinished, {
     end
     return false
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player.room:addPlayerMark(player, "@dongguiren_jiao", 1)
   end,
 })

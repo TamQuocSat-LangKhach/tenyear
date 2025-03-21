@@ -12,11 +12,11 @@ Fk:loadTranslationTable{
 
 jianliang:addEffect(fk.EventPhaseStart, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(jianliang.name) and player.phase == Player.Draw and
       not table.every(player.room.alive_players, function(p) return player:getHandcardNum() >= p:getHandcardNum() end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local tos = player.room:askToChoosePlayers(player, {
       targets = Util.map(player.room.alive_players, Util.IdMapper),
       min_num = 1,
@@ -30,7 +30,7 @@ jianliang:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     for _, id in ipairs(event:getCostData(self)) do
       local p = room:getPlayerById(id)

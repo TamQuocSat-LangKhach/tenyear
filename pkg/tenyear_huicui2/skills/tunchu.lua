@@ -13,7 +13,7 @@ Fk:loadTranslationTable{
 
 -- GameStart, BeforeCardsMove, EventPhaseStart
 tunchu:addEffect({fk.GameStart, fk.BeforeCardsMove, fk.EventPhaseStart}, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(tunchu) then
       return false
     end
@@ -31,7 +31,7 @@ tunchu:addEffect({fk.GameStart, fk.BeforeCardsMove, fk.EventPhaseStart}, {
       return target == player and player.phase == Player.Start and player:getHandcardNum() > player.hp
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.GameStart then
       player:drawCards(#room.players * 4 - player:getHandcardNum(), tunchu.name)
@@ -67,10 +67,10 @@ tunchu:addEffect({fk.GameStart, fk.BeforeCardsMove, fk.EventPhaseStart}, {
 
 -- AfterCardUseDeclared
 tunchu:addEffect(fk.AfterCardUseDeclared, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and player:getMark("@ty__tunchu-turn") > 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     local tunchuMark = player:getMark("@ty__tunchu-turn")
     tunchuMark = tunchuMark - 1

@@ -16,10 +16,10 @@ Fk:loadTranslationTable{
 
 ty__jieying:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__jieying.name) and player.phase == Player.Finish
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local tos = player.room:askToChoosePlayers(player, {
       targets = table.map(player.room:getOtherPlayers(player, false), Util.IdMapper),
       min_num = 1,
@@ -32,7 +32,7 @@ ty__jieying:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player.room:setPlayerMark(player.room:getPlayerById(event:getCostData(skill)), "@ty__jieying", {})
   end,
 })
@@ -40,7 +40,7 @@ ty__jieying:addEffect(fk.EventPhaseStart, {
 ty__jieying:addEffect({fk.AfterCardTargetDeclared, fk.Damage}, {
   name = "#ty__jieying_delay",
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player ~= target or player.dead or player:getMark("@ty__jieying") == 0 or player.phase == Player.NotActive then return false end
     if event == fk.AfterCardTargetDeclared then
       return (data.card:isCommonTrick() or data.card.trueName == "slash") and #TargetGroup:getRealTargets(data.tos) == 1
@@ -49,7 +49,7 @@ ty__jieying:addEffect({fk.AfterCardTargetDeclared, fk.Damage}, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.AfterCardTargetDeclared then
       local tos = room:askToChoosePlayers(player, {
@@ -66,10 +66,10 @@ ty__jieying:addEffect({fk.AfterCardTargetDeclared, fk.Damage}, {
       room:setPlayerMark(player, "@ty__jieying", {"ty__jieying_prohibit"})
     end
   end,
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return player == target and player:getMark("@ty__jieying") ~= 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@ty__jieying", 0)
   end,
 })

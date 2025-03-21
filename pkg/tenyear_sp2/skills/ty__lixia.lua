@@ -15,10 +15,10 @@ Fk:loadTranslationTable{
 ty__lixia:addEffect(fk.EventPhaseStart, {
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target ~= player and player:hasSkill(ty__lixia.name) and target.phase == Player.Finish and not target:inMyAttackRange(player)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local choice = room:askToChoice(player, {
       choices = {"draw1", "ty__lixia_draw:" .. target.id},

@@ -11,11 +11,11 @@ Fk:loadTranslationTable{
 
 shezang:addEffect(fk.EnterDying, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(skill.name) and (target == player or player.phase ~= Player.NotActive) and
       player:usedSkillTimes(shezang.name, Player.HistoryRound) == 0
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local suits = {1, 2, 3, 4}
     local cards = {}

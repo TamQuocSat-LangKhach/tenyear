@@ -13,7 +13,7 @@ Fk:loadTranslationTable{
 }
 
 jichouw:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(jichouw.name) and player.phase == Player.Finish then
       local room = player.room
       local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
@@ -45,7 +45,7 @@ jichouw:addEffect(fk.EventPhaseStart, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = table.simpleClone(event:getCostData(self))
     local targets = {}
@@ -109,10 +109,10 @@ jichouw:addEffect(fk.EventPhaseStart, {
 })
 
 jichouw:addEffect(fk.EventLoseSkill, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return player == target and data == self and player:getMark("@$jichouw") ~= 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@$jichouw", 0)
   end,
 })

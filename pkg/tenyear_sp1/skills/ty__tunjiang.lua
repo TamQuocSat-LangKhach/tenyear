@@ -11,7 +11,7 @@ Fk:loadTranslationTable{
 
 ty__tunjiang:addEffect(fk.EventPhaseStart, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(ty__tunjiang.name) and player.phase == Player.Finish then
       local play_ids = {}
       player.room.logic:getEventsOfScope(GameEvent.Phase, 1, function (e)
@@ -42,7 +42,7 @@ ty__tunjiang:addEffect(fk.EventPhaseStart, {
       return #used == 0
     end
   end,
-  on_use = function(self, event, player)
+  on_use = function(self, event, target, player, data)
     local kingdoms = {}
     for _, p in ipairs(player.room.alive_players) do
       table.insertIfNeed(kingdoms, p.kingdom)

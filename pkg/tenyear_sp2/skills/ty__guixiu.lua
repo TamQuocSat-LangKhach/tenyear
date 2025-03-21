@@ -11,10 +11,10 @@ Fk:loadTranslationTable{
 }
 
 ty__guixiu:addEffect(fk.TurnStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__guixiu.name) and player:getMark(ty__guixiu.name) == 0
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(2, ty__guixiu.name)
     room:setPlayerMark(player, ty__guixiu.name, 1)
@@ -25,7 +25,7 @@ ty__guixiu:addEffect(fk.AfterSkillEffect, {
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__guixiu.name) and data.name == "ty__cunsi" and player:isWounded()
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:recover({
       who = player,

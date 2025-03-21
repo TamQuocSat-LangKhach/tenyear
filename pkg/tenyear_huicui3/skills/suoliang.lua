@@ -3,11 +3,11 @@ local suoliang = fk.CreateSkill {
 }
 
 Fk:loadTranslationTable{
-  ['suoliang'] = '索粮',
-  ['#suoliang-invoke'] = '索粮：你可以选择 %dest 最多其体力上限张牌，获得其中的<font color=>♥</font>和♣牌，若没有则弃置这些牌',
-  [':suoliang'] = '每回合限一次，你对一名其他角色造成伤害后，你可以展示该角色的至多X张牌（X为其体力上限且最多为5），获得其中的<font color=>♥</font>和♣牌。若你未获得牌，则弃置你选择的牌。',
-  ['$suoliang1'] = '奉上万石粮草，吾便退兵！',
-  ['$suoliang2'] = '听闻北海富庶，特来借粮。',
+  ["suoliang"] = "索粮",
+  ["#suoliang-invoke"] = "索粮：你可以选择 %dest 最多其体力上限张牌，获得其中的<font color='red'>♥</font>和♣牌，若没有则弃置这些牌",
+  [":suoliang"] = "每回合限一次，你对一名其他角色造成伤害后，你可以展示该角色的至多X张牌（X为其体力上限且最多为5），获得其中的<font color='red'>♥</font>和♣牌。若你未获得牌，则弃置你选择的牌。",
+  ["$suoliang1"] = "奉上万石粮草，吾便退兵！",
+  ["$suoliang2"] = "听闻北海富庶，特来借粮。",
 }
 
 suoliang:addEffect(fk.Damage, {

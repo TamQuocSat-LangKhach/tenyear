@@ -16,7 +16,7 @@ Fk:loadTranslationTable{
 }
 
 manzhi:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player ~= target or not player:hasSkill(manzhi) then return end
     local room = player.room
     if player.phase == Player.Finish then
@@ -31,7 +31,7 @@ manzhi:addEffect(fk.EventPhaseStart, {
       return table.find(room.alive_players, function(p) return not p:isAllNude() and p ~= player end)
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local _, dat = room:askToUseActiveSkill(player, {
       skill_name = "manzhi_active",
@@ -47,7 +47,7 @@ manzhi:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(self)[1])
     local choice = event:getCostData(self)[2]
@@ -92,10 +92,10 @@ manzhi:addEffect(fk.EventPhaseStart, {
       if not player.dead then player:drawCards(1, manzhi.name) end
     end
   end,
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return player == target and target:hasSkill(manzhi) and player.phase == Player.Start -- ...
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@manzhi-turn", tostring(player.hp))
   end
 })

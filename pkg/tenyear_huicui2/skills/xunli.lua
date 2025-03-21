@@ -13,7 +13,7 @@ Fk:loadTranslationTable{
 
 xunli:addEffect(fk.AfterCardsMove, {
   derived_piles = "jiping_li",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(xunli) and player:getMark("lieyi_using-phase") == 0 then
       local ids = {}
       for _, move in ipairs(target.data.moves) do
@@ -31,7 +31,7 @@ xunli:addEffect(fk.AfterCardsMove, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local ids = event:getCostData(self)
     local n = 9 - #player:getPile("jiping_li")
@@ -44,12 +44,12 @@ xunli:addEffect(fk.AfterCardsMove, {
 
 xunli:addEffect(fk.EventPhaseStart, {
   derived_piles = "jiping_li",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(xunli) and player:getMark("lieyi_using-phase") == 0 then
       return target == player and player.phase == Player.Play and not player:isKongcheng() and #player:getPile("jiping_li") > 0
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = table.filter(player:getCardIds("h"), function(id)
       return Fk:getCardById(id, true).color == Card.Black and Fk:getCardById(id).color == Card.Black

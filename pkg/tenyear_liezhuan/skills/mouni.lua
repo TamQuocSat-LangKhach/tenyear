@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 
 mouni:addEffect(fk.EventPhaseStart, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(mouni.name) and player.phase == Player.Start and not player:isKongcheng()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local to = room:askToChoosePlayers(player, {
       targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper),
@@ -30,7 +30,7 @@ mouni:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(skill))
     local ids = table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id).trueName == "slash" end)
@@ -66,7 +66,7 @@ mouni:addEffect(fk.EventPhaseStart, {
       room:setPlayerMark(player, "mouni-turn", 1)
     end
   end,
-  can_refresh = function (skill, event, target, player, data)
+  can_refresh = function (self, event, target, player, data)
     if data.damage and data.damage.card then
       local e = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
       if e then
@@ -75,7 +75,7 @@ mouni:addEffect(fk.EventPhaseStart, {
       end
     end
   end,
-  on_refresh = function (skill, event, target, player, data)
+  on_refresh = function (self, event, target, player, data)
     local e = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
     if e then
       local use = e.data[1]

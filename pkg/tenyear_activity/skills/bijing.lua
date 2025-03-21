@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 
 bijing:addEffect(fk.EventPhaseStart, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(bijing.name) and player.phase == Player.Finish and not player:isKongcheng()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local cards = player.room:askToCards(player, {
       min_num = 1,
       max_num = 2,
@@ -30,7 +30,7 @@ bijing:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local cards = event:getCostData(skill)
     for _, id in ipairs(cards) do
       player.room:setCardMark(Fk:getCardById(id), "@@bijing", 1)
@@ -70,7 +70,7 @@ bijing:addEffect(fk.AfterCardsMove, {
 
 bijing:addEffect(fk.EventPhaseStart, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player then
       if player.phase == Player.Discard then
         return player:getMark("bijing_invoking-turn") ~= 0 and not player:isNude()
@@ -80,7 +80,7 @@ bijing:addEffect(fk.EventPhaseStart, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if player.phase == Player.Discard then
       local src = room:getPlayerById(player:getMark("bijing_invoking-turn"))

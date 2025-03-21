@@ -28,24 +28,24 @@ jiushi:addEffect('viewas', {
 
 jiushi:addEffect(fk.Damaged, {
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(skill) and player.data.ty_ex__jiushi
   end,
-  on_trigger = function(self, event, target, player)
+  on_trigger = function(self, event, target, player, data)
     player.data.ty_ex__jiushi = false
     skill:doCost(event, target, player)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {skill_name = skill.name})
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:turnOver()
   end,
 
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and player:hasSkill(skill) and not player.faceup
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     player.data.ty_ex__jiushi = true
   end,
 })
@@ -56,14 +56,14 @@ jiushi:addEffect(fk.AfterCardUseDeclared, {
     return target == player and player:hasSkill(jiushi) and data.card.name == "analeptic"
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player.room:addPlayerMark(player, "@ty_ex_jiushi_buff", 1)
   end,
 
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and player:getMark("@ty_ex_jiushi_buff") > 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@ty_ex_jiushi_buff", 0)
   end,
 })

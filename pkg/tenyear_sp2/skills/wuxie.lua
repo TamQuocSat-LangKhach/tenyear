@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 }
 
 wuxie:addEffect(fk.EventPhaseEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player == target and player.phase == Player.Play and player:hasSkill(wuxie.name)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local tos = room:askToChoosePlayers(player, {
       targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper),
@@ -30,7 +30,7 @@ wuxie:addEffect(fk.EventPhaseEnd, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cost_data = event:getCostData(self)
     local to = room:getPlayerById(cost_data.tos[1])

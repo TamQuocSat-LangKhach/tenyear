@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 }
 
 xunbie:addEffect(fk.EnterDying, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(xunbie.name) and player.dying and player:usedSkillTimes(xunbie.name, Player.HistoryGame) == 0
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local generals = {}
     if not table.find(room.alive_players, function(p) return p.general == "ty__ganfuren" or p.deputyGeneral == "ty__ganfuren" end) then
@@ -45,10 +45,10 @@ xunbie:addEffect(fk.EnterDying, {
 
 xunbie:addEffect(fk.DamageInflicted, {
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("@@xunbie-turn") > 0
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:broadcastSkillInvoke(xunbie.name)
     return true
   end,

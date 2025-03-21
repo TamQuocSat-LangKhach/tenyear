@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 xiongyis:addEffect(fk.AskForPeaches, {
   frequency = Skill.Limited,
   anim_type = "defensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(skill.name) and player.dying and player:usedSkillTimes(skill.name, Player.HistoryGame) == 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local prompt = "#xiongyis1-invoke:::"..tostring(math.min(3, player.maxHp))
     if table.find(player.room.alive_players, function(p)
       return Fk.generals[p.general].trueName == "xushi"
@@ -29,7 +29,7 @@ xiongyis:addEffect(fk.AskForPeaches, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local n = tonumber(string.sub(event:getCostData(skill), 10, 10))
     if n == 1 then

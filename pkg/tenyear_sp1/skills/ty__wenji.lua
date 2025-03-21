@@ -14,11 +14,11 @@ Fk:loadTranslationTable{
 
 ty__wenji:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__wenji.name) and player.phase == Player.Play and
       table.find(player.room:getOtherPlayers(player), function(p) return not p:isNude() end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local to = room:askToChoosePlayers(player, {
       targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
@@ -34,7 +34,7 @@ ty__wenji:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(skill))
     local card = room:askToCards(to, {
@@ -51,14 +51,14 @@ ty__wenji:addEffect(fk.EventPhaseStart, {
 ty__wenji:addEffect(fk.CardUsing, {
   name = "#ty__wenji_record",
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player then
       local mark = player:getTableMark("@ty__wenji-turn")
       return table.contains(mark, data.card:getTypeString() .. "_char")
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     data.disresponsiveList = data.disresponsiveList or {}
     for _, p in ipairs(player.room:getOtherPlayers(player)) do
       table.insertIfNeed(data.disresponsiveList, p.id)

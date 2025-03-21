@@ -16,13 +16,13 @@ aoren:addEffect(fk.CardUseFinished, {
       player:usedSkillTimes(aoren.name, Player.HistoryRound) < player:getMark(aoren.name) and
       player.room:getCardArea(data.card) == Card.Processing
   end,
-  on_cost = function (skill, event, target, player, data)
+  on_cost = function (self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = aoren.name,
       prompt = "#aoren-prey:::"..data.card:toLogString()
     })
   end,
-  on_use = function (skill, event, target, player, data)
+  on_use = function (self, event, target, player, data)
     player.room:moveCardTo(data.card, Card.PlayerHand, player, fk.ReasonJustMove, aoren.name, nil, true, player.id)
   end,
 })

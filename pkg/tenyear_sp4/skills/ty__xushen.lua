@@ -17,10 +17,10 @@ Fk:loadTranslationTable{
 ty__xushen:addEffect(fk.EnterDying, {
   anim_type = "defensive",
   frequency = Skill.Limited,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__xushen.name) and player.dying and player:usedSkillTimes(ty__xushen.name, Player.HistoryGame) == 0
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:recover({
       who = player,

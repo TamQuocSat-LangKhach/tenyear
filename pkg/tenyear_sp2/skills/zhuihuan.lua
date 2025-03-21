@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 
 zhuihuan:addEffect(fk.EventPhaseStart, {
   anim_type = "defensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(zhuihuan) and player.phase == Player.Finish
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local to = player.room:askToChoosePlayers(player, {
       targets = table.map(player.room.alive_players, Util.IdMapper),
       min_num = 1,
@@ -31,7 +31,7 @@ zhuihuan:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player.room:addPlayerMark(player.room:getPlayerById(event:getCostData(skill)), zhuihuan.name, 1)
   end,
 })
@@ -39,11 +39,11 @@ zhuihuan:addEffect(fk.EventPhaseStart, {
 zhuihuan:addEffect(fk.EventPhaseStart, {
   name = "#zhuihuan_delay",
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player.phase == Player.Start and player:getMark("zhuihuan") ~= 0
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "zhuihuan", 0)
     local mark = player:getTableMark("zhuihuan_record")

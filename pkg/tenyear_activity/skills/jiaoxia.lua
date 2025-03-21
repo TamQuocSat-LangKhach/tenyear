@@ -15,13 +15,13 @@ Fk:loadTranslationTable{
 
 -- TriggerSkill effects
 jiaoxia:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player.phase == Player.Play and player:hasSkill(jiaoxia.name)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {skill_name = jiaoxia.name, prompt = "#jiaoxia-invoke"})
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "@@jiaoxia-phase", 1)
     player:filterHandcards()

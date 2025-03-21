@@ -15,13 +15,13 @@ Fk:loadTranslationTable{
 }
 
 xingchong:addEffect(fk.RoundStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(xingchong.name)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, { skill_name = xingchong.name, prompt = "#xingchong-invoke:::" .. tostring(player.maxHp) })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local n = player.maxHp
     local choices = {}
@@ -55,7 +55,7 @@ xingchong:addEffect(fk.RoundStart, {
     end
   end,
   can_refresh = Util.TrueFunc,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     for _, id in ipairs(player:getCardIds(Player.Hand)) do
       room:setCardMark(Fk:getCardById(id), "@@xingchong-inhand", 0)
@@ -69,7 +69,7 @@ local xingchong_delay = fk.CreateSkill {
 
 xingchong:addEffect(fk.AfterCardsMove, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(xingchong.name) and player:getMark("xingchong-round") ~= 0 then
       local mark = player:getMark("xingchong-round")
       for _, move in ipairs(event.data) do
@@ -84,7 +84,7 @@ xingchong:addEffect(fk.AfterCardsMove, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local mark = player:getMark("xingchong-round")
     local x = 0

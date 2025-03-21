@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 
 -- Trigger Skill Effect
 ty_ex__qianxi:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty_ex__qianxi) and player.phase == Player.Start
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:drawCards(player, 1, ty_ex__qianxi.name)
     if player.dead then return false end
@@ -78,11 +78,11 @@ ty_ex__qianxi:addEffect('prohibit', {
 -- Delay Trigger Skill Effect
 ty_ex__qianxi:addEffect(fk.HpRecover, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return not player.dead and table.contains(player:getTableMark("ty_ex__qianxi_targets-turn"), target.id)
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:drawCards(2, ty_ex__qianxi.name)
   end,
 })

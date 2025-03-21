@@ -85,7 +85,7 @@ local ty_ex__jiaozhao_change = fk.CreateSkill {
 }
 
 ty_ex__jiaozhao_change:addEffect(fk.AfterTurnEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty_ex__jiaozhaoVS, true)
   end,
   on_trigger = function(self, event, target, player, data)

@@ -18,13 +18,13 @@ Fk:loadTranslationTable{
 jiedang:addEffect(fk.TurnStart, {
   derived_piles = "jiedang",
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(jiedang) and
       table.find(player.room.alive_players, function (p)
         return not p:isNude()
       end)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:doIndicate(player.id, table.map(room.alive_players, Util.IdMapper))
     for _, p in ipairs(room:getAlivePlayers()) do
@@ -51,7 +51,7 @@ jiedang:addEffect(fk.TurnStart, {
 
 jiedang:addEffect({fk.EnterDying, fk.EventPhaseStart}, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and #player:getPile("jiedang") > 0 then
       if event == fk.EnterDying then
         return true
@@ -61,7 +61,7 @@ jiedang:addEffect({fk.EnterDying, fk.EventPhaseStart}, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = table.map({Card.TypeBasic, Card.TypeTrick, Card.TypeEquip}, function (t)
       return table.filter(player:getPile("jiedang"), function (id)

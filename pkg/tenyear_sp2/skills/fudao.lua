@@ -15,10 +15,10 @@ Fk:loadTranslationTable{
 }
 
 fudao:addEffect(fk.GameStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(fudao)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, fudao.name)
     local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
@@ -40,14 +40,14 @@ fudao:addEffect(fk.GameStart, {
 })
 
 fudao:addEffect(fk.TargetSpecified, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(fudao) then
       local to = player.room:getPlayerById(player:getMark(fudao.name))
       return ((player == target and player:getMark(fudao.name) == to.id) or (player == to and player:getMark(fudao.name) == target.id)) 
         and player:getMark("fudao_specified-turn") == 0
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, fudao.name)
     room:addPlayerMark(player, "fudao_specified-turn")
@@ -64,7 +64,7 @@ fudao:addEffect(fk.TargetSpecified, {
 })
 
 fudao:addEffect(fk.Death, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(fudao, false, (player == target)) then
       local to = player.room:getPlayerById(player:getMark(fudao.name))
       return to ~= nil and ((player == target and not to.dead) or to == target) 
@@ -72,7 +72,7 @@ fudao:addEffect(fk.Death, {
         and data.damage.from ~= player and data.damage.from ~= to
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, fudao.name, "offensive")
     player:broadcastSkillInvoke(fudao.name)
@@ -81,12 +81,12 @@ fudao:addEffect(fk.Death, {
 })
 
 fudao:addEffect(fk.TargetConfirmed, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and data.from ~= player.id 
       and player.room:getPlayerById(data.from):getMark("@@juelie") > 0 
       and data.card.color == Card.Black
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, fudao.name, "control")
     player:broadcastSkillInvoke(fudao.name)
@@ -101,11 +101,11 @@ local fudao_delay = fk.CreateTriggerSkill{
 }
 
 fudao:addEffect(fk.DamageCaused, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player == target and player:getMark("@@fudao") > 0 
       and data.to:getMark("@@juelie") > 0
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, fudao.name, "offensive")
     if player:hasSkill(fudao, true) then

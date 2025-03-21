@@ -12,16 +12,16 @@ Fk:loadTranslationTable{
 
 ty_ex__yonglue:addEffect(fk.EventPhaseStart, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(ty_ex__yonglue) and target ~= player and target.phase == Player.Judge and #target:getCardIds("j") > 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = ty_ex__yonglue.name,
       prompt = "#ty_ex__yonglue-invoke::" .. target.id
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:doIndicate(player.id, {target.id})
     local card = #target:getCardIds("j") == 1 and target:getCardIds("j")[1] or

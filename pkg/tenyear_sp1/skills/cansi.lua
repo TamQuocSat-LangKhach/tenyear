@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 cansi:addEffect(fk.EventPhaseStart, {
   frequency = Skill.Compulsory,
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(cansi.name) and player.phase == Player.Start
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if player:isWounded() then
       room:recover({
@@ -88,7 +88,7 @@ cansi:addEffect(fk.Damaged, {
       self:doCost(event, target, player, data)
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:broadcastSkillInvoke("cansi")
     player:drawCards(2, cansi.name)
   end,

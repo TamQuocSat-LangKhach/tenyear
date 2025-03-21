@@ -12,17 +12,17 @@ Fk:loadTranslationTable{
 }
 
 yuguan:addEffect(fk.TurnEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(yuguan.name) and
       table.every(player.room:getOtherPlayers(player), function (p) return p:getLostHp() <= player:getLostHp() end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = yuguan.name,
       prompt = "#yuguan-invoke:::"..math.max(0, player:getLostHp() - 1)
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeMaxHp(player, -1)
     if not player.dead and player:getLostHp() > 0 then

@@ -11,10 +11,10 @@ Fk:loadTranslationTable{
 }
 
 ty_ex__zhiyan:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty_ex__zhiyan.name) and player.phase == Player.Finish
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local to = player.room:askToChoosePlayers(player, {
       targets = table.map(player.room:getAlivePlayers(), Util.IdMapper),
       min_num = 1,
@@ -28,7 +28,7 @@ ty_ex__zhiyan:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(self))
     local id = to:drawCards(1, ty_ex__zhiyan.name)[1]

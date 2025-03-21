@@ -3,21 +3,21 @@ local lieqiong = fk.CreateSkill {
 }
 
 Fk:loadTranslationTable{
-  ['lieqiong'] = '裂穹',
-  ['lieqiong_upper_limb'] = '力烽：令其随机弃置一半手牌（向上取整）',
-  ['lieqiong_lower_limb'] = '地机：令其下次受到伤害+1直到其回合结束',
-  ['lieqiong_chest'] = '中枢：令其使用下一张牌失效直到其回合结束',
-  ['lieqiong_abdomen'] = '气海：令其不能使用<font color=>♥</font>牌直到其回合结束',
-  ['lieqiong_head'] = '天冲：令其失去所有体力，若其死亡你加1体力上限',
-  ['#lieqiong-choose'] = '裂穹：你可“击伤” %dest 的其中一个部位',
-  ['@@lieqiong_lower_limb'] = '地机:受伤+1',
-  ['@@lieqiong_chest'] = '中枢:牌无效',
-  ['@@lieqiong_abdomen'] = '气海:禁<font color=>♥</font>',
-  ['#lieqiong_trigger'] = '裂穹',
-  ['#lieqiong_prohibit'] = '裂穹',
-  [':lieqiong'] = '当你对其他角色造成伤害后，你可以选择以下任一部位进行“击伤”：<br>力烽：令其随机弃置一半手牌（向上取整）。<br>地机：令其下次受到伤害+1直到其回合结束。<br>中枢：令其使用下一张牌失效直到其回合结束。<br>气海：令其不能使用<font color=>♥</font>牌直到其回合结束。<br>若你本回合击伤过该角色，则额外出现“天冲”选项。<br>天冲：令其失去所有体力，然后若其死亡，则你加1点体力上限。',
-  ['$lieqiong1'] = '横眉蔑风雨，引弓狩天狼。',
-  ['$lieqiong2'] = '一箭出，万军毙！',
+  ["lieqiong"] = "裂穹",
+  ["lieqiong_upper_limb"] = "力烽：令其随机弃置一半手牌（向上取整）",
+  ["lieqiong_lower_limb"] = "地机：令其下次受到伤害+1直到其回合结束",
+  ["lieqiong_chest"] = "中枢：令其使用下一张牌失效直到其回合结束",
+  ["lieqiong_abdomen"] = "气海：令其不能使用<font color='red'>♥</font>牌直到其回合结束",
+  ["lieqiong_head"] = "天冲：令其失去所有体力，若其死亡你加1体力上限",
+  ["#lieqiong-choose"] = "裂穹：你可“击伤” %dest 的其中一个部位",
+  ["@@lieqiong_lower_limb"] = "地机:受伤+1",
+  ["@@lieqiong_chest"] = "中枢:牌无效",
+  ["@@lieqiong_abdomen"] = "气海:禁<font color='red'>♥</font>",
+  ["#lieqiong_trigger"] = "裂穹",
+  ["#lieqiong_prohibit"] = "裂穹",
+  [":lieqiong"] = "当你对其他角色造成伤害后，你可以选择以下任一部位进行“击伤”：<br>力烽：令其随机弃置一半手牌（向上取整）。<br>地机：令其下次受到伤害+1直到其回合结束。<br>中枢：令其使用下一张牌失效直到其回合结束。<br>气海：令其不能使用<font color='red'>♥</font>牌直到其回合结束。<br>若你本回合击伤过该角色，则额外出现“天冲”选项。<br>天冲：令其失去所有体力，然后若其死亡，则你加1点体力上限。",
+  ["$lieqiong1"] = "横眉蔑风雨，引弓狩天狼。",
+  ["$lieqiong2"] = "一箭出，万军毙！",
 }
 
 lieqiong:addEffect(fk.Damage, {
@@ -141,7 +141,7 @@ lieqiong:addEffect(fk.DamageInflicted, {
   end,
 })
 
-lieqiong:addEffect('prohibit', {
+lieqiong:addEffect("prohibit", {
   name = "#lieqiong_prohibit",
   prohibit_use = function(self, player, card)
     return

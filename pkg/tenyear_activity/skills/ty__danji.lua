@@ -11,15 +11,15 @@ Fk:loadTranslationTable{
 
 ty__danji:addEffect(fk.EventPhaseStart, {
   frequency = Skill.Wake,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__danji.name) and
       player.phase == Player.Start and
       player:usedSkillTimes(ty__danji.name, Player.HistoryGame) == 0
   end,
-  can_wake = function(self, event, target, player)
+  can_wake = function(self, event, target, player, data)
     return #player:getCardIds("hej") > player.hp
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeMaxHp(player, -1)
     if player.dead then return false end

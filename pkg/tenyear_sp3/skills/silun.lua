@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 }
 
 silun:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(silun.name) and player.phase == Player.Start
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(4, silun.name)
     for i = 1, 4, 1 do
@@ -64,10 +64,10 @@ silun:addEffect(fk.EventPhaseStart, {
 })
 
 silun:addEffect(fk.Damaged, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(silun.name)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(4, silun.name)
     for i = 1, 4, 1 do

@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 kuimang:addEffect(fk.Death, {
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return #player.room.logic:getActualDamageEvents(1, function(e)
       local damage = e.data[1]
       if damage.from == player and damage.to == target then
@@ -20,7 +20,7 @@ kuimang:addEffect(fk.Death, {
       end
     end, nil, 0) > 0
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:drawCards(2, kuimang.name)
   end,
 })

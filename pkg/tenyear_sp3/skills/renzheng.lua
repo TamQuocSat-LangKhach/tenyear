@@ -26,7 +26,7 @@ renzheng:addEffect(fk.DamageFinished, {
 })
 
 renzheng:addEffect(fk.AfterSkillEffect, {
-  can_refresh = function (skill, event, target, player, data)
+  can_refresh = function (self, event, target, player, data)
     return player == player.room.players[1]
   end,
   on_refresh = function(self, event, target, player, data)
@@ -41,7 +41,7 @@ renzheng:addEffect(fk.AfterSkillEffect, {
 })
 
 renzheng:addEffect(fk.SkillEffect, {
-  can_refresh = function (skill, event, target, player, data)
+  can_refresh = function (self, event, target, player, data)
     return player == player.room.players[1]
   end,
   on_refresh = function(self, event, target, player, data)

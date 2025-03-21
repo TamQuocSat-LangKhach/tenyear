@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 }
 
 fanyin:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(fanyin.name) and player.phase == Player.PhasePlay
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local x, y = 13, 0
     local cards = {}
@@ -68,7 +68,7 @@ fanyin:addEffect(fk.EventPhaseStart, {
 fanyin:addEffect(fk.AfterCardTargetDeclared, {
   name = "#fanyin_delay",
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return not player.dead and player == target and player:getMark("@fanyin-turn") > 0 and
       (event.card:isCommonTrick() or event.card.type == Card.TypeBasic)
   end,

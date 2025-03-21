@@ -10,7 +10,7 @@ Fk:loadTranslationTable{
 }
 
 jiaowang:addEffect(fk.RoundEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(jiaowang.name) then
       local logic = player.room.logic
       local deathevents = logic.event_recorder[GameEvent.Death] or Util.DummyTable
@@ -18,7 +18,7 @@ jiaowang:addEffect(fk.RoundEnd, {
       return #deathevents == 0 or deathevents[#deathevents].id < round_event.id
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:loseHp(player, 1, jiaowang.name)
     xiaoyan:use(event, target, player)

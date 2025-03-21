@@ -17,12 +17,12 @@ Fk:loadTranslationTable{
 }
 
 canxi:addEffect(fk.DamageCaused, {
-  can_trigger = function (self, event, target, player)
+  can_trigger = function (self, event, target, player, data)
     if not player:hasSkill(canxi.name) then return false end
     return target and player:getMark("@canxi1-round") == target.kingdom and
       not table.contains(player:getTableMark("canxi1-turn"), target.id)
   end,
-  on_use = function (self, event, target, player)
+  on_use = function (self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(canxi.name)
     room:notifySkillInvoked(player, canxi.name, "offensive")
@@ -32,12 +32,12 @@ canxi:addEffect(fk.DamageCaused, {
 })
 
 canxi:addEffect(fk.HpRecover, {
-  can_trigger = function (self, event, target, player)
+  can_trigger = function (self, event, target, player, data)
     if not player:hasSkill(canxi.name) then return false end
     return player:getMark("@canxi2-round") == target.kingdom and
       not target.dead and target ~= player and not table.contains(player:getTableMark("canxi21-turn"), target.id)
   end,
-  on_use = function (self, event, target, player)
+  on_use = function (self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(canxi.name)
     room:notifySkillInvoked(player, canxi.name, "control")
@@ -64,11 +64,11 @@ canxi:addEffect(fk.TargetConfirmed, {
 })
 
 canxi:addEffect(fk.RoundStart, {
-  can_trigger = function (self, event, target, player)
+  can_trigger = function (self, event, target, player, data)
     if not player:hasSkill(canxi.name) then return false end
     return #player:getTableMark("@canxi_exist_kingdoms") > 0
   end,
-  on_use = function (self, event, target, player)
+  on_use = function (self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(canxi.name)
     room:notifySkillInvoked(player, canxi.name, "special")
@@ -88,11 +88,11 @@ canxi:addEffect(fk.RoundStart, {
 })
 
 canxi:addEffect(fk.GameStart, {
-  can_trigger = function (self, event, target, player)
+  can_trigger = function (self, event, target, player, data)
     if not player:hasSkill(canxi.name) then return false end
     return true
   end,
-  on_use = function (self, event, target, player)
+  on_use = function (self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(canxi.name)
     room:notifySkillInvoked(player, canxi.name, "special")

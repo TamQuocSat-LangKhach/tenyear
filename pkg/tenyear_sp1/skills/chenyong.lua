@@ -12,19 +12,19 @@ Fk:loadTranslationTable{
 
 chenyong:addEffect(fk.EventPhaseStart, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(chenyong.name) and player.phase == Player.Finish and player:getMark("chenyong-turn") ~= 0
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:drawCards(#player:getMark("chenyong-turn"), chenyong.name)
   end,
 })
 
 chenyong:addEffect(fk.CardUsing, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and player.phase < Player.NotActive
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     local mark = player:getMark("chenyong-turn")
     if mark == 0 then mark = {} end

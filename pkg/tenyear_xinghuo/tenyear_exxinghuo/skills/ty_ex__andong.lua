@@ -3,17 +3,17 @@ local ty_ex__andong = fk.CreateSkill {
 }
 
 Fk:loadTranslationTable{
-  ['ty_ex__andong'] = '安东',
-  ['#ty_ex__andong-invoke'] = '安东：你可以对 %dest 发动“安东”',
-  ['ty_ex__andong1'] = '防止此伤害，本回合你的<font color=>♥</font>牌不计入手牌上限',
-  ['ty_ex__andong2'] = '其观看你的手牌并获得其中的<font color=>♥</font>牌',
-  ['#ty_ex__andong-choice'] = '安东：选择 %src 令你执行的一项',
-  ['ty_ex__andong1Ex'] = '防止此伤害，本回合其<font color=>♥</font>牌不计入手牌上限',
-  ['ty_ex__andong2Ex'] = '观看其手牌并获得其中的<font color=>♥</font>牌',
-  ['#ty_ex__andong2-choice'] = '安东：选择对 %dest 执行的一项',
-  [':ty_ex__andong'] = '当你受到其他角色造成的伤害时，你可令伤害来源选择一项：1.防止此伤害，本回合弃牌阶段<font color=>♥</font>牌不计入手牌上限；2.观看其手牌，若其中有<font color=>♥</font>牌则你获得这些牌。若选择2且其没有手牌，则下一次发动时改为由你选择。',
-  ['$ty_ex__andong1'] = '青龙映木，星出其东则天下安。',
-  ['$ty_ex__andong2'] = '以身涉险，剑伐不臣而定河东。',
+  ["ty_ex__andong"] = "安东",
+  ["#ty_ex__andong-invoke"] = "安东：你可以对 %dest 发动“安东”",
+  ["ty_ex__andong1"] = "防止此伤害，本回合你的<font color='red'>♥</font>牌不计入手牌上限",
+  ["ty_ex__andong2"] = "其观看你的手牌并获得其中的<font color='red'>♥</font>牌",
+  ["#ty_ex__andong-choice"] = "安东：选择 %src 令你执行的一项",
+  ["ty_ex__andong1Ex"] = "防止此伤害，本回合其<font color='red'>♥</font>牌不计入手牌上限",
+  ["ty_ex__andong2Ex"] = "观看其手牌并获得其中的<font color='red'>♥</font>牌",
+  ["#ty_ex__andong2-choice"] = "安东：选择对 %dest 执行的一项",
+  [":ty_ex__andong"] = "当你受到其他角色造成的伤害时，你可令伤害来源选择一项：1.防止此伤害，本回合弃牌阶段<font color='red'>♥</font>牌不计入手牌上限；2.观看其手牌，若其中有<font color='red'>♥</font>牌则你获得这些牌。若选择2且其没有手牌，则下一次发动时改为由你选择。",
+  ["$ty_ex__andong1"] = "青龙映木，星出其东则天下安。",
+  ["$ty_ex__andong2"] = "以身涉险，剑伐不臣而定河东。",
 }
 
 ty_ex__andong:addEffect(fk.DamageInflicted, {
@@ -61,7 +61,7 @@ ty_ex__andong:addEffect(fk.DamageInflicted, {
   end,
 })
 
-ty_ex__andong:addEffect('maxcards', {
+ty_ex__andong:addEffect("maxcards", {
   exclude_from = function(self, player, card)
     return player:getMark("ty_ex__andong-turn") > 0 and card.suit == Card.Heart
   end,

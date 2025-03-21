@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 suchou:addEffect(fk.EventPhaseStart, {
   anim_type = "offensive",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(suchou.name) and player.phase == Player.Play
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local choice = room:askToChoice(player, {
       choices = {"loseHp", "loseMaxHp", "loseSuchou"},

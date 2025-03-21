@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 }
 
 dingji:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(dingji.name) and player.phase == Player.Start
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local to = player.room:askToChoosePlayers(player, {
       targets = table.map(player.room.alive_players, Util.IdMapper),
       min_num = 1,
@@ -30,7 +30,7 @@ dingji:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cost_data = event:getCostData(self)
     local to = room:getPlayerById(cost_data.tos[1])

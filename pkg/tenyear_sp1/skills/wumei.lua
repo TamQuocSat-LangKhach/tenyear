@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 }
 
 wumei:addEffect(fk.BeforeTurnStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(wumei.name) and player:usedSkillTimes(wumei.name, Player.HistoryRound) == 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local to = room:askToChoosePlayers(player, {
       targets = table.map(table.filter(room.alive_players, function (p)
@@ -32,7 +32,7 @@ wumei:addEffect(fk.BeforeTurnStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(skill))
     room:addPlayerMark(to, "@@wumei_extra", 1)
@@ -43,10 +43,10 @@ wumei:addEffect(fk.BeforeTurnStart, {
     room:setPlayerMark(to, "wumei_record", hp_record)
     to:gainAnExtraTurn()
   end,
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and player:getMark("@@wumei_extra") > 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "@@wumei_extra", 0)
     room:setPlayerMark(player, "wumei_record", 0)
@@ -60,11 +60,11 @@ local wumei_delay = fk.CreateTriggerSkill{
 }
 
 wumei:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player == target and player.phase == Player.Finish and player:getMark("@@wumei_extra") > 0
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, wumei.name, "special")
     local hp_record = player:getMark("wumei_record")

@@ -14,7 +14,7 @@ Fk:loadTranslationTable{
 }
 
 kuizhul:addEffect(fk.EventPhaseEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(skill.name) and player.phase == Player.Play and
       table.find(player.room:getOtherPlayers(player), function(p)
         return not p:isKongcheng() and table.every(player.room:getOtherPlayers(player), function(p2)
@@ -22,7 +22,7 @@ kuizhul:addEffect(fk.EventPhaseEnd, {
         end)
       end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
       return not p:isKongcheng() and table.every(room:getOtherPlayers(player), function(p2)
@@ -41,7 +41,7 @@ kuizhul:addEffect(fk.EventPhaseEnd, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(skill))
     if math.min(to:getHandcardNum(), 5) > player:getHandcardNum() then

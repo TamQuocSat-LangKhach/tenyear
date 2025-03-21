@@ -21,10 +21,10 @@ Fk:loadTranslationTable{
 benxi:addEffect(fk.CardUsing, {
   anim_type = "offensive",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(benxi) and player.phase ~= Player.NotActive
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player.room:addPlayerMark(player, "@ty_ex__benxi-turn", 1)
   end,
 })

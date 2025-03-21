@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 }
 
 xiaoguo:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target ~= player and player:hasSkill(xiaoguo.name) and target.phase == Player.Finish and not player:isKongcheng()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local card = player.room:askToDiscard(player, {
       min_num = 1,
       max_num = 1,
@@ -29,7 +29,7 @@ xiaoguo:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cost_data = event:getCostData(self)
     room:throwCard(cost_data.cards, xiaoguo.name, player, player)

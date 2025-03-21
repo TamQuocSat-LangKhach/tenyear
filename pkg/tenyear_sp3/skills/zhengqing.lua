@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 
 zhengqing:addEffect(fk.RoundEnd, {
   global = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(zhengqing.name)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     for _, p in ipairs(room.players) do
       if p:getMark("@zhengqing_qing") then

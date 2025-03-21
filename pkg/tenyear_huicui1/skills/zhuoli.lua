@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 zhuoli:addEffect(fk.TurnEnd, {
   anim_type = "defensive",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     local room = player.room
     if player:hasSkill(zhuoli.name) and (player.maxHp < #room.players or player:isWounded()) then
       local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
@@ -34,7 +34,7 @@ zhuoli:addEffect(fk.TurnEnd, {
       return x > player.hp
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if player.maxHp < #room.players then
       room:changeMaxHp(player, 1)

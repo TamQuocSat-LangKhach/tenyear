@@ -59,13 +59,13 @@ quanmou:addEffect('active', {
 -- 触发技能效果（延迟）
 quanmou:addEffect(fk.DamageCaused, {
   mute = true,
-  can_trigger = function(self, event, player, data)
+  can_trigger = function(self, event, target, player, data)
     if player.dead or player.phase ~= Player.Play or not player:isSelf() then return false end
     local target = Fk:currentRoom():getPlayerById(data.to.id)
     return table.contains(player:getTableMark("quanmou_yang-phase"), target.id)
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, player, data)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:doIndicate(player.id, {data.to.id})
     room:setPlayerMark(data.to, "@quanmou-phase", 0)
@@ -80,13 +80,13 @@ quanmou:addEffect(fk.DamageCaused, {
 -- 触发技能效果（延迟）
 quanmou:addEffect(fk.Damage, {
   mute = true,
-  can_trigger = function(self, event, player, data)
+  can_trigger = function(self, event, target, player, data)
     if player.dead or player.phase ~= Player.Play or not player:isSelf() then return false end
     local target = Fk:currentRoom():getPlayerById(data.to.id)
     return table.contains(player:getTableMark("quanmou_yin-phase"), target.id)
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, player, data)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:doIndicate(player.id, {data.to.id})
     room:setPlayerMark(data.to, "@quanmou-phase", 0)
@@ -125,11 +125,11 @@ quanmou:addEffect(fk.Damage, {
 -- 触发技能效果（切换状态）
 quanmou:addEffect(fk.GameStart, {
   mute = true,
-  can_trigger = function(self, event, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(quanmou.name)
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, player)
+  on_use = function(self, event, target, player, data)
     setTYMouSwitchSkillState(player, "simayi", quanmou.name,
       room:askToChoice(player, {
         choices = { "tymou_switch:::"..quanmou.name..":yang", "tymou_switch:::"..quanmou.name..":yin" },

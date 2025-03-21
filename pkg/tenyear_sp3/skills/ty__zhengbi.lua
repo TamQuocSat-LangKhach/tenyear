@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 -- 主技能
 ty__zhengbi:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__zhengbi.name) and player.phase == Player.Play and #player.room.alive_players > 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local success, dat = room:askToUseActiveSkill(player, {
       targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper),
@@ -37,7 +37,7 @@ ty__zhengbi:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(self).tos[1])
     if event:getCostData(self).cards then
@@ -90,7 +90,7 @@ ty__zhengbi:addEffect(fk.EventPhaseStart, {
 ty__zhengbi:addEffect(fk.EventPhaseEnd, {
   name = "#ty__zhengbi_delay",
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player.phase == Player.Play and player:getMark("ty__zhengbi-phase") ~= 0 then
       local room = player.room
       local p = room:getPlayerById(player:getMark("ty__zhengbi-phase"))
@@ -102,7 +102,7 @@ ty__zhengbi:addEffect(fk.EventPhaseEnd, {
       end, Player.HistoryPhase) > 0
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke("ty__zhengbi")
     room:notifySkillInvoked(player, "ty__zhengbi", "control")

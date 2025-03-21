@@ -21,13 +21,13 @@ Fk:loadTranslationTable{
 
 huishu:addEffect(fk.EventPhaseEnd, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player.phase == Player.Draw
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {skill_name = huishu.name})
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:drawCards(player:getMark("huishu1") + 3, huishu.name)
     if not player.dead then
       local x = player:getMark("huishu2") + 1

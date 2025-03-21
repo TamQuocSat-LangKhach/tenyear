@@ -12,14 +12,14 @@ Fk:loadTranslationTable{
 }
 
 mingfa:addEffect(fk.CardUseFinished, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(mingfa.name) then
       return target == player and player.phase == Player.Play and #player:getPile(mingfa.name) == 0 and
         (event.data.card.trueName == "slash" or event.data.card:isCommonTrick()) and player.room:getCardArea(event.data.card) == Card.Processing and
         U.isPureCard(event.data.card) and player:usedSkillTimes(mingfa.name, Player.HistoryPhase) == 0
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local tos = room:askToChoosePlayers(player, {
       targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper),
@@ -33,7 +33,7 @@ mingfa:addEffect(fk.CardUseFinished, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:addToPile(mingfa.name, event.data.card, true, mingfa.name)
     room:setPlayerMark(player, mingfa.name, event:getCostData(self).tos[1])
@@ -43,13 +43,13 @@ mingfa:addEffect(fk.CardUseFinished, {
 })
 
 mingfa:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(mingfa.name) then
       return target.phase == Player.Finish and player:getMark(mingfa.name) ~= 0 and #player:getPile(mingfa.name) > 0 and
         player:getMark(mingfa.name) == target.id
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local card = Fk:cloneCard(Fk:getCardById(player:getPile(mingfa.name)[1]).name)
     if card.trueName ~= "nullification" and card.skill:getMinTargetNum() < 2 and not player:isProhibited(target, card) then
@@ -82,12 +82,12 @@ mingfa:addEffect(fk.EventPhaseStart, {
 })
 
 mingfa:addEffect(fk.EventLoseSkill, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     if #player:getPile(mingfa.name) > 0 and player:getMark(mingfa.name) ~= 0 then
       return target == player and event.data == mingfa
     end
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(player:getMark(mingfa.name))
     room:setPlayerMark(player, mingfa.name, 0)
@@ -106,12 +106,12 @@ mingfa:addEffect(fk.EventLoseSkill, {
 })
 
 mingfa:addEffect(fk.Death, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     if #player:getPile(mingfa.name) > 0 and player:getMark(mingfa.name) ~= 0 then
       return target == player or target:getMark("@@mingfa") ~= 0
     end
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     if target == player then
       local to = room:getPlayerById(player:getMark(mingfa.name))

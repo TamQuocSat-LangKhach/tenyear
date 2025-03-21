@@ -11,13 +11,13 @@ Fk:loadTranslationTable{
 
 zhuangrong:addEffect(fk.TurnEnd, {
   frequency = Skill.Wake,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(zhuangrong) and player:usedSkillTimes(zhuangrong.name, Player.HistoryGame) == 0
   end,
-  can_wake = function(self, event, target, player)
+  can_wake = function(self, event, target, player, data)
     return player:getHandcardNum() == 1 or player.hp == 1
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeMaxHp(player, -1)
     if player:isWounded() then

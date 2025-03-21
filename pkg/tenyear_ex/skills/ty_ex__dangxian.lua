@@ -14,12 +14,12 @@ Fk:loadTranslationTable{
 ty_ex__dangxian:addEffect(fk.EventPhaseChanging, {
   anim_type = "offensive",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(ty_ex__dangxian.name) then
       return data.to == Player.Start
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "ty_ex__dangxian-phase", 1)
     player:gainAnExtraPhase(Player.Play)
@@ -29,12 +29,12 @@ ty_ex__dangxian:addEffect(fk.EventPhaseChanging, {
 ty_ex__dangxian:addEffect(fk.EventPhaseStart, {
   anim_type = "offensive",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(ty_ex__dangxian.name) then
       return player.phase == Player.Play and player:getMark("ty_ex__dangxian-phase") > 0
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "ty_ex__dangxian-phase", 0)
     if player:getMark("ty_ex__fuli") == 0 or room:askToSkillInvoke(player, { skill_name = ty_ex__dangxian.name, prompt = "#ty_ex__dangxian-invoke" }) then

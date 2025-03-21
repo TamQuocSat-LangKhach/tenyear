@@ -11,7 +11,7 @@ Fk:loadTranslationTable{
 }
 
 panqin:addEffect(fk.EventPhaseEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(panqin.name) and (player.phase == Player.Play or player.phase == Player.Discard) then
       local ids = {}
       player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
@@ -36,7 +36,7 @@ panqin:addEffect(fk.EventPhaseEnd, {
       end
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local cards_num = #event:getCostData(self)[1]
     local tos_num = #event:getCostData(self)[2]
     local promot = (#player:getTableMark("@[:]ty__manwang") > 0 and tos_num >= cards_num) and "#ty__panqin_delete-invoke" or "#ty__panqin-invoke"
@@ -47,7 +47,7 @@ panqin:addEffect(fk.EventPhaseEnd, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = event:getCostData(self)[1]
     local tos = event:getCostData(self)[2]

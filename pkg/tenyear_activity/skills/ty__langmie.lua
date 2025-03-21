@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 }
 
 ty__langmie:addEffect(fk.EventPhaseEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(ty__langmie.name) and target ~= player then
       local count = {0, 0, 0}
       player.room.logic:getEventsOfScope(GameEvent.UseCard, 999, function(e)
@@ -30,12 +30,12 @@ ty__langmie:addEffect(fk.EventPhaseEnd, {
       return table.find(count, function(i) return i > 1 end)
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     if event == fk.EventPhaseEnd then
       return player.room:askToSkillInvoke(player, {skill_name = ty__langmie.name, prompt = "#ty__langmie-draw"})
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(ty__langmie.name)
     if event == fk.EventPhaseEnd then
@@ -46,7 +46,7 @@ ty__langmie:addEffect(fk.EventPhaseEnd, {
 })
 
 ty__langmie:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(ty__langmie.name) and target ~= player then
       local n = 0
       player.room.logic:getEventsOfScope(GameEvent.ChangeHp, 999, function(e)
@@ -58,14 +58,14 @@ ty__langmie:addEffect(fk.EventPhaseStart, {
       return n > 1 and not player:isNude()
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local card = player.room:askToDiscard(player, {min_num = 1, max_num = 1, include_equip = true, skill_name = ty__langmie.name, cancelable = true, prompt = "#ty__langmie-damage::" .. target.id})
     if #card > 0 then
       event:setCostData(self, card)
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(ty__langmie.name)
     if event == fk.EventPhaseStart then

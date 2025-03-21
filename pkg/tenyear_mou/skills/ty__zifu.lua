@@ -14,11 +14,11 @@ Fk:loadTranslationTable{
 ty__zifu:addEffect(fk.EventPhaseStart, {
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__zifu.name) and player.phase == Player.Play and
       player:getHandcardNum() < math.min(5, player.maxHp)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:drawCards(math.min(5, player.maxHp)-player:getHandcardNum(), ty__zifu.name)
     if player.dead then return false end
     local cards = {}

@@ -33,10 +33,10 @@ lieji:addEffect(fk.CardUseFinished, {
 })
 
 lieji:addEffect(fk.PreCardUse, {
-  can_refresh = function (skill, event, target, player, data)
+  can_refresh = function (self, event, target, player, data)
     return target == player and data.card:getMark("@leiji_damage-inhand-turn") > 0
   end,
-  on_refresh = function (skill, event, target, player, data)
+  on_refresh = function (self, event, target, player, data)
     data.additionalDamage = (data.additionalDamage or 0) + data.card:getMark("@leiji_damage-inhand-turn")
   end,
 })

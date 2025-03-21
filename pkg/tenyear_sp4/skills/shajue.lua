@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 shajue:addEffect(fk.EnterDying, {
   anim_type = "offensive",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target ~= player and player:hasSkill(shajue.name)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if player:getMark("@baoli") < 3 then
       room:addPlayerMark(player, "@baoli", 1)

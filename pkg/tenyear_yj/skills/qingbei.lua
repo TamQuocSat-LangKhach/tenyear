@@ -13,12 +13,12 @@ Fk:loadTranslationTable{
 
 -- RoundStart and CardUseFinished trigger effect
 qingbei:addEffect(fk.RoundStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(qingbei.name) then
       return true
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local suits = {"log_spade", "log_heart", "log_club", "log_diamond"}
     local choices = room:askToChoices(player, {
@@ -34,7 +34,7 @@ qingbei:addEffect(fk.RoundStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local data = event:getCostData(skill)
     player.room:setPlayerMark(player, "@qingbei-round", data)
   end,
@@ -46,7 +46,7 @@ qingbei:addEffect(fk.CardUseFinished, {
       return U.IsUsingHandcard(player, data)
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local mark = player:getMark("@qingbei-round")
     player:drawCards(#mark, qingbei.name)
   end,

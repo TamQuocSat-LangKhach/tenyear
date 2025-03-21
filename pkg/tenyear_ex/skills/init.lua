@@ -3191,7 +3191,7 @@ local ty_ex__zongxuan = fk.CreateTriggerSkill{
           end
         end
       end
-      cards = U.moveCardsHoldingAreaCheck(room, cards)
+      cards = room.logic:moveCardsHoldingAreaCheck(cards)
       if #cards > 0 then
         self.cost_data = cards
         return true

@@ -15,10 +15,10 @@ Fk:loadTranslationTable{
 
 tongliao:addEffect(fk.EventPhaseEnd, {
   anim_type = "special",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(tongliao.name) and player.phase == Player.Draw and not player:isKongcheng()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local ids = table.filter(player.player_cards[Player.Hand], function(id)
       return table.every(player.player_cards[Player.Hand], function(id2)
@@ -35,7 +35,7 @@ tongliao:addEffect(fk.EventPhaseEnd, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local id = event:getCostData(self)
     room:addTableMarkIfNeed(player, "tongliao", id)
@@ -60,7 +60,7 @@ tongliao:addEffect(fk.AfterCardsMove, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, "tongliao", "drawcard")
     player:broadcastSkillInvoke("tongliao")

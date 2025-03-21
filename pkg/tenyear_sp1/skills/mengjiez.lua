@@ -21,7 +21,7 @@ Fk:loadTranslationTable{
 
 mengjiez:addEffect(fk.TurnEnd, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     local mark = target:getMark("tongguan_info")
     local room = player.room
     if player:hasSkill(skill.name) and mark ~= 0 then
@@ -87,7 +87,7 @@ mengjiez:addEffect(fk.TurnEnd, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local mark = target:getMark("tongguan_info")
     if mark == "tg_duomou" then

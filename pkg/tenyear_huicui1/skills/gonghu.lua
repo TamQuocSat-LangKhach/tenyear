@@ -16,7 +16,7 @@ Fk:loadTranslationTable{
 }
 
 gonghu:addEffect(fk.Damage, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(gonghu.name) or player.phase ~= Player.NotActive then return false end
     if player ~= target or player:getMark("gonghu2") > 0 then return false end
     local data = event.data[5]
@@ -32,7 +32,7 @@ gonghu:addEffect(fk.Damage, {
 
     return x > 1
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "gonghu2", 1)
     room:setPlayerMark(player, "@gonghu", player:getMark("gonghu1") > 0 and "gonghu_all" or "gonghu2")
@@ -40,7 +40,7 @@ gonghu:addEffect(fk.Damage, {
 })
 
 gonghu:addEffect(fk.Damaged, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(gonghu.name) or player.phase ~= Player.NotActive then return false end
     if player:getMark("gonghu2") > 0 then return false end
 
@@ -57,7 +57,7 @@ gonghu:addEffect(fk.Damaged, {
 
     return x > 1
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "gonghu2", 1)
     room:setPlayerMark(player, "@gonghu", player:getMark("gonghu1") > 0 and "gonghu_all" or "gonghu2")
@@ -65,7 +65,7 @@ gonghu:addEffect(fk.Damaged, {
 })
 
 gonghu:addEffect(fk.AfterCardsMove, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(gonghu.name) or player.phase ~= Player.NotActive then return false end
     if player:getMark("gonghu1") > 0 then return false end
 
@@ -100,7 +100,7 @@ gonghu:addEffect(fk.AfterCardsMove, {
 
     return x > 1
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "gonghu1", 1)
     room:setPlayerMark(player, "@gonghu", player:getMark("gonghu2") > 0 and "gonghu_all" or "gonghu1")

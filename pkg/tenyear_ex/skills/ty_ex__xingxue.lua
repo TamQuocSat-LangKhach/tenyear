@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 
 ty_ex__xingxue:addEffect(fk.EventPhaseStart, {
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty_ex__xingxue.name) and player.phase == Player.Finish
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local n = player.hp
     if player:getMark("ty_ex__yanzhu") > 0 then
       n = player.maxHp
@@ -36,7 +36,7 @@ ty_ex__xingxue:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     for _, id in ipairs(event:getCostData(self)) do
       local to = room:getPlayerById(id)

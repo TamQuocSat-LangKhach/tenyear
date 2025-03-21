@@ -12,14 +12,14 @@ Fk:loadTranslationTable{
 }
 
 tanban:addEffect(fk.GameStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(tanban) or player:isKongcheng() then return false end
     return true
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return event == fk.GameStart or player.room:askToSkillInvoke(player, { skill_name = tanban.name, prompt = "#tanban-invoke" })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.GameStart then
       local cards = player:getCardIds(Player.Hand)
@@ -31,14 +31,14 @@ tanban:addEffect(fk.GameStart, {
 })
 
 tanban:addEffect(fk.EventPhaseEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(tanban) or player:isKongcheng() then return false end
     return target == player and player.phase == Player.Draw
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, { skill_name = tanban.name, prompt = "#tanban-invoke" })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     for _, id in ipairs(player.player_cards[Player.Hand]) do
       room:setCardMark(Fk:getCardById(id), "@@tanban-inhand", Fk:getCardById(id):getMark("@@tanban-inhand") > 0 and 0 or 1)

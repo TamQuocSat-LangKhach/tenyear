@@ -51,12 +51,12 @@ luecheng:addEffect('targetmod', {
 -- Trigger Skill
 luecheng:addEffect(fk.EventPhaseEnd, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return not (player.dead or target.dead) and target.phase == Player.Finish and
       player:getMark("@@luecheng-turn") ~= 0 and not player:isKongcheng()
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:doIndicate(player.id, {target.id})
     local cards = player:getCardIds(Player.Hand)
@@ -84,7 +84,7 @@ luecheng:addEffect(fk.EventPhaseEnd, {
       end)
     end
   end,
-  can_refresh = function(self, event, player, data)
+  can_refresh = function(self, event, target, player, data)
     return player == target and data.card.trueName == "slash" and data.card:getMark("@@luecheng-inhand-phase") ~= 0 and
       table.find(TargetGroup:getRealTargets(data.tos), function(pid)
         return player.room:getPlayerById(pid):getMark("@@luecheng-turn") > 0

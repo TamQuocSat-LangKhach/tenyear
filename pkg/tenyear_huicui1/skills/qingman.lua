@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 qingman:addEffect(fk.TurnEnd, {
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(skill.name) and player:getHandcardNum() < 5 - #target:getCardIds("e")
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local num_to_draw = 5 - #target:getCardIds("e") - player:getHandcardNum()
     if num_to_draw > 0 then
       player:drawCards(num_to_draw, { skill_name = skill.name })

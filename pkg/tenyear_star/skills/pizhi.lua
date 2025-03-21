@@ -13,19 +13,19 @@ Fk:loadTranslationTable{
 }
 
 pizhi:addEffect(fk.EventPhaseEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(pizhi.name) then
       return target == player and player.phase == Player.Finish and player:getMark("canxi_removed_kingdoms") > 0
     end
   end,
-  on_use = function (skill, event, target, player)
+  on_use = function (self, event, target, player, data)
     local room = player.room
     player:drawCards(player:getMark("canxi_removed_kingdoms"), pizhi.name)
   end,
 })
 
 pizhi:addEffect(fk.Death, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(pizhi.name) then
       return player:getMark("@canxi1-round") == target.kingdom or player:getMark("@canxi2-round") == target.kingdom or
         (not table.find(player.room.alive_players, function(p)
@@ -33,7 +33,7 @@ pizhi:addEffect(fk.Death, {
         end) and table.contains(player:getTableMark("@canxi_exist_kingdoms"), target.kingdom))
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if player:getMark("@canxi1-round") == target.kingdom then
       room:setPlayerMark(player, "@canxi1-round", 0)

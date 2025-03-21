@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 }
 
 ty__shanjia:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__shanjia) and player.phase == Player.Play
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(3, ty__shanjia.name)
     local cards = {}
@@ -48,10 +48,10 @@ ty__shanjia:addEffect(fk.EventPhaseStart, {
 })
 
 ty__shanjia:addEffect(fk.AfterCardsMove, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return player:getMark(ty__shanjia.name) < 3
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local n = 0
     for _, move in ipairs(data) do
       if move.from == player.id and move.moveReason ~= fk.ReasonUse then

@@ -15,10 +15,10 @@ Fk:loadTranslationTable{
 xianwei:addEffect(fk.EventPhaseStart, {
   anim_type = "support",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(skill.name) and player.phase == Player.Start and #player:getAvailableEquipSlots() > 0
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local choices = player:getAvailableEquipSlots()
     local choice = room:askToChoice(player, {choices = choices, skill_name = skill.name, prompt = "#xianwei-abort"})
@@ -62,10 +62,10 @@ xianwei:addEffect(fk.EventPhaseStart, {
 xianwei:addEffect(fk.AreaAborted, {
   anim_type = "support",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(skill.name) and #player:getAvailableEquipSlots() == 0
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "@@xianwei", 1)
     room:changeMaxHp(player, 2)

@@ -15,11 +15,11 @@ Fk:loadTranslationTable{
 }
 
 heqia:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(heqia) and player.phase == Player.Play and (not player:isNude() or
       table.find(player.room:getOtherPlayers(player), function(p) return not p:isNude() end))
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local success, dat = room:askToUseActiveSkill(player, {
       skill_name = "heqia_active",
@@ -32,7 +32,7 @@ heqia:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to
     local to_get

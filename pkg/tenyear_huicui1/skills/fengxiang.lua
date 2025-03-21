@@ -10,12 +10,12 @@ Fk:loadTranslationTable{
 }
 
 fengxiang:addEffect(fk.Damaged, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(skill.name) then
       return target == player
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = getFengxiangPlayer(room)
     if to ~= 0 then
@@ -46,7 +46,7 @@ fengxiang:addEffect(fk.AfterCardsMove, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:drawCards(1, fengxiang.name)
   end,
 })

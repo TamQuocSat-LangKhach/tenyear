@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 huiqi:addEffect(fk.TurnEnd, {
   frequency = Skill.Wake,
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(huiqi) and player:usedSkillTimes(huiqi.name, Player.HistoryGame) == 0
   end,
-  can_wake = function(self, event, target, player)
+  can_wake = function(self, event, target, player, data)
     local room = player.room
     local targets = {}
     local events = room.logic:getEventsOfScope(GameEvent.UseCard, 999, function(e)
@@ -27,7 +27,7 @@ huiqi:addEffect(fk.TurnEnd, {
     end, Player.HistoryTurn)
     return #targets == 3 and table.contains(targets, player.id)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player.room:handleAddLoseSkills(player, "ty__xieju")
     player:gainAnExtraTurn(true, huiqi.name)
   end,

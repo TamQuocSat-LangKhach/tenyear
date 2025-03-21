@@ -11,15 +11,15 @@ Fk:loadTranslationTable{
 
 mengqing:addEffect(fk.EventPhaseStart, {
   frequency = Skill.Wake,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(mengqing.name) and
       player.phase == Player.Start and
       player:usedSkillTimes(mengqing.name, Player.HistoryGame) == 0
   end,
-  can_wake = function(self, event, target, player)
+  can_wake = function(self, event, target, player, data)
     return #table.filter(player.room.alive_players, function(p) return p:isWounded() end) > player.hp
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeMaxHp(player, 3)
     room:recover({

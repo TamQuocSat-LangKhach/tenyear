@@ -13,10 +13,10 @@ nifu:addEffect(fk.EventPhaseStart, {
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(skill.name) and target.phase == Player.Finish and player:getHandcardNum() ~= 3
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:broadcastSkillInvoke(nifu.name)
     local room = player.room
     local n = player:getHandcardNum() - 3

@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 
 sijun:addEffect(fk.EventPhaseStart, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(skill.name) and player.phase == Player.Start and
       player:getMark("@zhangjiao_huang") > #player.room.draw_pile
   end,

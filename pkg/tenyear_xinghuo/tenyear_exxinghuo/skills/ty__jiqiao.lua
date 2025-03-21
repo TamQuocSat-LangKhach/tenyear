@@ -11,10 +11,10 @@ Fk:loadTranslationTable{
 }
 
 ty__jiqiao:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__jiqiao) and player.phase == Player.Play and not player:isNude()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local cards = player.room:askToDiscard(player, {
       min_num = 1,
       max_num = 999,
@@ -28,7 +28,7 @@ ty__jiqiao:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:throwCard(event:getCostData(self), ty__jiqiao.name, player, player)
     if player.dead then return end

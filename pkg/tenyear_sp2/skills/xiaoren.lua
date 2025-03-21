@@ -13,11 +13,11 @@ Fk:loadTranslationTable{
 
 xiaoren:addEffect(fk.Damage, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(xiaoren) and player:getMark("xiaoren_break-turn") == 0 and
       (player:usedSkillTimes(xiaoren.name) == 0 or player.last_skill_name == xiaoren.name)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local judge = {
       who = player,
@@ -76,10 +76,10 @@ xiaoren:addEffect(fk.Damage, {
     end
   end,
 
-  can_refresh = function (self, event, target, player)
+  can_refresh = function (self, event, target, player, data)
     return not player.dead and player:getMark("xiaoren_break-turn") == 0 and player:usedSkillTimes(xiaoren.name) > 0
   end,
-  on_refresh = function (self, event, target, player)
+  on_refresh = function (self, event, target, player, data)
     player.room:setPlayerMark(player, "xiaoren_break-turn", 1)
   end,
 })

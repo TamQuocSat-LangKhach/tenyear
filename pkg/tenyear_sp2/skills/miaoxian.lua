@@ -47,13 +47,13 @@ miaoxian:addEffect('viewas', {
 miaoxian:addEffect(fk.CardUsing, {
   anim_type = "drawcard",
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(miaoxian.name) and table.every(player:getCardIds("h"), function(id)
       return Fk:getCardById(id).color ~= Card.Red end) and player.room:getCurrent():getCardUseReason().card.color == Card.Red and
       not (player.room:getCurrent():getCardUseReason().card:isVirtual() and #player.room:getCurrent():getCardUseReason().card.subcards ~= 1)
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player.room:notifySkillInvoked(player, miaoxian.name, self.anim_type)
     player:broadcastSkillInvoke(miaoxian.name)
     player:drawCards(1, "miaoxian")

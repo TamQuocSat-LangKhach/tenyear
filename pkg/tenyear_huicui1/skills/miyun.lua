@@ -16,11 +16,11 @@ Fk:loadTranslationTable{
 
 miyun:addEffect(fk.RoundStart, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(miyun.name) then return false end
     return not table.every(player.room.alive_players, function (p) return p == player or p:isNude() end)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if not player:hasSkill(miyun.name) then return false end
 
@@ -65,11 +65,11 @@ miyun:addEffect(fk.RoundStart, {
 
 miyun:addEffect(fk.RoundEnd, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(miyun.name) then return false end
     return table.contains(player.player_cards[player.Hand], player:getMark(miyun.name)) and #player.room.alive_players > 1
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
 
     room:notifySkillInvoked(player, miyun.name, "drawcard")

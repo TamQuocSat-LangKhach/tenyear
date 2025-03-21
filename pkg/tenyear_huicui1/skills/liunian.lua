@@ -10,10 +10,10 @@ Fk:loadTranslationTable{
 }
 
 liunian:addEffect(fk.TurnEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(liunian.name) and player:getMark("liunian-turn") > 0
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if player:getMark(liunian.name) == 1 then
       room:changeMaxHp(player, 1)
@@ -32,10 +32,10 @@ liunian:addEffect(fk.TurnEnd, {
 })
 
 liunian:addEffect(fk.AfterDrawPileShuffle, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return player:getMark(liunian.name) < 2
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     player.room:addPlayerMark(player, liunian.name, 1)
     player.room:setPlayerMark(player, "liunian-turn", 1)
   end,

@@ -10,10 +10,10 @@ Fk:loadTranslationTable{
 }
 
 mingjie:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(mingjie.name) and player.phase == Player.Finish
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local card_id = player:drawCards(1, mingjie.name)[1]
     local card = Fk:getCardById(card_id)

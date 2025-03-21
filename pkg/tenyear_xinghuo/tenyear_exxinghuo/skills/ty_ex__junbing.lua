@@ -13,16 +13,16 @@ Fk:loadTranslationTable{
 
 junbing:addEffect(fk.EventPhaseStart, {
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(junbing.name) and target.phase == Player.Finish and target:getHandcardNum() < target.hp
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(target, {
       skill_name = junbing.name,
       prompt = "#ty_ex__junbing-invoke::" .. player.id
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:drawCards(target, 1, junbing.name)
     if target == player or target.dead or player.dead or target:isKongcheng() then return false end

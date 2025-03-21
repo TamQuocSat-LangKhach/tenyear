@@ -14,13 +14,13 @@ Fk:loadTranslationTable{
 ty_ex__xiantu:addEffect(fk.EventPhaseStart, {
   mute = true,
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target ~= player and player:hasSkill(ty_ex__xiantu.name) and target.phase == Player.Play and not target.dead
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, { skill_name = ty_ex__xiantu.name, prompt = "#ty_ex__xiantu-invoke::" .. target.id })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(ty_ex__xiantu.name)
     room:notifySkillInvoked(player, ty_ex__xiantu.name)
@@ -44,7 +44,7 @@ ty_ex__xiantu:addEffect(fk.EventPhaseStart, {
 
 ty_ex__xiantu:addEffect(fk.EventPhaseEnd, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target.phase == Player.Play and player:usedSkillTimes(ty_ex__xiantu.name, Player.HistoryPhase) > 0 and not player.dead then
       local events = player.room.logic:getEventsOfScope(GameEvent.ChangeHp, 1, function(e)
         local damage = e.data[5]
@@ -54,7 +54,7 @@ ty_ex__xiantu:addEffect(fk.EventPhaseEnd, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(ty_ex__xiantu.name)
     room:notifySkillInvoked(player, ty_ex__xiantu.name, "negative")

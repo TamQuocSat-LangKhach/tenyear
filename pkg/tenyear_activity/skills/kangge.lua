@@ -14,7 +14,7 @@ Fk:loadTranslationTable{
 
 -- 主技能效果
 kangge:addEffect({fk.TurnStart, fk.AfterCardsMove, fk.Death}, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(kangge.name) then
       if event == fk.TurnStart then
         if player ~= target then return false end
@@ -51,7 +51,7 @@ kangge:addEffect({fk.TurnStart, fk.AfterCardsMove, fk.Death}, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(kangge.name)
     if event == fk.TurnStart then
@@ -100,10 +100,10 @@ kangge:addEffect({fk.TurnStart, fk.AfterCardsMove, fk.Death}, {
 
 -- 刷新效果
 kangge:addEffect({fk.BuryVictim}, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return player:getMark(kangge.name) == target.id
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, kangge.name, 0)
     room:setPlayerMark(player, "@kangge", 0)
@@ -115,16 +115,16 @@ local kangge_trigger = fk.CreateTriggerSkill {
   name = "#kangge_trigger",
   mute = true,
   events = {fk.EnterDying},
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(kangge) and player:getMark("kangge") == target.id and player:usedSkillTimes(kangge.name, Player.HistoryRound) == 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return room:askToSkillInvoke(player, {
       skill_name = "kangge",
       prompt = "#kangge-recover::" .. target.id
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke("kangge")
     room:notifySkillInvoked(player, "kangge", "support")

@@ -11,12 +11,12 @@ Fk:loadTranslationTable{
 }
 
 zhenxing:addEffect(fk.Damaged, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(zhenxing.name) then
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = room:getNCards(3)
     local can_get = table.filter(cards, function(id)
@@ -49,12 +49,12 @@ zhenxing:addEffect(fk.Damaged, {
 })
 
 zhenxing:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player.phase == Player.Finish and player:hasSkill(zhenxing.name) then
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = room:getNCards(3)
     local can_get = table.filter(cards, function(id)

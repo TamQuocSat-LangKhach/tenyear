@@ -13,7 +13,7 @@ Fk:loadTranslationTable{
 
 jiedao:addEffect(fk.DamageCaused, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(jiedao.name) then
       if player:getMark("jiedao-turn") == 0 then
         player.room:addPlayerMark(player, "jiedao-turn", 1)
@@ -21,7 +21,7 @@ jiedao:addEffect(fk.DamageCaused, {
       end
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = jiedao.name,
       prompt = "#jiedao-invoke::" .. target.id .. ":" .. player:getLostHp()

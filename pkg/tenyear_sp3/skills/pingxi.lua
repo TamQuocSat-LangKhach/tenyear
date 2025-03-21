@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 
 pingxi:addEffect(fk.EventPhaseEnd, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(pingxi.name) and player.phase == Player.Finish and
       #player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
         for _, move in ipairs(e.data) do
@@ -25,7 +25,7 @@ pingxi:addEffect(fk.EventPhaseEnd, {
         return not p:isNude() or not player:isProhibited(p, Fk:cloneCard("slash"))
       end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local n = 0
     player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
@@ -50,7 +50,7 @@ pingxi:addEffect(fk.EventPhaseEnd, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local tos = event:getCostData(self).tos
     room:sortPlayersByAction(tos)

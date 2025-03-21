@@ -14,11 +14,11 @@ Fk:loadTranslationTable{
 liedan:addEffect(fk.EventPhaseStart, {
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(liedan.name) and target.phase == Player.Start and player:getMark("@@zhuangdan") == 0 and
       (target ~= player or (target == player and player:getMark("@liedan")) > 4)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if target ~= player then
       local n = 0

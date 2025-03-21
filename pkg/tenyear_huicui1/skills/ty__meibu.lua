@@ -13,12 +13,12 @@ Fk:loadTranslationTable{
 }
 
 ty__meibu:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(ty__meibu.name) then
       return target.phase == Player.Play and target ~= player and target:inMyAttackRange(player) and not player:isNude()
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local card = room:askToDiscard(player, {
       min_num = 1,
@@ -33,7 +33,7 @@ ty__meibu:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:doIndicate(player.id, {target.id})
     room:setPlayerMark(player, "ty__meibu-turn", Fk:getCardById(event:getCostData(skill)).suit)

@@ -13,11 +13,11 @@ Fk:loadTranslationTable{
 
 ty__mumu:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__mumu.name) and player.phase == Player.Play and
       table.find(player.room:getOtherPlayers(player), function(p) return #p:getCardIds("e") > 0 end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local choices = {"Cancel", "ty__mumu1", "ty__mumu2"}
     local choice = room:askToChoice(player, {choices = choices, skill_name = ty__mumu.name})
@@ -30,7 +30,7 @@ ty__mumu:addEffect(fk.EventPhaseStart, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local data = event:getCostData(skill)
     local to = room:getPlayerById(data[2])

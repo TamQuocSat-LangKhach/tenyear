@@ -13,7 +13,7 @@ Fk:loadTranslationTable{
 }
 
 sigong:addEffect(fk.TurnEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(skill.name) and target ~= player and
       not target.dead and not player:isProhibited(target, Fk:cloneCard("slash")) then
       local events = player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e)
@@ -28,7 +28,7 @@ sigong:addEffect(fk.TurnEnd, {
       if #events > 0 then return true end
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     if player:getHandcardNum() > 1 then
       local n = player:getHandcardNum() - 1
       local cards = player.room:askToDiscard(player, {
@@ -58,7 +58,7 @@ sigong:addEffect(fk.TurnEnd, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if player:isKongcheng() then
       player:drawCards(1, skill.name)
@@ -85,7 +85,7 @@ sigong:addEffect(fk.TurnEnd, {
 })
 
 sigong:addEffect(fk.PreCardEffect, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and table.contains(data.card.skillNames, skill.name)
   end,
   on_refresh = function(self, event, target, player, data)

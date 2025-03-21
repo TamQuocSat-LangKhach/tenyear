@@ -15,13 +15,13 @@ Fk:loadTranslationTable{
 
 fuxi:addEffect(fk.EventPhaseStart, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(fuxi.name) and target.phase == Player.Play and not target.dead and player ~= target and
       table.every(player.room.alive_players, function (p)
         return p == target or p:getHandcardNum() <= target:getHandcardNum()
       end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local choices = {"Cancel", "fuxi_discard"}
     if not player:isNude() then
@@ -39,7 +39,7 @@ fuxi:addEffect(fk.EventPhaseStart, {
     event:setCostData(self, choice)
     return true
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(fuxi.name)
     if event:getCostData(self) == "fuxi_give" then

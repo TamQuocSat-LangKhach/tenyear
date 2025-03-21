@@ -10,10 +10,10 @@ Fk:loadTranslationTable{
 }
 
 ty__zhengnan:addEffect(fk.EnterDying, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(ty__zhengnan.name) and (player:getMark(ty__zhengnan.name) == 0 or not table.contains(player:getMark(ty__zhengnan.name), target.id))
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local mark = player:getMark(ty__zhengnan.name)
     if mark == 0 then mark = {} end

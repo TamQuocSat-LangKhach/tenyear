@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 
 ty_ex__yingshi:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty_ex__yingshi.name) and player.phase == Player.Play and not player:isKongcheng()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local success, dat = player.room:askToUseActiveSkill(player, {
       skill_name = "ty_ex__yingshi_active",
       prompt = "#ty_ex__yingshi-invoke",
@@ -28,7 +28,7 @@ ty_ex__yingshi:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local target1 = room:getPlayerById(event:getCostData(self).targets[1])
     local target2 = room:getPlayerById(event:getCostData(self).targets[2])

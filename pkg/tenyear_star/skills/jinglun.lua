@@ -12,17 +12,17 @@ Fk:loadTranslationTable{
 }
 
 jinglun:addEffect(fk.Damage, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(jinglun.name) and target and not target.dead and player:distanceTo(target) <= 1 and
       player:usedSkillTimes(jinglun.name, Player.HistoryTurn) == 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = jinglun.name,
       prompt = "#jinglun-invoke::" .. target.id
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:doIndicate(player.id, {target.id})
     local n = #target:getCardIds("e")

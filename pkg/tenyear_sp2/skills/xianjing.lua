@@ -11,7 +11,7 @@ Fk:loadTranslationTable{
 }
 
 xianjing:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(xianjing.name) and player.phase == Player.Start then
       local yuqi_initial = {0, 3, 1, 1}
       for i = 1, 4 do
@@ -22,7 +22,7 @@ xianjing:addEffect(fk.EventPhaseStart, {
     end
     return false
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     AddYuqi(player, xianjing.name, 1)
     if not player:isWounded() then
       AddYuqi(player, xianjing.name, 1)

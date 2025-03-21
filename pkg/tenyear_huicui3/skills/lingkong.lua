@@ -14,7 +14,7 @@ Fk:loadTranslationTable{
 lingkong:addEffect({fk.GameStart, fk.AfterCardsMove}, {
   anim_type = "special",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(lingkong.name) then return false end
     local handcards = player:getCardIds(Player.Hand)
     if event == fk.GameStart then
@@ -40,7 +40,7 @@ lingkong:addEffect({fk.GameStart, fk.AfterCardsMove}, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.GameStart then
       for _, id in ipairs(player.player_cards[Player.Hand]) do

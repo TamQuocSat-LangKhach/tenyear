@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 fensi:addEffect(fk.EventPhaseStart, {
   anim_type = "offensive",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(fensi.name) and player.phase == Player.Start
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:askToChoosePlayers(player, {
       targets = table.map(table.filter(room:getAlivePlayers(), function(p)

@@ -9,11 +9,11 @@ Fk:loadTranslationTable{
 }
 
 chaozhen:addEffect({fk.EventPhaseStart, fk.EnterDying}, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(chaozhen) and
       (event == fk.EventPhaseStart and player.phase == Player.Start or event == fk.EnterDying)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local choice = player.room:askToChoice(player, {
       choices = {"Field", "Pile", "Cancel"},
       skill_name = chaozhen.name,
@@ -24,7 +24,7 @@ chaozhen:addEffect({fk.EventPhaseStart, fk.EnterDying}, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards, num = {}, 14
     if event:getCostData(chaozhen).choice == "Field" then

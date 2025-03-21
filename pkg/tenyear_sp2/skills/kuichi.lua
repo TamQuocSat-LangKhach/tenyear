@@ -10,7 +10,7 @@ Fk:loadTranslationTable{
 }
 
 kuichi:addEffect(fk.TurnEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(skill.name) then
       local room = player.room
       local n = 0
@@ -32,7 +32,7 @@ kuichi:addEffect(fk.TurnEnd, {
       return n >= player.maxHp
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player.room:loseHp(player, 1, kuichi.name)
   end,
 })

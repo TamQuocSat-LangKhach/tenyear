@@ -11,10 +11,10 @@ Fk:loadTranslationTable{
 
 siegeEngineSkill:addEffect(fk.EventPhaseStart, {
   attached_equip = "siege_engine",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(siegeEngineSkill.name) and player.phase == Player.Play
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local success, dat = player.room:askToUseActiveSkill(player, {
       skill_name = "siege_engine_slash",
       prompt = "#siege_engine-invoke",
@@ -26,7 +26,7 @@ siegeEngineSkill:addEffect(fk.EventPhaseStart, {
     end
     return false
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local card = Fk:cloneCard("slash")
     card.skillName = siegeEngineSkill.name

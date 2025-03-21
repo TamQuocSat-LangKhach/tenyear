@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 }
 
 ty__neifa:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__neifa.name) and player.phase == Player.Play
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(3, ty__neifa.name)
     if player.dead then return false end

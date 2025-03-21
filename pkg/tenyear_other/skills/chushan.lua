@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 chushan:addEffect(fk.GameStart, {
   frequency = Skill.Compulsory,
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(chushan.name)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local generals = Fk:getGeneralsRandomly(6, nil, { "wuming" })
     local skills = {}

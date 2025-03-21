@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 }
 
 poyuan:addEffect(fk.GameStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(poyuan.name) then
       if table.find(player:getEquipments(Card.SubtypeTreasure), function(id) return Fk:getCardById(id).name == "ty__catapult" end) then
         return table.find(player.room:getOtherPlayers(player), function(p) return not p:isNude() end)
@@ -24,7 +24,7 @@ poyuan:addEffect(fk.GameStart, {
       end
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     if table.find(player:getEquipments(Card.SubtypeTreasure), function(id) return Fk:getCardById(id).name == "ty__catapult" end) then
       local targets = table.filter(room:getOtherPlayers(player), function(p) return not p:isNude() end)
@@ -48,7 +48,7 @@ poyuan:addEffect(fk.GameStart, {
       })
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if table.find(player:getEquipments(Card.SubtypeTreasure), function(id) return Fk:getCardById(id).name == "ty__catapult" end) then
       local to = room:getPlayerById(event:getCostData(self))
@@ -73,7 +73,7 @@ poyuan:addEffect(fk.GameStart, {
 })
 
 poyuan:addEffect(fk.TurnStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(poyuan.name) and (event == fk.GameStart or (event == fk.TurnStart and target == player)) then
       if table.find(player:getEquipments(Card.SubtypeTreasure), function(id) return Fk:getCardById(id).name == "ty__catapult" end) then
         return table.find(player.room:getOtherPlayers(player), function(p) return not p:isNude() end)
@@ -85,7 +85,7 @@ poyuan:addEffect(fk.TurnStart, {
       end
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     if table.find(player:getEquipments(Card.SubtypeTreasure), function(id) return Fk:getCardById(id).name == "ty__catapult" end) then
       local targets = table.filter(room:getOtherPlayers(player), function(p) return not p:isNude() end)
@@ -109,7 +109,7 @@ poyuan:addEffect(fk.TurnStart, {
       })
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if table.find(player:getEquipments(Card.SubtypeTreasure), function(id) return Fk:getCardById(id).name == "ty__catapult" end) then
       local to = room:getPlayerById(event:getCostData(self))

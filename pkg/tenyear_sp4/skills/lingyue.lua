@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 lingyue:addEffect(fk.Damage, {
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(lingyue.name) or not target then return false end
     local room = player.room
     local damage_event = room.logic:getCurrentEvent()
@@ -33,7 +33,7 @@ lingyue:addEffect(fk.Damage, {
     end
     return damage_event.id == x
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     if target.phase == Player.NotActive then
       local room = player.room
       local events = room.logic.event_recorder[GameEvent.ChangeHp] or Util.DummyTable

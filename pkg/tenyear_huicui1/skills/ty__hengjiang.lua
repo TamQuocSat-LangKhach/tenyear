@@ -11,7 +11,7 @@ Fk:loadTranslationTable{
 }
 
 ty__hengjiang:addEffect(fk.Damaged, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(ty__hengjiang.name) then
       local turn_event = player.room.logic:getCurrentEvent():findParent(GameEvent.Turn)
       return not turn_event.data[1].dead
@@ -26,14 +26,14 @@ ty__hengjiang:addEffect(fk.Damaged, {
       self:doCost(event, turn_event.data[1], player, data)
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     if player.room:askToSkillInvoke(player, {skill_name = ty__hengjiang.name, prompt = "#ty__hengjiang-invoke::"..target.id}) then
       event:setCostData(self, {tos = {target.id}})
       return true
     end
     self.cancel_cost = true
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:addPlayerMark(target, "@hengjiang-turn", 1)
     room:addPlayerMark(target, MarkEnum.MinusMaxCardsInTurn, 1)
@@ -41,17 +41,17 @@ ty__hengjiang:addEffect(fk.Damaged, {
 })
 
 ty__hengjiang:addEffect(fk.TurnEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:usedSkillTimes(ty__hengjiang.name, Player.HistoryTurn) > 0 and not player.dead
   end,
-  on_trigger = function(self, event, target, player)
+  on_trigger = function(self, event, target, player, data)
     local turn_event = player.room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
     self:doCost(event, turn_event.data[1], player)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return true
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local phase_ids = {}
     room.logic:getEventsOfScope(GameEvent.Phase, 1, function (e)

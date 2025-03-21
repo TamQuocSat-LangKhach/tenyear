@@ -13,13 +13,13 @@ Fk:loadTranslationTable{
 xiangshu:addEffect(fk.EventPhaseStart, {
   frequency = Skill.Limited,
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(xiangshu) and player.phase == Player.Finish
       and player:usedSkillTimes(xiangshu.name, Player.HistoryGame) == 0
       and #player.room.logic:getActualDamageEvents(1, function(e) return e.data[1].from == player end) > 0
       and table.find(player.room.alive_players, function(p) return p:isWounded() end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local n = 0
     room.logic:getActualDamageEvents(1, function(e)
@@ -43,7 +43,7 @@ xiangshu:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cost_data = event:getCostData(self)
     local to = room:getPlayerById(cost_data[1])

@@ -12,11 +12,11 @@ Fk:loadTranslationTable{
 
 -- 添加触发技效果
 lianhua:addEffect(fk.Damaged, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(skill.name) and target ~= player and player.phase == Player.NotActive
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local color = "black"
     if table.contains({"lord", "loyalist"}, player.role) and table.contains({"lord", "loyalist"}, target.role) or
@@ -29,11 +29,11 @@ lianhua:addEffect(fk.Damaged, {
 })
 
 lianhua:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(skill.name) and target == player and player.phase == Player.Start
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local pattern, skillName
     if player:getMark("@lianhua") < 4 then
@@ -74,11 +74,11 @@ lianhua:addEffect(fk.EventPhaseStart, {
 lianhua:addEffect(fk.EventPhaseStart, {
   name = "#lianhua_trigger",
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("@lianhua") > 0 and player.phase == Player.Play
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "@lianhua", 0)
     room:setPlayerMark(player, "lianhua-red", 0)

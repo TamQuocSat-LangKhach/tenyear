@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 }
 
 ty__liehou:addEffect(fk.DrawNCards, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__liehou.name) 
   end,
   on_use = function(self, event, target, player, data)
@@ -23,11 +23,11 @@ ty__liehou:addEffect(fk.DrawNCards, {
 })
 
 ty__liehou:addEffect(fk.EventPhaseEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__liehou.name) and 
       player:usedSkillTimes(ty__liehou.name, Player.HistoryPhase) > 0
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local n = 1 + player:getMark("@ty__liehou")
     if #room:askToDiscard(player, {

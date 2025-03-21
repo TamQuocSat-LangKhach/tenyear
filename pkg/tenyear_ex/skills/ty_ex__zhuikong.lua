@@ -14,17 +14,17 @@ Fk:loadTranslationTable{
 
 zhuikong:addEffect(fk.TurnStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(zhuikong.name) and not target.dead and target ~= player and
       player:isWounded() and player:canPindian(target)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = zhuikong.name,
       prompt = "#ty_ex__zhuikong-invoke::" .. target.id
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:doIndicate(player.id, {target.id})
     local pindian = player:pindian({target}, zhuikong.name)

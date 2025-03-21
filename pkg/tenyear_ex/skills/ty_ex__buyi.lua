@@ -12,16 +12,16 @@ Fk:loadTranslationTable{
 
 ty_ex__buyi:addEffect(fk.EnterDying, {
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(ty_ex__buyi.name) and not target:isKongcheng()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = ty_ex__buyi.name,
       prompt = "#ty_ex__buyi-invoke::" .. target.id
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if #target.player_cards[Player.Hand] == 1 then
       event:setCostData(player, true)

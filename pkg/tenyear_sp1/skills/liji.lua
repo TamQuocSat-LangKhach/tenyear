@@ -49,14 +49,14 @@ liji:addEffect('active', {
 
 liji:addEffect('refresh', {
   events = {fk.TurnStart, fk.EventPhaseStart, fk.AfterCardsMove},
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     if event == fk.TurnStart then
       return player == target
     else
       return player.room.current == player and not player.dead and #player:getTableMark("@liji-turn") == 5
     end
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     if event == fk.TurnStart then
       if player:hasSkill(liji.name, true) then
         room:setPlayerMark(player, "@liji-turn", {0, "-", 0, "/", #player.room.alive_players < 5 and 4 or 8})

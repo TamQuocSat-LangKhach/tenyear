@@ -14,13 +14,13 @@ Fk:loadTranslationTable{
 ty__mouli:addEffect(fk.TurnEnd, {
   anim_type = "drawcard",
   frequency = Skill.Wake,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(skill.name) and player:usedSkillTimes(ty__mouli.name, Player.HistoryGame) == 0
   end,
-  can_wake = function(self, event, target, player)
+  can_wake = function(self, event, target, player, data)
     return #player:getTableMark("@$jichouw") > 5
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeMaxHp(player, 1)
     if player.dead then return false end

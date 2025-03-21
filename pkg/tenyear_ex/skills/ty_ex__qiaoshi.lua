@@ -12,17 +12,17 @@ Fk:loadTranslationTable{
 
 ty_ex__qiaoshi:addEffect(fk.EventPhaseStart, {
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target ~= player and player:hasSkill(ty_ex__qiaoshi.name) and target.phase == Player.Finish and
       player:getHandcardNum() == target:getHandcardNum()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = ty_ex__qiaoshi.name,
       prompt = "#ty_ex__qiaoshi-invoke::"..target.id
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local card = Fk:getCardById(player:drawCards(1, ty_ex__qiaoshi.name)[1])
     local card1 = Fk:getCardById(target:drawCards(1, ty_ex__qiaoshi.name)[1])

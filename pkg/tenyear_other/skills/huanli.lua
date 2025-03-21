@@ -15,7 +15,7 @@ Fk:loadTranslationTable{
 
 huanli:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not (target == player and player:hasSkill(huanli.name) and player.phase == Player.Finish) then
       return false
     end
@@ -44,7 +44,7 @@ huanli:addEffect(fk.EventPhaseStart, {
     return false
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local aimedList = event:getCostData(self)
     local usedTimes = 0
@@ -122,7 +122,7 @@ huanli:addEffect(fk.EventPhaseStart, {
 huanli:addEffect(fk.TurnEnd, {
   name = "#huanli_lose",
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return
       target == player and
       (
@@ -131,7 +131,7 @@ huanli:addEffect(fk.TurnEnd, {
     )
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if player:getMark("@@huanli") ~= 0 then
       local huanliSkills = table.simpleClone(player:getTableMark("@@huanli"))

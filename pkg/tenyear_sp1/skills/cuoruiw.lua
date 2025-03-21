@@ -15,11 +15,11 @@ Fk:loadTranslationTable{
 }
 
 cuoruiw:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(cuoruiw.name) and player.phase == Player.Play
       and table.find(player.room.alive_players, function(p) return player:distanceTo(p) < 2 and not p:isAllNude() end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = {}
     for _, p in ipairs(room:getAlivePlayers()) do
@@ -40,7 +40,7 @@ cuoruiw:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local chosen = room:askToChooseCard(player, {
       target = room:getPlayerById(event:getCostData(self)),

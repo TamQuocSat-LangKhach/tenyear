@@ -12,12 +12,12 @@ Fk:loadTranslationTable{
 kangyong:addEffect(fk.TurnStart, {
   anim_type = "defensive",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(kangyong) then
       return player:isWounded()
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local n = player:getLostHp()
     room:setPlayerMark(player, "kangyong-turn", n)
@@ -33,12 +33,12 @@ kangyong:addEffect(fk.TurnStart, {
 kangyong:addEffect(fk.TurnEnd, {
   anim_type = "defensive",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(kangyong) then
       return player.hp > 1 and player:getMark("kangyong-turn") > 0
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local n = math.min(player:getMark("kangyong-turn"), player.hp - 1)
     room:loseHp(player, n, kangyong.name)

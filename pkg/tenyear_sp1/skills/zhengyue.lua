@@ -14,19 +14,19 @@ Fk:loadTranslationTable{
 
 zhengyue:addEffect(fk.TurnStart, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(skill.name) then
       return #player:getPile("#" .. skill.name) == 0
     end
   end,
-  on_cost = function (skill, event, target, player)
+  on_cost = function (self, event, target, player, data)
     local choice = player.room:askToChoice(player, {choices = {"1", "2", "3", "4", "5"}, skill_name = skill.name})
     if choice ~= "Cancel" then
       event:setCostData(skill, {choice = tonumber(choice)})
       return true
     end
   end,
-  on_use = function (skill, event, target, player)
+  on_use = function (self, event, target, player, data)
     local room = player.room
     local result = room:askToGuanxing(player, {
       cards = room:getNCards(event:getCostData(skill).choice),
@@ -42,7 +42,7 @@ zhengyue:addEffect(fk.TurnStart, {
 
 zhengyue:addEffect(fk.CardUseFinished, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(skill.name) then
       if #player:getPile("#" .. skill.name) > 0 then
         local c = Fk:getCardById(U.getPrivateMark(player, "$" .. skill.name)[1])
@@ -54,7 +54,7 @@ zhengyue:addEffect(fk.CardUseFinished, {
       end
     end
   end,
-  on_use = function (skill, event, target, player)
+  on_use = function (self, event, target, player, data)
     local room = player.room
     local c = Fk:getCardById(U.getPrivateMark(player, "$" .. skill.name)[1])
     if c.number == data.card.number or c:compareSuitWith(data.card) or c.trueName == data.card.trueName then

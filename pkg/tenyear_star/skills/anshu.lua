@@ -13,19 +13,19 @@ Fk:loadTranslationTable{
 }
 
 anshu:addEffect(fk.RoundEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(skill.name) then
       return true
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     return room:askToSkillInvoke(player, {
       skill_name = skill.name,
       prompt = "#anshu-use",
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = {}
     for _, id in ipairs(room.discard_pile) do
@@ -92,7 +92,7 @@ anshu:addEffect(fk.RoundEnd, {
 })
 
 anshu:addEffect(fk.TurnEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(skill.name) then
       return table.find(player:getTableMark("anshu-turn"), function (id)
         local p = player.room:getPlayerById(id)
@@ -100,7 +100,7 @@ anshu:addEffect(fk.TurnEnd, {
       end)
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.filter(player:getTableMark("anshu-turn"), function (id)
       local p = room:getPlayerById(id)
@@ -119,7 +119,7 @@ anshu:addEffect(fk.TurnEnd, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:sortPlayersByAction(event:getCostData(skill).tos)
     for _, id in ipairs(event:getCostData(skill).tos) do
@@ -135,10 +135,10 @@ anshu:addEffect(fk.TurnEnd, {
 })
 
 anshu:addEffect(fk.BeforeCardUseEffect, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and data.extra_data and data.extra_data.anshu_start
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     local new_tos = {}
     local n = 0
@@ -161,10 +161,10 @@ anshu:addEffect(fk.BeforeCardUseEffect, {
 })
 
 anshu:addEffect(fk.CardUseFinished, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and table.contains(data.card.skillNames, skill.name) and data.extra_data and data.extra_data.AGResult
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     local mark = {}
     for _, dat in ipairs(data.extra_data.AGResult) do
@@ -179,7 +179,7 @@ anshu:addEffect(fk.CardUseFinished, {
 })
 
 anshu:addEffect(fk.AfterCardsMove, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     if player:getTableMark("anshu_record") ~= 0 then
       local mark = player:getTableMark("anshu_record")
       for _, move in ipairs(data) do
@@ -189,7 +189,7 @@ anshu:addEffect(fk.AfterCardsMove, {
       end
     end
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     local mark = player:getTableMark("anshu_record")
     for _, move in ipairs(data) do
@@ -206,10 +206,10 @@ anshu:addEffect(fk.AfterCardsMove, {
 })
 
 anshu:addEffect(fk.RoundEnd, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return player:getTableMark("anshu_record") ~= 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "anshu_record", 0)
   end,

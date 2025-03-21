@@ -12,17 +12,17 @@ Fk:loadTranslationTable{
 }
 
 ruizhan:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(ruizhan.name) and target ~= player and target.phase == Player.Start and
       target:getHandcardNum() >= target.hp and not player:isKongcheng() and not target:isKongcheng()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = ruizhan.name,
       prompt = "#ruizhan-invoke::" .. target.id
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:doIndicate(player.id, {target.id})
     local pindian = player:pindian({target}, ruizhan.name)

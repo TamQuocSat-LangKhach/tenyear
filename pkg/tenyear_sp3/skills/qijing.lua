@@ -17,13 +17,13 @@ Fk:loadTranslationTable{
 qijing:addEffect(fk.TurnEnd, {
   frequency = Skill.Wake,
   priority = 2,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(qijing.name) and player:usedSkillTimes(qijing.name, Player.HistoryGame) == 0
   end,
-  can_wake = function(self, event, target, player)
+  can_wake = function(self, event, target, player, data)
     return player:getMark("tuoyu1") > 0 and player:getMark("tuoyu2") > 0 and player:getMark("tuoyu3") > 0
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeMaxHp(player, -1)
     if player.dead then return false end
@@ -74,10 +74,10 @@ qijing:addEffect(fk.TurnEnd, {
     end
     player:gainAnExtraTurn(true)
   end,
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return player == target and player.room:getBanner("qijing_destroyrulebook") ~= nil
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     local index = room:getBanner("qijing_destroyrulebook")
 

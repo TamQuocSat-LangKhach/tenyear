@@ -17,7 +17,7 @@ ty_ex__jiangchi:addEffect(fk.EventPhaseStart, {
   can_trigger = function(self, event, target)
     return target == player and player:hasSkill(ty_ex__jiangchi) and player.phase == Player.Play
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local _, ret = player.room:askToUseActiveSkill(player, {
       skill_name = "ty_ex__jiangchi_active",
       prompt = "#ty_ex__jiangchi-invoke",
@@ -28,7 +28,7 @@ ty_ex__jiangchi:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(ty_ex__jiangchi.name)
     if player:getMark("@@ty_ex__jiangchi_targetmod-phase") > 0 then

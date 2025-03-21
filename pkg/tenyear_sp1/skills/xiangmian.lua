@@ -37,10 +37,10 @@ xiangmian:addEffect('active', {
 })
 
 xiangmian:addEffect(fk.CardUseFinished, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and target:getMark("xiangmian_num") > 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     if data.card:getSuitString(true) == target:getMark("xiangmian_suit") or target:getMark("xiangmian_num") == 1 then
       room:setPlayerMark(target, "xiangmian_num", 0)

@@ -10,7 +10,7 @@ Fk:loadTranslationTable{
 }
 
 kunyu:addEffect(fk.AskForPeachesDone, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(kunyu.name) and player.hp <= 0 and
       table.find(player.room.draw_pile, function (id)
         local card = Fk:getCardById(id)
@@ -18,7 +18,7 @@ kunyu:addEffect(fk.AskForPeachesDone, {
           table.contains({"fire__slash", "fire_attack", "burning_camps"}, card.name)
       end)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = table.filter(room.draw_pile, function (id)
       local card = Fk:getCardById(id)

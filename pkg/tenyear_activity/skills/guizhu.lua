@@ -8,10 +8,10 @@ Fk:loadTranslationTable{
 }
 
 guizhu:addEffect(fk.EnterDying, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(guizhu.name) and player:usedSkillTimes(guizhu.name, Player.HistoryTurn) == 0
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     if room:askToSkillInvoke(player, {skill_name = guizhu.name}) then
       player:drawCards(2, guizhu.name)
     end

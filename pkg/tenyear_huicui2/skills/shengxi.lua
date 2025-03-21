@@ -10,11 +10,11 @@ Fk:loadTranslationTable{
 }
 
 shengxi:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player == target and player:hasSkill(shengxi.name) and player.phase == Player.Finish and
       #player.room.logic:getActualDamageEvents(1, function(e) return e.data[1].from == player end) == 0
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:drawCards(2, shengxi.name)
   end,
 })

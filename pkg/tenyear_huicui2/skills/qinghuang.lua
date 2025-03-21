@@ -12,13 +12,13 @@ Fk:loadTranslationTable{
 }
 
 qinghuang:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(qinghuang.name) and player.phase == Player.Play
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, { skill_name = qinghuang.name, prompt = "#qinghuang-invoke" })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeMaxHp(player, -1)
     if not player.dead then

@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 tongye:addEffect(fk.GameStart, {
   frequency = Skill.Compulsory,
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(tongye.name) 
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local kingdoms = {}
     for _, p in ipairs(room.alive_players) do
@@ -38,10 +38,10 @@ tongye:addEffect(fk.GameStart, {
 tongye:addEffect(fk.Deathed, {
   frequency = Skill.Compulsory,
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(tongye.name) 
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local kingdoms = {}
     for _, p in ipairs(room.alive_players) do
@@ -63,7 +63,7 @@ tongye:addEffect(fk.Deathed, {
 tongye:addEffect(fk.DrawNCards, {
   frequency = Skill.Compulsory,
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return 
       player:hasSkill(tongye.name) and
       (player == target and player:getMark("@tongye_count") > 0 and player:getMark("@tongye_count") < 4)

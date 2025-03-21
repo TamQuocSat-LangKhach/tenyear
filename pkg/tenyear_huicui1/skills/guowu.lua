@@ -11,10 +11,10 @@ Fk:loadTranslationTable {
 
 guowu:addEffect(fk.EventPhaseStart, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(guowu.name) and player.phase == Player.Play and not player:isKongcheng()
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = player:getCardIds("h")
     player:showCards(cards)

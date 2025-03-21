@@ -13,14 +13,14 @@ Fk:loadTranslationTable{
 jigu:addEffect(fk.GameStart, {
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(skill.name) then return false end
     local handcards = player:getCardIds(Player.Hand)
     if #handcards > 0 then
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     for _, id in ipairs(player.player_cards[Player.Hand]) do
       Fk:getCardById(id):setMark("@@jigu-inhand", 1)
     end
@@ -30,7 +30,7 @@ jigu:addEffect(fk.GameStart, {
 jigu:addEffect(fk.Damage, {
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(skill.name) then return false end
     local record = player:getMark("jiguused_record")
     if record == 0 then
@@ -57,7 +57,7 @@ jigu:addEffect(fk.Damage, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:addPlayerMark(player, "jiguused-round")
     player:drawCards(event:getCostData(skill), jigu.name)
@@ -67,7 +67,7 @@ jigu:addEffect(fk.Damage, {
 jigu:addEffect(fk.Damaged, {
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(skill.name) then return false end
     local record = player:getMark("jiguused_record")
     if record == 0 then
@@ -94,7 +94,7 @@ jigu:addEffect(fk.Damaged, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:addPlayerMark(player, "jiguused-round")
     player:drawCards(event:getCostData(skill), jigu.name)
@@ -105,7 +105,7 @@ jigu:addEffect('lose', {
   can_trigger = function(self, player)
     return true
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     for _, id in ipairs(player:getCardIds(Player.Hand)) do
       Fk:getCardById(id):setMark("@@jigu-inhand", 0)

@@ -13,14 +13,14 @@ Fk:loadTranslationTable{
 
 zongfan:addEffect(fk.TurnEnd, {
   frequency = Skill.Wake,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(zongfan.name) and
       player:usedSkillTimes(zongfan.name, Player.HistoryGame) == 0
   end,
-  can_wake = function(self, event, target, player)
+  can_wake = function(self, event, target, player, data)
     return player:getMark("mouni-turn") > 0 and not player.skipped_phases[Player.Play]
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if not player:isNude() then
       local success, dat = room:askToUseActiveSkill(player, {

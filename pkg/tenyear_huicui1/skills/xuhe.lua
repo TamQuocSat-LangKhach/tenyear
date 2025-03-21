@@ -13,18 +13,18 @@ Fk:loadTranslationTable{
 }
 
 xuhe:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(xuhe.name) and player.phase == Player.Play then
       return true
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = xuhe.name,
       prompt = "#xuhe-invoke"
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeMaxHp(player, -1)
     if player.dead or player:isRemoved() then return end
@@ -51,12 +51,12 @@ xuhe:addEffect(fk.EventPhaseStart, {
 })
 
 xuhe:addEffect(fk.EventPhaseEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(xuhe.name) and player.phase == Player.Play then
       return not table.every(player.room:getOtherPlayers(player), function(p) return p.maxHp <= player.maxHp end)
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeMaxHp(player, 1)
     if player.dead then return end

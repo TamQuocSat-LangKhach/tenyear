@@ -14,12 +14,12 @@ Fk:loadTranslationTable{
 }
 
 suizheng:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(suizheng.name) then
       return target == player and player.phase == Player.Finish
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(room:getAlivePlayers(), Util.IdMapper)
     local prompt = "#suizheng-choose"
@@ -35,7 +35,7 @@ suizheng:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(skill))
     room:setPlayerMark(to, "@@suizheng", 1)
@@ -43,12 +43,12 @@ suizheng:addEffect(fk.EventPhaseStart, {
 })
 
 suizheng:addEffect(fk.EventPhaseEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(suizheng.name) then
       return target:getMark("@@suizheng-turn") > 0 and target.phase == Player.Play
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets, prompt = {}, ""
     room.logic:getActualDamageEvents(1, function(e)
@@ -71,7 +71,7 @@ suizheng:addEffect(fk.EventPhaseEnd, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(skill))
     room:useVirtualCard("slash", nil, player, to, suizheng.name, true)
@@ -79,10 +79,10 @@ suizheng:addEffect(fk.EventPhaseEnd, {
 })
 
 suizheng:addEffect(fk.TurnStart, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return player:getMark("@@suizheng") > 0 and target == player
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "@@suizheng", 0)
     room:setPlayerMark(player, "@@suizheng-turn", 1)

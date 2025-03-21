@@ -13,13 +13,13 @@ Fk:loadTranslationTable{
 }
 
 lilu:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(lilu.name) and player.phase == Player.Draw
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, { skill_name = lilu.name, prompt = "#lilu-invoke" })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local n = math.min(player.maxHp, 5) - player:getHandcardNum()
     if n > 0 then
       player:drawCards(n, lilu.name)

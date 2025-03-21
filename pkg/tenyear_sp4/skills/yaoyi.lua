@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 yaoyi:addEffect(fk.GameStart, {
   anim_type = "control",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(yaoyi.name)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     for _, p in ipairs(player.room:getAlivePlayers()) do
       if not (p.dead or p:hasSkill("shoutan", true)) then

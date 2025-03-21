@@ -14,12 +14,12 @@ Fk:loadTranslationTable{
 chuanshu:addEffect(fk.Death, {
   anim_type = "support",
   frequency = Skill.Limited,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(chuanshu,false,true) and player:usedSkillTimes(chuanshu.name, Player.HistoryGame) == 0 then
       return true
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local tos = room:askToChoosePlayers(player, {
       targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper),
@@ -34,7 +34,7 @@ chuanshu:addEffect(fk.Death, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(skill))
     room:handleAddLoseSkills(to, "chaofeng")
@@ -45,12 +45,12 @@ chuanshu:addEffect(fk.Death, {
 chuanshu:addEffect(fk.EventPhaseStart, {
   anim_type = "support",
   frequency = Skill.Limited,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player == target and player:hasSkill(chuanshu,false,true) and player:usedSkillTimes(chuanshu.name, Player.HistoryGame) == 0 then
       return player.phase == Player.Start and player:isWounded()
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local tos = room:askToChoosePlayers(player, {
       targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper),
@@ -65,7 +65,7 @@ chuanshu:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(skill))
     room:handleAddLoseSkills(to, "chaofeng")

@@ -14,11 +14,11 @@ Fk:loadTranslationTable{
 lingxi:addEffect(fk.EventPhaseStart, {
   derived_piles = "lingxi_wing",
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(lingxi.name) then return false end
     return target == player and player.phase == Player.Play and not player:isNude()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local x = player.maxHp
     local card = room:askToCards(player, {
@@ -34,7 +34,7 @@ lingxi:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(lingxi.name)
     room:notifySkillInvoked(player, lingxi.name, "special")
@@ -45,11 +45,11 @@ lingxi:addEffect(fk.EventPhaseStart, {
 lingxi:addEffect(fk.EventPhaseEnd, {
   derived_piles = "lingxi_wing",
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(lingxi.name) then return false end
     return target == player and player.phase == Player.Play and not player:isNude()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local x = player.maxHp
     local card = room:askToCards(player, {
@@ -65,7 +65,7 @@ lingxi:addEffect(fk.EventPhaseEnd, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(lingxi.name)
     room:notifySkillInvoked(player, lingxi.name, "special")
@@ -88,7 +88,7 @@ lingxi:addEffect(fk.AfterCardsMove, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(lingxi.name)
     local suits = {}

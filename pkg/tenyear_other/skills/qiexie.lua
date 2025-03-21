@@ -12,14 +12,14 @@ Fk:loadTranslationTable{
 
 qiexie:addEffect(fk.EventPhaseStart, {
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return
       target == player and
       player:hasSkill(qiexie.name) and
       player.phase == Player.Start and
       player:hasEmptyEquipSlot(Card.SubtypeWeapon)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local availableGenerals = room:getTag("qiexieGenerals") or {}
     if #availableGenerals == 0 then

@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 
 pianchong:addEffect(fk.EventPhaseStart, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(pianchong) and player.phase == Player.Draw
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = {}
     local color = Card.NoColor
@@ -49,10 +49,10 @@ pianchong:addEffect(fk.EventPhaseStart, {
     return true
   end,
 
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and player:getMark("@pianchong") ~= 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@pianchong", 0)
   end,
 })
@@ -61,7 +61,7 @@ local pianchong_delay = fk.CreateTriggerSkill{
   name = "#pianchong_delay",
   mute = true,
   events = {fk.AfterCardsMove},
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player.dead then return false end
     local colors = player:getTableMark("@pianchong")
     if #colors == 0 then return false end
@@ -93,7 +93,7 @@ local pianchong_delay = fk.CreateTriggerSkill{
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local data = event:getCostData(skill)
     local x, y = table.unpack(data)

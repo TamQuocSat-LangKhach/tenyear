@@ -15,19 +15,19 @@ Fk:loadTranslationTable{
 
 ty_ex__lihuo:addEffect(fk.AfterCardUseDeclared, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(ty_ex__lihuo.name) then
       local data = player.room:getCurrentEvent().data[1]
       return data.card.name == "slash"
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = ty_ex__lihuo.name,
       prompt = "#ty_ex__lihuo1-invoke:::"..player.room:getCurrentEvent().data[1].card:toLogString()
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local data = player.room:getCurrentEvent().data[1]
     local card = Fk:cloneCard("fire__slash", data.card.suit, data.card.number)
     for k, v in pairs(data.card) do
@@ -50,13 +50,13 @@ ty_ex__lihuo:addEffect(fk.AfterCardUseDeclared, {
 
 ty_ex__lihuo:addEffect(fk.AfterCardTargetDeclared, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(ty_ex__lihuo.name) then
       local data = player.room:getCurrentEvent().data[1]
       return data.card.name == "fire__slash" and #player.room:getUseExtraTargets(data) > 0
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local tos = player.room:askToChoosePlayers(player, {
       targets = player.room:getUseExtraTargets(event.data[1]),
       min_num = 1,
@@ -70,7 +70,7 @@ ty_ex__lihuo:addEffect(fk.AfterCardTargetDeclared, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local data = player.room:getCurrentEvent().data[1]
     table.insert(data.tos, event:getCostData(skill))
   end,
@@ -78,14 +78,14 @@ ty_ex__lihuo:addEffect(fk.AfterCardTargetDeclared, {
 
 ty_ex__lihuo:addEffect(fk.CardUseFinished, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(ty_ex__lihuo.name) then
       local data = player.room:getCurrentEvent().data[1]
       return data.card.trueName ~= "slash" and #player.room:getUseExtraTargets(data) > 0
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cardlist = data.card:isVirtual() and data.card.subcards or {data.card.id}
     if #cardlist ~= 1 or Fk:getCardById(cardlist[1], true).trueName ~= "slash" then return end
@@ -115,14 +115,14 @@ local ty_ex__lihuo_record = fk.CreateSkill {
 
 ty_ex__lihuo_record:addEffect(fk.CardUseFinished, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return not player.dead and player.room:getCurrentEvent().data[1].damageDealt and
       player.room:getCurrentEvent().data[1].extra_data and
       player.room:getCurrentEvent().data[1].extra_data.ty_ex__lihuo and
       table.contains(player.room:getCurrentEvent().data[1].extra_data.ty_ex__lihuo, player.id)
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player.room:loseHp(player, 1, "ty_ex__lihuo")
   end,
 })

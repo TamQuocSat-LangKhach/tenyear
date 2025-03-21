@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 }
 
 ty__xuewei:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player.phase == Player.Finish
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local to = player.room:askToChoosePlayers(player, {
       targets = table.map(table.filter(player.room:getAlivePlayers(), function(p)
         return p.hp <= player.hp
@@ -32,7 +32,7 @@ ty__xuewei:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:addPlayerMark(room:getPlayerById(event:getCostData(self)), "@@ty__xuewei", 1)
     player.tag[ty__xuewei.name] = {event:getCostData(self)}
@@ -40,10 +40,10 @@ ty__xuewei:addEffect(fk.EventPhaseStart, {
 })
 
 ty__xuewei:addEffect(fk.DamageInflicted, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target:getMark("@@ty__xuewei") > 0 and player.tag[ty__xuewei.name][1] == target.id
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:loseHp(player, 1, ty__xuewei.name)
     if not player.dead then
@@ -57,11 +57,11 @@ ty__xuewei:addEffect(fk.DamageInflicted, {
 })
 
 ty__xuewei:addEffect(fk.TurnStart, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__xuewei) and
       player.tag[ty__xuewei.name] and #player.tag[ty__xuewei.name] > 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(player.tag[ty__xuewei.name][1])
     room:setPlayerMark(to, "@@ty__xuewei", 0)

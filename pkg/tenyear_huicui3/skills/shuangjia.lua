@@ -15,10 +15,10 @@ Fk:loadTranslationTable{
 shuangjia:addEffect(fk.GameStart, {
   anim_type = "special",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(shuangjia.name) and not player:isKongcheng()
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = player:getCardIds(Player.Hand)
     for _, id in ipairs(cards) do
@@ -30,10 +30,10 @@ shuangjia:addEffect(fk.GameStart, {
 })
 
 shuangjia:addEffect(fk.AfterCardsMove, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return #player:getTableMark("beifen") > 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     local mark = player:getTableMark("beifen")
     for _, id in ipairs(player:getCardIds(Player.Hand)) do

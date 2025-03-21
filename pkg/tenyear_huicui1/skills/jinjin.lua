@@ -12,16 +12,16 @@ Fk:loadTranslationTable{
 }
 
 jinjin:addEffect({fk.Damage, fk.Damaged}, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(jinjin.name) and player:usedSkillTimes(jinjin.name, Player.HistoryTurn) < 2
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = jinjin.name,
       prompt = "#jinjin-invoke:::"..player:getMaxCards()
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local n = math.max(1, math.abs(player:getMaxCards() - player.hp))
     room:setPlayerMark(player, MarkEnum.AddMaxCards, 0)

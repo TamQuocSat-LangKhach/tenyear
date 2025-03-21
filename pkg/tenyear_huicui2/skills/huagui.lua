@@ -16,10 +16,10 @@ Fk:loadTranslationTable{
 
 huagui:addEffect(fk.EventPhaseStart, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(huagui.name) and player.phase == Player.Play
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
       return not p:isNude()
@@ -54,7 +54,7 @@ huagui:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local tos = table.map(event:getCostData(self), function(id) return room:getPlayerById(id) end)
     local other_players = room:getOtherPlayers(player, false)

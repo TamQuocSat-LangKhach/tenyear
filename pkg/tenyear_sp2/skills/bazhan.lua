@@ -3,16 +3,16 @@ local bazhan = fk.CreateSkill {
 }
 
 Fk:loadTranslationTable{
-  ['bazhan'] = '把盏',
-  ['#bazhan-Yang'] = '把盏（阳）：选择一至两张手牌，交给一名其他角色',
-  ['#bazhan-Yin'] = '把盏（阴）：选择一名有手牌的其他角色，获得其一至两张手牌',
-  ['#bazhan-support'] = '把盏：可以选择令 %dest 回复1点体力或复原武将牌',
-  [':bazhan'] = '转换技，出牌阶段限一次，阳：你可以交给一名其他角色至多两张手牌；阴：你可以获得一名其他角色至多两张手牌。然后若这些牌里包括【酒】或<font color=>♥</font>牌，你可令获得此牌的角色回复1点体力或复原武将牌。',
-  ['$bazhan1'] = '此酒，当配将军。',
-  ['$bazhan2'] = '这杯酒，敬于将军。',
+  ["bazhan"] = "把盏",
+  ["#bazhan-Yang"] = "把盏（阳）：选择一至两张手牌，交给一名其他角色",
+  ["#bazhan-Yin"] = "把盏（阴）：选择一名有手牌的其他角色，获得其一至两张手牌",
+  ["#bazhan-support"] = "把盏：可以选择令 %dest 回复1点体力或复原武将牌",
+  [":bazhan"] = "转换技，出牌阶段限一次，阳：你可以交给一名其他角色至多两张手牌；阴：你可以获得一名其他角色至多两张手牌。然后若这些牌里包括【酒】或<font color='red'>♥</font>牌，你可令获得此牌的角色回复1点体力或复原武将牌。",
+  ["$bazhan1"] = "此酒，当配将军。",
+  ["$bazhan2"] = "这杯酒，敬于将军。",
 }
 
-bazhan:addEffect('active', {
+bazhan:addEffect("active", {
   anim_type = "switch",
   switch_skill_name = "bazhan",
   prompt = function (self, player)

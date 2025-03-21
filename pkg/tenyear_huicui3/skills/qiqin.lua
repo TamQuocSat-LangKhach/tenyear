@@ -11,10 +11,10 @@ Fk:loadTranslationTable{
 qiqin:addEffect(fk.GameStart, {
   anim_type = "special",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(skill.name) and not player:isKongcheng()
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = player:getCardIds(Player.Hand)
     for _, id in ipairs(cards) do
@@ -27,7 +27,7 @@ qiqin:addEffect(fk.GameStart, {
 qiqin:addEffect(fk.EventPhaseStart, {
   anim_type = "special",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(skill.name) and target == player and player.phase == Player.Start then
       local get = table.filter(player.room.discard_pile, function(id)
         return Fk:getCardById(id):getMark("qiqin") > 0
@@ -38,7 +38,7 @@ qiqin:addEffect(fk.EventPhaseStart, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:moveCardTo(event:getCostData(skill.name), Player.Hand, player, fk.ReasonJustMove, qiqin.name, "", false, player.id)
   end,
@@ -46,7 +46,7 @@ qiqin:addEffect(fk.EventPhaseStart, {
 
 qiqin:addEffect(fk.AfterCardsMove, {
   can_refresh = Util.TrueFunc,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     for _, id in ipairs(player:getCardIds(Player.Hand)) do
       local card = Fk:getCardById(id)

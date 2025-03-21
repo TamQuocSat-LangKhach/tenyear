@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 
 zecai:addEffect(fk.RoundEnd, {
   frequency = Skill.Limited,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(zecai.name) and player:usedSkillTimes(zecai.name, Player.HistoryGame) < 1
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local player_table = {}
     room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
@@ -57,7 +57,7 @@ zecai:addEffect(fk.RoundEnd, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local tar = room:getPlayerById(event:getCostData(self)[1])
     if not tar:hasSkill("ex__jizhi", true) then
@@ -68,10 +68,10 @@ zecai:addEffect(fk.RoundEnd, {
       tar:gainAnExtraTurn()
     end
   end,
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return player:getMark("zecai_tmpjizhi") > 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "zecai_tmpjizhi", 0)
     room:handleAddLoseSkills(player, "-ex__jizhi", nil, true, false)

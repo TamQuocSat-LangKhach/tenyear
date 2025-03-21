@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 }
 
 xiace:addEffect(fk.Damage, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(skill.name) and player:getMark("xiace_damage-turn") == 0 and not player:isNude()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local card = player.room:askToDiscard(player, {
       min_num = 1,
       max_num = 1,
@@ -32,7 +32,7 @@ xiace:addEffect(fk.Damage, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "xiace_damage-turn", 1)
     room:throwCard(event:getCostData(skill), skill.name, player)
@@ -48,10 +48,10 @@ xiace:addEffect(fk.Damage, {
 })
 
 xiace:addEffect(fk.Damaged, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(skill.name) and player:getMark("xiace_damaged-turn") == 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
     targets = room:askToChoosePlayers(player, {
@@ -67,7 +67,7 @@ xiace:addEffect(fk.Damaged, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "xiace_damaged-turn", 1)
     local tar = room:getPlayerById(event:getCostData(skill))

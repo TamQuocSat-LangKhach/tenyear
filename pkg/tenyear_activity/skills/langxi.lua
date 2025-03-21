@@ -11,14 +11,14 @@ Fk:loadTranslationTable{
 }
 
 langxi:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(langxi) and
       player.phase == Player.Start and
       not table.every(player.room:getOtherPlayers(player), function(p)
         return p.hp > player.hp
       end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local to = room:askToChoosePlayers(player, {
       targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
@@ -35,7 +35,7 @@ langxi:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:damage({
       from = player,

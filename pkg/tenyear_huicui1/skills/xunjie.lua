@@ -14,12 +14,12 @@ Fk:loadTranslationTable{
 }
 
 xunjie:addEffect(fk.TurnEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(xunjie) and player:getMark("xunjie_caninvoke-turn") > 0 and
       table.find(player.room.alive_players, function(p) return p:getHandcardNum() ~= p.hp end) and
       player:usedSkillTimes(xunjie.name, Player.HistoryRound) < 2
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local targets = table.map(table.filter(player.room.alive_players, function(p) return p:getHandcardNum() ~= p.hp end), Util.IdMapper)
     local to = player.room:askToChoosePlayers(player, {
       targets = targets,
@@ -33,7 +33,7 @@ xunjie:addEffect(fk.TurnEnd, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cost_data = event:getCostData(self)
     local to = room:getPlayerById(cost_data.tos[1])
@@ -74,7 +74,7 @@ xunjie:addEffect(fk.TurnEnd, {
 })
 
 xunjie:addEffect(fk.AfterCardsMove, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return player:hasSkill(xunjie, true) and player:getMark("xunjie_caninvoke-turn") == 0 and player.phase ~= Player.Draw
   end,
   on_refresh = function(self, event, target, player, data)

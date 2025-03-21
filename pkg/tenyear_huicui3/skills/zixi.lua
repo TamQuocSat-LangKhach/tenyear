@@ -15,11 +15,11 @@ Fk:loadTranslationTable{
 }
 
 zixi:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player or not player:hasSkill(zixi.name) then return false end
     return player.phase == Player.Play and not player:isNude()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local _, dat = room:askToUseActiveSkill(player, {
       skill_name = "zixi_active",
@@ -31,7 +31,7 @@ zixi:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local dat = table.simpleClone(event:getCostData(skill.name))
     local to = room:getPlayerById(dat.targets[1])
@@ -44,11 +44,11 @@ zixi:addEffect(fk.EventPhaseStart, {
 })
 
 zixi:addEffect(fk.EventPhaseEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player or not player:hasSkill(zixi.name) then return false end
     return player.phase == Player.Play and not player:isNude()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local _, dat = room:askToUseActiveSkill(player, {
       skill_name = "zixi_active",
@@ -60,7 +60,7 @@ zixi:addEffect(fk.EventPhaseEnd, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local dat = table.simpleClone(event:getCostData(skill.name))
     local to = room:getPlayerById(dat.targets[1])
@@ -123,7 +123,7 @@ zixi:addEffect(fk.TargetSpecified, {
 
 zixi:addEffect(fk.AfterCardsMove, {
   can_trigger = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local mark = {}
     for _, id in ipairs(player:getCardIds(Player.Judge)) do
@@ -174,7 +174,7 @@ zixi:addEffect(fk.CardUseFinished, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player.room:useCard(table.simpleClone(event:getCostData(skill.name)))
   end,
 })
@@ -182,10 +182,10 @@ zixi:addEffect(fk.CardUseFinished, {
 zixi:addEffect(fk.EventPhaseStart, {
   mute = true,
   priority = 0, -- game rule
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player.phase == Player.Judge
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = player:getCardIds(Player.Judge)
     for i = #cards, 1, -1 do

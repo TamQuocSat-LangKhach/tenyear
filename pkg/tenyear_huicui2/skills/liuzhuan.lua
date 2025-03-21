@@ -3,11 +3,11 @@ local liuzhuan = fk.CreateSkill {
 }
 
 Fk:loadTranslationTable{
-  ['liuzhuan'] = '流转',
-  ['@@liuzhuan-inhand-turn'] = '流转',
-  [':liuzhuan'] = '锁定技，其他角色的回合内，其于摸牌阶段外获得的牌无法对你使用，这些牌本回合进入弃牌堆后，你获得之。',
-  ['$liuzhuan1'] = '身似浮萍，随波逐流。',
-  ['$liuzhuan2'] = '辗转四方，宦游八州。',
+  ["liuzhuan"] = "流转",
+  ["@@liuzhuan-inhand-turn"] = "流转",
+  [":liuzhuan"] = "锁定技，其他角色的回合内，其于摸牌阶段外获得的牌无法对你使用，这些牌本回合进入弃牌堆后，你获得之。",
+  ["$liuzhuan1"] = "身似浮萍，随波逐流。",
+  ["$liuzhuan2"] = "辗转四方，宦游八州。",
 }
 
 liuzhuan:addEffect(fk.AfterCardsMove, {
@@ -88,7 +88,7 @@ liuzhuan:addEffect(fk.AfterCardsMove, {
   end,
 })
 
-liuzhuan:addEffect('prohibit', {
+liuzhuan:addEffect("prohibit", {
   is_prohibited = function(self, from, to, card)
     if not to:hasSkill(liuzhuan) then return false end
     local mark = to:getTableMark("liuzhuan_record-turn")

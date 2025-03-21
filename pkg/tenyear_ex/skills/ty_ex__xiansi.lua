@@ -17,12 +17,12 @@ ty_ex__xiansi:addEffect(fk.EventPhaseStart, {
   attached_skill_name = "ty_ex__xiansi&",
   derived_piles = "ty_ex__xiansi_ni",
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(ty_ex__xiansi) and player.phase == Player.Start then
       return not table.every(player.room:getOtherPlayers(player), function (p) return p:isNude() end)
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
       return not p:isNude()
@@ -40,7 +40,7 @@ ty_ex__xiansi:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     for _, p in ipairs(event:getCostData(self)) do
       local id = room:askToChooseCard(player, {

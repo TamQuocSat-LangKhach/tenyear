@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 
 zhenze:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(zhenze.name) and player.phase == Player.Discard
   end,
-  on_cost = function (self, event, target, player)
+  on_cost = function (self, event, target, player, data)
     local room = player.room
     local a = player:getHandcardNum() - player.hp
     local targets = {{},{}}
@@ -47,7 +47,7 @@ zhenze:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local choice, targets = table.unpack(event:getCostData(self))
     room:doIndicate(player.id, targets)

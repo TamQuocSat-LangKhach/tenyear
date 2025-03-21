@@ -11,11 +11,11 @@ Fk:loadTranslationTable{
 }
 
 qingren:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(qingren.name) and target == player and
       player.phase == Player.Finish and player:usedSkillTimes("ty__yizan", Player.HistoryTurn) > 0
   end,
-  on_use = function (self, event, target, player)
+  on_use = function (self, event, target, player, data)
     local num = player:usedSkillTimes("ty__yizan", Player.HistoryTurn)
     if num > 0 then
       player:drawCards(num, qingren.name)

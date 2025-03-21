@@ -70,12 +70,12 @@ ruyi:addEffect(fk.AfterCardUseDeclared, {
   name = "#ruyi_trigger",
   mute = true,
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player == target and player:hasSkill(ruyi) then
       return player:getMark("@ruyi") == 2 or player:getMark("@ruyi") == 3
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if player:getMark("@ruyi") == 2 then
       data.additionalDamage = (data.additionalDamage or 0) + 1
@@ -119,7 +119,7 @@ ruyi:addEffect(fk.EventAcquireSkill, {
   can_trigger = function(self, event, target, player, data)
     return data == ruyi and target == player and player.room:getBanner("RoundCount")
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "@ruyi", 3)
     if table.contains(player:getAvailableEquipSlots(), Player.WeaponSlot) then
@@ -132,10 +132,10 @@ ruyi:addEffect(fk.GameStart, {
   name = "#ruyi_trigger",
   mute = true,
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasShownSkill(ruyi, true)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "@ruyi", 3)
     if table.contains(player:getAvailableEquipSlots(), Player.WeaponSlot) then

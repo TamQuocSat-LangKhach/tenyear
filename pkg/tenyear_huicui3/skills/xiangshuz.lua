@@ -14,15 +14,15 @@ Fk:loadTranslationTable{
 
 xiangshuz:addEffect(fk.EventPhaseStart, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target ~= player and player:hasSkill(xiangshuz.name) and target.phase == Player.Play then
       return target:getHandcardNum() >= target.hp
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {skill_name = xiangshuz.name, prompt = "#xiangshuz-invoke::"..target.id})
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:doIndicate(player.id, {target.id})
     local choices = {}
@@ -40,12 +40,12 @@ xiangshuz:addEffect(fk.EventPhaseStart, {
 
 xiangshuz:addEffect(fk.EventPhaseEnd, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target ~= player and player:hasSkill(xiangshuz.name) and target.phase == Player.Play then
       return player:usedSkillTimes(xiangshuz.name, Player.HistoryPhase) > 0
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:doIndicate(player.id, {target.id})
     local n1 = target:getHandcardNum()

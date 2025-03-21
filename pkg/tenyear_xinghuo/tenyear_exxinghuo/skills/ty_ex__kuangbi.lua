@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 
 ty_ex__kuangbi:addEffect(fk.EventPhaseStart, {
   derived_piles = "ty_ex__kuangbi",
-  can_trigger = function(self, event, target)
+  can_trigger = function(self, event, target, player, data)
     return target:hasSkill(ty_ex__kuangbi.name) and target.phase == Player.Play
   end,
-  on_cost = function (skill, event, target)
+  on_cost = function (self, event, target, player, data)
     local room = target.room
     local targets = table.filter(room:getOtherPlayers(target), function(p) return not p:isNude() end)
     if #targets > 0 then
@@ -34,7 +34,7 @@ ty_ex__kuangbi:addEffect(fk.EventPhaseStart, {
       end
     end
   end,
-  on_use = function(self, event, target)
+  on_use = function(self, event, target, player, data)
     local room = target.room
     local to = room:getPlayerById(event:getCostData(skill))
     local cards = room:askToDiscard(to, {
@@ -52,11 +52,11 @@ ty_ex__kuangbi:addEffect(fk.EventPhaseStart, {
 
 ty_ex__kuangbi:addEffect(fk.CardUsing, {
   mute = true,
-  can_trigger = function(self, event, target)
+  can_trigger = function(self, event, target, player, data)
     return #target:getPile("ty_ex__kuangbi") > 0
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, data)
+  on_use = function(self, event, target, player, data)
     local room = target.room
     if event == fk.CardUsing then
       local cards = target:getPile("ty_ex__kuangbi")

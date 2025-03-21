@@ -11,13 +11,13 @@ Fk:loadTranslationTable{
 }
 
 sanshi:addEffect(fk.CardUsing, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(sanshi) then return false end
     local data = event.data[1]
     return player == target and (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) and
       not data.card:isVirtual() and table.contains(player:getTableMark(sanshi.name), data.card.id)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local data = event.data[1]
     data.disresponsiveList = table.map(room.players, Util.IdMapper)
@@ -25,7 +25,7 @@ sanshi:addEffect(fk.CardUsing, {
 })
 
 sanshi:addEffect(fk.TurnEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(sanshi) then return false end
     local room = player.room
     local cards = table.filter(player:getTableMark(sanshi.name), function (id)
@@ -70,15 +70,15 @@ sanshi:addEffect(fk.TurnEnd, {
 
     return false
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:moveCardTo(table.simpleClone(event:getCostData(skill)), Card.PlayerHand, player, fk.ReasonPrey, sanshi.name)
   end,
 })
 
 sanshi:addEffect(fk.GameStart, {
-  can_trigger = function(self, event, target, player) return true end,
-  on_use = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data) return true end,
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cardmap = {}
     for i = 1, 13 do
@@ -104,8 +104,8 @@ sanshi:addEffect(fk.GameStart, {
 })
 
 sanshi:addEffect(fk.AfterCardsMove, {
-  can_trigger = function(self, event, target, player) return not player.dead and #player:getTableMark(sanshi.name) > 0 end,
-  on_use = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data) return not player.dead and #player:getTableMark(sanshi.name) > 0 end,
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = player:getTableMark(sanshi.name)
     local handcards = player:getCardIds(Player.Hand)

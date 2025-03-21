@@ -10,11 +10,11 @@ Fk:loadTranslationTable{
 }
 
 ty__baobian:addEffect(fk.Damaged, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__baobian.name) and
       table.find({"tiaoxin", "ex__paoxiao", "ol_ex__shensu"}, function(s) return not player:hasSkill(s, true) end)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     for _, s in ipairs({"tiaoxin", "ex__paoxiao", "ol_ex__shensu"}) do
       if not player:hasSkill(s, true) then
         player.room:handleAddLoseSkills(player, s, nil, true, false)

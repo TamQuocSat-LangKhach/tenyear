@@ -3,13 +3,13 @@ local bushil = fk.CreateSkill {
 }
 
 Fk:loadTranslationTable{
-  ['bushil'] = '卜筮',
-  ['#bushil-invoke'] = '卜筮：是否重新分配“卜筮”的花色？',
-  ['#bushil-discard'] = '卜筮：你可以弃置一张手牌令%arg对你无效',
-  ['@bushil'] = '卜筮',
-  [':bushil'] = '你使用♠牌无次数限制；<br>你使用或打出<font color=>♥</font>牌后，摸一张牌；<br>当你成为♣牌的目标后，你可以弃置一张手牌令此牌对你无效；<br>结束阶段，你获得一张<font color=>♦</font>牌。<br>准备阶段，你可以将以上四种花色重新分配。',
-  ['$bushil1'] = '论演玄意，以筮辄验。',
-  ['$bushil2'] = '手不释书，好研经卷。',
+  ["bushil"] = "卜筮",
+  ["#bushil-invoke"] = "卜筮：是否重新分配“卜筮”的花色？",
+  ["#bushil-discard"] = "卜筮：你可以弃置一张手牌令%arg对你无效",
+  ["@bushil"] = "卜筮",
+  [":bushil"] = "你使用♠牌无次数限制；<br>你使用或打出<font color='red'>♥</font>牌后，摸一张牌；<br>当你成为♣牌的目标后，你可以弃置一张手牌令此牌对你无效；<br>结束阶段，你获得一张<font color='red'>♦</font>牌。<br>准备阶段，你可以将以上四种花色重新分配。",
+  ["$bushil1"] = "论演玄意，以筮辄验。",
+  ["$bushil2"] = "手不释书，好研经卷。",
 }
 
 bushil:addEffect({fk.CardUseFinished, fk.CardRespondFinished, fk.TargetConfirmed, fk.EventPhaseStart}, {

@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 }
 
 yizhengc:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(yizhengc.name) and player.phase == Player.Finish
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local to = player.room:askToChoosePlayers(player, {
       targets = table.map(player.room:getOtherPlayers(player, false), Util.IdMapper),
       min_num = 1,
@@ -41,7 +41,7 @@ yizhengc:addEffect(fk.EventPhaseStart, {
 })
 
 yizhengc:addEffect(fk.DamageCaused, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:getMark("@@yizhengc") ~= 0 then
       for _, id in ipairs(player:getMark("@@yizhengc")) do
         local p = player.room:getPlayerById(id)
@@ -63,7 +63,7 @@ yizhengc:addEffect(fk.DamageCaused, {
 })
 
 yizhengc:addEffect(fk.PreHpRecover, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:getMark("@@yizhengc") ~= 0 then
       for _, id in ipairs(player:getMark("@@yizhengc")) do
         local p = player.room:getPlayerById(id)
@@ -85,7 +85,7 @@ yizhengc:addEffect(fk.PreHpRecover, {
 })
 
 yizhengc:addEffect(fk.TurnStart, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and player:getMark(yizhengc.name) ~= 0
   end,
   on_use = function(self, event, target, player, data)

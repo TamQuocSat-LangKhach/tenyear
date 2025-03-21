@@ -11,13 +11,13 @@ Fk:loadTranslationTable{
 }
 
 luansuo:addEffect(fk.TurnStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player == target and player:hasSkill(luansuo.name)
   end,
-  on_cost = function (skill, event, target, player)
+  on_cost = function (self, event, target, player, data)
     event:setCostData(skill, { tos = table.map(player.room.alive_players, Util.IdMapper) })
   end,
-  on_use = function (skill, event, target, player)
+  on_use = function (self, event, target, player, data)
     local room = player.room
     room:setBanner("luansuo-turn", {})
     for _, p in ipairs(room.alive_players) do
@@ -42,11 +42,11 @@ luansuo:addEffect(fk.BeforeCardsMove, {
       end
     end
   end,
-  on_cost = function (skill, event, target, player)
+  on_cost = function (self, event, target, player, data)
     event:setCostData(skill, nil)
     return true
   end,
-  on_use = function (skill, event, target, player, data)
+  on_use = function (self, event, target, player, data)
     local ids = {}
     for _, move in ipairs(data) do
       if move.from and move.moveReason == fk.ReasonDiscard and not player.room:getPlayerById(move.from).dead then
@@ -74,10 +74,10 @@ luansuo:addEffect(fk.BeforeCardsMove, {
 })
 
 luansuo:addEffect(fk.AfterCardsMove, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return player == player.room.current and player.room:getBanner("luansuo-turn") ~= nil
   end,
-  on_refresh = function (skill, event, target, player)
+  on_refresh = function (self, event, target, player, data)
     local room = player.room
     local mark = room:getBanner("luansuo-turn")
     if type(mark) ~= "table" then
@@ -107,10 +107,10 @@ luansuo:addEffect(fk.AfterCardsMove, {
 })
 
 luansuo:addEffect(fk.AfterTurnEnd, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return player == player.room.current and player.room:getBanner("luansuo-turn") ~= nil
   end,
-  on_refresh = function (skill, event, target, player)
+  on_refresh = function (self, event, target, player, data)
     local room = player.room
     room:setBanner("luansuo-turn", 0)
   end,

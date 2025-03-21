@@ -16,17 +16,17 @@ Fk:loadTranslationTable{
 -- 主技能效果
 quanshou:addEffect(fk.TurnStart, {
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(skill.name) and target:getHandcardNum() <= target.maxHp
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     if room:askToSkillInvoke(player, {skill_name = skill.name, prompt = "#quanshou-invoke::"..target.id}) then
       room:doIndicate(player.id, {target.id})
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local choice = room:askToChoice(target, {
       choices = {"quanshou1", "quanshou2:"..player.id},
@@ -49,11 +49,11 @@ quanshou:addEffect(fk.TurnStart, {
 quanshou:addEffect(fk.CardEffectCancelledOut, {
   name = "#quanshou_trigger",
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:getMark("quanshou2-turn") ~= 0 and data.from and data.from == player:getMark("quanshou2-turn")
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:drawCards(1, quanshou.name)
   end,
 })

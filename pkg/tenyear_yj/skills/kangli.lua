@@ -11,26 +11,26 @@ Fk:loadTranslationTable{
 }
 
 kangli:addEffect(fk.Damage, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(kangli.name) and target == player
   end,
-  on_cost = function (skill, event, target, player)
+  on_cost = function (self, event, target, player, data)
     return player.room:askToSkillInvoke(player, { skill_name = kangli.name })
   end,
-  on_use = function (skill, event, target, player)
+  on_use = function (self, event, target, player, data)
     local room = player.room
     player:drawCards(2, kangli.name, nil, "@@kangli-inhand")
   end,
 })
 
 kangli:addEffect(fk.DamageCaused, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return table.find(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@kangli-inhand") > 0 end) and target == player
   end,
-  on_cost = function (skill, event, target, player)
+  on_cost = function (self, event, target, player, data)
     return true
   end,
-  on_use = function (skill, event, target, player)
+  on_use = function (self, event, target, player, data)
     local room = player.room
     local ids = table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id):getMark("@@kangli-inhand") > 0 end)
     room:throwCard(ids, kangli.name, player, player)

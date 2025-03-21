@@ -24,19 +24,19 @@ zimu:addEffect(fk.Damaged, {
 })
 
 zimu:addEffect(fk.EventAcquireSkill, {
-  can_refresh = function (skill, event, target, player, data)
+  can_refresh = function (self, event, target, player, data)
     return target == player and data == skill
   end,
-  on_refresh = function (skill, event, target, player, data)
+  on_refresh = function (self, event, target, player, data)
     player.room:setPlayerMark(player, "@@pijing", 1)
   end,
 })
 
 zimu:addEffect(fk.EventLoseSkill, {
-  can_refresh = function (skill, event, target, player, data)
+  can_refresh = function (self, event, target, player, data)
     return target == player and data == skill
   end,
-  on_refresh = function (skill, event, target, player, data)
+  on_refresh = function (self, event, target, player, data)
     player.room:setPlayerMark(player, "@@pijing", 0)
   end,
 })

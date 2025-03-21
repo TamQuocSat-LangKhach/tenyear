@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 -- 第一个效果
 jiqiaos:addEffect(fk.EventPhaseStart, {
   derived_piles = "jiqiaos",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(jiqiaos.name) and player.phase == Player.Play
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:addToPile(jiqiaos.name, player.room:getNCards(player.maxHp), true, jiqiaos.name)
   end,
 })
@@ -25,7 +25,7 @@ jiqiaos:addEffect(fk.EventPhaseStart, {
 jiqiaos:addEffect({fk.EventPhaseEnd, fk.CardUseFinished}, {
   derived_piles = "jiqiaos",
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and #player:getPile("jiqiaos") > 0 then
       if event == fk.EventPhaseEnd then
         return player.phase == Player.Play
@@ -35,7 +35,7 @@ jiqiaos:addEffect({fk.EventPhaseEnd, fk.CardUseFinished}, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.EventPhaseEnd then
       room:moveCards({

@@ -13,7 +13,7 @@ Fk:loadTranslationTable{
 
 ty__caishi:addEffect(fk.EventPhaseEnd, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(ty__caishi.name) and player == target and player.phase == Player.Draw then
       return #player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
         local move = e.data[1]
@@ -27,7 +27,7 @@ ty__caishi:addEffect(fk.EventPhaseEnd, {
       end, Player.HistoryPhase) > 0
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local ids = {}
     player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
       local move = e.data[1]
@@ -51,7 +51,7 @@ ty__caishi:addEffect(fk.EventPhaseEnd, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local different = event:getCostData(self)
     if different then

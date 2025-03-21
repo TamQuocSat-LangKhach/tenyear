@@ -8,10 +8,10 @@ Fk:loadTranslationTable{
 }
 
 yinbingn:addEffect(fk.PreDamage, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and data.card and data.card:trueName() == "slash"
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:loseHp(data.to, data.damage, yinbingn.name)
     return true
@@ -19,10 +19,10 @@ yinbingn:addEffect(fk.PreDamage, {
 })
 
 yinbingn:addEffect(fk.HpLost, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target ~= player
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:drawCards(1, yinbingn.name)
   end,
 })

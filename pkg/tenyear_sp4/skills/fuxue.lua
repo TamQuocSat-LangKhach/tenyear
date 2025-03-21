@@ -13,7 +13,7 @@ Fk:loadTranslationTable{
 }
 
 fuxue:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(fuxue.name) then
       if player.phase == Player.Start then
         return #searchFuxueCards(player.room, true) > 0
@@ -25,7 +25,7 @@ fuxue:addEffect(fk.EventPhaseStart, {
       end
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     if player.phase == Player.Start then
       return player.room:askToSkillInvoke(player, {
         skill_name = fuxue.name,
@@ -35,7 +35,7 @@ fuxue:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     if player.phase == Player.Start then
       local room = player.room
       local cards = searchFuxueCards(room, false)

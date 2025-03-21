@@ -14,13 +14,13 @@ Fk:loadTranslationTable{
 }
 
 zhuanwen:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(zhuanwen.name) and player.phase == Player.Finish and
       table.find(player.room:getOtherPlayers(player), function (p)
         return not p:isKongcheng()
       end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.filter(room:getOtherPlayers(player), function (p)
       return not p:isKongcheng()
@@ -37,7 +37,7 @@ zhuanwen:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local data = event:getCostData(self)
     local to = room:getPlayerById(data.tos[1])

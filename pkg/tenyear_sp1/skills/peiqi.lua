@@ -11,10 +11,10 @@ Fk:loadTranslationTable{
 }
 
 peiqi:addEffect(fk.Damaged, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player == target and player:hasSkill(peiqi.name)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:askToChooseToMoveCardInBoard(player, {
       prompt = "#peiqi-choose",

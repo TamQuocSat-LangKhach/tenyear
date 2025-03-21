@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 
 yuxin:addEffect(fk.EnterDying, {
   frequency = Skill.Limited,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(yuxin.name) and player:usedSkillTimes(yuxin.name, Player.HistoryGame) == 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     if room:askToSkillInvoke(player, {
       skill_name = yuxin.name,
@@ -25,7 +25,7 @@ yuxin:addEffect(fk.EnterDying, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:recover {
       who = target,

@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 
 -- 主技能
 ty_ex__jigong:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty_ex__jigong.name) and player.phase == Player.Play
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local choices = {}
     for i = 1, 3 do
@@ -32,7 +32,7 @@ ty_ex__jigong:addEffect(fk.EventPhaseStart, {
     room:addPlayerMark(player, "@jigong_draw-turn", tonumber(choice))
 
     -- 刷新事件处理
-    can_refresh = function(self, event, target, player)
+    can_refresh = function(self, event, target, player, data)
       return target == player and player:usedSkillTimes(ty_ex__jigong.name, Player.HistoryPhase) > 0
     end,
       on_refresh = function(self, event, target, player, data)
@@ -54,14 +54,14 @@ ty_ex__jigong:addEffect('maxcards', {
 ty_ex__jigong:addEffect(fk.EventPhaseEnd, {
   mute = true,
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     local num = player:getMark("@ty_ex__jigong-turn")
     local num1 = player:getMark("@jigong_draw-turn")
     if target == player and player:usedSkillTimes("ty_ex__jigong", Player.HistoryTurn) > 0 and player.phase == Player.Discard then
       return num >= num1 and player:isWounded()
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player.room:recover({
       who = player,
       num = 1,

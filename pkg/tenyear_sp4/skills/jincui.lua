@@ -10,10 +10,10 @@ Fk:loadTranslationTable{
 }
 
 jincui:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(jincui.name) and player.phase == Player.Start
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, jincui.name)
     player:broadcastSkillInvoke(jincui.name)
@@ -32,10 +32,10 @@ jincui:addEffect(fk.EventPhaseStart, {
 })
 
 jincui:addEffect(fk.GameStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(jincui.name) and player:getHandcardNum() < 7
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:notifySkillInvoked(player, jincui.name, "drawcard")
     player:broadcastSkillInvoke(jincui.name)

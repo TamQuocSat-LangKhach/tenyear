@@ -13,12 +13,12 @@ Fk:loadTranslationTable{
 }
 
 shunshi:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(shunshi) and not player:isNude() then
       return player.phase == Player.Start
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = {}
     for _, p in ipairs(room:getOtherPlayers(player, false)) do
@@ -40,7 +40,7 @@ shunshi:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:moveCardTo(event:getCostData(self)[2], Card.PlayerHand, room:getPlayerById(event:getCostData(self)[1]), fk.ReasonGive, shunshi.name, nil, false, player.id)
     if not player.dead then
@@ -79,7 +79,7 @@ shunshi:addEffect(fk.Damaged, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:moveCardTo(event:getCostData(self)[2], Card.PlayerHand, room:getPlayerById(event:getCostData(self)[1]), fk.ReasonGive, shunshi.name, nil, false, player.id)
     if not player.dead then
@@ -89,16 +89,16 @@ shunshi:addEffect(fk.Damaged, {
 })
 
 shunshi:addEffect(fk.AfterTurnEnd, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return player:getMark("@shunshi") > 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@shunshi", 0)
   end,
 })
 
 shunshi:addEffect(fk.DrawNCards, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("@shunshi") > 0
   end,
   on_cost = Util.TrueFunc,

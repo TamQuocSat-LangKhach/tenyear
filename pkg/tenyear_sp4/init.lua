@@ -278,7 +278,7 @@ local ty__wuniang = fk.CreateTriggerSkill{
       return true
     end
   end,
-  on_use = function(self, event, player, target, data)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(self.cost_data)
     local id = room:askForCardChosen(player, to, "he", self.name)

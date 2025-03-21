@@ -14,7 +14,7 @@ Fk:loadTranslationTable{
 
 yijia:addEffect(fk.Damaged, {
   anim_type = "masochism",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(yijia.name) and not target.dead and player:distanceTo(target) <= 1 and
       table.find(player.room:getOtherPlayers(target), function(p)
         return table.find(p:getCardIds("e"), function(id)
@@ -22,7 +22,7 @@ yijia:addEffect(fk.Damaged, {
         end)
       end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(table.filter(room:getOtherPlayers(target), function(p)
       return table.find(p:getCardIds("e"), function(id)
@@ -43,7 +43,7 @@ yijia:addEffect(fk.Damaged, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(self))
     local cards = table.filter(to:getCardIds("e"), function(id)

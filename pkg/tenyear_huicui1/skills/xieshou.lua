@@ -13,17 +13,17 @@ Fk:loadTranslationTable{
 }
 
 xieshou:addEffect(fk.Damaged, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(xieshou.name) and not target.dead and player:distanceTo(target) <= 2 and not target:isRemoved()
       and player:usedSkillTimes(xieshou.name, Player.HistoryTurn) == 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = xieshou.name,
       prompt = "#xieshou-invoke::"..target.id
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:addPlayerMark(player, MarkEnum.MinusMaxCards, 1)
     local choices = {"xieshou_draw"}

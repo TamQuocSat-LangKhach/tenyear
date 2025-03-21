@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 }
 
 haochong:addEffect(fk.CardUseFinished, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(haochong.name) and player:getHandcardNum() ~= player:getMaxCards()
   end,
   on_cost = function(self, event, target, player, data)
@@ -42,7 +42,7 @@ haochong:addEffect(fk.CardUseFinished, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cost_data = event:getCostData(self)
     if #cost_data > 0 then

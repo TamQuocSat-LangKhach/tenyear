@@ -15,10 +15,10 @@ Fk:loadTranslationTable{
 }
 
 fumou:addEffect(fk.Damaged, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(fumou.name) and player:isWounded()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(room.alive_players, Util.IdMapper)
     local tos = room:askToChoosePlayers(player, {
@@ -38,7 +38,7 @@ fumou:addEffect(fk.Damaged, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     for _, id in ipairs(event:getCostData(self).tos) do
       local p = room:getPlayerById(id)

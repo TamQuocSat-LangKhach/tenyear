@@ -13,7 +13,7 @@ Fk:loadTranslationTable{
 zhanwan:addEffect(fk.EventPhaseEnd, {
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(zhanwan.name) and target.phase == Player.Discard and target:getMark("@liushi") > 0 then
       local n = 0
       player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
@@ -34,7 +34,7 @@ zhanwan:addEffect(fk.EventPhaseEnd, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local n = event:getCostData(skill)
     player:drawCards(n, zhanwan.name)
     player.room:setPlayerMark(target, "@liushi", 0)

@@ -12,11 +12,11 @@ Fk:loadTranslationTable{
 
 ty__shenzhi:addEffect(fk.EventPhaseStart, {
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__shenzhi.name) and player.phase == Player.Start and
       player:getHandcardNum() > player.hp and player:isWounded()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local card = player.room:askToDiscard(player, {
       min_num = 1,
       max_num = 1,
@@ -30,7 +30,7 @@ ty__shenzhi:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:throwCard(event:getCostData(self), ty__shenzhi.name, player, player)
     if not player.dead and player:isWounded() then

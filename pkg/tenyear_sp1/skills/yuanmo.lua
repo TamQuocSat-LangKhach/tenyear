@@ -17,7 +17,7 @@ Fk:loadTranslationTable{
 }
 
 yuanmo:addEffect({fk.EventPhaseStart, fk.Damaged}, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(yuanmo.name) then
       if event == fk.EventPhaseStart then
         return player.phase == Player.Start or (player.phase == Player.Finish and
@@ -27,7 +27,7 @@ yuanmo:addEffect({fk.EventPhaseStart, fk.Damaged}, {
       end
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local prompt = "#yuanmo1-invoke"
     if event == fk.EventPhaseStart and player.phase == Player.Finish then
       prompt = "#yuanmo2-invoke"
@@ -37,7 +37,7 @@ yuanmo:addEffect({fk.EventPhaseStart, fk.Damaged}, {
       prompt = prompt,
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.EventPhaseStart and player.phase == Player.Finish then
       room:setPlayerMark(player, "@yuanmo", player:getMark("@yuanmo") + 1)  --此处不能用addMark

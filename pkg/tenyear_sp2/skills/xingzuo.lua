@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 
 xingzuo:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(xingzuo.name) and player.phase == Player.Play
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = room:getNCards(3, "bottom")
     local handcards = player:getCardIds(Player.Hand)
@@ -37,11 +37,11 @@ local xingzuo_delay = fk.CreateTriggerSkill{
 
 xingzuo:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and not player.dead and player.phase == Player.Finish and
       player:usedSkillTimes(xingzuo.name, Player.HistoryTurn) > 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(table.filter(room.alive_players, function(p)
       return not p:isKongcheng() end), Util.IdMapper)
@@ -57,7 +57,7 @@ xingzuo:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(xingzuo.name)
     local to = room:getPlayerById(event:getCostData(self))

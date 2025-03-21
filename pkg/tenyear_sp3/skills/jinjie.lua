@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 
 jinjie:addEffect(fk.EnterDying, {
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(jinjie.name) and not target.dead and player:usedSkillTimes(jinjie.name, Player.HistoryRound) < 1
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local choice = room:askToChoice(player, {
       choices = {"draw0", "draw1", "draw2", "draw3", "Cancel"},
@@ -30,7 +30,7 @@ jinjie:addEffect(fk.EnterDying, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local x = event:getCostData(self)
     if x > 0 then

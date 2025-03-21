@@ -15,7 +15,7 @@ Fk:loadTranslationTable{
 
 juying:addEffect(fk.EventPhaseEnd, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(juying) and player.phase == Player.Play then
       for _, name in ipairs({ "slash", "analeptic" }) do
         local card = Fk:cloneCard(name)
@@ -34,7 +34,7 @@ juying:addEffect(fk.EventPhaseEnd, {
 
     return false
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
 
     local all_choices = {"juying1", "juying2", "juying3"}
@@ -72,10 +72,10 @@ juying:addEffect(fk.EventPhaseEnd, {
 })
 
 juying:addEffect(fk.TurnStart, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and player:getMark(juying.name) > 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     room:addPlayerMark(player, MarkEnum.SlashResidue .. "-turn", player:getMark(juying.name))
     room:setPlayerMark(player, juying.name, 0)

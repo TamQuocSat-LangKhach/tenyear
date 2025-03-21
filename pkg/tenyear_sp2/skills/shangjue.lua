@@ -13,14 +13,14 @@ Fk:loadTranslationTable{
 shangjue:addEffect(fk.EnterDying, {
   anim_type = "defensive",
   frequency = Skill.Wake,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(shangjue.name) and
       player:usedSkillTimes(shangjue.name, Player.HistoryGame) == 0
   end,
-  can_wake = function(self, event, target, player)
+  can_wake = function(self, event, target, player, data)
     return player.dying
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:recover({
       who = player,

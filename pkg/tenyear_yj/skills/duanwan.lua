@@ -16,13 +16,13 @@ Fk:loadTranslationTable{
 duanwan:addEffect(fk.AskForPeaches, {
   anim_type = "defensive",
   frequency = Skill.Limited,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(duanwan) and player.dying and player:usedSkillTimes(duanwan.name, Player.HistoryGame) == 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, { skill_name = duanwan.name, prompt = "#duanwan-invoke" })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:recover({
       who = player,

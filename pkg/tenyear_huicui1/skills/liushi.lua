@@ -3,14 +3,14 @@ local liushi = fk.CreateSkill {
 }
 
 Fk:loadTranslationTable{
-  ['liushi'] = '流矢',
-  ['@liushi'] = '流矢',
-  [':liushi'] = '出牌阶段，你可以将一张<font color=>♥</font>牌置于牌堆顶，视为对一名角色使用一张【杀】（不计入次数且无距离限制）。受到此【杀】伤害的角色手牌上限-1。',
-  ['$liushi1'] = '就你叫夏侯惇？',
-  ['$liushi2'] = '兀那贼将，且吃我一箭！',
+  ["liushi"] = "流矢",
+  ["@liushi"] = "流矢",
+  [":liushi"] = "出牌阶段，你可以将一张<font color='red'>♥</font>牌置于牌堆顶，视为对一名角色使用一张【杀】（不计入次数且无距离限制）。受到此【杀】伤害的角色手牌上限-1。",
+  ["$liushi1"] = "就你叫夏侯惇？",
+  ["$liushi2"] = "兀那贼将，且吃我一箭！",
 }
 
-liushi:addEffect('active', {
+liushi:addEffect("active", {
   anim_type = "offensive",
   card_num = 1,
   target_num = 1,
@@ -57,7 +57,7 @@ local liushi_maxcards = fk.CreateSkill {
   name = "#liushi_maxcards"
 }
 
-liushi_maxcards:addEffect('maxcards', {
+liushi_maxcards:addEffect("maxcards", {
   correct_func = function(self, player)
     return -player:getMark("@liushi")
   end,

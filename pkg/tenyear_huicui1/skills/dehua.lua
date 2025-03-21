@@ -14,7 +14,7 @@ Fk:loadTranslationTable{
 
 dehua:addEffect(fk.RoundStart, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(dehua) then
       return false
     end
@@ -40,7 +40,7 @@ dehua:addEffect(fk.RoundStart, {
         end)
     end)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
 
     local availableNames = player:getTableMark("@$dehua")
@@ -79,10 +79,10 @@ dehua:addEffect(fk.RoundStart, {
 
 dehua:addEffect(fk.EventAcquireSkill, {
   global = false,
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and data == dehua and not player.tag["dehuaRealNames"]
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local names = {}
     local realNames = {}
     for _, id in ipairs(Fk:getAllCardIds()) do

@@ -12,11 +12,11 @@ Fk:loadTranslationTable{
 
 suirenq:addEffect(fk.Death, {
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(suirenq.name, false, true) and
       table.find(player:getCardIds("h"), function(id) return Fk:getCardById(id).is_damage_card end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(room.alive_players, Util.IdMapper)
     local to = room:askToChoosePlayers(player, {
@@ -31,7 +31,7 @@ suirenq:addEffect(fk.Death, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(self))
     local cards = table.filter(player:getCardIds("h"), function(id) return Fk:getCardById(id).is_damage_card end)

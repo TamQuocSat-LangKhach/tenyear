@@ -13,17 +13,17 @@ Fk:loadTranslationTable{
 
 ty__fuhan:addEffect(fk.TurnStart, {
   frequency = Skill.Limited,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__fuhan.name) and player:getMark("@meiying") > 0 and
       player:usedSkillTimes(ty__fuhan.name, Player.HistoryGame) == 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = ty__fuhan.name,
       prompt = "#ty__fuhan-invoke"
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local n = player:getMark("@meiying")
     room:setPlayerMark(player, "@meiying", 0)

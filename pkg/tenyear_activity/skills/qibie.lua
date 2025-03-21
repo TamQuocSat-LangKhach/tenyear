@@ -11,13 +11,13 @@ Fk:loadTranslationTable{
 }
 
 qibie:addEffect(fk.Deathed, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(qibie.name) and not player:isKongcheng()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {skill_name = qibie.name, prompt = "#qibie-invoke"})
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local n = player:getHandcardNum()
     player:throwAllCards("h")
     if player.dead then return end

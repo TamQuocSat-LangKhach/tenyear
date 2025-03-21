@@ -14,10 +14,10 @@ Fk:loadTranslationTable{
 
 ty_ex__chunlao:addEffect(fk.EventPhaseEnd, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player.phase == Player.Play and #player:getPile("ty_ex__chengpu_chun") == 0 and not player:isKongcheng()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local cards = room:askToCards(player, {
       min_num = 1,
@@ -30,7 +30,7 @@ ty_ex__chunlao:addEffect(fk.EventPhaseEnd, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:addToPile("ty_ex__chengpu_chun", event:getCostData(skill), true, skill.name)
   end,
@@ -38,10 +38,10 @@ ty_ex__chunlao:addEffect(fk.EventPhaseEnd, {
 
 ty_ex__chunlao:addEffect(fk.AskForPeaches, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target.dying and #player:getPile("ty_ex__chengpu_chun") > 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local cards = room:askToCards(player, {
       min_num = 1,
@@ -55,7 +55,7 @@ ty_ex__chunlao:addEffect(fk.AskForPeaches, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:moveCards({
       from = player.id,

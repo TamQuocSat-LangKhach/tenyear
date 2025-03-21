@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 shishou:addEffect(fk.EventPhaseStart, {
   frequency = Skill.Compulsory,
   anim_type = "negative",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(skill.name) and target == player and player.phase == Player.Start and player:getMark("@cangchu") == 0
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:loseHp(player, 1, shishou.name)
   end,
@@ -28,7 +28,7 @@ shishou:addEffect(fk.CardUseFinished, {
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(skill.name) and target == player and player:getMark("@cangchu") > 0 and data.card.name == "analeptic"
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:removePlayerMark(player, "@cangchu")
     room:broadcastProperty(player, "MaxCards")
@@ -41,7 +41,7 @@ shishou:addEffect(fk.Damaged, {
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(skill.name) and target == player and player:getMark("@cangchu") > 0 and data.damageType == fk.FireDamage
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:removePlayerMark(player, "@cangchu")
     room:broadcastProperty(player, "MaxCards")

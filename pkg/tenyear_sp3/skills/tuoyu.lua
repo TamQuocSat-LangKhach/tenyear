@@ -17,11 +17,11 @@ Fk:loadTranslationTable{
 
 tuoyu:addEffect(fk.EventPhaseStart, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(tuoyu.name) and player.phase == Player.Play and not player:isKongcheng() and
       table.find({"1", "2", "3"}, function(n) return player:getMark("tuoyu"..n) > 0 end)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = player.player_cards[Player.Hand]
     local markedcards = {{}, {}, {}}
@@ -59,11 +59,11 @@ tuoyu:addEffect(fk.EventPhaseStart, {
 
 tuoyu:addEffect(fk.EventPhaseEnd, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(tuoyu.name) and player.phase == Player.Play and not player:isKongcheng() and
       table.find({"1", "2", "3"}, function(n) return player:getMark("tuoyu"..n) > 0 end)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cards = player.player_cards[Player.Hand]
     local markedcards = {{}, {}, {}}

@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 
 huizhi:addEffect(fk.EventPhaseStart, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(huizhi.name) and player.phase == Player.Start
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local success, ret = player.room:askToDiscard(player, {
       min_num = 0,
       include_equip = false,
@@ -29,7 +29,7 @@ huizhi:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local cost_data = event:getCostData(self)
     if #cost_data > 0 then

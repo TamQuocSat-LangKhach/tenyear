@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 }
 
 jingyin:addEffect(fk.AfterCardsMove, {
-  can_trigger = function(self, event, player, data)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(jingyin.name) or player:usedSkillTimes(jingyin.name) > 0 then return false end
     local room = player.room
     local move_event = room.logic:getCurrentEvent()
@@ -39,7 +39,7 @@ jingyin:addEffect(fk.AfterCardsMove, {
       end
     end
   end,
-  on_cost = function(self, event, player, data)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard, false)
     if use_event == nil then return false end
@@ -57,7 +57,7 @@ jingyin:addEffect(fk.AfterCardsMove, {
       return true
     end
   end,
-  on_use = function(self, event, player, data)
+  on_use = function(self, event, target, player, data)
     local cost_data = event:getCostData(skill)
     player.room:moveCardTo(cost_data[2], Card.PlayerHand, cost_data[1], fk.ReasonGive, jingyin.name, "", true, player.id, "@@jingyin-inhand")
   end,

@@ -13,10 +13,10 @@ Fk:loadTranslationTable{
 
 ty__huoshui:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__huoshui.name) and player.phase == Player.Start
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local n = math.max(player:getLostHp(), 1)
     n = math.min(n, 3)
     return player.room:askToUseActiveSkill(player, {

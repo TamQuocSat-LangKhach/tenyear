@@ -14,17 +14,17 @@ Fk:loadTranslationTable{
 
 zhenfengf:addEffect(fk.CardUsing, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(zhenfengf.name) and target ~= player and target.phase ~= Player.NotActive and target:getHandcardNum() <= target.hp
       and not target.dead and player:usedSkillTimes(zhenfengf.name, Player.HistoryTurn) == 0
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = zhenfengf.name,
       prompt = "#zhenfengf-invoke::" .. target.id
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local choices = {}
     for i = 0, target:getHandcardNum(), 1 do

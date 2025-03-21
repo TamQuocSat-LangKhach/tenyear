@@ -15,7 +15,7 @@ Fk:loadTranslationTable{
 
 zhishi:addEffect({fk.EventPhaseStart, fk.TargetConfirmed, fk.EnterDying}, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(skill.name) then
       if event == fk.EventPhaseStart then
         return target == player and player.phase == Player.Finish
@@ -26,7 +26,7 @@ zhishi:addEffect({fk.EventPhaseStart, fk.TargetConfirmed, fk.EnterDying}, {
       end
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     if event == fk.EventPhaseStart then
       local to = player.room:askToChoosePlayers(player, {
         targets = table.map(player.room.alive_players, Util.IdMapper),
@@ -55,7 +55,7 @@ zhishi:addEffect({fk.EventPhaseStart, fk.TargetConfirmed, fk.EnterDying}, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.EventPhaseStart then
       local to = room:getPlayerById(event:getCostData(skill))
@@ -74,10 +74,10 @@ zhishi:addEffect({fk.EventPhaseStart, fk.TargetConfirmed, fk.EnterDying}, {
 
 zhishi:addEffect({fk.TurnStart, fk.Death}, {
   global = false,
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and player:getMark(skill.name) ~= 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(player:getMark(skill.name))
     if not to.dead then

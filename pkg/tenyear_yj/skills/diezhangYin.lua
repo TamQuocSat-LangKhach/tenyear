@@ -1,35 +1,51 @@
-local diezhangYin = fk.CreateSkill {
-  name = "diezhangYin"
+local diezhang = fk.CreateSkill {
+  name = "diezhangYin",
 }
 
 Fk:loadTranslationTable{
-  ['diezhangYin'] = '叠嶂',
-  ['#diezhangYin-invoke'] = '叠嶂：你可以摸两张牌，视为对 %dest 使用【杀】',
-  [':diezhangYin'] = '每回合限一次，当你使用牌抵消其他角色使用的牌后，你可以摸两张牌视为对其使用一张【杀】。',
+  ["diezhangYin"] = "叠嶂",
+  [":diezhangYin"] = "每回合限一次，当你使用牌抵消其他角色使用的牌后，你可以摸两张牌视为对其使用一张【杀】。",
+
+  ["#diezhangYin-invoke"] = "叠嶂：你可以摸两张牌，视为对 %dest 使用【杀】",
 }
 
-diezhangYin:addEffect(fk.CardUseFinished, {
+diezhang:addEffect(fk.CardEffectCancelledOut, {
   anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(diezhangYin.name) and data.responseToEvent then
-      local from = player.room:getPlayerById(data.responseToEvent.from)
-      return from ~= player and not from.dead and not player:isProhibited(from, Fk:cloneCard("slash"))
+    if player:hasSkill(diezhang.name) and target ~= player and data.to == player and not target.dead and
+      not player:isProhibited(target, Fk:cloneCard("slash")) then
+      local use_event = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
+      if use_event == nil then return end
+      local yes = false
+      player.room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
+        local use = e.data
+        if use.responseToEvent == data then
+          if use.from == player then
+            yes = true
+          end
+          return true
+        end
+      end, use_event.id)
+      return yes
     end
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askToSkillInvoke(player, {
-      skill_name = diezhangYin.name,
-      prompt = "#diezhangYin-invoke::" .. data.responseToEvent.from
-    })
+    local room = player.room
+    if room:askToSkillInvoke(player, {
+      skill_name = diezhang.name,
+      prompt = "#diezhangYin-invoke::"..target.id,
+    }) then
+      event:setCostData(self, {tos = {target}})
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(data.responseToEvent.from)
-    player:drawCards(2, diezhangYin.name)
-    if not player.dead and not to.dead then
-      room:useVirtualCard("slash", nil, player, to, diezhangYin.name, true)
+    player:drawCards(2, diezhang.name)
+    if not player.dead and not target.dead then
+      room:useVirtualCard("slash", nil, player, target, diezhang.name, true)
     end
   end,
 })
 
-return diezhangYin
+return diezhang

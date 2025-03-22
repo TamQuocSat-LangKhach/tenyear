@@ -1,37 +1,56 @@
 local fazhu = fk.CreateSkill {
-  name = "fazhu"
+  name = "fazhu",
 }
 
 Fk:loadTranslationTable{
-  ['fazhu'] = '筏铸',
-  ['fazhu_active'] = '筏铸',
-  ['#fazhu-invoke'] = '筏铸：你可以重铸任意张非伤害牌，将获得的牌分配给任意角色',
-  ['#fazhu-give'] = '筏铸：你可以将这些牌分配给任意角色各一张，获得牌的角色可以使用一张无距离限制的【杀】',
-  ['#fazhu-use'] = '筏铸：你可以使用一张【杀】（无距离限制）',
-  [':fazhu'] = '准备阶段，你可以重铸你区域内任意张非伤害牌，然后将因此获得的牌交给至多等量名角色各一张，以此法获得牌的角色可以依次使用一张【杀】（无距离限制）。',
-  ['$fazhu1'] = '击风雨于共济，逆流亦溯千帆。',
-  ['$fazhu2'] = '泰山轻于大义，每思志士、何惧临渊。',
+  ["fazhu"] = "筏铸",
+  [":fazhu"] = "准备阶段，你可以重铸你区域内任意张非伤害牌，然后将因此获得的牌交给至多等量名角色各一张，以此法获得牌的角色可以依次"..
+  "使用一张【杀】（无距离限制）。",
+
+  ["#fazhu-invoke"] = "筏铸：你可以重铸任意张非伤害牌，将获得的牌分配给任意角色",
+  ["#fazhu-give"] = "筏铸：你可以将这些牌分配给任意角色各一张，获得牌的角色可以使用一张无距离限制的【杀】",
+  ["#fazhu-use"] = "筏铸：你可以使用一张【杀】（无距离限制）",
+
+  ["$fazhu1"] = "击风雨于共济，逆流亦溯千帆。",
+  ["$fazhu2"] = "泰山轻于大义，每思志士、何惧临渊。",
 }
 
 fazhu:addEffect(fk.EventPhaseStart, {
-  anim_type = "drawCard",
+  anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(fazhu) and player.phase == Player.Start and
-      table.find(player:getCardIds("hej"), function(id)
-        return not Fk:getCardById(id).is_damage_card
-      end)
+    return target == player and player:hasSkill(fazhu.name) and player.phase == Player.Start and
+      not player:isAllNude()
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    room:setPlayerMark(player, "fazhu_cards", player:getCardIds("j"))
-    local success, dat = room:askToUseActiveSkill(player, {
-      skill_name = "fazhu_active",
-      prompt = "#fazhu-invoke",
-      cancelable = true,
-    })
-    if success then
-      event:setCostData(self, dat)
-      return true
+    local cards = table.filter(player:getCardIds("hej"), function(id)
+      return not Fk:getCardById(id).is_damage_card
+    end)
+    if #cards > 0 then
+      cards = room:askToCards(player, {
+        min_num = 1,
+        max_num = 999,
+        include_equip = true,
+        skill_name = fazhu.name,
+        pattern = tostring(Exppattern{ id = cards }),
+        prompt = "#fazhu-invoke",
+        cancelable = true,
+        expand_pile = player:getCardIds("j"),
+      })
+      if #cards > 0 then
+        event:setCostData(self, {cards = cards})
+        return true
+      end
+    else
+      room:askToCards(player, {
+        min_num = 1,
+        max_num = 1,
+        include_equip = false,
+        skill_name = fazhu.name,
+        pattern = "false",
+        prompt = "#fazhu-invoke",
+        cancelable = true,
+      })
     end
   end,
   on_use = function(self, event, target, player, data)
@@ -39,9 +58,11 @@ fazhu:addEffect(fk.EventPhaseStart, {
     local cards = event:getCostData(self).cards
     if #cards == 0 then return end
     local to_give = room:recastCard(cards, player, fazhu.name)
+    if player.dead or player:isKongcheng() then return end
     to_give = table.filter(to_give, function(id)
       return table.contains(player:getCardIds("h"), id)
     end)
+    if #to_give == 0 then return end
     local result = room:askToYiji(player, {
       cards = to_give,
       targets = room.alive_players,
@@ -69,7 +90,10 @@ fazhu:addEffect(fk.EventPhaseStart, {
           skill_name = "slash",
           prompt = "#fazhu-use",
           cancelable = true,
-          extra_data = {bypass_distances = true, bypass_times = true},
+          extra_data = {
+            bypass_distances = true,
+            bypass_times = true,
+          },
         })
         if use then
           use.extraUse = true

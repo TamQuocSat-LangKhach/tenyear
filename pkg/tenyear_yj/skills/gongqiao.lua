@@ -1,19 +1,22 @@
-local gongqiao = fk.CreateSkill { name = "gongqiao" }
-
-Fk:loadTranslationTable {
-  ['gongqiao'] = '工巧',
-  ['#gongqiao-active'] = '发动 工巧，将一张手牌置入你的装备区',
-  ['gongqiao_prohibit'] = '没有可用装备栏',
-  ['#gongqiao_trigger'] = '工巧',
-  ['#gongqiao_trigger2'] = '工巧',
-  [':gongqiao'] = '出牌阶段限一次，你可以将一张手牌置入你的装备区（替换原装备，离开你的装备区时移出游戏）。若你的装备区里有以此法置入的：基本牌，你使用基本牌的数值+1；锦囊牌，你每回合首次使用一种类别的牌后摸一张牌；装备牌，你的手牌上限+3。',
-  ['$gongqiao1'] = '怀兼爱之心，琢世间百器。',
-  ['$gongqiao2'] = '机巧用尽，方化腐朽为神奇！',
+local gongqiao = fk.CreateSkill {
+  name = "gongqiao",
 }
 
-gongqiao:addEffect('active', {
+Fk:loadTranslationTable {
+  ["gongqiao"] = "工巧",
+  [":gongqiao"] = "出牌阶段限一次，你可以将一张手牌置入你的装备区（替换原装备）。若你的装备区里有以此法置入的：基本牌，你使用基本牌的数值+1；"..
+  "锦囊牌，你每回合首次使用一种类别的牌后摸一张牌；装备牌，你的手牌上限+3。",
+
+  ["#gongqiao"] = "工巧：将一张手牌置入你的装备区",
+  ["gongqiao_prohibit"] = "没有可用装备栏",
+
+  ["$gongqiao1"] = "怀兼爱之心，琢世间百器。",
+  ["$gongqiao2"] = "机巧用尽，方化腐朽为神奇！",
+}
+
+gongqiao:addEffect("active", {
   anim_type = "support",
-  prompt = "#gongqiao-active",
+  prompt = "#gongqiao",
   max_phase_use_time = 1,
   card_num = 1,
   target_num = 0,
@@ -106,7 +109,7 @@ gongqiao:addEffect(fk.CardUseFinished, {
   end,
 })
 
-gongqiao:addEffect('maxcards', {
+gongqiao:addEffect("maxcards", {
   correct_func = function(self, player)
     if player:hasSkill(gongqiao.name) then
       return 3

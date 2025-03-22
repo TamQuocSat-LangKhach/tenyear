@@ -40,7 +40,7 @@ fangtong:addEffect(fk.EventPhaseStart, {
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local n1 = Fk:getCardById(event:getCostData(self).cards).number
+    local n1 = Fk:getCardById(event:getCostData(self).cards[1]).number
     room:throwCard(event:getCostData(self).cards, fangtong.name, player, player)
     if player.dead or #player:getPile("zhangliang_fang") == 0 then return end
     local cards = room:askToCards(player, {

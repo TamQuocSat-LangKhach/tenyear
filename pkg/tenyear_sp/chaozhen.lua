@@ -1,11 +1,12 @@
 local chaozhen = fk.CreateSkill {
-  name = "chaozhen"
+  name = "chaozhen",
 }
 
 Fk:loadTranslationTable{
-  ['chaozhen'] = '朝镇',
-  ['#chaozhen-invoke'] = '朝镇：你可以从场上或牌堆中随机获得一张点数最小的牌',
-  [':chaozhen'] = '准备阶段或当你进入濒死状态时，你可以选择从场上或牌堆中随机获得一张点数最小的牌，若此牌点数为A，你回复1点体力，此技能本回合失效。',
+  ["chaozhen"] = "朝镇",
+  [":chaozhen"] = "准备阶段或当你进入濒死状态时，你可以选择从场上或牌堆中随机获得一张点数最小的牌，若此牌点数为A，你回复1点体力，此技能本回合失效。",
+
+  ["#chaozhen-invoke"] = "朝镇：你可以从场上或牌堆中随机获得一张点数最小的牌",
 }
 
 chaozhen:addEffect({fk.EventPhaseStart, fk.EnterDying}, {
@@ -50,7 +51,7 @@ chaozhen:addEffect({fk.EventPhaseStart, fk.EnterDying}, {
     if #cards == 0 then return end
     local card = table.random(cards)
     local yes = Fk:getCardById(card).number == 1
-    room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonPrey, chaozhen.name, nil, true, player.id)
+    room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonPrey, chaozhen.name, nil, true, player)
     if player.dead then return end
     if yes then
       room:invalidateSkill(player, chaozhen.name, "-turn")

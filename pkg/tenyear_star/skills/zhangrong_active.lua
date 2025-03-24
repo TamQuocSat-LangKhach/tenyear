@@ -1,31 +1,25 @@
 local zhangrong = fk.CreateSkill {
-  name = "zhangrong_active"
+  name = "zhangrong_active",
 }
 
 Fk:loadTranslationTable{
-  ['zhangrong_active'] = '掌戎',
-  ['zhangrong1'] = '失去体力',
-  ['zhangrong2'] = '弃置手牌',
+  ["zhangrong_active"] = "掌戎",
 }
 
-zhangrong:addEffect('active', {
-  name = "zhangrong_active",
+zhangrong:addEffect("active", {
   card_num = 0,
   min_target_num = 1,
-  max_target_num = function(player)
+  max_target_num = function(self, player)
     return player.hp
   end,
-  interaction = function()
-    return UI.ComboBox {choices = {"zhangrong1", "zhangrong2"}}
-  end,
+  interaction = UI.ComboBox {choices = {"zhangrong1", "zhangrong2"}},
   card_filter = Util.FalseFunc,
-  target_filter = function(self, player, to_select, selected, selected_cards, card)
+  target_filter = function(self, player, to_select, selected)
     if #selected < player.hp then
-      local target = Fk:currentRoom():getPlayerById(to_select)
-      if skill.interaction.data == "zhangrong1" then
-        return target.hp >= player.hp
-      elseif skill.interaction.data == "zhangrong2" then
-        return target:getHandcardNum() >= player:getHandcardNum() and not target:isKongcheng()
+      if self.interaction.data == "zhangrong1" then
+        return to_select.hp >= player.hp
+      elseif self.interaction.data == "zhangrong2" then
+        return to_select:getHandcardNum() >= player:getHandcardNum() and not to_select:isKongcheng()
       end
     end
   end,

@@ -1,25 +1,30 @@
 local xiaoyan = fk.CreateSkill {
-  name = "xiaoyan"
+  name = "xiaoyan",
 }
 
 Fk:loadTranslationTable{
-  ['xiaoyan'] = '硝焰',
-  ['#xiaoyan-give'] = '硝焰：你可以选择一张牌交给%src来回复1点体力',
-  [':xiaoyan'] = '游戏开始时，所有其他角色各受到你造成的1点火焰伤害，然后这些角色可以依次交给你一张牌并回复1点体力。',
-  ['$xiaoyan1'] = '万军付薪柴，戾火燃苍穹。',
-  ['$xiaoyan2'] = '九州硝烟起，烽火灼铁衣。',
+  ["xiaoyan"] = "硝焰",
+  [":xiaoyan"] = "游戏开始时，所有其他角色各受到你造成的1点火焰伤害，然后这些角色可以依次交给你一张牌并回复1点体力。",
+
+  ["#xiaoyan-give"] = "硝焰：你可以选择一张牌交给%src来回复1点体力",
+
+  ["$xiaoyan1"] = "万军付薪柴，戾火燃苍穹。",
+  ["$xiaoyan2"] = "九州硝烟起，烽火灼铁衣。",
 }
 
 xiaoyan:addEffect(fk.GameStart, {
+  anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(xiaoyan.name)
+    return player:hasSkill(xiaoyan.name) and #player.room:getOtherPlayers(player, false) > 0
   end,
-  on_cost = Util.TrueFunc,
+  on_cost = function (self, event, target, player, data)
+    local tos = player.room:getOtherPlayers(player)
+    event:setCostData(self, {tos = tos})
+    return true
+  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local targets = room:getOtherPlayers(player)
-    if #targets == 0 then return false end
-    room:doIndicate(player.id, table.map(targets, Util.IdMapper))
     for _, p in ipairs(targets) do
       if not p.dead then
         room:damage{
@@ -43,7 +48,7 @@ xiaoyan:addEffect(fk.GameStart, {
           prompt = "#xiaoyan-give:"..player.id,
         })
         if #card > 0 then
-          room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonGive, xiaoyan.name, nil, false, p.id)
+          room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonGive, xiaoyan.name, nil, false, p)
           if not p.dead and p:isWounded() then
             room:recover{
               who = p,

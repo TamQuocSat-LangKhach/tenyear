@@ -1,15 +1,17 @@
-local kuangzuo = fk.CreateSkill {
-  name = "kuangzuo"
+local kuangzuo_active = fk.CreateSkill {
+  name = "kuangzuo_active",
 }
 
 Fk:loadTranslationTable{
-  ['kuangzuo_active'] = '匡祚',
+  ["kuangzuo_active"] = "匡祚",
 }
 
-kuangzuo:addEffect('active', {
+kuangzuo_active:addEffect("active", {
   card_filter = function(self, player, to_select, selected)
-    return table.contains(player:getCardIds("he"), to_select) and Fk:getCardById(to_select).suit ~= Card.NoSuit and
-      table.every(selected, function(id) return Fk:getCardById(to_select).suit ~= Fk:getCardById(id).suit end)
+    return Fk:getCardById(to_select).suit ~= Card.NoSuit and
+      table.every(selected, function(id)
+        return Fk:getCardById(to_select):compareSuitWith(Fk:getCardById(id), true)
+      end)
   end,
   feasible = function (skill, player, selected_cards)
     local suits = {}
@@ -21,4 +23,4 @@ kuangzuo:addEffect('active', {
   end,
 })
 
-return kuangzuo
+return kuangzuo_active

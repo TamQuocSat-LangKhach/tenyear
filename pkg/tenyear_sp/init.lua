@@ -226,6 +226,66 @@ Fk:loadTranslationTable{
 }
 
 --高山仰止：王朗 刘徽
---武庙：诸葛亮 陆逊 关羽
+General:new(extension, "ty__wanglang", "wei", 3):addSkills { "ty__gushe", "ty__jici" }
+Fk:loadTranslationTable{
+  ["ty__wanglang"] = "王朗",
+  ["#ty__wanglang"] = "凤鹛",
+  ["illustrator:ty__wanglang"] = "第七个桔子",
+
+  ["~ty__wanglang"] = "我本东海弄墨客，如何枉做沙场魂……",
+}
+
+local liuhui = General:new(extension, "liuhui", "qun", 4)
+liuhui:addSkills { "geyuan", "jieshu", "gusuan" }
+liuhui:addRelatedSkill("geyuan_update")
+Fk:loadTranslationTable{
+  ["liuhui"] = "刘徽",
+  ["#liuhui"] = "周天古率",
+  ["cv:liuhui"] = "冰霜墨菊",
+  ["illustrator:liuhui"] = "凡果_肉山大魔王",
+
+  ["~liuhui"] = "算学如海，穷我一生，只得杯水……",
+}
+
+--武庙：诸葛亮 陆逊 关羽 皇甫嵩 陆抗
+General:new(extension, "wm__zhugeliang", "shu", 4, 7):addSkills { "jincui", "qingshi", "zhizhe" }
+Fk:loadTranslationTable{
+  ["wm__zhugeliang"] = "武诸葛亮",
+  ["#wm__zhugeliang"] = "忠武良弼",
+  ["designer:wm__zhugeliang"] = "韩旭",
+  ["illustrator:wm__zhugeliang"] = "梦回唐朝",
+  ["cv:wm__zhugeliang"] = "马洋",
+
+  ["~wm__zhugeliang"] = "天下事，了犹未了，终以不了了之……",
+}
+
+General:new(extension, "wm__luxun", "wu", 3):addSkills { "xiongmu", "zhangcai", "ruxian" }
+Fk:loadTranslationTable{
+  ["wm__luxun"] = "武陆逊",
+  ["#wm__luxun"] = "释武怀儒",
+  ["designer:wm__luxun"] = "韩旭",
+  ["illustrator:wm__luxun"] = "小新",
+
+  ["~wm__luxun"] = "此生清白，不为浊泥所染……",
+}
+
+General:new(extension, "wm__guanyu", "shu", 5):addSkills { "juewu", "wuyou", "yixian" }
+Fk:loadTranslationTable{
+  ["wm__guanyu"] = "武关羽",
+  ["#wm__guanyu"] = "义武千秋",
+  ["illustrator:wm__guanyu"] = "黯荧岛_小董",
+  ["designer:wm__guanyu"] = "韩旭",
+
+  ["~wm__guanyu"] = "天下泪染将军袍，且枕青山梦桃园……",
+}
+
+--General:new(extension, "wm__huangfusong", "qun", 4):addSkills { "chaozhen", "lianjie", "jiangxian" }
+Fk:loadTranslationTable{
+  ["wm__huangfusong"] = "武皇甫嵩",
+  ["#wm__huangfusong"] = "襄武翼汉",
+  --["illustrator:wm__huangfusong"] = "",
+
+  --["~wm__huangfusong"] = "",
+}
 
 return extension

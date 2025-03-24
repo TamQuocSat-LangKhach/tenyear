@@ -713,112 +713,6 @@ Fk:loadTranslationTable{
   ["@@xidi-inhand"] = "笛",
 }
 
-local dingfeng = General(extension, "tystar__dingfeng", "wu", 4)
-local dangchen = fk.CreateTriggerSkill{
-  name = "dangchen",
-  anim_type = "control",
-  events = {fk.EventPhaseStart},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player.phase == Player.Play and
-      table.find(player.room:getOtherPlayers(player), function(p)
-        return not p:isNude()
-      end)
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    local targets = table.filter(room:getOtherPlayers(player), function(p)
-      return not p:isNude()
-    end)
-    local to = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#dangchen-choose", self.name, true)
-    if #to > 0 then
-      self.cost_data = {tos = to}
-      return true
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local to = room:getPlayerById(self.cost_data.tos[1])
-    local cards = room:askForCard(to, 1, 999, true, self.name, false, nil, "#dangchen-give:"..player.id)
-    room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonGive, self.name, nil, false, to.id)
-    if not player.dead then
-      room:setPlayerMark(player, "@dangchen-turn", #cards)
-    end
-  end,
-}
-local dangchen_delay = fk.CreateTriggerSkill{
-  name = "#dangchen_delay",
-  anim_type = "offensive",
-  events = {fk.CardUsing},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:getMark("@dangchen-turn") > 0 and
-      (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) and data.tos
-  end,
-  on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, "dangchen", nil,
-      "#dangchen-invoke:::"..player:getMark("@dangchen-turn")..":"..data.card:toLogString())
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local numbers = {}
-    for i = 1, 13, 1 do
-      if i % player:getMark("@dangchen-turn") == 0 then
-        table.insert(numbers, tostring(i))
-      end
-    end
-    local judge = {
-      who = player,
-      reason = "dangchen",
-      pattern = ".|"..table.concat(numbers, ","),
-    }
-    room:judge(judge)
-    if judge.card:matchPattern(judge.pattern) then
-      data.additionalEffect = (data.additionalEffect or 0) + 1
-    end
-  end,
-}
-local jianyud = fk.CreateTriggerSkill{
-  name = "jianyud",
-  anim_type = "drawcard",
-  frequency = Skill.Compulsory,
-  events = {fk.AfterCardsMove},
-  can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) then
-      local turn_event = player.room.logic:getCurrentEvent():findParent(GameEvent.Turn)
-      if turn_event == nil or turn_event.data[1] ~= player then return end
-      for _, move in ipairs(data) do
-        if move.from and move.from ~= player.id then
-          for _, info in ipairs(move.moveInfo) do
-            if info.fromArea == Card.PlayerEquip then
-              return true
-            end
-          end
-        end
-      end
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    player:drawCards(1, self.name)
-  end,
-}
-dangchen:addRelatedSkill(dangchen_delay)
-dingfeng:addSkill(dangchen)
-dingfeng:addSkill(jianyud)
-Fk:loadTranslationTable{
-  ["tystar__dingfeng"] = "星丁奉",
-  ["#tystar__dingfeng"] = "廓清阶陛",
-
-  ["dangchen"] = "荡尘",
-  [":dangchen"] = "出牌阶段开始时，你可以令一名角色交给你至少一张牌，然后你本回合使用牌时，可以进行一次判定，若判定的点数为其交给你"..
-  "牌数的倍数，此牌额外结算一次效果。",
-  ["jianyud"] = "翦羽",
-  [":jianyud"] = "锁定技，其他角色在你的回合内失去装备区的牌后，你摸一张牌。",
-  ["#dangchen-choose"] = "荡尘：你可以令一名角色交给你至少一张牌",
-  ["#dangchen-give"] = "荡尘：请交给 %src 至少一张牌",
-  ["@dangchen-turn"] = "荡尘",
-  ["#dangchen_delay"] = "荡尘",
-  ["#dangchen-invoke"] = "荡尘：是否进行判定？若为%arg的倍数，此%arg2额外结算一次",
-}
-
 local wenchou = General(extension, "tystar__wenchou", "qun", 4)
 local lianzhan = fk.CreateTriggerSkill{
   name = "lianzhan",
@@ -1221,11 +1115,12 @@ Fk:loadTranslationTable{
 }
 
 local xuxin = General(extension, "xuxin", "wu", 3, 3, General.Female)
-
 Fk:loadTranslationTable{
   ["xuxin"] = "徐馨",
   ["#xuxin"] = "望云思归",
-  ["~xuxin"] = "",
+  ["illustrator:xuxin"] = "鬼画府",
+
+  ["~xuxin"] = "无情总是帝王家。",
 }
 
 local yuxian = fk.CreateTriggerSkill{
@@ -1283,9 +1178,6 @@ local yuxian = fk.CreateTriggerSkill{
     player.room:setPlayerMark(player, "@[suits]yuxian", 0)
   end,
 }
-
-xuxin:addSkill(yuxian)
-
 Fk:loadTranslationTable{
   ["yuxian"] = "育贤",
   [":yuxian"] = "记录你于出牌阶段内使用的前四张手牌的花色直到你的下个回合开始；"..
@@ -1293,6 +1185,9 @@ Fk:loadTranslationTable{
 
   ["#yuxian-invoke"] = "是否发动 育贤，与 %dest 各摸1张牌",
   ["@[suits]yuxian"] = "育贤",
+
+  ["$yuxian1"] = "建业风寒，登儿益常添衣。",
+  ["$yuxian2"] = "妾不为汝妻，尚不能为人母乎？",
 }
 
 local minshan = fk.CreateTriggerSkill{
@@ -1320,13 +1215,14 @@ local minshan = fk.CreateTriggerSkill{
   end,
 }
 
-xuxin:addSkill(minshan)
-
 Fk:loadTranslationTable{
   ["minshan"] = "愍善",
   [":minshan"] = "当你受到伤害后，你可以令一名角色随机获得牌堆里的两张与伤害牌花色相同的牌。",
 
   ["#minshan-choose"] = "是否发动 愍善，令一名角色从牌堆随机获得2张 %arg 牌",
+
+  ["$minshan1"] = "红颜易老，恻隐之心未褪。",
+  ["$minshan2"] = "心虽存微妒，见落叶而怆然。",
 }
 
 local xianniang = fk.CreateTriggerSkill{
@@ -1472,16 +1368,20 @@ Fk:loadTranslationTable{
   ["#xianniang-choose"] = "是否发动 献酿，选择1名手牌数不小于你的角色，获得其至多2张牌",
   ["#xianniang-give"] = "献酿：可以选择至多%arg张牌交给一名角色（其中的基本牌将被视为【酒】）",
   ["@@xianniang-inhand"] = "献酿",
-  ["#xianniang_filter"] = "献酿",
+
+  ["$xianniang1"] = "将军！嘿嘿~酒来了~",
+  ["$xianniang2"] = "酒里没毒，真是的，自己吓自己！",
 }
 
-local houcheng = General(extension, "houcheng", "qun", 6)
+local houcheng = General(extension, "houcheng", "qun", 5)
 houcheng:addSkill(xianniang)
 
 Fk:loadTranslationTable{
   ["houcheng"] = "侯成",
   ["#houcheng"] = "猢威挽骊",
-  ["~houcheng"] = "",
+  ["illustrator:houcheng"] = "鬼画府",
+
+  ["~houcheng"] = "将军，你不喝酒呀？",
 }
 
 local laoyan = fk.CreateTriggerSkill{

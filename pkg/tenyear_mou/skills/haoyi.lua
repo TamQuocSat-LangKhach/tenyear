@@ -1,18 +1,21 @@
 local haoyi = fk.CreateSkill {
-  name = "haoyi"
+  name = "haoyi",
 }
 
 Fk:loadTranslationTable{
-  ['haoyi'] = '豪义',
-  [':haoyi'] = '结束阶段，你可以获得弃牌堆里于此回合内移至此区域的未造成过伤害的所有伤害类牌，然后你可以将这些牌中的任意张交给其他角色。',
-  ['$haoyi1'] = '今缴丧敌之炙，且宴麾下袍泽。',
-  ['$haoyi2'] = '龙骧枯荣一体，岂曰同袍无衣。',
+  ["haoyi"] = "豪义",
+  [":haoyi"] = "结束阶段，你可以获得弃牌堆中所有本回合进入且未造成过伤害的伤害类牌，然后可以任意分配给其他角色。",
+
+  ["#haoyi-give"] = "豪义：你可以将这些牌分配给其他角色",
+
+  ["$haoyi1"] = "今缴丧敌之炙，且宴麾下袍泽。",
+  ["$haoyi2"] = "龙骧枯荣一体，岂曰同袍无衣。",
 }
 
 haoyi:addEffect(fk.EventPhaseStart, {
   anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(haoyi.name) and player.phase == Player.Finish then
+    if target == player and player:hasSkill(haoyi.name) and player.phase == Player.Finish then
       local room = player.room
       local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
       if turn_event == nil then return false end
@@ -28,12 +31,10 @@ haoyi:addEffect(fk.EventPhaseStart, {
             end
           end
         end
-        return false
       end, end_id)
       if #cards == 0 then return false end
-      local damage
       room.logic:getActualDamageEvents(1, function (e)
-        damage = e.data[1]
+        local damage = e.data
         if damage.card then
           for _, id in ipairs(Card:getIdList(damage.card)) do
             if table.removeOne(cards, id) and #cards == 0 then
@@ -43,24 +44,27 @@ haoyi:addEffect(fk.EventPhaseStart, {
         end
       end, nil, end_id)
       if #cards > 0 then
-        event:setCostData(skill, cards)
+        event:setCostData(self, {cards = cards})
         return true
       end
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local cards = table.simpleClone(event:getCostData(skill))
-    room:obtainCard(player, cards, true, fk.ReasonJustMove, player.id, haoyi.name)
-    if player.dead then return false end
-    cards = table.filter(player:getCardIds(Player.Hand), function (id)
+    local cards = table.simpleClone(event:getCostData(self).cards)
+    room:obtainCard(player, cards, true, fk.ReasonJustMove, player, haoyi.name)
+    if player.dead then return end
+    cards = table.filter(player:getCardIds("h"), function (id)
       return table.contains(cards, id)
     end)
-    if #cards > 0 then
+    if #cards > 0 and #player.room:getOtherPlayers(player, false) > 0 then
       room:askToYiji(player, {
         cards = cards,
-        targets = room:getOtherPlayers(player),
-        skill_name = haoyi.name
+        targets = room.alive_players,
+        skill_name = haoyi.name,
+        min_num = 0,
+        max_num = 999,
+        prompt = "#haoyi-give",
       })
     end
   end,

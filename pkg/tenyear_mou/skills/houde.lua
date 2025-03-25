@@ -1,14 +1,17 @@
 local houde = fk.CreateSkill {
-  name = "houde"
+  name = "houde",
 }
 
 Fk:loadTranslationTable{
-  ['houde'] = '厚德',
-  ['#houde-slash-invoke'] = '是否发动 厚德，弃置一张牌，令%dest使用的%arg对你无效',
-  ['#houde-trick-invoke'] = '是否发动 厚德，弃置%dest的一张牌，令%dest使用的%arg对你无效',
-  [':houde'] = '当你于其他角色的出牌阶段内第一次成为红色【杀】/黑色普通锦囊牌的目标后，你可以弃置一张牌/弃置其一张牌，此【杀】/锦囊牌对你无效。',
-  ['$houde1'] = '君子有德，可以载天下之重。',
-  ['$houde2'] = '南山有松，任尔风雨雷霆。',
+  ["houde"] = "厚德",
+  [":houde"] = "当你于其他角色的出牌阶段内：首次成为红色【杀】的目标后，你可以弃置一张牌，令此【杀】对你无效；首次成为黑色普通锦囊牌的目标后，"..
+  "你可以弃置其一张牌，令此锦囊牌对你无效。",
+
+  ["#houde-slash-invoke"] = "厚德：你可以弃置一张牌，令此%arg对你无效",
+  ["#houde-trick-invoke"] = "厚德：你可以弃置 %dest 一张牌，令此%arg对你无效",
+
+  ["$houde1"] = "君子有德，可以载天下之重。",
+  ["$houde2"] = "南山有松，任尔风雨雷霆。",
 }
 
 houde:addEffect(fk.TargetConfirmed, {
@@ -24,9 +27,9 @@ houde:addEffect(fk.TargetConfirmed, {
         if use_event == nil then return false end
         if mark == 0 then
           room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
-            local use = e.data[1]
+            local use = e.data
             if use.card.trueName == "slash" and use.card.color == Card.Red and
-              table.contains(TargetGroup:getRealTargets(use.tos), player.id) then
+              table.contains(use.tos, player) then
               mark = e.id
               room:setPlayerMark(player, "houde_slash-phase", mark)
               return true
@@ -41,9 +44,9 @@ houde:addEffect(fk.TargetConfirmed, {
         if use_event == nil then return false end
         if mark == 0 then
           room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
-            local use = e.data[1]
+            local use = e.data
             if use.card:isCommonTrick() and use.card.color == Card.Black and
-              table.contains(TargetGroup:getRealTargets(use.tos), player.id) then
+              table.contains(use.tos, player) then
               mark = e.id
               room:setPlayerMark(player, "houde_trick-phase", mark)
               return true
@@ -55,46 +58,45 @@ houde:addEffect(fk.TargetConfirmed, {
     end
   end,
   on_cost = function(self, event, target, player, data)
+    local room = player.room
     if data.card.trueName == "slash" then
-      local card = player.room:askToDiscard(player, {
+      local card = room:askToDiscard(player, {
         min_num = 1,
         max_num = 1,
         include_equip = true,
         skill_name = houde.name,
         cancelable = true,
-        pattern = ".",
-        prompt = "#houde-slash-invoke::" .. data.from .. ":" .. data.card:toLogString(),
-        skip = true
+        prompt = "#houde-slash-invoke:::"..data.card:toLogString(),
+        skip = true,
       })
       if #card > 0 then
-        event:setCostData(skill, card)
+        event:setCostData(self, {cards = card})
         return true
       end
     else
-      local room = player.room
       if room:askToSkillInvoke(player, {
         skill_name = houde.name,
-        prompt = "#houde-trick-invoke:" .. room.current.id .. ":" .. data.from .. ":" .. data.card:toLogString()
+        prompt = "#houde-trick-invoke::"..room.current.id..":"..data.card:toLogString()
       }) then
-        room:doIndicate(player.id, {room.current.id})
+        event:setCostData(self, {target = {room.current}})
         return true
       end
     end
   end,
   on_use = function(self, event, target, player, data)
+    local room = player.room
     if data.card.trueName == "slash" then
-      local cost_data = event:getCostData(skill)
-      player.room:throwCard(cost_data, houde.name, player, player)
+      room:throwCard(event:getCostData(self).cards, houde.name, player, player)
     else
-      local room = player.room
       local id = room:askToChooseCard(player, {
         target = room.current,
         flag = "he",
-        skill_name = houde.name
+        skill_name = houde.name,
       })
-      room:throwCard({id}, houde.name, room.current, player)
+      room:throwCard(id, houde.name, room.current, player)
     end
-    table.insertIfNeed(data.nullifiedTargets, player.id)
+    data.use.nullifiedTargets = data.use.nullifiedTargets or {}
+    table.insertIfNeed(data.use.nullifiedTargets, player)
   end,
 })
 

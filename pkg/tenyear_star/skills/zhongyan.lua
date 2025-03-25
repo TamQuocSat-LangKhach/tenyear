@@ -16,30 +16,6 @@ Fk:loadTranslationTable{
   ["$zhongyanz2"] = "胸纳百川，当汇凌日之沧海。",
 }
 
-Fk:addPoxiMethod{
-  name = "zhongyanz",
-  prompt = "#zhongyanz-exchange",
-  card_filter = function(to_select, selected, data)
-    if #selected < 2 then
-      if #selected == 0 then
-        return true
-      else
-        if table.contains(data[1][2], selected[1]) then
-          return table.contains(data[2][2], to_select)
-        else
-          return table.contains(data[1][2], to_select)
-        end
-      end
-    end
-  end,
-  feasible = function(selected)
-    return #selected == 2
-  end,
-  default_choice = function (data, extra_data)
-    return {data[1][2][1], data[2][2][1]}
-  end,
-}
-
 local function DoZhongyanz(player, source, choice)
   local room = player.room
   if choice == "recover" then
@@ -95,30 +71,18 @@ zhongyan:addEffect("active", {
       room:cleanProcessingArea(cards)
       return
     end
-    local results = room:askToPoxi(to, {
-      poxi_type = zhongyan.name,
-      data = {
-        { "Top", cards },
-        { "$Hand", to:getCardIds("h") },
+    local results = room:askToArrangeCards(to, {
+      skill_name = zhongyan.name,
+      card_map = {
+        "Top", cards,
+        "hand_card", to:getCardIds("h"),
       },
-      cancelable = false,
+      prompt = "#gaojian-exchange",
     })
-    local to_hand = {}
-    if #results > 0 then
-      to_hand = table.filter(results, function(id)
-        return table.contains(cards, id)
-      end)
-      table.removeOne(results, to_hand[1])
-      for i = #cards, 1, -1 do
-        if cards[i] == to_hand[1] then
-          cards[i] = results[1]
-          break
-        end
-      end
-    else
-      to_hand, cards[1] = {cards[1]}, to:getCardIds("h")[1]
+    if #results == 0 then
+      results = {{to:getCardIds("h")[1]}, {cards[1]}}
     end
-    room:swapCardsWithPile(to, cards, to_hand, zhongyan.name, "Top", false, to)
+    room:swapCardsWithPile(to, results[1], results[2], zhongyan.name, "Top")
     if to.dead then return end
     if table.every(cards, function(id)
       return Fk:getCardById(id).color == Fk:getCardById(cards[1]).color

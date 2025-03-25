@@ -1,26 +1,28 @@
 local zuojun = fk.CreateSkill {
-  name = "zuojun"
+  name = "zuojun",
 }
 
 Fk:loadTranslationTable{
-  ['zuojun'] = '佐军',
-  ['#zuojun'] = '佐军：令一名角色摸三张牌，然后其执行后续效果',
-  ['zuojun1'] = '这些牌无法使用且不计入手牌上限直到你下回合结束',
-  ['zuojun2'] = '失去1点体力再摸一张牌，然后使用其中任意张，弃置剩余牌',
-  ['@@zuojun_prohibit-inhand'] = '佐军',
-  ['@@zuojun-inhand'] = '佐军',
-  ['#zuojun-use'] = '佐军：请使用这些牌，未使用的将被弃置',
-  [':zuojun'] = '出牌阶段限一次，你可以选择一名角色，其摸三张牌并选择：1.直到其下个回合结束之前，其不能使用或弃置这些牌且这些牌不计入其手牌上限；2.失去1点体力，摸一张牌，依次可以使用以此法摸的牌，弃置以此法摸的牌。',
-  ['$zuojun1'] = '彼不得安，我取其逸，则大局可定。',
-  ['$zuojun2'] = '义者无敌，骄者先败，今非用兵之时。',
+  ["zuojun"] = "佐军",
+  [":zuojun"] = "出牌阶段限一次，你可以选择一名角色，其摸三张牌并选择：1.直到其下个回合结束，其不能使用或弃置这些牌且这些牌不计入手牌上限；"..
+  "2.失去1点体力再摸一张牌，然后使用其中任意张牌，弃置剩余的牌。",
+
+  ["#zuojun"] = "佐军：令一名角色摸三张牌，然后其执行后续效果",
+  ["zuojun1"] = "这些牌无法使用且不计入手牌上限直到你下回合结束",
+  ["zuojun2"] = "失去1点体力再摸一张牌，然后使用其中任意张，弃置剩余牌",
+  ["@@zuojun_prohibit-inhand"] = "佐军",
+  ["@@zuojun-inhand"] = "佐军",
+  ["#zuojun-use"] = "佐军：请使用这些牌，未使用的将被弃置",
+
+  ["$zuojun1"] = "彼不得安，我取其逸，则大局可定。",
+  ["$zuojun2"] = "义者无敌，骄者先败，今非用兵之时。",
 }
 
--- 主动技能效果
-zuojun:addEffect('active', {
+zuojun:addEffect("active", {
   anim_type = "support",
+  prompt = "#zuojun",
   card_num = 0,
   target_num = 1,
-  prompt = "#zuojun",
   can_use = function(self, player)
     return player:usedSkillTimes(zuojun.name, Player.HistoryPhase) == 0
   end,
@@ -29,7 +31,7 @@ zuojun:addEffect('active', {
     return #selected == 0
   end,
   on_use = function(self, room, effect)
-    local target = room:getPlayerById(effect.tos[1])
+    local target = effect.tos[1]
     target:drawCards(3, zuojun.name, "top", "zuojun-inhand")
     if target.dead then return end
     local choice = room:askToChoice(target, {
@@ -38,7 +40,7 @@ zuojun:addEffect('active', {
     })
     if choice == "zuojun1" then
       local card
-      local cards = table.filter(target:getCardIds(Player.Hand), function (id)
+      local cards = table.filter(target:getCardIds("h"), function (id)
         card = Fk:getCardById(id)
         if card:getMark("zuojun-inhand") > 0 then
           room:setCardMark(card, "zuojun-inhand", 0)
@@ -50,7 +52,7 @@ zuojun:addEffect('active', {
         local mark = target:getTableMark("zuojun_prohibit")
         table.insertTableIfNeed(mark, cards)
         room:setPlayerMark(target, "zuojun_prohibit", mark)
-        if target.phase ~= Player.NotActive then
+        if room.current == target then
           mark = target:getTableMark("zuojun_noclean-turn")
           table.insertTableIfNeed(mark, cards)
           room:setPlayerMark(target, "zuojun_noclean-turn", mark)
@@ -75,7 +77,10 @@ zuojun:addEffect('active', {
         pattern = cards,
         skill_name = zuojun.name,
         prompt = "#zuojun-use",
-        extra_data = { bypass_times = true, extraUse = true },
+        extra_data = {
+          bypass_times = true,
+          extraUse = true,
+        },
       }) do
         if target.dead then return end
         cards = table.filter(target:getCardIds(Player.Hand), function (id)
@@ -95,14 +100,13 @@ zuojun:addEffect('active', {
   end,
 })
 
--- 禁用技能效果
-zuojun:addEffect('prohibit', {
-  name = "#zuojun_prohibit",
+zuojun:addEffect("prohibit", {
   prohibit_use = function(self, player, card)
-    local mark = player:getTableMark("zuojun_prohibit")
-    if #mark > 0 then
+    if player:getMark("zuojun_prohibit") ~= 0 then
       local cards = card:isVirtual() and card.subcards or {card.id}
-      return table.find(cards, function(id) return table.contains(mark, id) end)
+      return table.find(cards, function(id)
+        return table.contains(player:getTableMark("zuojun_prohibit"), id)
+      end)
     end
   end,
   prohibit_discard = function(self, player, card)
@@ -110,16 +114,14 @@ zuojun:addEffect('prohibit', {
   end,
 })
 
--- 最大手牌技能效果
-zuojun:addEffect('maxcards', {
-  name = "#zuojun_maxcards",
+zuojun:addEffect("maxcards", {
   exclude_from = function(self, player, card)
     return table.contains(player:getTableMark("zuojun_prohibit"), card.id)
   end,
 })
 
--- 触发技效果
-zuojun:addEffect(fk.AfterTurnEnd, {
+zuojun:addEffect(fk.TurnEnd, {
+  late_refresh = true,
   can_refresh = function(self, event, target, player, data)
     return target == player and player:getMark("zuojun_prohibit") ~= player:getMark("zuojun_noclean-turn")
   end,
@@ -127,7 +129,7 @@ zuojun:addEffect(fk.AfterTurnEnd, {
     local room = player.room
     local mark = player:getTableMark("zuojun_noclean-turn")
     local card
-    for _, id in ipairs(player:getCardIds(Player.Hand)) do
+    for _, id in ipairs(player:getCardIds("h")) do
       card = Fk:getCardById(id)
       if card:getMark("@@zuojun_prohibit-inhand") > 0 and not table.contains(mark, id) then
         room:setCardMark(card, "@@zuojun_prohibit-inhand", 0)

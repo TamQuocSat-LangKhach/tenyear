@@ -1,18 +1,19 @@
 local zijin = fk.CreateSkill {
-  name = "zijin"
+  name = "zijin",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
-  ['zijin'] = '自矜',
-  ['#zijin-discard'] = '自矜：你需要弃置一张牌，否则你失去1点体力',
-  [':zijin'] = '锁定技，当牌使用结算结束后，若使用者为你且此牌未造成过伤害，你选择：1.弃置一张牌；2.失去1点体力。',
+  ["zijin"] = "自矜",
+  [":zijin"] = "锁定技，当你使用牌后，若此牌未造成伤害，你需弃置一张牌或失去1点体力。",
+
+  ["#zijin-discard"] = "自矜：弃置一张牌，否则失去1点体力",
 }
 
 zijin:addEffect(fk.CardUseFinished, {
   anim_type = "negative",
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return player == target and player:hasSkill(zijin.name) and not data.damageDealt
+    return target == player and player:hasSkill(zijin.name) and not data.damageDealt
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

@@ -1,13 +1,15 @@
 local shizha = fk.CreateSkill {
-  name = "shizha"
+  name = "shizha",
 }
 
 Fk:loadTranslationTable{
-  ['shizha'] = '识诈',
-  ['#shizha-invoke'] = '识诈：是否令 %dest 使用的%arg无效并获得之？',
-  [':shizha'] = '每回合限一次，其他角色使用牌时，若此牌是其本回合体力变化后使用的第一张牌，你可令此牌无效并获得此牌。',
-  ['$shizha1'] = '不好，江东鼠辈欲趁东风来袭！',
-  ['$shizha2'] = '江上起东风，恐战局生变。',
+  ["shizha"] = "识诈",
+  [":shizha"] = "每回合限一次，其他角色使用牌时，若此牌是其本回合体力变化后使用的第一张牌，你可以令此牌无效并获得之。",
+
+  ["#shizha-invoke"] = "识诈：是否令 %dest 使用的%arg无效并获得之？",
+
+  ["$shizha1"] = "不好，江东鼠辈欲趁东风来袭！",
+  ["$shizha2"] = "江上起东风，恐战局生变。",
 }
 
 shizha:addEffect(fk.CardUsing, {
@@ -19,7 +21,7 @@ shizha:addEffect(fk.CardUsing, {
       if turn_event == nil then return false end
       local changehp_event_id = 1
       room.logic:getEventsByRule(GameEvent.ChangeHp, 1, function (e)
-        if e.data[1] == target and e.data[2] ~= 0 then
+        if e.data.who == target and e.data.num ~= 0 then
           changehp_event_id = e.end_id
           return true
         end
@@ -29,7 +31,7 @@ shizha:addEffect(fk.CardUsing, {
       if use_event == nil then return false end
       local use_event_id = 1
       room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
-        if e.data[1].from == target.id then
+        if e.data.from == target.id then
           use_event_id = e.id
         end
       end, changehp_event_id)
@@ -37,23 +39,21 @@ shizha:addEffect(fk.CardUsing, {
     end
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askToSkillInvoke(player, {
+    local room = player.room
+    if room:askToSkillInvoke(player, {
       skill_name = shizha.name,
-      prompt = "#shizha-invoke::"..target.id..":"..data.card:toLogString()
-    })
+      prompt = "#shizha-invoke::"..target.id..":"..data.card:toLogString(),
+    }) then
+      event:setCostData(self, {tos = {target}})
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:doIndicate(player.id, {target.id})
-    data.tos = {}
-    room:sendLog{
-      type = "#CardNullifiedBySkill",
-      from = target.id,
-      arg = shizha.name,
-      arg2 = data.card:toLogString(),
-    }
+    data.toCard = nil
+    data:removeAllTargets()
     if room:getCardArea(data.card) == Card.Processing then
-      room:moveCardTo(data.card, Card.PlayerHand, player, fk.ReasonPrey, shizha.name, nil, true, player.id)
+      room:moveCardTo(data.card, Card.PlayerHand, player, fk.ReasonJustMove, shizha.name, nil, true, player)
     end
   end,
 })

@@ -1,98 +1,101 @@
 local lianzhi = fk.CreateSkill {
-  name = "lianzhi"
+  name = "lianzhi",
 }
 
 Fk:loadTranslationTable{
-  ['lianzhi'] = '连枝',
-  ['#lianzhi-choose'] = '连枝：选择一名角色成为“连枝”角色',
-  ['#lianzhi2-choose'] = '连枝：你可以选择一名角色，你与其获得技能〖受责〗',
-  ['shouze'] = '受责',
-  ['@dongguiren_jiao'] = '绞',
-  ['@lianzhi'] = '连枝',
-  [':lianzhi'] = '游戏开始时，你选择一名其他角色。每回合限一次，当你进入濒死状态时，若该角色没有死亡，你回复1点体力且与其各摸一张牌。该角色死亡时，你可以选择一名其他角色，你与其获得〖受责〗，其获得与你等量的“绞”标记（至少1个）。',
-  ['$lianzhi1'] = '刘董同气连枝，一损则俱损。',
-  ['$lianzhi2'] = '妾虽女流，然亦有忠侍陛下之心。',
+  ["lianzhi"] = "连枝",
+  [":lianzhi"] = "游戏开始时，你选择一名其他角色。每回合限一次，当你进入濒死状态时，若该角色没有死亡，你回复1点体力并与其各摸一张牌。"..
+  "该角色死亡时，你可以选择一名其他角色，你与其获得〖受责〗，其获得与你等量的“绞”标记（至少1个）。",
+
+  ["@lianzhi"] = "连枝",
+  ["#lianzhi-choose"] = "连枝：选择一名角色成为“连枝”角色",
+  ["#lianzhi2-choose"] = "连枝：你可以选择一名角色，你与其获得技能〖受责〗",
+
+  ["$lianzhi1"] = "刘董同气连枝，一损则俱损。",
+  ["$lianzhi2"] = "妾虽女流，然亦有忠侍陛下之心。",
 }
 
--- GameStart and Deathed events
-lianzhi:addEffect({fk.GameStart, fk.Deathed}, {
+lianzhi:addLoseEffect(function (self, player, is_death)
+  local room = player.room
+  if player:getMark(lianzhi.name) ~= 0 then
+    local to = room:getPlayerById(player:getMark(lianzhi.name))
+    room:removeTableMark(to, "@lianzhi", player.id)
+  end
+end)
+
+lianzhi:addEffect(fk.GameStart, {
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(lianzhi.name) then
-      if event == fk.GameStart then
-        return true
-      else
-        return player:getMark("lianzhi") == target.id
-      end
-    end
+    return player:hasSkill(lianzhi.name) and #player.room:getOtherPlayers(player, false) > 0
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
+  on_use = function (self, event, target, player, data)
     local room = player.room
-    local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
-    if event == fk.GameStart then
-      local to = room:askToChoosePlayers(player, {
-        targets = targets,
-        min_num = 1,
-        max_num = 1,
-        prompt = "#lianzhi-choose",
-        skill_name = lianzhi.name,
-        cancelable = false,
-        no_indicate = true
-      })
-      if #to > 0 then
-        to = room:getPlayerById(to[1])
-      else
-        to = room:getPlayerById(table.random(targets))
-      end
-      room:setPlayerMark(player, "lianzhi", to.id)
-    else
-      local to = room:askToChoosePlayers(player, {
-        targets = targets,
-        min_num = 1,
-        max_num = 1,
-        prompt = "#lianzhi2-choose",
-        skill_name = lianzhi.name,
-        cancelable = true
-      })
-      if #to > 0 then
-        to = room:getPlayerById(to[1])
-        room:handleAddLoseSkills(player, "shouze", nil, true, false)
-        room:handleAddLoseSkills(to, "shouze", nil, true, false)
-        room:addPlayerMark(to, "@dongguiren_jiao", math.max(player:getMark("@dongguiren_jiao"), 1))
-      end
-    end
+    local to = room:askToChoosePlayers(player, {
+      min_num = 1,
+      max_num = 1,
+      targets = room:getOtherPlayers(player, false),
+      skill_name = lianzhi.name,
+      prompt = "#lianzhi-choose",
+      cancelable = false,
+    })[1]
+    room:addTableMark(to, "@lianzhi", {player.id})
+    room:setPlayerMark(player, lianzhi.name, to.id)
   end,
 })
 
--- EnterDying event for #lianzhi_trigger
 lianzhi:addEffect(fk.EnterDying, {
+  anim_type = "support",
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(lianzhi.name) and player:getMark("lianzhi") ~= 0 and
-      not player.room:getPlayerById(player:getMark("lianzhi")).dead and player:usedSkillTimes("#lianzhi_trigger", Player.HistoryTurn) == 0
+    return target == player and player:hasSkill(lianzhi.name) and player:getMark(lianzhi.name) ~= 0 and
+      not player.room:getPlayerById(player:getMark(lianzhi.name)).dead and
+      player:usedEffectTimes(self.name, Player.HistoryTurn) == 0
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    player:broadcastSkillInvoke(lianzhi.name)
-    room:notifySkillInvoked(player, lianzhi.name, "support")
-    local lianzhi_id = player:getMark("lianzhi")
-    local to = room:getPlayerById(lianzhi_id)
-    if player:getMark("@lianzhi") == 0 then
-      room:setPlayerMark(player, "@lianzhi", to.general)
-    end
-    room:doIndicate(player.id, {lianzhi_id})
-    room:recover({
+    local to = room:getPlayerById(player:getMark(lianzhi.name))
+    room:recover{
       who = player,
       num = 1,
       recoverBy = player,
       skillName = lianzhi.name
-    })
+    }
     if not player.dead then
       player:drawCards(1, lianzhi.name)
     end
     if not to.dead then
       to:drawCards(1, lianzhi.name)
     end
+  end,
+})
+
+lianzhi:addEffect(fk.Death, {
+  anim_type = "control",
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(lianzhi.name) and player:getMark(lianzhi.name) == target.id and
+      #player.room:getOtherPlayers(player, false) > 0
+  end,
+  on_cost = function (self, event, target, player, data)
+    local room = player.room
+    local to = room:askToChoosePlayers(player, {
+      min_num = 1,
+      max_num = 1,
+      targets = room:getOtherPlayers(player, false),
+      skill_name = lianzhi.name,
+      prompt = "#lianzhi2-choose",
+      cancelable = true,
+    })
+    if #to > 0 then
+      event:setCostData(self, {tos = to})
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = event:getCostData(self).tos[1]
+    room:handleAddLoseSkills(player, "shouze")
+    room:handleAddLoseSkills(to, "shouze")
+    room:addPlayerMark(to, "@dongguiren_jiao", math.max(player:getMark("@dongguiren_jiao"), 1))
   end,
 })
 

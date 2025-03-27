@@ -15,7 +15,7 @@ fengliao:addEffect(fk.TargetSpecified, {
   anim_type = "switch",
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(fengliao.name) and
-      #data.use.tos == 1 and not data.to.dead
+      data:isOnlyTarget(data.to) and not data.to.dead
   end,
   on_cost = function(self, event, target, player, data)
     event:setCostData(self, { tos = { data.to } })

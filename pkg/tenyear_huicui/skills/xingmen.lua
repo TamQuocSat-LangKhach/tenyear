@@ -1,73 +1,90 @@
 local xingmen = fk.CreateSkill {
-  name = "xingmen"
+  name = "xingmen",
 }
 
 Fk:loadTranslationTable{
-  ['xingmen'] = '兴门',
-  ['@@xingmen-inhand'] = '兴门',
-  [':xingmen'] = '当你因执行〖守执〗的效果而弃置手牌后，你可以回复1点体力。当你因摸牌而得到牌后，若这些牌数大于1，你使用其中的红色牌不能被响应。',
-  ['$xingmen1'] = '尔等，休道我关氏无人！',
-  ['$xingmen2'] = '义在人心，人人皆可成关公！',
+  ["xingmen"] = "兴门",
+  [":xingmen"] = "当你因〖守执〗弃置手牌后，你可以回复1点体力。当你一次从牌堆获得超过一张牌后，你使用其中的红色牌不能被响应。",
+
+  ["#xingmen_recover"] = "兴门：你可以回复1点体力",
+  ["@@xingmen-inhand"] = "兴门",
+
+  ["$xingmen1"] = "尔等，休道我关氏无人！",
+  ["$xingmen2"] = "义在人心，人人皆可成关公！",
 }
 
 xingmen:addEffect(fk.AfterCardsMove, {
-  global = false,
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(xingmen.name) then
-      local cards = {}
-      local recover = false
+    if player:hasSkill(xingmen.name) and player:isWounded() then
       for _, move in ipairs(data) do
-        if move.to == player.id and move.toArea == Player.Hand and move.moveReason == fk.ReasonDraw then
-          for _, info in ipairs(move.moveInfo) do
-            table.insertIfNeed(cards, info.cardId)
-          end
+        if move.from == player and move.skillName == "shouzhi" and move.moveReason == fk.ReasonDiscard then
+          return true
         end
-        if move.from == player.id and move.moveReason == fk.ReasonDiscard and
-          move.skillName == shouzhi.name and #move.moveInfo > 0 and player:isWounded() then
-          recover = true
-        end
-      end
-      if #cards < 2 then
-        cards = {}
-      end
-      cards = table.filter(cards, function (id)
-        return Fk:getCardById(id).color == Card.Red
-      end)
-      if #cards > 0 or recover then
-        event:setCostData(self, {cards, recover})
-        return true
       end
     end
   end,
-  on_cost = Util.TrueFunc,
+  on_cost = function (self, event, target, player, data)
+    return player.room:askToSkillInvoke(player, {
+      skill_name = xingmen.name,
+      prompt = "#xingmen_recover",
+    })
+  end,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    local cards = player:getCardIds(Player.Hand)
-    for _, id in ipairs(event:getCostData(self)[1]) do
-      if table.contains(cards, id) then
-        room:setCardMark(Fk:getCardById(id), "@@xingmen-inhand", 1)
+    player.room:recover{
+      who = player,
+      num = 1,
+      recoverBy = player,
+      skillName = xingmen.name,
+    }
+  end,
+
+  can_refresh = function (self, event, target, player, data)
+    if player:hasSkill(xingmen.name) then
+      for _, move in ipairs(data) do
+        if move.to == player and move.toArea == Player.Hand then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.DrawPile then
+              return true
+            end
+          end
+        end
       end
     end
-    if event:getCostData(self)[2] and room:askToSkillInvoke(player, { skill_name = xingmen.name }) then
-      room:notifySkillInvoked(player, xingmen.name)
-      player:broadcastSkillInvoke(xingmen.name)
-      room:recover{
-        who = player,
-        num = 1,
-        recoverBy = player,
-        skillName = xingmen.name
-      }
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local room = player.room
+    local cards = {}
+    for _, move in ipairs(data) do
+      if move.to == player and move.toArea == Player.Hand then
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.DrawPile then
+            table.insertIfNeed(cards, info.cardId)
+          end
+        end
+      end
+    end
+    if #cards > 1 then
+      cards = table.filter(cards, function (id)
+        return table.contains(player:getCardIds("h"), id) and Fk:getCardById(id).color == Card.Red
+      end)
+      if #cards > 0 then
+        for _, id in ipairs(cards) do
+          room:setCardMark(Fk:getCardById(id), "@@xingmen-inhand", 1)
+        end
+      end
     end
   end,
 })
 
 xingmen:addEffect(fk.PreCardUse, {
   can_refresh = function(self, event, target, player, data)
-    return player == target and (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) and
-      not data.card:isVirtual() and data.card:getMark("@@xingmen-inhand") > 0
+    return target == player and (data.card.trueName == "slash" or data.card:isCommonTrick()) and
+      table.every(Card:getIdList(data.card), function (id)
+        return Fk:getCardById(id):getMark("@@xingmen-inhand") > 0
+      end)
   end,
   on_refresh = function(self, event, target, player, data)
-    data.disresponsiveList = table.map(player.room.players, Util.IdMapper)
+    data.disresponsiveList = table.simpleClone(player.room.players)
   end,
 })
 

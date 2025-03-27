@@ -18,7 +18,7 @@ zhenwei:addEffect(fk.TargetConfirming, {
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(zhenwei.name) and not player:isNude() and data.from ~= player and target ~= player and
       (data.card.trueName == "slash" or (data.card.type == Card.TypeTrick and data.card.color == Card.Black)) and
-      #data.use.tos == 1 and target.hp <= player.hp
+      data:isOnlyTarget(target) and target.hp <= player.hp
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room

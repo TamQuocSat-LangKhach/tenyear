@@ -1,14 +1,15 @@
 local jijing = fk.CreateSkill {
-  name = "jijing"
+  name = "jijing",
 }
 
 Fk:loadTranslationTable{
-  ['jijing'] = '吉境',
-  ['jijing_active'] = '吉境',
-  ['#jijing-discard'] = '吉境：你可以弃置任意张点数之和为%arg的牌，回复1点体力',
-  [':jijing'] = '当你受到伤害后，你可以判定，然后你可以弃置任意张点数之和等于判定结果的牌，若如此做，你回复1点体力',
-  ['$jijing1'] = '吉梦赐福，顺应天命。',
-  ['$jijing2'] = '梦之指引，必为吉运。',
+  ["jijing"] = "吉境",
+  [":jijing"] = "当你受到伤害后，你可以判定，然后你可以弃置任意张点数之和等于判定结果的牌，若如此做，你回复1点体力",
+
+  ["#jijing-discard"] = "吉境：你可以弃置任意张点数之和为%arg的牌，回复1点体力",
+
+  ["$jijing1"] = "吉梦赐福，顺应天命。",
+  ["$jijing2"] = "梦之指引，必为吉运。",
 }
 
 jijing:addEffect(fk.Damaged, {
@@ -17,26 +18,27 @@ jijing:addEffect(fk.Damaged, {
     local room = player.room
     local judge = {
       who = player,
-      reason = skill.name,
+      reason = jijing.name,
     }
     room:judge(judge)
-    if player.dead or player:isNude() then return end
+    if player.dead or player:isNude() or judge.card.number == 0 then return end
     local n = judge.card.number
-    room:setPlayerMark(player, "jijing-tmp", n)
     local success, dat = room:askToUseActiveSkill(player, {
       skill_name = "jijing_active",
       prompt = "#jijing-discard:::" .. n,
       cancelable = true,
+      extra_data = {
+        jijing_number = n,
+      }
     })
-    room:setPlayerMark(player, "jijing-tmp", 0)
-    if success then
-      room:throwCard(dat.cards, skill.name, player, player)
+    if success and dat then
+      room:throwCard(dat.cards, jijing.name, player, player)
       if not player.dead and player:isWounded() then
         room:recover{
           who = player,
           num = 1,
           recoverBy = player,
-          skillName = skill.name,
+          skillName = jijing.name,
         }
       end
     end

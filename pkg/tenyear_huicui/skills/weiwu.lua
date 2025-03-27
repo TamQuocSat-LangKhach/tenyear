@@ -1,17 +1,21 @@
 local weiwu = fk.CreateSkill {
-  name = "weiwu"
+  name = "weiwu",
 }
 
 Fk:loadTranslationTable{
-  ['weiwu'] = '违忤',
-  [':weiwu'] = '出牌阶段限一次，你可以将一张红色牌当无距离限制的【顺手牵羊】使用。',
-  ['$weiwu1'] = '凉州寸土，不可拱手让人。',
-  ['$weiwu2'] = '明遵旨，暗忤意。',
+  ["weiwu"] = "违忤",
+  [":weiwu"] = "出牌阶段限一次，你可以将一张红色牌当无距离限制的【顺手牵羊】使用。",
+
+  ["#weiwu"] = "违忤：你可以将一张红色牌当无距离限制的【顺手牵羊】使用",
+
+  ["$weiwu1"] = "凉州寸土，不可拱手让人。",
+  ["$weiwu2"] = "明遵旨，暗忤意。",
 }
 
-weiwu:addEffect('viewas', {
+weiwu:addEffect("viewas", {
   anim_type = "control",
-  pattern = "snatch",
+  prompt = "#weiwu",
+  handly_pile = true,
   card_filter = function(self, player, to_select, selected)
     return #selected == 0 and Fk:getCardById(to_select).color == Card.Red
   end,
@@ -27,9 +31,9 @@ weiwu:addEffect('viewas', {
   end,
 })
 
-weiwu:addEffect('targetmod', {
+weiwu:addEffect("targetmod", {
   bypass_distances = function(self, player, skill, card, to)
-    return table.contains(card.skillNames, weiwu.name)
+    return card and table.contains(card.skillNames, weiwu.name)
   end,
 })
 

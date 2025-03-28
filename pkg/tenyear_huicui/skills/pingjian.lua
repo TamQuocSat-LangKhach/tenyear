@@ -9,7 +9,6 @@ Fk:loadTranslationTable{
 
   ["#ty__pingjian"] = "评荐：从三个出牌阶段的技能中选择一个学习",
   ["#ty__pingjian-choice"] = "评荐：选择要学习的技能",
-  ["#ty__pingjian-active"] = "评荐：请发动“%arg”",
 
   ["$ty__pingjian1"] = "识人读心，评荐推达。",
   ["$ty__pingjian2"] = "月旦雅评，试论天下。",

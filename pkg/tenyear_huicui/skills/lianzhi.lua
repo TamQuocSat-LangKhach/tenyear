@@ -7,7 +7,7 @@ Fk:loadTranslationTable{
   [":lianzhi"] = "游戏开始时，你选择一名其他角色。每回合限一次，当你进入濒死状态时，若该角色没有死亡，你回复1点体力并与其各摸一张牌。"..
   "该角色死亡时，你可以选择一名其他角色，你与其获得〖受责〗，其获得与你等量的“绞”标记（至少1个）。",
 
-  ["@lianzhi"] = "连枝",
+  ["@@lianzhi"] = "连枝",
   ["#lianzhi-choose"] = "连枝：选择一名角色成为“连枝”角色",
   ["#lianzhi2-choose"] = "连枝：你可以选择一名角色，你与其获得技能〖受责〗",
 
@@ -19,7 +19,7 @@ lianzhi:addLoseEffect(function (self, player, is_death)
   local room = player.room
   if player:getMark(lianzhi.name) ~= 0 then
     local to = room:getPlayerById(player:getMark(lianzhi.name))
-    room:removeTableMark(to, "@lianzhi", player.id)
+    room:removeTableMark(to, "@@lianzhi", player.id)
   end
 end)
 
@@ -38,7 +38,7 @@ lianzhi:addEffect(fk.GameStart, {
       prompt = "#lianzhi-choose",
       cancelable = false,
     })[1]
-    room:addTableMark(to, "@lianzhi", {player.id})
+    room:addTableMark(to, "@@lianzhi", {player.id})
     room:setPlayerMark(player, lianzhi.name, to.id)
   end,
 })

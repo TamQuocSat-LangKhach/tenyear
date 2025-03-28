@@ -50,7 +50,7 @@ Fk:loadTranslationTable{
   ["~ty__xushao"] = "守节好耻，不可逡巡……",
 }
 
---诸侯伐董：丁原√ 王荣√ 麹义√ 韩馥
+--诸侯伐董：丁原√ 王荣√ 麹义√ 韩馥√
 local dingyuan = General:new(extension, "ty__dingyuan", "qun", 4)
 dingyuan:addSkills { "cixiao", "xianshuai" }
 dingyuan:addRelatedSkill("panshi")
@@ -87,15 +87,132 @@ General:new(extension, "hanfu", "qun", 4):addSkills { "jieyingh", "ty__weipo" }
 Fk:loadTranslationTable{
   ["hanfu"] = "韩馥",
   ["#hanfu"] = "度势恇然",
-  ["designer:hanfu"] = "hanfu",
   ["illustrator:hanfu"] = "福州明暗",
 
   ["~hanfu"] = "袁本初，你为何不放过我！",
 }
 
---徐州风云：陶谦 曹嵩 张邈 丘力居
---中原狼烟：董承 胡车儿 邹氏 曹安民
---虓虎悲歌：郝萌 严夫人 朱灵 阎柔
+--徐州风云：陶谦√ 曹嵩√ 张邈√ 丘力居√
+General:new(extension, "ty__taoqian", "qun", 4):addSkills { "zhaohuo", "ty__yixiang", "ty__yirang" }
+Fk:loadTranslationTable{
+  ["ty__taoqian"] = "陶谦",
+  ["#ty__taoqian"] = "膺秉温仁",
+  ["illustrator:ty__taoqian"] = "福州明暗",
+
+  ["$zhaohuo_ty__taoqian1"] = "覆巢之下，安有完卵。",
+  ["$zhaohuo_ty__taoqian2"] = "四战之地，兵连祸结。",
+  ["~ty__taoqian"] = "原知万事空，谁解托州意？",
+}
+
+General:new(extension, "ty__caosong", "wei", 4):addSkills { "lilu", "yizhengc" }
+Fk:loadTranslationTable{
+  ["ty__caosong"] = "曹嵩",
+  ["#ty__caosong"] = "依权弼子",
+  ["designer:ty__caosong"] = "步穗",
+  ["illustrator:ty__caosong"] = "凝聚永恒",
+
+  ["~ty__caosong"] = "孟德，勿忘汝父之仇！",
+}
+
+local zhangmiao = General:new(extension, "zhangmiao", "qun", 4)
+zhangmiao:addSkills { "mouni", "zongfan" }
+zhangmiao:addRelatedSkill("zhangu")
+Fk:loadTranslationTable{
+  ["zhangmiao"] = "张邈",
+  ["#zhangmiao"] = "苔岑往却",
+  ["designer:zhangmiao"] = "步穗",
+  ["illustrator:zhangmiao"] = "猎枭",
+
+  ["~zhangmiao"] = "独木终难支矣。",
+}
+
+General:new(extension, "qiuliju", "qun", 4, 6):addSkills { "koulue", "suirenq" }
+Fk:loadTranslationTable{
+  ["qiuliju"] = "丘力居",
+  ["#qiuliju"] = "乌丸王",
+  ["illustrator:qiuliju"] = "盲特",
+
+  ["~qiuliju"] = "乌丸危矣！",
+}
+
+--中原狼烟：董承√ 胡车儿√ 邹氏√ 曹安民√
+General:new(extension, "ty__dongcheng", "qun", 4):addSkills { "xuezhao" }
+Fk:loadTranslationTable{
+  ["ty__dongcheng"] = "董承",
+  ["#ty__dongcheng"] = "扬义誓诛",
+  ["designer:ty__dongcheng"] = "步穗",
+  ["illustrator:ty__dongcheng"] = "游漫美绘",
+
+  ["~ty__dongcheng"] = "是谁走漏了风声？",
+}
+
+General:new(extension, "ty__hucheer", "qun", 4):addSkills { "ty__daoji", "fuzhong" }
+Fk:loadTranslationTable{
+  ["ty__hucheer"] = "胡车儿",
+  ["#ty__hucheer"] = "惩奸除恶",
+  ["illustrator:ty__hucheer"] = "游漫美绘",
+  ["designer:ty__hucheer"] = "韩旭",
+
+  ["~ty__hucheer"] = "好快的涯角枪！",
+}
+
+General:new(extension, "ty__zoushi", "qun", 3, 3, General.Female):addSkills { "ty__huoshui", "ty__qingcheng" }
+Fk:loadTranslationTable{
+  ["ty__zoushi"] = "邹氏",
+  ["#ty__zoushi"] = "惑心之魅",
+  ["illustrator:ty__zoushi"] = "猎枭",
+
+  ["~ty__zoushi"] = "年老色衰了吗……",
+}
+
+General:new(extension, "caoanmin", "wei", 4):addSkills { "xianwei" }
+Fk:loadTranslationTable{
+  ["caoanmin"] = "曹安民",
+  ["#caoanmin"] = "履薄临深",
+  ["illustrator:caoanmin"] = "君桓文化",
+
+  ["~caoanmin"] = "伯父快走！",
+}
+
+--虓虎悲歌：郝萌√ 严夫人 朱灵√ 阎柔√
+General:new(extension, "ty__haomeng", "qun", 7):addSkills { "xiongmang" }
+Fk:loadTranslationTable{
+  ["ty__haomeng"] = "郝萌",
+  ["#ty__haomeng"] = "悖虎之伥",
+  ["cv:ty__haomeng"] = "虞晓旭",
+  ["illustrator:ty__haomeng"] = "猎枭",
+
+  ["~ty__haomeng"] = "曹性，汝欲反我不成？",
+}
+
+General:new(extension, "yanfuren", "qun", 3, 3, General.Female):addSkills { "channi", "nifu" }
+Fk:loadTranslationTable{
+  ["yanfuren"] = "严夫人",
+  ["#yanfuren"] = "霜天薄裳",
+  ["cv:yanfuren"] = "亦喵酱",
+  ["illustrator:yanfuren"] = "君桓文化",
+
+  ["~yanfuren"] = "妾身绝不会害将军呀！",
+}
+
+General:new(extension, "ty__zhuling", "wei", 4):addSkills { "ty__zhanyi" }
+Fk:loadTranslationTable{
+  ["ty__zhuling"] = "朱灵",
+  ["#ty__zhuling"] = "良将之亚",
+  ["illustrator:ty__zhuling"] = "XXX&Karneval",
+
+  ["~ty__zhuling"] = "吾，错付曹公……",
+}
+
+General:new(extension, "yanrou", "wei", 4):addSkills { "choutao", "xiangshu" }
+Fk:loadTranslationTable{
+  ["yanrou"] = "阎柔",
+  ["#yanrou"] = "冠玉啸北",
+  ["illustrator:yanrou"] = "凝聚永恒",
+
+  ["~yanrou"] = "寒风折戍矛，铁衣裹枯骨……",
+}
+
 --群雄伺动：严白虎x
 --文和乱武：李傕 郭汜 樊稠 张济 梁兴 唐姬 段煨 张横 牛辅 董翓 李傕郭汜
 --逐鹿天下：张恭 吕凯 卫温诸葛直 卑弥呼

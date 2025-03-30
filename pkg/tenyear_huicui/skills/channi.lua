@@ -63,36 +63,11 @@ channi:addEffect("active", {
   end,
 })
 
-channi:addEffect(fk.Damage, {
-  mute = true,
-  is_delay_effect = true,
-  can_trigger = function(self, event, target, player, data)
-    if not player.dead and target and not target.dead and data.card and
-      table.contains(data.card.skillNames, channi.name) and player.room.logic:damageByCardEffect() then
-      local room = player.room
-      local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
-      if not use_event then return false end
-      local use = use_event.data
-      if use.extra_data then
-        local channi_data = use.extra_data.channi_data
-        if channi_data and channi_data[1] == player.id and channi_data[2] == target.id then
-          event:setCostData(self, {choice = channi_data[3]})
-          return true
-        end
-      end
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    target:drawCards(event:getCostData(self).choice, channi.name)
-  end
-})
-
 local spec = {
   can_trigger = function(self, event, target, player, data)
     if not player.dead and target and not target.dead and data.card and
       table.contains(data.card.skillNames, channi.name) then
-      local room = player.room
-      local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+      local use_event = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
       if not use_event then return false end
       local use = use_event.data
       if use.extra_data then
@@ -105,6 +80,15 @@ local spec = {
     end
   end,
 }
+
+channi:addEffect(fk.Damage, {
+  mute = true,
+  is_delay_effect = true,
+  can_trigger = spec.can_trigger,
+  on_use = function(self, event, target, player, data)
+    target:drawCards(event:getCostData(self).choice, channi.name)
+  end
+})
 
 channi:addEffect(fk.Damaged, {
   mute = true,

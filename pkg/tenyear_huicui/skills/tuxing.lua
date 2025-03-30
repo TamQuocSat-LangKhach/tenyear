@@ -16,11 +16,9 @@ Fk:loadTranslationTable{
 tuxing:addEffect(fk.AreaAborted, {
   anim_type = "support",
   trigger_times = function(self, event, target, player, data)
-    local n = 0
-    for _, value in pairs(data.slots) do
-      n = n + value
-    end
-    return n
+    local slots = table.simpleClone(data.slots)
+    table.removeOne(slots, Player.JudgeSlot)
+    return #slots
   end,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(tuxing.name)

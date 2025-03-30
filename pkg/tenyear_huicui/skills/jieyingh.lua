@@ -58,7 +58,7 @@ jieyingh:addEffect(fk.AfterCardTargetDeclared, {
   can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("@jieyingh-turn") ~= 0 and
       (data.card.trueName == "slash" or data.card:isCommonTrick()) and
-      #data.tos == 1 and #data:getExtraTargets() > 0
+      data:isOnlyTarget(data.tos[1]) and #data:getExtraTargets() > 0
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room

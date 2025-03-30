@@ -18,7 +18,7 @@ yinjun:addEffect(fk.CardUseFinished, {
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(yinjun.name) and data.tos and
       (data.card.trueName == "slash" or data.card.type == Card.TypeTrick) and data:IsUsingHandcard(player) and
-      data.tos[1] ~= player and data:isOnlyTarget(data.tos[1]) and not data.tos[1].dead and
+      data.tos[1] ~= player and data:isOnlyTarget(data.tos[1]) and
       not player:prohibitUse(Fk:cloneCard("slash")) and not player:isProhibited(data.tos[1], Fk:cloneCard("slash"))
   end,
   on_cost = function(self, event, target, player, data)

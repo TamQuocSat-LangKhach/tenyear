@@ -18,7 +18,7 @@ fudou:addEffect(fk.TargetSpecified, {
   anim_type = "control",
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(fudou.name) and data.to ~= player and
-      #data.use.tos == 1 and data.card.color ~= Card.NoColor then
+      data:isOnlyTarget(data.to) and data.card.color ~= Card.NoColor then
       local mark = player:getTableMark("fudou_record")
       if table.contains(mark, data.to.id) then
         return data.card.color == Card.Black

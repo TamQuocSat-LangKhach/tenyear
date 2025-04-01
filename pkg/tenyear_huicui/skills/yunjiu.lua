@@ -4,7 +4,7 @@ local yunjiu = fk.CreateSkill {
 
 Fk:loadTranslationTable{
   ["yunjiu"] = "运柩",
-  [":yunjiu"] = "当一名角色死亡时，你可以将其区域内一张牌交给一名其他角色。若如此做，你加1体力上限并回复1点体力。",
+  [":yunjiu"] = "当一名角色死亡时，你可以将其区域内一张牌交给一名其他角色。若如此做，你加1点体力上限并回复1点体力。",
 
   ["#yunjiu-give"] = "运柩：将 %dest 的一张牌交给一名其他角色",
 
@@ -26,6 +26,7 @@ yunjiu:addEffect(fk.Death, {
       min_num = 1,
       max_num = 1,
       prompt = "#yunjiu-give::" .. target.id,
+      expand_pile = target:getCardIds("hej"),
     })
     if player.dead then return end
     room:changeMaxHp(player, 1)

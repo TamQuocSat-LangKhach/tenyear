@@ -36,9 +36,7 @@ sanshi:addEffect(fk.TurnEnd, {
       end)
       if #cards == 0 then return end
       local ids = {}
-      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
-      if turn_event == nil then return end
-      room.logic:getEventsByRule(GameEvent.MoveCards, 1, function (e)
+      room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
         for _, move in ipairs(e.data) do
           for _, info in ipairs(move.moveInfo) do
             local id = info.cardId
@@ -61,7 +59,7 @@ sanshi:addEffect(fk.TurnEnd, {
             end
           end
         end
-      end, turn_event.id)
+      end, Player.HistoryTurn)
       if #ids > 0 then
         event:setCostData(self, {cards = ids})
         return true

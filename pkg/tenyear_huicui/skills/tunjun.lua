@@ -1,5 +1,6 @@
 local tunjun = fk.CreateSkill {
   name = "tunjun",
+  tags = { Skill.Limited },
 }
 
 Fk:loadTranslationTable{

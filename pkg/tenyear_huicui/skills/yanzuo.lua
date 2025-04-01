@@ -65,21 +65,8 @@ yanzuo:addEffect("active", {
 yanzuo:addAcquireEffect(function (self, player, is_start)
   local room = player.room
   if room:getBanner(yanzuo.name) == nil then
-    local names = {}
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card.type == Card.TypeBasic then
-        table.insertIfNeed(names, card.name)
-      end
-    end
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card:isCommonTrick() then
-        table.insertIfNeed(names, card.name)
-      end
-    end
     local ids = {}
-    for _, name in ipairs(names) do
+    for _, name in ipairs(Fk:getAllCardNames("bt", false, true)) do
       table.insert(ids, room:printCard(name).id)
     end
     room:setBanner(yanzuo.name, ids)

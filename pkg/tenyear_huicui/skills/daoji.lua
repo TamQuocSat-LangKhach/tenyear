@@ -71,12 +71,12 @@ daoji:addEffect("prohibit", {
 
 daoji:addAcquireEffect(function (self, player, is_start)
   local room = player.room
-  room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
+  room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
     local use = e.data
     if use.card.sub_type == Card.SubtypeWeapon then
       room:setPlayerMark(use.from, "ty__daoji_used_weapon", 1)
     end
-  end, 0)
+  end, Player.HistoryGame)
 end)
 
 return daoji

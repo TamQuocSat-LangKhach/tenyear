@@ -1,5 +1,6 @@
 local chenlue = fk.CreateSkill {
   name = "chenlue",
+  tags = { Skill.Limited },
 }
 
 Fk:loadTranslationTable{

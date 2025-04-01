@@ -46,12 +46,10 @@ xunji:addEffect(fk.EventPhaseStart, {
     local room = player.room
     local mark = player:getMark("@@xunji")
     room:setPlayerMark(player, "@@xunji", 0)
-    local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
-    if not turn_event then return false end
-    if #room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
+    if #room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
       local use = e.data[1]
       return use.from == player.id and use.card.color == Card.Black
-    end, turn_event.id) == 0 then return false end
+    end, Player.HistoryTurn) == 0 then return false end
     for _, id in ipairs(mark) do
       if player.dead then return end
       local p = room:getPlayerById(id)

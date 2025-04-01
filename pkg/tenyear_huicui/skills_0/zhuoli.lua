@@ -15,22 +15,19 @@ zhuoli:addEffect(fk.TurnEnd, {
   can_trigger = function(self, event, target, player, data)
     local room = player.room
     if player:hasSkill(zhuoli.name) and (player.maxHp < #room.players or player:isWounded()) then
-      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
-      if turn_event == nil then return false end
-      local end_id = turn_event.id
-      local events = room.logic:getEventsByRule(GameEvent.UseCard, player.hp + 1, function (e)
-        return e.data[1].from == player.id
-      end, end_id)
+      local events = room.logic:getEventsOfScope(GameEvent.UseCard, player.hp + 1, function (e)
+        return e.data.from == player
+      end, Player.HistoryTurn)
       if #events > player.hp then return true end
       local x = 0
-      events = room.logic:getEventsByRule(GameEvent.MoveCards, 1, function (e)
+      events = room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
         for _, move in ipairs(e.data) do
           if move.to == player.id and move.toArea == Player.Hand then
             x = x + #move.moveInfo
           end
         end
         return x > player.hp
-      end, end_id)
+      end, Player.HistoryTurn)
       return x > player.hp
     end
   end,

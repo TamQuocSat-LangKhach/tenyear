@@ -17,14 +17,12 @@ local spec = {
       local x, y = player:getAttackRange(), player:getMark("jilis_times-turn")
       if x >= y then
         local room = player.room
-        local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
-        if turn_event == nil then return false end
         y = y + #room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
           return e.data.from == player
-        end, turn_event.id)
+        end, nil, Player.HistoryTurn)
         y = y + #room.logic:getEventsByRule(GameEvent.RespondCard, 1, function (e)
           return e.data.from == player
-        end, turn_event.id)
+        end, nil, Player.HistoryTurn)
         room:setPlayerMark(player, "jilis_times-turn", y)
         return x == y
       end

@@ -19,13 +19,10 @@ jichou:addEffect(fk.EventPhaseStart, {
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(jichou.name) and player.phase == Player.Finish then
       local room = player.room
-      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, true)
-      if turn_event == nil then return false end
-
       local names = {}
       local cards = {}
 
-      room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
+      room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
         local use = e.data
         if use.from == player then
           if table.contains(names, use.card.trueName) then
@@ -35,7 +32,7 @@ jichou:addEffect(fk.EventPhaseStart, {
           table.insert(names, use.card.trueName)
           table.insertTableIfNeed(cards, Card:getIdList(use.card))
         end
-      end, turn_event.id)
+      end, Player.HistoryTurn)
 
       cards = table.filter(cards, function (id)
         return room:getCardArea(id) == Card.DiscardPile

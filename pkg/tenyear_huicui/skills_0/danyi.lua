@@ -19,8 +19,8 @@ danyi:addEffect(fk.TargetSpecified, {
       local last_tos = {}
       room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
         if e.id < use_event.id then
-          local use = e.data[1]
-          if use.from == player.id then
+          local use = e.data
+          if use.from == player then
             last_tos = TargetGroup:getRealTargets(use.tos)
             return true
           end

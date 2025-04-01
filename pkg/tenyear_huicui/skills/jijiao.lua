@@ -56,7 +56,7 @@ jijiao:addEffect("active", {
           end
         end
       end
-    end, Player.HistoryGame)
+    end, 0)
     ids = table.filter(ids, function (id)
       return table.contains(room.discard_pile, id)
     end)

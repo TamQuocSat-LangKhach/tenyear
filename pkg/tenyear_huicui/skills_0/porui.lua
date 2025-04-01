@@ -30,9 +30,7 @@ porui:addEffect(fk.EventPhaseStart, {
     if player:hasSkill(porui) and not player:isNude() and target ~= player and target.phase == Player.Finish
       and player:usedSkillTimes(porui.name, Player.HistoryRound) < (player:getMark("gonghu1") == 0 and 1 or 2) then
       local room = player.room
-      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
-      local end_id = turn_event.id
-      return #room.logic:getEventsByRule(GameEvent.MoveCards, 1, function (e)
+      return #room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
         for _, move in ipairs(e.data) do
           if move.from ~= nil and move.from ~= player.id and move.from ~= target.id and not room:getPlayerById(move.from).dead
             and (move.to ~= move.from or (move.toArea ~= Card.PlayerHand and move.toArea ~= Card.PlayerEquip)) then
@@ -44,15 +42,13 @@ porui:addEffect(fk.EventPhaseStart, {
           end
         end
         return false
-      end, end_id) > 0
+      end, Player.HistoryTurn) > 0
     end
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
-    local end_id = turn_event.id
     local num_map = {}
-    room.logic:getEventsByRule(GameEvent.MoveCards, 1, function (e)
+    room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
       for _, move in ipairs(e.data) do
         if move.from ~= nil and move.from ~= player.id and move.from ~= target.id
           and (move.to ~= move.from or (move.toArea ~= Card.PlayerHand and move.toArea ~= Card.PlayerEquip)) then
@@ -68,7 +64,7 @@ porui:addEffect(fk.EventPhaseStart, {
         end
       end
       return false
-    end, end_id)
+    end, Player.HistoryTurn)
     local targets = table.filter(room.alive_players, function (p)
       return num_map[tostring(p.id)]
     end)

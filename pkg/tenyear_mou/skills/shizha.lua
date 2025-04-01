@@ -25,7 +25,7 @@ shizha:addEffect(fk.CardUsing, {
           changehp_event_id = e.end_id
           return true
         end
-      end, turn_event.id)
+      end, nil, Player.HistoryTurn)
       if changehp_event_id == 1 then return false end
       local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
       if use_event == nil then return false end

@@ -17,11 +17,8 @@ haoyi:addEffect(fk.EventPhaseStart, {
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(haoyi.name) and player.phase == Player.Finish then
       local room = player.room
-      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
-      if turn_event == nil then return false end
-      local end_id = turn_event.id
       local cards = {}
-      room.logic:getEventsByRule(GameEvent.MoveCards, 1, function (e)
+      room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
         for _, move in ipairs(e.data) do
           if move.toArea == Card.DiscardPile then
             for _, info in ipairs(move.moveInfo) do
@@ -31,7 +28,7 @@ haoyi:addEffect(fk.EventPhaseStart, {
             end
           end
         end
-      end, end_id)
+      end, Player.HistoryTurn)
       if #cards == 0 then return false end
       room.logic:getActualDamageEvents(1, function (e)
         local damage = e.data
@@ -42,7 +39,7 @@ haoyi:addEffect(fk.EventPhaseStart, {
             end
           end
         end
-      end, nil, end_id)
+      end, Player.HistoryTurn)
       if #cards > 0 then
         event:setCostData(self, {cards = cards})
         return true

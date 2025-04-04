@@ -217,7 +217,7 @@ yinlu:addEffect(fk.EventPhaseStart, {
 -- 子技能 yinlu3
 yinlu:addEffect(fk.EventPhaseStart, {
   mute = true,
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("@@yinlu3") > 0 and player.phase == Player.Finish
   end,

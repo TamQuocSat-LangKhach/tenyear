@@ -1,5 +1,6 @@
 local gonghu = fk.CreateSkill {
-  name = "gonghu"
+  name = "gonghu",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -109,7 +110,7 @@ gonghu:addEffect(fk.AfterCardsMove, {
 
 local gonghu_delay = fk.CreateTriggerSkill{
   name = "#gonghu_delay",
-  frequency = Skill.Compulsory,
+  
   events = {fk.CardUsing, fk.AfterCardTargetDeclared},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:getMark("gonghu1") ~= 0 and player:getMark("gonghu2") ~=0 and data.card.color == Card.Red then

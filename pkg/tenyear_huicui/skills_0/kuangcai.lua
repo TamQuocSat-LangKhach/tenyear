@@ -1,5 +1,6 @@
 local kuangcai = fk.CreateSkill {
-  name = "kuangcai"
+  name = "kuangcai",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -12,7 +13,7 @@ Fk:loadTranslationTable{
 -- Trigger Skill Effect
 kuangcai:addEffect(fk.EventPhaseStart, {
   mute = true,
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(kuangcai.name) then
       if player.phase == Player.Discard then

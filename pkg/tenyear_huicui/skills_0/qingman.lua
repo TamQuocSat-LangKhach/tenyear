@@ -1,5 +1,6 @@
 local qingman = fk.CreateSkill {
-  name = "qingman"
+  name = "qingman",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -11,7 +12,7 @@ Fk:loadTranslationTable{
 
 qingman:addEffect(fk.TurnEnd, {
   anim_type = "drawcard",
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(skill.name) and player:getHandcardNum() < 5 - #target:getCardIds("e")
   end,

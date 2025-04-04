@@ -8,8 +8,6 @@ Fk:loadTranslationTable{
   "你摸两张牌且此技能本回合失效。",
 
   ["#woheng"] = "斡衡：你可以令一名角色摸或弃置%arg张牌",
-  ["woheng_draw"] = "摸牌",
-  ["woheng_discard"] = "弃牌",
 
   ["$woheng1"] = "壁立以千仞，非蚍蜉可撼。",
   ["$woheng2"] = "朕德载后土，焉不容天下风雨。",
@@ -22,7 +20,7 @@ woheng:addEffect("active", {
   end,
   card_num = 0,
   target_num = 1,
-  interaction = UI.ComboBox {choices = { "woheng_draw", "woheng_discard" } },
+  interaction = UI.ComboBox {choices = { "draw_card", "discard_skill" } },
   can_use = Util.TrueFunc,
   card_filter = Util.FalseFunc,
   target_filter = function(self, player, to_select, selected, selected_cards)
@@ -32,7 +30,7 @@ woheng:addEffect("active", {
     local player = effect.from
     local target  = effect.tos[1]
     local n = player:usedSkillTimes(woheng.name, Player.HistoryRound)
-    if self.interaction.data == "woheng_draw" then
+    if self.interaction.data == "draw_card" then
       target:drawCards(n, woheng.name)
     else
       room:askToDiscard(target, {

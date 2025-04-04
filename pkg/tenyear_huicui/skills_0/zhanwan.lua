@@ -1,5 +1,6 @@
 local zhanwan = fk.CreateSkill {
-  name = "zhanwan"
+  name = "zhanwan",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -12,7 +13,7 @@ Fk:loadTranslationTable{
 
 zhanwan:addEffect(fk.EventPhaseEnd, {
   anim_type = "drawcard",
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(zhanwan.name) and target.phase == Player.Discard and target:getMark("@liushi") > 0 then
       local n = 0

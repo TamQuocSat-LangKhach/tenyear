@@ -1,5 +1,6 @@
 local fozong = fk.CreateSkill {
-  name = "fozong"
+  name = "fozong",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -14,7 +15,7 @@ Fk:loadTranslationTable{
 }
 
 fozong:addEffect(fk.EventPhaseStart, {
-  frequency = Skill.Compulsory,
+  
   anim_type = "negative",
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(fozong.name) and player.phase == Player.Play and player:getHandcardNum() > 7

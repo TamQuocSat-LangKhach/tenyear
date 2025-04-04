@@ -1,5 +1,6 @@
 local tianji = fk.CreateSkill {
-  name = "tianji"
+  name = "tianji",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -10,7 +11,7 @@ Fk:loadTranslationTable{
 }
 
 tianji:addEffect(fk.AfterCardsMove, {
-  frequency = Skill.Compulsory,
+  
   anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(tianji.name) then

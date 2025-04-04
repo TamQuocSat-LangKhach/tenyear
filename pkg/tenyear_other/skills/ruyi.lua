@@ -1,5 +1,6 @@
 local ruyi = fk.CreateSkill {
-  name = "ruyi"
+  name = "ruyi",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -18,7 +19,7 @@ Fk:loadTranslationTable{
 ruyi:addEffect('active', {
   name = "ruyi",
   prompt = "#ruyi",
-  frequency = Skill.Compulsory,
+  
   card_num = 0,
   target_num = 0,
   interaction = function()
@@ -69,7 +70,7 @@ ruyi:addEffect('targetmod', {
 ruyi:addEffect(fk.AfterCardUseDeclared, {
   name = "#ruyi_trigger",
   mute = true,
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     if player == target and player:hasSkill(ruyi) then
       return player:getMark("@ruyi") == 2 or player:getMark("@ruyi") == 3
@@ -88,7 +89,7 @@ ruyi:addEffect(fk.AfterCardUseDeclared, {
 ruyi:addEffect(fk.AfterCardTargetDeclared, {
   name = "#ruyi_trigger",
   mute = true,
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     if player == target and player:hasSkill(ruyi) then
       return player:getMark("@ruyi") == 4 and #player.room:getUseExtraTargets(data) > 0
@@ -115,7 +116,7 @@ ruyi:addEffect(fk.AfterCardTargetDeclared, {
 ruyi:addEffect(fk.EventAcquireSkill, {
   name = "#ruyi_trigger",
   mute = true,
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     return data == ruyi and target == player and player.room:getBanner("RoundCount")
   end,
@@ -131,7 +132,7 @@ ruyi:addEffect(fk.EventAcquireSkill, {
 ruyi:addEffect(fk.GameStart, {
   name = "#ruyi_trigger",
   mute = true,
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     return player:hasShownSkill(ruyi, true)
   end,

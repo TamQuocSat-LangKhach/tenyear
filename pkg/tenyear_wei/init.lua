@@ -28,6 +28,16 @@ Fk:loadTranslationTable{
   ["~ty_wei__lvbu"] = "虓虎失落尽，日暮无归途。",
 }
 
+General:new(extension, "ty_wei__dongzhuo", "qun", 5):addSkills { "guangyong", "juchui" }
+Fk:loadTranslationTable{
+  ["ty_wei__dongzhuo"] = "威董卓",
+  ["#ty_wei__dongzhuo"] = "魔震西凉",
+  ["illustrator:ty_wei__dongzhuo"] = "鬼画府",
+  ["cv:ty_wei__dongzhuo"] = "冷泉夜月",
+
+  ["~ty_wei__dongzhuo"] = "半生戎马，不及门阀一语。",
+}
+
 --君威盖世
 General:new(extension, "ty_wei__sunquan", "wu", 4):addSkills { "woheng", "yuhui" }
 Fk:loadTranslationTable{

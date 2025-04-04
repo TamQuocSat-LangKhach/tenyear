@@ -1,5 +1,6 @@
 local xinghan = fk.CreateSkill {
-  name = "xinghan"
+  name = "xinghan",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -12,7 +13,7 @@ Fk:loadTranslationTable{
 
 xinghan:addEffect(fk.Damage, {
   anim_type = "drawcard",
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(xinghan.name) and target and target:getMark("@zhenge") > 0 and
       data.card and data.card.trueName == "slash" then

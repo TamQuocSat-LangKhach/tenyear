@@ -1,5 +1,6 @@
 local juanjia = fk.CreateSkill {
-  name = "juanjia"
+  name = "juanjia",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -10,7 +11,7 @@ Fk:loadTranslationTable{
 }
 
 juanjia:addEffect(fk.GameStart, {
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(juanjia.name)
   end,

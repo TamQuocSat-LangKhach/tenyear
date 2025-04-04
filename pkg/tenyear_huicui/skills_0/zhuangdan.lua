@@ -1,5 +1,6 @@
 local zhuangdan = fk.CreateSkill {
-  name = "zhuangdan"
+  name = "zhuangdan",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -13,7 +14,7 @@ Fk:loadTranslationTable{
 
 zhuangdan:addEffect(fk.TurnEnd, {
   anim_type = "special",
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(zhuangdan.name) and target ~= player and player:hasSkill("liedan") and
       table.every(player.room:getOtherPlayers(player), function(p)

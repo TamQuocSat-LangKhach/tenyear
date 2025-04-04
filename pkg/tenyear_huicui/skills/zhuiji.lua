@@ -11,7 +11,6 @@ Fk:loadTranslationTable{
 
 zhuiji:addEffect(fk.CardUseFinished, {
   anim_type = "offensive",
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(zhuiji.name) and
       table.find(data.tos, function (p)

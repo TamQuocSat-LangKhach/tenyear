@@ -1,5 +1,6 @@
 local jiaofeng = fk.CreateSkill {
-  name = "jiaofeng"
+  name = "jiaofeng",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -11,7 +12,7 @@ Fk:loadTranslationTable{
 
 jiaofeng:addEffect(fk.DamageCaused, {
   anim_type = "support",
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(jiaofeng.name) and player:usedSkillTimes(jiaofeng.name, Player.HistoryTurn) == 0 and
       #player.room.logic:getActualDamageEvents(1, function(e)

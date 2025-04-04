@@ -16,7 +16,7 @@ huangkong:addEffect(fk.TargetConfirmed, {
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(huangkong.name) and
       player:isKongcheng() and player.room.current ~= player and
-      (data.card:isCommonTrick() or data.card.trueName == "slash")
+      (data.card.trueName == "slash" or data.card:isCommonTrick())
   end,
   on_use = function(self, event, target, player, data)
     player:drawCards(2, huangkong.name)

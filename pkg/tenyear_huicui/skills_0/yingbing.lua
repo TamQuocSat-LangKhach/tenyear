@@ -1,5 +1,6 @@
 local yingbing = fk.CreateSkill {
-  name = "ty__yingbing"
+  name = "ty__yingbing",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -12,7 +13,7 @@ Fk:loadTranslationTable{
 
 yingbing:addEffect(fk.TargetSpecified, {
   anim_type = "drawcard",
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(yingbing.name) and target == player and #player.room:getPlayerById(data.to):getPile("ty__zhoufu_zhou") > 0
       and not table.contains(player:getTableMark("ty__yingbing-turn"), data.to)

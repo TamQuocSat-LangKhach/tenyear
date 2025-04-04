@@ -1,5 +1,6 @@
 local cansi = fk.CreateSkill {
-  name = "cansi"
+  name = "cansi",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -12,7 +13,6 @@ Fk:loadTranslationTable{
 }
 
 cansi:addEffect(fk.EventPhaseStart, {
-  frequency = Skill.Compulsory,
   anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(cansi.name) and player.phase == Player.Start
@@ -71,7 +71,8 @@ cansi:addEffect(fk.EventPhaseStart, {
 
 cansi:addEffect(fk.Damaged, {
   anim_type = "drawcard",
-  frequency = Skill.Compulsory,
+  ,
+  tags = { Skill.Compulsory },
   main_skill_name = "cansi",
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(cansi.name) or not data.card then return false end

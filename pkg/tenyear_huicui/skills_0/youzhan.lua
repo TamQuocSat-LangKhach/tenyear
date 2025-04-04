@@ -1,5 +1,6 @@
 local youzhan = fk.CreateSkill {
-  name = "youzhan"
+  name = "youzhan",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -15,7 +16,7 @@ Fk:loadTranslationTable{
 
 youzhan:addEffect(fk.AfterCardsMove, {
   anim_type = "drawcard",
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     local room = player.room
     if player:hasSkill(youzhan.name) and room.current == player then
@@ -64,7 +65,7 @@ youzhan:addEffect(fk.AfterCardsMove, {
 
 youzhan:addEffect(fk.DamageInflicted, {
   mute = true,
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     if target == player then
       return player:getMark("youzhan-turn") > 0 and player:getMark("@youzhan-turn") > 0
@@ -84,7 +85,7 @@ youzhan:addEffect(fk.DamageInflicted, {
 
 youzhan:addEffect(fk.EventPhaseStart, {
   mute = true,
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     return player.phase == Player.Finish and table.find(player.room.alive_players, function(p) return p:getMark("@youzhan-turn") > 0 end)
   end,

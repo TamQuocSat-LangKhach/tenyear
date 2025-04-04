@@ -1,5 +1,6 @@
 local liedan = fk.CreateSkill {
-  name = "liedan"
+  name = "liedan",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -13,7 +14,7 @@ Fk:loadTranslationTable{
 
 liedan:addEffect(fk.EventPhaseStart, {
   anim_type = "drawcard",
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(liedan.name) and target.phase == Player.Start and player:getMark("@@zhuangdan") == 0 and
       (target ~= player or (target == player and player:getMark("@liedan")) > 4)

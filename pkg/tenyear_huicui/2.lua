@@ -1,148 +1,4 @@
 
---江湖之远：管宁 黄承彦 胡昭 王烈 孟节
-local guanning = General(extension, "guanning", "qun", 3, 7)
-local dunshi = fk.CreateViewAsSkill{
-  name = "dunshi",
-  pattern = "slash,jink,peach,analeptic",
-  interaction = function()
-    local all_names, names = {"slash", "jink", "peach", "analeptic"}, {}
-    local mark = Self:getMark("dunshi")
-    for _, name in ipairs(all_names) do
-      if type(mark) ~= "table" or not table.contains(mark, name) then
-        local to_use = Fk:cloneCard(name)
-        if ((Fk.currentResponsePattern == nil and to_use.skill:canUse(Self, to_use) and not Self:prohibitUse(to_use)) or
-            (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use))) then
-          table.insertIfNeed(names, name)
-        end
-      end
-    end
-    if #names == 0 then return end
-    return UI.ComboBox {choices = names}
-  end,
-  card_filter = Util.FalseFunc,
-  view_as = function(self, cards)
-    if not self.interaction.data then return nil end
-    local card = Fk:cloneCard(self.interaction.data)
-    card.skillName = self.name
-    return card
-  end,
-  before_use = function(self, player, use)
-    player.room:setPlayerMark(player, "dunshi_name-turn", use.card.trueName)
-  end,
-  enabled_at_play = function(self, player)
-    if player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then return false end
-    local names = {"slash", "jink", "peach", "analeptic"}
-    local mark = player:getMark("dunshi")
-    for _, name in ipairs(names) do
-      if type(mark) ~= "table" or not table.contains(mark, name) then
-        local to_use = Fk:cloneCard(name)
-        if to_use.skill:canUse(player, to_use) and not player:prohibitUse(to_use) then
-          return true
-        end
-      end
-    end
-  end,
-  enabled_at_response = function(self, player, response)
-    if player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 then return false end
-    local names = {"slash", "jink", "peach", "analeptic"}
-    local mark = player:getMark("dunshi")
-    for _, name in ipairs(names) do
-      if type(mark) ~= "table" or not table.contains(mark, name) then
-        local to_use = Fk:cloneCard(name)
-        if (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(to_use)) then
-          return true
-        end
-      end
-    end
-  end,
-
-  on_acquire = function (self, player)
-    player.room:setPlayerMark(player, "@$dunshi", {"slash", "jink", "peach", "analeptic"})
-    player.room:setPlayerMark(player, "dunshi", 0)
-  end,
-  on_lose = function (self, player)
-    player.room:setPlayerMark(player, "@$dunshi", 0)
-    player.room:setPlayerMark(player, "dunshi", 0)
-  end,
-}
-local dunshi_record = fk.CreateTriggerSkill{
-  name = "#dunshi_record",
-  anim_type = "special",
-  events = {fk.DamageCaused},
-  can_trigger = function(self, event, target, player, data)
-    if player:usedSkillTimes("dunshi", Player.HistoryTurn) > 0 and target and target == player.room.current then
-      if target:getMark("dunshi-turn") == 0 then
-        return true
-      end
-    end
-  end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    player.room:setPlayerMark(target, "dunshi-turn", 1)
-    local choices = {"dunshi1", "dunshi2", "dunshi3"}
-    for i = 1, 2, 1 do
-      local choice = room:askForChoice(player, choices, self.name)
-      table.removeOne(choices, choice)
-      if choice == "dunshi1" then
-        local skills = {}
-        for _, general in ipairs(Fk:getAllGenerals()) do
-          for _, skill in ipairs(general.skills) do
-            local str = Fk:translate(skill.name, "zh_CN")
-            if not target:hasSkill(skill,true) and
-              (string.find(str, "仁") or string.find(str, "义") or string.find(str, "礼") or string.find(str, "智") or string.find(str, "信")) then
-              table.insertIfNeed(skills, skill.name)
-            end
-          end
-        end
-        if #skills > 0 then
-          local skill = room:askForChoice(player, table.random(skills, math.min(3, #skills)), self.name, "#dunshi-chooseskill::"..target.id, true)
-          room:handleAddLoseSkills(target, skill, nil, true, false)
-        end
-      elseif choice == "dunshi2" then
-        room:changeMaxHp(player, -1)
-        if not player.dead and player:getMark("dunshi") ~= 0 then
-          player:drawCards(#player:getMark("dunshi"), "dunshi")
-        end
-      elseif choice == "dunshi3" then
-        room:addTableMark(player, "dunshi", player:getMark("dunshi_name-turn"))
-
-        local UImark = player:getMark("@$dunshi")
-        if type(UImark) == "table" then
-          table.removeOne(UImark, player:getMark("dunshi_name-turn"))
-          room:setPlayerMark(player, "@$dunshi", #UImark > 0 and UImark or 0)
-        end
-      end
-    end
-    if not table.contains(choices, "dunshi1") then
-      return true
-    end
-  end,
-}
-dunshi:addRelatedSkill(dunshi_record)
-guanning:addSkill(dunshi)
-Fk:loadTranslationTable{
-  ["guanning"] = "管宁",
-  ["#guanning"] = "辟境归元",
-  ["designer:guanning"] = "七哀",
-  ["illustrator:guanning"] = "游漫美绘",
-  ["dunshi"] = "遁世",
-  [":dunshi"] = "每回合限一次，你可视为使用或打出一张【杀】，【闪】，【桃】或【酒】。然后当前回合角色本回合下次造成伤害时，你选择两项：<br>"..
-  "1.防止此伤害，选择1个包含“仁义礼智信”的技能令其获得；<br>"..
-  "2.减1点体力上限并摸X张牌（X为你选择3的次数）；<br>"..
-  "3.删除你本次视为使用的牌名。",
-  ["#dunshi_record"] = "遁世",
-  ["@$dunshi"] = "遁世",
-  ["dunshi1"] = "防止此伤害，选择1个“仁义礼智信”的技能令其获得",
-  ["dunshi2"] = "减1点体力上限并摸X张牌",
-  ["dunshi3"] = "删除你本次视为使用的牌名",
-  ["#dunshi-chooseskill"] = "遁世：选择令%dest获得的技能",
-
-  ["$dunshi1"] = "失路青山隐，藏名白水游。",
-  ["$dunshi2"] = "隐居青松畔，遁走孤竹丘。",
-  ["~guanning"] = "高节始终，无憾矣。",
-}
-
 local huangchengyan = General(extension, "ty__huangchengyan", "qun", 3)
 local jiezhen = fk.CreateActiveSkill{
   name = "jiezhen",
@@ -307,18 +163,8 @@ local yinshih = fk.CreateTriggerSkill{
     end
   end,
 }
-jiezhen:addRelatedSkill(jiezhen_trigger)
-jiezhen:addRelatedSkill(jiezhen_invalidity)
-huangchengyan:addSkill(jiezhen)
-huangchengyan:addSkill(zecai)
-huangchengyan:addSkill(yinshih)
 Fk:loadTranslationTable{
-  ["ty__huangchengyan"] = "黄承彦",
-  ["#ty__huangchengyan"] = "捧月共明",
-  ["designer:ty__huangchengyan"] = "七哀",
-  ["illustrator:ty__huangchengyan"] = "凡果",
   ["jiezhen"] = "解阵",
-  ["#jiezhen_trigger"] = "解阵",
   [":jiezhen"] = "出牌阶段限一次，你可令一名其他角色的所有技能替换为〖八阵〗（锁定技、限定技、觉醒技、主公技除外）。"..
   "你的回合开始时或当其【八卦阵】判定后，你令其失去〖八阵〗并获得原技能，然后你获得其区域里的一张牌。",
   ["zecai"] = "择才",
@@ -337,129 +183,6 @@ Fk:loadTranslationTable{
   ["$zecai2"] = "梧桐亭亭，必引凤而栖。",
   ["$yinshih1"] = "南阳隐世，耕读传家。",
   ["$yinshih2"] = "手扶耒耜，不闻风雷。",
-  ["~ty__huangchengyan"] = "卧龙出山天伦逝，悔教吾婿离南阳……",
-}
-
-local huzhao = General(extension, "huzhao", "qun", 3)
-local midu = fk.CreateActiveSkill{
-  name = "midu",
-  anim_type = "special",
-  card_num = 0,
-  target_num = 0,
-  prompt = function (self)
-    return "#"..self.interaction.data
-  end,
-  interaction = function(self)
-    local choices = {}
-    if #Self:getAvailableEquipSlots() > 0 or not table.contains(Self.sealedSlots, Player.JudgeSlot) then
-      table.insert(choices, "midu1")
-    end
-    if #Self.sealedSlots > 0 then
-      table.insert(choices, "midu2")
-    end
-    return UI.ComboBox { choices = choices }
-  end,
-  can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
-  end,
-  card_filter = Util.FalseFunc,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    if self.interaction.data == "midu1" then
-      local choices = {}
-      if not table.contains(player.sealedSlots, Player.JudgeSlot) then
-        table.insert(choices, "JudgeSlot")
-      end
-      table.insertTable(choices, player:getAvailableEquipSlots())
-      local choice = room:askForChoices(player, choices, 1, #choices, self.name, "#midu-abort", false)
-      room:abortPlayerArea(player, choice)
-      if not player.dead then
-        local to = room:askForChoosePlayers(player, table.map(room.alive_players, Util.IdMapper), 1, 1,
-          "#midu-draw:::"..#choice, self.name, false)
-        if #to > 0 then
-          to = to[1]
-        else
-          to = player.id
-        end
-        room:getPlayerById(to):drawCards(#choice, self.name)
-      end
-    else
-      local choices = table.simpleClone(player.sealedSlots)
-      local choice = room:askForChoice(player, choices, self.name, "#midu-resume")
-      room:resumePlayerArea(player, {choice})
-      if not player:hasSkill("ty_ex__huomo", true) then
-        room:handleAddLoseSkills(player, "ty_ex__huomo", nil, true, false)
-        room:setPlayerMark(player, self.name, 1)
-      end
-    end
-  end,
-}
-local midu_trigger = fk.CreateTriggerSkill{
-  name = "#midu_trigger",
-
-  refresh_events = {fk.TurnStart},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player:getMark("midu") > 0
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    room:setPlayerMark(player, "midu", 0)
-    room:handleAddLoseSkills(player, "-ty_ex__huomo", nil, true, false)
-  end,
-}
-local xianwang = fk.CreateDistanceSkill{
-  name = "xianwang",
-  frequency = Skill.Compulsory,
-  correct_func = function(self, from, to)
-    if from:hasSkill(self) then
-      local n = #table.filter(from.sealedSlots, function(slot) return slot ~= "JudgeSlot" end)
-      if n > 3 then
-        return -2
-      elseif n > 0 then
-        return -1
-      end
-    end
-    if to:hasSkill(self) then
-      local n = #table.filter(to.sealedSlots, function(slot) return slot ~= "JudgeSlot" end)
-      if n > 3 then
-        return 2
-      elseif n > 0 then
-        return 1
-      end
-    end
-    return 0
-  end,
-}
-midu:addRelatedSkill(midu_trigger)
-huzhao:addSkill(midu)
-huzhao:addSkill(xianwang)
-huzhao:addRelatedSkill("ty_ex__huomo")
-Fk:loadTranslationTable{
-  ["huzhao"] = "胡昭",
-  ["#huzhao"] = "阖门守静",
-  ["illustrator:huzhao"] = "游漫美绘",
-  ["designer:huzhao"] = "神壕",
-
-  ["midu"] = "弥笃",
-  [":midu"] = "出牌阶段限一次，你可以选择一项：1.废除任意个装备栏或判定区，令一名角色摸等量的牌；2.恢复一个被废除的装备栏或判定区，"..
-  "你获得〖活墨〗直到你下个回合开始。",
-  ["xianwang"] = "贤望",
-  [":xianwang"] = "锁定技，若你有废除的装备栏，其他角色计算与你的距离+1，你计算与其他角色的距离-1；若你有至少三个废除的装备栏，以上数字改为2。",
-  ["midu1"] = "废除",
-  ["midu2"] = "恢复",
-  ["#midu1"] = "弥笃：废除任意个区域，令一名角色摸等量牌",
-  ["#midu2"] = "弥笃：恢复一个区域，直到下个回合开始获得〖活墨〗",
-  ["#midu-abort"] = "弥笃：选择要废除的区域",
-  ["#midu-draw"] = "弥笃：令一名角色摸%arg张牌",
-  ["#midu-resume"] = "弥笃：选择要恢复的区域",
-
-  ["$midu1"] = "皓首穷经，其心不移。",
-  ["$midu2"] = "竹简册书，百读不厌。",
-  ["$xianwang1"] = "浩气长存，以正压邪。",
-  ["$xianwang2"] = "名彰千里，盗无敢侵。",
-  ["$ty_ex__huomo_huzhao1"] = "行文挥毫，得心应手。",
-  ["$ty_ex__huomo_huzhao2"] = "泼墨走笔，挥洒自如。",
-  ["~huzhao"] = "纵有清名，无益于世也。",
 }
 
 local wanglie = General(extension, "wanglie", "qun", 3)
@@ -632,14 +355,7 @@ local huagui = fk.CreateTriggerSkill{
     end
   end,
 }
-wanglie:addSkill(chongwang)
-wanglie:addSkill(huagui)
 Fk:loadTranslationTable{
-  ["wanglie"] = "王烈",
-  ["#wanglie"] = "通识达道",
-  ["designer:wanglie"] = "七哀",
-  ["cv:wanglie"] = "虞晓旭",
-  ["illustrator:wanglie"] = "青岛君桓",
   ["chongwang"] = "崇望",
   [":chongwang"] = "其他角色使用一张基本牌或普通锦囊牌时，若你为上一张牌的使用者，你可令其获得其使用的牌或令该牌无效。",
   ["huagui"] = "化归",
@@ -659,7 +375,6 @@ Fk:loadTranslationTable{
   ["$chongwang2"] = "诸家争讼曲直，可质于我。",
   ["$huagui1"] = "烈不才，难为君之朱紫。",
   ["$huagui2"] = "一身风雨，难坐高堂。",
-  ["~wanglie"] = "烈尚不能自断，何断人乎？",
 }
 
 local mengjie = General(extension, "mengjie", "qun", 3)
@@ -875,18 +590,7 @@ local youqi = fk.CreateTriggerSkill{
     end
   end,
 }
-yinlu:addRelatedSkill(yinlu1)
-yinlu:addRelatedSkill(yinlu2)
-yinlu:addRelatedSkill(yinlu3)
-yinlu:addRelatedSkill(yinlu4)
-mengjie:addSkill(yinlu)
-mengjie:addSkill(youqi)
 Fk:loadTranslationTable{
-  ["mengjie"] = "孟节",
-  ["#mengjie"] = "万安隐者",
-  ["designer:mengjie"] = "神壕",
-  ["illustrator:mengjie"] = "君桓文化",
-
   ["yinlu"] = "引路",
   [":yinlu"] = "游戏开始时，你令三名角色依次获得以下一个标记：“乐泉”、“藿溪”、“瘴气”，然后你获得一个“芸香”。<br>"..
   "准备阶段，你可以移动一个标记；有标记的角色死亡时，你可以移动其标记。拥有标记的角色获得对应的效果：<br>"..
@@ -894,8 +598,6 @@ Fk:loadTranslationTable{
   "藿溪：结束阶段，你可以弃置一张<font color='red'>♥</font>牌，然后摸两张牌；<br>"..
   "瘴气：结束阶段，你需要弃置一张♠牌，否则失去1点体力；<br>"..
   "芸香：结束阶段，你可以弃置一张♣牌，获得一个“芸香”；当你受到伤害时，你可以移去所有“芸香”并防止等量的伤害。",
-  ["youqi"] = "幽栖",
-  [":youqi"] = "锁定技，其他角色因“引路”弃置牌时，你有概率获得此牌，该角色距离你越近，概率越高。",
   ["#yinlu-give1"] = "引路：请选择获得“乐泉”（回复体力）的角色",
   ["#yinlu-give2"] = "引路：请选择获得“藿溪”（摸牌）的角色",
   ["#yinlu-give3"] = "引路：请选择获得“瘴气”（失去体力）的角色",
@@ -923,7 +625,6 @@ Fk:loadTranslationTable{
   ["$yinlu2"] = "闻丞相南征，某特来引之。",
   ["$youqi1"] = "寒烟锁旧山，坐看云起出。",
   ["$youqi2"] = "某隐居山野，不慕富贵功名。",
-  ["~mengjie"] = "蛮人无知，请丞相教之……",
 }
 
 --悬壶济世：吉平 孙寒华 郑浑 刘宠骆俊 吴普
@@ -1130,10 +831,6 @@ local lieyi_trigger = fk.CreateTriggerSkill{
     end
   end,
 }
-lieyi:addRelatedSkill(lieyi_trigger)
-jiping:addSkill(xunli)
-jiping:addSkill(zhishi)
-jiping:addSkill(lieyi)
 Fk:loadTranslationTable{
   ["jiping"] = "吉平",
   ["#jiping"] = "白虹贯日",
@@ -4182,7 +3879,3 @@ Fk:loadTranslationTable{
   ["$ty__shuliang1"] = "北伐鏖战正酣，此正需粮之时。",
   ["$ty__shuliang2"] = "粮草先于兵马而动，此军心之本。",
 }
-
-lifeng:addSkill(shuliang)
-
-return extension

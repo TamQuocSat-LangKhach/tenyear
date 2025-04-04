@@ -1,5 +1,6 @@
 local manyi = fk.CreateSkill {
-  name = "manyi"
+  name = "manyi",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -11,7 +12,7 @@ Fk:loadTranslationTable{
 
 manyi:addEffect(fk.PreCardEffect, {
   anim_type = "defensive",
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(manyi.name) and data.card.trueName == "savage_assault" and player.id == data.to
   end,

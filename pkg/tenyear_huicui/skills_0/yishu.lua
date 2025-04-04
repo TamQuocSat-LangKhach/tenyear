@@ -1,5 +1,6 @@
 local yishu = fk.CreateSkill {
-  name = "yishu"
+  name = "yishu",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -17,7 +18,7 @@ Fk:loadTranslationTable{
 }
 
 yishu:addEffect(fk.AfterCardsMove, {
-  frequency = Skill.Compulsory,
+  
   anim_type = "special",
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(yishu.name) and player:hasSkill(huishu, true) and player.phase ~= Player.Play and

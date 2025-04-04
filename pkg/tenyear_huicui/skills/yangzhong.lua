@@ -8,8 +8,8 @@ Fk:loadTranslationTable{
 
   ["#yangzhong-invoke"] = "殃众：你可以弃置两张牌，令 %dest 失去1点体力",
 
-  ["$yangzhong1"] = "窃权利己，弄祸殃众！",
-  ["$yangzhong2"] = "宦祸所起，池鱼所终！"
+  ["$yangzhong1"] = "宦祸所起，池鱼所终！",
+  ["$yangzhong2"] = "窃权利己，弄祸殃众！",
 }
 
 yangzhong:addEffect(fk.Damage, {

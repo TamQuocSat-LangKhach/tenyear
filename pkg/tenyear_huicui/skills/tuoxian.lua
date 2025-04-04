@@ -1,11 +1,17 @@
 local tuoxian = fk.CreateSkill {
   name = "tuoxian",
+  dynamic_desc = function (self, player)
+    return "tuoxian_inner:"..(player:getMark(self.name) + 1 - player:usedSkillTimes(self.name, Player.HistoryGame))
+  end,
 }
 
 Fk:loadTranslationTable{
   ["tuoxian"] = "托献",
   [":tuoxian"] = "每局游戏限一次，当你因〖漂萍〗弃置的牌进入弃牌堆后，你可以将这些牌交给一名其他角色，然后其选择一项：1.弃置其区域内等量的牌；"..
   "2.令〖漂萍〗本回合失效。",
+
+  [":tuoxian_inner"] = "（还剩{1}次），当你因〖漂萍〗弃置的牌进入弃牌堆后，你可以将这些牌交给一名其他角色，然后其选择一项："..
+  "1.弃置其区域内等量的牌；2.令〖漂萍〗本回合失效。",
 
   ["#tuoxian-choose"] = "托献：你可以将这些牌交给一名其他角色，其选择弃置等量牌或令你的〖漂萍〗失效",
   ["tuoxian1"] = "弃置你区域内%arg张牌",
@@ -15,6 +21,10 @@ Fk:loadTranslationTable{
   ["$tuoxian1"] = "一贵一贱，其情乃见。",
   ["$tuoxian2"] = "一死一生，乃知交情。",
 }
+
+tuoxian:addLoseEffect(function (self, player, is_death)
+  player.room:setPlayerMark(player, tuoxian.name, 0)
+end)
 
 tuoxian:addEffect(fk.AfterCardsMove, {
   anim_type = "support",

@@ -1,5 +1,6 @@
 local ty__mingshi = fk.CreateSkill {
-  name = "ty__mingshi"
+  name = "ty__mingshi",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -12,7 +13,7 @@ Fk:loadTranslationTable{
 
 ty__mingshi:addEffect(fk.DamageInflicted, {
   anim_type = "defensive",
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(ty__mingshi.name) and data.from and data.from:getHandcardNum() > player:getHandcardNum()
   end,

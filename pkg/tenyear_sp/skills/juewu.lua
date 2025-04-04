@@ -22,7 +22,7 @@ juewu:addAcquireEffect(function (self, player, is_start)
       table.insertIfNeed(names, card.name)
     end
   end
-  --table.insertIfNeed(names, "ty__drowning")
+  table.insertIfNeed(names, "ty__drowning")
   player.room:setPlayerMark(player, juewu.name, names)
 end)
 

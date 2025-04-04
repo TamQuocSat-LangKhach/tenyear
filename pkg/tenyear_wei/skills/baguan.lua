@@ -1,5 +1,6 @@
 local baguan = fk.CreateSkill {
   name = "baguan",
+  tags = { Skill.Combo },
 }
 
 Fk:loadTranslationTable{

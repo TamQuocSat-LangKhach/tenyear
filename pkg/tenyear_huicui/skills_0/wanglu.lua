@@ -1,5 +1,6 @@
 local wanglu = fk.CreateSkill {
-  name = "wanglu"
+  name = "wanglu",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -11,7 +12,7 @@ Fk:loadTranslationTable{
 }
 
 wanglu:addEffect(fk.EventPhaseStart, {
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(wanglu.name) and player.phase == Player.Start
   end,

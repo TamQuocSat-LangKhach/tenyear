@@ -17,65 +17,52 @@ Fk:loadTranslationTable{
 bijing:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
   can_trigger = function(self, event, target, player, data)
-    if target.phase == Player.Finish then
-      return target == player and player:hasSkill(bijing.name) and
-        not player:isKongcheng()
-    elseif target.phase == Player.Discard then
-      return table.contains(target:getTableMark("bijing_invoking-turn"), player.id) and not target:isNude()
-    elseif target.phase == Player.Start then
-      return target == player and
-        table.find(player:getCardIds("h"), function(id)
-          return Fk:getCardById(id):getMark("@@bijing") > 0
-        end)
-    end
+    return target == player and player:hasSkill(bijing.name) and player.phase == Player.Finish and
+      not player:isKongcheng()
   end,
   on_cost = function(self, event, target, player, data)
-    if target.phase == Player.Finish then
-      local room = player.room
-      local cards = room:askToCards(player, {
-        min_num = 1,
-        max_num = 2,
-        include_equip = false,
-        skill_name = bijing.name,
-        cancelable = true,
-        prompt = "#bijing-invoke",
-      })
-      if #cards > 0 then
-        event:setCostData(self, {cards = cards})
-        return true
-      end
-    elseif target.phase == Player.Discard then
-      event:setCostData(self, {tos = {target}})
-      return true
-    elseif target.phase == Player.Start then
-      event:setCostData(self, nil)
+    local room = player.room
+    local cards = room:askToCards(player, {
+      min_num = 1,
+      max_num = 2,
+      include_equip = false,
+      skill_name = bijing.name,
+      cancelable = true,
+      prompt = "#bijing-invoke",
+    })
+    if #cards > 0 then
+      event:setCostData(self, {cards = cards})
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if target.phase == Player.Finish then
-      local cards = event:getCostData(self).cards
-      for _, id in ipairs(cards) do
-        room:setCardMark(Fk:getCardById(id), "@@bijing", 1)
-      end
-    elseif target.phase == Player.Discard then
-      room:askToDiscard(target, {
-        min_num = 2,
-        max_num = 2,
-        include_equip = true,
-        skill_name = bijing.name,
-        cancelable = false,
-      })
-    elseif target.phase == Player.Start then
-      local cards = table.filter(player:getCardIds("h"), function(id)
-        return Fk:getCardById(id):getMark("@@bijing") > 0
-      end)
-      for _, id in ipairs(cards) do
-        room:setCardMark(Fk:getCardById(id), "@@bijing", 0)
-      end
-      room:recastCard(cards, player, bijing.name)
+    local cards = event:getCostData(self).cards
+    for _, id in ipairs(cards) do
+      room:setCardMark(Fk:getCardById(id), "@@bijing", 1)
     end
+  end,
+})
+
+bijing:addEffect(fk.EventPhaseStart, {
+  anim_type = "control",
+  is_delay_effect = true,
+  can_trigger = function(self, event, target, player, data)
+    return target.phase == Player.Discard and not target.dead and
+      table.contains(target:getTableMark("bijing_invoking-turn"), player.id) and not target:isNude()
+  end,
+  on_cost = function (self, event, target, player, data)
+    event:setCostData(self, {tos = {target}})
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:askToDiscard(target, {
+      min_num = 2,
+      max_num = 2,
+      include_equip = true,
+      skill_name = bijing.name,
+      cancelable = false,
+    })
   end,
 })
 
@@ -105,6 +92,27 @@ bijing:addEffect(fk.AfterCardsMove, {
     if not room.current.dead then
       room:addTableMark(room.current, "bijing_invoking-turn", player.id)
     end
+  end,
+})
+
+bijing:addEffect(fk.EventPhaseStart, {
+  anim_type = "drawcard",
+  is_delay_effect = true,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player.phase == Player.Start and
+      table.find(player:getCardIds("h"), function(id)
+        return Fk:getCardById(id):getMark("@@bijing") > 0
+      end)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = table.filter(player:getCardIds("h"), function(id)
+      return Fk:getCardById(id):getMark("@@bijing") > 0
+    end)
+    for _, id in ipairs(cards) do
+      room:setCardMark(Fk:getCardById(id), "@@bijing", 0)
+    end
+    room:recastCard(cards, player, bijing.name)
   end,
 })
 

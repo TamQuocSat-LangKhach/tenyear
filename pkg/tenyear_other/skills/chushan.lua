@@ -1,5 +1,6 @@
 local chushan = fk.CreateSkill {
-  name = "chushan"
+  name = "chushan",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -11,7 +12,7 @@ Fk:loadTranslationTable{
 }
 
 chushan:addEffect(fk.GameStart, {
-  frequency = Skill.Compulsory,
+  
   anim_type = "support",
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(chushan.name)

@@ -1,5 +1,6 @@
 local gangjian = fk.CreateSkill {
-  name = "gangjian"
+  name = "gangjian",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -11,7 +12,6 @@ Fk:loadTranslationTable{
 
 gangjian:addEffect(fk.TurnEnd, {
   anim_type = "drawcard",
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(gangjian) and
       #player.room.logic:getActualDamageEvents(1, function (e)

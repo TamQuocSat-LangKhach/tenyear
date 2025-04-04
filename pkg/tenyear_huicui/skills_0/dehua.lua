@@ -1,5 +1,6 @@
 local dehua = fk.CreateSkill {
-  name = "dehua"
+  name = "dehua",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -106,7 +107,6 @@ local dehuaBuff = fk.CreateSkill {
   name = "#dehua_buff"
 }
 dehuaBuff:addEffect("maxcards", {
-  frequency = Skill.Compulsory,
   correct_func = function(self, player)
     return player:hasSkill(dehua) and #player:getTableMark("dehuaChosen") or 0
   end,

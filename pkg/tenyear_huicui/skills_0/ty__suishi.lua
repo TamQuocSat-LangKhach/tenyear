@@ -1,5 +1,6 @@
 local ty__suishi = fk.CreateSkill {
-  name = "ty__suishi"
+  name = "ty__suishi",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -10,7 +11,7 @@ Fk:loadTranslationTable{
 }
 
 ty__suishi:addEffect(fk.EnterDying, {
-  frequency = Skill.Compulsory,
+  
   mute = true,
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(ty__suishi) or target == player then return false end
@@ -29,7 +30,7 @@ ty__suishi:addEffect(fk.EnterDying, {
 })
 
 ty__suishi:addEffect(fk.Death, {
-  frequency = Skill.Compulsory,
+  
   mute = true,
   can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(ty__suishi) or target == player then return false end

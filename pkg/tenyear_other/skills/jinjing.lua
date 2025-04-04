@@ -1,5 +1,6 @@
 local jinjing = fk.CreateSkill {
-  name = "jinjing"
+  name = "jinjing",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -8,7 +9,7 @@ Fk:loadTranslationTable{
 }
 
 jinjing:addEffect('visibility', {
-  frequency = Skill.Compulsory,
+  
   card_visible = function(self, player, card)
     if player:hasSkill(jinjing.name) and Fk:currentRoom():getCardArea(card) == Card.PlayerHand then
       return true

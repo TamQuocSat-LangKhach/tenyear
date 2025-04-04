@@ -14,7 +14,7 @@ Fk:loadTranslationTable{
   ["tystar__yuanshu"] = "星袁术",
   ["#tystar__yuanshu"] = "狂貔猖貅",
   ["designer:tystar__yuanshu"] = "头发好借好还",
-  ["illustrator:tystar__yuanshu"] = "黯萤岛工作室",
+  ["illustrator:tystar__yuanshu"] = "黯荧岛工作室",
 
   ["~tystar__yuanshu"] = "英雄不死则已，死则举大名尔……",
 }

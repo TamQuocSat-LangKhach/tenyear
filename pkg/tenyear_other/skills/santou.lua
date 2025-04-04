@@ -1,5 +1,6 @@
 local santou = fk.CreateSkill {
-  name = "santou"
+  name = "santou",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -11,7 +12,7 @@ Fk:loadTranslationTable{
 
 santou:addEffect(fk.DamageInflicted, {
   anim_type = "defensive",
-  frequency = Skill.Compulsory,
+  
   on_use = function(self, event, target, player, data)
     local room = player.room
     if (player.hp >= 3 and data.from and player:getMark("santou_"..data.from.id.."-turn") > 0) or

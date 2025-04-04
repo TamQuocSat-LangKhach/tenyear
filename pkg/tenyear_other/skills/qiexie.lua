@@ -1,4 +1,7 @@
-local qiexie = fk.CreateSkill { name = "qiexie" }
+local qiexie = fk.CreateSkill {
+  name = "qiexie",
+  tags = { Skill.Compulsory },
+}
 
 Fk:loadTranslationTable{
   ['qiexie'] = '挈挟',
@@ -11,7 +14,7 @@ Fk:loadTranslationTable{
 }
 
 qiexie:addEffect(fk.EventPhaseStart, {
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     return
       target == player and

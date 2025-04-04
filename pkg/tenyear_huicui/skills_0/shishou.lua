@@ -1,5 +1,6 @@
 local shishou = fk.CreateSkill {
-  name = "shishou"
+  name = "shishou",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -11,7 +12,7 @@ Fk:loadTranslationTable{
 }
 
 shishou:addEffect(fk.EventPhaseStart, {
-  frequency = Skill.Compulsory,
+  
   anim_type = "negative",
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(skill.name) and target == player and player.phase == Player.Start and player:getMark("@cangchu") == 0
@@ -23,7 +24,7 @@ shishou:addEffect(fk.EventPhaseStart, {
 })
 
 shishou:addEffect(fk.CardUseFinished, {
-  frequency = Skill.Compulsory,
+  
   anim_type = "negative",
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(skill.name) and target == player and player:getMark("@cangchu") > 0 and data.card.name == "analeptic"
@@ -36,7 +37,7 @@ shishou:addEffect(fk.CardUseFinished, {
 })
 
 shishou:addEffect(fk.Damaged, {
-  frequency = Skill.Compulsory,
+  
   anim_type = "negative",
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(skill.name) and target == player and player:getMark("@cangchu") > 0 and data.damageType == fk.FireDamage

@@ -1,5 +1,6 @@
 local porong = fk.CreateSkill {
   name = "porong",
+  tags = { Skill.Combo },
 }
 
 Fk:loadTranslationTable{

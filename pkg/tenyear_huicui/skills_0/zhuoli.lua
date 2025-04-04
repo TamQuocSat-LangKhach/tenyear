@@ -1,5 +1,6 @@
 local zhuoli = fk.CreateSkill {
-  name = "zhuoli"
+  name = "zhuoli",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
@@ -11,7 +12,7 @@ Fk:loadTranslationTable{
 
 zhuoli:addEffect(fk.TurnEnd, {
   anim_type = "defensive",
-  frequency = Skill.Compulsory,
+  
   can_trigger = function(self, event, target, player, data)
     local room = player.room
     if player:hasSkill(zhuoli.name) and (player.maxHp < #room.players or player:isWounded()) then

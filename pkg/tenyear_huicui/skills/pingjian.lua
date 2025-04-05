@@ -97,9 +97,11 @@ pingjian:addEffect("active", {
 pingjian:addEffect(fk.SkillEffect, {
   is_delay_effect = true,
   priority = 2,
+  mute = true,
   can_trigger = function(self, event, target, player, data)
     return target == player and table.contains(player:getTableMark("pingjian_play_skill-phase"), data.skill.name)
   end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local skillName = data.skill.name

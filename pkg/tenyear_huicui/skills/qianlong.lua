@@ -21,8 +21,8 @@ qianlong:addEffect(fk.Damaged, {
     room:turnOverCardsFromDrawPile(player, cards, qianlong.name)
     local result = room:askToGuanxing(player, {
       cards = cards,
-      bottom_limit = {0, 3},
-      top_limit = {0, player:getLostHp()},
+      top_limit = {0, 3},
+      bottom_limit = {0, player:getLostHp()},
       skill_name = qianlong.name,
       skip = true,
       area_names = {"Bottom", "toObtain"}

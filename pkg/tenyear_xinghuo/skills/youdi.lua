@@ -36,8 +36,8 @@ youdi:addEffect(fk.EventPhaseStart, {
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = event:getCostData(self).tos[1]
-    local card = room:askToChooseCard(player, {
-      target = to,
+    local card = room:askToChooseCard(to, {
+      target = player,
       flag = "h",
       skill_name = youdi.name,
     })

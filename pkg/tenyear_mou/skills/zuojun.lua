@@ -4,7 +4,7 @@ local zuojun = fk.CreateSkill {
 
 Fk:loadTranslationTable{
   ["zuojun"] = "佐军",
-  [":zuojun"] = "出牌阶段限一次，你可以选择一名角色，其摸三张牌并选择：1.直到其下个回合结束，其不能使用或弃置这些牌且这些牌不计入手牌上限；"..
+  [":zuojun"] = "出牌阶段限一次，你可以选择一名角色，其摸三张牌并选择：1.直到其下个回合结束，其不能使用这些牌且不计入其手牌上限；"..
   "2.失去1点体力再摸一张牌，然后使用其中任意张牌，弃置剩余的牌。",
 
   ["#zuojun"] = "佐军：令一名角色摸三张牌，然后其执行后续效果",
@@ -108,9 +108,6 @@ zuojun:addEffect("prohibit", {
         return table.contains(player:getTableMark("zuojun_prohibit"), id)
       end)
     end
-  end,
-  prohibit_discard = function(self, player, card)
-    return table.contains(player:getTableMark("zuojun_prohibit"), card.id)
   end,
 })
 

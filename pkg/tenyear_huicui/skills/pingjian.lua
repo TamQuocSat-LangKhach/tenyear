@@ -81,42 +81,30 @@ pingjian:addEffect("active", {
       toast = true,
     }
 
-    local skill = Fk.skills[skill_name]
-    local success, dat = room:askToUseActiveSkill(player, {
-      skill_name = skill_name,
-      prompt = skill.prompt or "#ty__pingjian-active",
-      no_indicate = false,
-      skip = true,
-    })
-    if success and dat then
-      if skill:isInstanceOf(ActiveSkill) then
-        player:broadcastSkillInvoke(skill_name)
-        room:notifySkillInvoked(player, skill_name)
-        skill:onUse(room, {
-          from = player,
-          tos = dat.targets,
-        })
-      elseif skill:isInstanceOf(ViewAsSkill) then
-        local card = skill:viewAs(player, dat.cards)
-        if card then
-          ---@type UseCardDataSpec
-          local use = {
-            from = player,
-            tos = dat.targets,
-            card = card,
-          }
-
-          room:useSkill(player, skill, Util.DummyFunc)
-          use.attachedSkillAndUser = { skillName = skill.name, user = player.id }
-
-          local rejectSkillName = skill:beforeUse(player, use)
-          if type(rejectSkillName) == "string" then
-            return rejectSkillName
-          end
-          room:useCard(use)
-        end
-      end
+    local phase_event = room.logic:getCurrentEvent():findParent(GameEvent.Phase)
+    if player:hasSkill(skill_name) or not phase_event then
+      return false
     end
+
+    room:handleAddLoseSkills(player, skill_name)
+    room:addTableMark(player, "pingjian_play_skill-phase", skill_name)
+    phase_event:addCleaner(function()
+      room:handleAddLoseSkills(player, "-" .. skill_name)
+    end)
+  end,
+})
+
+pingjian:addEffect(fk.SkillEffect, {
+  is_delay_effect = true,
+  priority = 2,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and table.contains(player:getTableMark("pingjian_play_skill-phase"), data.skill.name)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local skillName = data.skill.name
+    room:removeTableMark(player, "pingjian_play_skill-phase", skillName)
+    room:handleAddLoseSkills(player, "-" .. skillName)
   end,
 })
 
@@ -144,14 +132,14 @@ pingjian:addEffect(fk.Damaged, {
       toast = true,
     }
 
-    room:handleAddLoseSkills(player, skill_name, nil, false, true)
+    room:handleAddLoseSkills(player, skill_name)
     local skel = Fk.skill_skels[skill_name]
     for _, skill in ipairs(skel.effects) do
       if skill:isInstanceOf(TriggerSkill) and skill:triggerable(event, target, player, data) then
         skill:trigger(event, target, player, data)
       end
     end
-    room:handleAddLoseSkills(player, "-"..skill_name, nil, false, true)
+    room:handleAddLoseSkills(player, "-"..skill_name)
   end,
 })
 
@@ -178,14 +166,14 @@ pingjian:addEffect(fk.EventPhaseStart, {
       toast = true,
     }
 
-    room:handleAddLoseSkills(player, skill_name, nil, false, true)
+    room:handleAddLoseSkills(player, skill_name)
     local skel = Fk.skill_skels[skill_name]
     for _, skill in ipairs(skel.effects) do
       if skill:isInstanceOf(TriggerSkill) and skill:triggerable(event, target, player, data) then
         skill:trigger(event, target, player, data)
       end
     end
-    room:handleAddLoseSkills(player, "-"..skill_name, nil, false, true)
+    room:handleAddLoseSkills(player, "-"..skill_name)
   end,
 })
 

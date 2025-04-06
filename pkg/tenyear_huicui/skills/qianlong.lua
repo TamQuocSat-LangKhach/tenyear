@@ -30,7 +30,7 @@ qianlong:addEffect(fk.Damaged, {
     if #result.bottom > 0 then
       room:moveCardTo(result.bottom, Player.Hand, player, fk.ReasonJustMove, qianlong.name, nil, true, player)
     end
-    room:returnCardsToDrawPile(player, result.top, qianlong.name)
+    room:returnCardsToDrawPile(player, result.top, qianlong.name, "bottom")
   end,
 })
 

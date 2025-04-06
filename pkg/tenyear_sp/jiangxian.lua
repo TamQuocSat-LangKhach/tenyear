@@ -1,23 +1,23 @@
 local jiangxian = fk.CreateSkill {
-  name = "jiangxian"
+  name = "jiangxian",
+  tags = { Skill.Limited },
 }
 
 Fk:loadTranslationTable{
-  ['jiangxian'] = '将贤',
-  ['#jiangxian'] = '将贤：令你本回合使用〖连捷〗牌伤害+1，回合结束时失去““连捷”或“朝镇”！',
-  ['@@jiangxian-turn'] = '将贤',
-  ['#jiangxian_delay'] = '将贤',
-  ['lianjie'] = '连捷',
-  ['chaozhen'] = '朝镇',
-  ['@@lianjie-inhand-turn'] = '连捷',
-  [':jiangxian'] = '限定技，出牌阶段，你可以令本回合使用因〖连捷〗摸的牌造成伤害时，此伤害+1。若如此做，回合结束后失去〖连捷〗或〖朝镇〗。',
+  ["jiangxian"] = "将贤",
+  ["#jiangxian"] = "将贤：令你本回合使用〖连捷〗牌伤害+1，回合结束时失去““连捷”或“朝镇”！",
+  ["@@jiangxian-turn"] = "将贤",
+  ["#jiangxian_delay"] = "将贤",
+  ["lianjie"] = "连捷",
+  ["chaozhen"] = "朝镇",
+  ["@@lianjie-inhand-turn"] = "连捷",
+  [":jiangxian"] = "限定技，出牌阶段，你可以令本回合使用因〖连捷〗摸的牌造成伤害时，此伤害+1。若如此做，回合结束后失去〖连捷〗或〖朝镇〗。",
 }
 
-jiangxian:addEffect('active', {
+jiangxian:addEffect("active", {
   anim_type = "special",
   card_num = 0,
   target_num = 0,
-  frequency = Skill.Limited,
   prompt = "#jiangxian",
   can_use = function(self, player)
     return player:usedSkillTimes(jiangxian.name, Player.HistoryGame) == 0

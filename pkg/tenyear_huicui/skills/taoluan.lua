@@ -101,8 +101,9 @@ taoluan:addEffect("viewas", {
     return type(mark) ~= "table" or #mark.suits < 4
   end,
   enabled_at_response = function(self, player, response)
+    if response then return end
     local mark = player:getMark("@[ty__taoluan]")
-    return not response and type(mark) ~= "table" or
+    return type(mark) ~= "table" or
       (#mark.suits < 4 and #player:getViewAsCardNames(taoluan.name, Fk:getAllCardNames("bt"), nil, mark.value) > 0)
   end,
 })

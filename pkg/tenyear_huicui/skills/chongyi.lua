@@ -17,17 +17,18 @@ Fk:loadTranslationTable{
 chongyi:addEffect(fk.CardUsing, {
   anim_type = "support",
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(chongyi.name) and target.phase == Player.Play and not target.dead then
+    if player:hasSkill(chongyi.name) and target.phase == Player.Play and not target.dead and
+      data.card.trueName == "slash" then
       local room = player.room
       local use_event = room.logic:getCurrentEvent():findParent(GameEvent.UseCard, true)
       if use_event == nil then return end
-      local x = target:getMark("chongyi_record-turn")
+      local x = target:getMark("chongyi_record-phase")
       if x == 0 then
         room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
           local use = e.data
           if use.from == target then
             x = e.id
-            room:setPlayerMark(target, "chongyi_record-turn", x)
+            room:setPlayerMark(target, "chongyi_record-phase", x)
             return true
           end
         end, Player.HistoryPhase)

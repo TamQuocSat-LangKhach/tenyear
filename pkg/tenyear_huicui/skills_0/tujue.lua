@@ -1,18 +1,18 @@
 local tujue = fk.CreateSkill {
-  name = "tujue"
+  name = "tujue",
+  tags = { Skill.Limited },
 }
 
 Fk:loadTranslationTable{
-  ['tujue'] = '途绝',
-  ['#tujue-choose'] = '途绝：你可以将所有牌交给一名其他角色，然后回复等量的体力值并摸等量的牌',
-  [':tujue'] = '限定技，当你处于濒死状态时，你可以将所有牌交给一名其他角色，然后你回复等量的体力值并摸等量的牌。',
-  ['$tujue1'] = '归蜀无路，孤臣泪尽江北。',
-  ['$tujue2'] = '受吾主殊遇，安能降吴！',
+  ["tujue"] = "途绝",
+  ["#tujue-choose"] = "途绝：你可以将所有牌交给一名其他角色，然后回复等量的体力值并摸等量的牌",
+  [":tujue"] = "限定技，当你处于濒死状态时，你可以将所有牌交给一名其他角色，然后你回复等量的体力值并摸等量的牌。",
+  ["$tujue1"] = "归蜀无路，孤臣泪尽江北。",
+  ["$tujue2"] = "受吾主殊遇，安能降吴！",
 }
 
 tujue:addEffect(fk.AskForPeaches, {
   anim_type = "defensive",
-  frequency = Skill.Limited,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(tujue.name) and player.dying and not player:isNude() and
       player:usedSkillTimes(tujue.name, Player.HistoryGame) == 0

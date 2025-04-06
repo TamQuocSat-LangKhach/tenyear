@@ -1,18 +1,18 @@
 local zecai = fk.CreateSkill {
-  name = "zecai"
+  name = "zecai",
+  tags = { Skill.Limited },
 }
 
 Fk:loadTranslationTable{
-  ['zecai'] = '择才',
-  ['@@zecai_extra'] = '择才 额外回合',
-  ['#zecai-choose'] = '你可以发动择才，令一名其他角色获得〖集智〗直到下轮结束',
-  [':zecai'] = '限定技，一轮结束时，你可令一名其他角色获得〖集智〗直到下一轮结束，若其是本轮使用锦囊牌数唯一最多的角色，其执行一个额外的回合。',
-  ['$zecai1'] = '诸葛良才，可为我佳婿。',
-  ['$zecai2'] = '梧桐亭亭，必引凤而栖。',
+  ["zecai"] = "择才",
+  ["@@zecai_extra"] = "择才 额外回合",
+  ["#zecai-choose"] = "你可以发动择才，令一名其他角色获得〖集智〗直到下轮结束",
+  [":zecai"] = "限定技，一轮结束时，你可令一名其他角色获得〖集智〗直到下一轮结束，若其是本轮使用锦囊牌数唯一最多的角色，其执行一个额外的回合。",
+  ["$zecai1"] = "诸葛良才，可为我佳婿。",
+  ["$zecai2"] = "梧桐亭亭，必引凤而栖。",
 }
 
 zecai:addEffect(fk.RoundEnd, {
-  frequency = Skill.Limited,
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(zecai.name) and player:usedSkillTimes(zecai.name, Player.HistoryGame) < 1
   end,

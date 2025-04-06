@@ -9,7 +9,7 @@ local tenyear_huicui = require "packages/tenyear/pkg/tenyear_huicui"
 -- local tenyear_test = require "packages/tenyear/pkg/tenyear_test"
 -- local tenyear_other = require "packages/tenyear/pkg/tenyear_other"
 
--- local tenyear_token = require "packages/tenyear/pkg/tenyear_token"
+local tenyear_token = require "packages/tenyear/pkg/tenyear_token"
 
 Fk:loadTranslationTable{ ["tenyear"] = "十周年" }
 Fk:loadTranslationTable(require "packages/tenyear/i18n/en_US", "en_US")
@@ -25,5 +25,5 @@ return {
   -- tenyear_test,
   -- tenyear_other,
 
-  -- tenyear_token,
+  tenyear_token,
 }

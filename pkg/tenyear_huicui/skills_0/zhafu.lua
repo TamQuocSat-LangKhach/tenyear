@@ -1,25 +1,25 @@
 local zhafu = fk.CreateSkill {
-  name = "zhafu"
+  name = "zhafu",
+  tags = { Skill.Limited },
 }
 
 Fk:loadTranslationTable{
-  ['zhafu'] = '札符',
-  ['#zhafu'] = '选择一名其他角色：其下个弃牌阶段选择保留一张手牌，其余手牌交给你',
-  ['@@zhafu'] = '札符',
-  ['#zhafu_delay'] = '札符',
-  ['#zhafu-invoke'] = '札符：选择一张保留的手牌，其他手牌全部交给 %src ！',
-  [':zhafu'] = '限定技，出牌阶段，你可以选择一名其他角色。该角色的下个弃牌阶段开始时，其选择保留一张手牌，将其余手牌交给你。',
-  ['$zhafu1'] = '垂恩广救，慈悲在怀。',
-  ['$zhafu2'] = '行符敕鬼，神变善易。',
+  ["zhafu"] = "札符",
+  ["#zhafu"] = "选择一名其他角色：其下个弃牌阶段选择保留一张手牌，其余手牌交给你",
+  ["@@zhafu"] = "札符",
+  ["#zhafu_delay"] = "札符",
+  ["#zhafu-invoke"] = "札符：选择一张保留的手牌，其他手牌全部交给 %src ！",
+  [":zhafu"] = "限定技，出牌阶段，你可以选择一名其他角色。该角色的下个弃牌阶段开始时，其选择保留一张手牌，将其余手牌交给你。",
+  ["$zhafu1"] = "垂恩广救，慈悲在怀。",
+  ["$zhafu2"] = "行符敕鬼，神变善易。",
 }
 
 -- 主动技能部分
-zhafu:addEffect('active', {
+zhafu:addEffect("active", {
   name = "zhafu",
   anim_type = "control",
   card_num = 0,
   target_num = 1,
-  frequency = Skill.Limited,
   prompt = "#zhafu",
   can_use = function(self, player)
     return player:usedSkillTimes(zhafu.name, Player.HistoryGame) == 0
@@ -36,7 +36,7 @@ zhafu:addEffect('active', {
 })
 
 -- 触发技部分
-zhafu:addEffect('trigger', {
+zhafu:addEffect("trigger", {
   name = "#zhafu_delay",
   mute = true,
   events = {fk.EventPhaseStart},

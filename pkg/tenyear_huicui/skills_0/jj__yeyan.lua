@@ -1,23 +1,23 @@
 local jj__yeyan = fk.CreateSkill {
-  name = "jj__yeyan&"
+  name = "jj__yeyan&",
+  tags = { Skill.Limited },
 }
 
 Fk:loadTranslationTable{
-  ['jj__yeyan&'] = '业炎',
-  ['@@dragon_mark'] = '龙印',
-  ['@@phoenix_mark'] = '凤印',
-  [':jj__yeyan&'] = '限定技，出牌阶段，你可以移去“龙印”和“凤印”并指定一至三名角色，你分别对这些角色造成至多共计3点火焰伤害；若你对一名角色分配2点或更多的火焰伤害，你须先弃置四张不同花色的手牌并失去3点体力。',
+  ["jj__yeyan&"] = "业炎",
+  ["@@dragon_mark"] = "龙印",
+  ["@@phoenix_mark"] = "凤印",
+  [":jj__yeyan&"] = "限定技，出牌阶段，你可以移去“龙印”和“凤印”并指定一至三名角色，你分别对这些角色造成至多共计3点火焰伤害；若你对一名角色分配2点或更多的火焰伤害，你须先弃置四张不同花色的手牌并失去3点体力。",
 }
 
-jj__yeyan:addEffect('active', {
+jj__yeyan:addEffect("active", {
   anim_type = "offensive",
   min_target_num = 1,
   max_target_num = 3,
   min_card_num = 0,
   max_card_num = 4,
-  frequency = Skill.Limited,
   prompt = function(self, player, cards)
-    local yeyan_type = skill.interaction.data
+    local yeyan_type = self.interaction.data
     if yeyan_type == "great_yeyan" then
       return "#yeyan-great-active"
     elseif yeyan_type == "middle_yeyan" then

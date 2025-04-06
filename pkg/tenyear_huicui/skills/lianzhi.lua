@@ -38,7 +38,7 @@ lianzhi:addEffect(fk.GameStart, {
       prompt = "#lianzhi-choose",
       cancelable = false,
     })[1]
-    room:addTableMark(to, "@@lianzhi", {player.id})
+    room:addTableMark(to, "@@lianzhi", player.id)
     room:setPlayerMark(player, lianzhi.name, to.id)
   end,
 })

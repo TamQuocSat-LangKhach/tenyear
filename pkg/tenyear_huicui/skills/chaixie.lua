@@ -16,9 +16,9 @@ chaixie:addEffect(fk.AfterCardsMove, {
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(chaixie.name) and
       data.extra_data and data.extra_data.chaixie_draw and
-        table.find(data.extra_data.chaixie_draw, function (dat)
-          return dat[1] == player.id
-        end)
+      table.find(data.extra_data.chaixie_draw, function (dat)
+        return dat[1] == player.id
+      end)
   end,
   on_use = function(self, event, target, player, data)
     local n = 0

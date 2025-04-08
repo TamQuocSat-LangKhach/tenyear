@@ -18,12 +18,12 @@ chongwang:addEffect(fk.CardUsing, {
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(chongwang.name) and target ~= player and
       (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) then
-      local use_event = player.room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
+      local use_events = player.room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
         if e.id < player.room.logic:getCurrentEvent().id then
           return true
         end
       end, 0)
-      return use_event and use_event[1].data.from == player
+      return #use_events > 0 and use_events[1].data.from == player
     end
   end,
   on_cost = function(self, event, target, player, data)

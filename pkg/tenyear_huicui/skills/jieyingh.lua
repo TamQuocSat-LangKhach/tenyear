@@ -9,7 +9,7 @@ Fk:loadTranslationTable{
 
   ["#jieyingh-choose"] = "节应：选择一名角色，其下个回合使用牌无距离限制且可多指定一个目标，造成伤害后不能使用牌",
   ["@jieyingh-turn"] = "节应",
-  ["#jieyingh-extra"] = "节应：你可为此%arg额外指定1个目标",
+  ["#jieyingh-extra"] = "节应：你可以为%arg额外指定1个目标",
   ["jieyingh_prohibit"] = "禁止出牌",
 
   ["$jieyingh1"] = "秉志持节，应时而动。",

@@ -40,6 +40,7 @@ kangge:addEffect(fk.TurnStart, {
       cancelable = false,
     })[1]
     room:setPlayerMark(player, kangge.name, to.id)
+    room:setPlayerMark(player, "@kangge", to.general)
   end,
 })
 

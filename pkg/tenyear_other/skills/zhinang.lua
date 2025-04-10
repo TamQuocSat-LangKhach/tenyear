@@ -1,13 +1,13 @@
 local zhinang = fk.CreateSkill {
-  name = "zhinang"
+  name = "zhinang",
 }
 
 Fk:loadTranslationTable{
-  ['zhinang'] = '智囊',
-  ['@zhinang_skills'] = '',
-  [':zhinang'] = '当你使用锦囊牌后，你可以获得一个技能台词包含“谋”的技能直到下次获得；当你使用装备牌后，你可以获得一个技能名包含“谋”的技能直到下次获得。',
-  ['$zhinang1'] = '',
-  ['$zhinang2'] = '',
+  ["zhinang"] = "智囊",
+  [":zhinang"] = "当你使用锦囊牌后，你可以获得一个技能台词包含“谋”的技能直到下次获得；当你使用装备牌后，你可以获得一个技能名"..
+  "包含“谋”的技能直到下次获得。",
+
+  ["@zhinang_skills"] = "",
 }
 
 zhinang:addEffect(fk.CardUseFinished, {
@@ -18,10 +18,11 @@ zhinang:addEffect(fk.CardUseFinished, {
     local room = player.room
     if player:getMark("zhinang_pool") == 0 then
       local skills1, skills2 = {}, {}
-      for name, s in pairs(Fk.skills) do
-        if s.isPlayerSkill and s.visible then
-          if string.find(Fk:translate("$"..name.."1", "zh_CN"), "谋") or
-            string.find(Fk:translate("$"..name.."2", "zh_CN"), "谋") then  --暂时先这样，多句台词或者固定技能池看反馈
+      for name, _ in pairs(Fk.skill_skels) do
+        if Fk.skills[name]:isPlayerSkill() then
+          if string.find(Fk:translate("$"..name, "zh_CN"), "谋") or
+            string.find(Fk:translate("$"..name.."1", "zh_CN"), "谋") or
+            string.find(Fk:translate("$"..name.."2", "zh_CN"), "谋") then
             table.insert(skills1, name)
           end
           if string.find(Fk:translate(name, "zh_CN"), "谋") then
@@ -33,7 +34,7 @@ zhinang:addEffect(fk.CardUseFinished, {
     end
     if data.card.type == Card.TypeTrick then
       if player:getMark("zhinang_trick") ~= 0 and player:hasSkill(player:getMark("zhinang_trick"), true) then
-        room:handleAddLoseSkills(player, "-"..player:getMark("zhinang_trick"), nil, true, false)
+        room:handleAddLoseSkills(player, "-"..player:getMark("zhinang_trick"))
         if player.dead then return end
       end
       local skills = table.filter(player:getMark("zhinang_pool")[1], function (s)
@@ -47,11 +48,11 @@ zhinang:addEffect(fk.CardUseFinished, {
         else
           player:chat(string.format("$%s:%d", s, 2))
         end
-        room:handleAddLoseSkills(player, s, nil, true, false)
+        room:handleAddLoseSkills(player, s)
       end
     elseif data.card.type == Card.TypeEquip then
       if player:getMark("zhinang_equip") ~= 0 and player:hasSkill(player:getMark("zhinang_equip"), true) then
-        room:handleAddLoseSkills(player, "-"..player:getMark("zhinang_equip"), nil, true, false)
+        room:handleAddLoseSkills(player, "-"..player:getMark("zhinang_equip"))
         if player.dead then return end
       end
       local skills = table.filter(player:getMark("zhinang_pool")[2], function (s)
@@ -60,7 +61,7 @@ zhinang:addEffect(fk.CardUseFinished, {
       if #skills > 0 then
         local s = table.random(skills)
         room:setPlayerMark(player, "zhinang_equip", s)
-        room:handleAddLoseSkills(player, s, nil, true, false)
+        room:handleAddLoseSkills(player, s)
       end
     end
     local mark = ""

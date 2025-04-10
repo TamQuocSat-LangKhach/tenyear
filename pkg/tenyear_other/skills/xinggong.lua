@@ -1,14 +1,15 @@
 local xinggong = fk.CreateSkill {
-  name = "xinggong"
+  name = "xinggong",
 }
 
 Fk:loadTranslationTable{
-  ['xinggong'] = '兴功',
-  ['#xinggong'] = '兴功：获得任意张本回合进入弃牌堆的牌，若大于体力值则受到超出张数的伤害！',
-  [':xinggong'] = '出牌阶段限一次，你可以选择获得任意张本回合进入弃牌堆的牌，若张数大于当前体力值，每超出一张对自己造成1点伤害。',
+  ["xinggong"] = "兴功",
+  [":xinggong"] = "出牌阶段限一次，你可以选择获得任意张本回合进入弃牌堆的牌，若张数大于当前体力值，每超出一张对自己造成1点伤害。",
+
+  ["#xinggong"] = "兴功：获得任意张本回合进入弃牌堆的牌，若大于体力值则受到超出张数的伤害！",
 }
 
-xinggong:addEffect('active', {
+xinggong:addEffect("active", {
   anim_type = "drawcard",
   prompt = "#xinggong",
   card_num = 0,
@@ -18,7 +19,7 @@ xinggong:addEffect('active', {
   end,
   card_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
+    local player = effect.from
     local all_cards = {}
     room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
       for _, move in ipairs(e.data) do
@@ -33,13 +34,14 @@ xinggong:addEffect('active', {
     end, Player.HistoryTurn)
     if #all_cards == 0 then return end
     local cards = room:askToChooseCards(player, {
+      target = player,
       min = 1,
       max = #all_cards,
-      flag = { card_data = { { "pile_discard", all_cards } } },
+      flag = { card_data = {{ "pile_discard", all_cards }} },
       skill_name = xinggong.name,
-      prompt = "#xinggong"
+      prompt = "#xinggong",
     })
-    room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonJustMove, xinggong.name, nil, true, player.id)
+    room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonJustMove, xinggong.name, nil, true, player)
     if not player.dead and #cards > player.hp then
       room:damage{
         from = player,

@@ -1,13 +1,15 @@
 local baoshi = fk.CreateSkill {
-  name = "baoshi"
+  name = "baoshi",
 }
 
 Fk:loadTranslationTable{
-  ['baoshi'] = '暴食',
-  ['baoshi_prey'] = '获得这些牌',
-  ['baoshi_show'] = '再亮出一张',
-  ['#baoshi-choice'] = '暴食：现在总字数为%arg，若超过10则不能获得！',
-  [':baoshi'] = '摸牌阶段结束时，你可以亮出牌堆顶的两张牌。若亮出牌的牌名字数之和不大于10（【桃】或【酒】不计入牌名字数统计），你选择一项：1.获得所有亮出的牌；2.再亮出一张。',
+  ["baoshi"] = "暴食",
+  [":baoshi"] = "摸牌阶段结束时，你可以亮出牌堆顶的两张牌。若亮出牌的牌名字数之和不大于10（【桃】或【酒】不计入牌名字数统计），"..
+  "你选择一项：1.获得所有亮出的牌；2.再亮出一张。",
+
+  ["baoshi_prey"] = "获得这些牌",
+  ["baoshi_show"] = "再亮出一张",
+  ["#baoshi-choice"] = "暴食：现在总字数为%arg，若超过10则不能获得！",
 }
 
 baoshi:addEffect(fk.EventPhaseEnd, {
@@ -18,7 +20,7 @@ baoshi:addEffect(fk.EventPhaseEnd, {
   on_use = function (self, event, target, player, data)
     local room = player.room
     local cards = room:getNCards(2)
-    room:moveCardTo(cards, Card.Processing, nil, fk.ReasonJustMove, baoshi.name, nil, true, player.id)
+    room:turnOverCardsFromDrawPile(player, cards, baoshi.name)
     local n = 0
     for _, id in ipairs(cards) do
       local name = Fk:getCardById(id).trueName
@@ -34,15 +36,15 @@ baoshi:addEffect(fk.EventPhaseEnd, {
       local choice = room:askToChoice(player, {
         choices = {"baoshi_prey", "baoshi_show"},
         skill_name = baoshi.name,
-        prompt = "#baoshi-choice:::"..n
+        prompt = "#baoshi-choice:::"..n,
       })
       if choice == "baoshi_prey" then
-        room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonJustMove, baoshi.name, nil, true, player.id)
+        room:moveCardTo(cards, Card.PlayerHand, player, fk.ReasonJustMove, baoshi.name, nil, true, player)
         return
       else
         local id = room:getNCards(1)[1]
         table.insert(cards, id)
-        room:moveCardTo(id, Card.Processing, nil, fk.ReasonJustMove, baoshi.name, nil, true, player.id)
+        room:turnOverCardsFromDrawPile(player, {id}, baoshi.name)
         local name = Fk:getCardById(id).trueName
         if not table.contains({"peach", "analeptic"}, name) then
           n = n + Fk:translate(name, "zh_CN"):len()

@@ -66,7 +66,7 @@ miyun:addEffect(fk.RoundEnd, {
       dat.cards = table.filter(player:getCardIds("h"), function (id)
         return Fk:getCardById(id):getMark("@@miyun_safe-inhand-round") > 0
       end)
-      dat.targets = room:getOtherPlayers(player, false)[1]
+      dat.targets = {room:getOtherPlayers(player, false)[1]}
     end
     room:moveCardTo(dat.cards, Card.PlayerHand, dat.targets[1], fk.ReasonGive, miyun.name, nil, false, player)
     if not player.dead and player.maxHp > player:getHandcardNum() then

@@ -71,7 +71,7 @@ Fk:loadTranslationTable{
   ["~tycl__sunquan"] = "父亲大哥仲谋愧矣。",
 }
 
---General:new(extension, "sunwukong", "god", 3):addSkills { "jinjing", "ruyi", "cibeis" }
+General:new(extension, "sunwukong", "god", 3):addSkills { "jinjing", "ruyi", "cibeis" }
 Fk:loadTranslationTable{
   ["sunwukong"] = "孙悟空",
 
@@ -99,7 +99,7 @@ Fk:loadTranslationTable{
   ["illustrator:tycl__wuyi"] = "biou09",
 }
 
---General:new(extension, "goddianwei", "god", 4):addSkills { "juanjia", "qiexie", "cuijue" }
+General:new(extension, "goddianwei", "god", 4):addSkills { "juanjia", "qiexie", "cuijue" }
 Fk:loadTranslationTable{
   ["goddianwei"] = "神典韦",
   ["#goddianwei"] = "袒裼暴虎",
@@ -108,7 +108,9 @@ Fk:loadTranslationTable{
   ["~goddianwei"] = "战死沙场，快哉快哉！",
 }
 
---General:new(extension, "child__sunquan", "wu", 3):addSkills { "huiwan", "huanli" }
+local c_sunquan = General:new(extension, "child__sunquan", "wu", 3)
+c_sunquan:addSkills { "huiwan", "huanli" }
+c_sunquan:addRelatedSkills { "zhijian", "guzheng", "ex__yingzi", "ex__fanjian", "ex__zhiheng" }
 Fk:loadTranslationTable{
   ["child__sunquan"] = "小孙权",
   ["#child__sunquan"] = "牌堆的掌控者",--称号出自天水濯名
@@ -130,7 +132,7 @@ Fk:loadTranslationTable{
   ["wuming"] = "无名",
 }
 
---General:new(extension, "liuxiecaojie", "qun", 2):addSkills { "juanlv", "qixin" }
+General:new(extension, "liuxiecaojie", "qun", 2):addSkills { "juanlv", "qixin" }
 Fk:loadTranslationTable{
   ["liuxiecaojie"] = "刘协曹节",
 }

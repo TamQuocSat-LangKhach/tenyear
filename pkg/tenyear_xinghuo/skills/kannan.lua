@@ -16,10 +16,11 @@ Fk:loadTranslationTable{
 
 kannan:addEffect("active", {
   anim_type = "control",
+  prompt = "#kannan",
   card_num = 0,
   target_num = 1,
   can_use = function(self, player)
-    return not player:isKongcheng() and player:usedSkillTimes(kannan.name, Player.HistoryPhase) < player.hp
+    return player:usedSkillTimes(kannan.name, Player.HistoryPhase) < player.hp
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, player, to_select, selected)

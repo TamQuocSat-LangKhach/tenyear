@@ -1,6 +1,6 @@
 
 local tenyear_yj = require "packages/tenyear/pkg/tenyear_yj"
---local tenyear_ex = require "packages/tenyear/pkg/tenyear_ex"
+local tenyear_ex = require "packages/tenyear/pkg/tenyear_ex"
 local tenyear_xinghuo = require "packages/tenyear/pkg/tenyear_xinghuo"
 local tenyear_sp = require "packages/tenyear/pkg/tenyear_sp"
 local tenyear_wei = require "packages/tenyear/pkg/tenyear_wei"
@@ -17,7 +17,7 @@ Fk:loadTranslationTable(require "packages/tenyear/i18n/en_US", "en_US")
 
 return {
   tenyear_yj,
-  --tenyear_ex,
+  tenyear_ex,
   tenyear_xinghuo,
   tenyear_sp,
   tenyear_wei,

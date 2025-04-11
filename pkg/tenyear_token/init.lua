@@ -160,6 +160,74 @@ Fk:loadTranslationTable{
   "1.此【杀】无视距离和防具；<br>2.此【杀】可指定目标+1；<br>3.此【杀】造成伤害后弃牌数+1。",
 }
 
+local left_arm = fk.CreateCard{
+  name = "&goddianwei_left_arm",
+  type = Card.TypeEquip,
+  sub_type = Card.SubtypeWeapon,
+  attack_range = 1,
+  dynamic_attack_range = function(self, player)
+    if player then
+      local mark = player:getTableMark("@qiexie_left")
+      return #mark == 2 and tonumber(mark[2]) or nil
+    end
+  end,
+  dynamic_equip_skills = function(self, player)
+    if player then
+      return table.map(player:getTableMark("qiexie_left_skills"), Util.Name2SkillMapper)
+    end
+  end,
+  on_uninstall = function(self, room, player)
+    Weapon.onUninstall(self, room, player)
+
+    local qiexieInfo = player:getTableMark("@qiexie_left")
+    if #qiexieInfo == 2 then
+      room:returnToGeneralPile({ qiexieInfo[1] })
+    end
+    room:setPlayerMark(player, "qiexie_left_skills", 0)
+    room:setPlayerMark(player, "@qiexie_left", 0)
+  end,
+}
+extension:addCardSpec("goddianwei_left_arm")
+Fk:loadTranslationTable{
+  ["goddianwei_left_arm"] = "左膀",
+  [":goddianwei_left_arm"] = "装备牌·武器<br/>"..
+  "这是神典韦的左膀，蕴含着【杀】之力。",
+}
+
+local right_arm = fk.CreateCard{
+  name = "&goddianwei_right_arm",
+  type = Card.TypeEquip,
+  sub_type = Card.SubtypeWeapon,
+  attack_range = 1,
+  dynamic_attack_range = function(self, player)
+    if player then
+      local mark = player:getTableMark("@qiexie_right")
+      return #mark == 2 and tonumber(mark[2]) or nil
+    end
+  end,
+  dynamic_equip_skills = function(self, player)
+    if player then
+      return table.map(player:getTableMark("qiexie_right_skills"), Util.Name2SkillMapper)
+    end
+  end,
+  on_uninstall = function(self, room, player)
+    Weapon.onUninstall(self, room, player)
+
+    local qiexieInfo = player:getTableMark("@qiexie_right")
+    if #qiexieInfo == 2 then
+      room:returnToGeneralPile({ qiexieInfo[1] })
+    end
+    room:setPlayerMark(player, "qiexie_right_skills", 0)
+    room:setPlayerMark(player, "@qiexie_right", 0)
+  end,
+}
+extension:addCardSpec("goddianwei_right_arm")
+Fk:loadTranslationTable{
+  ["goddianwei_right_arm"] = "右臂",
+  [":goddianwei_right_arm"] = "装备牌·武器<br/>"..
+  "这是神典韦的右臂，蕴含着【杀】之力。",
+}
+
 extension:loadCardSkels {
   ty__drowning,
 
@@ -170,6 +238,8 @@ extension:loadCardSkels {
   thunder_blade,
   ty__catapult,
   siege_engine,
+  left_arm,
+  right_arm,
 }
 
 return extension

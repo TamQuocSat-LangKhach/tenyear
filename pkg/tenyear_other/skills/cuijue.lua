@@ -29,12 +29,13 @@ cuijue:addEffect("active", {
     room:throwCard(effect.cards, cuijue.name, player, player)
     if player.dead then return end
     local targets = table.filter(room.alive_players, function (p)
-      return player:inMyAttackRange(p) and table.every(room.alive_players, function (q)
-        return player:inMyAttackRange(q) and player:distanceTo(p) >= player:distanceTo(q)
-      end)
+      return player:inMyAttackRange(p)
     end)
     targets = table.filter(targets, function (p)
-      return not table.contains(player:getTableMark("cuijue-turn"), p.id)
+      return not table.contains(player:getTableMark("cuijue-turn"), p.id) and
+        table.every(targets, function (q)
+          return player:inMyAttackRange(q) and player:distanceTo(p) >= player:distanceTo(q)
+        end)
     end)
     if #targets == 0 then return end
     local to = room:askToChoosePlayers(player, {

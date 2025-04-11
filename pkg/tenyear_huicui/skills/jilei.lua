@@ -42,7 +42,7 @@ jilei:addEffect(fk.TurnStart, {
     return target == player and player:getMark("@ty__jilei") ~= 0
   end,
   on_refresh = function (self, event, target, player, data)
-    player.room:addTableMarkIfNeed(player, "@ty__jilei", 0)
+    player.room:setPlayerMark(player, "@ty__jilei", 0)
   end,
 })
 

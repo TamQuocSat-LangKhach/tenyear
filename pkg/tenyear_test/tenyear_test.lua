@@ -112,16 +112,13 @@ local feibaic = fk.CreateTriggerSkill{
     end
   end,
 }
-jiaowei:addRelatedSkill(jiaowei_maxcards)
-caiyong:addSkill(jiaowei)
-caiyong:addSkill(feibaic)
 Fk:loadTranslationTable{
   ["mu__caiyong"] = "乐蔡邕",
   ["#mu__caiyong"] = "焦尾识音",
   ["jiaowei"] = "焦尾",
-  [":jiaowei"] = "锁定技，游戏开始时，你的初始手牌增加“弦”标记且不计入手牌上限。当你受到伤害时，若伤害来源手牌数不大于“弦”数，防止此伤害。",
+  [":jiaowei"] = "锁定技，游戏开始时，你的初始手牌增加“弦”标记且不计入手牌上限。当你失去“弦”后，防止你本回合下一次受到的伤害。",
   ["feibaic"] = "飞白",
-  [":feibaic"] = "每回合限一次，当你连续使用两张牌后，你可以随机获得一张字数为X的牌（X为两张牌字数之和）；若你的“弦”数不大于X，此技能视为未发动。",
+  [":feibaic"] = "当你使用牌后，你可以从牌堆随机获得一张字数为X的牌（X为此牌与你本回合使用的上一张牌牌名字数之和，若没有上一张牌则记为0）。若没有字数为X的牌，你摸一张牌并标记为“弦”。",
   ["@jiaowei"] = "弦",
   ["@@jiaowei-inhand"] = "弦",
 }
@@ -969,7 +966,7 @@ Fk:loadTranslationTable{
   ["wm__lukang"] = "武陆抗",
   ["#wm__lukang"] = "桢武熙朝",
 }
-Fk:loadTranslationTable{
+--[[Fk:loadTranslationTable{
   ["kegou"] = "克构",
   [":kegou"] = "锁定技，其他角色回合结束时，你随机获得本回合进入弃牌堆的点数最大的一张牌。",
 }
@@ -990,6 +987,18 @@ Fk:loadTranslationTable{
   [":dixian"] = "限定技，出牌阶段，你可以弃置任意张手牌，从牌堆中按点数从大到小顺序获得等量的牌，这些牌不计入手牌上限。",
   ["#dixian"] = "砥贤：弃置任意张手牌，从牌堆按点数从大到小获得等量的牌",
   ["@@dixian-inhand"] = "砥贤",
+}]]
+Fk:loadTranslationTable{
+  ["dixian"] = "审断",
+  [":dixian"] = "当你拼点时，可以弃置一张牌，改为用牌堆中点数最大的一张牌拼点。当一次拼点结算后，你与本次用K拼点的角色各摸一张牌堆中点数最小的牌，然后将赢的角色的拼点牌置于牌堆底。",
+}
+Fk:loadTranslationTable{
+  ["dixian"] = "克构",
+  [":dixian"] = "出牌阶段限一次，或你使用或打出过牌的其他角色的回合结束时，你可以与一名其他角色拼点，若你赢，你获得牌堆中最小的X个点数的的牌各一张（X为双方拼点牌点数之差，最多为3）；若你没赢，其视为对你使用一张【杀】，然后你可以继续重复此流程。",
+}
+Fk:loadTranslationTable{
+  ["dixian"] = "砥贤",
+  [":dixian"] = "限定技，出牌阶段，你可以选择一个点数。若牌堆中所有牌均不小于此点数，你摸此点数张牌，你本局游戏使用不大于此点数的牌无距离次数限制；若牌堆中有小于此点数的牌，你获得牌堆和弃牌堆中所有点数为K的牌。",
 }
 
 local laoyan = fk.CreateTriggerSkill{
@@ -1022,7 +1031,7 @@ local laoyan = fk.CreateTriggerSkill{
 
 Fk:loadTranslationTable{
   ["laoyan"] = "劳燕",
-  [":laoyan"] = "锁定技，当你成为牌的目标后，若有其他目标，你令此牌对这些目标均无效。",
+  [":laoyan"] = "锁定技，其他角色使用牌指定包括你在内的多个目标后，此牌对其他目标无效，你从牌堆获得点数小于此牌的牌每个点数各一张，当前回合结束时弃置这些牌。",
 }
 
 local jueyan = fk.CreateTriggerSkill{
@@ -1139,10 +1148,9 @@ local jueyan = fk.CreateTriggerSkill{
 
 Fk:loadTranslationTable{
   ["jueyanz"] = "诀言",
-  [":jueyanz"] = "当你使用的牌结算结束后，若目标数为1且此目标不为你，你可以与其拼点，若你赢，你选择："..
-    "1.对你和其各造成1点伤害；2.回复1点体力；3.获得其的1张手牌。"..
-    "然后，此次选择的选项的数值改为1，其他选项的数值均+1，"..
-    "若三个选项均被选择过，你修改此技能（跳过拼点步骤直接选择选项）。",
+  [":jueyanz"] = "当你使用仅指定唯一目标的手牌结算结束后（每回合每种类别限一次），你可以选择一项："..
+    "1.摸1张牌；2.随机获得弃牌堆1张牌；3.与一名角色拼点，赢的角色对没赢的角色造成1点伤害。"..
+    "然后，此次选择的选项的数值改为1，其他选项的数值均+1。",
 
   ["#jueyanz-invoke"] = "是否发动 诀言，与 %dest 拼点，若你赢则可选择一项效果",
   ["jueyanz_damage"] = "对你和%dest各造成%arg点伤害",

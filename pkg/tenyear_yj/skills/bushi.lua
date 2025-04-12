@@ -68,12 +68,8 @@ bushi:addEffect(fk.TargetConfirmed, {
   on_use = function (self, event, target, player, data)
     local room = player.room
     room:throwCard(event:getCostData(self).cards, bushi.name, player, player)
-    if data.card.sub_type == Card.SubtypeDelayedTrick then
-      data:cancelTarget(player)
-    else
-      data.use.nullifiedTargets = data.use.nullifiedTargets or data.use.nullifiedTargets
-      table.insertIfNeed(data.use.nullifiedTargets, player)
-    end
+    data.use.nullifiedTargets = data.use.nullifiedTargets or data.use.nullifiedTargets
+    table.insertIfNeed(data.use.nullifiedTargets, player)
   end,
 })
 

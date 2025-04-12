@@ -29,9 +29,6 @@ duchi:addEffect(fk.TargetConfirmed, {
     end) then
       data.use.nullifiedTargets = data.use.nullifiedTargets or {}
       table.insertIfNeed(data.use.nullifiedTargets, player)
-      if data.card.sub_type == Card.SubtypeDelayedTrick then
-        data:cancelTarget(player)
-      end
     end
   end,
 })

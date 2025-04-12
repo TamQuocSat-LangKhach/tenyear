@@ -52,12 +52,8 @@ jiudun:addEffect(fk.TargetConfirmed, {
       room:useVirtualCard("analeptic", nil, player, player, jiudun.name, true)
     else
       room:throwCard(event:getCostData(self).cards, jiudun.name, player, player)
-      if data.card.sub_type == Card.SubtypeDelayedTrick then
-        data:cancelTarget(player)
-      else
-        data.use.nullifiedTargets = data.use.nullifiedTargets or {}
-        table.insertIfNeed(data.use.nullifiedTargets, player)
-      end
+      data.use.nullifiedTargets = data.use.nullifiedTargets or {}
+      table.insertIfNeed(data.use.nullifiedTargets, player)
     end
   end,
 })

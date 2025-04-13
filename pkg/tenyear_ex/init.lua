@@ -435,4 +435,115 @@ Fk:loadTranslationTable{
   ["~ty_ex__jvshou"] = "身处河南，魂归河北……",
 }
 
+General:new(extension, "ty_ex__caorui", "wei", 3):addSkills { "huituo", "ty_ex__mingjian", "xingshuai" }
+Fk:loadTranslationTable{
+  ["ty_ex__caorui"] = "界曹叡",
+  ["#ty_ex__caorui"] = "魏明帝",
+  ["illustrator:ty_ex__caorui"] = "君桓文化",
+
+  ["$huituo_ty_ex__caorui1"] = "拓土复疆，扬大魏鸿威！",
+  ["$huituo_ty_ex__caorui2"] = "制律弘法，固天下社稷！",
+  ["$xingshuai_ty_ex__caorui1"] = "家国兴衰，与君共担！",
+  ["$xingshuai_ty_ex__caorui2"] = "携君并进，共克此难！",
+  ["~ty_ex__caorui"] = "胸有宏图待展，奈何命数已尽……",
+}
+
+General:new(extension, "ty_ex__caoxiu", "wei", 4):addSkills { "qianju", "ty_ex__qingxi" }
+Fk:loadTranslationTable{
+  ["ty_ex__caoxiu"] = "界曹休",
+  ["#ty_ex__caoxiu"] = "征东大将军",
+  ["cv:ty_ex__caoxiu"] = "清水浊流",
+  ["illustrator:ty_ex__caoxiu"] = "写之火工作室",
+
+  ["~ty_ex__caoxiu"] = "奈何痈发背薨！",
+}
+
+General:new(extension, "ty_ex__zhongyao", "wei", 3):addSkills { "ty_ex__huomo", "zuoding" }
+Fk:loadTranslationTable{
+  ["ty_ex__zhongyao"] = "界钟繇",
+  ["#ty_ex__zhongyao"] = "定陵侯",
+  ["illustrator:ty_ex__zhongyao"] = "匠人绘",
+
+  ["$zuoding_ty_ex__zhongyao1"] = "腹有大才，可助阁下成事。",
+  ["$zuoding_ty_ex__zhongyao2"] = "胸有良策，可济将军之危。",
+  ["~ty_ex__zhongyao"] = "人有寿终日，笔有墨尽时。",
+}
+
+General:new(extension, "ty_ex__liuchen", "shu", 4):addSkills { "ty_ex__zhanjue", "ty_ex__qinwang" }
+Fk:loadTranslationTable{
+  ["ty_ex__liuchen"] = "界刘谌",
+  ["#ty_ex__liuchen"] = "北地王",
+  ["illustrator:ty_ex__liuchen"] = "青雨",
+
+  ["~ty_ex__liuchen"] = "儿欲死战，父亲何故先降……",
+}
+
+General:new(extension, "ty_ex__xiahoushi", "shu", 3, 3, General.Female):addSkills { "ty_ex__qiaoshi", "ty_ex__yanyu" }
+Fk:loadTranslationTable{
+  ["ty_ex__xiahoushi"] = "界夏侯氏",
+  ["#ty_ex__xiahoushi"] = "燕语呢喃",
+  ["illustrator:ty_ex__xiahoushi"] = "匠人绘",
+
+  ["~ty_ex__xiahoushi"] = "天气渐寒，郎君如今安在？",
+}
+
+General:new(extension, "ty_ex__zhangyi", "shu", 5):addSkills { "ty_ex__wurong", "ty_ex__shizhi" }
+Fk:loadTranslationTable{
+  ["ty_ex__zhangyi"] = "界张嶷",
+  ["#ty_ex__zhangyi"] = "无当飞军",
+  ["illustrator:ty_ex__zhangyi"] = "兴游",
+
+  ["~ty_ex__zhangyi"] = "挥师未捷，杀身以报！",
+}
+
+General:new(extension, "ty_ex__quancong", "wu", 4):addSkills { "ty_ex__yaoming" }
+Fk:loadTranslationTable{
+  ["ty_ex__quancong"] = "界全琮",
+  ["#ty_ex__quancong"] = "钱唐侯",
+  ["illustrator:ty_ex__quancong"] = "YanBai",
+
+  ["~ty_ex__quancong"] = "邀名射利，内伤骨体，外乏筋肉。",
+}
+
+local sunxiu = General:new(extension, "ty_ex__sunxiu", "wu", 3)
+sunxiu:addSkills { "ty_ex__yanzhu", "ty_ex__xingxue", "zhaofu" }
+sunxiu:addRelatedSkill("ty_ex__yanzhu_update")
+Fk:loadTranslationTable{
+  ["ty_ex__sunxiu"] = "界孙休",
+  ["#ty_ex__sunxiu"] = "兴学重教",
+  ["cv:ty_ex__sunxiu"] = "清水浊流",
+  ["illustrator:ty_ex__sunxiu"] = "写之火工作室",
+
+  ["~ty_ex__sunxiu"] = "盛世未成，实为憾事！",
+}
+
+General:new(extension, "ty_ex__zhuzhi", "wu", 4):addSkills { "ty_ex__anguo" }
+Fk:loadTranslationTable{
+  ["ty_ex__zhuzhi"] = "界朱治",
+  ["#ty_ex__zhuzhi"] = "安国将军",
+  ["illustrator:ty_ex__zhuzhi"] = "福州明暗",
+
+  ["~ty_ex__zhuzhi"] = "刀在人在，刀折人亡……",
+}
+
+General:new(extension, "ty_ex__gongsunyuan", "qun", 4):addSkills { "ty_ex__huaiyi" }
+Fk:loadTranslationTable{
+  ["ty_ex__gongsunyuan"] = "界公孙渊",
+  ["#ty_ex__gongsunyuan"] = "乐浪公",
+  ["illustrator:ty_ex__gongsunyuan"] = "君桓文化",
+
+  ["~ty_ex__gongsunyuan"] = "大星落，君王死……",
+}
+
+General:new(extension, "ty_ex__guotupangji", "qun", 3):addSkills { "ty_ex__jigong", "shifei" }
+Fk:loadTranslationTable{
+  ["ty_ex__guotupangji"] = "界郭图逄纪",
+  ["#ty_ex__guotupangji"] = "急攻猛进",
+  ["illustrator:ty_ex__guotupangji"] = "磐蒲",
+
+  ["$shifei_ty_ex__guotupangji1"] = "若依吾计而行，许昌旦夕可破！",
+  ["$shifei_ty_ex__guotupangji2"] = "先锋怯战，非谋策之过。",
+  ["~ty_ex__guotupangji"] = "主公，我还有一计啊！",
+}
+
 return extension

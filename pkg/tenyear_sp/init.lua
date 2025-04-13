@@ -279,7 +279,7 @@ Fk:loadTranslationTable{
   ["~wm__guanyu"] = "天下泪染将军袍，且枕青山梦桃园……",
 }
 
---General:new(extension, "wm__huangfusong", "qun", 4):addSkills { "chaozhen", "lianjie", "jiangxian" }
+General:new(extension, "wm__huangfusong", "qun", 4):addSkills { "chaozhen", "lianjie", "jiangxian" }
 Fk:loadTranslationTable{
   ["wm__huangfusong"] = "武皇甫嵩",
   ["#wm__huangfusong"] = "襄武翼汉",

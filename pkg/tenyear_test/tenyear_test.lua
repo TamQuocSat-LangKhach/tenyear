@@ -3,145 +3,6 @@ Fk:loadTranslationTable{
   ["tenyear_test"] = "十周年-测试服",
 }
 
-local caiyong = General(extension, "mu__caiyong", "qun", 3)
-local jiaowei = fk.CreateTriggerSkill{
-  name = "jiaowei",
-  anim_type = "defensive",
-  frequency = Skill.Compulsory,
-  events = {fk.GameStart, fk.DamageInflicted},
-  can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) then
-      if event == fk.GameStart then
-        return not player:isKongcheng()
-      else
-        return target == player and data.from and data.from:getHandcardNum() <= player:getMark("@jiaowei")
-      end
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    if event == fk.GameStart then
-      local room = player.room
-      local cards = player:getCardIds("h")
-      for _, id in ipairs(cards) do
-        room:setCardMark(Fk:getCardById(id), "@@jiaowei-inhand", 1)
-      end
-      room:setPlayerMark(player, "@jiaowei", #cards)
-    else
-      return true
-    end
-  end,
-
-  refresh_events = {fk.AfterCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    if player:getMark("@jiaowei") > 0 then
-      for _, move in ipairs(data) do
-        if move.from == player.id then
-          for _, info in ipairs(move.moveInfo) do
-            if info.fromArea == Card.PlayerHand then
-              return true
-            end
-          end
-        end
-      end
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:setPlayerMark(player, "@jiaowei", #table.filter(player:getCardIds("h"), function(id)
-      return Fk:getCardById(id):getMark("@@jiaowei-inhand") > 0 end))
-  end,
-}
-local jiaowei_maxcards = fk.CreateMaxCardsSkill{
-  name = "#jiaowei_maxcards",
-  exclude_from = function(self, player, card)
-    return card:getMark("@@jiaowei-inhand") > 0
-  end,
-}
-local feibaic = fk.CreateTriggerSkill{
-  name = "feibaic",
-  anim_type = "drawcard",
-  events = {fk.CardUseFinished},
-  can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 then
-      local room = player.room
-      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
-      if turn_event == nil then return false end
-      local end_id = math.max(turn_event.id, player:getMark("feibaic-turn"))  --截至上次发动技能的事件id
-      local yes = true
-      if #room.logic:getEventsByRule(GameEvent.UseCard, 2, function(e)
-        local use = e.data[1]
-        if e.id <= room.logic:getCurrentEvent().id then  --插入其他使用事件，eg.闪
-          if use.from == player.id then
-            return true
-          else
-            yes = false
-            return false
-          end
-        end
-      end, end_id) < 2 then return end
-      return yes
-    end
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
-    if turn_event == nil then return false end
-    local end_id = math.max(turn_event.id, player:getMark("feibaic-turn"))
-    local n, event_record = 0, 0
-    room.logic:getEventsByRule(GameEvent.UseCard, 2, function(e)
-      local use = e.data[1]
-      if use.from == player.id then
-        if event_record == 0 then
-          event_record = e.id
-        end
-        n = n + Fk:translate(use.card.trueName, "zh_CN"):len()
-      end
-    end, end_id)
-    room:setPlayerMark(player, "feibaic-turn", event_record)  --记录上次发动技能的事件id
-    local cards = {}
-    for _, id in ipairs(room.draw_pile) do
-      local card = Fk:getCardById(id)
-      if Fk:translate(card.trueName, "zh_CN"):len() == n then
-        table.insertIfNeed(cards, id)
-      end
-    end
-    if #cards > 0 then
-      room:moveCardTo(table.random(cards), Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
-    end
-    if player:getMark("@jiaowei") <= n then
-      player:setSkillUseHistory(self.name, 0, Player.HistoryTurn)
-    end
-  end,
-}
-Fk:loadTranslationTable{
-  ["mu__caiyong"] = "乐蔡邕",
-  ["#mu__caiyong"] = "焦尾识音",
-  ["jiaowei"] = "焦尾",
-  [":jiaowei"] = "锁定技，游戏开始时，你的初始手牌增加“弦”标记且不计入手牌上限。当你失去“弦”后，防止你本回合下一次受到的伤害。",
-  ["feibaic"] = "飞白",
-  [":feibaic"] = "当你使用牌后，你可以从牌堆随机获得一张字数为X的牌（X为此牌与你本回合使用的上一张牌牌名字数之和，若没有上一张牌则记为0）。若没有字数为X的牌，你摸一张牌并标记为“弦”。",
-  ["@jiaowei"] = "弦",
-  ["@@jiaowei-inhand"] = "弦",
-}
-
---嵇康 曹不兴 马良
-
-local tmp_illustrate = fk.CreateActiveSkill{name = "tmp_illustrate"}
-
-local chezhou = General(extension, "chezhou", "wei", 4)
-chezhou:addSkill(tmp_illustrate)
-chezhou.hidden = true
-Fk:loadTranslationTable{
-  ["chezhou"] = "车胄",
-  ["#chezhou"] = "当车螳臂",
-  ["tmp_illustrate"] = "看画",
-  [":tmp_illustrate"] = "这个武将还没上线，你可以看看插画。不会出现在选将框。",
-
-  ["shefuc"] = "慑伏",
-  [":shefuc"] = "锁定技，你的牌造成的伤害、其他角色的牌对你造成的伤害均改为X。（X为此牌在手牌中的轮次数）",
-  ["pigua"] = "披挂",
-  [":pigua"] = "当你对其他角色造成伤害后，若伤害值大于1，你可以获得其至多X张牌（X为轮次数），这些牌于当前回合内不计入手牌上限。",
-}
-
 local matie = General(extension, "matie", "qun", 4)
 local quxian = fk.CreateTriggerSkill{
   name = "quxian",
@@ -193,12 +54,7 @@ local quxian = fk.CreateTriggerSkill{
     end
   end,
 }
-matie:addSkill("sp__zhuiji")
-matie:addSkill(quxian)
 Fk:loadTranslationTable{
-  ["matie"] = "马铁",
-  ["#matie"] = "继志伏波",
-
   ["quxian"] = "驱险",
   [":quxian"] = "出牌阶段开始时，你可以选择一名角色，攻击范围内有其的其他角色均可以对其使用【杀】。"..
   "若其未以此法受到过伤害，未以此法使用过【杀】的角色各失去X点体力（X为以此法使用过【杀】的角色数）。",
@@ -329,14 +185,7 @@ local shuaiyan = fk.CreateTriggerSkill{
     end
   end,
 }
-yinbi:addRelatedSkill(yinbi_maxcards)
-yinbi:addRelatedSkill(yinbi_targetmod)
-hansong:addSkill(yinbi)
-hansong:addSkill(shuaiyan)
 Fk:loadTranslationTable{
-  ["hansong"] = "韩嵩",
-  ["#hansong"] = "楚国之望",
-
   ["yinbi"] = "隐避",
   [":yinbi"] = "锁定技，若其他角色的手牌数均不与你相等，你使用牌无距离和次数限制。"..
   "弃牌阶段开始时，若你不是手牌上限最大的角色，你令你的手牌上限的初值于此阶段内改为X（X为其他角色的手牌上限的最大值）。",
@@ -455,9 +304,6 @@ local tanluan = fk.CreateActiveSkill{
 zhurong:addSkill(manhou)
 zhurong:addRelatedSkill(tanluan)
 Fk:loadTranslationTable{
-  ["ty_sp__zhurong"] = "祝融",
-  ["#ty_sp__zhurong"] = "诗惹喜莫",
-
   ["manhou"] = "蛮后",
   [":manhou"] = "出牌阶段限一次，你可以摸至多四张牌，依次执行前等量项："..
   "1.失去〖探乱〗；2.弃置一张手牌；3.失去1点体力并获得一名其他角色的一张手牌；4.弃置场上的一张牌并获得〖探乱〗。",
@@ -567,14 +413,7 @@ local chengyan = fk.CreateTriggerSkill{
     end
   end,
 }
-
-xidi:addRelatedSkill(xidi_maxcards)
-zhugeguo:addSkill(xidi)
-zhugeguo:addSkill(chengyan)
-
 Fk:loadTranslationTable{
-  ["mu__zhugeguo"] = "乐诸葛果",
-  --["#mu__zhugeguo"] = "",
   --["designer:mu__zhugeguo"] = "",
 
   ["xidi"] = "羲笛",
@@ -707,61 +546,13 @@ local lianzhan_active = fk.CreateActiveSkill{
     return #selected == 0 and table.contains(extra_data.exclusive_targets, to_select)
   end,
 }
-local weimingw = fk.CreateTriggerSkill{
-  name = "weimingw",
-  anim_type = "control",
-  frequency = Skill.Compulsory,
-  events = {fk.CardUsing},
-  can_trigger = function(self, event, target, player, data)
-    if target ~= player and player:hasSkill(self) and data.tos and table.contains(TargetGroup:getRealTargets(data.tos), player.id) then
-      self.cost_data = {}
-      if target.hp < player.hp then
-        table.insert(self.cost_data, 1)
-      end
-      if #player.room.logic:getActualDamageEvents(1, function (e)
-        local damage = e.data[1]
-        return damage.from == player and damage.to == target
-      end, Player.HistoryRound) > 0 then
-        table.insert(self.cost_data, 2)
-      end
-      if #self.cost_data == 2 then
-        return true
-      elseif self.cost_data[1] == 1 then
-        return not target:isKongcheng()
-      end
-    end
-  end,
-  on_use = function (self, event, target, player, data)
-    local room = player.room
-    room:doIndicate(player.id, {target.id})
-    local cards = table.filter(target:getCardIds("h"), function (id)
-      return not target:prohibitDiscard(id)
-    end)
-    if #cards > 0 then
-      room:throwCard(table.random(cards), self.name, target, target)
-    end
-    local choices = table.simpleClone(self.cost_data)
-    if #choices == 2 and not player.dead then
-      player:drawCards(1, self.name)
-    end
-  end,
-}
-lianzhan:addRelatedSkill(lianzhan_delay)
-Fk:addSkill(lianzhan_active)
-wenchou:addSkill(lianzhan)
-wenchou:addSkill(weimingw)
 Fk:loadTranslationTable{
-  ["tystar__wenchou"] = "星文丑",
-  ["#tystar__wenchou"] = "夔威天下",
-
   ["lianzhan"] = "连战",
   [":lianzhan"] = "当你使用伤害牌指定唯一目标时，你可以选择一项：1.额外指定一个目标；2.此牌额外结算一次。然后，若此牌对目标造成伤害次数为2，"..
   "你可以回复1点体力（若你未受伤改为摸两张牌）；为0，目标角色视为对你使用同名牌。",
-  ["weimingw"] = "威名",
-  [":weimingw"] = "锁定技，体力值小于你或本轮受到过你造成伤害的其他角色对你使用牌时，随机弃置一张手牌，若皆满足，你摸一张牌。",
+  
   ["lianzhan_active"] = "连战",
   ["#lianzhan-choose"] = "连战：你可以为此%arg额外指定一个目标，或直接点“确定”额外结算一次",
-  ["#lianzhan_delay"] = "连战",
   ["#lianzhan-recover"] = "连战：是否回复1点体力？",
   ["#lianzhan-draw"] = "连战：是否摸两张牌？",
 }
@@ -957,14 +748,7 @@ local dixian_maxcards = fk.CreateMaxCardsSkill{
     return card:getMark("@@dixian-inhand") > 0
   end,
 }
-lukang:addSkill(kegou)
-Fk:addSkill(jiduan_active)
-lukang:addSkill(jiduan)
-dixian:addRelatedSkill(dixian_maxcards)
-lukang:addSkill(dixian)
 Fk:loadTranslationTable{
-  ["wm__lukang"] = "武陆抗",
-  ["#wm__lukang"] = "桢武熙朝",
 }
 --[[Fk:loadTranslationTable{
   ["kegou"] = "克构",
@@ -988,18 +772,6 @@ Fk:loadTranslationTable{
   ["#dixian"] = "砥贤：弃置任意张手牌，从牌堆按点数从大到小获得等量的牌",
   ["@@dixian-inhand"] = "砥贤",
 }]]
-Fk:loadTranslationTable{
-  ["dixian"] = "审断",
-  [":dixian"] = "当你拼点时，可以弃置一张牌，改为用牌堆中点数最大的一张牌拼点。当一次拼点结算后，你与本次用K拼点的角色各摸一张牌堆中点数最小的牌，然后将赢的角色的拼点牌置于牌堆底。",
-}
-Fk:loadTranslationTable{
-  ["dixian"] = "克构",
-  [":dixian"] = "出牌阶段限一次，或你使用或打出过牌的其他角色的回合结束时，你可以与一名其他角色拼点，若你赢，你获得牌堆中最小的X个点数的的牌各一张（X为双方拼点牌点数之差，最多为3）；若你没赢，其视为对你使用一张【杀】，然后你可以继续重复此流程。",
-}
-Fk:loadTranslationTable{
-  ["dixian"] = "砥贤",
-  [":dixian"] = "限定技，出牌阶段，你可以选择一个点数。若牌堆中所有牌均不小于此点数，你摸此点数张牌，你本局游戏使用不大于此点数的牌无距离次数限制；若牌堆中有小于此点数的牌，你获得牌堆和弃牌堆中所有点数为K的牌。",
-}
 
 local laoyan = fk.CreateTriggerSkill{
   name = "laoyan",
@@ -1027,11 +799,6 @@ local laoyan = fk.CreateTriggerSkill{
       table.insertIfNeed(data.nullifiedTargets, to)
     end
   end,
-}
-
-Fk:loadTranslationTable{
-  ["laoyan"] = "劳燕",
-  [":laoyan"] = "锁定技，其他角色使用牌指定包括你在内的多个目标后，此牌对其他目标无效，你从牌堆获得点数小于此牌的牌每个点数各一张，当前回合结束时弃置这些牌。",
 }
 
 local jueyan = fk.CreateTriggerSkill{
@@ -1162,15 +929,4 @@ Fk:loadTranslationTable{
     "然后，此次选择的选项的数值改为1，其他选项的数值均+1{2}。",
   ["jueyanz_pindian"] = "与其拼点，若你赢，你",
   ["jueyanz_update"] = "，若三个选项均被选择过，你修改此技能（跳过拼点步骤直接选择选项）",
-}
-
-local zhanghuai = General(extension, "zhanghuai", "wu", 3, 3, General.Female)
-
-zhanghuai:addSkill(laoyan)
-zhanghuai:addSkill(jueyan)
-
-Fk:loadTranslationTable{
-  ["zhanghuai"] = "张怀",
-  ["#zhanghuai"] = "连理分枝",
-  ["~zhanghuai"] = "",
 }

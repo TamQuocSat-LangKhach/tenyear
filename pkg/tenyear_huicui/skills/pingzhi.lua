@@ -70,7 +70,7 @@ pingzhi:addEffect("active", {
         prompt = prompt,
       })
     end
-    room:showCards(card, target)
+    target:showCards(card)
     if player:getSwitchSkillState(pingzhi.name, true) == fk.SwitchYang then
       if not player:prohibitDiscard(card) then
         room:throwCard(card, pingzhi.name, target, player)

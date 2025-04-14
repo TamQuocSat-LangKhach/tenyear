@@ -45,7 +45,7 @@ qingtan:addEffect("active", {
     local cards = {}
     for p, ids in pairs(result) do
       if table.contains(p:getCardIds("h"), ids[1]) then
-        room:showCards(ids, p)
+        p:showCards(ids)
         table.insert(cards, ids[1])
       end
     end

@@ -104,7 +104,7 @@ huagui:addEffect(fk.EventPhaseStart, {
           proposer = p,
         })
       else
-        room:showCards(dat[p].cards, p)
+        p:showCards(dat[p].cards)
       end
     end
     if #moves > 0 then

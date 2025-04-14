@@ -51,7 +51,7 @@ jianyan:addEffect("active", {
       end
     end
     if not get then return end
-    room:showCards(get)
+    room:turnOverCardsFromDrawPile(player, { get }, jianyan.name)
     local targets = table.filter(room.alive_players, function(p)
       return p:isMale()
     end)
@@ -66,6 +66,8 @@ jianyan:addEffect("active", {
       })[1]
       room:obtainCard(to, get, true, fk.ReasonGive, player, jianyan.name)
     end
+
+    room:cleanProcessingArea({ get }, jianyan.name)
   end,
 })
 

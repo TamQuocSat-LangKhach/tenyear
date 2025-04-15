@@ -76,7 +76,7 @@ xingchong:addEffect(fk.AfterCardsMove, {
   anim_type = "drawcard",
   is_delay_effect = true,
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(xingchong.name) and player:getMark("xingchong-round") ~= 0 then
+    if player:getMark("xingchong-round") ~= 0 then
       local mark = player:getMark("xingchong-round")
       for _, move in ipairs(event.data) do
         if move.from == player then

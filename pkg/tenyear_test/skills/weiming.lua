@@ -35,7 +35,7 @@ weiming:addEffect(fk.CardUsing, {
     end
   end,
   on_cost = function (self, event, target, player, data)
-    event:setCostData(self, {tos = {target}})
+    event:setCostData(self, {tos = {target}, choice = event:getCostData(self).choice})
     return true
   end,
   on_use = function (self, event, target, player, data)

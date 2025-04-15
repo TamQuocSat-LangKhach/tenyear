@@ -31,7 +31,7 @@ Fk:loadTranslationTable{
   --["~chezhou"] = "",
 }
 
---General:new(extension, "matie", "qun", 4):addSkills { "sp__zhuiji", "quxian" }
+General:new(extension, "matie", "qun", 4):addSkills { "sp__zhuiji", "quxian" }
 Fk:loadTranslationTable{
   ["matie"] = "马铁",
   ["#matie"] = "继志伏波",
@@ -39,7 +39,7 @@ Fk:loadTranslationTable{
   --["~matie"] = "",
 }
 
---General:new(extension, "hansong", "qun", 3):addSkills { "yinbi", "shuaiyan" }
+General:new(extension, "hansong", "qun", 3):addSkills { "yinbi", "shuaiyan" }
 Fk:loadTranslationTable{
   ["hansong"] = "韩嵩",
   ["#hansong"] = "楚国之望",
@@ -57,7 +57,7 @@ Fk:loadTranslationTable{
   --["~ty_sp__zhurong"] = "",
 }
 
---General:new(extension, "mu__zhugeguo", "shu", 3, 3, General.Female):addSkills { "xidi", "chengyan" }
+General:new(extension, "mu__zhugeguo", "shu", 3, 3, General.Female):addSkills { "xidi", "chengyan" }
 Fk:loadTranslationTable{
   ["mu__zhugeguo"] = "乐诸葛果",
   --["#mu__zhugeguo"] = "",
@@ -65,7 +65,7 @@ Fk:loadTranslationTable{
   --["~mu__zhugeguo"] = "",
 }
 
---General:new(extension, "tystar__wenchou", "qun", 4):addSkills { "lianzhan", "weimingw" }
+General:new(extension, "tystar__wenchou", "qun", 4):addSkills { "lianzhan", "weimingw" }
 Fk:loadTranslationTable{
   ["tystar__wenchou"] = "星文丑",
   ["#tystar__wenchou"] = "夔威天下",

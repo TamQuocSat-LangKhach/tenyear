@@ -75,7 +75,7 @@ kongwu:addEffect("active", {
 kongwu:addEffect(fk.EventPhaseEnd, {
   anim_type = "control",
   is_delay_effect = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player.phase == Player.Play and player:getMark("kongwu-phase") ~= 0 and
       table.find(player:getTableMark("kongwu-phase"), function (id)
         local to = player.room:getPlayerById(id)

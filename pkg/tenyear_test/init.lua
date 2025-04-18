@@ -47,9 +47,9 @@ Fk:loadTranslationTable{
   --["~hansong"] = "",
 }
 
---local zhurong = General:new(extension, "ty_sp__zhurong", "qun", 4, 4, General.Female)
---zhurong:addSkills { "manhou" }
---zhurong:addRelatedSkill("tanluan")
+local zhurong = General:new(extension, "ty_sp__zhurong", "qun", 4, 4, General.Female)
+zhurong:addSkills { "manhou" }
+zhurong:addRelatedSkill("tanluan")
 Fk:loadTranslationTable{
   ["ty_sp__zhurong"] = "祝融",
   ["#ty_sp__zhurong"] = "诗惹喜莫",
@@ -88,20 +88,12 @@ Fk:loadTranslationTable{
   [":dixian"] = "限定技，出牌阶段，你可以选择一个点数。若牌堆中所有牌均不小于此点数，你摸此点数张牌，你本局游戏使用不大于此点数的牌无距离次数限制；若牌堆中有小于此点数的牌，你获得牌堆和弃牌堆中所有点数为K的牌。",
 }
 
---General:new(extension, "zhanghuai", "wu", 3, 3, General.Female):addSkills { "laoyan", "jueyanz" }
+General:new(extension, "zhanghuai", "wu", 3, 3, General.Female):addSkills { "laoyan", "jueyanz" }
 Fk:loadTranslationTable{
   ["zhanghuai"] = "张怀",
   ["#zhanghuai"] = "连理分枝",
 
   --["~zhanghuai"] = "",
-
-  ["laoyan"] = "劳燕",
-  [":laoyan"] = "锁定技，其他角色使用牌指定包括你在内的多个目标后，此牌对其他目标无效，你从牌堆获得点数小于此牌的牌每个点数各一张，"..
-  "当前回合结束时弃置这些牌。",
-  ["jueyanz"] = "诀言",
-  [":jueyanz"] = "当你使用仅指定唯一目标的手牌结算结束后（每回合每种类别限一次），你可以选择一项："..
-  "1.摸1张牌；2.随机获得弃牌堆1张牌；3.与一名角色拼点，赢的角色对没赢的角色造成1点伤害。"..
-  "然后，此次选择的选项的数值改为1，其他选项的数值均+1。",
 }
 
 General:new(extension, "tymou__xunyu", "wei", 3):addSkills { "bizuo", "shimou" }
@@ -126,6 +118,22 @@ Fk:loadTranslationTable{
   --["#tymou__caohong"] = "",
 
   --["~tymou__caohong"] = "",
+}
+
+General:new(extension, "tystar__zhangrang", "qun", 3):addSkills { "duhai", "lingse" }
+Fk:loadTranslationTable{
+  ["tystar__zhangrang"] = "星张让",
+  ["#tystar__zhangrang"] = "斗筲穿窬",
+
+  --["~tystar__zhangrang"] = "",
+}
+
+General:new(extension, "tymou__liuxie", "qun", 3):addSkills { "zhanban", "chensheng", "tiancheng" }
+Fk:loadTranslationTable{
+  ["tymou__liuxie"] = "谋刘协",
+  --["#tymou__liuxie"] = "",
+
+  --["~tymou__liuxie"] = "",
 }
 
 return extension

@@ -4,7 +4,7 @@ local jiezhong = fk.CreateSkill {
 }
 
 Fk:loadTranslationTable{
-  ["ty_ex__jie__zhong"] = "竭忠",
+  ["ty_ex__jiezhong"] = "竭忠",
   [":ty_ex__jiezhong"] = "限定技，出牌阶段开始时，你可以将手牌摸至体力上限。",
 
   ["$ty_ex__jiezhong1"] = "犯我疆土者，竭忠尽节以灭之。",

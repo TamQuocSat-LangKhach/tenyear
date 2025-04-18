@@ -5,7 +5,7 @@ local chaozhen = fk.CreateSkill {
 Fk:loadTranslationTable{
   ["chaozhen"] = "朝镇",
   [":chaozhen"] = "准备阶段或当你进入濒死状态时，你可以从场上或牌堆中随机获得一张点数最小的牌，若此牌点数为A，你回复1点体力，"..
-  "此技能本回合失效。",
+  "此技能本回合失效；若不为A，你减1点体力上限。",
 
   ["#chaozhen-invoke"] = "朝镇：你可以从场上或牌堆中随机获得一张点数最小的牌",
 }
@@ -60,6 +60,8 @@ local spec = {
           skillName = chaozhen.name,
         })
       end
+    else
+      room:changeMaxHp(player, -1)
     end
   end,
 }

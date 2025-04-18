@@ -5,7 +5,8 @@ local jiangxian = fk.CreateSkill {
 
 Fk:loadTranslationTable{
   ["jiangxian"] = "将贤",
-  [":jiangxian"] = "限定技，出牌阶段，你可以令本回合使用因〖连捷〗摸的牌造成伤害时，此伤害+1。若如此做，回合结束后失去〖连捷〗或〖朝镇〗。",
+  [":jiangxian"] = "限定技，出牌阶段，你可以令本回合使用因〖连捷〗摸的牌造成伤害时，此伤害+X（X为你本回合造成伤害次数，至多为5）。\
+  若如此做，回合结束后失去〖连捷〗或〖朝镇〗。",
 
   ["#jiangxian"] = "将贤：令你本回合使用〖连捷〗牌伤害+1，回合结束时失去““连捷”或“朝镇”！",
   ["@@jiangxian-turn"] = "将贤",
@@ -34,12 +35,20 @@ jiangxian:addEffect(fk.DamageCaused, {
       local use_event = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
       if use_event then
         local use = use_event.data
-        return use.extra_data and use.extra_data.jiangxian == player
+        if use.extra_data and use.extra_data.jiangxian == player then
+          local n = #player.room.logic:getActualDamageEvents(5, function (e)
+            return e.data.from == player
+          end, Player.HistoryTurn)
+          if n > 0 then
+            event:setCostData(self, {choice = n})
+            return true
+          end
+        end
       end
     end
   end,
   on_use = function (self, event, target, player, data)
-    data:changeDamage(1)
+    data:changeDamage(event:getCostData(self).choice)
   end,
 })
 

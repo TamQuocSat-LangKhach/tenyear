@@ -47,16 +47,6 @@ Fk:loadTranslationTable{
   --["~hansong"] = "",
 }
 
-local zhurong = General:new(extension, "ty_sp__zhurong", "qun", 4, 4, General.Female)
-zhurong:addSkills { "manhou" }
-zhurong:addRelatedSkill("tanluan")
-Fk:loadTranslationTable{
-  ["ty_sp__zhurong"] = "祝融",
-  ["#ty_sp__zhurong"] = "诗惹喜莫",
-
-  --["~ty_sp__zhurong"] = "",
-}
-
 General:new(extension, "mu__zhugeguo", "shu", 3, 3, General.Female):addSkills { "xidi", "chengyan" }
 Fk:loadTranslationTable{
   ["mu__zhugeguo"] = "乐诸葛果",
@@ -86,14 +76,6 @@ Fk:loadTranslationTable{
   [":kegou"] = "出牌阶段限一次，或你使用或打出过牌的其他角色的回合结束时，你可以与一名其他角色拼点，若你赢，你获得牌堆中最小的X个点数的的牌各一张（X为双方拼点牌点数之差，最多为3）；若你没赢，其视为对你使用一张【杀】，然后你可以继续重复此流程。",
   ["dixian"] = "砥贤",
   [":dixian"] = "限定技，出牌阶段，你可以选择一个点数。若牌堆中所有牌均不小于此点数，你摸此点数张牌，你本局游戏使用不大于此点数的牌无距离次数限制；若牌堆中有小于此点数的牌，你获得牌堆和弃牌堆中所有点数为K的牌。",
-}
-
-General:new(extension, "zhanghuai", "wu", 3, 3, General.Female):addSkills { "laoyan", "jueyanz" }
-Fk:loadTranslationTable{
-  ["zhanghuai"] = "张怀",
-  ["#zhanghuai"] = "连理分枝",
-
-  --["~zhanghuai"] = "",
 }
 
 General:new(extension, "tymou__xunyu", "wei", 3):addSkills { "bizuo", "shimou" }

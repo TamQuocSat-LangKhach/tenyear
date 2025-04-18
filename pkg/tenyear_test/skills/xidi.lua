@@ -5,7 +5,7 @@ local xidi = fk.CreateSkill {
 
 Fk:loadTranslationTable{
   ["xidi"] = "羲笛",
-  [":xidi"] = "锁定技，游戏开始时，你的初始手牌增加“笛”标记且不计入手牌上限。准备阶段，你观看牌堆顶的X张牌（X为你的“笛”数且至少为1），"..
+  [":xidi"] = "锁定技，游戏开始时，你的初始手牌增加“笛”标记且不计入手牌上限。准备阶段，你观看牌堆顶的X张牌（X为你的“笛”数，至少为1至多为8），"..
   "以任意顺序置于牌堆顶或牌堆底。",
 
   ["@@xidi-inhand"] = "笛",
@@ -36,8 +36,10 @@ xidi:addEffect(fk.EventPhaseStart, {
     local n = #table.filter(player:getCardIds("h"), function (id)
       return Fk:getCardById(id):getMark("@@xidi-inhand") > 0
     end)
+    n = math.min(n, 8)
+    n = math.max(n, 1)
     room:askToGuanxing(player, {
-      cards = room:getNCards(math.max(n, 1)),
+      cards = room:getNCards(n),
       skill_name = xidi.name,
     })
   end,

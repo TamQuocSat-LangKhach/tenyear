@@ -7,6 +7,9 @@ Fk:loadTranslationTable{
   [":saima"] = "当你使用坐骑牌后，你可以与一名其他角色进行连续三次拼点。若你赢的次数不小于2，对其造成1点伤害。",
 
   ["#saima-choose"] = "赛马：与一名角色连续三次拼点，若赢的次数不小于2，对其造成1点伤害",
+
+  ["$saima1"] = "便依军师之言，以下驷取彼上驷。",
+  ["$saima2"] = "驰马重射，三局两胜，买定离手！",
 }
 
 saima:addEffect(fk.CardUseFinished, {

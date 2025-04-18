@@ -1706,6 +1706,17 @@ Fk:loadTranslationTable{
   ["~ty_sp__menghuo"] = "有材而得生，无材而得纵……",
 }
 
+local zhurong = General:new(extension, "ty_sp__zhurong", "qun", 4, 4, General.Female)
+zhurong:addSkills { "manhou" }
+zhurong:addRelatedSkill("tanluan")
+Fk:loadTranslationTable{
+  ["ty_sp__zhurong"] = "祝融",
+  ["#ty_sp__zhurong"] = "诗惹喜莫",
+  ["illustrator:ty_sp__zhurong"] = "匠人绘",
+
+  ["~ty_sp__zhurong"] = "丞相已数释，夫君忘恩乎？",
+}
+
 General:new(extension, "gongsunxiu", "qun", 4):addSkills { "gangu", "kuizhen" }
 Fk:loadTranslationTable{
   ["gongsunxiu"] = "公孙修",
@@ -2636,7 +2647,7 @@ Fk:loadTranslationTable{
   ["~ty__panshu"] = "有喜必忧，以为深戒！",
 }
 
---锦瑟良缘：曹金玉√ 孙翊√ 冯妤√ 来莺儿√ 曹华√ 张奋√ 诸葛若雪√ 诸葛梦雪√ 曹宪√ 柳婒√ 文鸳√
+--锦瑟良缘：曹金玉√ 孙翊√ 冯妤√ 来莺儿√ 曹华√ 张奋√ 诸葛若雪√ 诸葛梦雪√ 曹宪√ 柳婒√ 文鸳√ 张怀√
 General:new(extension, "caojinyu", "wei", 3, 3, General.Female):addSkills { "yuqi", "shanshen", "xianjing" }
 Fk:loadTranslationTable{
   ["caojinyu"] = "曹金玉",
@@ -2754,6 +2765,15 @@ Fk:loadTranslationTable{
   ["designer:wenyuan"] = "韩旭",
 
   ["~wenyuan"] = "伯约，回家了。",
+}
+
+General:new(extension, "zhanghuai", "wu", 3, 3, General.Female):addSkills { "laoyan", "jueyanz" }
+Fk:loadTranslationTable{
+  ["zhanghuai"] = "张怀",
+  ["#zhanghuai"] = "连理分枝",
+  ["illustrator:zhanghuai"] = "鬼画府",
+
+  ["~zhanghuai"] = "爱之深，痛之切。",
 }
 
 --笔舌如椽：诸葛恪x 陈琳√ 杨修√ 骆统√ 王昶√ 程秉√ 杨彪√ 阮籍√ 崔琰毛玠√

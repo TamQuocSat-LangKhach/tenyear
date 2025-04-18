@@ -8,6 +8,9 @@ Fk:loadTranslationTable{
 
   ["#weijit-invoke"] = "围计：你可以声明一个数字令 %dest 猜测，若其猜错，你摸所选数字张牌",
   ["#weijit-choice"] = "围计：猜测 %src 选择的数字，若猜错，其摸所选数字张牌",
+
+  ["$weijit1"] = "哈哈哈哈哈！庞涓当死于此树之下！",
+  ["$weijit2"] = "围魏救赵，急袭大梁，攻敌所必救。",
 }
 
 weiji:addEffect(fk.TargetSpecified, {

@@ -9,6 +9,11 @@ Fk:loadTranslationTable{
   "你本阶段使用【杀】次数上限+1。",
 
   ["@ty__nutao-phase"] = "怒涛",
+
+  ["$ty__nutao1"] = "波澜逆转，攻守皆可！",
+  ["$ty__nutao2"] = "伍胥怒涛，奔流不灭！",
+  ["$ty__nutao3"] = "波涛怒天，神力无边！",
+  ["$ty__nutao4"] = "智勇深沉，一世之雄！",
 }
 
 nutao:addEffect(fk.TargetSpecified, {

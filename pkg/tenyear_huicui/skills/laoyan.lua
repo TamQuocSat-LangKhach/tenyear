@@ -10,8 +10,8 @@ Fk:loadTranslationTable{
 
   ["@@laoyan-inhand-turn"] = "劳燕",
 
-  ["$laoyan1"] = "",
-  ["$laoyan2"] = "",
+  ["$laoyan1"] = "东飞伯劳西飞燕，此生难复见。",
+  ["$laoyan2"] = "林深失鹿，枝不得连理。",
 }
 
 laoyan:addEffect(fk.TargetConfirmed, {

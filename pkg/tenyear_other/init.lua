@@ -19,6 +19,8 @@ Fk:loadTranslationTable{
 General:new(extension, "taoshen", "god", 4):addSkills { "ty__nutao" }
 Fk:loadTranslationTable{
   ["taoshen"] = "涛神",
+
+  ["~taoshen"] = "马革裹尸，身沉江心。",
 }
 
 General:new(extension, "libai", "god", 3):addSkills { "jiuxian", "shixian" }

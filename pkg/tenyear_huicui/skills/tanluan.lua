@@ -8,8 +8,8 @@ Fk:loadTranslationTable{
 
   ["#tanluan"] = "探乱：使用一张本回合因弃置而进入弃牌堆的牌，若造成伤害则重置“蛮后”",
 
-  ["$tanluan1"] = "",
-  ["$tanluan2"] = "",
+  ["$tanluan1"] = "暗索缚雄兵，尔等不过如此！",
+  ["$tanluan2"] = "飞刀伤汉将，何人再来一战？",
 }
 
 tanluan:addEffect("active", {

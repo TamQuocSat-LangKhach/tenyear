@@ -12,19 +12,19 @@ Fk:loadTranslationTable{
   ["jueyanz"] = "诀言",
   [":jueyanz"] = "当你使用仅指定唯一目标的手牌结算结束后（每回合每种类别限一次），你可以选择一项：<br>"..
   "1.摸1张牌；<br>2.随机获得弃牌堆1张牌；<br>3.与一名角色拼点，赢的角色对没赢的角色造成1点伤害。<br>"..
-  "然后，此次选择的选项的数值改为1，其他选项的数值均+1。",
+  "然后，此次选择的选项的数值改为1，其他选项的数值+1（至多为3）。",
 
   [":jueyanz_inner"] = "当你使用仅指定唯一目标的手牌结算结束后（每回合每种类别限一次），你可以选择一项：<br>"..
   "1.摸{1}张牌；<br>2.随机获得弃牌堆{2}张牌；<br>3.与一名角色拼点，赢的角色对没赢的角色造成{3}点伤害。<br>"..
-  "然后，此次选择的选项的数值改为1，其他选项的数值均+1。",
+  "然后，此次选择的选项的数值改为1，其他选项的数值+1（至多为3）。",
 
   ["jueyanz_draw"] = "摸%arg张牌",
   ["jueyanz_prey"] = "随机获得弃牌堆%arg张牌",
   ["jueyanz_pindian"] = "与一名角色拼点，赢者对没赢者造成%arg点伤害",
   ["#jueyanz-choose"] = "诀言：与一名角色拼点，赢的角色对没赢的角色造成%arg点伤害",
 
-  ["$jueyanz1"] = "",
-  ["$jueyanz2"] = "",
+  ["$jueyanz1"] = "此日分钗，一别两宽，各生欢喜。",
+  ["$jueyanz2"] = "愿君相离之后，再遇今生良缘。",
 }
 
 jueyanz:addEffect(fk.CardUseFinished, {
@@ -108,7 +108,7 @@ jueyanz:addEffect(fk.CardUseFinished, {
       for _, c in ipairs({"jueyanz_draw", "jueyanz_prey", "jueyanz_pindian"}) do
         if c == choice then
           room:setPlayerMark(player, c, 0)
-        else
+        elseif player:getMark(c) < 2 then
           room:addPlayerMark(player, c, 1)
         end
       end

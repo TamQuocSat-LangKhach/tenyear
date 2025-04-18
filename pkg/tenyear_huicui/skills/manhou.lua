@@ -10,8 +10,8 @@ Fk:loadTranslationTable {
   ["#manhou"] = "蛮后：你可以摸至多四张牌，依次执行等量效果",
   ["#manhou-choose"] = "蛮后：选择一名角色，弃置其场上一张牌",
 
-  ["$manhou1"] = "",
-  ["$manhou2"] = "",
+  ["$manhou1"] = "既为蛮王之妻，当彰九黎之仪。",
+  ["$manhou2"] = "君行役四海，妾怎敢居后。",
 }
 
 manhou:addEffect("active", {

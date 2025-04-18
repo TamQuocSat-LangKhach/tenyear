@@ -183,6 +183,53 @@ Fk:loadTranslationTable{
   ["~ty__majun"] = "龙骨坍夜陌，水尽百戏枯……",
 }
 
+local weapon__gongqiao = fk.CreateCard{
+  name = "&weapon__gongqiao",
+  type = Card.TypeEquip,
+  sub_type = Card.SubtypeWeapon,
+}
+extension:loadCardSkels{weapon__gongqiao}
+extension:addCardSpec("weapon__gongqiao")
+
+local armor__gongqiao = fk.CreateCard{
+  name = "&armor__gongqiao",
+  type = Card.TypeEquip,
+  sub_type = Card.SubtypeArmor,
+}
+extension:loadCardSkels{armor__gongqiao}
+extension:addCardSpec("armor__gongqiao")
+
+local offensive_horse__gongqiao = fk.CreateCard{
+  name = "&offensive_horse__gongqiao",
+  type = Card.TypeEquip,
+  sub_type = Card.SubtypeOffensiveRide,
+}
+extension:loadCardSkels{offensive_horse__gongqiao}
+extension:addCardSpec("offensive_horse__gongqiao")
+
+local defensive_horse__gongqiao = fk.CreateCard{
+  name = "&defensive_horse__gongqiao",
+  type = Card.TypeEquip,
+  sub_type = Card.SubtypeDefensiveRide,
+}
+extension:loadCardSkels{defensive_horse__gongqiao}
+extension:addCardSpec("defensive_horse__gongqiao")
+
+local treasure__gongqiao = fk.CreateCard{
+  name = "&treasure__gongqiao",
+  type = Card.TypeEquip,
+  sub_type = Card.SubtypeTreasure,
+}
+extension:loadCardSkels{treasure__gongqiao}
+extension:addCardSpec("treasure__gongqiao")
+Fk:loadTranslationTable{
+  ["weapon__gongqiao"] = "工巧",
+  ["armor__gongqiao"] = "工巧",
+  ["offensive_horse__gongqiao"] = "工巧",
+  ["defensive_horse__gongqiao"] = "工巧",
+  ["treasure__gongqiao"] = "工巧",
+}
+
 local peixiu = General:new(extension, "ty__peixiu", "qun", 3)
 peixiu.subkingdom = "jin"
 peixiu:addSkills { "zhitu", "fujue" }

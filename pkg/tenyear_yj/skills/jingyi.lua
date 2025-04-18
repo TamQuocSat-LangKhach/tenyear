@@ -14,13 +14,14 @@ Fk:loadTranslationTable{
 jingyi:addEffect(fk.AfterCardsMove, {
   anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(jingyi.name) or player.room:getCurrent() == nil then return false end
-    local mark = player:getTableMark("jingyi-turn")
-    for _, move in ipairs(data) do
-      if move.to == player and move.toArea == Card.PlayerEquip then
-        for _, info in ipairs(move.moveInfo) do
-          if not table.contains(mark, Fk:getCardById(info.cardId).sub_type) then
-            return true
+    if player:hasSkill(jingyi.name) then
+      local mark = player:getTableMark("jingyi-turn")
+      for _, move in ipairs(data) do
+        if move.to == player and move.toArea == Card.PlayerEquip then
+          for _, info in ipairs(move.moveInfo) do
+            if not table.contains(mark, Fk:getCardById(info.cardId).sub_type) then
+              return true
+            end
           end
         end
       end
@@ -56,5 +57,9 @@ jingyi:addEffect(fk.AfterCardsMove, {
     })
   end,
 })
+
+jingyi:addLoseEffect(function (self, player, is_death)
+  player.room:setPlayerMark(player, "jingyi-turn", 0)
+end)
 
 return jingyi

@@ -159,4 +159,9 @@ Fk:loadTranslationTable{
   ["tianjiq"] = "田忌",
 }
 
+General:new(extension, "yuanshaoyuanshu", "qun", 4):addSkills { "lieti", "shigong", "luankui" }
+Fk:loadTranslationTable{
+  ["yuanshaoyuanshu"] = "烈袁绍袁术",
+}
+
 return extension

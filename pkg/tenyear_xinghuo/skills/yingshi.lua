@@ -18,7 +18,7 @@ Fk:loadTranslationTable{
 yingshi:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
   can_trigger = function(self, event, target, player, data)
-    return target == player and player.phase == Player.Play and
+    return target == player and player:hasSkill(yingshi.name) and player.phase == Player.Play and
       not table.find(player.room.alive_players, function(p)
         return #p:getPile("duji_chou") > 0
       end) and

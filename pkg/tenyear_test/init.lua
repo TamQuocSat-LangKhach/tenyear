@@ -79,11 +79,23 @@ Fk:loadTranslationTable{
 }
 
 General:new(extension, "tymou__xunyu", "wei", 3):addSkills { "bizuo", "shimou" }
+local xunyu2 = General:new(extension, "tymou2__xunyu", "wei", 3)
+xunyu2:addSkills { "bizuo", "shimou" }
+xunyu2.hidden = true
 Fk:loadTranslationTable{
   ["tymou__xunyu"] = "谋荀彧",
   --["#tymou__xunyu"] = "",
 
   --["~tymou__xunyu"] = "",
+  ["tymou2__xunyu"] = "谋荀彧",
+  ["#tymou2__xunyu"] = "",
+  ["illustrator:tymou2__xunyu"] = "",
+
+  ["$bizuo_tymou2__xunyu1"] = "",
+  ["$bizuo_tymou2__xunyu2"] = "",
+  ["$shimou_tymou2__xunyu1"] = "",
+  ["$shimou_tymou2__xunyu2"] = "",
+  ["~tymou2__xunyu"] = "",
 }
 
 General:new(extension, "tymou__dongcheng", "qun", 4):addSkills { "baojia", "douwei" }
@@ -116,6 +128,39 @@ Fk:loadTranslationTable{
   --["#tymou__liuxie"] = "",
 
   --["~tymou__liuxie"] = "",
+}
+
+--General:new(extension, "ty__xiahouxuan", "wei", 3):addSkills { "boxuan", "yizhengx", "guilin" }
+Fk:loadTranslationTable{
+  ["ty__xiahouxuan"] = "夏侯玄",
+  ["#ty__xiahouxuan"] = "玄隐山林",
+
+  --["~ty__xiahouxuan"] = "",
+
+  ["boxuan"] = "博玄",
+  [":boxuan"] = "当你使用指定其他角色为目标的手牌结算完毕后，你可以展示牌堆底三张牌，若其中有牌与你使用的牌：<br>"..
+  "牌名字数相同，你摸一张牌；<br>花色相同，你可以弃置一名其他角色的一张牌；<br>类别相同，你可以使用一张展示的牌。",
+  ["yizhengx"] = "议政",
+  [":yizhengx"] = "回合开始时和结束时，你可以与任意名其他角色同时展示一张手牌，若展示的牌类别均相同，你可以将这些牌交给一名角色，否则弃置这些牌，"..
+  "你失去1点体力。",
+  ["guilin"] = "归林",
+  [":guilin"] = "限定技，当你进入濒死状态时，你可以弃置任意张手牌并回复等量体力，然后失去〖议政〗、修改〖博玄〗（可以将使用的牌置于牌堆底）。",
+}
+
+General:new(extension, "ty__xiahouhui", "wei", 3, 3, General.Female):addSkills { "dujun", "jikun" }
+Fk:loadTranslationTable{
+  ["ty__xiahouhui"] = "夏侯徽",
+  ["#ty__xiahouhui"] = "雅识有度",
+
+  --["~ty__xiahouhui"] = "",
+}
+
+General:new(extension, "zhongyu", "wei", 3):addSkills { "zhidui", "jiesi" }
+Fk:loadTranslationTable{
+  ["zhongyu"] = "钟毓",
+  ["#zhongyu"] = "智辩捷才",
+
+  --["~zhongyu"] = "",
 }
 
 return extension

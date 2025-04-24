@@ -47,6 +47,7 @@ shimou:addEffect("active", {
   on_use = function(self, room, effect)
     local player = effect.from
     local target = effect.tos[1]
+    U.SetSwitchSkillState(player, shimou.name, player:getSwitchSkillState(shimou.name, false))
     local n = target:getHandcardNum() - target.maxHp
     if n < 0 then
       target:drawCards(math.min(5, -n), shimou.name)

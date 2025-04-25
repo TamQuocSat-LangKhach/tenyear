@@ -171,7 +171,9 @@ sugang:addEffect("prohibit", {
         for _, p in ipairs(Fk:currentRoom().alive_players) do
           if p:getMark("sugang-turn") ~= 0 then
             for _, id in ipairs(subcards) do
-              if Fk:getCardById(id).number < p:getMark("sugang-turn")[1] or Fk:getCardById(id).number > p:getMark("sugang-turn")[2] then
+              local c = Fk:getCardById(id)
+              if c:getMark("dianlun-inhand-turn") == 0 and
+                (c.number < p:getMark("sugang-turn")[1] or c.number > p:getMark("sugang-turn")[2]) then
                 return true
               end
             end

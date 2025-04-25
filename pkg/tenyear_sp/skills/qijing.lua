@@ -15,7 +15,6 @@ Fk:loadTranslationTable{
 }
 
 qijing:addEffect(fk.TurnEnd, {
-  frequency = Skill.Wake,
   priority = 2,
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(qijing.name) and player:usedSkillTimes(qijing.name, Player.HistoryGame) == 0

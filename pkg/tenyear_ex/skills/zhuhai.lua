@@ -23,8 +23,9 @@ zhuhai:addEffect(fk.EventPhaseStart, {
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local success, dat = room:askToUseActiveSkill(player, {
-      skill_name = "ty_ex__zhuhai_viewas",
+    local use = room:askToUseVirtualCard(player, {
+      name = {"slash", "dismantlement"},
+      skill_name = zhuhai.name,
       prompt = "#ty_ex__zhuhai-invoke::"..target.id,
       cancelable = true,
       extra_data = {
@@ -33,23 +34,18 @@ zhuhai:addEffect(fk.EventPhaseStart, {
         extraUse = true,
         exclusive_targets = {target.id},
       },
+      card_filter = {
+        n = 1,
+      },
+      skip = true,
     })
-    if success and dat then
-      event:setCostData(self, {cards = dat.cards, choice = dat.interaction})
+    if use then
+      event:setCostData(self, {extra_data = use})
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    local card = Fk:cloneCard(event:getCostData(self).choice)
-    card:addSubcards(event:getCostData(self).cards)
-    card.skillName = zhuhai.name
-    room:useCard{
-      from = player,
-      tos =  {target},
-      card = card,
-      extraUse = true,
-    }
+    player.room:useCard(event:getCostData(self).extra_data)
   end,
 })
 

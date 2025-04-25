@@ -50,24 +50,15 @@ shiji:addEffect(fk.EventPhaseStart, {
       arg = choice,
       toast = true,
     }
-    local success, dat = room:askToUseActiveSkill(target, {
-      skill_name = "shijiz_viewas",
+    room:askToUseVirtualCard(target, {
+      name = choice,
+      skill_name = shiji.name,
       prompt = "#shijiz-use:::"..choice,
       cancelable = true,
-      extra_data = {
-        shijiz_name = choice,
+      card_filter = {
+        n = 1,
       },
     })
-    if success and dat then
-      local card = Fk:cloneCard(choice)
-      card:addSubcards(dat.cards)
-      card.skillName = shiji.name
-      room:useCard{
-        from = target,
-        tos = dat.targets,
-        card = card,
-      }
-    end
   end,
 })
 

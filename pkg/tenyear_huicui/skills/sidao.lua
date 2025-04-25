@@ -41,8 +41,9 @@ sidao:addEffect(fk.CardUseFinished, {
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = event:getCostData(self).extra_data
-    local success, dat = room:askToUseActiveSkill(player, {
-      skill_name = "sidao_viewas",
+    local use = room:askToUseVirtualCard(player, {
+      name = "snatch",
+      skill_name = sidao.name,
       prompt = "#sidao-invoke",
       cancelable = true,
       extra_data = {
@@ -50,15 +51,19 @@ sidao:addEffect(fk.CardUseFinished, {
         bypass_times = true,
         exclusive_targets = table.map(targets, Util.IdMapper),
       },
+      card_filter = {
+        n = 1,
+        cards = player:getHandlyIds(),
+      },
+      skip = true,
     })
-    if success and dat then
-      event:setCostData(self, {extra_data = dat})
+    if use then
+      event:setCostData(self, {extra_data = use})
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
-    local dat = event:getCostData(self).extra_data
-    player.room:useVirtualCard("snatch", dat.cards, player, dat.targets, sidao.name)
+    player.room:useCard(event:getCostData(self).extra_data)
   end,
 })
 

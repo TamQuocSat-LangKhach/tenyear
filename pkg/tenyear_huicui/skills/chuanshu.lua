@@ -51,10 +51,7 @@ chuanshu:addEffect(fk.Death, {
 chuanshu:addEffect(fk.EventPhaseStart, {
   anim_type = "support",
   can_trigger = function(self, event, target, player, data)
-    return
-      target == player and
-      player:hasSkill(chuanshu.name) and
-      player.phase == Player.Start and
+    return target == player and player:hasSkill(chuanshu.name, false, true) and
       player:usedSkillTimes(chuanshu.name, Player.HistoryGame) == 0 and
       player:isWounded() and #player.room:getOtherPlayers(player, false) > 0
   end,

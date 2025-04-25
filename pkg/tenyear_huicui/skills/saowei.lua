@@ -28,12 +28,16 @@ saowei:addEffect(fk.CardUseFinished, {
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
+    local cards = table.filter(player:getCardIds("h"), function(id)
+      return Fk:getCardById(id):getMark("@@aishou-inhand") > 0
+    end)
     local targets = table.filter(data.tos, function(p)
       return player:inMyAttackRange(p) and not p.dead and
         player:canUseTo(Fk:cloneCard("slash"), p, {bypass_distances = true, bypass_times = true})
     end)
-    local success, dat = room:askToUseActiveSkill(player, {
-      skill_name = "saowei_viewas",
+    local use = room:askToUseVirtualCard(player, {
+      name = "slash",
+      skill_name = saowei.name,
       prompt = "#saowei-use",
       cancelable = true,
       extra_data = {
@@ -42,24 +46,20 @@ saowei:addEffect(fk.CardUseFinished, {
         extraUse = true,
         exclusive_targets = table.map(targets, Util.IdMapper),
       },
+      card_filter = {
+        n = 1,
+        pattern = tostring(Exppattern{ id = cards }),
+      },
+      skip = true,
     })
-    if success and dat then
-      event:setCostData(self, {extra_data = dat})
+    if use then
+      event:setCostData(self, {extra_data = use})
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local dat = event:getCostData(self).extra_data
-    local card = Fk:cloneCard("slash")
-    card:addSubcards(dat.cards)
-    card.skillName = saowei.name
-    local use = {
-      from = player,
-      tos = dat.targets,
-      card = card,
-      extraUse = true,
-    }
+    local use = event:getCostData(self).extra_data
     room:useCard(use)
     if use.damageDealt and not player.dead and room:getCardArea(use.card) == Card.DiscardPile then
       room:obtainCard(player, use.card, true, fk.ReasonJustMove, player, saowei.name)

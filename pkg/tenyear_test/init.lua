@@ -50,7 +50,7 @@ Fk:loadTranslationTable{
 General:new(extension, "mu__zhugeguo", "shu", 3, 3, General.Female):addSkills { "xidi", "chengyan" }
 Fk:loadTranslationTable{
   ["mu__zhugeguo"] = "乐诸葛果",
-  --["#mu__zhugeguo"] = "",
+  ["#mu__zhugeguo"] = "玉露清音",
 
   --["~mu__zhugeguo"] = "",
 }
@@ -84,11 +84,11 @@ xunyu2:addSkills { "bizuo", "shimou" }
 xunyu2.hidden = true
 Fk:loadTranslationTable{
   ["tymou__xunyu"] = "谋荀彧",
-  --["#tymou__xunyu"] = "",
+  ["#tymou__xunyu"] = "贞谋弼汉",
 
   --["~tymou__xunyu"] = "",
   ["tymou2__xunyu"] = "谋荀彧",
-  ["#tymou2__xunyu"] = "",
+  ["#tymou2__xunyu"] = "贞谋弼汉",
   ["illustrator:tymou2__xunyu"] = "",
 
   ["$bizuo_tymou2__xunyu1"] = "",
@@ -101,7 +101,7 @@ Fk:loadTranslationTable{
 General:new(extension, "tymou__dongcheng", "qun", 4):addSkills { "baojia", "douwei" }
 Fk:loadTranslationTable{
   ["tymou__dongcheng"] = "谋董承",
-  --["#tymou__dongcheng"] = "",
+  ["#tymou__dongcheng"] = "汉室孤忠",
 
   --["~tymou__dongcheng"] = "",
 }
@@ -125,7 +125,7 @@ Fk:loadTranslationTable{
 General:new(extension, "tymou__liuxie", "qun", 3):addSkills { "zhanban", "chensheng", "tiancheng" }
 Fk:loadTranslationTable{
   ["tymou__liuxie"] = "谋刘协",
-  --["#tymou__liuxie"] = "",
+  ["#tymou__liuxie"] = "玉辂东归",
 
   --["~tymou__liuxie"] = "",
 }
@@ -161,6 +161,14 @@ Fk:loadTranslationTable{
   ["#zhongyu"] = "智辩捷才",
 
   --["~zhongyu"] = "",
+}
+
+General:new(extension, "ty_wei__caopi", "wei", 4):addSkills { "dianlun", "jiweic", "sugang" }
+Fk:loadTranslationTable{
+  ["ty_wei__caopi"] = "威曹丕",
+  --["#ty_wei__caopi"] = "",
+
+  --["~ty_wei__caopi"] = "",
 }
 
 return extension

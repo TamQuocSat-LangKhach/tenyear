@@ -15,7 +15,7 @@ Fk:loadTranslationTable{
 lirang:addEffect(fk.AfterCardsMove, {
   anim_type = "support",
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(lirang.name) and player.room:getOtherPlayers(player, false) > 0 then
+    if player:hasSkill(lirang.name) and #player.room:getOtherPlayers(player, false) > 0 then
       local cards = {}
       for _, move in ipairs(data) do
         if move.from == player and move.moveReason == fk.ReasonDiscard and move.toArea == Card.DiscardPile then

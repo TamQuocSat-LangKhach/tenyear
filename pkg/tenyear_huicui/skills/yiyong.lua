@@ -50,6 +50,7 @@ yiyong:addEffect(fk.DamageCaused, {
       players = {player, data.to},
       min_num = 1,
       max_num = 999,
+      include_equip = true,
       cancelable = false,
       skill_name = yiyong.name,
       prompt = "#yiyong-discard",

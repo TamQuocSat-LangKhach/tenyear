@@ -4,7 +4,7 @@ local baojia = fk.CreateSkill{
 
 Fk:loadTranslationTable{
   ["baojia"] = "保驾",
-  [":baojia"] = "游戏开始时，你选择一名其他角色，当其每回合受到牌造成的伤害时，你可以废除一个装备栏防止此伤害，此牌结算结束后你获得之。",
+  [":baojia"] = "游戏开始时，你选择一名其他角色，你与其每回合首次受到牌造成的伤害时，你可以废除一个装备栏防止此伤害，此牌结算结束后你获得之。",
 
   ["@baojia"] = "保驾",
   ["#baojia-choose"] = "保驾：请选择要保驾的角色",
@@ -38,7 +38,8 @@ baojia:addEffect(fk.GameStart, {
 baojia:addEffect(fk.DamageInflicted, {
   anim_type = "support",
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(baojia.name) and player:getMark(baojia.name) == target.id and data.card and
+    return player:hasSkill(baojia.name) and
+      (target == player or player:getMark(baojia.name) == target.id) and data.card and
       #player:getAvailableEquipSlots() > 0 and
       #player.room.logic:getEventsOfScope(GameEvent.Damage, 1, function (e)
         local damage = e.data

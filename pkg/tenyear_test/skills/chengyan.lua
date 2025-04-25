@@ -5,7 +5,7 @@ local chengyan = fk.CreateSkill {
 Fk:loadTranslationTable{
   ["chengyan"] = "乘烟",
   [":chengyan"] = "当你使用【杀】或普通锦囊牌指定其他角色为目标后，你可以摸一张牌并展示之，若为【杀】或普通锦囊牌且可以对目标使用，"..
-  "将你使用的牌的效果改为展示牌的效果，否则将展示牌标记为“笛”。",
+  "将你使用的牌的效果改为展示牌的效果，否则你摸一张牌并标记为“笛”。",
 
   ["#chengyan-invoke"] = "乘烟：是否摸一张牌？若是【杀】或普通锦囊牌，则将此%arg改为摸到牌的效果",
 
@@ -61,8 +61,8 @@ chengyan:addEffect(fk.TargetSpecified, {
         end
       end
       return
-    elseif table.contains(player:getCardIds("h"), cards[1]) and player:hasSkill("xidi", true) then
-      room:setCardMark(card, "@@xidi-inhand", 1)
+    elseif not player.dead then
+      player:drawCards(1, chengyan.name, nil, player:hasSkill("xidi", true) and "@@xidi-inhand" or nil)
     end
   end,
 })

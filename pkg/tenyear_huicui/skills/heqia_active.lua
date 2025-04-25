@@ -35,7 +35,7 @@ heqia_active:addEffect("active", {
       if self.interaction.data == "heqia_prey" then
         return not to_select:isNude()
       else
-        return selected_cards > 0
+        return #selected_cards > 0
       end
     end
   end,

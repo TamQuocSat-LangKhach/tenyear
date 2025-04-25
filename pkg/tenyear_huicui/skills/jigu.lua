@@ -42,8 +42,8 @@ local spec = {
           player.room:setPlayerMark(player, "jigu_record", record)
         end
       end
-      return player:usedEffectTimes("#jigu_2_trig", Player.HistoryRound) +
-        player:usedEffectTimes("#jigu_3_trig", Player.HistoryRound) < record and
+      return (player:usedEffectTimes("#jigu_2_trig", Player.HistoryRound) +
+        player:usedEffectTimes("#jigu_3_trig", Player.HistoryRound) < record) and
         #table.filter(player:getCardIds("h"), function (id)
           return Fk:getCardById(id):getMark("@@jigu-inhand") > 0
         end) == #player:getAvailableEquipSlots() - #player:getCardIds("e")

@@ -4,10 +4,11 @@ local douwei = fk.CreateSkill{
 
 Fk:loadTranslationTable{
   ["douwei"] = "斗围",
-  [":douwei"] = "出牌阶段，你可以弃置一张伤害牌，视为对任意名攻击范围内包含你的其他角色使用之，若其因此进入濒死状态，你回复1点体力，"..
-  "此技能本回合失效。",
+  [":douwei"] = "出牌阶段，你可以弃置一张伤害牌，视为对任意名攻击范围内包含你的其他角色使用之，若其因此进入濒死状态，你回复1点体力并"..
+  "恢复一个装备栏，此技能本回合失效。",
 
   ["#douwei"] = "斗围：弃置一张伤害牌，视为对任意名攻击范围内包含你的角色使用之",
+  ["#douwei-resume"] = "斗围：恢复一个装备栏",
 
   ["$douwei1"] = "",
   ["$douwei2"] = "",
@@ -63,6 +64,19 @@ douwei:addEffect(fk.EnterDying, {
         recoverBy = player,
         skillName = douwei.name,
       }
+    end
+    if not player.dead then
+      local slots = table.filter(player.sealedSlots, function (slot)
+        return slot ~= Player.JudgeSlot
+      end)
+      if #slots > 0 then
+        local choice = room:askToChoice(player, {
+          choices = slots,
+          skill_name = douwei.name,
+          prompt = "#douwei-resume",
+        })
+        room:resumePlayerArea(player, choice)
+      end
     end
   end,
 })

@@ -5,8 +5,8 @@ local xidi = fk.CreateSkill {
 
 Fk:loadTranslationTable{
   ["xidi"] = "羲笛",
-  [":xidi"] = "锁定技，游戏开始时，你的初始手牌增加“笛”标记且不计入手牌上限。准备阶段，你观看牌堆顶的X张牌（X为你的“笛”数，至少为1至多为8），"..
-  "以任意顺序置于牌堆顶或牌堆底。",
+  [":xidi"] = "锁定技，游戏开始时，你的初始手牌增加“笛”标记且不计入手牌上限。准备阶段和结束阶段，你观看牌堆顶的X张牌"..
+  "（X为你的“笛”数，至少为1至多为8），以任意顺序置于牌堆顶或牌堆底。",
 
   ["@@xidi-inhand"] = "笛",
 
@@ -29,7 +29,7 @@ xidi:addEffect(fk.GameStart, {
 xidi:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(xidi.name) and player.phase == Player.Start
+    return target == player and player:hasSkill(xidi.name) and (player.phase == Player.Start or player.phase == Player.Finish)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

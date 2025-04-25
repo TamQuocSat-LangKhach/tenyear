@@ -22,9 +22,6 @@ Fk:loadTranslationTable{
   "<b>时机</b>：出牌阶段<br/>"..
   "<b>目标</b>：一至两名角色<br/>"..
   "<b>效果</b>：第一名角色受到1点雷电伤害并弃置一张牌，该角色以外的角色受到1点雷电伤害并摸一张牌。",
-
-  ["mobile__enemy_at_the_gates_skill"] = "兵临城下",
-  ["#mobile__enemy_at_the_gates_skill"] = "选择一名其他角色，你展示牌堆顶四张牌，依次对其使用其中【杀】，其余牌放回牌堆顶",
 }
 
 local red_spear = fk.CreateCard{

@@ -6,8 +6,8 @@ Fk:loadTranslationTable{
   ["chensheng"] = "沉声",
   [":chensheng"] = "其他角色回合结束时，若你与其均不为手牌数唯一最多的角色，你摸一张牌。",
 
-  ["$chensheng1"] = "",
-  ["$chensheng2"] = "",
+  ["$chensheng1"] = "请卿取狐狸，为天子裘。",
+  ["$chensheng2"] = "朕客居许昌，唯仰丞相鼻息。",
 }
 
 chensheng:addEffect(fk.TurnEnd, {

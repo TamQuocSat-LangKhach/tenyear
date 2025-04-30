@@ -47,14 +47,6 @@ Fk:loadTranslationTable{
   --["~hansong"] = "",
 }
 
-General:new(extension, "mu__zhugeguo", "shu", 3, 3, General.Female):addSkills { "xidi", "chengyan" }
-Fk:loadTranslationTable{
-  ["mu__zhugeguo"] = "乐诸葛果",
-  ["#mu__zhugeguo"] = "玉露清音",
-
-  --["~mu__zhugeguo"] = "",
-}
-
 General:new(extension, "tystar__wenchou", "qun", 4):addSkills { "lianzhan", "weimingw" }
 Fk:loadTranslationTable{
   ["tystar__wenchou"] = "星文丑",
@@ -78,26 +70,6 @@ Fk:loadTranslationTable{
   [":dixian"] = "限定技，出牌阶段，你可以选择一个点数。若牌堆中所有牌均不小于此点数，你摸此点数张牌，你本局游戏使用不大于此点数的牌无距离次数限制；若牌堆中有小于此点数的牌，你获得牌堆和弃牌堆中所有点数为K的牌。",
 }
 
-General:new(extension, "tymou__xunyu", "wei", 3):addSkills { "bizuo", "shimou" }
-local xunyu2 = General:new(extension, "tymou2__xunyu", "wei", 3)
-xunyu2:addSkills { "bizuo", "shimou" }
-xunyu2.hidden = true
-Fk:loadTranslationTable{
-  ["tymou__xunyu"] = "谋荀彧",
-  ["#tymou__xunyu"] = "贞谋弼汉",
-
-  --["~tymou__xunyu"] = "",
-  ["tymou2__xunyu"] = "谋荀彧",
-  ["#tymou2__xunyu"] = "贞谋弼汉",
-  ["illustrator:tymou2__xunyu"] = "",
-
-  ["$bizuo_tymou2__xunyu1"] = "",
-  ["$bizuo_tymou2__xunyu2"] = "",
-  ["$shimou_tymou2__xunyu1"] = "",
-  ["$shimou_tymou2__xunyu2"] = "",
-  ["~tymou2__xunyu"] = "",
-}
-
 General:new(extension, "tymou__dongcheng", "qun", 4):addSkills { "baojia", "douwei" }
 Fk:loadTranslationTable{
   ["tymou__dongcheng"] = "谋董承",
@@ -112,22 +84,6 @@ Fk:loadTranslationTable{
   --["#tymou__caohong"] = "",
 
   --["~tymou__caohong"] = "",
-}
-
-General:new(extension, "tystar__zhangrang", "qun", 3):addSkills { "duhai", "lingse" }
-Fk:loadTranslationTable{
-  ["tystar__zhangrang"] = "星张让",
-  ["#tystar__zhangrang"] = "斗筲穿窬",
-
-  --["~tystar__zhangrang"] = "",
-}
-
-General:new(extension, "tymou__liuxie", "qun", 3):addSkills { "zhanban", "chensheng", "tiancheng" }
-Fk:loadTranslationTable{
-  ["tymou__liuxie"] = "谋刘协",
-  ["#tymou__liuxie"] = "玉辂东归",
-
-  --["~tymou__liuxie"] = "",
 }
 
 --General:new(extension, "ty__xiahouxuan", "wei", 3):addSkills { "boxuan", "yizhengx", "guilin" }

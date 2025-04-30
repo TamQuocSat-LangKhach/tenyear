@@ -12,8 +12,8 @@ Fk:loadTranslationTable{
   ["@@bizuo-turn"] = "弼佐",
   ["#bizuo-give"] = "弼佐：分配本回合所有不因弃置进入弃牌堆的牌！",
 
-  ["$bizuo1"] = "",
-  ["$bizuo2"] = "",
+  ["$bizuo1"] = "君同日月，国若山河，吾不敢舍昼夜。",
+  ["$bizuo2"] = "人生百载，或死利，或死欲，死义可乎？",
 }
 
 bizuo:addEffect(fk.TurnEnd, {

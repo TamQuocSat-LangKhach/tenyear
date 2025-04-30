@@ -5,26 +5,43 @@ local zhanban = fk.CreateSkill {
 
 Fk:loadTranslationTable{
   ["zhanban"] = "斩绊",
-  [":zhanban"] = "出牌阶段限一次，你可以令所有其他角色将手牌数调整至与你相同。若因此弃牌，其摸三张牌；若因此摸牌，其弃置三张牌；\
-  若未摸牌或弃牌，你对其造成1点伤害。",
+  [":zhanban"] = "出牌阶段限一次，你可以摸或弃至多三张牌，令所有其他角色将手牌数调整至与你相同，然后因此弃牌的角色摸三张牌；因此摸牌的角色"..
+  "弃置三张牌；若未摸牌或弃牌，你对其造成1点伤害。",
 
-  ["#zhanban"] = "斩绊：令所有角色将手牌数调整至与你相同，根据是否弃牌或摸牌执行效果",
+  ["#zhanban"] = "斩绊：摸或弃至多三张牌，然后所有角色将手牌数调整至与你相同，根据是否弃牌或摸牌执行效果",
 
-  ["$zhanban1"] = "",
-  ["$zhanban2"] = "",
+  ["$zhanban1"] = "君岂不闻，飞则冲天，鸣则惊人？",
+  ["$zhanban2"] = "困龙将出，朕再也不受羁绊了！",
 }
 
 zhanban:addEffect("active", {
   anim_type = "control",
   prompt = "#zhanban",
-  card_num = 0,
+  interaction = UI.ComboBox { choices = { "discard_skill", "draw1", "draw2", "draw3" } },
+  min_card_num = 0,
+  max_card_num = 3,
   target_num = 0,
   can_use = function(self, player)
     return player:usedSkillTimes(zhanban.name, Player.HistoryPhase) == 0 and
       #Fk:currentRoom().alive_players > 1
   end,
+  card_filter = function (self, player, to_select, selected)
+    if self.interaction.data == "discard_skill" then
+      return #selected <= 3 and not player:prohibitDiscard(to_select)
+    else
+      return false
+    end
+  end,
   on_use = function(self, room, effect)
     local player = effect.from
+    if self.interaction.data == "discard_skill" then
+      if #effect.cards > 0 then
+        room:throwCard(effect.cards, zhanban.name, player, player)
+      end
+    else
+      player:drawCards(tonumber(self.interaction.data[5]), zhanban.name)
+    end
+    if player.dead then return end
     local targets = room:getOtherPlayers(player)
     if player:hasSkill("tiancheng") then
       local tos = table.filter(targets, function (p)
@@ -69,6 +86,15 @@ zhanban:addEffect("active", {
         end
       end
     end
+    if #effect.cards > 0 then
+      result[player] = -#effect.cards
+    elseif self.interaction.data == "discard_skill" then
+      result[player] = 0
+    else
+      result[player] = tonumber(self.interaction.data[5])
+    end
+    table.insert(targets, player)
+    room:sortByAction(targets)
     for _, p in ipairs(targets) do
       if not p.dead then
         if result[p] > 0 then

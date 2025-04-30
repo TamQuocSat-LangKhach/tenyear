@@ -208,6 +208,15 @@ Fk:loadTranslationTable{
 }
 
 --七杀：马云騄 关银屏 祖茂 徐氏 吕虔 张梁 蹋顿 公孙瓒
+General:new(extension, "ty__mayunlu", "shu", 4, 4, General.Female):addSkills { "ty__fengpo", "mashu" }
+Fk:loadTranslationTable{
+  ["ty__mayunlu"] = "马云騄",
+  ["#ty__mayunlu"] = "关山凤吟",
+  ["illustrator:ty__mayunlu"] = "7点Game",
+
+  ["~ty__mayunlu"] = "寂寂花语多，相思谁来解。",
+}
+
 General:new(extension, "lvqian", "wei", 4):addSkills { "weilu", "zengdao" }
 Fk:loadTranslationTable{
   ["lvqian"] = "吕虔",

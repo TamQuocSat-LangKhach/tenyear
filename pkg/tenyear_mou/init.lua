@@ -138,6 +138,28 @@ Fk:loadTranslationTable{
   ["~tymou2__guojia"] = "江湖路远，诸君，某先行一步。",
 }
 
+General:new(extension, "tymou__xunyu", "wei", 3):addSkills { "bizuo", "shimou" }
+local xunyu2 = General:new(extension, "tymou2__xunyu", "wei", 3)
+xunyu2:addSkills { "bizuo", "shimou" }
+xunyu2.hidden = true
+Fk:loadTranslationTable{
+  ["tymou__xunyu"] = "谋荀彧",
+  ["#tymou__xunyu"] = "贞谋弼汉",
+  ["illustrator:tymou__xunyu"] = "",
+
+  ["~tymou__xunyu"] = "诸君见我冢，亦如见青山。",
+
+  ["tymou2__xunyu"] = "谋荀彧",
+  ["#tymou2__xunyu"] = "贞谋弼汉",
+  ["illustrator:tymou2__xunyu"] = "",
+
+  ["$bizuo_tymou2__xunyu1"] = "而今江山未靖，劝君择日称公。",
+  ["$bizuo_tymou2__xunyu2"] = "请君三尺剑，诛罢宵小，再复江山！",
+  ["$shimou_tymou2__xunyu1"] = "明公揽青兖，征睢洛，胜券已然在握。",
+  ["$shimou_tymou2__xunyu2"] = "为大汉抱薪者，不可使其冻毙于风雨。",
+  ["~tymou2__xunyu"] = "知我罪我，其惟春秋。",
+}
+
 --冢虎狼顾：蒋济 王凌 司马师 曹爽
 General:new(extension, "tymou__jiangji", "wei", 3):addSkills { "shiju", "yingshij" }
 Fk:loadTranslationTable{
@@ -284,6 +306,17 @@ Fk:loadTranslationTable{
   ["illustrator:tymou__huanggai"] = "白",
 
   ["~tymou__huanggai"] = "被那曹贼看穿了。",
+}
+
+--王佐倡义：董承 曹洪 刘协
+General:new(extension, "tymou__liuxie", "qun", 3):addSkills { "zhanban", "chensheng", "tiancheng" }
+Fk:loadTranslationTable{
+  ["tymou__liuxie"] = "谋刘协",
+  ["#tymou__liuxie"] = "玉辂东归",
+  --["illustrator:tymou__liuxie"] = "",
+  ["designer:tymou__liuxie"] = "韩旭",
+
+  ["~tymou__liuxie"] = "前有董贼、李贼，今有曹贼！",
 }
 
 return extension

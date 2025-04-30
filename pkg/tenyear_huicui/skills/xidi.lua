@@ -10,8 +10,8 @@ Fk:loadTranslationTable{
 
   ["@@xidi-inhand"] = "笛",
 
-  ["$xidi1"] = "",
-  ["$xidi2"] = "",
+  ["$xidi1"] = "霜清飞鸟静，月明晚笛声。",
+  ["$xidi2"] = "玉声暗飞来，青城盈春风。",
 }
 
 xidi:addEffect(fk.GameStart, {

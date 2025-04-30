@@ -9,8 +9,8 @@ Fk:loadTranslationTable{
 
   ["#tiancheng-choose"] = "天承：你可以令任意名群势力角色不成为此次“斩绊”的目标",
 
-  ["$tiancheng1"] = "",
-  ["$tiancheng2"] = "",
+  ["$tiancheng1"] = "大汉良臣，必得大汉天子护佑！",
+  ["$tiancheng2"] = "忠臣不可罪，义士不可轻。",
 }
 
 tiancheng:addEffect("visibility", {

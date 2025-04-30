@@ -85,6 +85,8 @@ nezha:addSkills { "santou", "faqi" }
 nezha.fixMaxHp = 3
 Fk:loadTranslationTable{
   ["nezha"] = "哪吒",
+  ["#nezha"] = "三太子",--称号出自官盗长安风云
+  ["illustrator:nezha"] = "匠人绘",
 
   ["~nezha"] = "莲藕花开，始知三清……",
 }

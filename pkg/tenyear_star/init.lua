@@ -8,7 +8,7 @@ Fk:loadTranslationTable{
   ["tystar"] = "新服星",
 }
 
---天枢：袁术 董卓 张昭 袁绍
+--天枢：袁术 董卓 张昭 袁绍 张让
 General:new(extension, "tystar__yuanshu", "qun", 4):addSkills { "canxi", "pizhi", "zhonggu" }
 Fk:loadTranslationTable{
   ["tystar__yuanshu"] = "星袁术",
@@ -46,6 +46,14 @@ Fk:loadTranslationTable{
   ["illustrator:tystar__yuanshao"] = "鬼画府",
 
   ["~tystar__yuanshao"] = "骄兵必败，奈何不记前辙……",
+}
+
+General:new(extension, "tystar__zhangrang", "qun", 3):addSkills { "duhai", "lingse" }
+Fk:loadTranslationTable{
+  ["tystar__zhangrang"] = "星张让",
+  ["#tystar__zhangrang"] = "斗筲穿窬",
+
+  ["~tystar__zhangrang"] = "先皇啊，小陛下他拿咱不当人！",
 }
 
 --天璇：法正 荀彧

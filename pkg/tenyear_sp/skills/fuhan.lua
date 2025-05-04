@@ -70,12 +70,7 @@ fuhan:addEffect(fk.TurnStart, {
         qml_path = "packages/tenyear/qml/ChooseGeneralSkillsBox.qml",
         extra_data = {generals, skills, 1, 2, "#ty__fuhan-choice", false}
       })
-      local choices = {}
-      if result ~= "" then
-        choices = json.decode(result)
-      else
-        choices = table.random(skills, 2)
-      end
+      local choices = result ~= "" and json.decode(result) or table.random(skills, 2)
       room:handleAddLoseSkills(player, table.concat(choices, "|"))
     end
 

@@ -25,7 +25,8 @@ xiaowu:addEffect("active", {
   can_use = function(self, player)
     return player:usedSkillTimes(xiaowu.name, Player.HistoryPhase) == 0 and
       table.find(Fk:currentRoom().draw_pile, function (id)
-        return string.find(Fk:translate(":"..Fk:getCardById(id).name, "zh_CN"), "【杀】") ~= nil
+        return Fk:getCardById(id).trueName == "slash" or
+          string.find(Fk:translate(":"..Fk:getCardById(id).name, "zh_CN"), "【杀】") ~= nil
       end)
   end,
   card_filter = function (self, player, to_select, selected)
@@ -36,7 +37,8 @@ xiaowu:addEffect("active", {
     room:throwCard(effect.cards, xiaowu.name, player, player)
     if player.dead then return end
     local cards = table.filter(room.draw_pile, function (id)
-      return string.find(Fk:translate(":" .. Fk:getCardById(id).name, "zh_CN"), "【杀】") ~= nil
+      return Fk:getCardById(id).trueName == "slash" or
+        string.find(Fk:translate(":" .. Fk:getCardById(id).name, "zh_CN"), "【杀】") ~= nil
     end)
     if #cards > 0 then
       local n = player:getMark("xiaowul-turn") > 0 and 2 or 1

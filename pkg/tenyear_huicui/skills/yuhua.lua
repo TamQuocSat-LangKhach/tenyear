@@ -7,8 +7,8 @@ Fk:loadTranslationTable{
   ["ty__yuhua"] = "羽化",
   [":ty__yuhua"] = "锁定技，你的非基本牌不计入手牌上限；结束阶段，若你的手牌数大于体力上限，你观看牌堆顶一张牌，置于牌堆顶或牌堆底。",
 
-  ["$ty__yuhua1"] = "虹衣羽裳，出尘入仙。",
-  ["$ty__yuhua2"] = "羽化成蝶，翩仙舞愿。",
+  ["$ty__yuhua1"] = "飘然若仙，翠羽明珠。",
+  ["$ty__yuhua2"] = "仙姿玉质，翠羽明垱。",
 }
 
 yuhua:addEffect(fk.EventPhaseStart, {

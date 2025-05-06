@@ -145,13 +145,13 @@ xunyu2.hidden = true
 Fk:loadTranslationTable{
   ["tymou__xunyu"] = "谋荀彧",
   ["#tymou__xunyu"] = "贞谋弼汉",
-  ["illustrator:tymou__xunyu"] = "",
+  ["illustrator:tymou__xunyu"] = "鬼画府",
 
   ["~tymou__xunyu"] = "诸君见我冢，亦如见青山。",
 
   ["tymou2__xunyu"] = "谋荀彧",
   ["#tymou2__xunyu"] = "贞谋弼汉",
-  ["illustrator:tymou2__xunyu"] = "",
+  ["illustrator:tymou2__xunyu"] = "鬼画府",
 
   ["$bizuo_tymou2__xunyu1"] = "而今江山未靖，劝君择日称公。",
   ["$bizuo_tymou2__xunyu2"] = "请君三尺剑，诛罢宵小，再复江山！",
@@ -289,6 +289,17 @@ Fk:loadTranslationTable{
   ["~tymou__chenlin"] = "矢在弦上，不得不发，请曹公恕罪。",
 }
 
+--王佐倡义：董承 曹洪 刘协
+General:new(extension, "tymou__liuxie", "qun", 3):addSkills { "zhanban", "chensheng", "tiancheng" }
+Fk:loadTranslationTable{
+  ["tymou__liuxie"] = "谋刘协",
+  ["#tymou__liuxie"] = "玉辂东归",
+  ["illustrator:tymou__liuxie"] = "黯荧岛",
+  ["designer:tymou__liuxie"] = "韩旭",
+
+  ["~tymou__liuxie"] = "前有董贼、李贼，今有曹贼！",
+}
+
 --周郎将计：程昱 黄盖
 General:new(extension, "tymou__chengyu", "wei", 3):addSkills { "shizha", "gaojian" }
 Fk:loadTranslationTable{
@@ -306,17 +317,6 @@ Fk:loadTranslationTable{
   ["illustrator:tymou__huanggai"] = "白",
 
   ["~tymou__huanggai"] = "被那曹贼看穿了。",
-}
-
---王佐倡义：董承 曹洪 刘协
-General:new(extension, "tymou__liuxie", "qun", 3):addSkills { "zhanban", "chensheng", "tiancheng" }
-Fk:loadTranslationTable{
-  ["tymou__liuxie"] = "谋刘协",
-  ["#tymou__liuxie"] = "玉辂东归",
-  --["illustrator:tymou__liuxie"] = "",
-  ["designer:tymou__liuxie"] = "韩旭",
-
-  ["~tymou__liuxie"] = "前有董贼、李贼，今有曹贼！",
 }
 
 return extension

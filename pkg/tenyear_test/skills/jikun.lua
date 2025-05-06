@@ -92,7 +92,7 @@ jikun:addEffect(fk.AfterCardsMove, {
         for _, info in ipairs(move.moveInfo) do
           if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
             room:addPlayerMark(player, "@jikun", 1)
-            while player:getMark("@jikun") > 5 do
+            while player:getMark("@jikun") >= 5 do
               room:removePlayerMark(player, "@jikun", 5)
               move.extra_data = move.extra_data or {}
               move.extra_data.jikun = move.extra_data.jikun or {}

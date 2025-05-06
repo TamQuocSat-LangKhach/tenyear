@@ -31,7 +31,7 @@ pingxiang:addEffect("active", {
     room:handleAddLoseSkills(player, "-jiufa")
     for i = 1, 9 do
       if player.dead or not room:askToUseVirtualCard(player, {
-        name = "slash",
+        name = "fire__slash",
         skill_name = pingxiang.name,
         prompt = "#pingxiang-slash:::" .. i,
         cancelable = true,

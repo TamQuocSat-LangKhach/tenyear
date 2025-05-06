@@ -46,7 +46,8 @@ local spec = {
         player:usedEffectTimes("#jigu_3_trig", Player.HistoryRound) < record) and
         #table.filter(player:getCardIds("h"), function (id)
           return Fk:getCardById(id):getMark("@@jigu-inhand") > 0
-        end) == #player:getAvailableEquipSlots() - #player:getCardIds("e")
+        end) == #player:getCardIds("e") and
+        #player:getAvailableEquipSlots() > #player:getCardIds("e")
     end
   end,
   on_use = function(self, event, target, player, data)

@@ -19,7 +19,9 @@ chengyan:addEffect(fk.TargetSpecified, {
     return target == player and player:hasSkill(chengyan.name) and data.firstTarget and
       not table.contains(data.card.skillNames, chengyan.name) and
       (data.card.trueName == "slash" or data.card:isCommonTrick()) and
-      not table.contains(data.use.tos, player)
+      table.find(data.use.tos, function (p)
+        return p ~= player
+      end)
   end,
   on_cost = function (self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
@@ -36,7 +38,10 @@ chengyan:addEffect(fk.TargetSpecified, {
     local card = Fk:getCardById(cards[1])
     if (card.trueName == "slash" or card:isCommonTrick()) and not card.is_passive then
       data.use.nullifiedTargets = table.simpleClone(room.players)
-      room:useVirtualCard(card.name, nil, player, data.use.tos, chengyan.name, true)
+      local new_tos = table.simpleClone(data.use.tos)
+      table.removeOne(new_tos, player)
+      room:sortByAction(new_tos)
+      room:useVirtualCard(card.name, nil, player, new_tos, chengyan.name, true)
     elseif not player.dead then
       player:drawCards(1, chengyan.name, nil, player:hasSkill("xidi", true) and "@@xidi-inhand" or nil)
     end

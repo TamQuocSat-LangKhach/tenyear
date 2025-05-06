@@ -35,7 +35,7 @@ jianshu:addEffect("active", {
     room:obtainCard(target, Fk:getCardById(effect.cards[1]), false, fk.ReasonGive)
     if player.dead or target.dead then return end
     local targets = table.filter(room:getOtherPlayers(target, false), function (p)
-      return target:canPindian(p)
+      return p ~= player and target:canPindian(p)
     end)
     if #targets == 0 then return end
     local to = room:askToChoosePlayers(player, {

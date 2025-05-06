@@ -14,7 +14,7 @@ Fk:loadTranslationTable{
   ["#shimou-use"] = "势谋：选择 %dest 视为使用的牌和至多%arg个目标",
   ["#shimou-extra"] = "势谋：是否令此牌额外结算一次？",
 
-  ["$shimou1"] = "臣未寒在胸之血，君何吝啬雨露雷霆？",
+  ["$shimou1"] = "臣未寒在胸之血，君何吝雨露雷霆？",
   ["$shimou2"] = "龙困浅滩，尚需云雨为济，况天子乎？",
 }
 

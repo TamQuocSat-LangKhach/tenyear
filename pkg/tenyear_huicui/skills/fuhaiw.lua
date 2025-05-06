@@ -20,6 +20,9 @@ fuhai:addEffect("active", {
   prompt = "#fuhaiw",
   card_num = 0,
   target_num = 1,
+  can_use = function (self, player)
+    return not player:isKongcheng()
+  end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, player, to_select, selected, selected_cards)
     if #selected == 0 and to_select ~= player then
@@ -32,7 +35,7 @@ fuhai:addEffect("active", {
     local player = effect.from
     local target = effect.tos[1]
     local order = player:getNextAlive() == target and "right" or "left"
-    while not player.dead do
+    while not player.dead and not player:isKongcheng() do
       room:doIndicate(player, {target})
       room:addTableMark(player, "fuhaiw-phase", target.id)
       local card1 = room:askToCards(player, {

@@ -24,6 +24,7 @@ jinglan:addEffect(fk.Damage, {
         max_num = 4,
         include_equip = false,
         skill_name = jinglan.name,
+        cancelable = false,
       })
     elseif player:getHandcardNum() == player.hp then
       room:notifySkillInvoked(player, jinglan.name, "support")
@@ -32,6 +33,7 @@ jinglan:addEffect(fk.Damage, {
         max_num = 1,
         include_equip = true,
         skill_name = jinglan.name,
+        cancelable = false,
       })
       if player:isWounded() and not player.dead then
         room:recover{

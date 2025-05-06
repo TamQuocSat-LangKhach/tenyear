@@ -52,6 +52,7 @@ General:new(extension, "tystar__zhangrang", "qun", 3):addSkills { "duhai", "ling
 Fk:loadTranslationTable{
   ["tystar__zhangrang"] = "星张让",
   ["#tystar__zhangrang"] = "斗筲穿窬",
+  ["illustrator:tystar__zhangrang"] = "君桓文化",
 
   ["~tystar__zhangrang"] = "先皇啊，小陛下他拿咱不当人！",
 }

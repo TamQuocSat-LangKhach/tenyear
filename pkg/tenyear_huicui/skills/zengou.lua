@@ -73,7 +73,7 @@ zengou:addEffect(fk.CardUseFinished, {
   can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("@@ty__zengou") > 0
   end,
-  on_cost = Util.TrueFunc,
+  on_use = spec.on_use,
 })
 
 return zengou

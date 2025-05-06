@@ -55,7 +55,7 @@ xianju:addEffect(fk.EventPhaseEnd, {
   on_use = function (self, event, target, player, data)
     local room = player.room
     local n = #table.filter(room.alive_players, function (p)
-      return not player:inMyAttackRange(p)
+      return not player:inMyAttackRange(p) and p ~= player
     end)
     room:askToDiscard(player, {
       min_num = n,

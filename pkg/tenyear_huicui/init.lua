@@ -1737,7 +1737,7 @@ Fk:loadTranslationTable{
   ["~ty__mateng"] = "儿子，为爹报仇啊！",
 }
 
---正音雅乐：蔡文姬√ 周妃√ 祢衡√ 大乔√ 小乔√ 邹氏√ 貂蝉√ 周瑜√
+--正音雅乐：蔡文姬√ 周妃√ 诸葛果√ 祢衡√ 大乔√ 小乔√ 邹氏√ 貂蝉√ 周瑜√
 General:new(extension, "mu__caiwenji", "qun", 3, 3, General.Female):addSkills { "shuangjia", "beifen" }
 Fk:loadTranslationTable{
   ["mu__caiwenji"] = "乐蔡文姬",
@@ -1755,6 +1755,15 @@ Fk:loadTranslationTable{
   ["illustrator:mu__zhoufei"] = "匠人绘",
 
   ["~mu__zhoufei"] = "红颜薄命，望君珍重……",
+}
+
+General:new(extension, "mu__zhugeguo", "shu", 3, 3, General.Female):addSkills { "xidi", "chengyan" }
+Fk:loadTranslationTable{
+  ["mu__zhugeguo"] = "乐诸葛果",
+  ["#mu__zhugeguo"] = "玉笛朝真",
+  ["illustrator:mu__zhugeguo"] = "黯荧岛",
+
+  ["~mu__zhugeguo"] = "七情盈丹海，不敢妄飞升。",
 }
 
 General:new(extension, "mu__miheng", "qun", 3):addSkills { "jigu", "sirui" }
@@ -1827,15 +1836,6 @@ Fk:loadTranslationTable{
   ["illustrator:mu__zhouyu"] = "觉觉",
 
   ["~mu__zhouyu"] = "高山难觅流水意，曲终人散皆难违。",
-}
-
-General:new(extension, "mu__zhugeguo", "shu", 3, 3, General.Female):addSkills { "xidi", "chengyan" }
-Fk:loadTranslationTable{
-  ["mu__zhugeguo"] = "乐诸葛果",
-  ["#mu__zhugeguo"] = "玉露清音",
-  --["illustrator:mu__zhugeguo"] = "",
-
-  ["~mu__zhugeguo"] = "七情盈丹海，不敢妄飞升。",
 }
 
 --百战虎贲：兀突骨√ 文鸯√ 夏侯霸√ 皇甫嵩√ 王双√ 留赞√ 雷铜√ 吴兰√ 黄祖√ 陈泰√ 王濬√ 杜预√ 文钦√ 胡遵√ 蒋钦√ 张任√ 凌操√ 吕据√ 陈武董袭√ 丁奉x

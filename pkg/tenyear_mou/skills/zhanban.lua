@@ -5,8 +5,8 @@ local zhanban = fk.CreateSkill {
 
 Fk:loadTranslationTable{
   ["zhanban"] = "斩绊",
-  [":zhanban"] = "出牌阶段限一次，你可以摸或弃至多三张牌，令所有其他角色将手牌数调整至与你相同，然后因此弃牌的角色摸三张牌；因此摸牌的角色"..
-  "弃置三张牌；若未摸牌或弃牌，你对其造成1点伤害。",
+  [":zhanban"] = "出牌阶段限一次，你可以摸或弃至多三张牌，令所有其他角色将手牌数调整至与你相同，然后目标角色中：因此弃牌的角色摸三张牌；"..
+  "因此摸牌的角色弃置三张牌；若未摸牌或弃牌，你对其造成1点伤害。",
 
   ["#zhanban"] = "斩绊：摸或弃至多三张牌，然后所有角色将手牌数调整至与你相同，根据是否弃牌或摸牌执行效果",
 
@@ -86,14 +86,6 @@ zhanban:addEffect("active", {
         end
       end
     end
-    if #effect.cards > 0 then
-      result[player] = -#effect.cards
-    elseif self.interaction.data == "discard_skill" then
-      result[player] = 0
-    else
-      result[player] = tonumber(self.interaction.data[5])
-    end
-    table.insert(targets, player)
     room:sortByAction(targets)
     for _, p in ipairs(targets) do
       if not p.dead then

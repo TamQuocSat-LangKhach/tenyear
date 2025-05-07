@@ -16,7 +16,7 @@ tongli:addEffect(fk.TargetSpecified, {
   anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(tongli.name) and player.phase == Player.Play and data.firstTarget and
-      data.extra_data and data.extra_data.tongli_target and
+      data.extra_data and data.extra_data.tongli_tos and
       not table.contains(data.card.skillNames, tongli.name) and player:getMark("@tongli-phase") > 0 and
       (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) and
       not (table.contains({"peach", "analeptic"}, data.card.trueName) and
@@ -33,8 +33,10 @@ tongli:addEffect(fk.TargetSpecified, {
   on_use = function(self, event, target, player, data)
     data.extra_data = data.extra_data or {}
     data.extra_data.tongli = {
+      card = data.card,
       from = player,
-      tos = data.extra_data.tongli_target,
+      tos = data.extra_data.tongli_tos,
+      subTos = data.extra_data.tongli_subTos,
       times = player:getMark("@tongli-phase"),
     }
   end
@@ -50,29 +52,43 @@ tongli:addEffect(fk.PreCardUse, {
     room:addPlayerMark(player, "@tongli-phase", 1)
     if type(data.tos) == "table" then
       data.extra_data = data.extra_data or {}
-      data.extra_data.tongli_target = table.simpleClone(data.tos)
+      data.extra_data.tongli_tos = table.simpleClone(data.tos)
+      data.extra_data.tongli_subTos = data.subTos and table.simpleClone(data.subTos) or nil
     end
   end,
 })
 
-local parseTongliUseStruct = function (player, name, targetGroup)
-  local card = Fk:cloneCard(name)
+local parseTongliUseStruct = function (player, data)
+  local card = Fk:cloneCard(data.card.name)
   card.skillName = tongli.name
   if player:prohibitUse(card) then return nil end
   local all_tos = {}
-  for _, tos in ipairs(targetGroup) do
+  for _, target in ipairs(data.tos) do
     local passed_target = {}
-    for _, target in ipairs(tos) do
-      if target.dead then return nil end
-      if #passed_target == 0 and player:isProhibited(target, card) then return nil end
+    if target.dead then return nil end
+    if #passed_target == 0 and player:isProhibited(target, card) then return nil end
+    if data.subTos then
+      if table.find(data.subTos, function(p)
+        return p.dead
+      end) then
+        return nil
+      else
+        local subTo = data:getSubTos(target)
+        if not card.skill:modTargetFilter(player, subTo, {target}, card) then return nil end
+      end
+    else
       if not card.skill:modTargetFilter(player, target, passed_target, card) then return nil end
-      table.insert(passed_target, target)
-      table.insert(all_tos, target)
     end
+    table.insert(passed_target, target)
+    table.insert(all_tos, target)
+  end
+  if card.multiple_targets and card.skill:getMinTargetNum(player) == 0 then
+    all_tos = card:getAvailableTargets(player, {bypass_distances = true, bypass_times = true})
   end
   return {
     from = player,
-    tos = (card.multiple_targets and card.skill:getMinTargetNum(player) == 0) and {} or all_tos,
+    tos = all_tos,
+    subTos = data.subTos,
     card = card,
     extraUse = true,
   }
@@ -85,7 +101,7 @@ tongli:addEffect(fk.CardUseFinished, {
     if data.extra_data and data.extra_data.tongli and not player.dead then
       local dat = table.simpleClone(data.extra_data.tongli)
       if dat.from == player then
-        local use = parseTongliUseStruct(player, data.card.name, dat.tos)
+        local use = parseTongliUseStruct(player, dat)
         if use then
           event:setCostData(self, {extra_data = use})
           return true
@@ -100,7 +116,7 @@ tongli:addEffect(fk.CardUseFinished, {
     for _ = 1, dat.times, 1 do
       room:useCard(use)
       if player.dead then break end
-      use = parseTongliUseStruct(player, data.card.name, dat.tos)
+      use = parseTongliUseStruct(player, dat)
       if use == nil then break end
     end
   end,

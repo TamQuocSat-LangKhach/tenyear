@@ -77,9 +77,9 @@ zhanban:addEffect("active", {
             skill_name = zhanban.name,
             cancelable = false,
           })
-          result[p] = #cards
+          result[p] = -#cards
         elseif n < 0 then
-          result[p] = -n
+          result[p] = n
           p:drawCards(-n, zhanban.name)
         else
           result[p] = 0

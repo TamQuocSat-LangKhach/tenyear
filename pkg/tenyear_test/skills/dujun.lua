@@ -77,10 +77,10 @@ dujun:addEffect(fk.Damage, {
   anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(dujun.name) and target and (target == player or player:getMark(dujun.name) == target.id) then
-      local damage_events = player.room.logic:getActualDamageEvents(999, function (e)
+      local damage_events = player.room.logic:getActualDamageEvents(1, function (e)
         return e.data.from == target
       end, Player.HistoryTurn)
-      return #damage_events > 0 and damage_events[#damage_events].data == data
+      return #damage_events > 0 and damage_events[1].data == data
     end
   end,
   on_use = spec.on_use,
@@ -90,10 +90,10 @@ dujun:addEffect(fk.Damaged, {
   anim_type = "masochism",
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(dujun.name) and (target == player or player:getMark(dujun.name) == target.id) then
-      local damage_events = player.room.logic:getActualDamageEvents(999, function (e)
+      local damage_events = player.room.logic:getActualDamageEvents(1, function (e)
         return e.data.to == target
       end, Player.HistoryTurn)
-      return #damage_events > 0 and damage_events[#damage_events].data == data
+      return #damage_events > 0 and damage_events[1].data == data
     end
   end,
   on_use = spec.on_use,

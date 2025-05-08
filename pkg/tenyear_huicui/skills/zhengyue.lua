@@ -55,7 +55,8 @@ zhengyue:addEffect(fk.CardUseFinished, {
       if c.number == data.card.number or c:compareSuitWith(data.card) or c.trueName == data.card.trueName then
         return true
       else
-        return player.room:getCardArea(data.card) == Card.Processing and #player:getPile("#zhengyue") < 5
+        return table.contains({Card.Processing, Card.PlayerJudge, Card.PlayerEquip}, player.room:getCardArea(data.card)) and
+          #player:getPile("#zhengyue") < 5
       end
     end
   end,

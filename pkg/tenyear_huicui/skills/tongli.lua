@@ -4,9 +4,10 @@ local tongli = fk.CreateSkill {
 
 Fk:loadTranslationTable{
   ["tongli"] = "同礼",
-  ["@tongli-phase"] = "同礼",
   [":tongli"] = "当你于出牌阶段内使用基本牌或普通锦囊牌指定目标后，若你此阶段已使用牌数为X，你可以令你于此牌结算后视为对"..
   "包含此牌的所有原本目标在内的角色依次使用X次牌名相同的牌。（X为你手牌中的花色数，包含无色）",
+
+  ["@tongli-phase"] = "同礼",
 
   ["$tongli1"] = "胞妹殊礼，妾幸同之。",
   ["$tongli2"] = "夫妻之礼，举案齐眉。",
@@ -44,7 +45,7 @@ tongli:addEffect(fk.TargetSpecified, {
 
 tongli:addEffect(fk.PreCardUse, {
   can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(tongli.name, true) and player.phase == Player.Play and
+    return target == player and player:hasSkill(tongli.name) and player.phase == Player.Play and
       not table.contains(data.card.skillNames, tongli.name)
   end,
   on_refresh = function(self, event, target, player, data)

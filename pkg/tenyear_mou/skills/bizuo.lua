@@ -6,11 +6,11 @@ local bizuo = fk.CreateSkill{
 Fk:loadTranslationTable{
   ["bizuo"] = "弼佐",
   [":bizuo"] = "限定技，一名角色回合结束时，若一号位角色体力值为全场最低，你可以令一名角色执行一个额外回合：此回合中除你与其以外的角色"..
-  "非锁定技失效；此回合结束时，你分配本回合所有不因弃置进入弃牌堆的牌。",
+  "非锁定技失效；此回合结束时，你可以分配本回合所有不因弃置进入弃牌堆的牌。",
 
   ["#bizuo-choose"] = "弼佐：令一名角色执行一个额外回合！",
   ["@@bizuo-turn"] = "弼佐",
-  ["#bizuo-give"] = "弼佐：分配本回合所有不因弃置进入弃牌堆的牌！",
+  ["#bizuo-give"] = "弼佐：你可以分配本回合所有不因弃置进入弃牌堆的牌",
 
   ["$bizuo1"] = "君同日月，国若山河，吾不敢舍昼夜。",
   ["$bizuo2"] = "人生百载，或死利，或死欲，死义可乎？",
@@ -92,7 +92,7 @@ bizuo:addEffect(fk.TurnEnd, {
     local room = player.room
     local cards = event:getCostData(self).cards
     room:askToYiji(player, {
-      min_num = #cards,
+      min_num = 0,
       max_num = #cards,
       skill_name = bizuo.name,
       targets = room.alive_players,

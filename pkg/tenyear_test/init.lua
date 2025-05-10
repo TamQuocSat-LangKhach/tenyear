@@ -127,4 +127,14 @@ Fk:loadTranslationTable{
   --["~ty_wei__caopi"] = "",
 }
 
+local godzhonghui = General:new(extension, "godzhonghui", "god", 4)
+godzhonghui:addSkills { "linjiez", "duzhang", "jianghuo" }
+godzhonghui:addRelatedSkill("lishi")
+Fk:loadTranslationTable{
+  ["godzhonghui"] = "神钟会",
+  --["#godzhonghui"] = "",
+
+  --["~godzhonghui"] = "",
+}
+
 return extension

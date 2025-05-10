@@ -64,6 +64,7 @@ lishi:addEffect(fk.EventPhaseStart, {
         prompt = "#lishi-choice:::"..player:getMark("@zhonghui_piercing"),
         cancelable = false,
       })
+      room:removePlayerMark(player, "@zhonghui_piercing", #choices)
       choices = table.map(choices, function(choice)
         return string.split(choice, "_")[2]
       end)

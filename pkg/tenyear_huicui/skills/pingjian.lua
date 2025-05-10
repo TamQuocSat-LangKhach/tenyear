@@ -137,7 +137,7 @@ pingjian:addEffect(fk.Damaged, {
     room:handleAddLoseSkills(player, skill_name)
     local skel = Fk.skill_skels[skill_name]
     for _, skill in ipairs(skel.effects) do
-      if skill:isInstanceOf(TriggerSkill) and skill:triggerable(event, target, player, data) then
+      if skill:isInstanceOf(TriggerSkill) and skill.event == fk.Damaged and skill:triggerable(event, target, player, data) then
         skill:trigger(event, target, player, data)
       end
     end
@@ -171,7 +171,7 @@ pingjian:addEffect(fk.EventPhaseStart, {
     room:handleAddLoseSkills(player, skill_name)
     local skel = Fk.skill_skels[skill_name]
     for _, skill in ipairs(skel.effects) do
-      if skill:isInstanceOf(TriggerSkill) and skill:triggerable(event, target, player, data) then
+      if skill:isInstanceOf(TriggerSkill) and skill.event == fk.EventPhaseStart and skill:triggerable(event, target, player, data) then
         skill:trigger(event, target, player, data)
       end
     end
